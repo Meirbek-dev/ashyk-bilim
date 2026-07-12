@@ -235,9 +235,7 @@ const EditCourseContributors = () => {
     limit: 5,
     enabled: hasSearchQuery,
   })
-  const contributorSearchData = contributorSearchResponse?.success
-    ? (contributorSearchResponse.data as ContributorSearchResponse | undefined)
-    : undefined
+  const contributorSearchData = contributorSearchResponse?.data as ContributorSearchResponse | undefined
   const contributorSearchUsers = Array.isArray(contributorSearchData?.users) ? contributorSearchData.users : []
   const fetchedSearchResults: SearchUser[] = contributorSearchUsers.map((user: SearchUser) =>
     Object.assign(user, {

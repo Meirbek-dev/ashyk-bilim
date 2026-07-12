@@ -22,11 +22,7 @@ export function StudyCompanionPanel({
 }) {
   const t = useTranslations('AiExperience.studyCompanion')
   return (
-    <WidgetErrorBoundary
-      scope="student-study-companion"
-      variant="section"
-      title={t('title')}
-    >
+    <WidgetErrorBoundary scope="student-study-companion" variant="section" title={t('title')}>
       <StudyCompanionPanelInner courseUuid={courseUuid} initialMode={initialMode} />
     </WidgetErrorBoundary>
   )
@@ -92,4 +88,3 @@ function StudyCompanionPanelInner({
     </section>
   )
 }
-

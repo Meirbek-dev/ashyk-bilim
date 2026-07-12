@@ -30,7 +30,7 @@ export function useCreateCourseMutation() {
             description: payload.description.trim(),
             learnings: JSON.stringify([]),
             tags: JSON.stringify([]),
-            visibility: payload.initialVisibility === 'public',
+            visibility: false,
             template: apiTemplate,
           },
           null,
@@ -39,7 +39,7 @@ export function useCreateCourseMutation() {
         const created = result.data
         const createdCourseUuid = typeof created?.course_uuid === 'string' ? created.course_uuid : null
 
-        if (!result.success || !created || !createdCourseUuid) {
+        if (!created || !createdCourseUuid) {
           const detail =
             created && typeof created === 'object' && 'detail' in (created as Record<string, unknown>)
               ? (created as Record<string, unknown>).detail

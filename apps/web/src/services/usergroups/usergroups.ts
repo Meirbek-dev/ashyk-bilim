@@ -1,82 +1,67 @@
 'use server'
 
-import { apiFetch, getResponseMetadata } from '@/lib/api-client'
+import { apiResult } from '@/lib/api-client'
 import { courseTag, tags } from '@/lib/cacheTags'
 
 export async function createUserGroup(body: AppPayload) {
-  const result = await apiFetch('usergroups/', {
+  const data = await apiResult('usergroups/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.platform, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.platform, 'max')
 
-  return metadata
+  return data
 }
 
 export async function linkUserToUserGroup(usergroup_id: number, user_id: number) {
-  const result = await apiFetch(`usergroups/${usergroup_id}/add_users?user_ids=${user_id}`, {
+  const data = await apiResult(`usergroups/${usergroup_id}/add_users?user_ids=${user_id}`, {
     method: 'POST',
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.platform, 'max')
-    revalidateTag(tags.users, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.platform, 'max')
+  revalidateTag(tags.users, 'max')
 
-  return metadata
+  return data
 }
 
 export async function unLinkUserToUserGroup(usergroup_id: number, user_id: number) {
-  const result = await apiFetch(`usergroups/${usergroup_id}/remove_users?user_ids=${user_id}`, {
+  const data = await apiResult(`usergroups/${usergroup_id}/remove_users?user_ids=${user_id}`, {
     method: 'DELETE',
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.platform, 'max')
-    revalidateTag(tags.users, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.platform, 'max')
+  revalidateTag(tags.users, 'max')
 
-  return metadata
+  return data
 }
 
 export async function updateUserGroup(usergroup_id: number, data: AppPayload) {
-  const result = await apiFetch(`usergroups/${usergroup_id}`, {
+  const response = await apiResult(`usergroups/${usergroup_id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.platform, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.platform, 'max')
 
-  return metadata
+  return response
 }
 
 export async function deleteUserGroup(usergroup_id: number) {
-  const result = await apiFetch(`usergroups/${usergroup_id}`, {
+  const data = await apiResult(`usergroups/${usergroup_id}`, {
     method: 'DELETE',
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.platform, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.platform, 'max')
 
-  return metadata
+  return data
 }
 
 interface UserGroupCourseInvalidationOptions {
@@ -104,16 +89,13 @@ export async function linkResourcesToUserGroup(
   resource_uuids: string[],
   options?: UserGroupCourseInvalidationOptions,
 ) {
-  const result = await apiFetch(`usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`, {
+  const data = await apiResult(`usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`, {
     method: 'POST',
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    await revalidateUserGroupCourseTags(options)
-  }
+  await revalidateUserGroupCourseTags(options)
 
-  return metadata
+  return data
 }
 
 export async function unLinkResourcesToUserGroup(
@@ -121,14 +103,11 @@ export async function unLinkResourcesToUserGroup(
   resource_uuids: string[],
   options?: UserGroupCourseInvalidationOptions,
 ) {
-  const result = await apiFetch(`usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`, {
+  const data = await apiResult(`usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`, {
     method: 'DELETE',
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    await revalidateUserGroupCourseTags(options)
-  }
+  await revalidateUserGroupCourseTags(options)
 
-  return metadata
+  return data
 }

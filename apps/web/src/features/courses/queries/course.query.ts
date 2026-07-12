@@ -1,5 +1,5 @@
 import { getCourseEditorBundle } from '@services/courses/editor'
-import { apiFetcher, apiFetcherWithHeaders, fetchResponseMetadata } from '@/lib/api-client'
+import { apiJson, apiResult } from '@/lib/api-client'
 import { queryOptions } from '@tanstack/react-query'
 import type { CourseListKeyOptions } from '@/hooks/courses/courseKeys'
 import { courseEndpoints, courseKeys } from '@/hooks/courses/courseKeys'
@@ -20,14 +20,14 @@ interface CourseListResponse<TCourse> {
 export function courseQueryOptions<TCourse = unknown>(courseUuid: string) {
   return queryOptions({
     queryKey: courseKeys.detail(courseUuid),
-    queryFn: () => apiFetcher<TCourse>(courseEndpoints.detail(courseUuid)),
+    queryFn: () => apiJson<TCourse>(courseEndpoints.detail(courseUuid)),
   })
 }
 
 export function courseMetadataQueryOptions<TCourse = unknown>(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.metadata(courseUuid),
-    queryFn: () => apiFetcher<TCourse>(courseEndpoints.detail(courseUuid)),
+    queryFn: () => apiJson<TCourse>(courseEndpoints.detail(courseUuid)),
   })
 }
 
@@ -37,7 +37,7 @@ export function courseStructureQueryOptions<TCourseStructure = unknown>(
 ) {
   return queryOptions({
     queryKey: courseKeys.structure(courseUuid, withUnpublishedActivities),
-    queryFn: () => apiFetcher<TCourseStructure>(courseEndpoints.structure(courseUuid, withUnpublishedActivities)),
+    queryFn: () => apiJson<TCourseStructure>(courseEndpoints.structure(courseUuid, withUnpublishedActivities)),
     staleTime: 5000,
   })
 }
@@ -45,7 +45,7 @@ export function courseStructureQueryOptions<TCourseStructure = unknown>(
 export function courseRightsQueryOptions<TRights = unknown>(courseUuid: string) {
   return queryOptions({
     queryKey: courseKeys.rights(courseUuid),
-    queryFn: () => apiFetcher<TRights>(courseEndpoints.rights(courseUuid)),
+    queryFn: () => apiJson<TRights>(courseEndpoints.rights(courseUuid)),
   })
 }
 
@@ -60,7 +60,7 @@ export function courseListQueryOptions<TCourse = unknown>(options: CourseListKey
   return queryOptions({
     queryKey: courseKeys.list(options),
     queryFn: async (): Promise<CourseListResponse<TCourse>> => {
-      const response = await apiFetcherWithHeaders(courseEndpoints.list(options))
+      const response = await apiResult(courseEndpoints.list(options))
       const courses = Array.isArray(response.data) ? (response.data as TCourse[]) : []
       return {
         courses,
@@ -74,7 +74,7 @@ export function editableCourseListQueryOptions<TCourse = unknown>(options: Cours
   return queryOptions({
     queryKey: courseKeys.editable(options),
     queryFn: async (): Promise<CourseListResponse<TCourse>> => {
-      const response = await apiFetcherWithHeaders(courseEndpoints.editable(options))
+      const response = await apiResult(courseEndpoints.editable(options))
       const courses = Array.isArray(response.data) ? (response.data as TCourse[]) : []
       return {
         courses,
@@ -101,7 +101,7 @@ interface CourseUpdateRead {
 export function courseUpdatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.updates(courseUuid),
-    queryFn: () => apiFetcher<CourseUpdateRead[]>(`${courseEndpoints.detail(courseUuid)}/updates`),
+    queryFn: () => apiJson<CourseUpdateRead[]>(`${courseEndpoints.detail(courseUuid)}/updates`),
   })
 }
 
@@ -120,7 +120,7 @@ export function courseDiscussionsQueryOptions(
         offset: String(offset),
       }).toString()
 
-      return apiFetcher<unknown[]>(`${courseEndpoints.detail(courseUuid)}/discussions?${queryString}`)
+      return apiJson<unknown[]>(`${courseEndpoints.detail(courseUuid)}/discussions?${queryString}`)
     },
   })
 }
@@ -128,42 +128,42 @@ export function courseDiscussionsQueryOptions(
 export function trailCurrentQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.trail.current(),
-    queryFn: () => apiFetcher<AppTrailData>(`trail`),
+    queryFn: () => apiJson<AppTrailData>(`trail`),
   })
 }
 
 export function trailLeaderboardQueryOptions(limit = 10) {
   return queryOptions({
     queryKey: queryKeys.trail.leaderboard(limit),
-    queryFn: () => apiFetcher<PlatformLeaderboard>(`gamification/leaderboard?limit=${limit}`),
+    queryFn: () => apiJson<PlatformLeaderboard>(`gamification/leaderboard?limit=${limit}`),
   })
 }
 
 export function userCertificatesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.certifications.userAll(),
-    queryFn: () => apiFetcher<AppCertification[]>(`certifications/user/all`),
+    queryFn: () => apiJson<AppCertification[]>(`certifications/user/all`),
   })
 }
 
 export function userCourseCertificatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.certifications.course(courseUuid),
-    queryFn: () => fetchResponseMetadata<AppCertification[]>(`certifications/user/course/${courseUuid}`),
+    queryFn: () => apiResult<AppCertification[]>(`certifications/user/course/${courseUuid}`),
   })
 }
 
 export function certificateDetailQueryOptions(certificateUuid: string) {
   return queryOptions({
     queryKey: queryKeys.certifications.detail(certificateUuid),
-    queryFn: () => fetchResponseMetadata<AppCertification>(`certifications/certificate/${certificateUuid}`),
+    queryFn: () => apiResult<AppCertification>(`certifications/certificate/${certificateUuid}`),
   })
 }
 
 export function courseContributorsQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.contributors(courseUuid),
-    queryFn: () => fetchResponseMetadata<AppCourseAuthor[]>(`courses/${courseUuid}/contributors`),
+    queryFn: () => apiResult<AppCourseAuthor[]>(`courses/${courseUuid}/contributors`),
   })
 }
 
@@ -172,7 +172,7 @@ export function activityAssessmentUuidQueryOptions(activityUuid: string) {
     queryKey: queryKeys.assessments.activity(activityUuid),
     queryFn: async () => {
       try {
-        const data = await apiFetcher<{ assessment_uuid?: string }>(`assessments/activity/${activityUuid}`)
+        const data = await apiJson<{ assessment_uuid?: string }>(`assessments/activity/${activityUuid}`)
         return data?.assessment_uuid ?? null
       } catch {
         return null
@@ -185,7 +185,7 @@ export function platformCoursesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.platform.courses(),
     queryFn: async () => {
-      const { data, headers } = await apiFetcherWithHeaders(courseEndpoints.list({ page: 1, limit: 20 }))
+      const { data, headers } = await apiResult(courseEndpoints.list({ page: 1, limit: 20 }))
       const courses = Array.isArray(data) ? (data as AppCourse[]) : []
       return {
         courses,

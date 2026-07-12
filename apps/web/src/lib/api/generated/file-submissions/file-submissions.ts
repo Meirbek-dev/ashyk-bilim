@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   ApiListFileSubmissionSubmissionsApiV1FileSubmissionsFileSubmissionUuidSubmissionsGetParams,
   FileSubmissionAttemptRead,
@@ -35,9 +35,9 @@ import type {
   FileSubmissionRead,
   FileSubmissionReviewQueue,
   FileSubmissionUpdate,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, nullableParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -68,12 +68,16 @@ export const apiCreateFileSubmissionApiV1FileSubmissionsPost = async (
   fileSubmissionCreate: FileSubmissionCreate,
   options?: RequestInit,
 ): Promise<FileSubmissionRead> => {
-  return orvalMutator<FileSubmissionRead>(getApiCreateFileSubmissionApiV1FileSubmissionsPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(fileSubmissionCreate),
-  })
+  return orvalMutator<FileSubmissionRead>(
+    getApiCreateFileSubmissionApiV1FileSubmissionsPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(fileSubmissionCreate),
+    },
+    FileSubmissionRead,
+  )
 }
 
 export const getApiCreateFileSubmissionApiV1FileSubmissionsPostMutationOptions = <
@@ -162,6 +166,7 @@ export const apiGetFileSubmissionByActivityApiV1FileSubmissionsActivityActivityU
       ...options,
       method: 'GET',
     },
+    FileSubmissionRead,
   )
 }
 
@@ -465,6 +470,7 @@ export const apiDownloadFileSubmissionFileApiV1FileSubmissionsFilesAttemptFileUu
       ...options,
       method: 'GET',
     },
+    voidParser,
   )
 }
 
@@ -770,6 +776,7 @@ export const apiGetFileSubmissionFileUrlApiV1FileSubmissionsFilesAttemptFileUuid
       ...options,
       method: 'GET',
     },
+    FileSubmissionFileUrlResponse,
   )
 }
 
@@ -1071,6 +1078,7 @@ export const apiGetFileSubmissionApiV1FileSubmissionsFileSubmissionUuidGet = asy
       ...options,
       method: 'GET',
     },
+    FileSubmissionRead,
   )
 }
 
@@ -1370,6 +1378,7 @@ export const apiUpdateFileSubmissionApiV1FileSubmissionsFileSubmissionUuidPatch 
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(fileSubmissionUpdate),
     },
+    FileSubmissionRead,
   )
 }
 
@@ -1464,6 +1473,7 @@ export const apiGetFileSubmissionDraftApiV1FileSubmissionsFileSubmissionUuidDraf
       ...options,
       method: 'GET',
     },
+    nullableParser(FileSubmissionAttemptRead),
   )
 }
 
@@ -1770,6 +1780,7 @@ export const apiSaveFileSubmissionDraftApiV1FileSubmissionsFileSubmissionUuidDra
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(fileSubmissionDraftPatch),
     },
+    FileSubmissionAttemptRead,
   )
 }
 
@@ -1868,6 +1879,7 @@ export const apiStartFileSubmissionDraftApiV1FileSubmissionsFileSubmissionUuidDr
       ...options,
       method: 'POST',
     },
+    FileSubmissionAttemptRead,
   )
 }
 
@@ -1964,6 +1976,7 @@ export const apiListMyFileSubmissionAttemptsApiV1FileSubmissionsFileSubmissionUu
       ...options,
       method: 'GET',
     },
+    arrayParser(FileSubmissionAttemptRead),
   )
 }
 
@@ -2268,6 +2281,7 @@ export const apiPublishFileSubmissionApiV1FileSubmissionsFileSubmissionUuidPubli
       ...options,
       method: 'POST',
     },
+    FileSubmissionRead,
   )
 }
 
@@ -2350,7 +2364,7 @@ export const getApiListFileSubmissionSubmissionsApiV1FileSubmissionsFileSubmissi
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2378,6 +2392,7 @@ export const apiListFileSubmissionSubmissionsApiV1FileSubmissionsFileSubmissionU
       ...options,
       method: 'GET',
     },
+    FileSubmissionReviewQueue,
   )
 }
 
@@ -2756,6 +2771,7 @@ export const apiDownloadFileSubmissionZipApiV1FileSubmissionsFileSubmissionUuidS
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(fileSubmissionBulkDownloadRequest),
     },
+    voidParser,
   )
 }
 
@@ -2865,6 +2881,7 @@ export const apiExportFileSubmissionCsvApiV1FileSubmissionsFileSubmissionUuidSub
       ...options,
       method: 'GET',
     },
+    voidParser,
   )
 }
 
@@ -3204,6 +3221,432 @@ export function useApiExportFileSubmissionCsvApiV1FileSubmissionsFileSubmissionU
   return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetUrl = (
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+) => {
+  return `/api/v1/file-submissions/${fileSubmissionUuid}/submissions/${attemptUuid}`
+}
+
+/**
+ * @summary Api Get File Submission Submission
+ */
+export const apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet = async (
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options?: RequestInit,
+): Promise<FileSubmissionAttemptRead> => {
+  return orvalMutator<FileSubmissionAttemptRead>(
+    getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetUrl(
+      fileSubmissionUuid,
+      attemptUuid,
+    ),
+    {
+      ...options,
+      method: 'GET',
+    },
+    FileSubmissionAttemptRead,
+  )
+}
+
+export const getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetQueryKey =
+  (fileSubmissionUuid: string, attemptUuid: string) => {
+    return [`/api/v1/file-submissions/${fileSubmissionUuid}/submissions/${attemptUuid}`] as const
+  }
+
+export const getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetQueryOptions =
+  <
+    TData = Awaited<
+      ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+    >,
+    TError = ErrorType<ApiErrorEnvelope>,
+  >(
+    fileSubmissionUuid: string,
+    attemptUuid: string,
+    options?: {
+      query?: Partial<
+        UseQueryOptions<
+          Awaited<
+            ReturnType<
+              typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+            >
+          >,
+          TError,
+          TData
+        >
+      >
+      request?: SecondParameter<typeof orvalMutator>
+    },
+  ) => {
+    const { query: queryOptions, request: requestOptions } = options ?? {}
+
+    const queryKey =
+      queryOptions?.queryKey ??
+      getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetQueryKey(
+        fileSubmissionUuid,
+        attemptUuid,
+      )
+
+    const queryFn: QueryFunction<
+      Awaited<
+        ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+      >
+    > = ({ signal }) =>
+      apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet(
+        fileSubmissionUuid,
+        attemptUuid,
+        { signal, ...requestOptions },
+      )
+
+    return {
+      queryKey,
+      queryFn,
+      enabled:
+        fileSubmissionUuid !== null &&
+        fileSubmissionUuid !== undefined &&
+        attemptUuid !== null &&
+        attemptUuid !== undefined,
+      ...queryOptions,
+    } as UseQueryOptions<
+      Awaited<
+        ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+      >,
+      TError,
+      TData
+    > & { queryKey: DataTag<QueryKey, TData, TError> }
+  }
+
+export type ApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetQueryResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+    >
+  >
+export type ApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetQueryError =
+  ErrorType<ApiErrorEnvelope>
+
+export function useApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet<
+  TData = Awaited<
+    ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+  >,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+          >
+        >,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<
+            ReturnType<
+              typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+            >
+          >,
+          TError,
+          Awaited<
+            ReturnType<
+              typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+            >
+          >
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet<
+  TData = Awaited<
+    ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+  >,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+          >
+        >,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<
+            ReturnType<
+              typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+            >
+          >,
+          TError,
+          Awaited<
+            ReturnType<
+              typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+            >
+          >
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet<
+  TData = Awaited<
+    ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+  >,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+          >
+        >,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Get File Submission Submission
+ */
+
+export function useApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet<
+  TData = Awaited<
+    ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+  >,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+          >
+        >,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions =
+    getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetQueryOptions(
+      fileSubmissionUuid,
+      attemptUuid,
+      options,
+    )
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetSuspenseQueryOptions =
+  <
+    TData = Awaited<
+      ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+    >,
+    TError = ErrorType<ApiErrorEnvelope>,
+  >(
+    fileSubmissionUuid: string,
+    attemptUuid: string,
+    options?: {
+      query?: Partial<
+        UseSuspenseQueryOptions<
+          Awaited<
+            ReturnType<
+              typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+            >
+          >,
+          TError,
+          TData
+        >
+      >
+      request?: SecondParameter<typeof orvalMutator>
+    },
+  ) => {
+    const { query: queryOptions, request: requestOptions } = options ?? {}
+
+    const queryKey =
+      queryOptions?.queryKey ??
+      getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetQueryKey(
+        fileSubmissionUuid,
+        attemptUuid,
+      )
+
+    const queryFn: QueryFunction<
+      Awaited<
+        ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+      >
+    > = ({ signal }) =>
+      apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet(
+        fileSubmissionUuid,
+        attemptUuid,
+        { signal, ...requestOptions },
+      )
+
+    return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+      Awaited<
+        ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+      >,
+      TError,
+      TData
+    > & { queryKey: DataTag<QueryKey, TData, TError> }
+  }
+
+export type ApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetSuspenseQueryResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+    >
+  >
+export type ApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetSuspenseQueryError =
+  ErrorType<ApiErrorEnvelope>
+
+export function useApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetSuspense<
+  TData = Awaited<
+    ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+  >,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+          >
+        >,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetSuspense<
+  TData = Awaited<
+    ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+  >,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+          >
+        >,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetSuspense<
+  TData = Awaited<
+    ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+  >,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+          >
+        >,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Get File Submission Submission
+ */
+
+export function useApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetSuspense<
+  TData = Awaited<
+    ReturnType<typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet>
+  >,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof apiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGet
+          >
+        >,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions =
+    getApiGetFileSubmissionSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGetSuspenseQueryOptions(
+      fileSubmissionUuid,
+      attemptUuid,
+      options,
+    )
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getApiGradeFileSubmissionAttemptApiV1FileSubmissionsFileSubmissionUuidSubmissionsAttemptUuidGradePatchUrl =
   (fileSubmissionUuid: string, attemptUuid: string) => {
     return `/api/v1/file-submissions/${fileSubmissionUuid}/submissions/${attemptUuid}/grade`
@@ -3230,6 +3673,7 @@ export const apiGradeFileSubmissionAttemptApiV1FileSubmissionsFileSubmissionUuid
         headers: { 'Content-Type': 'application/json', ...options?.headers },
         body: JSON.stringify(fileSubmissionGradePatch),
       },
+      FileSubmissionAttemptRead,
     )
   }
 
@@ -3359,6 +3803,7 @@ export const apiSubmitFileSubmissionApiV1FileSubmissionsFileSubmissionUuidSubmit
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(fileSubmissionDraftPatchNull),
     },
+    FileSubmissionAttemptRead,
   )
 }
 

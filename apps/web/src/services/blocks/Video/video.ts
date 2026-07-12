@@ -1,5 +1,6 @@
-import { apiFetch } from '@/lib/api-client'
-import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
+import { apiJson } from '@/lib/api-client'
+import { clientApiError } from '@/lib/api/assertSuccess'
+import type { VideoBlockObject } from '@/components/Objects/Editor/Extensions/Video/VideoBlock'
 import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload'
 
 export async function uploadNewVideoFile(
@@ -8,7 +9,7 @@ export async function uploadNewVideoFile(
   course_uuid?: string,
   block_uuid?: string,
   onProgress?: (progress: { percentage: number; currentChunk: number; totalChunks: number }) => void,
-) {
+): Promise<VideoBlockObject> {
   // For large files, use chunked upload
   if (shouldUseChunkedUpload(file.size)) {
     console.log('Using chunked upload for large file')
@@ -57,19 +58,15 @@ export async function uploadNewVideoFile(
         file_type: file.type,
         activity_uuid,
       },
-    }
+    } as VideoBlockObject
   }
 
   // For smaller files, use traditional upload
   const formData = new FormData()
   formData.append('file_object', file)
   formData.append('activity_uuid', activity_uuid)
-  const result = await apiFetch('blocks/video', {
+  return apiJson<VideoBlockObject>('blocks/video', {
     method: 'POST',
     body: formData,
   })
-  if (!result.ok) {
-    throw await parseApiError(result, 'blocks/video')
-  }
-  return await result.json()
 }

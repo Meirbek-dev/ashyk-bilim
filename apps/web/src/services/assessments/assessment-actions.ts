@@ -7,8 +7,8 @@
  * in the World-Class LMS plan Phases 1–5.
  */
 
-import { apiFetch, apiJson, getResponseMetadata } from '@/lib/api-client'
-import { parseApiError } from '@/lib/api/assertSuccess'
+import { apiJson } from '@/lib/api-client'
+import { isApiError } from '@/lib/api/assertSuccess'
 import { revalidateTag } from 'next/cache'
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -174,37 +174,40 @@ export interface CodeRunRequest {
  * Drive all student action gating from this single call.
  */
 export async function getAttemptState(assessmentUuid: string): Promise<AttemptProjection | null> {
-  const res = await apiFetch(`assessments/${assessmentUuid}/attempt-state`, {
-    method: 'GET',
-    next: { tags: ['attempt-state', `assessment-${assessmentUuid}`] },
-  })
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) return null
-  return meta.data as AttemptProjection
+  try {
+    return await apiJson<AttemptProjection>(`assessments/${assessmentUuid}/attempt-state`, {
+      method: 'GET',
+      next: { tags: ['attempt-state', `assessment-${assessmentUuid}`] },
+    })
+  } catch {
+    return null
+  }
 }
 
 // ── Policy preset ─────────────────────────────────────────────────────────────
 
 export async function getPolicyPreset(kind: string): Promise<PolicyPreset | null> {
-  const res = await apiFetch(`assessments/policy-preset/${encodeURIComponent(kind)}`, {
-    method: 'GET',
-    next: { tags: ['policy-presets'] },
-  })
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) return null
-  return meta.data as PolicyPreset
+  try {
+    return await apiJson<PolicyPreset>(`assessments/policy-preset/${encodeURIComponent(kind)}`, {
+      method: 'GET',
+      next: { tags: ['policy-presets'] },
+    })
+  } catch {
+    return null
+  }
 }
 
 // ── Student policy overrides ───────────────────────────────────────────────────
 
 export async function listStudentPolicyOverrides(assessmentUuid: string): Promise<StudentPolicyOverride[]> {
-  const res = await apiFetch(`assessments/${assessmentUuid}/overrides`, {
-    method: 'GET',
-    next: { tags: ['overrides', `assessment-${assessmentUuid}`] },
-  })
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) return []
-  return meta.data as StudentPolicyOverride[]
+  try {
+    return await apiJson<StudentPolicyOverride[]>(`assessments/${assessmentUuid}/overrides`, {
+      method: 'GET',
+      next: { tags: ['overrides', `assessment-${assessmentUuid}`] },
+    })
+  } catch {
+    return []
+  }
 }
 
 export async function createStudentPolicyOverride(
@@ -254,23 +257,25 @@ export async function saveGradingDraft(
   if (version !== undefined) {
     headers['If-Match'] = String(version)
   }
-  const res = await apiFetch(`assessments/${assessmentUuid}/submissions/${submissionUuid}/grade`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify(payload),
-  })
+  try {
+    const response = await apiJson(`assessments/${assessmentUuid}/submissions/${submissionUuid}/grade`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(payload),
+    })
 
-  if (res.status === 412) {
-    const { StaleGradeError } = await import('@/services/grading/errors')
-    const latest = await import('@/services/grading/grading').then(m =>
-      m.getAssessmentSubmission(assessmentUuid, submissionUuid),
-    )
-    throw new StaleGradeError(latest ?? ({ submission_uuid: submissionUuid } as never))
+    revalidateTag('submissions', 'max')
+    return response
+  } catch (error) {
+    if (isApiError(error) && error.status === 412) {
+      const { StaleGradeError } = await import('@/services/grading/errors')
+      const latest = await import('@/services/grading/grading').then(m =>
+        m.getAssessmentSubmission(assessmentUuid, submissionUuid),
+      )
+      throw new StaleGradeError(latest ?? ({ submission_uuid: submissionUuid } as never))
+    }
+    throw error
   }
-
-  if (!res.ok) throw await parseApiError(res, `assessments/${assessmentUuid}/submissions/${submissionUuid}/grade`)
-  revalidateTag('submissions', 'max')
-  return res.json()
 }
 
 // ── Code challenge runtime ─────────────────────────────────────────────────────

@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type { ApiErrorEnvelope, Trail, TrailCreate, TrailRead } from '../api.schemas'
+import { ApiErrorEnvelope, Trail, TrailCreate, TrailRead } from '../zod'
 
 import { orvalMutator } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
@@ -54,10 +54,14 @@ export const getApiGetUserTrailApiV1TrailGetUrl = () => {
  * @summary Api Get User Trail
  */
 export const apiGetUserTrailApiV1TrailGet = async (options?: RequestInit): Promise<TrailRead> => {
-  return orvalMutator<TrailRead>(getApiGetUserTrailApiV1TrailGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<TrailRead>(
+    getApiGetUserTrailApiV1TrailGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    TrailRead,
+  )
 }
 
 export const getApiGetUserTrailApiV1TrailGetQueryKey = () => {
@@ -250,10 +254,14 @@ export const apiAddActivityToTrailApiV1TrailAddActivityActivityUuidPost = async 
   activityUuid: string,
   options?: RequestInit,
 ): Promise<TrailRead> => {
-  return orvalMutator<TrailRead>(getApiAddActivityToTrailApiV1TrailAddActivityActivityUuidPostUrl(activityUuid), {
-    ...options,
-    method: 'POST',
-  })
+  return orvalMutator<TrailRead>(
+    getApiAddActivityToTrailApiV1TrailAddActivityActivityUuidPostUrl(activityUuid),
+    {
+      ...options,
+      method: 'POST',
+    },
+    TrailRead,
+  )
 }
 
 export const getApiAddActivityToTrailApiV1TrailAddActivityActivityUuidPostMutationOptions = <
@@ -335,10 +343,14 @@ export const apiAddCourseToTrailApiV1TrailAddCourseCourseUuidPost = async (
   courseUuid: string,
   options?: RequestInit,
 ): Promise<TrailRead> => {
-  return orvalMutator<TrailRead>(getApiAddCourseToTrailApiV1TrailAddCourseCourseUuidPostUrl(courseUuid), {
-    ...options,
-    method: 'POST',
-  })
+  return orvalMutator<TrailRead>(
+    getApiAddCourseToTrailApiV1TrailAddCourseCourseUuidPostUrl(courseUuid),
+    {
+      ...options,
+      method: 'POST',
+    },
+    TrailRead,
+  )
 }
 
 export const getApiAddCourseToTrailApiV1TrailAddCourseCourseUuidPostMutationOptions = <
@@ -426,6 +438,7 @@ export const apiRemoveActivityFromTrailApiV1TrailRemoveActivityActivityUuidDelet
       ...options,
       method: 'DELETE',
     },
+    TrailRead,
   )
 }
 
@@ -512,10 +525,14 @@ export const apiRemoveCourseToTrailApiV1TrailRemoveCourseCourseUuidDelete = asyn
   courseUuid: string,
   options?: RequestInit,
 ): Promise<TrailRead> => {
-  return orvalMutator<TrailRead>(getApiRemoveCourseToTrailApiV1TrailRemoveCourseCourseUuidDeleteUrl(courseUuid), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<TrailRead>(
+    getApiRemoveCourseToTrailApiV1TrailRemoveCourseCourseUuidDeleteUrl(courseUuid),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    TrailRead,
+  )
 }
 
 export const getApiRemoveCourseToTrailApiV1TrailRemoveCourseCourseUuidDeleteMutationOptions = <
@@ -600,12 +617,16 @@ export const apiStartTrailApiV1TrailStartPost = async (
   trailCreate: TrailCreate,
   options?: RequestInit,
 ): Promise<Trail> => {
-  return orvalMutator<Trail>(getApiStartTrailApiV1TrailStartPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(trailCreate),
-  })
+  return orvalMutator<Trail>(
+    getApiStartTrailApiV1TrailStartPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(trailCreate),
+    },
+    Trail,
+  )
 }
 
 export const getApiStartTrailApiV1TrailStartPostMutationOptions = <

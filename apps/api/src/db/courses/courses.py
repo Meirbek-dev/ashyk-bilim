@@ -253,6 +253,41 @@ class CourseAccessUpdate(PydanticStrictBaseModel):
         return value
 
 
+class CourseReadinessIssue(PydanticStrictBaseModel):
+    code: str
+    severity: str
+    message: str
+    scope: str = "course"
+    activity_uuid: str | None = None
+    path: str | None = None
+
+
+class CourseReadinessResponse(PydanticStrictBaseModel):
+    ready: bool
+    issues: list[CourseReadinessIssue] = PydanticField(default_factory=list)
+    active_content_count: int = 0
+    scheduled_content_count: int = 0
+
+
+class CourseLifecycleUpdate(PydanticStrictBaseModel):
+    action: str
+    last_known_update_date: datetime | None = None
+    audit_note: str | None = PydanticField(default=None, max_length=1000)
+
+    @field_validator("action")
+    @classmethod
+    def validate_action(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if normalized not in {"PUBLISH", "UNPUBLISH"}:
+            raise ValueError("action must be PUBLISH or UNPUBLISH")
+        return normalized
+
+    @field_validator("last_known_update_date", mode="before")
+    @classmethod
+    def validate_lifecycle_date(cls, value: object) -> object:
+        return CourseAccessUpdate.validate_last_known_update_date(value)
+
+
 class CourseRead(PydanticStrictBaseModel):
     id: int
     creator_id: int | None = None
@@ -292,6 +327,17 @@ class CourseRead(PydanticStrictBaseModel):
                 value = f"{value[:-1]}+00:00"
             return datetime.fromisoformat(value)
         return v
+
+
+class CourseLifecycleResult(PydanticStrictBaseModel):
+    course: CourseRead
+    readiness: CourseReadinessResponse
+    audit_event_uuid: str
+    previous_public: bool
+    current_public: bool
+    affected_learner_count: int = 0
+    active_content_count: int = 0
+    scheduled_content_count: int = 0
 
 
 class FullCourseRead(PydanticStrictBaseModel):

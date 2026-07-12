@@ -68,7 +68,50 @@ function resolveOrvalRequest(urlOrConfig: string | OrvalConfig, options?: OrvalF
 export type ErrorType<Error> = APIError & Error
 export type BodyType<BodyData> = BodyData
 
-export async function orvalMutator<T>(urlOrConfig: string | OrvalConfig, options?: OrvalFetchOptions): Promise<T> {
+export type ResponseParser<T> = { parse: (data: unknown) => T } | ((data: unknown) => T)
+
+export function stringifyQueryParam(value: unknown): string {
+  return String(value)
+}
+
+function parseWith<T>(parser: ResponseParser<T>, data: unknown): T {
+  return typeof parser === 'function' ? parser(data) : parser.parse(data)
+}
+
+export function arrayParser<T>(parser: ResponseParser<T>): ResponseParser<T[]> {
+  return data => {
+    if (!Array.isArray(data)) {
+      throw new Error('Response validation failed: expected array')
+    }
+    return data.map(item => parseWith(parser, item))
+  }
+}
+
+export function nullableParser<T>(parser: ResponseParser<T>): ResponseParser<T | null> {
+  return data => (data === null ? null : parseWith(parser, data))
+}
+
+export const stringParser: ResponseParser<string> = data => {
+  if (typeof data !== 'string') {
+    throw new Error('Response validation failed: expected string')
+  }
+  return data
+}
+
+export const unknownParser: ResponseParser<unknown> = data => data
+
+export const voidParser: ResponseParser<void> = data => {
+  if (data !== undefined && data !== null && data !== '') {
+    throw new Error('Response validation failed: expected empty response')
+  }
+  return undefined
+}
+
+export async function orvalMutator<T>(
+  urlOrConfig: string | OrvalConfig,
+  options: OrvalFetchOptions | undefined,
+  parser: ResponseParser<T>,
+): Promise<T> {
   const { path, init } = resolveOrvalRequest(urlOrConfig, options)
-  return apiJson<T>(path, init)
+  return apiJson<T>(path, init, data => parseWith(parser, data))
 }

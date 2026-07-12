@@ -15,7 +15,6 @@ interface AssessmentOutliersTableProps {
   serverPaginated?: boolean
 }
 
-
 export default function AssessmentOutliersTable({ rows, storageKey, serverPaginated }: AssessmentOutliersTableProps) {
   const t = useTranslations('TeacherAnalytics')
   const columns: DataTableColumnDef<AssessmentOutlierRow>[] = [

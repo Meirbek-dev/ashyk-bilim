@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SendIcon } from 'lucide-react'
+import { SendIcon, SquareIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -9,10 +9,11 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } fro
 
 interface QAInputProps {
   pending?: boolean
+  onStop?: () => void
   onSubmit: (question: string) => void
 }
 
-export function QAInput({ pending, onSubmit }: QAInputProps) {
+export function QAInput({ pending, onStop, onSubmit }: QAInputProps) {
   const t = useTranslations('AiExperience.qaInput')
   const [question, setQuestion] = useState('')
   return (
@@ -26,18 +27,33 @@ export function QAInput({ pending, onSubmit }: QAInputProps) {
           placeholder={t('placeholder')}
           value={question}
           onChange={event => setQuestion(event.target.value)}
-        />
-        <InputGroupAddon align="block-end">
-          <InputGroupButton
-            disabled={!question.trim() || pending}
-            onClick={() => {
+          onKeyDown={event => {
+            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && question.trim() && !pending) {
+              event.preventDefault()
               onSubmit(question)
               setQuestion('')
-            }}
-          >
-            <SendIcon data-icon="inline-start" />
-            {t('ask')}
-          </InputGroupButton>
+            }
+          }}
+        />
+        <InputGroupAddon align="block-end">
+          {pending ? (
+            <InputGroupButton type="button" variant="outline" onClick={onStop}>
+              <SquareIcon data-icon="inline-start" aria-hidden="true" />
+              {t('stop')}
+            </InputGroupButton>
+          ) : (
+            <InputGroupButton
+              type="button"
+              disabled={!question.trim()}
+              onClick={() => {
+                onSubmit(question)
+                setQuestion('')
+              }}
+            >
+              <SendIcon data-icon="inline-start" aria-hidden="true" />
+              {t('ask')}
+            </InputGroupButton>
+          )}
         </InputGroupAddon>
       </InputGroup>
       <FieldDescription>{t('description')}</FieldDescription>

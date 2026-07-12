@@ -1,7 +1,9 @@
 export function cloneJsonValue<T>(value: T): T {
-  if (typeof structuredClone === 'function') {
-    return structuredClone(value)
+  const clone = globalThis.structuredClone
+  if (typeof clone === 'function') {
+    return clone(value)
   }
 
-  return structuredClone(value)
+  const serialized = JSON.stringify(value)
+  return JSON.parse(serialized) as T
 }

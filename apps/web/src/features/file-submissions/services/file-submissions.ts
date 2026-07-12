@@ -1,5 +1,4 @@
-import { apiFetch, apiJson, errorHandling, getResponseMetadata } from '@/lib/api-client'
-import type { CustomResponseTyping } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
 import { getAPIUrl } from '@services/config/config'
 
@@ -93,17 +92,16 @@ export interface FileSubmissionReviewQueue {
 }
 
 export async function getFileSubmissionByActivity(activityUuid: string): Promise<FileSubmissionActivity> {
-  const response = await apiFetch(`file-submissions/activity/${activityUuid}`, {
+  return apiJson<FileSubmissionActivity>(`file-submissions/activity/${activityUuid}`, {
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return await errorHandling(response)
 }
 
 export async function createFileSubmissionActivity(
   payload: FileSubmissionCreatePayload,
-): Promise<CustomResponseTyping> {
-  const response = await apiFetch('file-submissions', {
+): Promise<FileSubmissionActivity> {
+  return apiJson<FileSubmissionActivity>('file-submissions', {
     method: 'POST',
     baseUrl: getAPIUrl(),
     headers: { 'Content-Type': 'application/json' },
@@ -118,8 +116,6 @@ export async function createFileSubmissionActivity(
       grade_release_mode: payload.grade_release_mode ?? 'IMMEDIATE',
     }),
   })
-  const metadata = await getResponseMetadata(response)
-  return metadata
 }
 
 export async function updateFileSubmissionActivity(
@@ -231,8 +227,34 @@ export async function uploadSubmissionFileWithProgress(
   return { upload_uuid: finalized.upload_uuid, filename: file.name }
 }
 
-export async function getFileSubmissionReviewQueue(fileSubmissionUuid: string): Promise<FileSubmissionReviewQueue> {
-  return apiJson<FileSubmissionReviewQueue>(`file-submissions/${fileSubmissionUuid}/submissions`)
+export interface FileSubmissionReviewQueueParams {
+  status?: FileSubmissionAttemptStatus | 'ALL'
+  search?: string
+  page?: number
+  pageSize?: number
+}
+
+export async function getFileSubmissionReviewQueue(
+  fileSubmissionUuid: string,
+  params: FileSubmissionReviewQueueParams = {},
+): Promise<FileSubmissionReviewQueue> {
+  const searchParams = new URLSearchParams()
+  const normalizedSearch = params.search?.trim()
+  if (params.status && params.status !== 'ALL') searchParams.set('status', params.status)
+  if (normalizedSearch) searchParams.set('search', normalizedSearch)
+  searchParams.set('page', String(params.page ?? 1))
+  searchParams.set('page_size', String(params.pageSize ?? 25))
+
+  return apiJson<FileSubmissionReviewQueue>(
+    `file-submissions/${fileSubmissionUuid}/submissions?${searchParams.toString()}`,
+  )
+}
+
+export async function getFileSubmissionReviewAttempt(
+  fileSubmissionUuid: string,
+  attemptUuid: string,
+): Promise<FileSubmissionAttempt> {
+  return apiJson<FileSubmissionAttempt>(`file-submissions/${fileSubmissionUuid}/submissions/${attemptUuid}`)
 }
 
 export async function getFileSubmissionFileUrl(attemptFileUuid: string): Promise<{
@@ -241,7 +263,12 @@ export async function getFileSubmissionFileUrl(attemptFileUuid: string): Promise
   get_url: string
   expires_at: string
 }> {
-  return apiJson(`file-submissions/files/${attemptFileUuid}/url`)
+  return apiJson<{
+    attempt_file_uuid: string
+    upload_uuid: string
+    get_url: string
+    expires_at: string
+  }>(`file-submissions/files/${attemptFileUuid}/url`)
 }
 
 export function fileSubmissionExportUrl(fileSubmissionUuid: string): string {

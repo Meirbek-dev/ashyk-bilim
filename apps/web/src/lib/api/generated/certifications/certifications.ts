@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiDeleteCertificationApiV1CertificationsCertificationUuidDeleteParams,
   ApiErrorEnvelope,
   CertificationCreate,
@@ -33,9 +33,9 @@ import type {
   CourseCertificateResponse,
   PublicCertificateResponse,
   UserCertificateResponse,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -67,12 +67,16 @@ export const apiCreateCertificationApiV1CertificationsPost = async (
   certificationCreate: CertificationCreate,
   options?: RequestInit,
 ): Promise<CertificationRead> => {
-  return orvalMutator<CertificationRead>(getApiCreateCertificationApiV1CertificationsPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(certificationCreate),
-  })
+  return orvalMutator<CertificationRead>(
+    getApiCreateCertificationApiV1CertificationsPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(certificationCreate),
+    },
+    CertificationRead,
+  )
 }
 
 export const getApiCreateCertificationApiV1CertificationsPostMutationOptions = <
@@ -164,6 +168,7 @@ export const apiGetCertificateByUserCertificationUuidApiV1CertificationsCertific
       ...options,
       method: 'GET',
     },
+    PublicCertificateResponse,
   )
 }
 
@@ -571,6 +576,7 @@ export const apiGetCertificationsByCourseApiV1CertificationsCourseCourseUuidGet 
       ...options,
       method: 'GET',
     },
+    arrayParser(CertificationRead),
   )
 }
 
@@ -855,10 +861,14 @@ export const getApiGetAllUserCertificatesApiV1CertificationsUserAllGetUrl = () =
 export const apiGetAllUserCertificatesApiV1CertificationsUserAllGet = async (
   options?: RequestInit,
 ): Promise<UserCertificateResponse[]> => {
-  return orvalMutator<UserCertificateResponse[]>(getApiGetAllUserCertificatesApiV1CertificationsUserAllGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserCertificateResponse[]>(
+    getApiGetAllUserCertificatesApiV1CertificationsUserAllGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(UserCertificateResponse),
+  )
 }
 
 export const getApiGetAllUserCertificatesApiV1CertificationsUserAllGetQueryKey = () => {
@@ -1099,6 +1109,7 @@ export const apiGetUserCertificatesForCourseApiV1CertificationsUserCourseCourseU
       ...options,
       method: 'GET',
     },
+    arrayParser(CourseCertificateResponse),
   )
 }
 
@@ -1385,7 +1396,7 @@ export const getApiDeleteCertificationApiV1CertificationsCertificationUuidDelete
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1411,6 +1422,7 @@ export const apiDeleteCertificationApiV1CertificationsCertificationUuidDelete = 
       ...options,
       method: 'DELETE',
     },
+    CertificationDetailResponse,
   )
 }
 
@@ -1502,6 +1514,7 @@ export const apiGetCertificationApiV1CertificationsCertificationUuidGet = async 
       ...options,
       method: 'GET',
     },
+    CertificationRead,
   )
 }
 
@@ -1795,6 +1808,7 @@ export const apiUpdateCertificationApiV1CertificationsCertificationUuidPut = asy
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(certificationUpdate),
     },
+    CertificationRead,
   )
 }
 

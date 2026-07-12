@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import type { CodeChallengeSettings, Judge0Language } from '@/services/courses/code-challenges'
 import { cn } from '@/lib/utils'
 
@@ -53,14 +53,12 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
     setIsValidating(true)
     setResults(null)
     try {
-      const response = await apiFetch(`assessments/${draft.uuid}/code-challenge/validate`, {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}))
-        throw new Error(error.detail || t('validationEndpointFailed'))
-      }
-      const data = await response.json()
+      const data = await apiJson<{ results: Record<number, ValidationResultLanguage> }>(
+        `assessments/${draft.uuid}/code-challenge/validate`,
+        {
+          method: 'POST',
+        },
+      )
       setResults(data.results)
       toast.success(t('referenceValidationFinished'))
     } catch (error) {

@@ -1,5 +1,5 @@
 import { logoutAction } from '@/app/actions/auth'
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { broadcastLogout } from '@/components/providers/session-provider'
 import type { components } from '@/lib/api/generated'
 
@@ -15,7 +15,7 @@ export async function logout(options?: LogoutOptions): Promise<void> {
 }
 
 export async function sendResetLink(email: string): Promise<Response> {
-  return apiFetch('auth/forgot-password', {
+  return apiJson('auth/forgot-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: email.trim().toLowerCase() }),
@@ -23,7 +23,7 @@ export async function sendResetLink(email: string): Promise<Response> {
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<Response> {
-  return apiFetch('auth/reset-password', {
+  return apiJson('auth/reset-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, new_password: newPassword }),

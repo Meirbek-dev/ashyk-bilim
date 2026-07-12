@@ -161,6 +161,9 @@ describe('teacher review controls', () => {
     expect(within(dialog).getByText('preview.hiddenFromStudent')).toBeInTheDocument()
     expect(within(dialog).getByText('preview.alreadyVisible')).toBeInTheDocument()
 
+    fireEvent.change(within(dialog).getByPlaceholderText('Reason for this bulk action'), {
+      target: { value: 'Publish graded submissions' },
+    })
     fireEvent.click(within(dialog).getByRole('button', { name: 'confirmPublish' }))
 
     await waitFor(() => {
@@ -171,7 +174,7 @@ describe('teacher review controls', () => {
       'submission_ready',
       {
         final_score: 91,
-        feedback: 'Solid work.',
+        feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
         status: 'PUBLISHED',
         item_feedback: [],
       },
@@ -183,7 +186,7 @@ describe('teacher review controls', () => {
       'submission_visible',
       {
         final_score: 77,
-        feedback: 'Solid work.',
+        feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
         status: 'PUBLISHED',
         item_feedback: [],
       },
@@ -232,7 +235,7 @@ describe('teacher review controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'deadlinePlaceholder' }))
 
     const dueAtDialog = await screen.findByRole('dialog')
-    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /June 15/i }))
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /July 15/i }))
 
     const dueAtTimeInput = dueAtDialog.querySelector('input[type="time"]')
     expect(dueAtTimeInput).not.toBeNull()
@@ -255,7 +258,7 @@ describe('teacher review controls', () => {
     })
     expect(mocks.createStudentPolicyOverrideMock).toHaveBeenNthCalledWith(1, 'assessment_review', {
       user_id: 9,
-      due_at_override: new Date('2026-06-15T14:30').toISOString(),
+      due_at_override: new Date('2026-07-15T14:30').toISOString(),
       note: 'Medical extension',
     })
     expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineQueued')
@@ -291,6 +294,9 @@ describe('teacher review controls', () => {
     expect(within(dialog).getByText('dialogs.releaseTitle')).toBeInTheDocument()
     expect(within(dialog).getByText('preview.selectedHiddenSubmissions')).toBeInTheDocument()
 
+    fireEvent.change(within(dialog).getByPlaceholderText('Reason for this bulk action'), {
+      target: { value: 'Release hidden grades' },
+    })
     fireEvent.click(within(dialog).getByRole('button', { name: 'releaseGrades' }))
 
     await waitFor(() => {

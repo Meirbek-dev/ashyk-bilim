@@ -31,13 +31,13 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'en',
 }))
 
-import type * as ApiClient from '@/lib/api-client'
+type ApiClientModule = typeof import('@/lib/api-client')
 
 vi.mock('@/lib/api-client', async importOriginal => {
-  const actual = await importOriginal<typeof ApiClient>()
+  const actual = await importOriginal<ApiClientModule>()
   return {
     ...actual,
-    apiFetch: mocks.apiFetchMock,
+    apiJson: mocks.apiFetchMock,
   }
 })
 

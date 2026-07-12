@@ -11,7 +11,7 @@ import {
 import NewActivityModal from '@components/Objects/Modals/Activities/Create/NewActivity'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { useCourse } from '@components/Contexts/CourseContext'
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { useTranslations } from 'next-intl'
 import { Plus } from 'lucide-react'
@@ -104,7 +104,7 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
       const toast_loading = toast.loading(tNotify('creatingActivity'))
       try {
         const courseId = course.courseStructure.id
-        const response = await apiFetch('assessments', {
+        await apiJson('assessments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -124,11 +124,6 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
             },
           }),
         })
-        const payload = await response.json().catch(() => ({}))
-        if (!response.ok) {
-          throw new Error(payload.detail?.message || payload.detail || tNotify('uploadFailed'))
-        }
-
         // Invalidate course structure queries so the new activity appears on the page
         await queryClient.invalidateQueries({
           queryKey: courseKeys.structure(course.courseStructure.course_uuid, true),

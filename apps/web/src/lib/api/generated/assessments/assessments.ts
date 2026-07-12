@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   ApiExportAssessmentSubmissionsCsvApiV1AssessmentsAssessmentUuidSubmissionsExportGetParams,
   ApiGetAuditTrailApiV1AssessmentsAssessmentUuidAuditGetParams,
@@ -66,9 +66,9 @@ import type {
   SubmissionStats,
   TeacherGradeInput,
   TeacherSubmissionRead,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -99,12 +99,16 @@ export const apiCreateAssessmentApiV1AssessmentsPost = async (
   assessmentCreate: AssessmentCreate,
   options?: RequestInit,
 ): Promise<AssessmentRead> => {
-  return orvalMutator<AssessmentRead>(getApiCreateAssessmentApiV1AssessmentsPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(assessmentCreate),
-  })
+  return orvalMutator<AssessmentRead>(
+    getApiCreateAssessmentApiV1AssessmentsPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(assessmentCreate),
+    },
+    AssessmentRead,
+  )
 }
 
 export const getApiCreateAssessmentApiV1AssessmentsPostMutationOptions = <
@@ -188,6 +192,7 @@ export const apiGetAssessmentByActivityApiV1AssessmentsActivityActivityUuidGet =
       ...options,
       method: 'GET',
     },
+    AssessmentRead,
   )
 }
 
@@ -473,12 +478,16 @@ export const apiCreateInlineQuizApiV1AssessmentsInlineQuizPost = async (
   inlineQuizCreate: InlineQuizCreate,
   options?: RequestInit,
 ): Promise<InlineQuizResponse> => {
-  return orvalMutator<InlineQuizResponse>(getApiCreateInlineQuizApiV1AssessmentsInlineQuizPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(inlineQuizCreate),
-  })
+  return orvalMutator<InlineQuizResponse>(
+    getApiCreateInlineQuizApiV1AssessmentsInlineQuizPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(inlineQuizCreate),
+    },
+    InlineQuizResponse,
+  )
 }
 
 export const getApiCreateInlineQuizApiV1AssessmentsInlineQuizPostMutationOptions = <
@@ -560,10 +569,14 @@ export const apiGetPolicyPresetApiV1AssessmentsPolicyPresetKindGet = async (
   kind: string,
   options?: RequestInit,
 ): Promise<AssessmentPolicyPreset> => {
-  return orvalMutator<AssessmentPolicyPreset>(getApiGetPolicyPresetApiV1AssessmentsPolicyPresetKindGetUrl(kind), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AssessmentPolicyPreset>(
+    getApiGetPolicyPresetApiV1AssessmentsPolicyPresetKindGetUrl(kind),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AssessmentPolicyPreset,
+  )
 }
 
 export const getApiGetPolicyPresetApiV1AssessmentsPolicyPresetKindGetQueryKey = (kind: string) => {
@@ -811,10 +824,14 @@ export const apiGetAssessmentApiV1AssessmentsAssessmentUuidGet = async (
   assessmentUuid: string,
   options?: RequestInit,
 ): Promise<AssessmentRead> => {
-  return orvalMutator<AssessmentRead>(getApiGetAssessmentApiV1AssessmentsAssessmentUuidGetUrl(assessmentUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AssessmentRead>(
+    getApiGetAssessmentApiV1AssessmentsAssessmentUuidGetUrl(assessmentUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AssessmentRead,
+  )
 }
 
 export const getApiGetAssessmentApiV1AssessmentsAssessmentUuidGetQueryKey = (assessmentUuid: string) => {
@@ -1068,12 +1085,16 @@ export const apiUpdateAssessmentApiV1AssessmentsAssessmentUuidPatch = async (
   assessmentUpdate: AssessmentUpdate,
   options?: RequestInit,
 ): Promise<AssessmentRead> => {
-  return orvalMutator<AssessmentRead>(getApiUpdateAssessmentApiV1AssessmentsAssessmentUuidPatchUrl(assessmentUuid), {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(assessmentUpdate),
-  })
+  return orvalMutator<AssessmentRead>(
+    getApiUpdateAssessmentApiV1AssessmentsAssessmentUuidPatchUrl(assessmentUuid),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(assessmentUpdate),
+    },
+    AssessmentRead,
+  )
 }
 
 export const getApiUpdateAssessmentApiV1AssessmentsAssessmentUuidPatchMutationOptions = <
@@ -1154,10 +1175,14 @@ export const apiGetAccessApiV1AssessmentsAssessmentUuidAccessGet = async (
   assessmentUuid: string,
   options?: RequestInit,
 ): Promise<AssessmentAccessRead> => {
-  return orvalMutator<AssessmentAccessRead>(getApiGetAccessApiV1AssessmentsAssessmentUuidAccessGetUrl(assessmentUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AssessmentAccessRead>(
+    getApiGetAccessApiV1AssessmentsAssessmentUuidAccessGetUrl(assessmentUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AssessmentAccessRead,
+  )
 }
 
 export const getApiGetAccessApiV1AssessmentsAssessmentUuidAccessGetQueryKey = (assessmentUuid: string) => {
@@ -1424,6 +1449,7 @@ export const apiUpdateAccessApiV1AssessmentsAssessmentUuidAccessPut = async (
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(assessmentAccessUpdate),
     },
+    AssessmentAccessRead,
   )
 }
 
@@ -1502,7 +1528,7 @@ export const getApiListAccessEligibleLearnersApiV1AssessmentsAssessmentUuidAcces
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1527,6 +1553,7 @@ export const apiListAccessEligibleLearnersApiV1AssessmentsAssessmentUuidAccessEl
       ...options,
       method: 'GET',
     },
+    arrayParser(AssessmentAccessUserRead),
   )
 }
 
@@ -1891,7 +1918,7 @@ export const getApiListAccessEligibleUsergroupsApiV1AssessmentsAssessmentUuidAcc
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1919,6 +1946,7 @@ export const apiListAccessEligibleUsergroupsApiV1AssessmentsAssessmentUuidAccess
       ...options,
       method: 'GET',
     },
+    arrayParser(AssessmentAccessUserGroupRead),
   )
 }
 
@@ -2299,6 +2327,7 @@ export const apiGetAttemptStateApiV1AssessmentsAssessmentUuidAttemptStateGet = a
       ...options,
       method: 'GET',
     },
+    AssessmentAttemptProjection,
   )
 }
 
@@ -2580,7 +2609,7 @@ export const getApiGetAuditTrailApiV1AssessmentsAssessmentUuidAuditGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2606,6 +2635,7 @@ export const apiGetAuditTrailApiV1AssessmentsAssessmentUuidAuditGet = async (
       ...options,
       method: 'GET',
     },
+    AssessmentAuditTrailResponse,
   )
 }
 
@@ -2891,6 +2921,7 @@ export const apiValidateCodeChallengeApiV1AssessmentsAssessmentUuidCodeChallenge
       ...options,
       method: 'POST',
     },
+    CodeChallengeValidationResponse,
   )
 }
 
@@ -2979,10 +3010,14 @@ export const apiGetDraftApiV1AssessmentsAssessmentUuidDraftGet = async (
   assessmentUuid: string,
   options?: RequestInit,
 ): Promise<AssessmentDraftRead> => {
-  return orvalMutator<AssessmentDraftRead>(getApiGetDraftApiV1AssessmentsAssessmentUuidDraftGetUrl(assessmentUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AssessmentDraftRead>(
+    getApiGetDraftApiV1AssessmentsAssessmentUuidDraftGetUrl(assessmentUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AssessmentDraftRead,
+  )
 }
 
 export const getApiGetDraftApiV1AssessmentsAssessmentUuidDraftGetQueryKey = (assessmentUuid: string) => {
@@ -3244,6 +3279,7 @@ export const apiSaveDraftApiV1AssessmentsAssessmentUuidDraftPatch = async (
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(assessmentDraftPatch),
     },
+    StudentSubmissionRead,
   )
 }
 
@@ -3336,6 +3372,7 @@ export const apiDuplicateAssessmentApiV1AssessmentsAssessmentUuidDuplicatePost =
       ...options,
       method: 'POST',
     },
+    AssessmentRead,
   )
 }
 
@@ -3427,6 +3464,7 @@ export const apiGetItemAnalyticsApiV1AssessmentsAssessmentUuidItemAnalyticsGet =
       ...options,
       method: 'GET',
     },
+    arrayParser(ItemAnalytics),
   )
 }
 
@@ -3716,12 +3754,16 @@ export const apiCreateItemApiV1AssessmentsAssessmentUuidItemsPost = async (
   assessmentItemCreate: AssessmentItemCreate,
   options?: RequestInit,
 ): Promise<AssessmentReadItem> => {
-  return orvalMutator<AssessmentReadItem>(getApiCreateItemApiV1AssessmentsAssessmentUuidItemsPostUrl(assessmentUuid), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(assessmentItemCreate),
-  })
+  return orvalMutator<AssessmentReadItem>(
+    getApiCreateItemApiV1AssessmentsAssessmentUuidItemsPostUrl(assessmentUuid),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(assessmentItemCreate),
+    },
+    AssessmentReadItem,
+  )
 }
 
 export const getApiCreateItemApiV1AssessmentsAssessmentUuidItemsPostMutationOptions = <
@@ -3812,6 +3854,7 @@ export const apiDeleteItemApiV1AssessmentsAssessmentUuidItemsItemUuidDelete = as
       ...options,
       method: 'DELETE',
     },
+    AssessmentDetailResponse,
   )
 }
 
@@ -3909,6 +3952,7 @@ export const apiUpdateItemApiV1AssessmentsAssessmentUuidItemsItemUuidPatch = asy
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(assessmentItemUpdate),
     },
+    AssessmentReadItem,
   )
 }
 
@@ -4007,6 +4051,7 @@ export const apiRunCodeItemApiV1AssessmentsAssessmentUuidItemsItemUuidRunsPost =
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(codeRunRequest),
     },
+    CodeRunResponse,
   )
 }
 
@@ -4109,6 +4154,7 @@ export const apiGetCodeItemRunApiV1AssessmentsAssessmentUuidItemsItemUuidRunsRun
       ...options,
       method: 'GET',
     },
+    CodeRunResponse,
   )
 }
 
@@ -4454,6 +4500,7 @@ export const apiReorderItemsApiV1AssessmentsAssessmentUuidItemsReorderPost = asy
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(assessmentItemReorder),
     },
+    arrayParser(AssessmentReadItem),
   )
 }
 
@@ -4547,6 +4594,7 @@ export const apiTransitionLifecycleApiV1AssessmentsAssessmentUuidLifecyclePost =
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(assessmentLifecycleTransition),
     },
+    AssessmentRead,
   )
 }
 
@@ -4638,6 +4686,7 @@ export const apiGetMySubmissionsApiV1AssessmentsAssessmentUuidMeGet = async (
       ...options,
       method: 'GET',
     },
+    arrayParser(StudentSubmissionRead),
   )
 }
 
@@ -4903,6 +4952,7 @@ export const apiListOverridesApiV1AssessmentsAssessmentUuidOverridesGet = async 
       ...options,
       method: 'GET',
     },
+    arrayParser(StudentPolicyOverrideRead),
   )
 }
 
@@ -5196,6 +5246,7 @@ export const apiCreateOverrideApiV1AssessmentsAssessmentUuidOverridesPost = asyn
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(studentPolicyOverrideCreate),
     },
+    StudentPolicyOverrideRead,
   )
 }
 
@@ -5291,6 +5342,7 @@ export const apiDeleteOverrideApiV1AssessmentsAssessmentUuidOverridesUserIdDelet
       ...options,
       method: 'DELETE',
     },
+    AssessmentDetailResponse,
   )
 }
 
@@ -5389,6 +5441,7 @@ export const apiUpdateOverrideApiV1AssessmentsAssessmentUuidOverridesUserIdPatch
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(studentPolicyOverrideUpdate),
     },
+    StudentPolicyOverrideRead,
   )
 }
 
@@ -5486,6 +5539,7 @@ export const apiPublishGradesApiV1AssessmentsAssessmentUuidPublishGradesPost = a
       ...options,
       method: 'POST',
     },
+    BulkPublishGradesResponse,
   )
 }
 
@@ -5576,6 +5630,7 @@ export const apiCheckReadinessApiV1AssessmentsAssessmentUuidReadinessGet = async
       ...options,
       method: 'GET',
     },
+    AssessmentReadiness,
   )
 }
 
@@ -5865,6 +5920,7 @@ export const apiStartAssessmentApiV1AssessmentsAssessmentUuidStartPost = async (
       ...options,
       method: 'POST',
     },
+    StudentSubmissionRead,
   )
 }
 
@@ -5943,7 +5999,7 @@ export const getApiGetSubmissionsApiV1AssessmentsAssessmentUuidSubmissionsGetUrl
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -5968,6 +6024,7 @@ export const apiGetSubmissionsApiV1AssessmentsAssessmentUuidSubmissionsGet = asy
       ...options,
       method: 'GET',
     },
+    ReviewQueueRead,
   )
 }
 
@@ -6266,7 +6323,7 @@ export const getApiExportAssessmentSubmissionsCsvApiV1AssessmentsAssessmentUuidS
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -6291,6 +6348,7 @@ export const apiExportAssessmentSubmissionsCsvApiV1AssessmentsAssessmentUuidSubm
       ...options,
       method: 'GET',
     },
+    voidParser,
   )
 }
 
@@ -6648,6 +6706,7 @@ export const apiGetSubmissionStatsApiV1AssessmentsAssessmentUuidSubmissionsStats
       ...options,
       method: 'GET',
     },
+    SubmissionStats,
   )
 }
 
@@ -6953,6 +7012,7 @@ export const apiGetSubmissionApiV1AssessmentsAssessmentUuidSubmissionsSubmission
       ...options,
       method: 'GET',
     },
+    TeacherSubmissionRead,
   )
 }
 
@@ -7285,6 +7345,7 @@ export const apiSaveGradeApiV1AssessmentsAssessmentUuidSubmissionsSubmissionUuid
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(teacherGradeInput),
     },
+    TeacherSubmissionRead,
   )
 }
 
@@ -7393,6 +7454,7 @@ export const apiSaveGradingDraftApiV1AssessmentsAssessmentUuidSubmissionsSubmiss
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(gradingDraftSave),
     },
+    TeacherSubmissionRead,
   )
 }
 
@@ -7482,7 +7544,7 @@ export const getApiSubmitAssessmentApiV1AssessmentsAssessmentUuidSubmitPostUrl =
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -7510,6 +7572,7 @@ export const apiSubmitAssessmentApiV1AssessmentsAssessmentUuidSubmitPost = async
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(assessmentDraftPatchNull),
     },
+    StudentSubmissionRead,
   )
 }
 

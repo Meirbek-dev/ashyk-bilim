@@ -50,24 +50,15 @@ export function useCourseCreateForm() {
   const destination = useWatch({ control: form.control, name: 'destination', defaultValue: 'overview' })
 
   const isTitleFilled = title.trim().length > 0
-  const isDescriptionFilled = description.trim().length > 0
   const isSourceRequired = structureMode === 'copy-outline'
   const isSourceFilled = Boolean(sourceCourseUuid?.trim())
 
-  const blockingReason: string | null = !isTitleFilled
-    ? 'title'
-    : !isDescriptionFilled
-      ? 'description'
-      : isSourceRequired && !isSourceFilled
-        ? 'source'
-        : null
+  const blockingReason: string | null = !isTitleFilled ? 'title' : isSourceRequired && !isSourceFilled ? 'source' : null
 
   const canSubmit = blockingReason === null
 
-  const completedCount = [isTitleFilled, isDescriptionFilled, isSourceRequired ? isSourceFilled : true].filter(
-    Boolean,
-  ).length
-  const totalRequired = isSourceRequired ? 3 : 2
+  const completedCount = [isTitleFilled, isSourceRequired ? isSourceFilled : true].filter(Boolean).length
+  const totalRequired = isSourceRequired ? 2 : 1
 
   const resetSourceCourse = useCallback(() => {
     form.setValue('sourceCourseUuid', '')

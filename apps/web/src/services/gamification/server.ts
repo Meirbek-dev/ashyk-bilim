@@ -15,7 +15,8 @@ import { extractStreakInfo } from '@/types/gamification/profile'
 import { getServerAPIUrl } from '@/services/config/config'
 import type { components } from '@/lib/api/generated'
 import { revalidateTag } from 'next/cache'
-import { apiFetch, apiJson } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
+import { isApiError } from '@/lib/api/assertSuccess'
 
 type ApiDashboardResponse = components['schemas']['DashboardRead']
 type ApiLeaderboardResponse = components['schemas']['LeaderboardRead']
@@ -88,7 +89,7 @@ function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): Platform
   const fallbackDate = nowISO()
   const entries = payload?.entries ?? []
   return {
-    entries: entries.map((data, index) => {
+    entries: entries.map((data: NonNullable<ApiLeaderboardResponse['entries']>[number], index: number) => {
       const entry: PlatformLeaderboard['entries'][number] = {
         user_id: numberOr(data.user_id),
         total_xp: Math.max(0, numberOr(data.total_xp)),
@@ -115,19 +116,13 @@ function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): Platform
  */
 async function fetchGamificationData(): Promise<ApiDashboardResponse | null> {
   try {
-    const res = await apiFetch('gamification/', {
+    return await apiJson<ApiDashboardResponse>('gamification/', {
       method: 'GET',
       baseUrl: getServerAPIUrl(),
       timeoutMs: 8000,
     })
-
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) return null
-      console.error(`Failed to fetch gamification data: ${res.status}`)
-      return null
-    }
-    return (await res.json())
   } catch (error) {
+    if (isApiError(error) && (error.status === 401 || error.status === 403)) return null
     if (error instanceof Error && !error.message.includes('fetch')) {
       console.error('Error fetching gamification data:', error)
     }
@@ -140,20 +135,16 @@ async function fetchGamificationData(): Promise<ApiDashboardResponse | null> {
  */
 async function fetchLeaderboardData(limit: number): Promise<ApiLeaderboardResponse | null> {
   try {
-    const res = await apiFetch(`gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`, {
-      method: 'GET',
-      baseUrl: getServerAPIUrl(),
-      timeoutMs: 8000,
-    })
-
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) return null
-      console.error(`Failed to fetch leaderboard: ${res.status}`)
-      return null
-    }
-
-    return (await res.json())
+    return await apiJson<ApiLeaderboardResponse>(
+      `gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`,
+      {
+        method: 'GET',
+        baseUrl: getServerAPIUrl(),
+        timeoutMs: 8000,
+      },
+    )
   } catch (error) {
+    if (isApiError(error) && (error.status === 401 || error.status === 403)) return null
     console.error('Error fetching leaderboard:', error)
     return null
   }

@@ -21,9 +21,9 @@ export function citationHref(citation: AICitation, options: { courseUuid?: strin
   return `#source-${citation.source_uuid}`
 }
 
-export function confidenceLabel(value?: number | null) {
-  if (typeof value !== 'number') return 'Uncalibrated'
-  if (value >= 0.8) return 'High confidence'
-  if (value >= 0.55) return 'Medium confidence'
-  return 'Low confidence'
+export function confidenceLevel(value?: number | null) {
+  if (typeof value !== 'number') return 'uncalibrated' as const
+  if (value >= 0.8) return 'high' as const
+  if (value >= 0.55) return 'medium' as const
+  return 'low' as const
 }

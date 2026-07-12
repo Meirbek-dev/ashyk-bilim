@@ -1,6 +1,6 @@
 'use client'
 
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { listRoleAuditLog, listRoles, listUserRoles, listUsers } from '@services/rbac'
 import { queryOptions } from '@tanstack/react-query'
 import { getCoursesByUser, getUserById, getUserByUsername, userKeys } from '@/lib/users/client'
@@ -23,28 +23,28 @@ export function userByUsernameQueryOptions(username: string) {
 export function userCoursesQueryOptions(userId: number) {
   return queryOptions({
     queryKey: userKeys.coursesByUser(userId),
-    queryFn: async () => (await getCoursesByUser(userId)).data ?? [],
+    queryFn: () => getCoursesByUser(userId),
   })
 }
 
 export function userGroupsQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.userGroups.all(),
-    queryFn: () => apiFetcher<{ id: number; name: string; description?: string }[]>(`usergroups`),
+    queryFn: () => apiJson<{ id: number; name: string; description?: string }[]>(`usergroups`),
   })
 }
 
 export function userGroupUsersQueryOptions(userGroupId: number) {
   return queryOptions({
     queryKey: queryKeys.userGroups.users(userGroupId),
-    queryFn: () => apiFetcher<unknown[]>(`usergroups/${userGroupId}/users`),
+    queryFn: () => apiJson<unknown[]>(`usergroups/${userGroupId}/users`),
   })
 }
 
 export function allMembersQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.users.allMembers(),
-    queryFn: () => apiFetcher(`members`),
+    queryFn: () => apiJson(`members`),
   })
 }
 
@@ -52,7 +52,7 @@ export function membersQueryOptions(page: number, perPage: number) {
   return queryOptions({
     queryKey: queryKeys.users.members(page, perPage),
     queryFn: () =>
-      apiFetcher<{ total: number; total_pages: number; users: unknown[] }>(`members?page=${page}&per_page=${perPage}`),
+      apiJson<{ total: number; total_pages: number; users: unknown[] }>(`members?page=${page}&per_page=${perPage}`),
   })
 }
 

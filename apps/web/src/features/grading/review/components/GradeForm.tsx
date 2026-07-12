@@ -581,7 +581,10 @@ export default function GradeForm({
       )}
 
       <div className="border-t pt-4">
-        <SubmissionAIEntry submissionUuid={submissionUuid} />
+        <SubmissionAIEntry
+          submissionUuid={submissionUuid}
+          onDraftFeedback={feedback => setDraft(current => ({ ...current, feedback }))}
+        />
       </div>
 
       {/* ── Keyboard legend ────────────────────────────────────────────── */}

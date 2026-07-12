@@ -15,43 +15,19 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { APIError } from '@/lib/api/assertSuccess'
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 const mocks = vi.hoisted(() => ({
-  apiFetch: vi.fn(),
   apiJson: vi.fn(),
   apiResult: vi.fn(),
-  getResponseMetadata: vi.fn(),
-  errorHandling: vi.fn(),
   revalidateTag: vi.fn(),
   getAssessmentSubmission: vi.fn(),
 }))
 
 vi.mock('@/lib/api-client', () => ({
-  apiFetch: mocks.apiFetch,
-  getResponseMetadata: mocks.getResponseMetadata,
-  errorHandling: mocks.errorHandling,
-  apiJson: async (path: string, init?: any) => {
-    const res = await mocks.apiFetch(path, init)
-    if (!res.ok) {
-      const err = new Error(res.statusText || 'API Error')
-      try {
-        const body = await res.json()
-        if (body && body.detail) {
-          err.message = body.detail
-        }
-      } catch {
-        // ignore parse error if res.json() fails
-      }
-      throw err
-    }
-    return res.json()
-  },
-  apiResult: async (path: string, init?: any) => {
-    const res = await mocks.apiFetch(path, init)
-    const data = await res.json()
-    return { data, headers: {}, requestId: null }
-  },
+  apiJson: mocks.apiJson,
+  apiResult: mocks.apiResult,
 }))
 
 vi.mock('next/cache', () => ({
@@ -97,46 +73,32 @@ function makeAssessment(overrides = {}) {
 }
 
 function mockFetchSuccess(data: unknown) {
-  const mockResponse = { status: 200, ok: true }
-  mocks.apiFetch.mockResolvedValue(mockResponse)
-  mocks.errorHandling.mockResolvedValue(data)
+  mocks.apiJson.mockResolvedValue(data)
 }
 
 function mockFetch404() {
-  const mockResponse = { status: 404, ok: false }
-  mocks.apiFetch.mockResolvedValue(mockResponse)
+  mocks.apiJson.mockRejectedValue(new APIError({ code: 'NOT_FOUND', message: 'Not found', status: 404 }))
 }
 
 function mockFetchNetworkError() {
-  mocks.apiFetch.mockRejectedValue(new Error('Network error'))
+  mocks.apiJson.mockRejectedValue(new Error('Network error'))
 }
 
 function mockMetaSuccess(data: unknown) {
-  mocks.apiFetch.mockResolvedValue({
-    ok: true,
-    status: 200,
-    headers: new Headers(),
-    json: () => Promise.resolve(data),
-  })
-  mocks.getResponseMetadata.mockResolvedValue({
-    success: true,
+  mocks.apiJson.mockResolvedValue(data)
+  mocks.apiResult.mockResolvedValue({
     data,
+    headers: {},
+    requestId: null,
     status: 200,
+    statusText: 'OK',
   })
 }
 
 function mockMetaFailure(detail = 'Operation failed') {
-  mocks.apiFetch.mockResolvedValue({
-    ok: false,
-    status: 400,
-    headers: new Headers(),
-    json: () => Promise.resolve({ detail }),
-  })
-  mocks.getResponseMetadata.mockResolvedValue({
-    success: false,
-    data: { detail },
-    status: 400,
-  })
+  const error = new APIError({ code: 'API_ERROR', message: detail, status: 400, data: { detail } })
+  mocks.apiJson.mockRejectedValue(error)
+  mocks.apiResult.mockRejectedValue(error)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,7 +116,7 @@ describe('getAssessmentByUuid', () => {
 
     const result = await getAssessmentByUuid('asm_test_1')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_test_1', expect.any(Object))
+    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/asm_test_1', expect.any(Object))
     expect(result?.assessment_uuid).toBe('asm_test_1')
     expect(result?.lifecycle).toBe('PUBLISHED')
   })
@@ -185,7 +147,7 @@ describe('getAssessmentByActivityUuid', () => {
 
     const result = await getAssessmentByActivityUuid('activity_abc')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/activity/activity_abc', expect.any(Object))
+    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/activity/activity_abc', expect.any(Object))
     expect(result?.activity_uuid).toBe('activity_abc')
   })
 
@@ -244,7 +206,7 @@ describe('getAttemptState', () => {
 
     const result = await getAttemptState('asm_1')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
+    expect(mocks.apiJson).toHaveBeenCalledWith(
       'assessments/asm_1/attempt-state',
       expect.objectContaining({ method: 'GET' }),
     )
@@ -281,7 +243,7 @@ describe('getPolicyPreset', () => {
 
     const result = await getPolicyPreset('EXAM')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/policy-preset/EXAM', expect.any(Object))
+    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/policy-preset/EXAM', expect.any(Object))
     expect(result?.grade_release_mode).toBe('IMMEDIATE')
     expect(result?.grading_mode).toBe('MANUAL')
   })
@@ -304,7 +266,7 @@ describe('listStudentPolicyOverrides', () => {
 
     const result = await listStudentPolicyOverrides('asm_1')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_1/overrides', expect.any(Object))
+    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/asm_1/overrides', expect.any(Object))
     expect(result).toHaveLength(1)
     expect(result[0]!.max_attempts_override).toBe(3)
   })
@@ -335,7 +297,7 @@ describe('createStudentPolicyOverride', () => {
       max_attempts_override: 2,
     })
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
+    expect(mocks.apiJson).toHaveBeenCalledWith(
       'assessments/asm_1/overrides',
       expect.objectContaining({
         method: 'POST',
@@ -364,7 +326,7 @@ describe('updateStudentPolicyOverride', () => {
       max_attempts_override: 5,
     })
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
+    expect(mocks.apiJson).toHaveBeenCalledWith(
       'assessments/asm_1/overrides/5',
       expect.objectContaining({
         method: 'PATCH',
@@ -390,7 +352,7 @@ describe('deleteStudentPolicyOverride', () => {
 
     await deleteStudentPolicyOverride('asm_1', 5)
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
+    expect(mocks.apiJson).toHaveBeenCalledWith(
       'assessments/asm_1/overrides/5',
       expect.objectContaining({ method: 'DELETE' }),
     )
@@ -417,7 +379,7 @@ describe('saveGradingDraft', () => {
     }
     await saveGradingDraft('asm_1', 'sub_1', payload)
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
+    expect(mocks.apiJson).toHaveBeenCalledWith(
       'assessments/asm_1/submissions/sub_1/grade',
       expect.objectContaining({
         method: 'PATCH',
@@ -432,13 +394,12 @@ describe('saveGradingDraft', () => {
 
     await saveGradingDraft('asm_1', 'sub_v3', { item_grades: [] }, 3)
 
-    const [, opts] = mocks.apiFetch.mock.calls[0]!
+    const [, opts] = mocks.apiJson.mock.calls[0]!
     expect(opts.headers['If-Match']).toBe('3')
   })
 
   it('throws StaleGradeError when server returns 412', async () => {
-    // Mock the 412 response
-    mocks.apiFetch.mockResolvedValue({ status: 412 })
+    mocks.apiJson.mockRejectedValue(new APIError({ code: 'STALE_GRADE', message: 'Stale grade', status: 412 }))
     // Mock the subsequent getAssessmentSubmission call
     const { StaleGradeError } = await import('@/services/grading/errors')
 
@@ -473,7 +434,7 @@ describe('runCodeItem', () => {
     const payload = { source: 'print("hello")', language: 71 }
     const result = await runCodeItem('asm_1', 'item_code_1', payload)
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
+    expect(mocks.apiJson).toHaveBeenCalledWith(
       'assessments/asm_1/items/item_code_1/runs',
       expect.objectContaining({
         method: 'POST',

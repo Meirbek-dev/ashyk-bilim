@@ -233,7 +233,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     <ActivityAIDockLayout
       scope={aiScope}
       defaultMode="review"
-      panel={<CourseAIHub courseUuid={courseUuid} variant="panel" />}
+      panel={<CourseAIHub courseUuid={courseUuid} scope={aiScope} variant="panel" />}
       className="bg-background min-h-screen"
     >
       <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur">

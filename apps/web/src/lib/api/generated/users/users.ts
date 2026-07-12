@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   ApiGetUserCoursesApiV1UsersUserIdCoursesGetParams,
   ApiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPutParams,
@@ -35,9 +35,9 @@ import type {
   UserSession,
   UserUpdate,
   UserUpdatePassword,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -69,12 +69,16 @@ export const apiCreateUserWithoutPlatformApiV1UsersPost = async (
   userCreate: UserCreate,
   options?: RequestInit,
 ): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiCreateUserWithoutPlatformApiV1UsersPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(userCreate),
-  })
+  return orvalMutator<UserRead>(
+    getApiCreateUserWithoutPlatformApiV1UsersPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(userCreate),
+    },
+    UserRead,
+  )
 }
 
 export const getApiCreateUserWithoutPlatformApiV1UsersPostMutationOptions = <
@@ -156,12 +160,16 @@ export const apiUpdateUserPasswordApiV1UsersChangePasswordUserIdPut = async (
   userUpdatePassword: UserUpdatePassword,
   options?: RequestInit,
 ): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiUpdateUserPasswordApiV1UsersChangePasswordUserIdPutUrl(userId), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(userUpdatePassword),
-  })
+  return orvalMutator<UserRead>(
+    getApiUpdateUserPasswordApiV1UsersChangePasswordUserIdPutUrl(userId),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(userUpdatePassword),
+    },
+    UserRead,
+  )
 }
 
 export const getApiUpdateUserPasswordApiV1UsersChangePasswordUserIdPutMutationOptions = <
@@ -240,10 +248,14 @@ export const getApiGetUserByIdApiV1UsersIdUserIdGetUrl = (userId: number) => {
  * @summary Api Get User By Id
  */
 export const apiGetUserByIdApiV1UsersIdUserIdGet = async (userId: number, options?: RequestInit): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiGetUserByIdApiV1UsersIdUserIdGetUrl(userId), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserRead>(
+    getApiGetUserByIdApiV1UsersIdUserIdGetUrl(userId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserRead,
+  )
 }
 
 export const getApiGetUserByIdApiV1UsersIdUserIdGetQueryKey = (userId: number) => {
@@ -456,7 +468,7 @@ export const getApiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPutUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -476,10 +488,14 @@ export const apiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPut = async (
   params: ApiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPutParams,
   options?: RequestInit,
 ): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPutUrl(userId, params), {
-    ...options,
-    method: 'PUT',
-  })
+  return orvalMutator<UserRead>(
+    getApiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPutUrl(userId, params),
+    {
+      ...options,
+      method: 'PUT',
+    },
+    UserRead,
+  )
 }
 
 export const getApiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPutMutationOptions = <
@@ -557,7 +573,7 @@ export const getApiUpdateUserThemeApiV1UsersPreferencesThemeUserIdPutUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -577,10 +593,14 @@ export const apiUpdateUserThemeApiV1UsersPreferencesThemeUserIdPut = async (
   params: ApiUpdateUserThemeApiV1UsersPreferencesThemeUserIdPutParams,
   options?: RequestInit,
 ): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiUpdateUserThemeApiV1UsersPreferencesThemeUserIdPutUrl(userId, params), {
-    ...options,
-    method: 'PUT',
-  })
+  return orvalMutator<UserRead>(
+    getApiUpdateUserThemeApiV1UsersPreferencesThemeUserIdPutUrl(userId, params),
+    {
+      ...options,
+      method: 'PUT',
+    },
+    UserRead,
+  )
 }
 
 export const getApiUpdateUserThemeApiV1UsersPreferencesThemeUserIdPutMutationOptions = <
@@ -659,10 +679,14 @@ export const getApiGetPublicUserApiV1UsersProfileGetUrl = () => {
  * @summary Api Get Public User
  */
 export const apiGetPublicUserApiV1UsersProfileGet = async (options?: RequestInit): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiGetPublicUserApiV1UsersProfileGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserRead>(
+    getApiGetPublicUserApiV1UsersProfileGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserRead,
+  )
 }
 
 export const getApiGetPublicUserApiV1UsersProfileGetQueryKey = () => {
@@ -862,10 +886,14 @@ export const getApiGetPublicUserSessionApiV1UsersSessionGetUrl = () => {
  * @summary Api Get Public User Session
  */
 export const apiGetPublicUserSessionApiV1UsersSessionGet = async (options?: RequestInit): Promise<UserSession> => {
-  return orvalMutator<UserSession>(getApiGetPublicUserSessionApiV1UsersSessionGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserSession>(
+    getApiGetPublicUserSessionApiV1UsersSessionGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserSession,
+  )
 }
 
 export const getApiGetPublicUserSessionApiV1UsersSessionGetQueryKey = () => {
@@ -1091,11 +1119,15 @@ export const apiUpdateAvatarUserApiV1UsersUpdateAvatarUserIdPut = async (
     formData.append(`avatar_file`, bodyApiUpdateAvatarUserApiV1UsersUpdateAvatarUserIdPut.avatar_file)
   }
 
-  return orvalMutator<UserRead>(getApiUpdateAvatarUserApiV1UsersUpdateAvatarUserIdPutUrl(userId), {
-    ...options,
-    method: 'PUT',
-    body: formData,
-  })
+  return orvalMutator<UserRead>(
+    getApiUpdateAvatarUserApiV1UsersUpdateAvatarUserIdPutUrl(userId),
+    {
+      ...options,
+      method: 'PUT',
+      body: formData,
+    },
+    UserRead,
+  )
 }
 
 export const getApiUpdateAvatarUserApiV1UsersUpdateAvatarUserIdPutMutationOptions = <
@@ -1181,10 +1213,14 @@ export const apiDeleteUserApiV1UsersUserIdUserIdDelete = async (
   userId: number,
   options?: RequestInit,
 ): Promise<string> => {
-  return orvalMutator<string>(getApiDeleteUserApiV1UsersUserIdUserIdDeleteUrl(userId), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<string>(
+    getApiDeleteUserApiV1UsersUserIdUserIdDeleteUrl(userId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    stringParser,
+  )
 }
 
 export const getApiDeleteUserApiV1UsersUserIdUserIdDeleteMutationOptions = <
@@ -1263,10 +1299,14 @@ export const apiGetUserByUsernameApiV1UsersUsernameUsernameGet = async (
   username: string,
   options?: RequestInit,
 ): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiGetUserByUsernameApiV1UsersUsernameUsernameGetUrl(username), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserRead>(
+    getApiGetUserByUsernameApiV1UsersUsernameUsernameGetUrl(username),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserRead,
+  )
 }
 
 export const getApiGetUserByUsernameApiV1UsersUsernameUsernameGetQueryKey = (username: string) => {
@@ -1518,10 +1558,14 @@ export const apiGetUserByUuidApiV1UsersUuidUserUuidGet = async (
   userUuid: string,
   options?: RequestInit,
 ): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiGetUserByUuidApiV1UsersUuidUserUuidGetUrl(userUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserRead>(
+    getApiGetUserByUuidApiV1UsersUuidUserUuidGetUrl(userUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserRead,
+  )
 }
 
 export const getApiGetUserByUuidApiV1UsersUuidUserUuidGetQueryKey = (userUuid: string) => {
@@ -1754,12 +1798,16 @@ export const apiUpdateUserApiV1UsersUserIdPut = async (
   userUpdate: UserUpdate,
   options?: RequestInit,
 ): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getApiUpdateUserApiV1UsersUserIdPutUrl(userId), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(userUpdate),
-  })
+  return orvalMutator<UserRead>(
+    getApiUpdateUserApiV1UsersUserIdPutUrl(userId),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(userUpdate),
+    },
+    UserRead,
+  )
 }
 
 export const getApiUpdateUserApiV1UsersUserIdPutMutationOptions = <
@@ -1834,7 +1882,7 @@ export const getApiGetUserCoursesApiV1UsersUserIdCoursesGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1854,10 +1902,14 @@ export const apiGetUserCoursesApiV1UsersUserIdCoursesGet = async (
   params?: ApiGetUserCoursesApiV1UsersUserIdCoursesGetParams,
   options?: RequestInit,
 ): Promise<CourseRead[]> => {
-  return orvalMutator<CourseRead[]>(getApiGetUserCoursesApiV1UsersUserIdCoursesGetUrl(userId, params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<CourseRead[]>(
+    getApiGetUserCoursesApiV1UsersUserIdCoursesGetUrl(userId, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(CourseRead),
+  )
 }
 
 export const getApiGetUserCoursesApiV1UsersUserIdCoursesGetQueryKey = (

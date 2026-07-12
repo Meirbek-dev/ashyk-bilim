@@ -2,7 +2,7 @@
 
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
-import { apiFetcher, apiJson } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import type { AIRunStatusPayload } from '@/features/ai-experience'
 
 export interface RemediationSession {
@@ -22,7 +22,7 @@ export interface RemediationSession {
 export function remediationSessionQueryOptions(sessionUuid: string) {
   return queryOptions({
     queryKey: ['remediation-session', sessionUuid],
-    queryFn: () => apiFetcher<RemediationSession>(`ai/remediation/sessions/${sessionUuid}`),
+    queryFn: () => apiJson<RemediationSession>(`ai/remediation/sessions/${sessionUuid}`),
     enabled: Boolean(sessionUuid),
   })
 }

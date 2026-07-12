@@ -8,7 +8,7 @@ import * as v from 'valibot'
 
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,7 +51,7 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
       throw new Error('Course metadata is missing for code challenge creation')
     }
 
-    const response = await apiFetch('assessments', {
+    await apiJson('assessments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -72,11 +72,6 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
         },
       }),
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.detail?.message || error.detail || 'Failed to create code challenge')
-    }
 
     closeModal?.()
   }

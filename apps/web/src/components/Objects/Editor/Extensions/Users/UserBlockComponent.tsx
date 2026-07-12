@@ -61,6 +61,18 @@ const IconComponent = ({ iconName }: { iconName: string }) => {
   return <IconElement className="h-4 w-4 text-gray-600" />
 }
 
+const isUserDetail = (value: unknown): value is UserDetail => {
+  if (!value || typeof value !== 'object') return false
+  const detail = value as Partial<Record<keyof UserDetail, unknown>>
+
+  return (
+    typeof detail.id === 'string' &&
+    typeof detail.label === 'string' &&
+    typeof detail.icon === 'string' &&
+    typeof detail.text === 'string'
+  )
+}
+
 interface UserNodeAttrs {
   user_id: string | number | null
 }
@@ -199,7 +211,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
     )
   }
 
-  const details = userData.details ? (Object.values(userData.details) as UserDetail[]) : []
+  const details = userData.details ? Object.values(userData.details).filter(isUserDetail) : []
 
   return (
     <NodeViewWrapper className="block-user">

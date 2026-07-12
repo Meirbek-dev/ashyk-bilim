@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { AICitationLink } from './ai-citation-link'
-import { confidenceLabel } from '../lib/ai-citations'
+import { confidenceLevel } from '../lib/ai-citations'
 import type { AICitation } from '../lib/ai-citations'
 
 interface AIEvidencePanelProps {
@@ -35,7 +35,9 @@ export function AIEvidencePanel({ citations, courseUuid }: AIEvidencePanelProps)
           <article key={citation.citation_id} className="flex flex-col gap-2 rounded-lg border p-3">
             <div className="flex flex-wrap items-center gap-2">
               <AICitationLink citation={citation} courseUuid={courseUuid} />
-              <span className="text-muted-foreground text-xs">{confidenceLabel(citation.confidence)}</span>
+              <span className="text-muted-foreground text-xs">
+                {t(`confidence.${confidenceLevel(citation.confidence)}`)}
+              </span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">{citation.excerpt}</p>
           </article>

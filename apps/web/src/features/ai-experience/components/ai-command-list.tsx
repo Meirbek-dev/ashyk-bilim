@@ -29,7 +29,7 @@ interface AICommandDefinition {
   surface: AICommandSurface
 }
 
-// Labels and prompts live in the `AiExperience.commandList` next-intl namespace, not here —
+// Labels and prompts live in the `AiExperience.commandList` next-intl namespace, not here.
 // this registry only fixes which command ids exist per surface and which icon each one uses.
 const COMMANDS: Record<AICommandSurface, AICommandDefinition[]> = {
   activity: [

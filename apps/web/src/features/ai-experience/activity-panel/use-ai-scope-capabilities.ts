@@ -2,7 +2,7 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 
 import type { ActivityAIMode } from './activity-ai-url-state'
 
@@ -32,6 +32,12 @@ export interface AIScopeCapability {
   reason?: string | null
   modes: ActivityAIMode[]
   features: AIFeatureCapability[]
+  context?: {
+    course_label: string
+    activity_label?: string | null
+    activity_uuid?: string | null
+    source_count: number
+  } | null
 }
 
 function scopeCapabilitiesPath(scope: AIScope) {
@@ -44,7 +50,7 @@ function scopeCapabilitiesPath(scope: AIScope) {
 export function aiScopeCapabilitiesQueryOptions(scope: AIScope) {
   return queryOptions({
     queryKey: ['ai-scope-capabilities', scope],
-    queryFn: () => apiFetcher<AIScopeCapability>(scopeCapabilitiesPath(scope)),
+    queryFn: () => apiJson<AIScopeCapability>(scopeCapabilitiesPath(scope)),
     enabled: Boolean(scope.courseUuid),
     staleTime: 30_000,
   })

@@ -11,7 +11,7 @@ import {
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,7 @@ import {
   localItemValidationIssues,
 } from '@/features/assessments/domain/readiness'
 import { InlineIssueMessage } from './ValidationIssues'
-import { buildDefaultItemPayload, responseError } from '../utils'
+import { buildDefaultItemPayload } from '../utils'
 import type { SupportedStudioItemKind } from '../utils'
 
 const KIND_ICONS: Record<SupportedStudioItemKind, typeof ListTodo> = {
@@ -62,17 +62,11 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
   const createItem = (kind: SupportedStudioItemKind) => {
     startTransition(async () => {
       try {
-        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items`, {
+        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessment.assessment_uuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(buildDefaultItemPayload(kind, t('defaultItemTitle'))),
         })
-
-        if (!response.ok) {
-          throw new Error(await responseError(response, t('createFailed', { itemNoun: displayItemNoun.toLowerCase() })))
-        }
-
-        const created = (await response.json()) as { item_uuid?: string }
         toast.success(t('itemCreated', { itemNoun: displayItemNoun }))
         await refresh()
         if (typeof created.item_uuid === 'string') {

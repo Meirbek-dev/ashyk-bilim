@@ -10,6 +10,7 @@ import { AIErrorRecovery } from '@/features/ai-experience'
 
 import { useAIAdminSettings, useAIEvalDashboard, useAIUsage } from '../api/use-ai-usage'
 import { AIEvalDashboardPanel } from './ai-eval-dashboard'
+import { AIOperationsConsole } from './ai-operations-console'
 import { AIFeatureToggles } from './ai-feature-toggles'
 import { BudgetStatus } from './budget-status'
 import { TokenUsageChart } from './token-usage-chart'
@@ -28,6 +29,7 @@ export function AIAdminPanel() {
         <p className="text-muted-foreground text-sm">{t('description')}</p>
       </div>
       {error ? <AIErrorRecovery message={error.message} /> : null}
+      <AIOperationsConsole />
       {usage.data ? (
         <div className="grid gap-4 lg:grid-cols-[1fr_24rem]">
           <div className="flex flex-col gap-4">

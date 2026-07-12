@@ -43,7 +43,7 @@ class AICitationValidationResult(PydanticStrictBaseModel):
 def render_context_bundle(bundle: AIContextBundle) -> str:
     if not bundle.sources:
         return bundle.text
-    source_lines = ["", "Citation sources:"]
+    source_lines = ["", "Citation sources:", "Use only these authoritative sources for the selected scope."]
     for source in bundle.sources:
         source_lines.extend([
             f"[{source.citation_id}] {source.source_type} | {source.source_uuid or 'untracked'} | {source.label}",

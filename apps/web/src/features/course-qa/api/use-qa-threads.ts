@@ -2,14 +2,14 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 
 import type { QAThreadSummary } from '../lib/types'
 
 export function qaThreadsQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: ['course-qa-threads', courseUuid],
-    queryFn: () => apiFetcher<QAThreadSummary[]>(`ai/qa/${courseUuid}/threads`),
+    queryFn: () => apiJson<QAThreadSummary[]>(`ai/qa/${courseUuid}/threads`),
     enabled: Boolean(courseUuid),
   })
 }

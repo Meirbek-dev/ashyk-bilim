@@ -4,10 +4,8 @@ import { XCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
 
-import { aiStateProgress } from '../lib/ai-run-state'
 import type { AIWorkState } from '../lib/ai-run-state'
 
 export function AIRunProgress({ onCancel, state }: { onCancel?: (() => void) | undefined; state: AIWorkState }) {
@@ -30,7 +28,6 @@ export function AIRunProgress({ onCancel, state }: { onCancel?: (() => void) | u
           </Button>
         ) : null}
       </div>
-      <Progress value={aiStateProgress(state)} />
     </div>
   )
 }

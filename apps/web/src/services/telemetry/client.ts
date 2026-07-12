@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
 
 export function createErrorEventId(): string {
@@ -39,7 +39,7 @@ export async function reportClientError(payload: Record<string, unknown>): Promi
   const origin = typeof globalThis.window !== 'undefined' ? globalThis.location.origin : undefined
   const eventId = typeof payload.eventId === 'string' ? payload.eventId : createErrorEventId()
 
-  await apiFetch('/api/log-error', {
+  await apiJson('/api/log-error', {
     body: JSON.stringify({
       ...payload,
       eventId,

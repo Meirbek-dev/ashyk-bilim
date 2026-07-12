@@ -5,6 +5,9 @@ import { getCollections } from '@services/courses/collections'
 import { getPlatform } from '@/services/platform/platform'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'
+import { Link } from '@/i18n/navigation'
+import { getTranslations } from 'next-intl/server'
+import { AlertTriangle } from 'lucide-react'
 
 function isExpectedPrerenderCancellation(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -79,6 +82,7 @@ function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | n
 }
 
 export async function LandingContent({ page = 1 }: { page?: number }) {
+  const tDegraded = await getTranslations('LandingDegraded')
   let coursesData, collections, gamificationData, trailData, session
   try {
     // Fetch platform info with detailed error handling
@@ -124,7 +128,7 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
       stack: error instanceof Error ? error.stack : undefined,
       cause: error instanceof Error ? error.cause : undefined,
     })
-    throw error // Re-throw to be caught by error boundary
+    return <LandingDegradedState isAuthenticated={Boolean(session)} t={tDegraded} />
   }
 
   const { courses } = coursesData
@@ -141,5 +145,42 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
       isAuthenticated={Boolean(session)}
       currentPage={page}
     />
+  )
+}
+
+function LandingDegradedState({
+  isAuthenticated,
+  t,
+}: {
+  isAuthenticated: boolean
+  t: Awaited<ReturnType<typeof getTranslations<'LandingDegraded'>>>
+}) {
+  return (
+    <main className="mx-auto flex min-h-[60dvh] w-full max-w-4xl items-center px-4 py-12 sm:px-6">
+      <section aria-labelledby="landing-unavailable-title" className="w-full border-y py-10 sm:py-14">
+        <AlertTriangle className="size-8 text-amber-600" aria-hidden />
+        <h1 id="landing-unavailable-title" className="mt-5 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          {t('title')}
+        </h1>
+        <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-7">{t('description')}</p>
+        <p className="mt-5 text-sm" role="status">
+          {t('safeState')}
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-medium outline-none focus-visible:ring-3"
+          >
+            {t('retry')}
+          </Link>
+          <Link
+            href={isAuthenticated ? '/dash' : '/login'}
+            className="border-border bg-background hover:bg-muted focus-visible:ring-ring inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-medium outline-none focus-visible:ring-3"
+          >
+            {isAuthenticated ? t('openDashboard') : t('signIn')}
+          </Link>
+        </div>
+      </section>
+    </main>
   )
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { aiStateProgress, buildAIStages, isTerminalAIState } from '@/features/ai-experience'
+import { buildAIStages, isTerminalAIState } from '@/features/ai-experience'
 import type { AIWorkState } from '@/features/ai-experience'
 
 // Test-local labels. The app's single source of truth for these strings is the
@@ -23,12 +23,6 @@ describe('AI run state helpers', () => {
     expect(isTerminalAIState('complete')).toBe(true)
     expect(isTerminalAIState('needs_human_review')).toBe(true)
     expect(isTerminalAIState('running')).toBe(false)
-  })
-
-  it('calculates stable progress values', () => {
-    expect(aiStateProgress('idle')).toBe(0)
-    expect(aiStateProgress('running')).toBeGreaterThan(aiStateProgress('queued'))
-    expect(aiStateProgress('complete')).toBe(100)
   })
 
   it('builds ordered timeline stages', () => {

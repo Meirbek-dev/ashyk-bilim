@@ -76,11 +76,60 @@
         "title": "AIArtifactRead",
         "type": "object"
       },
+      "AIContextSummary": {
+        "properties": {
+          "activity_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Label"
+          },
+          "activity_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Uuid"
+          },
+          "course_label": {
+            "title": "Course Label",
+            "type": "string"
+          },
+          "source_count": {
+            "default": 0,
+            "title": "Source Count",
+            "type": "integer"
+          }
+        },
+        "required": ["course_label"],
+        "title": "AIContextSummary",
+        "type": "object"
+      },
       "AICourseAnalysisRead": {
         "properties": {
           "analysis_uuid": {
             "title": "Analysis Uuid",
             "type": "string"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
           },
           "course_id": {
             "title": "Course Id",
@@ -113,6 +162,17 @@
             ],
             "title": "Model Name"
           },
+          "previous_public_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Public Score"
+          },
           "public_score": {
             "title": "Public Score",
             "type": "integer"
@@ -142,6 +202,11 @@
               }
             ],
             "title": "Run Id"
+          },
+          "stale": {
+            "default": false,
+            "title": "Stale",
+            "type": "boolean"
           },
           "status": {
             "title": "Status",
@@ -402,10 +467,198 @@
         "title": "AILectureReviewRead",
         "type": "object"
       },
+      "AIOperationEventRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/JsonObject"
+          },
+          "sequence": {
+            "title": "Sequence",
+            "type": "integer"
+          }
+        },
+        "required": ["event_id", "sequence", "event_type", "created_at", "payload"],
+        "title": "AIOperationEventRead",
+        "type": "object"
+      },
+      "AIOperationRunDetailRead": {
+        "properties": {
+          "artifact_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Artifact Uuids",
+            "type": "array"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/AIOperationEventRead"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "run": {
+            "$ref": "#/components/schemas/AIOperationRunRead"
+          }
+        },
+        "required": ["run", "events", "artifact_uuids"],
+        "title": "AIOperationRunDetailRead",
+        "type": "object"
+      },
+      "AIOperationRunRead": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "context": {
+            "$ref": "#/components/schemas/JsonObject"
+          },
+          "cost_estimate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Estimate"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "feature": {
+            "title": "Feature",
+            "type": "string"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "retry_count": {
+            "default": 0,
+            "title": "Retry Count",
+            "type": "integer"
+          },
+          "run_uuid": {
+            "title": "Run Uuid",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stuck": {
+            "default": false,
+            "title": "Stuck",
+            "type": "boolean"
+          },
+          "time_to_first_text_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To First Text Ms"
+          }
+        },
+        "required": ["run_uuid", "status", "feature", "started_at", "context"],
+        "title": "AIOperationRunRead",
+        "type": "object"
+      },
       "AIQAMessageRead": {
         "properties": {
           "citations_json": {
             "$ref": "#/components/schemas/JsonObject"
+          },
+          "client_turn_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Turn Id"
           },
           "confidence": {
             "anyOf": [
@@ -709,11 +962,36 @@
         "title": "AIRunStatusRead",
         "type": "object"
       },
+      "AIRunStreamRequest": {
+        "properties": {
+          "runId": {
+            "title": "Runid",
+            "type": "string"
+          },
+          "threadId": {
+            "title": "Threadid",
+            "type": "string"
+          }
+        },
+        "required": ["threadId", "runId"],
+        "title": "AIRunStreamRequest",
+        "type": "object"
+      },
       "AIScopeCapabilityRead": {
         "properties": {
           "available": {
             "title": "Available",
             "type": "boolean"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AIContextSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "context_visibility": {
             "enum": ["student", "teacher", "admin"],
@@ -8151,6 +8429,81 @@
         "title": "CourseGradebookResponse",
         "type": "object"
       },
+      "CourseLifecycleResult": {
+        "properties": {
+          "active_content_count": {
+            "default": 0,
+            "title": "Active Content Count",
+            "type": "integer"
+          },
+          "affected_learner_count": {
+            "default": 0,
+            "title": "Affected Learner Count",
+            "type": "integer"
+          },
+          "audit_event_uuid": {
+            "title": "Audit Event Uuid",
+            "type": "string"
+          },
+          "course": {
+            "$ref": "#/components/schemas/CourseRead"
+          },
+          "current_public": {
+            "title": "Current Public",
+            "type": "boolean"
+          },
+          "previous_public": {
+            "title": "Previous Public",
+            "type": "boolean"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/CourseReadinessResponse"
+          },
+          "scheduled_content_count": {
+            "default": 0,
+            "title": "Scheduled Content Count",
+            "type": "integer"
+          }
+        },
+        "required": ["course", "readiness", "audit_event_uuid", "previous_public", "current_public"],
+        "title": "CourseLifecycleResult",
+        "type": "object"
+      },
+      "CourseLifecycleUpdate": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "audit_note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Note"
+          },
+          "last_known_update_date": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Known Update Date"
+          }
+        },
+        "required": ["action"],
+        "title": "CourseLifecycleUpdate",
+        "type": "object"
+      },
       "CourseMetadataUpdate": {
         "properties": {
           "about": {
@@ -8234,18 +8587,36 @@
         "title": "CourseMetadataUpdate",
         "type": "object"
       },
-      "CourseQARequest": {
+      "CourseQAChatRequest": {
         "properties": {
-          "language": {
-            "default": "auto",
-            "title": "Language",
+          "forwardedProps": {
+            "additionalProperties": true,
+            "title": "Forwardedprops",
+            "type": "object"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/CourseQAWireMessage"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "runId": {
+            "title": "Runid",
             "type": "string"
           },
-          "question": {
-            "title": "Question",
+          "threadId": {
+            "title": "Threadid",
             "type": "string"
-          },
-          "thread_uuid": {
+          }
+        },
+        "required": ["threadId", "runId"],
+        "title": "CourseQAChatRequest",
+        "type": "object"
+      },
+      "CourseQAWireMessage": {
+        "properties": {
+          "content": {
             "anyOf": [
               {
                 "type": "string"
@@ -8254,28 +8625,41 @@
                 "type": "null"
               }
             ],
-            "title": "Thread Uuid"
-          }
-        },
-        "required": ["question"],
-        "title": "CourseQARequest",
-        "type": "object"
-      },
-      "CourseQAResponse": {
-        "properties": {
-          "assistant_message": {
-            "$ref": "#/components/schemas/AIQAMessageRead"
+            "title": "Content"
           },
-          "thread_uuid": {
-            "title": "Thread Uuid",
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "parts": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parts"
+          },
+          "role": {
+            "title": "Role",
             "type": "string"
-          },
-          "user_message": {
-            "$ref": "#/components/schemas/AIQAMessageRead"
           }
         },
-        "required": ["thread_uuid", "user_message", "assistant_message"],
-        "title": "CourseQAResponse",
+        "required": ["role"],
+        "title": "CourseQAWireMessage",
         "type": "object"
       },
       "CourseRead": {
@@ -8569,6 +8953,80 @@
         },
         "required": ["id", "course_uuid", "creation_date", "update_date", "name", "public", "open_to_contributors"],
         "title": "CourseReadWithPermissions",
+        "type": "object"
+      },
+      "CourseReadinessIssue": {
+        "properties": {
+          "activity_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Uuid"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "scope": {
+            "default": "course",
+            "title": "Scope",
+            "type": "string"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": ["code", "severity", "message"],
+        "title": "CourseReadinessIssue",
+        "type": "object"
+      },
+      "CourseReadinessResponse": {
+        "properties": {
+          "active_content_count": {
+            "default": 0,
+            "title": "Active Content Count",
+            "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/CourseReadinessIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "scheduled_content_count": {
+            "default": 0,
+            "title": "Scheduled Content Count",
+            "type": "integer"
+          }
+        },
+        "required": ["ready"],
+        "title": "CourseReadinessResponse",
         "type": "object"
       },
       "CourseUpdateCreate": {
@@ -9933,6 +10391,36 @@
         },
         "required": ["id", "username", "email"],
         "title": "FileSubmissionUserRead",
+        "type": "object"
+      },
+      "FindingReviewRequest": {
+        "properties": {
+          "action": {
+            "enum": ["accepted", "dismissed", "task_created"],
+            "title": "Action",
+            "type": "string"
+          },
+          "finding_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": ["finding_id", "action"],
+        "title": "FindingReviewRequest",
         "type": "object"
       },
       "ForecastItem": {
@@ -11622,6 +12110,394 @@
         },
         "required": ["entries", "total_participants"],
         "title": "LeaderboardRead",
+        "type": "object"
+      },
+      "LearnerCertificateState": {
+        "properties": {
+          "configured": {
+            "default": false,
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "eligible": {
+            "default": false,
+            "title": "Eligible",
+            "type": "boolean"
+          },
+          "href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href"
+          },
+          "issued": {
+            "default": false,
+            "title": "Issued",
+            "type": "boolean"
+          },
+          "user_certification_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Certification Uuid"
+          }
+        },
+        "title": "LearnerCertificateState",
+        "type": "object"
+      },
+      "LearnerCourseAction": {
+        "properties": {
+          "activity_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Uuid"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href"
+          },
+          "id": {
+            "enum": [
+              "enroll",
+              "start",
+              "continue",
+              "revise",
+              "view_feedback",
+              "wait_for_grade",
+              "view_certificate",
+              "review_completion",
+              "none"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": ["id", "label", "reason"],
+        "title": "LearnerCourseAction",
+        "type": "object"
+      },
+      "LearnerCourseActivityState": {
+        "properties": {
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Actions",
+            "type": "array"
+          },
+          "available": {
+            "default": true,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          },
+          "complete": {
+            "default": false,
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_late": {
+            "default": false,
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passed"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "state": {
+            "default": "not_started",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "submitted",
+              "needs_grading",
+              "graded_hidden",
+              "returned",
+              "passed",
+              "failed",
+              "complete",
+              "locked"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id", "uuid", "title", "type"],
+        "title": "LearnerCourseActivityState",
+        "type": "object"
+      },
+      "LearnerCourseChapterState": {
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/LearnerCourseActivityState"
+            },
+            "title": "Activities",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id", "uuid", "title", "index"],
+        "title": "LearnerCourseChapterState",
+        "type": "object"
+      },
+      "LearnerCoursePermissions": {
+        "properties": {
+          "can_access": {
+            "title": "Can Access",
+            "type": "boolean"
+          },
+          "can_discover": {
+            "title": "Can Discover",
+            "type": "boolean"
+          },
+          "can_enroll": {
+            "title": "Can Enroll",
+            "type": "boolean"
+          },
+          "denial_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Denial Reason"
+          }
+        },
+        "required": ["can_discover", "can_access", "can_enroll"],
+        "title": "LearnerCoursePermissions",
+        "type": "object"
+      },
+      "LearnerCourseProgressState": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "completed_required_count": {
+            "default": 0,
+            "title": "Completed Required Count",
+            "type": "integer"
+          },
+          "grade_average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Average"
+          },
+          "missing_required_count": {
+            "default": 0,
+            "title": "Missing Required Count",
+            "type": "integer"
+          },
+          "needs_grading_count": {
+            "default": 0,
+            "title": "Needs Grading Count",
+            "type": "integer"
+          },
+          "progress_pct": {
+            "default": 0.0,
+            "title": "Progress Pct",
+            "type": "number"
+          },
+          "total_required_count": {
+            "default": 0,
+            "title": "Total Required Count",
+            "type": "integer"
+          }
+        },
+        "title": "LearnerCourseProgressState",
+        "type": "object"
+      },
+      "LearnerCourseState": {
+        "properties": {
+          "certificate": {
+            "$ref": "#/components/schemas/LearnerCertificateState"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "course_uuid": {
+            "title": "Course Uuid",
+            "type": "string"
+          },
+          "enrolled": {
+            "title": "Enrolled",
+            "type": "boolean"
+          },
+          "enrollment_state": {
+            "enum": ["not_enrolled", "in_progress", "completed"],
+            "title": "Enrollment State",
+            "type": "string"
+          },
+          "next_action": {
+            "$ref": "#/components/schemas/LearnerCourseAction"
+          },
+          "outline": {
+            "items": {
+              "$ref": "#/components/schemas/LearnerCourseChapterState"
+            },
+            "title": "Outline",
+            "type": "array"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/LearnerCoursePermissions"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/LearnerCourseProgressState"
+          },
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "course_uuid",
+          "title",
+          "public",
+          "enrolled",
+          "enrollment_state",
+          "permissions",
+          "progress",
+          "certificate",
+          "next_action"
+        ],
+        "title": "LearnerCourseState",
         "type": "object"
       },
       "LectureReviewRequest": {
@@ -17156,6 +18032,155 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WorkItem": {
+        "properties": {
+          "activity_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Title"
+          },
+          "activity_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Uuid"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Actions",
+            "type": "array"
+          },
+          "course_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Title"
+          },
+          "course_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Uuid"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "href": {
+            "title": "Href",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "primary_action": {
+            "title": "Primary Action",
+            "type": "string"
+          },
+          "priority": {
+            "enum": ["critical", "high", "normal", "low"],
+            "title": "Priority",
+            "type": "string"
+          },
+          "role": {
+            "enum": ["learner", "teacher"],
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["id", "role", "kind", "status", "priority", "title", "description", "href", "primary_action"],
+        "title": "WorkItem",
+        "type": "object"
+      },
+      "WorkQueueResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "title": "WorkQueueResponse",
+        "type": "object"
+      },
       "WorkloadAgingBuckets": {
         "properties": {
           "d1_3": {
@@ -17742,6 +18767,187 @@
         "tags": ["ai"]
       }
     },
+    "/api/v1/ai/admin/runs": {
+      "get": {
+        "operationId": "api_ai_operation_runs_api_v1_ai_admin_runs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 7,
+              "maximum": 90,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "feature",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Feature"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider"
+            }
+          },
+          {
+            "in": "query",
+            "name": "course_uuid",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Course Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AIOperationRunRead"
+                  },
+                  "title": "Response Api Ai Operation Runs Api V1 Ai Admin Runs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Ai Operation Runs",
+        "tags": ["ai"]
+      }
+    },
+    "/api/v1/ai/admin/runs/{run_uuid}": {
+      "get": {
+        "operationId": "api_ai_operation_run_detail_api_v1_ai_admin_runs__run_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_uuid",
+            "required": true,
+            "schema": {
+              "title": "Run Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIOperationRunDetailRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Ai Operation Run Detail",
+        "tags": ["ai"]
+      }
+    },
     "/api/v1/ai/admin/settings": {
       "get": {
         "operationId": "api_ai_admin_settings_api_v1_ai_admin_settings_get",
@@ -17871,6 +19077,71 @@
           }
         ],
         "summary": "Api Ai Scope Capabilities",
+        "tags": ["ai"]
+      }
+    },
+    "/api/v1/ai/course-analysis/{analysis_uuid}/findings/review": {
+      "post": {
+        "operationId": "api_review_course_finding_api_v1_ai_course_analysis__analysis_uuid__findings_review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_uuid",
+            "required": true,
+            "schema": {
+              "title": "Analysis Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FindingReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AICourseAnalysisRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Review Course Finding",
         "tags": ["ai"]
       }
     },
@@ -18376,9 +19647,10 @@
         "tags": ["ai"]
       }
     },
-    "/api/v1/ai/qa/{course_uuid}/ask": {
+    "/api/v1/ai/qa/{course_uuid}/chat": {
       "post": {
-        "operationId": "api_ask_course_question_api_v1_ai_qa__course_uuid__ask_post",
+        "description": "AG-UI-compatible chat transport for course Q&A, consumed by `useChat`.\n\nAuth, budget checks, and thread/message persistence all happen eagerly\nbelow (before the stream starts) so they surface as a normal HTTP error\nstatus; only the model call and final persistence happen inside the\ngenerator, where failures become a RUN_ERROR event instead.",
+        "operationId": "api_stream_course_question_api_v1_ai_qa__course_uuid__chat_post",
         "parameters": [
           {
             "in": "path",
@@ -18394,7 +19666,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CourseQARequest"
+                "$ref": "#/components/schemas/CourseQAChatRequest"
               }
             }
           },
@@ -18402,13 +19674,6 @@
         },
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CourseQAResponse"
-                }
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -18437,72 +19702,7 @@
             "APIKeyCookie": []
           }
         ],
-        "summary": "Api Ask Course Question",
-        "tags": ["ai"]
-      }
-    },
-    "/api/v1/ai/qa/{course_uuid}/ask/queue": {
-      "post": {
-        "operationId": "api_queue_course_question_api_v1_ai_qa__course_uuid__ask_queue_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "course_uuid",
-            "required": true,
-            "schema": {
-              "title": "Course Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CourseQARequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AIRunStatusRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Validation Error"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Внутренняя ошибка сервера"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Queue Course Question",
+        "summary": "Api Stream Course Question",
         "tags": ["ai"]
       }
     },
@@ -18517,6 +19717,18 @@
             "schema": {
               "title": "Course Uuid",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
             }
           }
         ],
@@ -19226,8 +20438,8 @@
       }
     },
     "/api/v1/ai/runs/{run_uuid}/stream": {
-      "get": {
-        "operationId": "api_stream_ai_run_events_api_v1_ai_runs__run_uuid__stream_get",
+      "post": {
+        "operationId": "api_stream_ai_run_events_api_v1_ai_runs__run_uuid__stream_post",
         "parameters": [
           {
             "in": "path",
@@ -19239,6 +20451,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AIRunStreamRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response"
@@ -29988,6 +31210,126 @@
         "tags": ["discussions"]
       }
     },
+    "/api/v1/courses/{course_uuid}/learner-state": {
+      "get": {
+        "operationId": "api_get_learner_course_state_api_v1_courses__course_uuid__learner_state_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnerCourseState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Learner Course State",
+        "tags": ["courses"]
+      }
+    },
+    "/api/v1/courses/{course_uuid}/lifecycle": {
+      "post": {
+        "operationId": "api_update_course_lifecycle_api_v1_courses__course_uuid__lifecycle_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseLifecycleUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseLifecycleResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update Course Lifecycle",
+        "tags": ["courses"]
+      }
+    },
     "/api/v1/courses/{course_uuid}/meta": {
       "get": {
         "description": "Get single Course Metadata (chapters, activities) by course_uuid.\n\nReturns ``X-Structure-Version`` header (latest chapter update_date ISO string).\nClients should send this back as ``If-Match`` on reorder requests to detect\nconcurrent edits.",
@@ -30116,6 +31458,61 @@
           }
         ],
         "summary": "Api Update Course Metadata",
+        "tags": ["courses"]
+      }
+    },
+    "/api/v1/courses/{course_uuid}/readiness": {
+      "get": {
+        "operationId": "api_get_course_readiness_api_v1_courses__course_uuid__readiness_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseReadinessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Course Readiness",
         "tags": ["courses"]
       }
     },
@@ -31383,6 +32780,70 @@
           }
         ],
         "summary": "Api Export File Submission Csv",
+        "tags": ["file-submissions"]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions/{attempt_uuid}": {
+      "get": {
+        "operationId": "api_get_file_submission_submission_api_v1_file_submissions__file_submission_uuid__submissions__attempt_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attempt_uuid",
+            "required": true,
+            "schema": {
+              "title": "Attempt Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get File Submission Submission",
         "tags": ["file-submissions"]
       }
     },
@@ -33196,6 +34657,91 @@
         ],
         "summary": "Api Update App Logo",
         "tags": ["platform"]
+      }
+    },
+    "/api/v1/me/work": {
+      "get": {
+        "operationId": "api_get_work_queue_api_v1_me_work_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "default": "learner",
+              "enum": ["learner", "teacher"],
+              "title": "Role",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkQueueResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Work Queue",
+        "tags": ["work"]
       }
     },
     "/api/v1/members": {

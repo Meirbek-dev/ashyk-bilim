@@ -6,6 +6,7 @@ import { cache } from 'react'
 import type { Metadata } from 'next'
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
 import { courseDiscussionsQueryOptions, trailCurrentQueryOptions } from '@/features/courses/queries/course.query'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 import CourseClient from './course'
 
@@ -82,6 +83,7 @@ const CoursePage = async (params: { params: Promise<{ courseuuid: string }> }) =
         }),
       ),
       queryClient.prefetchQuery(trailCurrentQueryOptions()),
+      queryClient.prefetchQuery(learnerCourseStateQueryOptions(course_meta.course_uuid)),
     ])
     trailData = queryClient.getQueryData<AppTrailData>(trailCurrentQueryOptions().queryKey) ?? null
   }

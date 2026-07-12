@@ -401,13 +401,3 @@ function reviewVisibilityForState(state: AssessmentEditorState) {
   if (!state.allowResultReview) return 'NONE'
   return state.showCorrectAnswers ? 'FULL' : 'SCORE_ONLY'
 }
-
-export async function responseError(response: Response, fallback: string) {
-  const payload = await response.json().catch(() => null)
-  const detail = payload && typeof payload === 'object' ? (payload as { detail?: unknown }).detail : null
-  if (typeof detail === 'string' && detail) return detail
-  if (detail && typeof detail === 'object' && 'message' in detail && typeof detail.message === 'string') {
-    return detail.message
-  }
-  return fallback
-}

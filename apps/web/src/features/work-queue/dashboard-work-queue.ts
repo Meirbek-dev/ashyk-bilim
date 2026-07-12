@@ -33,6 +33,7 @@ interface TeacherDashboardSignal {
   }[]
   signalAvailable: boolean
   errorMessage?: string | null
+  workItems?: LearnerDashboardSignal['items']
 }
 
 interface AdminDashboardSignal {
@@ -44,11 +45,29 @@ interface AdminDashboardSignal {
   errorMessage?: string | null
 }
 
+export interface LearnerDashboardSignal {
+  items: {
+    id: string
+    kind: string
+    status: string
+    priority: WorkQueueItem['priority']
+    title: string
+    description: string
+    href: string
+    primary_action: string
+    due_at?: string | null
+    created_at?: string | null
+    groupLabel?: string
+  }[]
+  signalAvailable: boolean
+}
+
 interface DashboardWorkQueueInput {
   access: DashboardAccess
   courseSummary: EditableCourseSummary | null
   teacherSignal: TeacherDashboardSignal | null
   adminSignal: AdminDashboardSignal | null
+  learnerSignal: LearnerDashboardSignal | null
 }
 
 export interface DashboardWorkQueueModel {
@@ -66,6 +85,7 @@ export function buildDashboardWorkQueue({
   courseSummary,
   teacherSignal,
   adminSignal,
+  learnerSignal,
 }: DashboardWorkQueueInput): DashboardWorkQueueModel {
   const teacherSection = buildTeacherSection({ access, courseSummary, teacherSignal })
   const adminSection = buildAdminSection({ access, adminSignal })
@@ -80,7 +100,7 @@ export function buildDashboardWorkQueue({
   }
 
   if (sections.length === 0) {
-    sections.push(buildLearnerSection())
+    sections.push(buildLearnerSection(learnerSignal))
   }
 
   return {
@@ -89,16 +109,52 @@ export function buildDashboardWorkQueue({
   }
 }
 
-function buildLearnerSection(): WorkQueueSection {
+function buildLearnerSection(signal: LearnerDashboardSignal | null): WorkQueueSection {
   return {
     audience: 'learner',
     title: 'Learner Work',
     description: 'Assignments and course actions that need the learner next.',
     emptyTitle: 'No learner work is queued',
-    emptyDescription:
-      'Open a course from Browse or check your account settings while learner work feeds are connected.',
-    items: [],
+    emptyDescription: 'You are caught up. Browse a course when you are ready to continue learning.',
+    items: signal?.signalAvailable
+      ? sortWorkQueueItems(
+          signal.items.map(item => ({
+            id: item.id,
+            audience: 'learner',
+            title: item.title,
+            description: item.description,
+            href: item.href,
+            primaryActionLabel: item.primary_action,
+            source: 'learner-learning',
+            sourceLabel: 'Learning',
+            status: learnerQueueStatus(item.kind, item.status),
+            priority: item.priority,
+            ...(item.due_at ? { dueAt: item.due_at } : {}),
+            ...(item.created_at ? { createdAt: item.created_at } : {}),
+            ...(item.groupLabel ? { groupLabel: item.groupLabel } : {}),
+          })),
+        )
+      : [
+          {
+            id: 'learner-work-unavailable',
+            audience: 'learner',
+            title: 'Check learning work',
+            description: 'Your learning queue could not be loaded. Open Courses to continue directly.',
+            href: '/courses',
+            primaryActionLabel: 'Browse Courses',
+            source: 'learner-learning',
+            sourceLabel: 'Learning',
+            status: LmsStatuses.UNAVAILABLE,
+            priority: 'normal',
+          },
+        ],
   }
+}
+
+function learnerQueueStatus(kind: string, status: string) {
+  if (kind === 'returned_for_revision' || kind === 'overdue' || status === 'failed') return LmsStatuses.NEEDS_ATTENTION
+  if (kind === 'feedback_released') return LmsStatuses.PUBLISHED
+  return LmsStatuses.IN_PROGRESS
 }
 
 interface TeacherSectionInput {
@@ -109,6 +165,24 @@ interface TeacherSectionInput {
 
 function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSectionInput): WorkQueueSection {
   const items: WorkQueueItem[] = []
+
+  teacherSignal?.workItems?.forEach(item => {
+    items.push({
+      id: item.id,
+      audience: 'teacher',
+      title: item.title,
+      description: item.description,
+      href: item.href,
+      primaryActionLabel: item.primary_action,
+      source: 'course-management',
+      sourceLabel: 'Grading Queue',
+      status: item.priority === 'critical' ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
+      priority: item.priority,
+      ...(item.due_at ? { dueAt: item.due_at } : {}),
+      ...(item.created_at ? { createdAt: item.created_at } : {}),
+      ...(item.groupLabel ? { groupLabel: item.groupLabel } : {}),
+    })
+  })
 
   if (access.hasCoursesAccess && courseSummary?.signalAvailable) {
     if (courseSummary.attention > 0) {
@@ -148,9 +222,7 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
       id: 'courses-unavailable',
       audience: 'teacher',
       title: 'Check courses feed',
-      description: courseSummary?.errorMessage
-        ? `Course management is permitted, but the dashboard could not load course summary: ${courseSummary.errorMessage}`
-        : 'Course management is permitted, but the dashboard could not load course summary.',
+      description: 'Course management is available, but its summary could not be loaded. Open Courses to retry.',
       href: '/dash/courses',
       primaryActionLabel: 'Open Courses',
       source: 'course-management',
@@ -247,9 +319,7 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
       id: 'teacher-analytics-unavailable',
       audience: 'teacher',
       title: 'Check analytics feed',
-      description: teacherSignal.errorMessage
-        ? `Teacher analytics is permitted, but the dashboard could not load the queue signal: ${teacherSignal.errorMessage}`
-        : 'Teacher analytics is permitted, but the dashboard could not load the queue signal.',
+      description: 'Teacher analytics could not be loaded. Open Analytics to retry.',
       href: '/dash/analytics',
       primaryActionLabel: 'Open Analytics',
       source: 'teacher-analytics',
@@ -383,9 +453,7 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
       id: 'admin-analytics-unavailable',
       audience: 'admin',
       title: 'Check admin analytics feed',
-      description: adminSignal.errorMessage
-        ? `Admin analytics is permitted, but the dashboard could not load workload signals: ${adminSignal.errorMessage}`
-        : 'Admin analytics is permitted, but the dashboard could not load workload signals.',
+      description: 'Admin workload signals could not be loaded. Open Admin Analytics to retry.',
       href: '/dash/analytics/admin',
       primaryActionLabel: 'Open Admin Analytics',
       source: 'admin-analytics',

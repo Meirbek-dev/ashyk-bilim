@@ -1,14 +1,14 @@
-import type { components } from '@/lib/api/generated'
+import type * as schemas from '@/lib/api/generated/api.schemas'
 
-type GeneratedSubmission = components['schemas']['SubmissionRead']
-type GeneratedGradedItem = components['schemas']['GradedItem']
-type GeneratedGradingBreakdown = components['schemas']['GradingBreakdown']
-type GeneratedActivityProgressCell = components['schemas']['ActivityProgressCell']
-type GeneratedCourseGradebookResponse = components['schemas']['CourseGradebookResponse']
-type GeneratedSubmissionListResponse = components['schemas']['SubmissionListResponse']
+type GeneratedSubmission = schemas.SubmissionRead
+type GeneratedGradedItem = schemas.GradedItem
+type GeneratedGradingBreakdown = schemas.GradingBreakdown
+type GeneratedActivityProgressCell = schemas.ActivityProgressCell
+type GeneratedCourseGradebookResponse = schemas.CourseGradebookResponse
+type GeneratedSubmissionListResponse = schemas.SubmissionListResponse
 
-export type SubmissionStatus = components['schemas']['SubmissionStatus']
-export type AssessmentType = components['schemas']['AssessmentType']
+export type SubmissionStatus = schemas.SubmissionStatus
+export type AssessmentType = schemas.AssessmentType
 export interface GradedItem extends Omit<GeneratedGradedItem, 'max_score'> {
   max_score: number
 }
@@ -26,18 +26,18 @@ export interface Submission extends Omit<
   user?: SubmissionUser | null
   user_id: number
 }
-export type SubmissionUser = components['schemas']['SubmissionUser']
+export type SubmissionUser = schemas.SubmissionUser
 export interface SubmissionsPage extends Omit<GeneratedSubmissionListResponse, 'items'> {
   items: Submission[]
 }
-export type SubmissionStats = components['schemas']['SubmissionStats']
-export type ItemFeedback = components['schemas']['ItemFeedback']
-export type TeacherGradeInput = components['schemas']['TeacherGradeInput']
-export type BatchGradeItem = components['schemas']['BatchGradeItem']
-export type BatchGradeRequest = components['schemas']['BatchGradeRequest']
-export type BatchGradeResultItem = components['schemas']['BatchGradeResultItem']
-export type BatchGradeResponse = components['schemas']['BatchGradeResponse']
-export type ActivityProgressState = components['schemas']['ActivityProgressState']
+export type SubmissionStats = schemas.SubmissionStats
+export type ItemFeedback = schemas.ItemFeedback
+export type TeacherGradeInput = schemas.TeacherGradeInput
+export type BatchGradeItem = schemas.BatchGradeItem
+export type BatchGradeRequest = schemas.BatchGradeRequest
+export type BatchGradeResultItem = schemas.BatchGradeResultItem
+export type BatchGradeResponse = schemas.BatchGradeResponse
+export type ActivityProgressState = schemas.ActivityProgressState
 export interface ActivityProgressCell extends Omit<
   GeneratedActivityProgressCell,
   'attempt_count' | 'is_late' | 'teacher_action_required'
@@ -49,10 +49,10 @@ export interface ActivityProgressCell extends Omit<
 export interface CourseGradebookResponse extends Omit<GeneratedCourseGradebookResponse, 'cells'> {
   cells: ActivityProgressCell[]
 }
-export type GradebookActivity = components['schemas']['GradebookActivity']
-export type GradebookStudent = components['schemas']['GradebookStudent']
-export type GradebookSummary = components['schemas']['GradebookSummary']
-export type TeacherAction = components['schemas']['TeacherAction']
+export type GradebookActivity = schemas.GradebookActivity
+export type GradebookStudent = schemas.GradebookStudent
+export type GradebookSummary = schemas.GradebookSummary
+export type TeacherAction = schemas.TeacherAction
 
 export function normalizeSubmission(
   submission: Partial<GeneratedSubmission> | Partial<Submission> | null | undefined,

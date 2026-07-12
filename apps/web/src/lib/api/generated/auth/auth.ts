@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   AuthActionResponse,
   AuthLoginResponse,
@@ -37,9 +37,9 @@ import type {
   UserCreate,
   UserRead,
   UserSession,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringifyQueryParam, unknownParser, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -70,12 +70,16 @@ export const forgotPasswordApiV1AuthForgotPasswordPost = async (
   bodyForgotPasswordApiV1AuthForgotPasswordPost: BodyForgotPasswordApiV1AuthForgotPasswordPost,
   options?: RequestInit,
 ): Promise<AuthActionResponse> => {
-  return orvalMutator<AuthActionResponse>(getForgotPasswordApiV1AuthForgotPasswordPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(bodyForgotPasswordApiV1AuthForgotPasswordPost),
-  })
+  return orvalMutator<AuthActionResponse>(
+    getForgotPasswordApiV1AuthForgotPasswordPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(bodyForgotPasswordApiV1AuthForgotPasswordPost),
+    },
+    AuthActionResponse,
+  )
 }
 
 export const getForgotPasswordApiV1AuthForgotPasswordPostMutationOptions = <
@@ -150,7 +154,7 @@ export const getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -169,10 +173,14 @@ export const googleAuthorizeApiV1AuthGoogleAuthorizeGet = async (
   params: GoogleAuthorizeApiV1AuthGoogleAuthorizeGetParams,
   options?: RequestInit,
 ): Promise<unknown> => {
-  return orvalMutator<unknown>(getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<unknown>(
+    getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    unknownParser,
+  )
 }
 
 export const getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetQueryKey = (
@@ -197,7 +205,7 @@ export const getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetQueryOptions = <
 
   const queryKey = queryOptions?.queryKey ?? getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetQueryKey(params)
 
-  const queryFn: QueryFunction = ({ signal }) =>
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleAuthorizeApiV1AuthGoogleAuthorizeGet>>> = ({ signal }) =>
     googleAuthorizeApiV1AuthGoogleAuthorizeGet(params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
@@ -309,7 +317,7 @@ export const getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetSuspenseQueryOptions =
 
   const queryKey = queryOptions?.queryKey ?? getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetQueryKey(params)
 
-  const queryFn: QueryFunction = ({ signal }) =>
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleAuthorizeApiV1AuthGoogleAuthorizeGet>>> = ({ signal }) =>
     googleAuthorizeApiV1AuthGoogleAuthorizeGet(params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
@@ -396,7 +404,7 @@ export const getGoogleCallbackApiV1AuthGoogleCallbackGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -415,10 +423,14 @@ export const googleCallbackApiV1AuthGoogleCallbackGet = async (
   params?: GoogleCallbackApiV1AuthGoogleCallbackGetParams,
   options?: RequestInit,
 ): Promise<unknown> => {
-  return orvalMutator<unknown>(getGoogleCallbackApiV1AuthGoogleCallbackGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<unknown>(
+    getGoogleCallbackApiV1AuthGoogleCallbackGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    unknownParser,
+  )
 }
 
 export const getGoogleCallbackApiV1AuthGoogleCallbackGetQueryKey = (
@@ -443,7 +455,7 @@ export const getGoogleCallbackApiV1AuthGoogleCallbackGetQueryOptions = <
 
   const queryKey = queryOptions?.queryKey ?? getGoogleCallbackApiV1AuthGoogleCallbackGetQueryKey(params)
 
-  const queryFn: QueryFunction = ({ signal }) =>
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleCallbackApiV1AuthGoogleCallbackGet>>> = ({ signal }) =>
     googleCallbackApiV1AuthGoogleCallbackGet(params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
@@ -555,7 +567,7 @@ export const getGoogleCallbackApiV1AuthGoogleCallbackGetSuspenseQueryOptions = <
 
   const queryKey = queryOptions?.queryKey ?? getGoogleCallbackApiV1AuthGoogleCallbackGetQueryKey(params)
 
-  const queryFn: QueryFunction = ({ signal }) =>
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleCallbackApiV1AuthGoogleCallbackGet>>> = ({ signal }) =>
     googleCallbackApiV1AuthGoogleCallbackGet(params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
@@ -662,12 +674,16 @@ export const loginApiV1AuthLoginPost = async (
   }
   formUrlEncoded.append(`username`, bodyLoginApiV1AuthLoginPost.username)
 
-  return orvalMutator<AuthLoginResponse>(getLoginApiV1AuthLoginPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...options?.headers },
-    body: formUrlEncoded,
-  })
+  return orvalMutator<AuthLoginResponse>(
+    getLoginApiV1AuthLoginPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...options?.headers },
+      body: formUrlEncoded,
+    },
+    AuthLoginResponse,
+  )
 }
 
 export const getLoginApiV1AuthLoginPostMutationOptions = <
@@ -740,10 +756,14 @@ export const getLogoutApiV1AuthLogoutPostUrl = () => {
  * @summary Logout
  */
 export const logoutApiV1AuthLogoutPost = async (options?: RequestInit): Promise<void> => {
-  return orvalMutator<void>(getLogoutApiV1AuthLogoutPostUrl(), {
-    ...options,
-    method: 'POST',
-  })
+  return orvalMutator<void>(
+    getLogoutApiV1AuthLogoutPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+    },
+    voidParser,
+  )
 }
 
 export const getLogoutApiV1AuthLogoutPostMutationOptions = <
@@ -791,10 +811,14 @@ export const getGetMeApiV1AuthMeGetUrl = () => {
  * @summary Get Me
  */
 export const getMeApiV1AuthMeGet = async (options?: RequestInit): Promise<UserSession> => {
-  return orvalMutator<UserSession>(getGetMeApiV1AuthMeGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserSession>(
+    getGetMeApiV1AuthMeGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserSession,
+  )
 }
 
 export const getGetMeApiV1AuthMeGetQueryKey = () => {
@@ -980,10 +1004,14 @@ export const getRefreshTokenApiV1AuthRefreshPostUrl = () => {
  * @summary Refresh Token
  */
 export const refreshTokenApiV1AuthRefreshPost = async (options?: RequestInit): Promise<AuthRefreshResponse> => {
-  return orvalMutator<AuthRefreshResponse>(getRefreshTokenApiV1AuthRefreshPostUrl(), {
-    ...options,
-    method: 'POST',
-  })
+  return orvalMutator<AuthRefreshResponse>(
+    getRefreshTokenApiV1AuthRefreshPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+    },
+    AuthRefreshResponse,
+  )
 }
 
 export const getRefreshTokenApiV1AuthRefreshPostMutationOptions = <
@@ -1036,12 +1064,16 @@ export const registerRegisterApiV1AuthRegisterPost = async (
   userCreate: UserCreate,
   options?: RequestInit,
 ): Promise<UserRead> => {
-  return orvalMutator<UserRead>(getRegisterRegisterApiV1AuthRegisterPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(userCreate),
-  })
+  return orvalMutator<UserRead>(
+    getRegisterRegisterApiV1AuthRegisterPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(userCreate),
+    },
+    UserRead,
+  )
 }
 
 export const getRegisterRegisterApiV1AuthRegisterPostMutationOptions = <
@@ -1119,12 +1151,16 @@ export const resetPasswordApiV1AuthResetPasswordPost = async (
   bodyResetPasswordApiV1AuthResetPasswordPost: BodyResetPasswordApiV1AuthResetPasswordPost,
   options?: RequestInit,
 ): Promise<AuthActionResponse> => {
-  return orvalMutator<AuthActionResponse>(getResetPasswordApiV1AuthResetPasswordPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(bodyResetPasswordApiV1AuthResetPasswordPost),
-  })
+  return orvalMutator<AuthActionResponse>(
+    getResetPasswordApiV1AuthResetPasswordPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(bodyResetPasswordApiV1AuthResetPasswordPost),
+    },
+    AuthActionResponse,
+  )
 }
 
 export const getResetPasswordApiV1AuthResetPasswordPostMutationOptions = <
@@ -1199,10 +1235,14 @@ export const getListSessionsApiV1AuthSessionsGetUrl = () => {
  * @summary List Sessions
  */
 export const listSessionsApiV1AuthSessionsGet = async (options?: RequestInit): Promise<AuthSessionRead[]> => {
-  return orvalMutator<AuthSessionRead[]>(getListSessionsApiV1AuthSessionsGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AuthSessionRead[]>(
+    getListSessionsApiV1AuthSessionsGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(AuthSessionRead),
+  )
 }
 
 export const getListSessionsApiV1AuthSessionsGetQueryKey = () => {

@@ -7,7 +7,7 @@ import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeeUsers } from '@/lib/
 import { getEditableCourses } from '@services/courses/courses'
 import { getAdminAnalyticsOverview, getTeacherOverview } from '@services/analytics/teacher'
 import { buildDashboardWorkQueue, DashboardWorkQueue } from '@/features/work-queue'
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 
 import type { Action, Resource, Scope } from '@/types/permissions'
 import type { AdminAnalyticsResponse, TeacherOverviewResponse } from '@/types/analytics'
@@ -24,6 +24,26 @@ interface AIUsageSummary {
   remaining_budget: number
 }
 
+interface WorkQueueApiResponse {
+  items: {
+    id: string
+    role: 'learner' | 'teacher'
+    kind: string
+    status: string
+    priority: 'critical' | 'high' | 'normal' | 'low'
+    title: string
+    description: string
+    href: string
+    primary_action: string
+    course_title?: string | null
+    activity_title?: string | null
+    due_at?: string | null
+    created_at?: string | null
+  }[]
+  total: number
+  next_cursor?: string | null
+}
+
 const analyticsQueueQuery = {
   window: '28d',
   compare: 'previous_period',
@@ -34,18 +54,12 @@ const analyticsQueueQuery = {
   timezone: 'UTC',
 } as const
 
-const dashboardQueueCopy = {
-  priorityLabel: 'Priority Queue',
-  title: 'Start With Work That Needs a Person',
-  description: 'The dashboard now starts with role-specific work, then keeps sections and tools below for browsing.',
-  browseLabel: 'Browse',
-  toolsTitle: 'Tools & Sections',
-  toolsDescription: 'Use these when you need to explore, configure, or jump to a workspace.',
-  openLabel: 'Open',
-}
-
 export default async function PlatformDashHomePage() {
-  const [tGeneral, session] = await Promise.all([getTranslations('General'), requireSession()])
+  const [tGeneral, tQueue, session] = await Promise.all([
+    getTranslations('General'),
+    getTranslations('DashboardWorkQueue'),
+    requireSession(),
+  ])
   const permsSet = new Set<string>(session.permissions)
 
   const can = (resource: Resource, action: Action, scope: Scope): boolean =>
@@ -58,20 +72,106 @@ export default async function PlatformDashHomePage() {
     hasAdminAccess: canSeeAdmin(can),
   } satisfies DashboardAccess
 
-  const [courseSummaryResult, teacherOverviewResult, adminOverviewResult, aiUsageResult] = await Promise.all([
+  const [
+    courseSummaryResult,
+    teacherOverviewResult,
+    adminOverviewResult,
+    aiUsageResult,
+    learnerWorkResult,
+    teacherWorkResult,
+  ] = await Promise.all([
     access.hasCoursesAccess ? getSafeEditableCourseSummary() : Promise.resolve({ data: null, error: null }),
     access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve({ data: null, error: null }),
     access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve({ data: null, error: null }),
     access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve({ data: null, error: null }),
+    getSafeLearnerWork(),
+    access.hasCoursesAccess || access.hasAnalyticsAccess
+      ? getSafeTeacherWork()
+      : Promise.resolve({ data: null, error: null }),
   ])
 
   const courseSummary = courseSummaryResult.data
   const teacherOverview = teacherOverviewResult.data
   const adminOverview = adminOverviewResult.data
   const aiUsage = aiUsageResult.data
+  const learnerWork = learnerWorkResult.data
+  const teacherWork = teacherWorkResult.data
+  const localizeWorkItem = (item: WorkQueueApiResponse['items'][number]) => {
+    const activity = item.activity_title || item.title
+    const course = item.course_title || tQueue('items.unknownCourse')
+    switch (item.kind) {
+      case 'returned_for_revision': {
+        return {
+          ...item,
+          title: tQueue('items.returned.title', { activity }),
+          description: tQueue('items.returned.description', { course }),
+          primary_action: tQueue('items.returned.action'),
+          groupLabel: tQueue('groups.returned'),
+        }
+      }
+      case 'waiting_for_grade': {
+        return {
+          ...item,
+          title: tQueue('items.waiting.title', { activity }),
+          description: tQueue('items.waiting.description', { course }),
+          primary_action: tQueue('items.waiting.action'),
+          groupLabel: tQueue('groups.waiting'),
+        }
+      }
+      case 'feedback_released': {
+        return {
+          ...item,
+          title: tQueue('items.feedback.title', { activity }),
+          description: tQueue('items.feedback.description', { course }),
+          primary_action: tQueue('items.feedback.action'),
+          groupLabel: tQueue('groups.released'),
+        }
+      }
+      case 'overdue':
+      case 'in_progress': {
+        return {
+          ...item,
+          title: tQueue(item.kind === 'overdue' ? 'items.overdue.title' : 'items.inProgress.title', { activity }),
+          description: tQueue(item.kind === 'overdue' ? 'items.overdue.description' : 'items.inProgress.description', {
+            course,
+          }),
+          primary_action: tQueue('items.inProgress.action'),
+          groupLabel: tQueue(item.kind === 'overdue' ? 'groups.today' : 'groups.dueSoon'),
+        }
+      }
+      case 'awaiting_release': {
+        return {
+          ...item,
+          title: tQueue('items.awaitingRelease.title', { activity }),
+          description: tQueue('items.awaitingRelease.description', { course }),
+          primary_action: tQueue('items.awaitingRelease.action'),
+        }
+      }
+      case 'needs_grading':
+      case 'sla_breach': {
+        return {
+          ...item,
+          title: tQueue(item.kind === 'sla_breach' ? 'items.slaBreach.title' : 'items.needsGrading.title', {
+            activity,
+          }),
+          description: tQueue(
+            item.kind === 'sla_breach' ? 'items.slaBreach.description' : 'items.needsGrading.description',
+            { course },
+          ),
+          primary_action: tQueue('items.needsGrading.action'),
+        }
+      }
+      default: {
+        return item
+      }
+    }
+  }
 
   const queue = buildDashboardWorkQueue({
     access,
+    learnerSignal: learnerWork
+      ? { items: learnerWork.items.map(localizeWorkItem), signalAvailable: true }
+      : { items: [], signalAvailable: false },
     courseSummary: courseSummary
       ? {
           ...courseSummary,
@@ -104,6 +204,7 @@ export default async function PlatformDashHomePage() {
           })),
           signalAvailable: true,
           errorMessage: null,
+          workItems: teacherWork?.items.map(localizeWorkItem) ?? [],
         }
       : access.hasAnalyticsAccess
         ? {
@@ -115,6 +216,7 @@ export default async function PlatformDashHomePage() {
             backlogItems: [],
             signalAvailable: false,
             errorMessage: teacherOverviewResult.error,
+            workItems: teacherWork?.items.map(localizeWorkItem) ?? [],
           }
         : null,
     adminSignal: adminOverview
@@ -149,7 +251,19 @@ export default async function PlatformDashHomePage() {
       <DashHeader title={tGeneral('dashboard')} description={tGeneral('dashboardWelcome')} />
 
       <main className="container mx-auto flex-1 px-4 py-8 md:py-10 lg:px-8">
-        <DashboardWorkQueue sections={queue.sections} tools={queue.tools} copy={dashboardQueueCopy} />
+        <DashboardWorkQueue
+          sections={queue.sections}
+          tools={queue.tools}
+          copy={{
+            priorityLabel: tQueue('priorityLabel'),
+            title: tQueue('title'),
+            description: tQueue('description'),
+            browseLabel: tQueue('browseLabel'),
+            toolsTitle: tQueue('toolsTitle'),
+            toolsDescription: tQueue('toolsDescription'),
+            openLabel: tQueue('openLabel'),
+          }}
+        />
       </main>
     </div>
   )
@@ -190,10 +304,30 @@ async function getSafeAdminOverview(): Promise<{ data: AdminAnalyticsResponse | 
 
 async function getSafeAIUsageSummary(): Promise<{ data: AIUsageSummary | null; error: string | null }> {
   try {
-    const data = await apiFetcher<AIUsageSummary>('ai/usage')
+    const data = await apiJson<AIUsageSummary>('ai/usage')
     return { data, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load AI usage summary:', error)
     return { data: null, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+async function getSafeLearnerWork(): Promise<{ data: WorkQueueApiResponse | null; error: string | null }> {
+  try {
+    const data = await apiJson<WorkQueueApiResponse>('me/work?role=learner&limit=50')
+    return { data, error: null }
+  } catch (error) {
+    console.warn('[dashboard] Failed to load learner work:', error)
+    return { data: null, error: 'learner_work_unavailable' }
+  }
+}
+
+async function getSafeTeacherWork(): Promise<{ data: WorkQueueApiResponse | null; error: string | null }> {
+  try {
+    const data = await apiJson<WorkQueueApiResponse>('me/work?role=teacher&limit=50')
+    return { data, error: null }
+  } catch (error) {
+    console.warn('[dashboard] Failed to load teacher work:', error)
+    return { data: null, error: 'teacher_work_unavailable' }
   }
 }

@@ -280,6 +280,7 @@ def test_eligible_usergroups_are_server_searchable_and_include_member_counts(
         )
         session.add(UserGroupUser(usergroup_id=801, user_id=STUDENT_ID))
         session.add(UserGroupUser(usergroup_id=801, user_id=OTHER_ID))
+        session.add(UserGroupResource(usergroup_id=801, resource_uuid="course_access"))
         session.commit()
 
     response = api_client.get(
@@ -316,6 +317,19 @@ def _seed_assessment(db_session_factory: Callable[[], Session]) -> tuple[str, in
             update_date=now,
         )
         session.add(course)
+        course_group = UserGroup(
+            id=901,
+            usergroup_uuid="group_course_access",
+            name="Access course learners",
+            description="Learners explicitly assigned to the access test course",
+            creator_id=TEACHER_ID,
+            creation_date=now,
+            update_date=now,
+        )
+        session.add(course_group)
+        session.add(UserGroupResource(usergroup_id=901, resource_uuid=course.course_uuid))
+        session.add(UserGroupUser(usergroup_id=901, user_id=STUDENT_ID))
+        session.add(UserGroupUser(usergroup_id=901, user_id=OTHER_ID))
         chapter = Chapter(id=401, chapter_uuid="chapter_access", name="Chapter", course_id=course.id)
         session.add(chapter)
         activity = Activity(

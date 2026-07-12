@@ -49,7 +49,6 @@ interface ProfileDetail {
   text: string
 }
 
-
 interface ProfileImage {
   caption?: string
   url: string
@@ -394,25 +393,24 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                             <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
                               {userCourses.map(course => {
                                 const { authors, description, thumbnail_image, ...courseWithoutAuthors } = course
-                                const mappedAuthors: AppCourseAuthor[] | undefined =
-                                  authors?.flatMap((author) => {
-                                    if (!author.user) return []
-                                    return [
-                                      {
-                                        authorship: author.authorship,
-                                        authorship_status: author.authorship_status,
-                                        user: {
-                                          id: author.user.id,
-                                          user_uuid: author.user.user_uuid,
-                                          avatar_image: author.user.avatar_image ?? '',
-                                          first_name: author.user.first_name,
-                                          ...(author.user.middle_name ? { middle_name: author.user.middle_name } : {}),
-                                          last_name: author.user.last_name,
-                                          username: author.user.username,
-                                        },
+                                const mappedAuthors: AppCourseAuthor[] | undefined = authors?.flatMap(author => {
+                                  if (!author.user) return []
+                                  return [
+                                    {
+                                      authorship: author.authorship,
+                                      authorship_status: author.authorship_status,
+                                      user: {
+                                        id: author.user.id,
+                                        user_uuid: author.user.user_uuid,
+                                        avatar_image: author.user.avatar_image ?? '',
+                                        first_name: author.user.first_name,
+                                        ...(author.user.middle_name ? { middle_name: author.user.middle_name } : {}),
+                                        last_name: author.user.last_name,
+                                        username: author.user.username,
                                       },
-                                    ]
-                                  })
+                                    },
+                                  ]
+                                })
                                 const courseThumbnailData: CourseThumbnailData = {
                                   course_uuid: courseWithoutAuthors.course_uuid,
                                   name: courseWithoutAuthors.name,

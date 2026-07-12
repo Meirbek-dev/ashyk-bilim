@@ -13,7 +13,7 @@ import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout'
 import AttemptEntryCard from '@/features/assessments/shell/AttemptEntryCard'
 import AttemptResultCard from '@/features/assessments/shell/AttemptResultCard'
 import { ErrorState } from '@/components/ui/error-state'
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useApiError } from '@/hooks/useApiError'
 
@@ -94,12 +94,9 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       if (!vm.assessmentUuid) return
       setIsPending(true)
       try {
-        const response = await apiFetch(`assessments/${vm.assessmentUuid}/start`, {
+        await apiJson(`assessments/${vm.assessmentUuid}/start`, {
           method: 'POST',
         })
-        if (!response.ok) {
-          throw new Error(await response.text())
-        }
         await Promise.all([
           queryClient.invalidateQueries({
             queryKey: queryKeys.assessments.activity(activityUuid),
@@ -132,20 +129,20 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       setBottomBarAction(null)
     }
   }, [
-	isPreflightMode,
-	canAct,
-	recommendedAction,
-	vm,
-	isPending,
-	activityUuid,
-	courseUuid,
-	queryClient,
-	router,
-	setBottomBarAction,
-	setMode,
-	t,
-	toastApiError
-])
+    isPreflightMode,
+    canAct,
+    recommendedAction,
+    vm,
+    isPending,
+    activityUuid,
+    courseUuid,
+    queryClient,
+    router,
+    setBottomBarAction,
+    setMode,
+    t,
+    toastApiError,
+  ])
 
   // ── Loading ─────────────────────────────────────────────────────────────────
 

@@ -42,7 +42,11 @@ def _source(
 
 
 def assemble_course_context_bundle(
-    db_session: Session, course: Course, *, include_unpublished: bool
+    db_session: Session,
+    course: Course,
+    *,
+    include_unpublished: bool,
+    activity_uuid: str | None = None,
 ) -> AIContextBundle:
     if course.id is None:
         return AIContextBundle(text="", sources=[])
@@ -56,6 +60,13 @@ def assemble_course_context_bundle(
     ).all()
     if not include_unpublished:
         activities = [activity for activity in activities if activity.published]
+    if activity_uuid:
+        normalized_activity_uuid = activity_uuid.removeprefix("activity_")
+        activities = [
+            activity
+            for activity in activities
+            if (activity.activity_uuid or "").removeprefix("activity_") == normalized_activity_uuid
+        ]
 
     lines = [
         f"Course: {course.name}",
@@ -84,10 +95,6 @@ def assemble_course_context_bundle(
             f"Content: {_json_snippet(activity.content)}",
             f"Details: {_json_snippet(activity.details)}",
         ]
-        lines.extend([
-            "",
-            *activity_lines,
-        ])
         sources.append(
             _source(
                 f"activity:{activity.activity_uuid or activity.id}",
@@ -119,7 +126,6 @@ def assemble_course_context_bundle(
                     f"Assessment: {assessment.title or assessment.assessment_uuid}",
                     f"Assessment settings: {_json_snippet(settings_json)}",
                 ]
-                lines.extend(assessment_lines)
                 sources.append(
                     _source(
                         f"assessment:{assessment.assessment_uuid or assessment.id}",
@@ -132,7 +138,6 @@ def assemble_course_context_bundle(
                 )
                 for item in items:
                     item_line = f"Assessment item: {item.title} {item.kind} {_json_snippet(item.body_json, limit=700)}"
-                    lines.append(item_line)
                     sources.append(
                         _source(
                             f"assessment_item:{item.id}",

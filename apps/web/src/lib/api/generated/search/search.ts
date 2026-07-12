@@ -20,9 +20,9 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type { ApiErrorEnvelope, ApiSearchPlatformContentApiV1SearchGetParams, SearchResult } from '../api.schemas'
+import { ApiErrorEnvelope, ApiSearchPlatformContentApiV1SearchGetParams, SearchResult } from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -47,7 +47,7 @@ export const getApiSearchPlatformContentApiV1SearchGetUrl = (params: ApiSearchPl
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -63,10 +63,14 @@ export const apiSearchPlatformContentApiV1SearchGet = async (
   params: ApiSearchPlatformContentApiV1SearchGetParams,
   options?: RequestInit,
 ): Promise<SearchResult> => {
-  return orvalMutator<SearchResult>(getApiSearchPlatformContentApiV1SearchGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<SearchResult>(
+    getApiSearchPlatformContentApiV1SearchGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    SearchResult,
+  )
 }
 
 export const getApiSearchPlatformContentApiV1SearchGetQueryKey = (

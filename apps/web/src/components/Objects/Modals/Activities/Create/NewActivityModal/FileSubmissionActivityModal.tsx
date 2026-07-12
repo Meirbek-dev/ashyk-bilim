@@ -126,7 +126,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
     }
     setIsSubmitting(true)
     try {
-      const result = await createFileSubmissionActivity({
+      await createFileSubmissionActivity({
         title,
         instructions,
         due_at: dueAt || null,
@@ -136,10 +136,6 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
         course_id: courseId,
         chapter_id: chapterId,
       })
-      if (!result.success) {
-        toast.error(t('createError'))
-        return
-      }
       toast.success(t('createSuccess'))
       if (course?.courseStructure?.course_uuid) {
         await queryClient.invalidateQueries({

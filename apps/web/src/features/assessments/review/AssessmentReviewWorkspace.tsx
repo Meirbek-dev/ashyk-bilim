@@ -5,7 +5,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { assessmentTypeToKind } from '@/features/assessments/domain/view-models'
 import { loadKindModule } from '@/features/assessments/registry'
@@ -48,7 +48,7 @@ export default function AssessmentReviewWorkspace({
   } = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.activity(cleanUuid),
-      queryFn: () => apiFetcher<AssessmentReviewDetail>(`assessments/activity/${cleanUuid}`),
+      queryFn: () => apiJson<AssessmentReviewDetail>(`assessments/activity/${cleanUuid}`),
       enabled: Boolean(cleanUuid),
     }),
   )

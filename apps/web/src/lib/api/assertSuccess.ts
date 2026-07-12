@@ -1,14 +1,5 @@
 import type { ApiErrorEnvelope, ApiFieldError } from '@/lib/api/generated/api.schemas'
 
-/**
- * Unified API error handling for mutation hooks.
- *
- * Replaces three near-identical helpers that existed across mutation files:
- *  - ensureMutationSuccess  (useCoursesMutations)
- *  - toError                (useActivityMutations)
- *  - ensureSuccess          (useChapterMutations - was broken: only threw on 409)
- */
-
 export type ClientErrorCode =
   | 'CLIENT_TIMEOUT'
   | 'NETWORK_UNAVAILABLE'
@@ -88,7 +79,7 @@ function formatIssueDetail(detail: unknown): string | null {
   return `${firstMessages.join(' ')}${suffix}`
 }
 
-function legacyMessage(data: Record<string, unknown> | null, response: ResponseLike): string {
+function fallbackMessage(data: Record<string, unknown> | null, response: ResponseLike): string {
   const detail = data?.detail
   return (
     (typeof detail === 'string' ? detail : null) ??
@@ -105,7 +96,7 @@ export function getApiErrorMessage(payload: unknown, fallback = 'Request failed'
 
   const data = asRecord(payload)
   return (
-    legacyMessage(data, {
+    fallbackMessage(data, {
       message: fallback,
     }) || fallback
   )
@@ -154,7 +145,7 @@ export class APIError extends Error {
     const data = responseRecord && 'data' in responseRecord ? responseRecord.data : null
     const dataRecord = asRecord(data)
     const envelope = parseApiErrorEnvelope(data)
-    const message = envelope?.message ?? legacyMessage(dataRecord, responseLike)
+    const message = envelope?.message ?? fallbackMessage(dataRecord, responseLike)
 
     super(message)
     this.name = 'APIError'
@@ -241,17 +232,4 @@ export function isRetryableApiError(error: unknown): boolean {
 export function getSupportReference(error: unknown): string | null {
   if (!isApiError(error)) return null
   return error.requestId || error.headers['x-correlation-id'] || null
-}
-
-/**
- * Asserts that a service-layer response indicates success.
- * Throws {@link APIError} otherwise.
- *
- * Use this with functions that return `{success, status, data, ...}` (i.e.
- * those backed by `getResponseMetadata`).  Functions that use `errorHandling`
- * already throw on non-2xx, so you don't need this for them.
- */
-export function assertSuccess<T extends { success?: boolean }>(response: T): T {
-  if (response?.success) return response
-  throw new APIError(response)
 }

@@ -2,7 +2,8 @@
 
 import { cn } from '@/lib/utils'
 
-import { ActivityAIPanel, useActivityAIDockStyle } from './activity-ai-panel'
+import { ActivityAIPanel } from './activity-ai-panel'
+import { useActivityAIUrlState } from './activity-ai-url-state'
 import type { ActivityAIMode } from './activity-ai-url-state'
 import type { AIScope } from './use-ai-scope-capabilities'
 
@@ -17,11 +18,8 @@ interface ActivityAIDockLayoutProps {
 }
 
 /**
- * Pairs the AI dock's content-spacing style with the floating `ActivityAIPanel` by
- * construction, so a host page cannot render one without the other. This is the only
- * place `ActivityAIPanel` should be rendered from — every activity/studio/editor host
- * should go through this component instead of calling `useActivityAIDockStyle` and
- * spreading the resulting style onto its own root element by hand.
+ * Keeps the workspace and assistant in one responsive layout so the assistant never
+ * covers the content it is meant to explain on desktop.
  */
 export function ActivityAIDockLayout({
   children,
@@ -31,14 +29,13 @@ export function ActivityAIDockLayout({
   panel,
   scope,
 }: ActivityAIDockLayoutProps) {
-  const dockStyle = useActivityAIDockStyle({ defaultMode, enabled, surface: scope.surface })
+  const { open } = useActivityAIUrlState(defaultMode)
+  const docked = enabled !== false && panel !== null && open
 
   return (
-    <>
-      <div className={cn('transition-[padding] duration-200 ease-out', className)} style={dockStyle}>
-        {children}
-      </div>
+    <div className={cn('grid min-w-0 items-start', docked && 'xl:grid-cols-[minmax(0,1fr)_minmax(30rem,36rem)]')}>
+      <div className={cn('min-w-0', className)}>{children}</div>
       {panel !== null ? <ActivityAIPanel scope={scope}>{panel}</ActivityAIPanel> : null}
-    </>
+    </div>
   )
 }

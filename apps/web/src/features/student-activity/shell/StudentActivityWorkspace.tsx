@@ -171,7 +171,7 @@ export default function StudentActivityWorkspace({
         scope={aiScope}
         defaultMode="ask"
         enabled={aiEnabled}
-        panel={aiEnabled ? <CourseAIHub courseUuid={courseUuid} variant="panel" /> : null}
+        panel={aiEnabled ? <CourseAIHub courseUuid={courseUuid} scope={aiScope} variant="panel" /> : null}
         className="relative flex flex-1"
       >
         <main

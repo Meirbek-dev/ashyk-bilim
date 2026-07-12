@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   DashboardRead,
   GetLeaderboardApiV1GamificationLeaderboardGetParams,
@@ -35,9 +35,9 @@ import type {
   UserRankRead,
   XPAwardRequest,
   XPAwardResponse,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -66,10 +66,14 @@ export const getGetUnifiedDashboardApiV1GamificationGetUrl = () => {
  * @summary Get Unified Dashboard
  */
 export const getUnifiedDashboardApiV1GamificationGet = async (options?: RequestInit): Promise<DashboardRead> => {
-  return orvalMutator<DashboardRead>(getGetUnifiedDashboardApiV1GamificationGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<DashboardRead>(
+    getGetUnifiedDashboardApiV1GamificationGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    DashboardRead,
+  )
 }
 
 export const getGetUnifiedDashboardApiV1GamificationGetQueryKey = () => {
@@ -271,7 +275,7 @@ export const getGetLeaderboardApiV1GamificationLeaderboardGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -289,10 +293,14 @@ export const getLeaderboardApiV1GamificationLeaderboardGet = async (
   params?: GetLeaderboardApiV1GamificationLeaderboardGetParams,
   options?: RequestInit,
 ): Promise<LeaderboardRead> => {
-  return orvalMutator<LeaderboardRead>(getGetLeaderboardApiV1GamificationLeaderboardGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<LeaderboardRead>(
+    getGetLeaderboardApiV1GamificationLeaderboardGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    LeaderboardRead,
+  )
 }
 
 export const getGetLeaderboardApiV1GamificationLeaderboardGetQueryKey = (
@@ -522,12 +530,16 @@ export const updatePreferencesApiV1GamificationPreferencesPatch = async (
   updatePreferencesApiV1GamificationPreferencesPatchBody: UpdatePreferencesApiV1GamificationPreferencesPatchBody,
   options?: RequestInit,
 ): Promise<ProfileRead> => {
-  return orvalMutator<ProfileRead>(getUpdatePreferencesApiV1GamificationPreferencesPatchUrl(), {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updatePreferencesApiV1GamificationPreferencesPatchBody),
-  })
+  return orvalMutator<ProfileRead>(
+    getUpdatePreferencesApiV1GamificationPreferencesPatchUrl(),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(updatePreferencesApiV1GamificationPreferencesPatchBody),
+    },
+    ProfileRead,
+  )
 }
 
 export const getUpdatePreferencesApiV1GamificationPreferencesPatchMutationOptions = <
@@ -607,10 +619,14 @@ export const getGetUserRankApiV1GamificationRankGetUrl = () => {
  * @summary Get User Rank
  */
 export const getUserRankApiV1GamificationRankGet = async (options?: RequestInit): Promise<UserRankRead> => {
-  return orvalMutator<UserRankRead>(getGetUserRankApiV1GamificationRankGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserRankRead>(
+    getGetUserRankApiV1GamificationRankGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserRankRead,
+  )
 }
 
 export const getGetUserRankApiV1GamificationRankGetQueryKey = () => {
@@ -812,10 +828,14 @@ export const updateStreakApiV1GamificationStreaksStreakTypePost = async (
   streakType: StreakType,
   options?: RequestInit,
 ): Promise<StreakUpdateRead> => {
-  return orvalMutator<StreakUpdateRead>(getUpdateStreakApiV1GamificationStreaksStreakTypePostUrl(streakType), {
-    ...options,
-    method: 'POST',
-  })
+  return orvalMutator<StreakUpdateRead>(
+    getUpdateStreakApiV1GamificationStreaksStreakTypePostUrl(streakType),
+    {
+      ...options,
+      method: 'POST',
+    },
+    StreakUpdateRead,
+  )
 }
 
 export const getUpdateStreakApiV1GamificationStreaksStreakTypePostMutationOptions = <
@@ -897,12 +917,16 @@ export const awardXpApiV1GamificationXpPost = async (
   xPAwardRequest: XPAwardRequest,
   options?: RequestInit,
 ): Promise<XPAwardResponse> => {
-  return orvalMutator<XPAwardResponse>(getAwardXpApiV1GamificationXpPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(xPAwardRequest),
-  })
+  return orvalMutator<XPAwardResponse>(
+    getAwardXpApiV1GamificationXpPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(xPAwardRequest),
+    },
+    XPAwardResponse,
+  )
 }
 
 export const getAwardXpApiV1GamificationXpPostMutationOptions = <

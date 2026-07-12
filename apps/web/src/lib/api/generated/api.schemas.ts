@@ -23,7 +23,7 @@ export interface AIAdminSettingsRead {
   provider_ready: boolean
 }
 
-export interface AIArtifactReadContentJson { [key: string]: unknown }
+export type AIArtifactReadContentJson = Record<string, unknown>
 
 export interface AIArtifactRead {
   artifact_uuid: string
@@ -34,7 +34,7 @@ export interface AIArtifactRead {
 
 export interface JsonValue {}
 
-export type JsonObject = Record<string, JsonValue>;
+export type JsonObject = Record<string, JsonValue>
 
 export interface AICourseAnalysisRead {
   analysis_uuid: string
@@ -146,7 +146,7 @@ export interface AIRemediationSessionRead {
   updated_at: string
 }
 
-export interface AIRunEventReadPayloadJson { [key: string]: unknown }
+export type AIRunEventReadPayloadJson = Record<string, unknown>
 
 export interface AIRunEventRead {
   event_id: string
@@ -155,7 +155,7 @@ export interface AIRunEventRead {
   sequence: number
 }
 
-export interface AIRunStatusReadRunMetadata { [key: string]: unknown }
+export type AIRunStatusReadRunMetadata = Record<string, unknown>
 
 export interface AIRunStatusRead {
   error_code?: string | null
@@ -228,9 +228,9 @@ export interface AIUsageSummary {
   total_runs: number
 }
 
-export interface ActivityAssessmentPolicyReadAntiCheatJson { [key: string]: unknown }
+export type ActivityAssessmentPolicyReadAntiCheatJson = Record<string, unknown>
 
-export interface ActivityAssessmentPolicyReadSettingsJson { [key: string]: unknown }
+export type ActivityAssessmentPolicyReadSettingsJson = Record<string, unknown>
 
 export type AssessmentCompletionRule = (typeof AssessmentCompletionRule)[keyof typeof AssessmentCompletionRule]
 
@@ -376,11 +376,11 @@ export interface ActivityAssessmentPolicyRead {
   time_limit_seconds?: number | null
 }
 
-export interface ActivityCreateContent { [key: string]: unknown }
+export type ActivityCreateContent = Record<string, unknown>
 
 export type ActivityCreateDetails = Record<string, unknown> | null
 
-export interface ActivityCreateSettings { [key: string]: unknown }
+export type ActivityCreateSettings = Record<string, unknown>
 
 export type ActivitySubTypeEnum = (typeof ActivitySubTypeEnum)[keyof typeof ActivitySubTypeEnum]
 
@@ -474,11 +474,11 @@ export interface ActivityProgressCell {
   user_id: number
 }
 
-export interface ActivityReadContent { [key: string]: unknown }
+export type ActivityReadContent = Record<string, unknown>
 
 export type ActivityReadDetails = Record<string, unknown> | null
 
-export interface ActivityReadSettings { [key: string]: unknown }
+export type ActivityReadSettings = Record<string, unknown>
 
 export interface ActivityRead {
   activity_sub_type: ActivitySubTypeEnum
@@ -498,11 +498,11 @@ export interface ActivityRead {
   update_date: string
 }
 
-export interface ActivityReadWithPermissionsContent { [key: string]: unknown }
+export type ActivityReadWithPermissionsContent = Record<string, unknown>
 
 export type ActivityReadWithPermissionsDetails = Record<string, unknown> | null
 
-export interface ActivityReadWithPermissionsSettings { [key: string]: unknown }
+export type ActivityReadWithPermissionsSettings = Record<string, unknown>
 
 /**
  * Activity response with permission metadata.
@@ -639,7 +639,7 @@ export const AnalyticsDataQualityConfidenceLevel = {
   high: 'high',
 } as const
 
-export interface AnalyticsDataQualityCoursesWithoutEnoughDataItem { [key: string]: unknown }
+export type AnalyticsDataQualityCoursesWithoutEnoughDataItem = Record<string, unknown>
 
 export type AnalyticsDataQualityMode = (typeof AnalyticsDataQualityMode)[keyof typeof AnalyticsDataQualityMode]
 
@@ -798,7 +798,7 @@ export const FormItemAnswerKind = {
   FORM: 'FORM',
 } as const
 
-export interface FormItemAnswerValues { [key: string]: string }
+export type FormItemAnswerValues = Record<string, string>
 
 export interface FormItemAnswer {
   kind: FormItemAnswerKind
@@ -811,7 +811,7 @@ export const CodeItemAnswerKind = {
   CODE: 'CODE',
 } as const
 
-export interface CodeRunResultDetailsItem { [key: string]: unknown }
+export type CodeRunResultDetailsItem = Record<string, unknown>
 
 export interface CodeRunResult {
   details?: CodeRunResultDetailsItem[]
@@ -873,11 +873,11 @@ export const AssessmentAttemptProjectionReleaseState = {
   RETURNED_FOR_REVISION: 'RETURNED_FOR_REVISION',
 } as const
 
-export interface AssessmentEffectivePolicyAntiCheatJson { [key: string]: unknown }
+export type AssessmentEffectivePolicyAntiCheatJson = Record<string, unknown>
 
-export interface AssessmentEffectivePolicyLatePolicy { [key: string]: unknown }
+export type AssessmentEffectivePolicyLatePolicy = Record<string, unknown>
 
-export interface AssessmentEffectivePolicySettingsJson { [key: string]: unknown }
+export type AssessmentEffectivePolicySettingsJson = Record<string, unknown>
 
 export interface AssessmentEffectivePolicy {
   allow_late?: boolean
@@ -1312,9 +1312,9 @@ export interface CodeTestCase {
   weight?: number
 }
 
-export interface CodeItemBodyReferenceSolutions { [key: string]: string }
+export type CodeItemBodyReferenceSolutions = Record<string, string>
 
-export interface CodeItemBodyStarterCode { [key: string]: string }
+export type CodeItemBodyStarterCode = Record<string, string>
 
 export interface CodeItemBody {
   constraints?: string[]
@@ -1689,7 +1689,7 @@ export const AtRiskLearnerRowConfidenceLevel = {
   high: 'high',
 } as const
 
-export interface AtRiskLearnerRowRiskComponents { [key: string]: number }
+export type AtRiskLearnerRowRiskComponents = Record<string, number>
 
 export type AtRiskLearnerRowRiskLevel = (typeof AtRiskLearnerRowRiskLevel)[keyof typeof AtRiskLearnerRowRiskLevel]
 
@@ -1887,13 +1887,13 @@ export interface BatchPermissionCheckRequest {
   checks: PermissionCheckRequest[]
 }
 
-export interface BatchPermissionCheckResponseResults { [key: string]: boolean }
+export type BatchPermissionCheckResponseResults = Record<string, boolean>
 
 export interface BatchPermissionCheckResponse {
   results: BatchPermissionCheckResponseResults
 }
 
-export interface BlockReadContent { [key: string]: unknown }
+export type BlockReadContent = Record<string, unknown>
 
 export type BlockTypeEnum = (typeof BlockTypeEnum)[keyof typeof BlockTypeEnum]
 
@@ -2094,7 +2094,7 @@ export interface CertificateUserSummary {
   username: string
 }
 
-export interface CertificationCreateConfig { [key: string]: unknown }
+export type CertificationCreateConfig = Record<string, unknown>
 
 export interface CertificationCreate {
   config?: CertificationCreateConfig
@@ -2106,7 +2106,7 @@ export interface CertificationDetailResponse {
   detail: string
 }
 
-export interface CertificationReadConfig { [key: string]: unknown }
+export type CertificationReadConfig = Record<string, unknown>
 
 export interface CertificationRead {
   certification_uuid: string
@@ -2241,7 +2241,7 @@ export interface CodeChallengeValidationResult {
   total?: number | null
 }
 
-export interface CodeChallengeValidationResponseResults { [key: string]: CodeChallengeValidationResult }
+export type CodeChallengeValidationResponseResults = Record<string, CodeChallengeValidationResult>
 
 export interface CodeChallengeValidationResponse {
   results: CodeChallengeValidationResponseResults
@@ -2828,7 +2828,7 @@ export interface DeadlineExtensionRequest {
   user_uuids: string[]
 }
 
-export type DevConfigResponse = Record<string, unknown>;
+export type DevConfigResponse = Record<string, unknown>
 
 export interface DiscussionLikeRead {
   creation_date: string
@@ -2853,7 +2853,7 @@ export interface DismissSuggestionRequest {
   suggestion_id: string
 }
 
-export interface DrillThroughResponseItemsItem { [key: string]: unknown }
+export type DrillThroughResponseItemsItem = Record<string, unknown>
 
 export type DrillThroughResponseMetric = (typeof DrillThroughResponseMetric)[keyof typeof DrillThroughResponseMetric]
 
@@ -3195,7 +3195,7 @@ export interface GradingDraftSave {
   status?: string
 }
 
-export interface ValidationErrorCtx { [key: string]: unknown }
+export type ValidationErrorCtx = Record<string, unknown>
 
 export interface ValidationError {
   ctx?: ValidationErrorCtx
@@ -3209,7 +3209,7 @@ export interface HTTPValidationError {
   detail?: ValidationError[]
 }
 
-export interface HealthStatusResponseChecks { [key: string]: JsonObject }
+export type HealthStatusResponseChecks = Record<string, JsonObject>
 
 export interface HealthStatusResponse {
   checks: HealthStatusResponseChecks
@@ -3605,7 +3605,7 @@ export interface RootResponse {
   Message: string
 }
 
-export interface SavedAnalyticsViewCreateQuery { [key: string]: unknown }
+export type SavedAnalyticsViewCreateQuery = Record<string, unknown>
 
 export interface SavedAnalyticsViewCreate {
   name: string
@@ -3613,7 +3613,7 @@ export interface SavedAnalyticsViewCreate {
   view_type?: string
 }
 
-export interface SavedAnalyticsViewRowQuery { [key: string]: unknown }
+export type SavedAnalyticsViewRowQuery = Record<string, unknown>
 
 export interface SavedAnalyticsViewRow {
   created_at: string
@@ -4016,9 +4016,9 @@ export interface TeacherAssessmentListResponse {
   total?: number
 }
 
-export interface TeacherCourseDetailResponseCourse { [key: string]: number | string }
+export type TeacherCourseDetailResponseCourse = Record<string, number | string>
 
-export interface TeacherCourseDetailResponseFunnels { [key: string]: FunnelStep[] }
+export type TeacherCourseDetailResponseFunnels = Record<string, FunnelStep[]>
 
 export interface TimeSeriesPoint {
   bucket_start: string
@@ -4104,7 +4104,7 @@ export const TeacherInterventionCreateInterventionType = {
   learner_recovered: 'learner_recovered',
 } as const
 
-export interface TeacherInterventionCreatePayload { [key: string]: unknown }
+export type TeacherInterventionCreatePayload = Record<string, unknown>
 
 export type TeacherInterventionCreateStatus =
   (typeof TeacherInterventionCreateStatus)[keyof typeof TeacherInterventionCreateStatus]
@@ -5882,7 +5882,7 @@ export interface GetLeaderboardApiV1GamificationLeaderboardGetParams {
   offset?: number
 }
 
-export interface UpdatePreferencesApiV1GamificationPreferencesPatchBody { [key: string]: unknown }
+export type UpdatePreferencesApiV1GamificationPreferencesPatchBody = Record<string, unknown>
 
 export interface ApiGetCourseGradebookApiV1GradingCoursesCourseUuidGradebookGetParams {
   page?: number | null

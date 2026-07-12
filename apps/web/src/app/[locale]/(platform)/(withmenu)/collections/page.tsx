@@ -13,6 +13,7 @@ import { getTranslations } from 'next-intl/server'
 import Link from '@components/ui/AppLink'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
+import { connection } from 'next/server'
 
 interface MetadataProps {
   params: Promise<{ locale: string }>
@@ -74,6 +75,7 @@ export default async function PlatformCollectionsPage(props: PageProps) {
 }
 
 async function CollectionsContent({ params }: PageProps) {
+  await connection()
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'HomePage.Collections' })
   const collections = await getCollections()

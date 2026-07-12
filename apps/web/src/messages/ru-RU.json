@@ -6,21 +6,39 @@
       "currentActivity": "Текущая активность",
       "askPlaceholder": "Спросите о чем угодно по этой активности...",
       "aiComposerLabel": "Сообщение ИИ",
-      "approvalBoundary": "AI suggestions stay separate until you choose an action.",
-      "closePanel": "Close AI assistant",
-      "composerHint": "Enter to send. Shift Enter for a new line.",
-      "contextDescription": "Ashyk Ai uses this activity as the main learning context.",
+      "approvalBoundary": "Предложения ИИ не применяются, пока вы не выберете действие.",
+      "closePanel": "Закрыть ассистента ИИ",
+      "composerHint": "Enter отправляет сообщение. Shift Enter добавляет строку.",
+      "contextDescription": "Ashyq AI использует эту активность как основной учебный контекст.",
       "emptyStateTitle": "Спросить ИИ",
       "emptyStateDescription": "Использовать текущую активность в качестве контекста.",
       "errorStateTitle": "Сбой запроса ИИ",
       "defaultErrorMessage": "Сбой запроса ИИ. Попробуйте еще раз.",
-      "unavailable": "AI is unavailable for this activity.",
+      "unavailable": "ИИ недоступен для этой активности.",
       "retry": "Повторить",
       "dismiss": "Скрыть",
-      "sendMessage": "Send message",
-      "stopGeneration": "Stop generation",
-      "studentMode": "Student tutor",
-      "sourcesAvailable": "{count} modes available",
+      "sendMessage": "Отправить сообщение",
+      "stopGeneration": "Остановить ответ",
+      "studentMode": "Контекст студента",
+      "sourcesAvailable": "Доступно режимов: {count}",
+      "contextLabel": "Используемый контекст",
+      "courseContext": "Текущий курс",
+      "sourceCount": "Включено источников: {count}",
+      "visibility": {
+        "student": "Только опубликованные материалы",
+        "teacher": "Контекст преподавателя",
+        "admin": "Контекст администратора"
+      },
+      "modes": {
+        "ask": "Вопрос",
+        "explain": "Объяснение",
+        "practice": "Практика",
+        "sources": "Источники",
+        "review": "Проверка",
+        "analyze": "Анализ",
+        "draft-feedback": "Обратная связь",
+        "remediation": "Коррекция"
+      },
       "suggestions": {
         "dynamic": {
           "summarize": "Кратко изложите эту страницу для меня",
@@ -1258,6 +1276,7 @@
     "AlertDialog": {
       "cancel": "Отмена",
       "close": "Закрыть",
+      "cancelRun": "Отменить запуск",
       "confirm": "Подтвердить",
       "ok": "ОК",
       "title": "Уведомление"
@@ -3870,6 +3889,34 @@
         "publishingNotes": "Заметки по публикации",
         "readinessChecklist": "Чек-лист готовности",
         "readyTitle": "Этот курс структурно готов.",
+        "publishedTitle": "Курс опубликован.",
+        "openLearnerPreview": "Открыть предпросмотр учащегося",
+        "serverReadinessTitle": "Проверка готовности на сервере",
+        "serverReadinessDescription": "Сервер повторяет эти проверки во время публикации.",
+        "readinessUnavailable": "Не удалось проверить готовность. Публикация отключена, пока проверка не пройдет успешно.",
+        "loadingReadiness": "Проверка готовности…",
+        "previewTitle": "Предпросмотр служит для осмотра, а не подтверждения",
+        "previewHonesty": "Откройте среду учащегося, чтобы проверить опыт. Само открытие не завершает ни одну проверку.",
+        "publishImpact": "Влияние публикации",
+        "activeContent": "Активные задания",
+        "scheduledContent": "Запланированные оценивания",
+        "openBlockers": "Открытые блокеры",
+        "warnings": "Предупреждения",
+        "noBlockersTitle": "Нет блокеров публикации",
+        "noBlockersDescription": "Сервер не обнаружил проверяемых проблем целостности, мешающих публикации.",
+        "blockerLabel": "Блокер публикации",
+        "warningLabel": "Неблокирующее предупреждение",
+        "resolveIssue": "Исправить",
+        "issues": {
+          "noVisibleActivities": "Опубликуйте хотя бы одно задание, видимое учащимся.",
+          "requiredActivityUnpublished": "Обязательное задание еще не опубликовано.",
+          "assessmentUnready": "В опубликованном оценивании остались проблемы готовности.",
+          "fileSubmissionUnready": "Задание с отправкой файла не завершено или не опубликовано.",
+          "thumbnailMissing": "Добавьте обложку для узнаваемости. Это не блокирует публикацию.",
+          "outcomesMissing": "Добавьте результаты обучения. Это не блокирует публикацию.",
+          "certificateMissing": "Сертификат не настроен. Это не блокирует публикацию.",
+          "contributorMissing": "Активный соавтор не настроен. Это не блокирует публикацию."
+        },
         "sectionLabel": "Проверка и публикация",
         "toasts": {
           "movedPrivate": "Курс снова переведён в приватный режим.",
@@ -3900,6 +3947,7 @@
           }
         },
         "formLabel": "Создать курс",
+        "quickCreateTitleHelp": "Создайте приватный черновик. Описание, доступ, медиа, сертификат и публикация остаются в Студии курса.",
         "header": {
           "description": "Укажите название, начальную структуру и куда перейти после создания.",
           "title": "Создать курс"
@@ -4127,6 +4175,10 @@
         "usersOnlyLabel": "Только пользователи",
         "accessPolicyStagedTitle": "Политика доступа не сохраняется до нажатия кнопки «Сохранить»",
         "accessPolicyStagedDescription": "Изменения видимости остаются локальными до сохранения этого раздела. Привязка групп пользователей ниже применяется немедленно и намеренно отделена от черновика политики.",
+        "readinessReadyTitle": "Готово к публикации",
+        "readinessReadyDescription": "Сервер не обнаружил проверяемых блокеров публикации.",
+        "readinessBlockedTitle": "Публикацию блокирует {count, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
+        "readinessWarningsTitle": "Готово с {count, plural, one {# предупреждением} few {# предупреждениями} many {# предупреждениями} other {# предупреждения}}",
         "userGroupLinksImmediateTitle": "Привязки групп пользователей применяются немедленно",
         "userGroupLinksImmediateDescription": "Эти привязки вступают в силу сразу после подтверждения. Храните изменения политики доступа отдельно и сохраняйте явно."
       },
@@ -8523,6 +8575,8 @@
           "schedulePublication": "Запланировать публикацию",
           "schedule": "Запланировать",
           "previewGateTitle": "Предпросмотр для студента",
+          "honestPreviewDescription": "Откройте реальную среду учащегося, чтобы проверить оценивание. Само открытие не считается проверкой и не меняет готовность к публикации.",
+          "openLearnerPreview": "Открыть предпросмотр учащегося",
           "previewGateDesc": "Проверьте студенческий опыт перед изменением статуса публикации.",
           "previewGateHighStakesDesc": "Этот экзамен считается высокозначимым. Запустите хотя бы один предпросмотр перед публикацией или планированием.",
           "previewCompletedCount": "{count, plural, =0 {Предпросмотры не запускались} one {# предпросмотр} few {# предпросмотра} many {# предпросмотров} other {# предпросмотра}}",
@@ -8570,6 +8624,7 @@
           "auditNoteDesc": "Сохраняется вместе с изменением статуса для проверки высокозначимого экзамена.",
           "previewRequiredBeforePublish": "Запустите хотя бы один студенческий предпросмотр перед подтверждением изменения статуса высокозначимого экзамена.",
           "blockersRequiredBeforePublish": "Устраните все блокеры публикации перед подтверждением.",
+          "auditNoteRequiredBeforePublish": "Добавьте примечание аудита перед подтверждением этого высокозначимого изменения статуса.",
           "cancel": "Отмена",
           "confirmPublish": "Опубликовать экзамен",
           "confirmSchedule": "Запланировать экзамен",
@@ -10057,6 +10112,8 @@
       "submitted": "Отправлено",
       "graded": "Проверено",
       "published": "Опубликовано",
+      "contentChanged": "Материалы курса изменились после этой проверки",
+      "previousScore": "Оценка предыдущей проверки: {score}",
       "returned": "Возвращено"
     }
   },
@@ -10092,6 +10149,23 @@
     "feedbackPlaceholder": "Отзыв",
     "rubricScorePlaceholder": "0",
     "downloadCsv": "Скачать CSV",
+    "searchLearners": "Поиск по учащимся",
+    "filterByStatus": "Фильтр по статусу",
+    "allStatuses": "Все статусы",
+    "statusSubmitted": "Отправлено",
+    "statusGraded": "Оценено",
+    "statusPublished": "Опубликовано",
+    "statusReturned": "Возвращено",
+    "statusDraft": "Черновик",
+    "pageOf": "Страница {page} из {pages}",
+    "discardDraftTitle": "Удалить черновик оценки?",
+    "discardDraftDescription": "Вы изменили балл или отзыв для этого учащегося. Удалить изменения перед переходом к другой работе?",
+    "keepEditing": "Продолжить редактирование",
+    "discardAndSwitch": "Удалить и перейти",
+    "unsavedTitle": "Выйти с несохранённым черновиком оценки?",
+    "unsavedDescription": "Изменения балла или отзыва ещё не сохранены. Выйти со страницы и удалить их?",
+    "stayHere": "Остаться",
+    "leaveWithoutSaving": "Выйти без сохранения",
     "csv": "CSV"
   },
   "FileSubmissionStudio": {
@@ -10171,7 +10245,8 @@
     },
     "qaMessage": {
       "you": "Вы",
-      "aiAnswer": "Ответ ИИ"
+      "aiAnswer": "Ответ ИИ",
+      "incomplete": "Остановлено до завершения"
     },
     "languageControl": {
       "label": "Язык ответа",
@@ -10186,7 +10261,13 @@
       "noCitationsDesc": "Результату необходимо подтверждение из курса, прежде чем ему можно будет доверять.",
       "title": "Источники",
       "description": "Источники, которые ИИ использовал для этого результата.",
-      "openSource": "Open source: {label}"
+      "openSource": "Открыть источник: {label}",
+      "confidence": {
+        "high": "Высокая уверенность",
+        "medium": "Средняя уверенность",
+        "low": "Низкая уверенность",
+        "uncalibrated": "Уверенность не откалибрована"
+      }
     },
     "errorRecovery": {
       "title": "Сбой работы ИИ",
@@ -10234,23 +10315,33 @@
     "qaInput": {
       "label": "Вопрос",
       "ask": "Спросить",
+      "stop": "Остановить",
       "placeholder": "Спросите об этом курсе...",
       "description": "Ответы основаны на материалах курса.",
       "emptyTitle": "Вопросов пока нет",
       "emptyDesc": "Спросите об этом курсе, и ответ будет содержать ссылки на материалы курса.",
-      "activityContext": "Using current activity",
-      "threadContext": "Using this thread",
-      "notUsingPrivateContext": "Not using hidden teacher notes or answer keys.",
-      "starterExplain": "Explain current section",
-      "starterSummarize": "Summarize key points",
-      "starterQuiz": "Quiz me on this",
-      "starterBeforeContinuing": "What should I know next?",
-      "starterSources": "Show sources",
-      "threadsTitle": "Threads",
-      "newThread": "New thread",
-      "threadsLoading": "Loading threads…",
-      "threadsEmpty": "No saved threads yet.",
-      "threadMessageCount": "{count, plural, one {# message} other {# messages}}"
+      "activityContext": "Используется текущая активность",
+      "threadContext": "Используется этот диалог",
+      "notUsingPrivateContext": "Скрытые заметки преподавателя и ключи ответов не используются.",
+      "starterExplain": "Объяснить текущий раздел",
+      "starterSummarize": "Кратко изложить главное",
+      "starterQuiz": "Проверить мои знания",
+      "starterBeforeContinuing": "Что нужно знать дальше?",
+      "starterSources": "Показать источники",
+      "threadsTitle": "Диалоги",
+      "newThread": "Новый диалог",
+      "deleteThread": "Удалить диалог",
+      "deleteConfirm": "Удалить этот диалог, его сообщения и связанные записи запусков ИИ? Это действие нельзя отменить.",
+      "keepThread": "Оставить диалог",
+      "confirmDelete": "Удалить диалог",
+      "threadsLoading": "Загрузка диалогов…",
+      "threadsEmpty": "Сохранённых диалогов пока нет.",
+      "threadMessageCount": "{count, plural, one {# сообщение} few {# сообщения} many {# сообщений} other {# сообщения}}",
+      "streamingStatus": "Формируем ответ по выбранным материалам курса.",
+      "cancelledStatus": "Ответ остановлен. Частичный текст сохранён.",
+      "error": "Не удалось завершить ответ. Ваш вопрос сохранён.",
+      "retry": "Повторить",
+      "dismiss": "Закрыть"
     },
     "courseAIHub": {
       "title": "ИИ-поддержка обучения",
@@ -10258,14 +10349,17 @@
       "tabStudy": "Обучение",
       "tabQA": "Вопросы и ответы",
       "tabReview": "Обзор",
-      "groundedBadge": "Source grounded",
-      "reviewBadge": "Teacher reviewed"
+      "groundedBadge": "На основе источников",
+      "reviewBadge": "Проверено преподавателем",
+      "capabilityError": "Не удалось проверить доступность ИИ. Закройте и снова откройте ассистента.",
+      "unavailable": "ИИ недоступен в этом контексте."
     },
     "courseAnalysisEntry": {
       "title": "ИИ-анализ курса",
       "description": "Оценка качества, подтверждения и риски исправления для этого курса.",
       "rerun": "Запустить заново",
       "analyze": "Анализировать",
+      "draftFeedback": "Подготовить отзыв",
       "defaultStatus": "Запустите анализ, чтобы подготовить отчет о качестве перед публикацией руководства."
     },
     "courseAnalysisResultShell": {
@@ -10285,15 +10379,20 @@
       "recommendedFix": "Recommended fix",
       "noRisks": "No critical blockers were returned.",
       "noStrengths": "No strengths were returned.",
-      "noFindings": "No actionable findings were returned.",
-      "summaryFindingTitle": "Review generated summary",
-      "inspectCitationsAction": "Inspect cited course material before publishing the score.",
+      "noFindings": "Практических рекомендаций нет.",
+      "actions": "Решение",
+      "acceptFinding": "Принять",
+      "dismissFinding": "Отклонить",
+      "createTask": "Создать задачу",
+      "reviewActions": { "accepted": "Принято", "dismissed": "Отклонено", "task_created": "Задача создана" },
+      "summaryFindingTitle": "Проверить сводку",
+      "inspectCitationsAction": "Проверить материалы курса перед публикацией оценки.",
       "reviewGateLabel": "Я открыл(а) и проверил(а) нижеприведенные выводы и доказательства перед публикацией.",
       "reviewGateHint": "Публикация недоступна, пока это не отмечено.",
-      "publishDialogTitle": "Publish reviewed score?",
+      "publishDialogTitle": "Опубликовать проверенную оценку?",
       "publishDialogDescription": "Эта оценка, список выводов и цитируемые источники станут видны студентам и сотрудникам, записанным на этот курс.",
-      "cancelPublish": "Keep reviewing",
-      "confirmPublish": "Publish reviewed score"
+      "cancelPublish": "Продолжить проверку",
+      "confirmPublish": "Опубликовать оценку"
     },
     "submissionAIEntry": {
       "title": "ИИ-анализ отправки",
@@ -10342,6 +10441,49 @@
       "modelLabel": "Model",
       "requestLimitLabel": "Request token limit",
       "outputLimitLabel": "Output token limit"
+    },
+    "operationsConsole": {
+      "title": "Операции запусков",
+      "description": "Фильтруйте недавние запуски, находите зависшие задачи и проверяйте очищенный журнал событий.",
+      "timeRange": "Период",
+      "days": "Последние {count} дн.",
+      "statusFilter": "Статус запуска",
+      "featureFilter": "Функция",
+      "providerFilter": "Провайдер или модель",
+      "courseFilter": "UUID курса",
+      "statuses": {
+        "all": "Все статусы",
+        "queued": "В очереди",
+        "running": "Выполняется",
+        "finished": "Завершено",
+        "error": "Ошибка",
+        "aborted": "Отменено"
+      },
+      "metrics": {
+        "requests": "Запросы",
+        "success": "Успешность",
+        "cancelled": "Доля отмен",
+        "retried": "Доля повторов",
+        "p50": "Задержка p50",
+        "p95": "Задержка p95",
+        "ttft50": "Первый текст p50",
+        "ttft95": "Первый текст p95",
+        "tokens": "Токены",
+        "cost": "Расчётная стоимость"
+      },
+      "table": {
+        "feature": "Функция",
+        "status": "Статус",
+        "started": "Начало",
+        "model": "Провайдер / модель",
+        "error": "Код ошибки"
+      },
+      "stuck": "Завис",
+      "inspect": "Подробнее",
+      "detailTitle": "Очищенные данные запуска",
+      "close": "Закрыть",
+      "artifacts": "Артефакты",
+      "notAvailable": "Нет данных"
     },
     "tokenUsageChart": {
       "title": "ИИ-использование",
@@ -10393,6 +10535,75 @@
         "status": "Status"
       }
     }
+  },
+  "PageLoading": {
+    "loading": "Загрузка..."
+  },
+  "DashboardWorkQueue": {
+    "priorityLabel": "Приоритетная очередь",
+    "title": "Работа, требующая вашего участия",
+    "description": "Откройте следующее действие по обучению, оцениванию или курсу без поиска по разделам.",
+    "browseLabel": "Обзор",
+    "toolsTitle": "Инструменты и разделы",
+    "toolsDescription": "Изучайте курсы, отчёты, пользователей и настройки, когда в очереди нет срочной работы.",
+    "openLabel": "Открыть",
+    "groups": {
+      "today": "Сегодня",
+      "dueSoon": "Скоро срок",
+      "returned": "Возвращено",
+      "waiting": "Ожидание",
+      "released": "Недавно опубликовано"
+    },
+    "items": {
+      "unknownCourse": "Курс",
+      "returned": {
+        "title": "Доработать: {activity}",
+        "description": "{course}: по отзыву требуется новая отправка.",
+        "action": "Доработать"
+      },
+      "waiting": {
+        "title": "Ожидание отзыва: {activity}",
+        "description": "{course}: работа получена.",
+        "action": "Открыть подтверждение"
+      },
+      "feedback": {
+        "title": "Посмотреть отзыв: {activity}",
+        "description": "{course}: решение по оценке опубликовано.",
+        "action": "Посмотреть отзыв"
+      },
+      "overdue": {
+        "title": "Завершить просроченную работу: {activity}",
+        "description": "{course}: срок выполнения уже прошёл."
+      },
+      "inProgress": {
+        "title": "Продолжить: {activity}",
+        "description": "{course}: завершите начатую работу.",
+        "action": "Продолжить"
+      },
+      "needsGrading": {
+        "title": "Оценить: {activity}",
+        "description": "Работа учащегося в курсе «{course}» готова к проверке.",
+        "action": "Оценить работу"
+      },
+      "slaBreach": {
+        "title": "Проверить просроченную работу: {activity}",
+        "description": "Учащийся в курсе «{course}» ждёт дольше целевого срока.",
+        "action": "Оценить работу"
+      },
+      "awaitingRelease": {
+        "title": "Опубликовать: {activity}",
+        "description": "Оценка в курсе «{course}» сохранена, но ещё не видна учащемуся.",
+        "action": "Проверить и опубликовать"
+      }
+    }
+  },
+  "LandingDegraded": {
+    "title": "Курсы временно недоступны",
+    "description": "Сервис обучения не ответил. Повторите попытку или откройте панель, пока каталог курсов восстанавливается.",
+    "safeState": "Ваши данные не изменены и не потеряны.",
+    "retry": "Повторить",
+    "openDashboard": "Открыть панель",
+    "signIn": "Войти"
   },
   "LearnerCourse": {
     "privateCourse": "Приватный курс"

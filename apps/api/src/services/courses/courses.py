@@ -10,7 +10,9 @@ from sqlmodel import Session, and_, col, or_, select
 from sqlmodel.sql.expression import SelectOfScalar
 from ulid import ULID
 
-from src.db.courses.activities import Activity
+from src.app.exceptions import ValidationAppError
+from src.db.assessments import Assessment, AssessmentLifecycle
+from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.certifications import Certifications
 from src.db.courses.chapters import Chapter, ChapterReadWithPermissions
 from src.db.courses.courses import (
@@ -18,13 +20,18 @@ from src.db.courses.courses import (
     Course,
     CourseAccessUpdate,
     CourseCreate,
+    CourseLifecycleResult,
+    CourseLifecycleUpdate,
     CourseMetadataUpdate,
     CourseRead,
+    CourseReadinessIssue,
+    CourseReadinessResponse,
     CourseUpdate,
     FullCourseRead,
     ThumbnailType,
 )
 from src.db.courses.enhanced_responses import CourseReadWithPermissions
+from src.db.file_submissions import FileSubmissionActivity, FileSubmissionLifecycle
 from src.db.resource_authors import (
     ResourceAuthor,
     ResourceAuthorshipEnum,
@@ -1014,6 +1021,7 @@ async def create_course(
     checker.require(current_user.id, "course:create")
 
     course.course_uuid = f"course_{ULID()}"
+    course.public = False
     course.creation_date = datetime.now(tz=UTC)
     course.update_date = datetime.now(tz=UTC)
     course.creator_id = current_user.id  # Track creator
@@ -1288,6 +1296,239 @@ async def update_course_metadata(
     return _serialize_course_with_authors(course, db_session)
 
 
+def get_course_readiness(
+    course_uuid: str,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+    checker: PermissionChecker | None = None,
+) -> CourseReadinessResponse:
+    course = _get_course_by_uuid(db_session, course_uuid)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    checker = checker or PermissionChecker(db_session)
+    checker.require(current_user.id, "course:update", resource_owner_id=course.creator_id)
+
+    activities = list(
+        db_session.exec(
+            select(Activity)
+            .join(Chapter, col(Chapter.id) == Activity.chapter_id)
+            .where(col(Chapter.course_id) == course.id)
+            .order_by(col(Chapter.order), col(Activity.order))
+        ).all()
+    )
+    issues: list[CourseReadinessIssue] = []
+    active_content_count = sum(1 for activity in activities if activity.published)
+
+    if active_content_count == 0:
+        issues.append(
+            CourseReadinessIssue(
+                code="COURSE_NO_LEARNER_VISIBLE_ACTIVITIES",
+                severity="blocker",
+                message="Publish at least one learner-visible activity.",
+                scope="curriculum",
+                path=f"/dash/courses/{course_uuid}/curriculum",
+            )
+        )
+
+    for activity in activities:
+        required = activity.settings.get("required", True) is not False
+        activity_path = f"/dash/courses/{course_uuid}/activity/{activity.activity_uuid}"
+        if required and not activity.published:
+            issues.append(
+                CourseReadinessIssue(
+                    code="COURSE_REQUIRED_ACTIVITY_UNPUBLISHED",
+                    severity="blocker",
+                    message=f'Publish required activity "{activity.name}" or mark it optional.',
+                    scope="activity",
+                    activity_uuid=activity.activity_uuid,
+                    path=activity_path,
+                )
+            )
+            continue
+
+        if not activity.published:
+            continue
+
+        if activity.activity_type in {
+            ActivityTypeEnum.TYPE_EXAM,
+            ActivityTypeEnum.TYPE_CODE_CHALLENGE,
+            ActivityTypeEnum.TYPE_CUSTOM,
+        }:
+            assessment = db_session.exec(
+                select(Assessment).where(Assessment.activity_id == activity.id)
+            ).first()
+            if assessment is None or assessment.lifecycle != AssessmentLifecycle.PUBLISHED:
+                issues.append(
+                    CourseReadinessIssue(
+                        code="COURSE_ASSESSMENT_UNREADY",
+                        severity="blocker",
+                        message=f'Assessment "{activity.name}" is not published and ready.',
+                        scope="activity",
+                        activity_uuid=activity.activity_uuid,
+                        path=activity_path,
+                    )
+                )
+            else:
+                from src.services.assessments.core import build_readiness
+
+                readiness = build_readiness(assessment, db_session)
+                if not readiness.ok:
+                    issues.append(
+                        CourseReadinessIssue(
+                            code="COURSE_ASSESSMENT_UNREADY",
+                            severity="blocker",
+                            message=f'Assessment "{activity.name}" has unresolved readiness issues.',
+                            scope="activity",
+                            activity_uuid=activity.activity_uuid,
+                            path=activity_path,
+                        )
+                    )
+
+        if activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION:
+            file_submission = db_session.exec(
+                select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
+            ).first()
+            if (
+                file_submission is None
+                or file_submission.lifecycle != FileSubmissionLifecycle.PUBLISHED
+                or not file_submission.instructions.strip()
+            ):
+                issues.append(
+                    CourseReadinessIssue(
+                        code="COURSE_FILE_SUBMISSION_UNREADY",
+                        severity="blocker",
+                        message=f'File submission "{activity.name}" is incomplete or unpublished.',
+                        scope="activity",
+                        activity_uuid=activity.activity_uuid,
+                        path=activity_path,
+                    )
+                )
+
+    warning_specs = [
+        (not bool((course.thumbnail_image or "").strip()), "COURSE_THUMBNAIL_MISSING", "Add a course thumbnail.", "general"),
+        (not bool((course.learnings or "").strip()), "COURSE_OUTCOMES_MISSING", "Add learning outcomes.", "general"),
+        (
+            not db_session.exec(
+                select(Certifications.id).where(Certifications.course_id == course.id)
+            ).first(),
+            "COURSE_CERTIFICATE_NOT_CONFIGURED",
+            "No certificate is configured. This does not block publishing.",
+            "certification",
+        ),
+        (
+            not db_session.exec(
+                select(ResourceAuthor.id).where(
+                    col(ResourceAuthor.resource_uuid) == course.course_uuid,
+                    col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
+                )
+            ).first(),
+            "COURSE_CONTRIBUTOR_NOT_CONFIGURED",
+            "No active contributor is configured. This does not block publishing.",
+            "contributors",
+        ),
+    ]
+    for applies, code, message, scope in warning_specs:
+        if applies:
+            issues.append(
+                CourseReadinessIssue(
+                    code=code,
+                    severity="warning",
+                    message=message,
+                    scope=scope,
+                    path=f"/dash/courses/{course_uuid}/{scope}",
+                )
+            )
+
+    activity_ids = [activity.id for activity in activities]
+    scheduled_content_count = 0
+    if activity_ids:
+        scheduled_content_count = int(
+            db_session.exec(
+                select(func.count()).select_from(Assessment).where(
+                    col(Assessment.activity_id).in_(activity_ids),
+                    Assessment.lifecycle == AssessmentLifecycle.SCHEDULED,
+                )
+            ).one()
+        )
+
+    return CourseReadinessResponse(
+        ready=not any(issue.severity == "blocker" for issue in issues),
+        issues=issues,
+        active_content_count=active_content_count,
+        scheduled_content_count=scheduled_content_count,
+    )
+
+
+async def update_course_lifecycle(
+    course_uuid: str,
+    lifecycle_object: CourseLifecycleUpdate,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+    checker: PermissionChecker | None = None,
+) -> CourseLifecycleResult:
+    course = _get_course_by_uuid(db_session, course_uuid)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    checker = checker or PermissionChecker(db_session)
+    checker.require(current_user.id, "course:manage", resource_owner_id=course.creator_id)
+    _ensure_course_is_current(course, lifecycle_object.last_known_update_date)
+    readiness = get_course_readiness(course_uuid, current_user, db_session, checker)
+
+    if lifecycle_object.action == "PUBLISH" and not readiness.ready:
+        blockers = [issue.model_dump() for issue in readiness.issues if issue.severity == "blocker"]
+        raise ValidationAppError(
+            code="COURSE_NOT_READY",
+            message="Resolve all course readiness blockers before publishing.",
+            details={"issues": blockers},
+        )
+
+    from src.db.audit import AuditEventType
+    from src.services.audit import record_audit_event
+
+    previous_public = course.public
+    course.public = lifecycle_object.action == "PUBLISH"
+    course.update_date = datetime.now(tz=UTC)
+    db_session.add(course)
+    audit_event = record_audit_event(
+        db_session,
+        actor_id=current_user.id,
+        event_type=AuditEventType.LIFECYCLE_TRANSITION,
+        target_kind="course",
+        target_uuid=course.course_uuid,
+        payload={
+            "action": lifecycle_object.action,
+            "previous_public": previous_public,
+            "current_public": course.public,
+            "audit_note": lifecycle_object.audit_note,
+            "active_content_count": readiness.active_content_count,
+            "scheduled_content_count": readiness.scheduled_content_count,
+        },
+    )
+    db_session.commit()
+    db_session.refresh(course)
+
+    affected_learner_count = int(
+        db_session.exec(
+            select(func.count(col(UserGroupUser.user_id).distinct()))
+            .select_from(UserGroupUser)
+            .join(UserGroupResource, col(UserGroupResource.usergroup_id) == UserGroupUser.usergroup_id)
+            .where(UserGroupResource.resource_uuid == course.course_uuid)
+        ).one()
+    )
+    return CourseLifecycleResult(
+        course=_serialize_course_with_authors(course, db_session),
+        readiness=readiness,
+        audit_event_uuid=audit_event.event_uuid,
+        previous_public=previous_public,
+        current_public=course.public,
+        affected_learner_count=affected_learner_count,
+        active_content_count=readiness.active_content_count,
+        scheduled_content_count=readiness.scheduled_content_count,
+    )
+
+
 async def update_course_access(
     request: Request,
     course_uuid: str,
@@ -1310,10 +1551,10 @@ async def update_course_access(
     update_data.pop("last_known_update_date", None)
 
     if "public" in update_data:
-        checker.require(
-            current_user.id,
-            "course:manage",
-            resource_owner_id=course.creator_id,
+        raise ValidationAppError(
+            code="COURSE_LIFECYCLE_ENDPOINT_REQUIRED",
+            message="Use the course lifecycle endpoint to publish or unpublish a course.",
+            details={"path": f"/courses/{course_uuid}/lifecycle"},
         )
 
     if "open_to_contributors" in update_data:

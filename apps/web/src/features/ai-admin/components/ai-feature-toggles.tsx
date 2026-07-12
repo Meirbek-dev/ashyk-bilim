@@ -3,7 +3,6 @@
 import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Field, FieldContent, FieldDescription, FieldLabel } from '@/components/ui/field'
 
 import type { AIFeatureSetting } from '../api/use-ai-usage'
@@ -25,7 +24,7 @@ export function AIFeatureToggles({ features }: { features: AIFeatureSetting[] })
       {features.map(feature => {
         const labelKey = FEATURE_LABEL_KEYS[feature.key] ?? feature.key
         return (
-          <Field key={feature.key} orientation="horizontal" data-disabled={!feature.editable || undefined}>
+          <Field key={feature.key} orientation="horizontal">
             <FieldContent>
               <div className="flex flex-wrap items-center gap-2">
                 <FieldLabel>{t(labelKey)}</FieldLabel>
@@ -35,7 +34,6 @@ export function AIFeatureToggles({ features }: { features: AIFeatureSetting[] })
               </div>
               <FieldDescription>{t('source', { source: feature.source })}</FieldDescription>
             </FieldContent>
-            <Switch checked={feature.enabled} disabled={!feature.editable} aria-label={t(labelKey)} />
           </Field>
         )
       })}

@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   ApiExportSubmissionsCsvApiV1GradingSubmissionsExportGetParams,
   ApiGetCourseGradebookApiV1GradingCoursesCourseUuidGradebookGetParams,
@@ -44,9 +44,9 @@ import type {
   SubmissionRead,
   SubmissionStats,
   TeacherGradeInput,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -87,6 +87,7 @@ export const apiExtendDeadlineApiV1GradingActivitiesActivityIdExtendDeadlinePost
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(deadlineExtensionRequest),
     },
+    BulkActionRead,
   )
 }
 
@@ -187,6 +188,7 @@ export const apiBulkPublishGradesApiV1GradingActivitiesActivityIdPublishGradesPo
       ...options,
       method: 'POST',
     },
+    BulkPublishGradesResponse,
   )
 }
 
@@ -273,10 +275,14 @@ export const apiGetBulkActionApiV1GradingBulkActionsActionUuidGet = async (
   actionUuid: string,
   options?: RequestInit,
 ): Promise<BulkActionRead> => {
-  return orvalMutator<BulkActionRead>(getApiGetBulkActionApiV1GradingBulkActionsActionUuidGetUrl(actionUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<BulkActionRead>(
+    getApiGetBulkActionApiV1GradingBulkActionsActionUuidGetUrl(actionUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    BulkActionRead,
+  )
 }
 
 export const getApiGetBulkActionApiV1GradingBulkActionsActionUuidGetQueryKey = (actionUuid: string) => {
@@ -526,7 +532,7 @@ export const getApiGetCourseGradebookApiV1GradingCoursesCourseUuidGradebookGetUr
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -552,6 +558,7 @@ export const apiGetCourseGradebookApiV1GradingCoursesCourseUuidGradebookGet = as
       ...options,
       method: 'GET',
     },
+    CourseGradebookResponse,
   )
 }
 
@@ -850,7 +857,7 @@ export const getApiGetCourseGradebookCursorApiV1GradingCoursesCourseUuidGradeboo
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -876,6 +883,7 @@ export const apiGetCourseGradebookCursorApiV1GradingCoursesCourseUuidGradebookCu
       ...options,
       method: 'GET',
     },
+    GradebookCursorPage,
   )
 }
 
@@ -1194,6 +1202,7 @@ export const apiExportCourseGradebookCsvApiV1GradingCoursesCourseUuidGradebookEx
       ...options,
       method: 'GET',
     },
+    voidParser,
   )
 }
 
@@ -1490,10 +1499,14 @@ export const apiDeleteItemFeedbackApiV1GradingFeedbackFeedbackIdDelete = async (
   feedbackId: number,
   options?: RequestInit,
 ): Promise<void> => {
-  return orvalMutator<void>(getApiDeleteItemFeedbackApiV1GradingFeedbackFeedbackIdDeleteUrl(feedbackId), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<void>(
+    getApiDeleteItemFeedbackApiV1GradingFeedbackFeedbackIdDeleteUrl(feedbackId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
 }
 
 export const getApiDeleteItemFeedbackApiV1GradingFeedbackFeedbackIdDeleteMutationOptions = <
@@ -1575,12 +1588,16 @@ export const apiUpdateItemFeedbackApiV1GradingFeedbackFeedbackIdPatch = async (
   itemFeedbackUpdate: ItemFeedbackUpdate,
   options?: RequestInit,
 ): Promise<ItemFeedbackRead> => {
-  return orvalMutator<ItemFeedbackRead>(getApiUpdateItemFeedbackApiV1GradingFeedbackFeedbackIdPatchUrl(feedbackId), {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(itemFeedbackUpdate),
-  })
+  return orvalMutator<ItemFeedbackRead>(
+    getApiUpdateItemFeedbackApiV1GradingFeedbackFeedbackIdPatchUrl(feedbackId),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(itemFeedbackUpdate),
+    },
+    ItemFeedbackRead,
+  )
 }
 
 export const getApiUpdateItemFeedbackApiV1GradingFeedbackFeedbackIdPatchMutationOptions = <
@@ -1657,7 +1674,7 @@ export const getApiListSubmissionsApiV1GradingSubmissionsGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1685,10 +1702,14 @@ export const apiListSubmissionsApiV1GradingSubmissionsGet = async (
   params: ApiListSubmissionsApiV1GradingSubmissionsGetParams,
   options?: RequestInit,
 ): Promise<SubmissionListResponse> => {
-  return orvalMutator<SubmissionListResponse>(getApiListSubmissionsApiV1GradingSubmissionsGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<SubmissionListResponse>(
+    getApiListSubmissionsApiV1GradingSubmissionsGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    SubmissionListResponse,
+  )
 }
 
 export const getApiListSubmissionsApiV1GradingSubmissionsGetQueryKey = (
@@ -1919,12 +1940,16 @@ export const apiBatchGradeSubmissionsApiV1GradingSubmissionsBatchPatch = async (
   batchGradeRequest: BatchGradeRequest,
   options?: RequestInit,
 ): Promise<BatchGradeResponse> => {
-  return orvalMutator<BatchGradeResponse>(getApiBatchGradeSubmissionsApiV1GradingSubmissionsBatchPatchUrl(), {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(batchGradeRequest),
-  })
+  return orvalMutator<BatchGradeResponse>(
+    getApiBatchGradeSubmissionsApiV1GradingSubmissionsBatchPatchUrl(),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(batchGradeRequest),
+    },
+    BatchGradeResponse,
+  )
 }
 
 export const getApiBatchGradeSubmissionsApiV1GradingSubmissionsBatchPatchMutationOptions = <
@@ -2001,7 +2026,7 @@ export const getApiExportSubmissionsCsvApiV1GradingSubmissionsExportGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2023,10 +2048,14 @@ export const apiExportSubmissionsCsvApiV1GradingSubmissionsExportGet = async (
   params: ApiExportSubmissionsCsvApiV1GradingSubmissionsExportGetParams,
   options?: RequestInit,
 ): Promise<void> => {
-  return orvalMutator<void>(getApiExportSubmissionsCsvApiV1GradingSubmissionsExportGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<void>(
+    getApiExportSubmissionsCsvApiV1GradingSubmissionsExportGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    voidParser,
+  )
 }
 
 export const getApiExportSubmissionsCsvApiV1GradingSubmissionsExportGetQueryKey = (
@@ -2292,7 +2321,7 @@ export const getApiGetSubmissionStatsApiV1GradingSubmissionsStatsGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2311,10 +2340,14 @@ export const apiGetSubmissionStatsApiV1GradingSubmissionsStatsGet = async (
   params: ApiGetSubmissionStatsApiV1GradingSubmissionsStatsGetParams,
   options?: RequestInit,
 ): Promise<SubmissionStats> => {
-  return orvalMutator<SubmissionStats>(getApiGetSubmissionStatsApiV1GradingSubmissionsStatsGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<SubmissionStats>(
+    getApiGetSubmissionStatsApiV1GradingSubmissionsStatsGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    SubmissionStats,
+  )
 }
 
 export const getApiGetSubmissionStatsApiV1GradingSubmissionsStatsGetQueryKey = (
@@ -2565,10 +2598,14 @@ export const apiGetSubmissionApiV1GradingSubmissionsSubmissionUuidGet = async (
   submissionUuid: string,
   options?: RequestInit,
 ): Promise<SubmissionRead> => {
-  return orvalMutator<SubmissionRead>(getApiGetSubmissionApiV1GradingSubmissionsSubmissionUuidGetUrl(submissionUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<SubmissionRead>(
+    getApiGetSubmissionApiV1GradingSubmissionsSubmissionUuidGetUrl(submissionUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    SubmissionRead,
+  )
 }
 
 export const getApiGetSubmissionApiV1GradingSubmissionsSubmissionUuidGetQueryKey = (submissionUuid: string) => {
@@ -2855,12 +2892,16 @@ export const apiSaveGradeApiV1GradingSubmissionsSubmissionUuidPatch = async (
   teacherGradeInput: TeacherGradeInput,
   options?: RequestInit,
 ): Promise<SubmissionRead> => {
-  return orvalMutator<SubmissionRead>(getApiSaveGradeApiV1GradingSubmissionsSubmissionUuidPatchUrl(submissionUuid), {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(teacherGradeInput),
-  })
+  return orvalMutator<SubmissionRead>(
+    getApiSaveGradeApiV1GradingSubmissionsSubmissionUuidPatchUrl(submissionUuid),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(teacherGradeInput),
+    },
+    SubmissionRead,
+  )
 }
 
 export const getApiSaveGradeApiV1GradingSubmissionsSubmissionUuidPatchMutationOptions = <
@@ -2947,6 +2988,7 @@ export const apiListItemFeedbackApiV1GradingSubmissionsSubmissionUuidFeedbackGet
       ...options,
       method: 'GET',
     },
+    arrayParser(ItemFeedbackRead),
   )
 }
 
@@ -3246,6 +3288,7 @@ export const apiCreateItemFeedbackApiV1GradingSubmissionsSubmissionUuidFeedbackP
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(itemFeedbackCreate),
     },
+    ItemFeedbackRead,
   )
 }
 
@@ -3347,6 +3390,7 @@ export const apiFeedbackStreamApiV1GradingSubmissionsSubmissionUuidFeedbackStrea
       ...options,
       method: 'GET',
     },
+    voidParser,
   )
 }
 

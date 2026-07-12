@@ -21,6 +21,7 @@ def _fake_stream(
         instructions: str,
         prompt: str,
         output_type: type[CourseQAAnswer],
+        message_history: object = None,
     ) -> AsyncIterator[AIModelStreamChunk[CourseQAAnswer]]:
         for chunk in chunks:
             yield chunk
@@ -57,15 +58,11 @@ async def test_stream_course_question_yields_growing_text_deltas_then_final(
     provider = ModelProvider(AIConfig(ai_enabled=True))
     results = [
         chunk
-        async for chunk in stream_course_question(
-            provider, "Course context", "How are quizzes graded?", role="student"
-        )
+        async for chunk in stream_course_question(provider, "Course context", "How are quizzes graded?", role="student")
     ]
 
     # Every non-final chunk carries the full answer-so-far (not a delta) — the caller computes deltas.
-    assert [chunk.answer_text for chunk in results[:-1]] == [
-        item.answer_markdown for item in partials
-    ]
+    assert [chunk.answer_text for chunk in results[:-1]] == [item.answer_markdown for item in partials]
     assert all(not chunk.final for chunk in results[:-1])
 
     last = results[-1]
@@ -81,24 +78,15 @@ async def test_stream_course_question_raises_when_draft_mode_disabled() -> None:
     provider = ModelProvider(AIConfig(ai_enabled=False, ai_draft_mode_enabled=False))
 
     with pytest.raises(AIProviderUnavailable):
-        async for _chunk in stream_course_question(
-            provider, "Course context", "Question?", role="student"
-        ):
+        async for _chunk in stream_course_question(provider, "Course context", "Question?", role="student"):
             pass
 
 
 @pytest.mark.asyncio
-async def test_stream_course_question_emits_draft_answer_when_explicitly_enabled() -> (
-    None
-):
+async def test_stream_course_question_emits_draft_answer_when_explicitly_enabled() -> None:
     provider = ModelProvider(AIConfig(ai_enabled=False, ai_draft_mode_enabled=True))
 
-    chunks = [
-        chunk
-        async for chunk in stream_course_question(
-            provider, "Course context", "Question?", role="student"
-        )
-    ]
+    chunks = [chunk async for chunk in stream_course_question(provider, "Course context", "Question?", role="student")]
 
     assert len(chunks) == 2
     assert chunks[0].final is False

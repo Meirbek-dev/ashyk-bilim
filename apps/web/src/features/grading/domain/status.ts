@@ -97,8 +97,7 @@ export function getActivityProgressStateLabel(
   t: (key: string) => string,
 ): string {
   const normalizedState = state ?? 'NOT_STARTED'
-  const labelKey = (ACTIVITY_PROGRESS_STATE_LABELS[normalizedState] ??
-    ACTIVITY_PROGRESS_STATE_LABELS.NOT_STARTED)!
+  const labelKey = (ACTIVITY_PROGRESS_STATE_LABELS[normalizedState] ?? ACTIVITY_PROGRESS_STATE_LABELS.NOT_STARTED)!
   return t(labelKey)
 }
 

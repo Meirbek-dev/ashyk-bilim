@@ -41,12 +41,23 @@ import { Button } from '@/components/ui/button'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { getCourseReadiness } from '@services/courses/courses'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Link } from '@/i18n/navigation'
 
 const EditCourseAccess = () => {
   const course = useCourse()
   const { courseStructure, editorData } = course
   const t = useTranslations('DashPage.Courses.Access')
   const { updateAccess } = useCoursesMutations(courseStructure?.course_uuid ?? '')
+  const readinessQuery = useQuery(
+    queryOptions({
+      queryKey: ['courses', courseStructure?.course_uuid ?? 'pending', 'readiness'],
+      queryFn: () => getCourseReadiness(courseStructure.course_uuid),
+      enabled: Boolean(courseStructure?.course_uuid),
+    }),
+  )
   const linkedUserGroupsResource = editorData.linkedUserGroups
   const usergroups = (
     Array.isArray(linkedUserGroupsResource.data) ? linkedUserGroupsResource.data : []
@@ -79,7 +90,10 @@ const EditCourseAccess = () => {
           },
         ),
       {
-        onSuccess: () => markClean(draftPublic),
+        onSuccess: async () => {
+          markClean(draftPublic)
+          await readinessQuery.refetch()
+        },
       },
     )
   }
@@ -101,6 +115,10 @@ const EditCourseAccess = () => {
           title={t('accessPolicyStagedTitle')}
           description={t('accessPolicyStagedDescription')}
         />
+
+        {draftPublic === true && readinessQuery.data ? (
+          <CourseReadinessSummary readiness={readinessQuery.data} />
+        ) : null}
 
         <RadioGroup
           value={draftPublic === true ? 'public' : draftPublic === false ? 'private' : undefined}
@@ -141,6 +159,48 @@ const EditCourseAccess = () => {
         />
       ) : null}
     </div>
+  )
+}
+
+const CourseReadinessSummary = ({ readiness }: { readiness: Awaited<ReturnType<typeof getCourseReadiness>> }) => {
+  const t = useTranslations('DashPage.Courses.Access')
+  const blockers = readiness.issues.filter(issue => issue.severity === 'blocker')
+  const warnings = readiness.issues.filter(issue => issue.severity === 'warning')
+
+  if (readiness.ready && warnings.length === 0) {
+    return (
+      <Alert>
+        <Globe aria-hidden />
+        <AlertTitle>{t('readinessReadyTitle')}</AlertTitle>
+        <AlertDescription>{t('readinessReadyDescription')}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  return (
+    <Alert variant={blockers.length > 0 ? 'destructive' : 'default'}>
+      <AlertTriangle aria-hidden />
+      <AlertTitle>
+        {blockers.length > 0
+          ? t('readinessBlockedTitle', { count: blockers.length })
+          : t('readinessWarningsTitle', { count: warnings.length })}
+      </AlertTitle>
+      <AlertDescription>
+        <ul className="mt-2 flex list-disc flex-col gap-1 ps-5">
+          {[...blockers, ...warnings].map(issue => (
+            <li key={`${issue.code}-${issue.activity_uuid ?? issue.scope}`}>
+              {issue.path ? (
+                <Link href={issue.path} className="underline underline-offset-4">
+                  {issue.message}
+                </Link>
+              ) : (
+                issue.message
+              )}
+            </li>
+          ))}
+        </ul>
+      </AlertDescription>
+    </Alert>
   )
 }
 

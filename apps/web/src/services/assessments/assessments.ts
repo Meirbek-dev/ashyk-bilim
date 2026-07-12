@@ -1,6 +1,6 @@
 'use server'
 
-import { apiFetch, errorHandling } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { getAPIUrl } from '@services/config/config'
 
 export interface AssessmentSummary {
@@ -35,13 +35,11 @@ export interface AssessmentMutationPayload {
  */
 export async function getAssessmentByUuid(assessmentUuid: string): Promise<AssessmentSummary | null> {
   try {
-    const result = await apiFetch(`assessments/${assessmentUuid}`, {
+    return await apiJson<AssessmentSummary>(`assessments/${assessmentUuid}`, {
       method: 'GET',
       baseUrl: getAPIUrl(),
       timeoutMs: 8000,
     })
-    if (result.status === 404) return null
-    return await errorHandling(result)
   } catch {
     return null
   }
@@ -53,13 +51,11 @@ export async function getAssessmentByUuid(assessmentUuid: string): Promise<Asses
  */
 export async function getAssessmentByActivityUuid(activityUuid: string): Promise<AssessmentSummary | null> {
   try {
-    const result = await apiFetch(`assessments/activity/${activityUuid}`, {
+    return await apiJson<AssessmentSummary>(`assessments/activity/${activityUuid}`, {
       method: 'GET',
       baseUrl: getAPIUrl(),
       timeoutMs: 8000,
     })
-    if (result.status === 404) return null
-    return await errorHandling(result)
   } catch {
     return null
   }

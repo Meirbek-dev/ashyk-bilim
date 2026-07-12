@@ -17,7 +17,7 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
   try {
     const result = await getCertificateByUuid(uuid)
 
-    if (result.success && result.data) {
+    if (result.data) {
       const certificateData = result.data
       const certificationName = certificateData.certification.config.certification_name
       const courseName = certificateData.course.name ?? ''

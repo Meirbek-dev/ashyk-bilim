@@ -2,7 +2,7 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 
 export interface AIUsageSummary {
   total_runs: number
@@ -62,24 +62,62 @@ export interface AIEvalDashboard {
   recent_evals: AIEvalResultRead[]
 }
 
+export interface AIOperationRun {
+  run_uuid: string
+  status: string
+  feature: string
+  model_name: string | null
+  error_code: string | null
+  duration_ms: number | null
+  time_to_first_text_ms: number | null
+  input_tokens: number | null
+  output_tokens: number | null
+  cost_estimate: number | null
+  retry_count: number
+  started_at: string
+  completed_at: string | null
+  stuck: boolean
+  context: Record<string, unknown>
+}
+
+export interface AIOperationRunDetail {
+  run: AIOperationRun
+  events: {
+    event_id: string
+    sequence: number
+    event_type: string
+    created_at: string
+    payload: Record<string, unknown>
+  }[]
+  artifact_uuids: string[]
+}
+
+export interface AIOperationFilters {
+  days: number
+  status?: string | undefined
+  feature?: string | undefined
+  provider?: string | undefined
+  courseUuid?: string | undefined
+}
+
 export function aiUsageQueryOptions() {
   return queryOptions({
     queryKey: ['ai-usage'],
-    queryFn: () => apiFetcher<AIUsageSummary>('ai/usage'),
+    queryFn: () => apiJson<AIUsageSummary>('ai/usage'),
   })
 }
 
 export function aiAdminSettingsQueryOptions() {
   return queryOptions({
     queryKey: ['ai-admin-settings'],
-    queryFn: () => apiFetcher<AIAdminSettings>('ai/admin/settings'),
+    queryFn: () => apiJson<AIAdminSettings>('ai/admin/settings'),
   })
 }
 
 export function aiEvalDashboardQueryOptions() {
   return queryOptions({
     queryKey: ['ai-eval-dashboard'],
-    queryFn: () => apiFetcher<AIEvalDashboard>('ai/admin/evals'),
+    queryFn: () => apiJson<AIEvalDashboard>('ai/admin/evals'),
   })
 }
 
@@ -93,4 +131,24 @@ export function useAIAdminSettings() {
 
 export function useAIEvalDashboard() {
   return useQuery(aiEvalDashboardQueryOptions())
+}
+
+export function useAIOperationRuns(filters: AIOperationFilters) {
+  const params = new URLSearchParams({ days: String(filters.days) })
+  if (filters.status) params.set('status', filters.status)
+  if (filters.feature) params.set('feature', filters.feature)
+  if (filters.provider) params.set('provider', filters.provider)
+  if (filters.courseUuid) params.set('course_uuid', filters.courseUuid)
+  return useQuery({
+    queryKey: ['ai-operation-runs', filters],
+    queryFn: () => apiJson<AIOperationRun[]>(`ai/admin/runs?${params.toString()}`),
+  })
+}
+
+export function useAIOperationRunDetail(runUuid: string | null) {
+  return useQuery({
+    queryKey: ['ai-operation-run', runUuid],
+    queryFn: () => apiJson<AIOperationRunDetail>(`ai/admin/runs/${runUuid}`),
+    enabled: Boolean(runUuid),
+  })
 }

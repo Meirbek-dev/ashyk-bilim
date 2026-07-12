@@ -138,13 +138,9 @@ const UserEditGeneral = () => {
         if (prev) URL.revokeObjectURL(prev)
         return previewUrl
       })
-      const res = await updateUserAvatar(me.id, uploadFile)
-      if (!res.success) {
-        setError(res.HTTPmessage || t('avatarError'))
-      } else {
-        setSuccess(t('avatarSuccess'))
-        router.refresh()
-      }
+      await updateUserAvatar(me.id, uploadFile)
+      setSuccess(t('avatarSuccess'))
+      router.refresh()
     } catch (uploadError) {
       console.error('Avatar upload error:', uploadError)
       setError(t('avatarError'))

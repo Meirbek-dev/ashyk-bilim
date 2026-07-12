@@ -214,14 +214,9 @@ const UserProfileBuilder = () => {
         profile: profileData,
       }
 
-      const res = await updateProfile(userData, currentUser.id)
-
-      if (res.status === 200) {
-        router.refresh()
-        toast.success(tNotify('profileUpdateSuccess'), { id: loadingToast })
-      } else {
-        toast.error(tNotify('profileUpdateFailed'), { id: loadingToast })
-      }
+      await updateProfile(userData, currentUser.id)
+      router.refresh()
+      toast.success(tNotify('profileUpdateSuccess'), { id: loadingToast })
     } catch (error) {
       console.error('Error updating profile:', error)
       toast.error(tNotify('profileUpdateFailed'), { id: loadingToast })

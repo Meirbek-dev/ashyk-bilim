@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   BatchPermissionCheckRequest,
   BatchPermissionCheckResponse,
@@ -34,9 +34,9 @@ import type {
   RoleRevocationRequest,
   UserPermissionsResponse,
   UserRoleAssignmentResponse,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -67,12 +67,16 @@ export const checkPermissionApiV1RbacCheckPost = async (
   permissionCheckRequest: PermissionCheckRequest,
   options?: RequestInit,
 ): Promise<PermissionCheckResponse> => {
-  return orvalMutator<PermissionCheckResponse>(getCheckPermissionApiV1RbacCheckPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(permissionCheckRequest),
-  })
+  return orvalMutator<PermissionCheckResponse>(
+    getCheckPermissionApiV1RbacCheckPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(permissionCheckRequest),
+    },
+    PermissionCheckResponse,
+  )
 }
 
 export const getCheckPermissionApiV1RbacCheckPostMutationOptions = <
@@ -150,12 +154,16 @@ export const checkPermissionsBatchApiV1RbacCheckBatchPost = async (
   batchPermissionCheckRequest: BatchPermissionCheckRequest,
   options?: RequestInit,
 ): Promise<BatchPermissionCheckResponse> => {
-  return orvalMutator<BatchPermissionCheckResponse>(getCheckPermissionsBatchApiV1RbacCheckBatchPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(batchPermissionCheckRequest),
-  })
+  return orvalMutator<BatchPermissionCheckResponse>(
+    getCheckPermissionsBatchApiV1RbacCheckBatchPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(batchPermissionCheckRequest),
+    },
+    BatchPermissionCheckResponse,
+  )
 }
 
 export const getCheckPermissionsBatchApiV1RbacCheckBatchPostMutationOptions = <
@@ -235,10 +243,14 @@ export const getGetMyPermissionsApiV1RbacMePermissionsGetUrl = () => {
 export const getMyPermissionsApiV1RbacMePermissionsGet = async (
   options?: RequestInit,
 ): Promise<UserPermissionsResponse> => {
-  return orvalMutator<UserPermissionsResponse>(getGetMyPermissionsApiV1RbacMePermissionsGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserPermissionsResponse>(
+    getGetMyPermissionsApiV1RbacMePermissionsGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserPermissionsResponse,
+  )
 }
 
 export const getGetMyPermissionsApiV1RbacMePermissionsGetQueryKey = () => {
@@ -451,12 +463,16 @@ export const assignRoleApiV1RbacRolesAssignPost = async (
   roleAssignmentRequest: RoleAssignmentRequest,
   options?: RequestInit,
 ): Promise<RoleMutationResponse> => {
-  return orvalMutator<RoleMutationResponse>(getAssignRoleApiV1RbacRolesAssignPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(roleAssignmentRequest),
-  })
+  return orvalMutator<RoleMutationResponse>(
+    getAssignRoleApiV1RbacRolesAssignPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(roleAssignmentRequest),
+    },
+    RoleMutationResponse,
+  )
 }
 
 export const getAssignRoleApiV1RbacRolesAssignPostMutationOptions = <
@@ -537,12 +553,16 @@ export const revokeRoleApiV1RbacRolesRevokePost = async (
   roleRevocationRequest: RoleRevocationRequest,
   options?: RequestInit,
 ): Promise<RoleMutationResponse> => {
-  return orvalMutator<RoleMutationResponse>(getRevokeRoleApiV1RbacRolesRevokePostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(roleRevocationRequest),
-  })
+  return orvalMutator<RoleMutationResponse>(
+    getRevokeRoleApiV1RbacRolesRevokePostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(roleRevocationRequest),
+    },
+    RoleMutationResponse,
+  )
 }
 
 export const getRevokeRoleApiV1RbacRolesRevokePostMutationOptions = <
@@ -620,10 +640,14 @@ export const getListUserRolesApiV1RbacUserRolesGetUrl = () => {
 export const listUserRolesApiV1RbacUserRolesGet = async (
   options?: RequestInit,
 ): Promise<UserRoleAssignmentResponse[]> => {
-  return orvalMutator<UserRoleAssignmentResponse[]>(getListUserRolesApiV1RbacUserRolesGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserRoleAssignmentResponse[]>(
+    getListUserRolesApiV1RbacUserRolesGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(UserRoleAssignmentResponse),
+  )
 }
 
 export const getListUserRolesApiV1RbacUserRolesGetQueryKey = () => {

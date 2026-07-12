@@ -1,6 +1,6 @@
 'use server'
 
-import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
+import { apiJson, apiResult } from '@/lib/api-client'
 import { courseTag, tags } from '@/lib/cacheTags'
 
 interface CertificationInvalidationOptions {
@@ -15,7 +15,7 @@ export interface CreateCertificationParams {
 }
 
 export async function createCertification({ course_id, config, options }: CreateCertificationParams) {
-  const result = await apiFetch('certifications/', {
+  const response = await apiJson<AppCertification>('certifications/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -24,7 +24,6 @@ export async function createCertification({ course_id, config, options }: Create
       last_known_update_date: options?.lastKnownUpdateDate ?? undefined,
     }),
   })
-  const response = await errorHandling<AppCertification>(result)
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -40,7 +39,7 @@ export interface UpdateCertificationParams {
 }
 
 export async function updateCertification({ certification_uuid, config, options }: UpdateCertificationParams) {
-  const result = await apiFetch(`certifications/${certification_uuid}`, {
+  const response = await apiJson<AppCertification>(`certifications/${certification_uuid}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -48,7 +47,6 @@ export async function updateCertification({ certification_uuid, config, options 
       last_known_update_date: options?.lastKnownUpdateDate ?? undefined,
     }),
   })
-  const response = await errorHandling<AppCertification>(result)
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -61,10 +59,12 @@ export async function deleteCertification(certification_uuid: string, options?: 
   const query = new URLSearchParams()
   if (options?.lastKnownUpdateDate) query.set('last_known_update_date', options.lastKnownUpdateDate)
 
-  const result = await apiFetch(`certifications/${certification_uuid}${query.size > 0 ? `?${query.toString()}` : ''}`, {
-    method: 'DELETE',
-  })
-  const response = await errorHandling<AppPayload>(result)
+  const response = await apiJson<AppPayload>(
+    `certifications/${certification_uuid}${query.size > 0 ? `?${query.toString()}` : ''}`,
+    {
+      method: 'DELETE',
+    },
+  )
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -74,9 +74,8 @@ export async function deleteCertification(certification_uuid: string, options?: 
 }
 
 export async function getCertificateByUuid(user_certification_uuid: string) {
-  const result = await apiFetch(`certifications/certificate/${user_certification_uuid}`, {
+  return apiResult<AppCertification>(`certifications/certificate/${user_certification_uuid}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
   })
-  return getResponseMetadata<AppCertification>(result)
 }

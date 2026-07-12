@@ -124,6 +124,7 @@ export default defineConfig({
       '**/.turbo/',
       '**/.genenv/',
       'lib/api/generated/',
+      '**/lib/api/generated/**',
       'e2e/',
       'scripts/',
       'playwright.config.ts',

@@ -21,6 +21,24 @@
       "stopGeneration": "Stop generation",
       "studentMode": "Student context",
       "sourcesAvailable": "{count} modes available",
+      "contextLabel": "Context used",
+      "courseContext": "Current course",
+      "sourceCount": "{count, plural, one {# source} other {# sources}} included",
+      "visibility": {
+        "student": "Published material only",
+        "teacher": "Teacher context",
+        "admin": "Administrator context"
+      },
+      "modes": {
+        "ask": "Ask",
+        "explain": "Explain",
+        "practice": "Practice",
+        "sources": "Sources",
+        "review": "Review",
+        "analyze": "Analyze",
+        "draft-feedback": "Feedback",
+        "remediation": "Remediation"
+      },
       "suggestions": {
         "dynamic": {
           "summarize": "Summarize this page for me",
@@ -1255,6 +1273,7 @@
     "AlertDialog": {
       "cancel": "Cancel",
       "close": "Close",
+      "cancelRun": "Cancel run",
       "confirm": "Confirm",
       "ok": "OK",
       "title": "Notice"
@@ -3856,6 +3875,34 @@
         "publishingNotes": "Publishing notes",
         "readinessChecklist": "Readiness checklist",
         "readyTitle": "This course is structurally ready.",
+        "publishedTitle": "This course is published.",
+        "openLearnerPreview": "Open learner preview",
+        "serverReadinessTitle": "Server readiness",
+        "serverReadinessDescription": "These checks are re-run by the server when you publish.",
+        "readinessUnavailable": "Readiness could not be checked. Publishing is disabled until the check succeeds.",
+        "loadingReadiness": "Checking readiness…",
+        "previewTitle": "Preview is inspection, not verification",
+        "previewHonesty": "Open the learner runtime to inspect the experience. Opening the preview does not mark any check complete.",
+        "publishImpact": "Publish impact",
+        "activeContent": "Active activities",
+        "scheduledContent": "Scheduled assessments",
+        "openBlockers": "Open blockers",
+        "warnings": "Warnings",
+        "noBlockersTitle": "No publish blockers",
+        "noBlockersDescription": "The server found no deterministic integrity issue that prevents publishing.",
+        "blockerLabel": "Publish blocker",
+        "warningLabel": "Non-blocking warning",
+        "resolveIssue": "Resolve",
+        "issues": {
+          "noVisibleActivities": "Publish at least one learner-visible activity.",
+          "requiredActivityUnpublished": "A required activity is still unpublished.",
+          "assessmentUnready": "A published assessment has unresolved readiness issues.",
+          "fileSubmissionUnready": "A file-submission activity is incomplete or unpublished.",
+          "thumbnailMissing": "Add a thumbnail to improve recognition. This does not block publishing.",
+          "outcomesMissing": "Add learning outcomes. This does not block publishing.",
+          "certificateMissing": "No certificate is configured. This does not block publishing.",
+          "contributorMissing": "No active contributor is configured. This does not block publishing."
+        },
         "sectionLabel": "Review & publish",
         "toasts": {
           "movedPrivate": "Course moved back to private.",
@@ -3886,6 +3933,7 @@
           }
         },
         "formLabel": "Create course",
+        "quickCreateTitleHelp": "Create a private draft now. Description, access, media, certificate, and publishing stay in Course Studio.",
         "header": {
           "description": "Set the title, starting structure, and where to go after creation.",
           "title": "Create Course"
@@ -4113,6 +4161,10 @@
         "usersOnlyLabel": "Users Only",
         "accessPolicyStagedTitle": "Access policy is staged until you save",
         "accessPolicyStagedDescription": "Visibility changes stay local until you save this section. User-group linking below applies immediately and is intentionally isolated from the policy draft.",
+        "readinessReadyTitle": "Ready to publish",
+        "readinessReadyDescription": "The server found no deterministic publish blockers.",
+        "readinessBlockedTitle": "Publishing blocked by {count, plural, one {# issue} other {# issues}}",
+        "readinessWarningsTitle": "Ready with {count, plural, one {# warning} other {# warnings}}",
         "userGroupLinksImmediateTitle": "User-group links apply immediately",
         "userGroupLinksImmediateDescription": "These links take effect as soon as you confirm them. Keep access policy changes above separate and save them explicitly."
       },
@@ -9049,6 +9101,8 @@
           "schedulePublication": "Schedule Publication",
           "schedule": "Schedule",
           "previewGateTitle": "Student preview gate",
+          "honestPreviewDescription": "Open the real learner runtime to inspect the assessment. Opening it does not count as verification or change publish readiness.",
+          "openLearnerPreview": "Open learner preview",
           "previewGateDesc": "Preview the student experience before changing lifecycle state.",
           "previewGateHighStakesDesc": "This exam is treated as high-stakes. Run at least one preview before publishing or scheduling.",
           "previewCompletedCount": "{count, plural, =0 {No previews run} =1 {# preview run} other {# previews run}}",
@@ -9096,6 +9150,7 @@
           "auditNoteDesc": "Saved with the lifecycle transition for high-stakes review.",
           "previewRequiredBeforePublish": "Run at least one student preview before confirming this high-stakes lifecycle change.",
           "blockersRequiredBeforePublish": "Resolve all publish blockers before confirming.",
+          "auditNoteRequiredBeforePublish": "Add an audit note before confirming this high-stakes lifecycle change.",
           "cancel": "Cancel",
           "confirmPublish": "Publish exam",
           "confirmSchedule": "Schedule exam",
@@ -10041,6 +10096,8 @@
       "submitted": "Submitted",
       "graded": "Graded",
       "published": "Published",
+      "contentChanged": "Course content changed since this review",
+      "previousScore": "Previous review score: {score}",
       "returned": "Returned"
     }
   },
@@ -10076,6 +10133,23 @@
     "feedbackPlaceholder": "Feedback",
     "rubricScorePlaceholder": "0",
     "downloadCsv": "Download CSV",
+    "searchLearners": "Search learners",
+    "filterByStatus": "Filter by status",
+    "allStatuses": "All statuses",
+    "statusSubmitted": "Submitted",
+    "statusGraded": "Graded",
+    "statusPublished": "Published",
+    "statusReturned": "Returned",
+    "statusDraft": "Draft",
+    "pageOf": "Page {page} of {pages}",
+    "discardDraftTitle": "Discard this grading draft?",
+    "discardDraftDescription": "You changed the score or feedback for this learner. Discard those changes before switching submissions?",
+    "keepEditing": "Keep editing",
+    "discardAndSwitch": "Discard and switch",
+    "unsavedTitle": "Leave with an unsaved grading draft?",
+    "unsavedDescription": "Your score or feedback changes have not been saved. Leave this page and discard them?",
+    "stayHere": "Stay here",
+    "leaveWithoutSaving": "Leave without saving",
     "csv": "CSV"
   },
   "FileSubmissionStudio": {
@@ -10155,7 +10229,8 @@
     },
     "qaMessage": {
       "you": "You",
-      "aiAnswer": "AI answer"
+      "aiAnswer": "AI answer",
+      "incomplete": "Stopped before completion"
     },
     "languageControl": {
       "label": "Response language",
@@ -10170,7 +10245,13 @@
       "noCitationsDesc": "The result needs course evidence before it can be trusted.",
       "title": "Evidence",
       "description": "Sources the AI used for this result.",
-      "openSource": "Open source: {label}"
+      "openSource": "Open source: {label}",
+      "confidence": {
+        "high": "High confidence",
+        "medium": "Medium confidence",
+        "low": "Low confidence",
+        "uncalibrated": "Confidence not calibrated"
+      }
     },
     "errorRecovery": {
       "title": "AI run failed",
@@ -10218,6 +10299,7 @@
     "qaInput": {
       "label": "Question",
       "ask": "Ask",
+      "stop": "Stop",
       "placeholder": "Ask about this course…",
       "description": "Answers are grounded in course material.",
       "emptyTitle": "Ask about this activity",
@@ -10232,9 +10314,18 @@
       "starterSources": "Show sources",
       "threadsTitle": "Threads",
       "newThread": "New thread",
+      "deleteThread": "Delete thread",
+      "deleteConfirm": "Delete this thread, its messages, and associated AI run records? This cannot be undone.",
+      "keepThread": "Keep thread",
+      "confirmDelete": "Delete thread",
       "threadsLoading": "Loading threads…",
       "threadsEmpty": "No saved threads yet.",
-      "threadMessageCount": "{count, plural, one {# message} other {# messages}}"
+      "threadMessageCount": "{count, plural, one {# message} other {# messages}}",
+      "streamingStatus": "Answering from the selected course material.",
+      "cancelledStatus": "Answer stopped. The partial response is preserved.",
+      "error": "The answer could not be completed. Your question is still here.",
+      "retry": "Try again",
+      "dismiss": "Dismiss"
     },
     "courseAIHub": {
       "title": "AI learning support",
@@ -10243,13 +10334,16 @@
       "reviewBadge": "Teacher reviewed",
       "tabStudy": "Study",
       "tabQA": "Q&A",
-      "tabReview": "Review"
+      "tabReview": "Review",
+      "capabilityError": "AI availability could not be checked. Try reopening the assistant.",
+      "unavailable": "AI is not available in this context."
     },
     "courseAnalysisEntry": {
       "title": "Course AI review",
       "description": "Quality score, evidence, and remediation risks for this course.",
       "rerun": "Rerun",
       "analyze": "Analyze",
+      "draftFeedback": "Draft feedback",
       "defaultStatus": "Run an analysis to prepare a teacher-reviewed quality report before publishing AI-visible guidance."
     },
     "courseAnalysisResultShell": {
@@ -10270,12 +10364,17 @@
       "noRisks": "No critical blockers were returned.",
       "noStrengths": "No strengths were returned.",
       "noFindings": "No actionable findings were returned.",
+      "actions": "Review action",
+      "acceptFinding": "Accept",
+      "dismissFinding": "Dismiss",
+      "createTask": "Create task",
+      "reviewActions": { "accepted": "Accepted", "dismissed": "Dismissed", "task_created": "Task created" },
       "summaryFindingTitle": "Review generated summary",
       "inspectCitationsAction": "Inspect cited course material before publishing the score.",
       "reviewGateLabel": "I opened the evidence and findings below and reviewed them before publishing.",
       "reviewGateHint": "Publishing is disabled until this is checked.",
       "publishDialogTitle": "Publish reviewed score?",
-      "publishDialogDescription": "This score, the findings list, and cited sources will become visible to students and staff enrolled in this course. This cannot be un-published quietly — a revised score will show as an update, not a removal.",
+      "publishDialogDescription": "This score, the findings list, and cited sources will become visible to students and staff enrolled in this course. A revised score will appear as an update, not a silent removal.",
       "cancelPublish": "Keep reviewing",
       "confirmPublish": "Publish reviewed score"
     },
@@ -10327,6 +10426,49 @@
       "flagsDescription": "Read-only runtime view. Change flags in backend environment.",
       "loading": "Loading AI usage."
     },
+    "operationsConsole": {
+      "title": "Run operations",
+      "description": "Filter recent runs, spot stuck work, and inspect a redacted event trail.",
+      "timeRange": "Time range",
+      "days": "{count, plural, one {Last day} other {Last # days}}",
+      "statusFilter": "Run status",
+      "featureFilter": "Feature",
+      "providerFilter": "Provider or model",
+      "courseFilter": "Course UUID",
+      "statuses": {
+        "all": "All statuses",
+        "queued": "Queued",
+        "running": "Running",
+        "finished": "Finished",
+        "error": "Failed",
+        "aborted": "Cancelled"
+      },
+      "metrics": {
+        "requests": "Requests",
+        "success": "Success rate",
+        "cancelled": "Cancellation rate",
+        "retried": "Retry rate",
+        "p50": "p50 latency",
+        "p95": "p95 latency",
+        "ttft50": "p50 first text",
+        "ttft95": "p95 first text",
+        "tokens": "Tokens",
+        "cost": "Estimated cost"
+      },
+      "table": {
+        "feature": "Feature",
+        "status": "Status",
+        "started": "Started",
+        "model": "Provider / model",
+        "error": "Error code"
+      },
+      "stuck": "Stuck",
+      "inspect": "Inspect",
+      "detailTitle": "Redacted run detail",
+      "close": "Close",
+      "artifacts": "Artifacts",
+      "notAvailable": "Not available"
+    },
     "tokenUsageChart": {
       "title": "AI usage",
       "description": "Token usage across AI runs.",
@@ -10377,6 +10519,75 @@
         "status": "Status"
       }
     }
+  },
+  "PageLoading": {
+    "loading": "Loading..."
+  },
+  "DashboardWorkQueue": {
+    "priorityLabel": "Priority queue",
+    "title": "Work that needs you",
+    "description": "Open the next learner, grading, or course action without hunting through sections.",
+    "browseLabel": "Browse",
+    "toolsTitle": "Tools and sections",
+    "toolsDescription": "Explore courses, reports, people, and settings when you are not responding to queued work.",
+    "openLabel": "Open",
+    "groups": {
+      "today": "Today",
+      "dueSoon": "Due soon",
+      "returned": "Returned",
+      "waiting": "Waiting",
+      "released": "Recently released"
+    },
+    "items": {
+      "unknownCourse": "Course",
+      "returned": {
+        "title": "Revise {activity}",
+        "description": "{course}: feedback requires a new submission.",
+        "action": "Revise work"
+      },
+      "waiting": {
+        "title": "Waiting for feedback on {activity}",
+        "description": "{course}: your work was received.",
+        "action": "View receipt"
+      },
+      "feedback": {
+        "title": "Review feedback for {activity}",
+        "description": "{course}: a grading decision is available.",
+        "action": "View feedback"
+      },
+      "overdue": {
+        "title": "Finish overdue work: {activity}",
+        "description": "{course}: this work is past its due date."
+      },
+      "inProgress": {
+        "title": "Continue {activity}",
+        "description": "{course}: finish your in-progress work.",
+        "action": "Continue"
+      },
+      "needsGrading": {
+        "title": "Grade {activity}",
+        "description": "A learner submission in {course} is ready for review.",
+        "action": "Grade submission"
+      },
+      "slaBreach": {
+        "title": "Grade overdue review: {activity}",
+        "description": "A learner in {course} has waited beyond the review target.",
+        "action": "Grade submission"
+      },
+      "awaitingRelease": {
+        "title": "Release {activity}",
+        "description": "A grade in {course} is saved but not visible to the learner.",
+        "action": "Review and release"
+      }
+    }
+  },
+  "LandingDegraded": {
+    "title": "Courses are temporarily unavailable",
+    "description": "The learning service did not respond. You can retry now or use your dashboard while the course catalogue recovers.",
+    "safeState": "No work was changed or lost.",
+    "retry": "Retry",
+    "openDashboard": "Open dashboard",
+    "signIn": "Sign in"
   },
   "LearnerCourse": {
     "privateCourse": "Private course"

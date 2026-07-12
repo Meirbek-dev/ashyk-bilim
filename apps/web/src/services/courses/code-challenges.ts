@@ -1,5 +1,5 @@
-import { apiFetch } from '@/lib/api-client'
-import { APIError, parseApiError } from '@/lib/api/assertSuccess'
+import { apiJson } from '@/lib/api-client'
+import { APIError, isApiError } from '@/lib/api/assertSuccess'
 import type {
   SubmissionStatus as CanonicalSubmissionStatus,
   Submission as GradingSubmission,
@@ -78,12 +78,6 @@ interface CanonicalRunRecord {
 interface CanonicalMetadata {
   judge0_state?: string
   latest_run?: CanonicalRunRecord | null
-}
-
-async function ensureOk(response: Response, path: string): Promise<void> {
-  if (!response.ok) {
-    throw await parseApiError(response, path)
-  }
 }
 
 function serviceError(code: string, message: string, status = 0): APIError {
@@ -255,21 +249,16 @@ function normalizeActivityUuid(activityUuid: string) {
 }
 
 export async function getJudge0Languages(): Promise<Judge0Language[]> {
-  const response = await apiFetch('code-execution/languages')
-  await ensureOk(response, 'code-execution/languages')
-  return (await response.json()) as Judge0Language[]
+  return apiJson<Judge0Language[]>('code-execution/languages')
 }
 
 async function loadCodeAssessment(activityUuid: string): Promise<CodeAssessmentRead | null> {
-  const response = await apiFetch(`assessments/activity/${normalizeActivityUuid(activityUuid)}`)
-
-  if (response.status === 404) {
-    return null
+  try {
+    return await apiJson<CodeAssessmentRead>(`assessments/activity/${normalizeActivityUuid(activityUuid)}`)
+  } catch (error) {
+    if (isApiError(error) && error.status === 404) return null
+    throw error
   }
-
-  await ensureOk(response, `assessments/activity/${normalizeActivityUuid(activityUuid)}`)
-
-  return (await response.json()) as CodeAssessmentRead
 }
 
 function getCodeAssessmentItem(assessment: CodeAssessmentRead | null): CodeAssessmentItem | null {
@@ -455,21 +444,19 @@ async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<
   }
 
   if (codeItem) {
-    const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}`, {
+    await apiJson(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    await ensureOk(response, `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}`)
     return
   }
 
-  const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items`, {
+  await apiJson(`assessments/${assessment.assessment_uuid}/items`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  await ensureOk(response, `assessments/${assessment.assessment_uuid}/items`)
 }
 
 function normalizeJudge0State(
@@ -528,7 +515,7 @@ export async function saveCodeChallengeSettings(
     throw serviceError('CODE_CHALLENGE_NOT_FOUND', 'Code challenge assessment not found', 404)
   }
 
-  const response = await apiFetch(`assessments/${assessment.assessment_uuid}`, {
+  await apiJson(`assessments/${assessment.assessment_uuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -540,8 +527,6 @@ export async function saveCodeChallengeSettings(
       },
     }),
   })
-
-  await ensureOk(response, `assessments/${assessment.assessment_uuid}`)
 
   await upsertCodeItem(assessment, settings)
 
@@ -567,7 +552,7 @@ export async function submitCode(
     throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
   }
 
-  const response = await apiFetch(`assessments/${assessment.assessment_uuid}/submit`, {
+  const submission = await apiJson<GradingSubmission>(`assessments/${assessment.assessment_uuid}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -584,9 +569,7 @@ export async function submitCode(
     }),
   })
 
-  await ensureOk(response, `assessments/${assessment.assessment_uuid}/submit`)
-
-  return mapCanonicalCodeSubmission((await response.json()) as GradingSubmission)
+  return mapCanonicalCodeSubmission(submission)
 }
 
 export async function runTests(
@@ -604,19 +587,19 @@ export async function runTests(
     throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
   }
 
-  const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      language: languageId,
-      source: sourceCode,
-      idempotency_key: codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode),
-    }),
-  })
+  const run = await apiJson<CanonicalCodeRunResponse>(
+    `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        language: languageId,
+        source: sourceCode,
+        idempotency_key: codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode),
+      }),
+    },
+  )
 
-  await ensureOk(response, `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`)
-
-  const run = (await response.json()) as CanonicalCodeRunResponse
   if (run.status === 'DEGRADED') {
     throw serviceError('JUDGE0_UNAVAILABLE', run.error_message || 'Code runner is temporarily unavailable', 503)
   }
@@ -650,26 +633,26 @@ export async function runCustomTest(
     throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
   }
 
-  const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      language: languageId,
-      source: sourceCode,
-      custom_input: stdin,
-      idempotency_key: codeRunIdempotencyKey(
-        assessment.assessment_uuid,
-        codeItem.item_uuid,
-        languageId,
-        sourceCode,
-        stdin,
-      ),
-    }),
-  })
+  const run = await apiJson<CanonicalCodeRunResponse>(
+    `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        language: languageId,
+        source: sourceCode,
+        custom_input: stdin,
+        idempotency_key: codeRunIdempotencyKey(
+          assessment.assessment_uuid,
+          codeItem.item_uuid,
+          languageId,
+          sourceCode,
+          stdin,
+        ),
+      }),
+    },
+  )
 
-  await ensureOk(response, `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`)
-
-  const run = (await response.json()) as CanonicalCodeRunResponse
   if (run.status === 'DEGRADED') {
     throw serviceError('JUDGE0_UNAVAILABLE', run.error_message || 'Code runner is temporarily unavailable', 503)
   }
@@ -700,11 +683,9 @@ export async function getSubmissions(activityUuid: string): Promise<CodeSubmissi
     return []
   }
 
-  const response = await apiFetch(`assessments/${assessment.assessment_uuid}/me`)
-
-  await ensureOk(response, `assessments/${assessment.assessment_uuid}/me`)
-
-  return ((await response.json()) as CanonicalSubmissionRead[] as GradingSubmission[]).map(mapCanonicalCodeSubmission)
+  return (await apiJson<CanonicalSubmissionRead[]>(`assessments/${assessment.assessment_uuid}/me`)).map(submission =>
+    mapCanonicalCodeSubmission(submission as unknown as GradingSubmission),
+  )
 }
 
 interface CanonicalCodeRunTestResult {

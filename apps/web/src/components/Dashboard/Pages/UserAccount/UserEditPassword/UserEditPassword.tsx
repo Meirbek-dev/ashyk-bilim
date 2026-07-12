@@ -63,30 +63,19 @@ const UserEditPassword = () => {
         return
       }
 
-      const response = await updatePassword(user_id, values)
+      await updatePassword(user_id, values)
+      toast.dismiss(loadingToast)
+      toast.success(t('passwordUpdateSuccess'), {
+        duration: 4000,
+      })
+      toast(t('promptLogoutOnPasswordChange'), {
+        duration: 4000,
+      })
+      form.reset()
 
-      if (response.success) {
-        toast.dismiss(loadingToast)
-
-        // Show success message and notify about logout
-        toast.success(t('passwordUpdateSuccess'), {
-          duration: 4000,
-        })
-        toast(t('promptLogoutOnPasswordChange'), {
-          duration: 4000,
-          icon: '🔑',
-        })
-        form.reset()
-
-        // Wait for 4 seconds before signing out
-        setTimeout(() => {
-          void logout({ redirectTo: getAbsoluteUrl('/') })
-        }, 4000)
-      } else {
-        toast.error(t('passwordUpdateError'), {
-          id: loadingToast,
-        })
-      }
+      setTimeout(() => {
+        void logout({ redirectTo: getAbsoluteUrl('/') })
+      }, 4000)
     } catch (error: unknown) {
       toast.error(t('passwordUpdateError'), { id: loadingToast })
       console.error('Password update error:', error)

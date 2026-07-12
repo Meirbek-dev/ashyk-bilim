@@ -43,7 +43,8 @@ import { LearnerCourseModules } from '@/features/learner-course/course-page-modu
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { startCourse } from '@services/courses/activity'
 import { toast } from 'sonner'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 interface CourseClientProps {
   course: AppCourse
@@ -119,26 +120,6 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
   return []
 }
 
-function findFirstUnfinishedActivity(course: AppCourse, run: AppTrailRun | undefined): AppActivity | null {
-  const completedActivityIds = new Set(
-    (run?.steps ?? [])
-      .filter((step: AppTrailStep) => step.complete === true || step.completed === true)
-      .map((step: AppTrailStep) => Number(step.activity_id))
-      .filter(Number.isFinite),
-  )
-
-  for (const chapter of course.chapters ?? []) {
-    for (const activity of chapter.activities ?? []) {
-      const activityId = Number(activity.id)
-      if (!Number.isFinite(activityId) || !completedActivityIds.has(activityId)) {
-        return activity
-      }
-    }
-  }
-
-  return course.chapters?.[0]?.activities?.[0] ?? null
-}
-
 const CourseClient = (props: CourseClientProps) => {
   const t = useTranslations('CoursePage')
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
@@ -150,6 +131,8 @@ const CourseClient = (props: CourseClientProps) => {
   const { user: currentUser } = useSession()
   const router = useRouter()
   const queryClient = useQueryClient()
+  const learnerStateQuery = useQuery(learnerCourseStateQueryOptions(courseuuid, Boolean(currentUser)))
+  const learnerState = learnerStateQuery.data
 
   const mutateDiscussions = () => {
     router.refresh()
@@ -160,12 +143,7 @@ const CourseClient = (props: CourseClientProps) => {
     return normalizeLearningsHelper(course?.learnings)
   }, [course?.learnings])
 
-  const normalizedCourseUuidForRun = course.course_uuid?.replace('course_', '')
-  const currentCourseRun = trailData?.runs?.find((run: AppTrailRun) => {
-    const runCourseUuid = run.course?.course_uuid?.replace('course_', '')
-    return runCourseUuid === normalizedCourseUuidForRun
-  })
-  const isEnrolled = Boolean(currentCourseRun)
+  const isEnrolled = learnerState?.enrolled ?? false
 
   const handleStartCourse = async () => {
     if (!currentUser) {
@@ -173,12 +151,9 @@ const CourseClient = (props: CourseClientProps) => {
       return
     }
 
-    if (currentCourseRun) {
-      const firstUnfinishedActivity = findFirstUnfinishedActivity(course, currentCourseRun)
-      if (firstUnfinishedActivity?.activity_uuid) {
-        router.push(
-          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstUnfinishedActivity.activity_uuid.replace('activity_', '')}`,
-        )
+    if (learnerState?.enrolled) {
+      if (learnerState.next_action.href && learnerState.next_action.enabled) {
+        router.push(learnerState.next_action.href)
       }
       return
     }
@@ -187,7 +162,10 @@ const CourseClient = (props: CourseClientProps) => {
     const loadingToast = toast.loading('Starting course')
     try {
       await startCourse(`course_${courseuuid}`)
-      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
+        queryClient.invalidateQueries({ queryKey: learnerCourseStateQueryOptions(courseuuid).queryKey }),
+      ])
       toast.success('Course started', { id: loadingToast })
       const firstActivity = course.chapters?.[0]?.activities?.[0]
       if (firstActivity?.activity_uuid) {
@@ -247,12 +225,9 @@ const CourseClient = (props: CourseClientProps) => {
   }
 
   const isActivityDone = (activity: AppActivity) => {
-    if (currentCourseRun) {
-      return currentCourseRun.steps?.find(
-        (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
-      )
-    }
-    return false
+    return learnerState?.outline
+      .flatMap(chapter => chapter.activities)
+      .some(item => item.id === Number(activity.id) && item.complete)
   }
 
   const isActivityCurrent = (activity: AppActivity) => {
@@ -284,7 +259,9 @@ const CourseClient = (props: CourseClientProps) => {
                   isEnrolled={isEnrolled}
                   onStartCourse={handleStartCourse}
                   starting={isStartingCourse}
-                  trailData={trailData}
+                  learnerState={learnerState}
+                  isStateLoading={learnerStateQuery.isLoading}
+                  stateError={learnerStateQuery.error}
                 />
 
                 {/* Thumbnail */}

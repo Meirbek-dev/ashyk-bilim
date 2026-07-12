@@ -20,7 +20,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type { ApiErrorEnvelope, RootResponse } from '../api.schemas'
+import { ApiErrorEnvelope, RootResponse } from '../zod'
 
 import { orvalMutator } from '../../orval-mutator'
 import type { ErrorType } from '../../orval-mutator'
@@ -50,10 +50,14 @@ export const getRootGetUrl = () => {
  * @summary Root
  */
 export const rootGet = async (options?: RequestInit): Promise<RootResponse> => {
-  return orvalMutator<RootResponse>(getRootGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<RootResponse>(
+    getRootGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    RootResponse,
+  )
 }
 
 export const getRootGetQueryKey = () => {

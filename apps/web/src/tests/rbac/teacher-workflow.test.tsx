@@ -29,9 +29,9 @@ vi.mock('@tanstack/react-query', () => ({
   queryOptions: (opts: any) => opts,
 }))
 
-// Mock apiFetch
+// Mock apiJson
 vi.mock('@/lib/api-client', () => ({
-  apiFetch: vi.fn(),
+  apiJson: vi.fn(),
 }))
 
 const createMockSession = (permissions: string[]): Session => ({

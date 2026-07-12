@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { InlineError } from '@/components/ui/error-state'
 import { Progress } from '@/components/ui/progress'
-import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
+import type { LearnerCourseState } from '@/features/learner-course/api'
 import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import { cn } from '@/lib/utils'
 import { getAbsoluteUrl } from '@services/config/config'
@@ -34,13 +34,16 @@ interface LearnerCourseModulesProps {
   isEnrolled: boolean
   onStartCourse?: () => void
   starting?: boolean
-  trailData?: AppTrailData | null | undefined
+  learnerState?: LearnerCourseState | undefined
+  isStateLoading?: boolean | undefined
+  stateError?: Error | null | undefined
 }
 
 interface CourseActivityAgendaItem {
-  activity: AppActivity
+  activityId: number
+  activityUuid: string
+  title: string
   chapterName: string
-  cleanActivityUuid: string
   complete: boolean
   href: string
   index: number
@@ -84,6 +87,7 @@ const LEARNER_COURSE_COPY = {
   reviewFeedback: 'Review feedback and resubmit',
   signIn: 'Sign in',
   startCourse: 'Start course',
+  stateUnavailable: 'Course progress is temporarily unavailable. Try again before continuing.',
   untitledActivity: 'Untitled activity',
   verifyCertificate: 'Verify certificate',
 }
@@ -95,28 +99,32 @@ export function LearnerCourseModules({
   isEnrolled,
   onStartCourse,
   starting,
-  trailData,
+  learnerState,
+  isStateLoading,
+  stateError,
 }: LearnerCourseModulesProps) {
-  const progress = useMemo(
-    () => buildCourseProgressSnapshot(course, courseUuid, trailData),
-    [course, courseUuid, trailData],
-  )
+  const progress = useMemo(() => buildCourseProgressSnapshot(courseUuid, learnerState), [courseUuid, learnerState])
 
   return (
     <div className="grid gap-4">
+      {stateError ? <InlineError description={LEARNER_COURSE_COPY.stateUnavailable} error={stateError} /> : null}
       <CourseEnrollmentState
         course={course}
         isAuthenticated={isAuthenticated}
-        isEnrolled={isEnrolled}
+        isEnrolled={learnerState?.enrolled ?? isEnrolled}
         nextItem={progress.nextItem}
         onStartCourse={onStartCourse}
         starting={starting}
       />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]">
-        <LearnerAgendaModule isEnrolled={isEnrolled} progress={progress} />
-        <CertificateProgressModule course={course} isEnrolled={isEnrolled} progress={progress} />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]" aria-busy={isStateLoading}>
+        <LearnerAgendaModule isEnrolled={learnerState?.enrolled ?? isEnrolled} progress={progress} />
+        <CertificateProgressModule
+          isEnrolled={learnerState?.enrolled ?? isEnrolled}
+          progress={progress}
+          certificate={learnerState?.certificate}
+        />
       </div>
-      <ReturnedWorkModule isEnrolled={isEnrolled} returnedItems={progress.returnedItems} />
+      <ReturnedWorkModule isEnrolled={learnerState?.enrolled ?? isEnrolled} returnedItems={progress.returnedItems} />
     </div>
   )
 }
@@ -141,7 +149,7 @@ function CourseEnrollmentState({
   const title = isEnrolled ? 'You are enrolled' : isAuthenticated ? 'Preview before enrolling' : 'Sign in to start'
   const description = isEnrolled
     ? nextItem
-      ? `Continue with ${nextItem.activity.name ?? 'the next activity'}.`
+      ? `Continue with ${nextItem.title || 'the next activity'}.`
       : 'All listed activities are complete. Review the certificate module for completion status.'
     : 'See the syllabus and outcomes first. Starting the course creates your learner agenda and progress trail.'
   const firstActivity = firstCourseActivity(course)
@@ -222,7 +230,7 @@ function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; pr
           <div className="divide-border overflow-hidden rounded-lg border">
             {visibleItems.map(item => (
               <AppLink
-                key={item.activity.activity_uuid}
+                key={item.activityUuid}
                 href={item.href}
                 className="hover:bg-muted/40 flex min-h-14 items-center gap-3 px-3 py-2 transition-colors"
               >
@@ -240,7 +248,7 @@ function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; pr
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">
-                    {item.activity.name ?? LEARNER_COURSE_COPY.untitledActivity}
+                    {item.title || LEARNER_COURSE_COPY.untitledActivity}
                   </span>
                   <span className="text-muted-foreground block truncate text-xs">{item.chapterName}</span>
                 </span>
@@ -296,14 +304,14 @@ function ReturnedWorkModule({
           <div className="grid gap-2 md:grid-cols-2">
             {returnedItems.slice(0, 4).map(item => (
               <AppLink
-                key={item.activity.activity_uuid}
+                key={item.activityUuid}
                 href={item.href}
                 className="border-border hover:bg-muted/40 flex items-start gap-3 rounded-lg border p-3 transition-colors"
               >
                 <FileWarning className="text-destructive mt-0.5 size-4 shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">
-                    {item.activity.name ?? LEARNER_COURSE_COPY.returnedWork}
+                    {item.title || LEARNER_COURSE_COPY.returnedWork}
                   </span>
                   <span className="text-muted-foreground block text-xs">{LEARNER_COURSE_COPY.reviewFeedback}</span>
                 </span>
@@ -318,23 +326,15 @@ function ReturnedWorkModule({
 }
 
 function CertificateProgressModule({
-  course,
   isEnrolled,
   progress,
+  certificate,
 }: {
-  course: AppCourse
   isEnrolled: boolean
   progress: CourseProgressSnapshot
+  certificate?: LearnerCourseState['certificate'] | undefined
 }) {
-  const normalizedCourseUuid = normalizeCourseUuid(course.course_uuid)
-  const certificateQuery = useUserCertificateByCourse(
-    isEnrolled && progress.percent === 100 ? normalizedCourseUuid : null,
-  )
-  const certificates = certificateQuery.isSuccess ? certificateQuery.data.data : []
-  const earnedCertificate = certificates[0]
-  const verificationHref = earnedCertificate
-    ? getAbsoluteUrl(`/certificates/${earnedCertificate.certificate_user.user_certification_uuid}/verify`)
-    : null
+  const verificationHref = certificate?.issued && certificate.href ? getAbsoluteUrl(certificate.href) : null
 
   return (
     <Card>
@@ -344,7 +344,7 @@ function CertificateProgressModule({
           {LEARNER_COURSE_COPY.certificateProgress}
         </CardTitle>
         <CardDescription>
-          {earnedCertificate ? LEARNER_COURSE_COPY.certificateEarned : LEARNER_COURSE_COPY.certificateDescription}
+          {certificate?.issued ? LEARNER_COURSE_COPY.certificateEarned : LEARNER_COURSE_COPY.certificateDescription}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -365,9 +365,6 @@ function CertificateProgressModule({
             <div className="text-xl font-semibold tabular-nums">{Math.max(0, progress.total - progress.completed)}</div>
           </div>
         </div>
-        {certificateQuery.isError ? (
-          <InlineError description={LEARNER_COURSE_COPY.certificateCheckPending} error={certificateQuery.error} />
-        ) : null}
         {verificationHref ? (
           <Button
             variant="outline"
@@ -381,10 +378,10 @@ function CertificateProgressModule({
         ) : (
           <LmsStatusBadge
             status={
-              progress.percent === 100 ? LmsStatuses.READY : isEnrolled ? LmsStatuses.IN_PROGRESS : LmsStatuses.LIMITED
+              certificate?.eligible ? LmsStatuses.READY : isEnrolled ? LmsStatuses.IN_PROGRESS : LmsStatuses.LIMITED
             }
             label={
-              progress.percent === 100
+              certificate?.eligible
                 ? LEARNER_COURSE_COPY.certificateCheckPending
                 : isEnrolled
                   ? LEARNER_COURSE_COPY.inProgress
@@ -409,43 +406,29 @@ function EmptyModuleState({ description, icon, title }: { description: string; i
   )
 }
 
-function buildCourseProgressSnapshot(
-  course: AppCourse,
-  courseUuid: string,
-  trailData?: AppTrailData | null,
-): CourseProgressSnapshot {
-  const cleanCourseUuid = normalizeCourseUuid(course.course_uuid || courseUuid)
-  const run = trailData?.runs?.find(activeRun => normalizeCourseUuid(activeRun.course?.course_uuid) === cleanCourseUuid)
-  const completedActivityIds = new Set(
-    (run?.steps ?? [])
-      .filter(step => step.complete === true || step.completed === true)
-      .map(step => Number(step.activity_id))
-      .filter(Number.isFinite),
-  )
-  const items = (course.chapters ?? []).flatMap((chapter, chapterIndex) =>
-    (chapter.activities ?? []).map((activity, activityIndex) => {
-      const cleanActivityUuid = normalizeActivityUuid(activity.activity_uuid)
-      const activityId = Number(activity.id)
-      const complete = Number.isFinite(activityId) && completedActivityIds.has(activityId)
-      return {
-        activity,
-        chapterName: chapter.name || `Chapter ${chapterIndex + 1}`,
-        cleanActivityUuid,
-        complete,
-        href: `${getAbsoluteUrl('')}/course/${courseUuid}/activity/${cleanActivityUuid}`,
+function buildCourseProgressSnapshot(courseUuid: string, state?: LearnerCourseState): CourseProgressSnapshot {
+  const items =
+    state?.outline.flatMap(chapter =>
+      chapter.activities.map((activity, activityIndex) => ({
+        activityId: activity.id,
+        activityUuid: activity.uuid,
+        title: activity.title,
+        chapterName: chapter.title,
+        complete: activity.complete,
+        href: `${getAbsoluteUrl('')}/course/${courseUuid}/activity/${normalizeActivityUuid(activity.uuid)}`,
         index: activityIndex,
-        returned: isReturnedActivity(activity),
-      }
-    }),
-  )
-  const completed = items.filter(item => item.complete).length
-  const total = items.length
-  const percent = total === 0 ? 0 : Math.round((completed / total) * 100)
+        returned: activity.state === 'returned',
+      })),
+    ) ?? []
+  const completed = state?.progress.completed_required_count ?? 0
+  const total = state?.progress.total_required_count ?? 0
+  const percent = Math.round(state?.progress.progress_pct ?? 0)
+  const nextActivityUuid = state?.next_action.activity_uuid
 
   return {
     completed,
     items,
-    nextItem: items.find(item => !item.complete) ?? null,
+    nextItem: items.find(item => item.activityUuid === nextActivityUuid) ?? items.find(item => !item.complete) ?? null,
     percent,
     returnedItems: items.filter(item => item.returned),
     total,
@@ -467,19 +450,4 @@ function normalizeCourseUuid(value?: string | null) {
 
 function normalizeActivityUuid(value?: string | null) {
   return (value ?? '').replace(/^activity_/, '')
-}
-
-function isReturnedActivity(activity: AppActivity) {
-  const candidate = activity as AppActivity & {
-    latest_submission_status?: string | null
-    release_state?: string | null
-    submission_status?: string | null
-    status?: string | null
-  }
-  return (
-    candidate.submission_status === 'RETURNED' ||
-    candidate.latest_submission_status === 'RETURNED' ||
-    candidate.release_state === 'RETURNED_FOR_REVISION' ||
-    candidate.status === 'RETURNED'
-  )
 }

@@ -124,7 +124,9 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
 
   const course: CourseStructure = {
     ...course_meta,
-    chapters: (course_meta?.chapters ?? []).map(chapter => (Object.assign(chapter, { activities: chapter.activities ?? [] }))),
+    chapters: (course_meta?.chapters ?? []).map(chapter =>
+      Object.assign(chapter, { activities: chapter.activities ?? [] }),
+    ),
   }
 
   return (

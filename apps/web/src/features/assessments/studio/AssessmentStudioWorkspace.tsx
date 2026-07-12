@@ -11,7 +11,7 @@ import type { KindModule } from '@/features/assessments/registry'
 import { useAssessmentStudio } from '@/features/assessments/hooks/useAssessment'
 import type { AssessmentLifecycle } from '@/features/assessments/domain'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from '@components/ui/AppLink'
@@ -96,12 +96,11 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const archiveAssessment = () => {
     startTransition(async () => {
       try {
-        const response = await apiFetch(`assessments/${studio.assessmentUuid}/lifecycle`, {
+        await apiJson(`assessments/${studio.assessmentUuid}/lifecycle`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ to: 'ARCHIVED', scheduled_at: null }),
         })
-        if (!response.ok) throw new Error(response.statusText || 'Failed to archive')
         await queryClient.invalidateQueries({
           queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
         })
@@ -122,7 +121,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
     <ActivityAIDockLayout
       scope={aiScope}
       defaultMode="review"
-      panel={<CourseAIHub courseUuid={courseUuid} variant="panel" />}
+      panel={<CourseAIHub courseUuid={courseUuid} scope={aiScope} variant="panel" />}
       className="bg-background min-h-screen"
     >
       {/* ── Topbar ───────────────────────────────────────────────────────────────── */}

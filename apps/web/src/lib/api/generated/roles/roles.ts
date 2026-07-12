@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   AddPermissionBody,
   ApiErrorEnvelope,
   GetRoleAuditLogApiV1RolesAuditLogGetParams,
@@ -34,9 +34,9 @@ import type {
   RoleRead,
   RoleUpdate,
   RoleUsersCountResponse,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -65,10 +65,14 @@ export const getListRolesApiV1RolesGetUrl = () => {
  * @summary List Roles
  */
 export const listRolesApiV1RolesGet = async (options?: RequestInit): Promise<RoleRead[]> => {
-  return orvalMutator<RoleRead[]>(getListRolesApiV1RolesGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<RoleRead[]>(
+    getListRolesApiV1RolesGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(RoleRead),
+  )
 }
 
 export const getListRolesApiV1RolesGetQueryKey = () => {
@@ -254,12 +258,16 @@ export const getCreateRoleApiV1RolesPostUrl = () => {
  * @summary Create Role
  */
 export const createRoleApiV1RolesPost = async (roleCreate: RoleCreate, options?: RequestInit): Promise<RoleRead> => {
-  return orvalMutator<RoleRead>(getCreateRoleApiV1RolesPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(roleCreate),
-  })
+  return orvalMutator<RoleRead>(
+    getCreateRoleApiV1RolesPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(roleCreate),
+    },
+    RoleRead,
+  )
 }
 
 export const getCreateRoleApiV1RolesPostMutationOptions = <
@@ -329,7 +337,7 @@ export const getGetRoleAuditLogApiV1RolesAuditLogGetUrl = (params?: GetRoleAudit
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -345,10 +353,14 @@ export const getRoleAuditLogApiV1RolesAuditLogGet = async (
   params?: GetRoleAuditLogApiV1RolesAuditLogGetParams,
   options?: RequestInit,
 ): Promise<RoleAuditListResponse> => {
-  return orvalMutator<RoleAuditListResponse>(getGetRoleAuditLogApiV1RolesAuditLogGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<RoleAuditListResponse>(
+    getGetRoleAuditLogApiV1RolesAuditLogGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    RoleAuditListResponse,
+  )
 }
 
 export const getGetRoleAuditLogApiV1RolesAuditLogGetQueryKey = (
@@ -566,10 +578,14 @@ export const getListAllPermissionsApiV1RolesPermissionsAllGetUrl = () => {
 export const listAllPermissionsApiV1RolesPermissionsAllGet = async (
   options?: RequestInit,
 ): Promise<PermissionRead[]> => {
-  return orvalMutator<PermissionRead[]>(getListAllPermissionsApiV1RolesPermissionsAllGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<PermissionRead[]>(
+    getListAllPermissionsApiV1RolesPermissionsAllGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(PermissionRead),
+  )
 }
 
 export const getListAllPermissionsApiV1RolesPermissionsAllGetQueryKey = () => {
@@ -784,10 +800,14 @@ export const deleteRoleApiV1RolesRoleIdDelete = async (
   roleId: number,
   options?: RequestInit,
 ): Promise<RoleActionResponse> => {
-  return orvalMutator<RoleActionResponse>(getDeleteRoleApiV1RolesRoleIdDeleteUrl(roleId), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<RoleActionResponse>(
+    getDeleteRoleApiV1RolesRoleIdDeleteUrl(roleId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    RoleActionResponse,
+  )
 }
 
 export const getDeleteRoleApiV1RolesRoleIdDeleteMutationOptions = <
@@ -863,10 +883,14 @@ export const getGetRoleApiV1RolesRoleIdGetUrl = (roleId: number) => {
  * @summary Get Role
  */
 export const getRoleApiV1RolesRoleIdGet = async (roleId: number, options?: RequestInit): Promise<RoleRead> => {
-  return orvalMutator<RoleRead>(getGetRoleApiV1RolesRoleIdGetUrl(roleId), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<RoleRead>(
+    getGetRoleApiV1RolesRoleIdGetUrl(roleId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    RoleRead,
+  )
 }
 
 export const getGetRoleApiV1RolesRoleIdGetQueryKey = (roleId: number) => {
@@ -1072,12 +1096,16 @@ export const updateRoleApiV1RolesRoleIdPut = async (
   roleUpdate: RoleUpdate,
   options?: RequestInit,
 ): Promise<RoleRead> => {
-  return orvalMutator<RoleRead>(getUpdateRoleApiV1RolesRoleIdPutUrl(roleId), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(roleUpdate),
-  })
+  return orvalMutator<RoleRead>(
+    getUpdateRoleApiV1RolesRoleIdPutUrl(roleId),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(roleUpdate),
+    },
+    RoleRead,
+  )
 }
 
 export const getUpdateRoleApiV1RolesRoleIdPutMutationOptions = <
@@ -1156,10 +1184,14 @@ export const getRolePermissionsApiV1RolesRoleIdPermissionsGet = async (
   roleId: number,
   options?: RequestInit,
 ): Promise<PermissionRead[]> => {
-  return orvalMutator<PermissionRead[]>(getGetRolePermissionsApiV1RolesRoleIdPermissionsGetUrl(roleId), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<PermissionRead[]>(
+    getGetRolePermissionsApiV1RolesRoleIdPermissionsGetUrl(roleId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(PermissionRead),
+  )
 }
 
 export const getGetRolePermissionsApiV1RolesRoleIdPermissionsGetQueryKey = (roleId: number) => {
@@ -1409,12 +1441,16 @@ export const addPermissionToRoleApiV1RolesRoleIdPermissionsPost = async (
   addPermissionBody: AddPermissionBody,
   options?: RequestInit,
 ): Promise<RoleActionResponse> => {
-  return orvalMutator<RoleActionResponse>(getAddPermissionToRoleApiV1RolesRoleIdPermissionsPostUrl(roleId), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(addPermissionBody),
-  })
+  return orvalMutator<RoleActionResponse>(
+    getAddPermissionToRoleApiV1RolesRoleIdPermissionsPostUrl(roleId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(addPermissionBody),
+    },
+    RoleActionResponse,
+  )
 }
 
 export const getAddPermissionToRoleApiV1RolesRoleIdPermissionsPostMutationOptions = <
@@ -1506,6 +1542,7 @@ export const removePermissionFromRoleApiV1RolesRoleIdPermissionsPermissionIdDele
       ...options,
       method: 'DELETE',
     },
+    RoleActionResponse,
   )
 }
 
@@ -1591,10 +1628,14 @@ export const getRoleUsersCountApiV1RolesRoleIdUsersCountGet = async (
   roleId: number,
   options?: RequestInit,
 ): Promise<RoleUsersCountResponse> => {
-  return orvalMutator<RoleUsersCountResponse>(getGetRoleUsersCountApiV1RolesRoleIdUsersCountGetUrl(roleId), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<RoleUsersCountResponse>(
+    getGetRoleUsersCountApiV1RolesRoleIdUsersCountGetUrl(roleId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    RoleUsersCountResponse,
+  )
 }
 
 export const getGetRoleUsersCountApiV1RolesRoleIdUsersCountGetQueryKey = (roleId: number) => {

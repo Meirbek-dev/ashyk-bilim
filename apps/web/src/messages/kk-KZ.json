@@ -6,21 +6,39 @@
       "currentActivity": "Ағымдағы белсенділік",
       "askPlaceholder": "Осы белсенділік туралы кез келген нәрсені сұраңыз...",
       "aiComposerLabel": "ЖИ хабарламасы",
-      "approvalBoundary": "AI suggestions stay separate until you choose an action.",
-      "closePanel": "Close AI assistant",
-      "composerHint": "Enter to send. Shift Enter for a new line.",
-      "contextDescription": "Ashyk Ai uses this activity as the main learning context.",
+      "approvalBoundary": "Әрекетті таңдағанша ЖИ ұсыныстары қолданылмайды.",
+      "closePanel": "ЖИ көмекшісін жабу",
+      "composerHint": "Enter хабарламаны жібереді. Shift Enter жаңа жол қосады.",
+      "contextDescription": "Ashyq AI осы белсенділікті негізгі оқу контексті ретінде қолданады.",
       "emptyStateTitle": "ЖИ-ден сұрау",
       "emptyStateDescription": "Ағымдағы әрекетті контекст ретінде пайдаланыңыз.",
       "errorStateTitle": "ЖИ сұрауы сәтсіз аяқталды",
       "defaultErrorMessage": "ЖИ сұрауы сәтсіз аяқталды. Қайталап көріңіз.",
-      "unavailable": "AI is unavailable for this activity.",
+      "unavailable": "Бұл белсенділік үшін ЖИ қолжетімсіз.",
       "retry": "Қайталау",
       "dismiss": "Елемеу",
-      "sendMessage": "Send message",
-      "stopGeneration": "Stop generation",
-      "studentMode": "Student tutor",
-      "sourcesAvailable": "{count} modes available",
+      "sendMessage": "Хабарлама жіберу",
+      "stopGeneration": "Жауапты тоқтату",
+      "studentMode": "Студент контексті",
+      "sourcesAvailable": "{count} режим қолжетімді",
+      "contextLabel": "Қолданылатын контекст",
+      "courseContext": "Ағымдағы курс",
+      "sourceCount": "{count} дереккөз қамтылды",
+      "visibility": {
+        "student": "Тек жарияланған материалдар",
+        "teacher": "Оқытушы контексті",
+        "admin": "Әкімші контексті"
+      },
+      "modes": {
+        "ask": "Сұрақ",
+        "explain": "Түсіндіру",
+        "practice": "Жаттығу",
+        "sources": "Дереккөздер",
+        "review": "Тексеру",
+        "analyze": "Талдау",
+        "draft-feedback": "Кері байланыс",
+        "remediation": "Түзету"
+      },
       "suggestions": {
         "dynamic": {
           "summarize": "Маған осы беттің қысқаша мазмұнын дайындап беріңіз",
@@ -1258,6 +1276,7 @@
     "AlertDialog": {
       "cancel": "Бас тарту",
       "close": "Жабу",
+      "cancelRun": "Іске қосуды тоқтату",
       "confirm": "Растау",
       "ok": "ОК",
       "title": "Ескерту"
@@ -3874,6 +3893,34 @@
         "publishingNotes": "Жариялау ескертпелері",
         "readinessChecklist": "Дайындық чек-парағы",
         "readyTitle": "Бұл курс құрылымдық тұрғыдан дайын.",
+        "publishedTitle": "Бұл курс жарияланған.",
+        "openLearnerPreview": "Оқушы көрінісін ашу",
+        "serverReadinessTitle": "Серверлік дайындық",
+        "serverReadinessDescription": "Жариялау кезінде сервер осы тексерулерді қайта орындайды.",
+        "readinessUnavailable": "Дайындықты тексеру мүмкін болмады. Тексеру сәтті аяқталғанша жариялау өшірулі.",
+        "loadingReadiness": "Дайындық тексерілуде…",
+        "previewTitle": "Алдын ала қарау тексеру куәлігі емес",
+        "previewHonesty": "Тәжірибені тексеру үшін оқушы ортасын ашыңыз. Көріністі ашу ешбір тексеруді аяқталған деп белгілемейді.",
+        "publishImpact": "Жариялау әсері",
+        "activeContent": "Белсенді тапсырмалар",
+        "scheduledContent": "Жоспарланған бағалаулар",
+        "openBlockers": "Ашық бұғаттаушылар",
+        "warnings": "Ескертулер",
+        "noBlockersTitle": "Жариялау бұғаттаушылары жоқ",
+        "noBlockersDescription": "Сервер жариялауға кедергі келтіретін нақты тұтастық мәселесін таппады.",
+        "blockerLabel": "Жариялау бұғаттаушысы",
+        "warningLabel": "Бұғаттамайтын ескерту",
+        "resolveIssue": "Шешу",
+        "issues": {
+          "noVisibleActivities": "Оқушыға көрінетін кемінде бір тапсырманы жариялаңыз.",
+          "requiredActivityUnpublished": "Міндетті тапсырма әлі жарияланбаған.",
+          "assessmentUnready": "Жарияланған бағалауда шешілмеген дайындық мәселелері бар.",
+          "fileSubmissionUnready": "Файл тапсыру әрекеті толық емес немесе жарияланбаған.",
+          "thumbnailMissing": "Курсты тануды жақсарту үшін мұқаба қосыңыз. Бұл жариялауды бұғаттамайды.",
+          "outcomesMissing": "Оқу нәтижелерін қосыңыз. Бұл жариялауды бұғаттамайды.",
+          "certificateMissing": "Сертификат бапталмаған. Бұл жариялауды бұғаттамайды.",
+          "contributorMissing": "Белсенді автор бапталмаған. Бұл жариялауды бұғаттамайды."
+        },
         "sectionLabel": "Тексеру және жариялау",
         "toasts": {
           "movedPrivate": "Курс қайтадан жабық күйге ауыстырылды.",
@@ -3904,6 +3951,7 @@
           }
         },
         "formLabel": "Курс құру",
+        "quickCreateTitleHelp": "Жеке нобайды қазір жасаңыз. Сипаттама, қолжетімділік, медиа, сертификат және жариялау Курс студиясында қалады.",
         "header": {
           "description": "Атауын, бастапқы құрылымын және құрғаннан кейін баруды көрсетіңіз.",
           "title": "Курс құру"
@@ -4131,6 +4179,10 @@
         "usersOnlyLabel": "Тек пайдаланушылар",
         "accessPolicyStagedTitle": "Қолжетімділік саясаты Сақтау басқанша сақталмайды",
         "accessPolicyStagedDescription": "Көрінерлік өзгерістері бұл бөлімді сақтағанша дейін локалды болып қалады. Төмендегі пайдаланушылар тобын байланыстыру бірден қолданылады.",
+        "readinessReadyTitle": "Жариялауға дайын",
+        "readinessReadyDescription": "Сервер жариялауға кедергі келтіретін нақты мәселе таппады.",
+        "readinessBlockedTitle": "Жариялауды {count} мәселе бұғаттап тұр",
+        "readinessWarningsTitle": "{count} ескертумен дайын",
         "userGroupLinksImmediateTitle": "Пайдаланушылар тобы байланыстырулары бірден қолданылады",
         "userGroupLinksImmediateDescription": "Бұл байланыстырулар растаудан кейін күшіне енеді. Қолжетімділік саясаты өзгерістерін бөлек сақтаңыз."
       },
@@ -8501,6 +8553,8 @@
           "schedulePublication": "Жариялауды жоспарлау",
           "schedule": "Жоспарлау",
           "previewGateTitle": "Студент көрінісін тексеру",
+          "honestPreviewDescription": "Бағалауды тексеру үшін нақты оқушы ортасын ашыңыз. Оны ашу тексеру болып саналмайды және жариялау дайындығын өзгертпейді.",
+          "openLearnerPreview": "Оқушы көрінісін ашу",
           "previewGateDesc": "Жариялау күйін өзгертпес бұрын студент тәжірибесін тексеріңіз.",
           "previewGateHighStakesDesc": "Бұл емтихан жоғары мәнді деп саналады. Жариялау немесе жоспарлау алдында кемінде бір алдын ала тексеруді іске қосыңыз.",
           "previewCompletedCount": "{count, plural, =0 {Алдын ала тексеру іске қосылмады} =1 {# тексеру іске қосылды} other {# тексеру іске қосылды}}",
@@ -8548,6 +8602,7 @@
           "auditNoteDesc": "Жоғары мәнді тексеру үшін күй өзгерісімен бірге сақталады.",
           "previewRequiredBeforePublish": "Жоғары мәнді күй өзгерісін растау алдында кемінде бір студент алдын ала тексеруін іске қосыңыз.",
           "blockersRequiredBeforePublish": "Растау алдында барлық жариялау бұғаттаушыларын шешіңіз.",
+          "auditNoteRequiredBeforePublish": "Осы жоғары мәнді күй өзгерісін растау алдында аудит жазбасын қосыңыз.",
           "cancel": "Бас тарту",
           "confirmPublish": "Емтиханды жариялау",
           "confirmSchedule": "Емтиханды жоспарлау",
@@ -10229,6 +10284,8 @@
       "submitted": "Тапсырылды",
       "graded": "Бағаланды",
       "published": "Жарияланды",
+      "contentChanged": "Осы тексерістен кейін курс материалдары өзгерді",
+      "previousScore": "Алдыңғы тексеріс ұпайы: {score}",
       "returned": "Қайтарылды"
     }
   },
@@ -10264,6 +10321,23 @@
     "feedbackPlaceholder": "Кері байланыс",
     "rubricScorePlaceholder": "0",
     "downloadCsv": "CSV жүктеу",
+    "searchLearners": "Оқушыларды іздеу",
+    "filterByStatus": "Күйі бойынша сүзу",
+    "allStatuses": "Барлық күйлер",
+    "statusSubmitted": "Тапсырылды",
+    "statusGraded": "Бағаланды",
+    "statusPublished": "Жарияланды",
+    "statusReturned": "Қайтарылды",
+    "statusDraft": "Нобай",
+    "pageOf": "{pages} беттің {page}-беті",
+    "discardDraftTitle": "Бағалау нобайын жою керек пе?",
+    "discardDraftDescription": "Бұл оқушының бағасын немесе кері байланысын өзгерттіңіз. Басқа жұмысқа ауыспас бұрын өзгерістерді жою керек пе?",
+    "keepEditing": "Өңдеуді жалғастыру",
+    "discardAndSwitch": "Жою және ауысу",
+    "unsavedTitle": "Сақталмаған бағалау нобайымен шығу керек пе?",
+    "unsavedDescription": "Баға немесе кері байланыс өзгерістері әлі сақталмады. Беттен шығып, оларды жою керек пе?",
+    "stayHere": "Осында қалу",
+    "leaveWithoutSaving": "Сақтамай шығу",
     "csv": "CSV"
   },
   "FileSubmissionStudio": {
@@ -10343,7 +10417,8 @@
     },
     "qaMessage": {
       "you": "Сіз",
-      "aiAnswer": "ЖИ жауабы"
+      "aiAnswer": "ЖИ жауабы",
+      "incomplete": "Аяқталғанға дейін тоқтатылды"
     },
     "languageControl": {
       "label": "Жауап тілі",
@@ -10358,7 +10433,13 @@
       "noCitationsDesc": "Сенімді болу үшін бұл нәтижеге курстық айғақтар қажет.",
       "title": "Дереккөздер",
       "description": "Жасанды интеллект осы нәтиже үшін пайдаланған дереккөздер.",
-      "openSource": "Open source: {label}"
+      "openSource": "Дереккөзді ашу: {label}",
+      "confidence": {
+        "high": "Жоғары сенімділік",
+        "medium": "Орташа сенімділік",
+        "low": "Төмен сенімділік",
+        "uncalibrated": "Сенімділік калибрленбеген"
+      }
     },
     "errorRecovery": {
       "title": "ЖИ жұмысы сәтсіз аяқталды",
@@ -10406,23 +10487,33 @@
     "qaInput": {
       "label": "Сұрақ",
       "ask": "Сұрау",
+      "stop": "Тоқтату",
       "placeholder": "Осы курс туралы сұраңыз...",
       "description": "Жауаптар курс материалдарына негізделген.",
       "emptyTitle": "Әзірге сұрақтар жоқ",
       "emptyDesc": "Осы курс туралы сұраңыз, сонда жауап курс материалдарына сілтеме жасайды.",
-      "activityContext": "Using current activity",
-      "threadContext": "Using this thread",
-      "notUsingPrivateContext": "Not using hidden teacher notes or answer keys.",
-      "starterExplain": "Explain current section",
-      "starterSummarize": "Summarize key points",
-      "starterQuiz": "Quiz me on this",
-      "starterBeforeContinuing": "What should I know next?",
-      "starterSources": "Show sources",
-      "threadsTitle": "Threads",
-      "newThread": "New thread",
-      "threadsLoading": "Loading threads…",
-      "threadsEmpty": "No saved threads yet.",
-      "threadMessageCount": "{count, plural, one {# message} other {# messages}}"
+      "activityContext": "Ағымдағы белсенділік қолданылады",
+      "threadContext": "Осы диалог қолданылады",
+      "notUsingPrivateContext": "Оқытушының жасырын жазбалары мен жауап кілттері қолданылмайды.",
+      "starterExplain": "Ағымдағы бөлімді түсіндіру",
+      "starterSummarize": "Негізгі ойларды қорытындылау",
+      "starterQuiz": "Білімімді тексеру",
+      "starterBeforeContinuing": "Келесі не білуім керек?",
+      "starterSources": "Дереккөздерді көрсету",
+      "threadsTitle": "Диалогтар",
+      "newThread": "Жаңа диалог",
+      "deleteThread": "Диалогты жою",
+      "deleteConfirm": "Бұл диалог, оның хабарламалары және байланысты ЖИ іске қосу жазбалары жойылсын ба? Бұл әрекетті қайтару мүмкін емес.",
+      "keepThread": "Диалогты сақтау",
+      "confirmDelete": "Диалогты жою",
+      "threadsLoading": "Диалогтар жүктелуде…",
+      "threadsEmpty": "Сақталған диалогтар жоқ.",
+      "threadMessageCount": "{count, plural, one {# хабарлама} other {# хабарлама}}",
+      "streamingStatus": "Таңдалған курс материалдары бойынша жауап дайындалуда.",
+      "cancelledStatus": "Жауап тоқтатылды. Жартылай жауап сақталды.",
+      "error": "Жауапты аяқтау мүмкін болмады. Сұрағыңыз сақталды.",
+      "retry": "Қайталау",
+      "dismiss": "Жабу"
     },
     "courseAIHub": {
       "title": "ЖИ оқу қолдауы",
@@ -10430,14 +10521,17 @@
       "tabStudy": "Оқу",
       "tabQA": "Сұрақ-жауап",
       "tabReview": "Шолу",
-      "groundedBadge": "Source grounded",
-      "reviewBadge": "Teacher reviewed"
+      "groundedBadge": "Дереккөздерге негізделген",
+      "reviewBadge": "Оқытушы тексерген",
+      "capabilityError": "ЖИ қолжетімділігін тексеру мүмкін болмады. Көмекшіні қайта ашып көріңіз.",
+      "unavailable": "Бұл контексте ЖИ қолжетімсіз."
     },
     "courseAnalysisEntry": {
       "title": "Курсты ЖИ шолуы",
       "description": "Осы курс үшін сапа ұпайы, айғақтар және түзету тәуекелдері.",
       "rerun": "Қайта қосу",
       "analyze": "Талдау",
+      "draftFeedback": "Кері байланыс жобасы",
       "defaultStatus": "ЖИ-ге көрінетін нұсқаулықты жарияламас бұрын мұғалім тексерген сапа есебін дайындау үшін талдауды іске қосыңыз."
     },
     "courseAnalysisResultShell": {
@@ -10457,15 +10551,20 @@
       "recommendedFix": "Recommended fix",
       "noRisks": "No critical blockers were returned.",
       "noStrengths": "No strengths were returned.",
-      "noFindings": "No actionable findings were returned.",
-      "summaryFindingTitle": "Review generated summary",
-      "inspectCitationsAction": "Inspect cited course material before publishing the score.",
+      "noFindings": "Іске жарамды ұсыныстар жоқ.",
+      "actions": "Шешім",
+      "acceptFinding": "Қабылдау",
+      "dismissFinding": "Қабылдамау",
+      "createTask": "Тапсырма жасау",
+      "reviewActions": { "accepted": "Қабылданды", "dismissed": "Қабылданбады", "task_created": "Тапсырма жасалды" },
+      "summaryFindingTitle": "Қорытындыны тексеру",
+      "inspectCitationsAction": "Ұпайды жарияламас бұрын курс материалдарын тексеру.",
       "reviewGateLabel": "Мен төмендегі дәлелдер мен дәлелдемелерді ашып, жарияламас бұрын тексердім.",
       "reviewGateHint": "Бұл белгі қойылмайынша, жариялау бұғатталған.",
-      "publishDialogTitle": "Publish reviewed score?",
+      "publishDialogTitle": "Тексерілген ұпай жариялансын ба?",
       "publishDialogDescription": "Бұл ұпай, табылған дәлелдер тізімі және дереккөздер осы курсқа жазылған студенттер мен қызметкерлерге көрінетін болады.",
-      "cancelPublish": "Keep reviewing",
-      "confirmPublish": "Publish reviewed score"
+      "cancelPublish": "Тексеруді жалғастыру",
+      "confirmPublish": "Ұпайды жариялау"
     },
     "submissionAIEntry": {
       "title": "Тапсырманы ЖИ талдауы",
@@ -10514,6 +10613,49 @@
       "modelLabel": "Model",
       "requestLimitLabel": "Request token limit",
       "outputLimitLabel": "Output token limit"
+    },
+    "operationsConsole": {
+      "title": "Іске қосу операциялары",
+      "description": "Соңғы іске қосуларды сүзу, тұрып қалған жұмыстарды табу және тазартылған оқиға журналын тексеру.",
+      "timeRange": "Уақыт аралығы",
+      "days": "Соңғы {count} күн",
+      "statusFilter": "Іске қосу күйі",
+      "featureFilter": "Мүмкіндік",
+      "providerFilter": "Провайдер немесе модель",
+      "courseFilter": "Курс UUID",
+      "statuses": {
+        "all": "Барлық күйлер",
+        "queued": "Кезекте",
+        "running": "Орындалуда",
+        "finished": "Аяқталды",
+        "error": "Қате",
+        "aborted": "Тоқтатылды"
+      },
+      "metrics": {
+        "requests": "Сұраулар",
+        "success": "Сәттілік үлесі",
+        "cancelled": "Тоқтату үлесі",
+        "retried": "Қайталау үлесі",
+        "p50": "p50 кідірісі",
+        "p95": "p95 кідірісі",
+        "ttft50": "Алғашқы мәтін p50",
+        "ttft95": "Алғашқы мәтін p95",
+        "tokens": "Токендер",
+        "cost": "Болжамды құн"
+      },
+      "table": {
+        "feature": "Мүмкіндік",
+        "status": "Күй",
+        "started": "Басталды",
+        "model": "Провайдер / модель",
+        "error": "Қате коды"
+      },
+      "stuck": "Тұрып қалды",
+      "inspect": "Қарау",
+      "detailTitle": "Тазартылған іске қосу деректері",
+      "close": "Жабу",
+      "artifacts": "Артефактілер",
+      "notAvailable": "Дерек жоқ"
     },
     "tokenUsageChart": {
       "title": "ЖИ пайдаланылуы",
@@ -10565,6 +10707,75 @@
         "status": "Status"
       }
     }
+  },
+  "PageLoading": {
+    "loading": "Жүктелуде..."
+  },
+  "DashboardWorkQueue": {
+    "priorityLabel": "Басымдық кезегі",
+    "title": "Сіздің қатысуыңызды қажет ететін жұмыс",
+    "description": "Бөлімдерді іздемей-ақ келесі оқу, бағалау немесе курс әрекетін ашыңыз.",
+    "browseLabel": "Шолу",
+    "toolsTitle": "Құралдар мен бөлімдер",
+    "toolsDescription": "Кезекте шұғыл жұмыс болмағанда курстарды, есептерді, пайдаланушыларды және баптауларды қараңыз.",
+    "openLabel": "Ашу",
+    "groups": {
+      "today": "Бүгін",
+      "dueSoon": "Мерзімі жақын",
+      "returned": "Қайтарылған",
+      "waiting": "Күтуде",
+      "released": "Жақында жарияланған"
+    },
+    "items": {
+      "unknownCourse": "Курс",
+      "returned": {
+        "title": "Қайта өңдеу: {activity}",
+        "description": "{course}: кері байланысқа сай жаңа жұмыс жіберу қажет.",
+        "action": "Қайта өңдеу"
+      },
+      "waiting": {
+        "title": "Кері байланыс күтілуде: {activity}",
+        "description": "{course}: жұмысыңыз қабылданды.",
+        "action": "Қабылдау жазбасын ашу"
+      },
+      "feedback": {
+        "title": "Кері байланысты қарау: {activity}",
+        "description": "{course}: бағалау шешімі қолжетімді.",
+        "action": "Кері байланысты қарау"
+      },
+      "overdue": {
+        "title": "Мерзімі өткен жұмысты аяқтау: {activity}",
+        "description": "{course}: бұл жұмыстың мерзімі өтіп кетті."
+      },
+      "inProgress": {
+        "title": "Жалғастыру: {activity}",
+        "description": "{course}: басталған жұмысты аяқтаңыз.",
+        "action": "Жалғастыру"
+      },
+      "needsGrading": {
+        "title": "Бағалау: {activity}",
+        "description": "{course} курсындағы білім алушы жұмысы тексеруге дайын.",
+        "action": "Жұмысты бағалау"
+      },
+      "slaBreach": {
+        "title": "Кешіккен тексеруді орындау: {activity}",
+        "description": "{course} курсындағы білім алушы мақсатты мерзімнен ұзақ күтті.",
+        "action": "Жұмысты бағалау"
+      },
+      "awaitingRelease": {
+        "title": "Жариялау: {activity}",
+        "description": "{course} курсындағы баға сақталды, бірақ білім алушыға әлі көрінбейді.",
+        "action": "Тексеру және жариялау"
+      }
+    }
+  },
+  "LandingDegraded": {
+    "title": "Курстар уақытша қолжетімсіз",
+    "description": "Оқу қызметі жауап бермеді. Қазір қайталап көріңіз немесе курс каталогы қалпына келгенше басқару тақтасын ашыңыз.",
+    "safeState": "Ешбір жұмысыңыз өзгерген немесе жоғалған жоқ.",
+    "retry": "Қайталау",
+    "openDashboard": "Басқару тақтасын ашу",
+    "signIn": "Кіру"
   },
   "LearnerCourse": {
     "privateCourse": "Жабық курс"

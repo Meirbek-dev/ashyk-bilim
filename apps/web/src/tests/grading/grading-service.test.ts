@@ -1,37 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 const mocks = vi.hoisted(() => ({
-  apiFetch: vi.fn(),
   apiJson: vi.fn(),
   apiResult: vi.fn(),
-  getResponseMetadata: vi.fn(),
   revalidateTag: vi.fn(),
 }))
 
 vi.mock('@/lib/api-client', () => ({
-  apiFetch: mocks.apiFetch,
-  getResponseMetadata: mocks.getResponseMetadata,
-  apiJson: async (path: string, init?: any) => {
-    const res = await mocks.apiFetch(path, init)
-    if (!res.ok) {
-      const err = new Error(res.statusText || 'API Error')
-      try {
-        const body = await res.json()
-        if (body && body.detail) {
-          err.message = body.detail
-        }
-      } catch {
-        // ignore parse error if res.json() fails
-      }
-      throw err
-    }
-    return res.json()
-  },
-  apiResult: async (path: string, init?: any) => {
-    const res = await mocks.apiFetch(path, init)
-    const data = await res.json()
-    return { data, headers: {}, requestId: null }
-  },
+  apiJson: mocks.apiJson,
+  apiResult: mocks.apiResult,
 }))
 
 vi.mock('next/cache', () => ({
@@ -77,17 +54,13 @@ function makeSubmission(overrides: Partial<Submission> = {}): Submission {
 }
 
 function mockSuccess(data: unknown) {
-  const response = {
-    ok: true,
-    status: 200,
-    headers: new Headers(),
-    json: () => Promise.resolve(data),
-  }
-  mocks.apiFetch.mockResolvedValue(response)
-  mocks.getResponseMetadata.mockResolvedValue({
-    success: true,
+  mocks.apiJson.mockResolvedValue(data)
+  mocks.apiResult.mockResolvedValue({
     data,
+    headers: {},
+    requestId: null,
     status: 200,
+    statusText: 'OK',
   })
 }
 
@@ -102,7 +75,7 @@ describe('grading service canonical assessment endpoints', () => {
 
     const result = await getAssessmentSubmission('asm_1', 'sub_test_1')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_1/submissions/sub_test_1', {
+    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/asm_1/submissions/sub_test_1', {
       next: { tags: ['submissions'] },
     })
     expect(result).toEqual(submission)
@@ -119,7 +92,7 @@ describe('grading service canonical assessment endpoints', () => {
       'asm_1',
     )
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_1/submissions/sub_test_1', {
+    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/asm_1/submissions/sub_test_1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'If-Match': '7' },
       body: JSON.stringify({
@@ -143,7 +116,7 @@ describe('grading service canonical assessment endpoints', () => {
 
     const result = await publishAssessmentGrades('asm_1')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_1/publish-grades', {
+    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/asm_1/publish-grades', {
       method: 'POST',
     })
     expect(result).toEqual(payload)

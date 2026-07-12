@@ -9,12 +9,6 @@ export interface QAMessage {
   created_at: string
 }
 
-export interface CourseQAResponse {
-  thread_uuid: string
-  user_message: QAMessage
-  assistant_message: QAMessage
-}
-
 export interface QAThreadSummary {
   thread_uuid: string
   title?: string | null

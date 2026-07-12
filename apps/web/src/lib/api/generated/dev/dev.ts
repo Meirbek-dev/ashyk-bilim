@@ -20,7 +20,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type { ApiErrorEnvelope, DevConfigResponse } from '../api.schemas'
+import { ApiErrorEnvelope, DevConfigResponse } from '../zod'
 
 import { orvalMutator } from '../../orval-mutator'
 import type { ErrorType } from '../../orval-mutator'
@@ -50,10 +50,14 @@ export const getConfigApiV1DevConfigGetUrl = () => {
  * @summary Config
  */
 export const configApiV1DevConfigGet = async (options?: RequestInit): Promise<DevConfigResponse> => {
-  return orvalMutator<DevConfigResponse>(getConfigApiV1DevConfigGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<DevConfigResponse>(
+    getConfigApiV1DevConfigGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    DevConfigResponse,
+  )
 }
 
 export const getConfigApiV1DevConfigGetQueryKey = () => {

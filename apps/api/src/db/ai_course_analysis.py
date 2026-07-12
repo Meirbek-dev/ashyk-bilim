@@ -34,6 +34,7 @@ class AICourseAnalysis(SQLModelStrictBaseModel, table=True):
     report_json: JsonObject = Field(default_factory=dict, sa_column=Column(JSON, nullable=False, server_default="{}"))
     evidence_json: JsonObject = Field(default_factory=dict, sa_column=Column(JSON, nullable=False, server_default="{}"))
     model_name: str | None = None
+    content_hash: str | None = None
     created_at: datetime = Field(default_factory=utc_now, sa_column=Column(DateTime(timezone=True), nullable=False))
     published_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
 
@@ -50,6 +51,9 @@ class AICourseAnalysisRead(PydanticStrictBaseModel):
     report_json: JsonObject = PydanticField(default_factory=dict)
     evidence_json: JsonObject = PydanticField(default_factory=dict)
     model_name: str | None = None
+    content_hash: str | None = None
+    stale: bool = False
+    previous_public_score: int | None = None
     created_at: datetime
     published_at: datetime | None = None
 

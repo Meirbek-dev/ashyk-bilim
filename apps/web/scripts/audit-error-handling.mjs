@@ -74,7 +74,7 @@ function inspectFile(path) {
       add(rel, lineNumber, 'LOCAL_RESPONSE_PARSER', 'use apiJson/apiResult/parseApiError')
     }
     if (/\bfetch\s*\(/.test(line) && !isAllowed(rel, allowedDirectFetch)) {
-      add(rel, lineNumber, 'DIRECT_FETCH', 'use apiFetch/apiJson unless this is an external non-API fetch')
+      add(rel, lineNumber, 'DIRECT_FETCH', 'use apiJson/apiResult/apiBody unless this is an external non-API fetch')
     }
     if (/throw new Error\(/.test(line) && rel.includes('/services/')) {
       add(rel, lineNumber, 'PLAIN_SERVICE_ERROR', 'throw APIError or a typed domain/client error in service code')

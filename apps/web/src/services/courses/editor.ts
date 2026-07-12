@@ -1,5 +1,5 @@
-import { apiFetch, getResponseMetadata } from '@/lib/api-client'
-import { getApiErrorMessage } from '@/lib/api/assertSuccess'
+import { apiResult } from '@/lib/api-client'
+import { getApiErrorMessage, isApiError } from '@/lib/api/assertSuccess'
 
 export interface CourseEditorResource<T> {
   data: T | null
@@ -32,34 +32,31 @@ export const createEmptyCourseEditorBundle = (): CourseEditorBundle => ({
   certifications: createResource<unknown[]>(null, 0, null, false),
 })
 
-const toArrayResource = <T>(response: {
-  success: boolean
-  data: unknown
-  status: number
-  HTTPmessage: string
-}): CourseEditorResource<T[]> => {
-  if (response.status === 401 || response.status === 403) {
-    return createResource<T[]>(null, response.status, null, false)
+const fetchArrayResource = async <T>(path: string): Promise<CourseEditorResource<T[]>> => {
+  try {
+    const response = await apiResult(path)
+    return createResource((Array.isArray(response.data) ? response.data : []) as T[], 200, null, true)
+  } catch (error) {
+    if (isApiError(error) && (error.status === 401 || error.status === 403)) {
+      return createResource<T[]>(null, error.status, null, false)
+    }
+    if (isApiError(error)) {
+      return createResource<T[]>([], error.status, getApiErrorMessage(error.data, error.message), true)
+    }
+    throw error
   }
-
-  if (!response.success) {
-    const detail = getApiErrorMessage(response.data, response.HTTPmessage || 'Request failed')
-    return createResource<T[]>([], response.status, detail, true)
-  }
-
-  return createResource((Array.isArray(response.data) ? response.data : []) as T[], response.status, null, true)
 }
 
 export async function getCourseEditorBundle(courseUuid: string): Promise<CourseEditorBundle> {
   const [contributors, linkedUserGroups, certifications] = await Promise.all([
-    apiFetch(`courses/${courseUuid}/contributors`).then(getResponseMetadata),
-    apiFetch(`usergroups/resource/${courseUuid}`).then(getResponseMetadata),
-    apiFetch(`certifications/course/${courseUuid}`).then(getResponseMetadata),
+    fetchArrayResource<AppCourseAuthor>(`courses/${courseUuid}/contributors`),
+    fetchArrayResource<unknown>(`usergroups/resource/${courseUuid}`),
+    fetchArrayResource<unknown>(`certifications/course/${courseUuid}`),
   ])
 
   return {
-    contributors: toArrayResource<AppCourseAuthor>(contributors),
-    linkedUserGroups: toArrayResource<unknown>(linkedUserGroups),
-    certifications: toArrayResource<unknown>(certifications),
+    contributors,
+    linkedUserGroups,
+    certifications,
   }
 }

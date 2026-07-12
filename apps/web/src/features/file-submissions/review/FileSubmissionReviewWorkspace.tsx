@@ -1,27 +1,53 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useState } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, ExternalLink, Eye, FileText, Loader2, RefreshCw, RotateCcw, Search, Send, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import { MarkdownEditor } from '@/features/content-markdown'
 import { useApiError } from '@/hooks/useApiError'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import {
   fileSubmissionExportUrl,
   getFileSubmissionByActivity,
   getFileSubmissionFileUrl,
+  getFileSubmissionReviewAttempt,
   getFileSubmissionReviewQueue,
   gradeFileSubmissionAttempt,
 } from '@/features/file-submissions/services/file-submissions'
-import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
+import type {
+  FileSubmissionAttempt,
+  FileSubmissionAttemptStatus,
+} from '@/features/file-submissions/services/file-submissions'
+import { usePathname, useRouter } from '@/i18n/navigation'
+import { cn } from '@/lib/utils'
 
 // ── Rubric types (convention-based schema stored in rubric_json) ──────────────
 
@@ -56,7 +82,27 @@ interface FileSubmissionReviewWorkspaceProps {
 }
 
 const activityQueryKey = (activityUuid: string) => ['file-submission', 'review-activity', activityUuid] as const
+const PAGE_SIZE = 25
+type QueueStatus = FileSubmissionAttemptStatus | 'ALL'
+
 const queueQueryKey = (fileSubmissionUuid: string) => ['file-submission', 'review-queue', fileSubmissionUuid] as const
+const queuePageQueryKey = (fileSubmissionUuid: string, status: QueueStatus, search: string, page: number) =>
+  [...queueQueryKey(fileSubmissionUuid), { status, search, page, pageSize: PAGE_SIZE }] as const
+
+function parseQueueStatus(value: string | null): QueueStatus {
+  return value === 'DRAFT' ||
+    value === 'SUBMITTED' ||
+    value === 'GRADED' ||
+    value === 'PUBLISHED' ||
+    value === 'RETURNED'
+    ? value
+    : 'ALL'
+}
+
+function parsePage(value: string | null): number {
+  const parsed = Number.parseInt(value ?? '', 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+}
 
 export default function FileSubmissionReviewWorkspace({
   activityUuid,
@@ -64,16 +110,25 @@ export default function FileSubmissionReviewWorkspace({
 }: FileSubmissionReviewWorkspaceProps) {
   const cleanActivityUuid = activityUuid.replace(/^activity_/, '')
   const queryClient = useQueryClient()
-  const [search, setSearch] = useState('')
+  const router = useRouter()
+  const pathname = usePathname()
+  const urlSearchParams = useSearchParams()
+  const [search, setSearch] = useState(() => urlSearchParams.get('search') ?? '')
+  const deferredSearch = useDeferredValue(search.trim())
+  const [status, setStatus] = useState<QueueStatus>(() => parseQueueStatus(urlSearchParams.get('status')))
+  const [page, setPage] = useState(() => parsePage(urlSearchParams.get('page')))
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialAttemptUuid ?? null)
-  const [score, setScore] = useState<string>('')
-  const [feedback, setFeedback] = useState('')
-  const [rubricScores, setRubricScores] = useState<Record<string, number>>({})
+  const [pendingAttempt, setPendingAttempt] = useState<FileSubmissionAttempt | null>(null)
+  const [isGradeDirty, setIsGradeDirty] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewFilename, setPreviewFilename] = useState<string | null>(null)
   const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null) // attemptFileUuid
   const t = useTranslations('FileSubmissionReview')
   const { handleApiError, toastApiError } = useApiError()
+  const navigationGuard = useUnsavedChangesGuard(isGradeDirty, {
+    message: t('unsavedDescription'),
+    interceptInAppNavigation: true,
+  })
 
   const {
     data: config,
@@ -89,6 +144,22 @@ export default function FileSubmissionReviewWorkspace({
     }),
   )
 
+  useEffect(() => {
+    const next = new URLSearchParams(urlSearchParams.toString())
+    if (deferredSearch) next.set('search', deferredSearch)
+    else next.delete('search')
+    if (status === 'ALL') next.delete('status')
+    else next.set('status', status)
+    if (page === 1) next.delete('page')
+    else next.set('page', String(page))
+
+    const current = urlSearchParams.toString()
+    const nextValue = next.toString()
+    if (nextValue !== current) {
+      router.replace(nextValue ? `${pathname}?${nextValue}` : pathname, { scroll: false })
+    }
+  }, [deferredSearch, page, pathname, router, status, urlSearchParams])
+
   const {
     data: queue,
     error: queueError,
@@ -97,49 +168,53 @@ export default function FileSubmissionReviewWorkspace({
     refetch: refetchQueue,
   } = useQuery(
     queryOptions({
-      queryKey: config ? queueQueryKey(config.file_submission_uuid) : ['file-submission', 'review-queue', 'pending'],
-      queryFn: () => getFileSubmissionReviewQueue(config!.file_submission_uuid),
+      queryKey: config
+        ? queuePageQueryKey(config.file_submission_uuid, status, deferredSearch, page)
+        : ['file-submission', 'review-queue', 'pending'],
+      queryFn: () =>
+        getFileSubmissionReviewQueue(config!.file_submission_uuid, {
+          status,
+          search: deferredSearch,
+          page,
+          pageSize: PAGE_SIZE,
+        }),
       enabled: Boolean(config?.file_submission_uuid),
+      placeholderData: previous => previous,
     }),
   )
 
-  const filteredItems = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    const items = queue?.items ?? []
-    if (!term) return items
-    return items.filter(attempt => {
-      const { user } = attempt
-      const name = `${user?.first_name ?? ''} ${user?.last_name ?? ''} ${user?.email ?? ''} ${user?.username ?? ''}`
-      return name.toLowerCase().includes(term)
-    })
-  }, [queue?.items, search])
+  const { data: linkedAttempt } = useQuery(
+    queryOptions({
+      queryKey:
+        config && initialAttemptUuid
+          ? ['file-submission', 'review-attempt', config.file_submission_uuid, initialAttemptUuid]
+          : ['file-submission', 'review-attempt', 'pending'],
+      queryFn: () => getFileSubmissionReviewAttempt(config!.file_submission_uuid, initialAttemptUuid!),
+      enabled: Boolean(config?.file_submission_uuid && initialAttemptUuid),
+    }),
+  )
 
-  const selected = filteredItems.find(attempt => attempt.attempt_uuid === selectedUuid) ?? filteredItems[0] ?? null
+  const queueItems = queue?.items ?? []
+  const selected =
+    queueItems.find(attempt => attempt.attempt_uuid === selectedUuid) ??
+    (linkedAttempt?.attempt_uuid === selectedUuid ? linkedAttempt : null) ??
+    queueItems[0] ??
+    null
 
   const gradeMutation = useMutation({
-    mutationFn: async ({ status }: { status: 'GRADED' | 'PUBLISHED' | 'RETURNED' }) => {
-      if (!config || !selected) throw new Error('Submission is unavailable')
-      const rubricPayload =
-        parsedCriteria.length > 0
-          ? {
-              criteria: parsedCriteria.map(c => ({
-                criterion_id: c.criterion_id,
-                label: c.label,
-                score: rubricScores[c.criterion_id] ?? 0,
-                max_score: c.max_score,
-              })),
-            }
-          : {}
+    mutationFn: async ({
+      attempt,
+      payload,
+    }: {
+      attempt: FileSubmissionAttempt
+      payload: Parameters<typeof gradeFileSubmissionAttempt>[2]
+    }) => {
+      if (!config) throw new Error('Submission is unavailable')
       return await gradeFileSubmissionAttempt(
         config.file_submission_uuid,
-        selected.attempt_uuid,
-        {
-          final_score: score.trim() === '' ? null : Number(score),
-          feedback,
-          rubric: rubricPayload,
-          status,
-        },
-        selected.version,
+        attempt.attempt_uuid,
+        payload,
+        attempt.version,
       )
     },
     onSuccess: async () => {
@@ -150,31 +225,30 @@ export default function FileSubmissionReviewWorkspace({
       toast.success(t('submissionUpdated'))
     },
     onError: gradeError => {
+      setIsGradeDirty(true)
       toastApiError(gradeError, { fallback: t('updateSubmissionFailed') })
     },
   })
 
   const parsedCriteria = config?.rubric ? parseRubricCriteria(config.rubric) : []
 
-  // Auto-fill score from rubric criterion scores
-  const rubricTotalScore =
-    parsedCriteria.length === 0 ? null : parsedCriteria.reduce((acc, c) => acc + (rubricScores[c.criterion_id] ?? 0), 0)
-
   function selectAttempt(attempt: FileSubmissionAttempt) {
     setSelectedUuid(attempt.attempt_uuid)
-    setScore(attempt.final_score === null ? '' : String(attempt.final_score))
-    setFeedback(typeof attempt.feedback?.feedback === 'string' ? attempt.feedback.feedback : '')
-    // Restore rubric scores from saved feedback.rubric
-    const savedRubric = attempt.feedback?.rubric
-    if (savedRubric && typeof savedRubric === 'object' && 'criteria' in savedRubric) {
-      const criteriaScores: Record<string, number> = {}
-      for (const c of (savedRubric as { criteria: { criterion_id: string; score: number }[] }).criteria) {
-        criteriaScores[c.criterion_id] = c.score
-      }
-      setRubricScores(criteriaScores)
-    } else {
-      setRubricScores({})
+    setIsGradeDirty(false)
+    setPreviewUrl(null)
+    setPreviewFilename(null)
+    const next = new URLSearchParams(urlSearchParams.toString())
+    next.set('submission', attempt.attempt_uuid)
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false })
+  }
+
+  function requestAttemptSelection(attempt: FileSubmissionAttempt) {
+    if (attempt.attempt_uuid === selected?.attempt_uuid) return
+    if (isGradeDirty) {
+      setPendingAttempt(attempt)
+      return
     }
+    selectAttempt(attempt)
   }
 
   async function openFile(attemptFileUuid: string) {
@@ -237,8 +311,8 @@ export default function FileSubmissionReviewWorkspace({
 
   return (
     <div className="bg-background grid min-h-screen lg:grid-cols-[360px_minmax(0,1fr)]">
-      <aside className="border-border bg-card/40 border-r">
-        <div className="border-border sticky top-0 z-10 space-y-3 border-b bg-inherit p-4 backdrop-blur">
+      <aside className="border-border bg-card/40 border-b lg:border-r lg:border-b-0">
+        <div className="border-border sticky top-0 z-10 flex flex-col gap-3 border-b bg-inherit p-4 backdrop-blur">
           <div>
             <p className="text-muted-foreground text-xs">{t('fileSubmissionReview')}</p>
             <h1 className="truncate text-lg font-semibold">{config.title}</h1>
@@ -246,12 +320,37 @@ export default function FileSubmissionReviewWorkspace({
           <div className="relative">
             <Search className="text-muted-foreground pointer-events-none absolute top-2.5 left-2.5 size-4" />
             <Input
+              aria-label={t('searchLearners')}
+              autoComplete="off"
+              name="learner-search"
               value={search}
-              onChange={event => setSearch(event.target.value)}
+              onChange={event => {
+                setSearch(event.target.value)
+                setPage(1)
+              }}
               placeholder={t('searchLearnersPlaceholder')}
               className="pl-8"
             />
           </div>
+          <Label htmlFor="file-review-status" className="sr-only">
+            {t('filterByStatus')}
+          </Label>
+          <NativeSelect
+            id="file-review-status"
+            className="w-full"
+            value={status}
+            onChange={event => {
+              setStatus(parseQueueStatus(event.target.value))
+              setPage(1)
+            }}
+          >
+            <NativeSelectOption value="ALL">{t('allStatuses')}</NativeSelectOption>
+            <NativeSelectOption value="SUBMITTED">{t('statusSubmitted')}</NativeSelectOption>
+            <NativeSelectOption value="GRADED">{t('statusGraded')}</NativeSelectOption>
+            <NativeSelectOption value="PUBLISHED">{t('statusPublished')}</NativeSelectOption>
+            <NativeSelectOption value="RETURNED">{t('statusReturned')}</NativeSelectOption>
+            <NativeSelectOption value="DRAFT">{t('statusDraft')}</NativeSelectOption>
+          </NativeSelect>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
@@ -263,7 +362,7 @@ export default function FileSubmissionReviewWorkspace({
                 })
               }
             >
-              <RefreshCw className="size-4" />
+              <RefreshCw data-icon="inline-start" />
               {t('refresh')}
             </Button>
             <Button
@@ -272,24 +371,25 @@ export default function FileSubmissionReviewWorkspace({
               nativeButton={false}
               render={<a href={fileSubmissionExportUrl(config.file_submission_uuid)} aria-label={t('downloadCsv')} />}
             >
-              <Download className="size-4" />
+              <Download data-icon="inline-start" />
               CSV
             </Button>
           </div>
         </div>
-        <div className="divide-border divide-y">
-          {filteredItems.length === 0 ? (
+        <div className="divide-border max-h-64 divide-y overflow-y-auto overscroll-contain lg:max-h-none">
+          {queueItems.length === 0 ? (
             <p className="text-muted-foreground p-4 text-sm">{t('noSubmissions')}</p>
           ) : (
-            filteredItems.map(attempt => (
+            queueItems.map(attempt => (
               <Button
                 type="button"
                 key={attempt.attempt_uuid}
                 variant="ghost"
-                className={`hover:bg-muted/60 h-auto w-full justify-start rounded-none p-4 text-left transition-colors ${
-                  selected?.attempt_uuid === attempt.attempt_uuid ? 'bg-muted' : ''
-                }`}
-                onClick={() => selectAttempt(attempt)}
+                className={cn(
+                  'hover:bg-muted/60 h-auto w-full justify-start rounded-none p-4 text-left transition-colors',
+                  selected?.attempt_uuid === attempt.attempt_uuid && 'bg-muted',
+                )}
+                onClick={() => requestAttemptSelection(attempt)}
               >
                 <div className="flex w-full items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -307,6 +407,41 @@ export default function FileSubmissionReviewWorkspace({
             ))
           )}
         </div>
+        {queue.total > PAGE_SIZE ? (
+          <div className="border-border border-t p-3">
+            <Pagination>
+              <PaginationContent className="w-full justify-between">
+                <PaginationItem>
+                  <PaginationPrevious
+                    aria-disabled={page <= 1}
+                    className={cn(page <= 1 && 'pointer-events-none opacity-50')}
+                    href={buildQueuePageHref(urlSearchParams, pathname, Math.max(1, page - 1))}
+                    onClick={event => {
+                      event.preventDefault()
+                      if (page > 1) setPage(page - 1)
+                    }}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-muted-foreground px-2 text-sm tabular-nums">
+                    {t('pageOf', { page, pages: Math.max(1, Math.ceil(queue.total / PAGE_SIZE)) })}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    aria-disabled={page * PAGE_SIZE >= queue.total}
+                    className={cn(page * PAGE_SIZE >= queue.total && 'pointer-events-none opacity-50')}
+                    href={buildQueuePageHref(urlSearchParams, pathname, page + 1)}
+                    onClick={event => {
+                      event.preventDefault()
+                      if (page * PAGE_SIZE < queue.total) setPage(page + 1)
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        ) : null}
       </aside>
 
       <main className="p-4 lg:p-6">
@@ -409,97 +544,17 @@ export default function FileSubmissionReviewWorkspace({
             </section>
 
             <aside className="space-y-4">
-              <section className="rounded-md border p-4">
-                <h3 className="mb-3 text-sm font-semibold">{t('gradeAndFeedback')}</h3>
-                <div className="space-y-3">
-                  {/* ── Rubric grid (shown when rubric criteria are defined) ── */}
-                  {parsedCriteria.length > 0 && (
-                    <RubricGrid
-                      criteria={parsedCriteria}
-                      scores={rubricScores}
-                      onChange={(criterionId, criterionScore) => {
-                        setRubricScores(prev => ({
-                          ...prev,
-                          [criterionId]: criterionScore,
-                        }))
-                        // Auto-fill overall score from rubric total
-                        const newScores = {
-                          ...rubricScores,
-                          [criterionId]: criterionScore,
-                        }
-                        const total = parsedCriteria.reduce((acc, c) => acc + (newScores[c.criterion_id] ?? 0), 0)
-                        const maxTotal = parsedCriteria.reduce((acc, c) => acc + c.max_score, 0)
-                        if (maxTotal > 0) {
-                          setScore(String(Math.round((total / maxTotal) * 100)))
-                        }
-                      }}
-                    />
-                  )}
-
-                  <div className="space-y-1">
-                    <Label htmlFor="fs-review-score">{t('finalScore')}</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="fs-review-score"
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={score}
-                        onChange={event => setScore(event.target.value)}
-                        placeholder={t('scorePlaceholder')}
-                        className="w-24"
-                      />
-                      <span className="text-muted-foreground text-sm">{t('scoreSlash')}</span>
-                      {rubricTotalScore !== null && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="link"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => setScore(String(rubricTotalScore))}
-                        >
-                          {t('useRubricTotal', { score: rubricTotalScore })}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <MarkdownEditor
-                    value={feedback}
-                    onChange={setFeedback}
-                    preset="explanation"
-                    minHeight={160}
-                    placeholder={t('feedbackPlaceholder')}
-                  />
-                  <div className="grid gap-2">
-                    <Button
-                      onClick={() => gradeMutation.mutate({ status: 'GRADED' })}
-                      disabled={gradeMutation.isPending}
-                    >
-                      {gradeMutation.isPending ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Send className="size-4" />
-                      )}
-                      {t('saveGrade')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => gradeMutation.mutate({ status: 'RETURNED' })}
-                      disabled={gradeMutation.isPending}
-                    >
-                      <RotateCcw className="size-4" />
-                      {t('returnForRevision')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => gradeMutation.mutate({ status: 'PUBLISHED' })}
-                      disabled={gradeMutation.isPending}
-                    >
-                      {t('publishResult')}
-                    </Button>
-                  </div>
-                </div>
-              </section>
+              <GradeEditor
+                key={selected.attempt_uuid}
+                attempt={selected}
+                criteria={parsedCriteria}
+                isPending={gradeMutation.isPending}
+                onDirtyChange={setIsGradeDirty}
+                onSubmit={payload => {
+                  setIsGradeDirty(false)
+                  gradeMutation.mutate({ attempt: selected, payload })
+                }}
+              />
             </aside>
           </div>
         ) : (
@@ -508,6 +563,46 @@ export default function FileSubmissionReviewWorkspace({
           </div>
         )}
       </main>
+      <AlertDialog open={pendingAttempt !== null} onOpenChange={open => (!open ? setPendingAttempt(null) : null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('discardDraftTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('discardDraftDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('keepEditing')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (pendingAttempt) selectAttempt(pendingAttempt)
+                setPendingAttempt(null)
+              }}
+            >
+              {t('discardAndSwitch')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={navigationGuard.isPromptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('unsavedTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{navigationGuard.promptMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={navigationGuard.cancelNavigation}>{t('stayHere')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                setIsGradeDirty(false)
+                navigationGuard.confirmNavigation()
+              }}
+            >
+              {t('leaveWithoutSaving')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -516,6 +611,163 @@ function displayUser(attempt: FileSubmissionAttempt) {
   const { user } = attempt
   const fullName = `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim()
   return fullName || user?.username || user?.email || 'Learner'
+}
+
+function buildQueuePageHref(searchParams: Readonly<URLSearchParams>, pathname: string, page: number): string {
+  const next = new URLSearchParams(searchParams.toString())
+  if (page <= 1) next.delete('page')
+  else next.set('page', String(page))
+  const query = next.toString()
+  return query ? `${pathname}?${query}` : pathname
+}
+
+function readRubricScores(attempt: FileSubmissionAttempt): Record<string, number> {
+  const savedRubric = attempt.feedback?.rubric
+  if (!savedRubric || typeof savedRubric !== 'object' || !('criteria' in savedRubric)) return {}
+  const rawCriteria = (savedRubric as { criteria?: unknown }).criteria
+  if (!Array.isArray(rawCriteria)) return {}
+
+  return rawCriteria.reduce<Record<string, number>>((scores, criterion) => {
+    if (
+      criterion &&
+      typeof criterion === 'object' &&
+      typeof (criterion as { criterion_id?: unknown }).criterion_id === 'string' &&
+      typeof (criterion as { score?: unknown }).score === 'number'
+    ) {
+      scores[(criterion as { criterion_id: string }).criterion_id] = (criterion as { score: number }).score
+    }
+    return scores
+  }, {})
+}
+
+function GradeEditor({
+  attempt,
+  criteria,
+  isPending,
+  onDirtyChange,
+  onSubmit,
+}: {
+  attempt: FileSubmissionAttempt
+  criteria: RubricCriterion[]
+  isPending: boolean
+  onDirtyChange: (dirty: boolean) => void
+  onSubmit: (payload: Parameters<typeof gradeFileSubmissionAttempt>[2]) => void
+}) {
+  const t = useTranslations('FileSubmissionReview')
+  const [score, setScore] = useState(attempt.final_score === null ? '' : String(attempt.final_score))
+  const [feedback, setFeedback] = useState(
+    typeof attempt.feedback?.feedback === 'string' ? attempt.feedback.feedback : '',
+  )
+  const [rubricScores, setRubricScores] = useState<Record<string, number>>(() => readRubricScores(attempt))
+  const rubricTotalScore =
+    criteria.length === 0
+      ? null
+      : criteria.reduce((total, criterion) => total + (rubricScores[criterion.criterion_id] ?? 0), 0)
+  const scoreId = `fs-review-score-${attempt.attempt_uuid}`
+
+  function submit(status: 'GRADED' | 'PUBLISHED' | 'RETURNED') {
+    const rubric =
+      criteria.length > 0
+        ? {
+            criteria: criteria.map(criterion => ({
+              criterion_id: criterion.criterion_id,
+              label: criterion.label,
+              score: rubricScores[criterion.criterion_id] ?? 0,
+              max_score: criterion.max_score,
+            })),
+          }
+        : {}
+    onSubmit({
+      final_score: score.trim() === '' ? null : Number(score),
+      feedback,
+      rubric,
+      status,
+    })
+  }
+
+  return (
+    <section className="rounded-md border p-4">
+      <h3 className="mb-3 text-sm font-semibold">{t('gradeAndFeedback')}</h3>
+      <div className="flex flex-col gap-3">
+        {criteria.length > 0 ? (
+          <RubricGrid
+            criteria={criteria}
+            scores={rubricScores}
+            onChange={(criterionId, criterionScore) => {
+              const nextScores = { ...rubricScores, [criterionId]: criterionScore }
+              setRubricScores(nextScores)
+              onDirtyChange(true)
+              const total = criteria.reduce((sum, criterion) => sum + (nextScores[criterion.criterion_id] ?? 0), 0)
+              const maxTotal = criteria.reduce((sum, criterion) => sum + criterion.max_score, 0)
+              if (maxTotal > 0) setScore(String(Math.round((total / maxTotal) * 100)))
+            }}
+          />
+        ) : null}
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={scoreId}>{t('finalScore')}</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id={scoreId}
+              name="final-score"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={100}
+              value={score}
+              onChange={event => {
+                setScore(event.target.value)
+                onDirtyChange(true)
+              }}
+              placeholder={t('scorePlaceholder')}
+              className="w-24 tabular-nums"
+            />
+            <span className="text-muted-foreground text-sm">{t('scoreSlash')}</span>
+            {rubricTotalScore !== null ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="link"
+                className="h-auto p-0 text-xs"
+                onClick={() => {
+                  setScore(String(rubricTotalScore))
+                  onDirtyChange(true)
+                }}
+              >
+                {t('useRubricTotal', { score: rubricTotalScore })}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <MarkdownEditor
+          value={feedback}
+          onChange={value => {
+            setFeedback(value)
+            onDirtyChange(true)
+          }}
+          preset="explanation"
+          minHeight={160}
+          placeholder={t('feedbackPlaceholder')}
+        />
+        <div className="grid gap-2">
+          <Button onClick={() => submit('GRADED')} disabled={isPending}>
+            {isPending ? (
+              <Loader2 data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <Send data-icon="inline-start" />
+            )}
+            {t('saveGrade')}
+          </Button>
+          <Button variant="outline" onClick={() => submit('RETURNED')} disabled={isPending}>
+            <RotateCcw data-icon="inline-start" />
+            {t('returnForRevision')}
+          </Button>
+          <Button variant="outline" onClick={() => submit('PUBLISHED')} disabled={isPending}>
+            {t('publishResult')}
+          </Button>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function isPreviewable(filename: string): boolean {

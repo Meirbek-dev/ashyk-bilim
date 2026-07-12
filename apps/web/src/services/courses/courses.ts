@@ -1,9 +1,8 @@
 'use server'
 
-import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
-import type { CustomResponseTyping } from '@/lib/api-client'
+import { apiJson, apiResult } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated'
-import { parseApiError } from '@/lib/api/assertSuccess'
+import { isApiError } from '@/lib/api/assertSuccess'
 import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
 
@@ -32,9 +31,11 @@ type NormalizedCourse = Omit<
 > & {
   about: string
   authors: NormalizedCourseAuthor[]
+  course_uuid: string
   description: string
   learnings: string
   mini_description: string
+  name: string
   tags: string[]
   thumbnail_image: string
   thumbnail_type?: NonNullable<CourseRead['thumbnail_type']>
@@ -46,9 +47,11 @@ export type NormalizedCourseWithPermissions = Omit<
 > & {
   about: string
   authors: NormalizedCourseAuthor[]
+  course_uuid: string
   description: string
   learnings: string
   mini_description: string
+  name: string
   tags: string[]
   thumbnail_image: string
   thumbnail_type?: NonNullable<CourseReadWithPermissions['thumbnail_type']>
@@ -84,19 +87,11 @@ type NormalizedFullCourse = Omit<
   update_date?: string
 }
 
-type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
-  data: T | null
-}
-
 interface EditableCoursesSummary {
   total: number
   ready: number
   private: number
   attention: number
-}
-
-async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
-  return await getResponseMetadata<T | null>(response)
 }
 
 function normalizeTags(rawTags: string | null | undefined): string[] {
@@ -141,8 +136,10 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
   const {
     about,
     authors,
+    course_uuid,
     description,
     learnings,
+    name,
     tags: courseTags,
     thumbnail_image,
     thumbnail_type,
@@ -154,9 +151,11 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
     ...rest,
     about: about ?? '',
     authors: normalizeAuthors(authors),
+    course_uuid: course_uuid ?? '',
     description: description ?? '',
     learnings: learnings ?? '',
     mini_description: description ?? '',
+    name: name ?? '',
     tags: normalizeTags(courseTags),
     thumbnail_image: thumbnail_image ?? '',
     thumbnail_video: thumbnail_video ?? '',
@@ -168,8 +167,10 @@ function normalizeCourseWithPermissions(course: CourseReadWithPermissions): Norm
   const {
     about,
     authors,
+    course_uuid,
     description,
     learnings,
+    name,
     tags: courseTags,
     thumbnail_image,
     thumbnail_type,
@@ -181,9 +182,11 @@ function normalizeCourseWithPermissions(course: CourseReadWithPermissions): Norm
     ...rest,
     about: about ?? '',
     authors: normalizeAuthors(authors),
+    course_uuid: course_uuid ?? '',
     description: description ?? '',
     learnings: learnings ?? '',
     mini_description: description ?? '',
+    name: name ?? '',
     tags: normalizeTags(courseTags),
     thumbnail_image: thumbnail_image ?? '',
     thumbnail_video: thumbnail_video ?? '',
@@ -212,7 +215,7 @@ function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
     ...rest,
     about: about ?? '',
     authors: normalizeAuthors(authors),
-    chapters: (chapters ?? []) as unknown as AppChapter[],
+    chapters: chapters ?? [],
     course_uuid: course_uuid ?? '',
     description: description ?? '',
     learnings: learnings ?? '',
@@ -235,21 +238,15 @@ async function fetchCourses(
   page = 1,
   limit = 20,
 ): Promise<{ courses: NormalizedCourseWithPermissions[]; total: number }> {
-  const result = await apiFetch(`courses/page/${page}/limit/${limit}`, {
+  const result = await apiResult<CourseReadWithPermissions[]>(`courses/page/${page}/limit/${limit}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
 
-  if (!result.ok) {
-    throw await parseApiError(result, `courses/page/${page}/limit/${limit}`)
-  }
-
-  const courses = ((await result.json()) as CourseReadWithPermissions[]).map(course =>
-    normalizeCourseWithPermissions(course),
-  )
-  const total = Number.parseInt(result.headers.get('X-Total-Count') ?? '0', 10)
+  const courses = result.data.map(course => normalizeCourseWithPermissions(course))
+  const total = Number.parseInt(result.headers['x-total-count'] ?? '0', 10)
 
   return { courses, total }
 }
@@ -283,37 +280,35 @@ async function fetchEditableCourses(
     queryParams.set('preset', preset.trim())
   }
 
-  const result = await apiFetch(
-    `courses/editable/page/${page}/limit/${limit}${queryParams.size > 0 ? `?${queryParams.toString()}` : ''}`,
-    {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      baseUrl: getAPIUrl(),
-      timeoutMs: 10_000,
-    },
-  )
-
-  if (result.status === 401 || result.status === 403) {
-    return {
-      courses: [],
-      total: 0,
-      summary: { total: 0, ready: 0, private: 0, attention: 0 },
+  let result: Awaited<ReturnType<typeof apiResult<CourseReadWithPermissions[]>>>
+  try {
+    result = await apiResult<CourseReadWithPermissions[]>(
+      `courses/editable/page/${page}/limit/${limit}${queryParams.size > 0 ? `?${queryParams.toString()}` : ''}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        baseUrl: getAPIUrl(),
+        timeoutMs: 10_000,
+      },
+    )
+  } catch (error) {
+    if (isApiError(error) && (error.status === 401 || error.status === 403)) {
+      return {
+        courses: [],
+        total: 0,
+        summary: { total: 0, ready: 0, private: 0, attention: 0 },
+      }
     }
+    throw error
   }
 
-  if (!result.ok) {
-    throw await parseApiError(result, `courses/lms/page/${page}/limit/${limit}`)
-  }
-
-  const courses = ((await result.json()) as CourseReadWithPermissions[]).map(course =>
-    normalizeCourseWithPermissions(course),
-  )
-  const total = Number.parseInt(result.headers.get('X-Total-Count') ?? '0', 10)
+  const courses = result.data.map(course => normalizeCourseWithPermissions(course))
+  const total = Number.parseInt(result.headers['x-total-count'] ?? '0', 10)
   const summary = {
-    total: Number.parseInt(result.headers.get('X-Summary-Total') ?? String(total), 10),
-    ready: Number.parseInt(result.headers.get('X-Summary-Ready') ?? '0', 10),
-    private: Number.parseInt(result.headers.get('X-Summary-Private') ?? '0', 10),
-    attention: Number.parseInt(result.headers.get('X-Summary-Attention') ?? '0', 10),
+    total: Number.parseInt(result.headers['x-summary-total'] ?? String(total), 10),
+    ready: Number.parseInt(result.headers['x-summary-ready'] ?? '0', 10),
+    private: Number.parseInt(result.headers['x-summary-private'] ?? '0', 10),
+    attention: Number.parseInt(result.headers['x-summary-attention'] ?? '0', 10),
   }
 
   return { courses, total, summary }
@@ -324,13 +319,13 @@ export async function getEditableCourses(page = 1, limit = 20, query = '', sortB
 }
 
 export async function getCourseUserRights(course_uuid: string) {
-  const result = await apiFetch(`courses/${course_uuid}/rights`)
-  return await errorHandling(result)
+  return apiJson(`courses/${course_uuid}/rights`)
 }
 
 export async function searchCourses(query: string, page = 1, limit = 20) {
-  const result = await apiFetch(`courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
-  const courses: CourseRead[] = await errorHandling(result)
+  const courses = await apiJson<CourseRead[]>(
+    `courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
+  )
   return courses.map(course => normalizeCourse(course))
 }
 
@@ -339,7 +334,7 @@ export async function searchCourses(query: string, page = 1, limit = 20) {
  */
 async function fetchCourseMetadata(course_uuid: string, withUnpublishedActivities = false): Promise<AppCourse> {
   const normalizedCourseUuid = course_uuid.startsWith('course_') ? course_uuid : `course_${course_uuid}`
-  const result = await apiFetch(
+  const course = await apiJson<FullCourseRead>(
     `courses/${normalizedCourseUuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`,
     {
       method: 'GET',
@@ -348,7 +343,7 @@ async function fetchCourseMetadata(course_uuid: string, withUnpublishedActivitie
       timeoutMs: 10_000,
     },
   )
-  return normalizeFullCourse(await errorHandling(result))
+  return normalizeFullCourse(course)
 }
 
 export async function getCourseMetadata(
@@ -376,26 +371,23 @@ const toCourseMetadataPayload = (data: AppPayload, options?: CourseWriteOptions)
 })
 
 export async function updateCourseMetadata(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
-  const result = await apiFetch(`courses/${course_uuid}/metadata`, {
+  const result = await apiResult<CourseRead>(`courses/${course_uuid}/metadata`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toCourseMetadataPayload(data, options)),
   })
-  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.courses, 'max')
-    revalidateTag(courseTag.detail(course_uuid), 'max')
-    revalidateTag(courseTag.editableList(), 'max')
-    revalidateTag(courseTag.publicList(), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
+  revalidateTag(courseTag.editableList(), 'max')
+  revalidateTag(courseTag.publicList(), 'max')
 
-  return metadata
+  return { ...result, data: normalizeCourse(result.data) }
 }
 
 export async function updateCourseAccess(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
-  const result = await apiFetch(`courses/${course_uuid}/access`, {
+  const result = await apiResult<CourseRead>(`courses/${course_uuid}/access`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -403,31 +395,77 @@ export async function updateCourseAccess(course_uuid: string, data: AppPayload, 
       last_known_update_date: options?.lastKnownUpdateDate ?? data.update_date ?? undefined,
     }),
   })
-  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.courses, 'max')
-    revalidateTag(courseTag.detail(course_uuid), 'max')
-    revalidateTag(courseTag.access(course_uuid), 'max')
-    revalidateTag(courseTag.editableList(), 'max')
-    revalidateTag(courseTag.publicList(), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
+  revalidateTag(courseTag.access(course_uuid), 'max')
+  revalidateTag(courseTag.editableList(), 'max')
+  revalidateTag(courseTag.publicList(), 'max')
 
-  return metadata
+  return { ...result, data: normalizeCourse(result.data) }
+}
+
+export interface CourseReadiness {
+  ready: boolean
+  issues: {
+    code: string
+    severity: 'blocker' | 'warning' | 'advice'
+    message: string
+    scope: string
+    activity_uuid?: string | null
+    path?: string | null
+  }[]
+  active_content_count: number
+  scheduled_content_count: number
+}
+
+interface CourseLifecycleResult {
+  course: CourseRead
+  readiness: CourseReadiness
+  affected_learner_count: number
+  active_content_count: number
+  scheduled_content_count: number
+}
+
+export async function getCourseReadiness(courseUuid: string): Promise<CourseReadiness> {
+  return apiJson<CourseReadiness>(`courses/${courseUuid}/readiness`, {
+    baseUrl: getAPIUrl(),
+    timeoutMs: 10_000,
+  })
+}
+
+export async function updateCourseLifecycle(courseUuid: string, makePublic: boolean, options?: CourseWriteOptions) {
+  const result = await apiResult<CourseLifecycleResult>(`courses/${courseUuid}/lifecycle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: makePublic ? 'PUBLISH' : 'UNPUBLISH',
+      last_known_update_date: options?.lastKnownUpdateDate ?? undefined,
+    }),
+  })
+
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
+  revalidateTag(courseTag.detail(courseUuid), 'max')
+  revalidateTag(courseTag.access(courseUuid), 'max')
+  revalidateTag(courseTag.editableList(), 'max')
+  revalidateTag(courseTag.publicList(), 'max')
+
+  return { ...result, data: normalizeCourse(result.data.course), readiness: result.data.readiness }
 }
 
 /**
  * Cached fetch for full course data
  */
 async function fetchCourse(course_uuid: string): Promise<NormalizedCourse> {
-  const result = await apiFetch(`courses/${course_uuid}`, {
+  const course = await apiJson<CourseRead>(`courses/${course_uuid}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return normalizeCourse(await errorHandling(result))
+  return normalizeCourse(course)
 }
 
 export async function getCourse(course_uuid: string, _next?: unknown) {
@@ -439,21 +477,18 @@ export async function updateCourseThumbnail(course_uuid: string, formData: FormD
     formData.set('last_known_update_date', options.lastKnownUpdateDate)
   }
 
-  const result = await apiFetch(`courses/${course_uuid}/thumbnail`, {
+  const result = await apiResult<CourseRead>(`courses/${course_uuid}/thumbnail`, {
     method: 'PUT',
     body: formData,
   })
-  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.courses, 'max')
-    revalidateTag(courseTag.detail(course_uuid), 'max')
-    revalidateTag(courseTag.editableList(), 'max')
-    revalidateTag(courseTag.publicList(), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
+  revalidateTag(courseTag.editableList(), 'max')
+  revalidateTag(courseTag.publicList(), 'max')
 
-  return metadata
+  return { ...result, data: normalizeCourse(result.data) }
 }
 
 export async function createNewCourse(
@@ -481,18 +516,15 @@ export async function createNewCourse(
     formData.append('thumbnail', thumbnail)
   }
 
-  const result = await apiFetch(`courses`, { method: 'POST', body: formData })
-  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result)
+  const result = await apiResult<CourseRead>('courses', { method: 'POST', body: formData })
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.courses, 'max')
-    revalidateTag(tags.editableCourses, 'max')
-    revalidateTag(courseTag.editableList(), 'max')
-    revalidateTag(courseTag.publicList(), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
+  revalidateTag(tags.editableCourses, 'max')
+  revalidateTag(courseTag.editableList(), 'max')
+  revalidateTag(courseTag.publicList(), 'max')
 
-  return metadata
+  return { ...result, data: normalizeCourse(result.data) }
 }
 
 /**
@@ -500,13 +532,9 @@ export async function createNewCourse(
  * Not cached — used for interactive search.
  */
 export async function searchEditableCourses(query: string, limit = 20) {
-  const result = await apiFetch(
+  const courses = await apiJson<CourseReadWithPermissions[]>(
     `courses/editable/page/1/limit/${limit}?query=${encodeURIComponent(query)}&sort_by=updated`,
-  )
-  if (!result.ok) return []
-  const courses = ((await result.json()) as CourseReadWithPermissions[]).map(course =>
-    normalizeCourseWithPermissions(course),
-  )
+  ).catch(() => [])
   return Array.isArray(courses) ? courses : []
 }
 
@@ -514,19 +542,14 @@ export async function deleteCourseFromBackend(
   course_uuid: string,
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  const result = await apiFetch(`courses/${course_uuid}`, { method: 'DELETE' })
-  const data = await errorHandling(result)
-  const deletionSucceeded =
-    result.ok && (!('success' in (data as Record<string, unknown>)) || Boolean((data as { success?: unknown }).success))
+  const data = await apiJson(`courses/${course_uuid}`, { method: 'DELETE' })
 
-  if (deletionSucceeded) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.courses, 'max')
-    revalidateTag(tags.editableCourses, 'max')
-    revalidateTag(courseTag.detail(course_uuid), 'max')
-    revalidateTag(courseTag.editableList(), 'max')
-    revalidateTag(courseTag.publicList(), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
+  revalidateTag(tags.editableCourses, 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
+  revalidateTag(courseTag.editableList(), 'max')
+  revalidateTag(courseTag.publicList(), 'max')
 
   return data
 }
@@ -538,34 +561,28 @@ export async function editContributor(
   authorship_status: string | undefined,
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  const result = await apiFetch(
+  const metadata = await apiResult(
     `courses/${course_uuid}/contributors/${contributor_id}?authorship=${authorship}&authorship_status=${authorship_status}`,
     { method: 'PUT' },
   )
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(courseTag.contributors(course_uuid), 'max')
-    revalidateTag(courseTag.detail(course_uuid), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(courseTag.contributors(course_uuid), 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
 
   return metadata
 }
 
 export async function applyForContributor(course_uuid: string, data: AppPayload) {
-  const result = await apiFetch(`courses/${course_uuid}/apply-contributor`, {
+  const metadata = await apiResult(`courses/${course_uuid}/apply-contributor`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(courseTag.contributors(course_uuid), 'max')
-    revalidateTag(courseTag.detail(course_uuid), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(courseTag.contributors(course_uuid), 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
 
   return metadata
 }
@@ -575,18 +592,15 @@ export async function bulkAddContributors(
   data: string[],
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  const result = await apiFetch(`courses/${course_uuid}/bulk-add-contributors`, {
+  const metadata = await apiResult(`courses/${course_uuid}/bulk-add-contributors`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(courseTag.contributors(course_uuid), 'max')
-    revalidateTag(courseTag.detail(course_uuid), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(courseTag.contributors(course_uuid), 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
 
   return metadata
 }
@@ -596,18 +610,15 @@ export async function bulkRemoveContributors(
   data: string[],
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  const result = await apiFetch(`courses/${course_uuid}/bulk-remove-contributors`, {
+  const metadata = await apiResult(`courses/${course_uuid}/bulk-remove-contributors`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(courseTag.contributors(course_uuid), 'max')
-    revalidateTag(courseTag.detail(course_uuid), 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(courseTag.contributors(course_uuid), 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
 
   return metadata
 }

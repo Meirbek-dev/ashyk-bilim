@@ -2,6 +2,8 @@
  * Client-side Next.js cache revalidation.
  * Calls the /api/revalidate route handler which runs revalidateTag server-side.
  */
+import { fetch as transportFetch } from 'ofetch'
+
 export const revalidateTags = async (tags: string[]) => {
   const uniqueTags = [...new Set(tags)]
     .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
@@ -13,7 +15,7 @@ export const revalidateTags = async (tags: string[]) => {
   const endpoint = `${baseUrl}/api/revalidate`
 
   try {
-    const response = await fetch(endpoint, {
+    const response = await transportFetch(endpoint, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -30,7 +32,7 @@ export const revalidateTags = async (tags: string[]) => {
     await Promise.all(
       uniqueTags.map(tag => {
         const url = `${endpoint}?tag=${encodeURIComponent(tag)}`
-        return fetch(url, { credentials: 'include' })
+        return transportFetch(url, { credentials: 'include' })
       }),
     )
   }

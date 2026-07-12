@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   ApiGetImageFileBlockApiV1BlocksImageGetParams,
   ApiGetPdfFileBlockApiV1BlocksPdfGetParams,
@@ -32,9 +32,9 @@ import type {
   BodyApiCreateImageFileBlockApiV1BlocksImagePost,
   BodyApiCreatePdfFileBlockApiV1BlocksPdfPost,
   BodyApiCreateVideoFileBlockApiV1BlocksVideoPost,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -61,7 +61,7 @@ export const getApiGetImageFileBlockApiV1BlocksImageGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -78,10 +78,14 @@ export const apiGetImageFileBlockApiV1BlocksImageGet = async (
   params: ApiGetImageFileBlockApiV1BlocksImageGetParams,
   options?: RequestInit,
 ): Promise<BlockRead> => {
-  return orvalMutator<BlockRead>(getApiGetImageFileBlockApiV1BlocksImageGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<BlockRead>(
+    getApiGetImageFileBlockApiV1BlocksImageGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    BlockRead,
+  )
 }
 
 export const getApiGetImageFileBlockApiV1BlocksImageGetQueryKey = (
@@ -308,11 +312,15 @@ export const apiCreateImageFileBlockApiV1BlocksImagePost = async (
   formData.append(`activity_uuid`, bodyApiCreateImageFileBlockApiV1BlocksImagePost.activity_uuid)
   formData.append(`file_object`, bodyApiCreateImageFileBlockApiV1BlocksImagePost.file_object)
 
-  return orvalMutator<BlockRead>(getApiCreateImageFileBlockApiV1BlocksImagePostUrl(), {
-    ...options,
-    method: 'POST',
-    body: formData,
-  })
+  return orvalMutator<BlockRead>(
+    getApiCreateImageFileBlockApiV1BlocksImagePostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      body: formData,
+    },
+    BlockRead,
+  )
 }
 
 export const getApiCreateImageFileBlockApiV1BlocksImagePostMutationOptions = <
@@ -388,7 +396,7 @@ export const getApiGetPdfFileBlockApiV1BlocksPdfGetUrl = (params: ApiGetPdfFileB
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -405,10 +413,14 @@ export const apiGetPdfFileBlockApiV1BlocksPdfGet = async (
   params: ApiGetPdfFileBlockApiV1BlocksPdfGetParams,
   options?: RequestInit,
 ): Promise<BlockRead> => {
-  return orvalMutator<BlockRead>(getApiGetPdfFileBlockApiV1BlocksPdfGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<BlockRead>(
+    getApiGetPdfFileBlockApiV1BlocksPdfGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    BlockRead,
+  )
 }
 
 export const getApiGetPdfFileBlockApiV1BlocksPdfGetQueryKey = (params?: ApiGetPdfFileBlockApiV1BlocksPdfGetParams) => {
@@ -629,11 +641,15 @@ export const apiCreatePdfFileBlockApiV1BlocksPdfPost = async (
   formData.append(`activity_uuid`, bodyApiCreatePdfFileBlockApiV1BlocksPdfPost.activity_uuid)
   formData.append(`file_object`, bodyApiCreatePdfFileBlockApiV1BlocksPdfPost.file_object)
 
-  return orvalMutator<BlockRead>(getApiCreatePdfFileBlockApiV1BlocksPdfPostUrl(), {
-    ...options,
-    method: 'POST',
-    body: formData,
-  })
+  return orvalMutator<BlockRead>(
+    getApiCreatePdfFileBlockApiV1BlocksPdfPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      body: formData,
+    },
+    BlockRead,
+  )
 }
 
 export const getApiCreatePdfFileBlockApiV1BlocksPdfPostMutationOptions = <
@@ -707,7 +723,7 @@ export const getApiGetVideoFileBlockApiV1BlocksVideoGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -724,10 +740,14 @@ export const apiGetVideoFileBlockApiV1BlocksVideoGet = async (
   params: ApiGetVideoFileBlockApiV1BlocksVideoGetParams,
   options?: RequestInit,
 ): Promise<BlockRead> => {
-  return orvalMutator<BlockRead>(getApiGetVideoFileBlockApiV1BlocksVideoGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<BlockRead>(
+    getApiGetVideoFileBlockApiV1BlocksVideoGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    BlockRead,
+  )
 }
 
 export const getApiGetVideoFileBlockApiV1BlocksVideoGetQueryKey = (
@@ -954,11 +974,15 @@ export const apiCreateVideoFileBlockApiV1BlocksVideoPost = async (
   formData.append(`activity_uuid`, bodyApiCreateVideoFileBlockApiV1BlocksVideoPost.activity_uuid)
   formData.append(`file_object`, bodyApiCreateVideoFileBlockApiV1BlocksVideoPost.file_object)
 
-  return orvalMutator<BlockRead>(getApiCreateVideoFileBlockApiV1BlocksVideoPostUrl(), {
-    ...options,
-    method: 'POST',
-    body: formData,
-  })
+  return orvalMutator<BlockRead>(
+    getApiCreateVideoFileBlockApiV1BlocksVideoPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      body: formData,
+    },
+    BlockRead,
+  )
 }
 
 export const getApiCreateVideoFileBlockApiV1BlocksVideoPostMutationOptions = <

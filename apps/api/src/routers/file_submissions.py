@@ -28,6 +28,7 @@ from src.services.file_submissions import (
     get_file_submission,
     get_file_submission_attempt_file_upload,
     get_file_submission_by_activity_uuid,
+    get_file_submission_submission,
     get_my_file_submission_draft,
     grade_file_submission_attempt,
     list_file_submission_submissions,
@@ -230,6 +231,24 @@ async def api_export_file_submission_csv(
         iter([csv_body]),
         media_type="text/csv",
         headers={"Content-Disposition": get_content_disposition_header(f"file-submissions-{file_submission_uuid}.csv")},
+    )
+
+
+@router.get(
+    "/{file_submission_uuid}/submissions/{attempt_uuid}",
+    response_model=FileSubmissionAttemptRead,
+)
+async def api_get_file_submission_submission(
+    file_submission_uuid: str,
+    attempt_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> FileSubmissionAttemptRead:
+    return await get_file_submission_submission(
+        file_submission_uuid,
+        attempt_uuid,
+        current_user,
+        db_session,
     )
 
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from contextlib import aclosing
 from dataclasses import dataclass
+
+from pydantic_ai.messages import ModelMessage
 
 from src.services.ai.agents._shared import clipped, load_prompt
 from src.services.ai.providers import AIProviderUnavailable, ModelProvider
@@ -33,6 +35,7 @@ async def answer_course_question(
     role: str,
     language: str = "auto",
     locale: str | None = None,
+    message_history: Sequence[ModelMessage] | None = None,
 ) -> tuple[CourseQAAnswer, str]:
     prompt = f"Role: {role}\nLanguage: {language}\nQuestion: {question}\n\nCourse context:\n{clipped(course_context)}"
     try:
@@ -40,6 +43,7 @@ async def answer_course_question(
             instructions=load_prompt("course_qa.md", locale=locale),
             prompt=prompt,
             output_type=CourseQAAnswer,
+            message_history=message_history,
         )
         return result.output, result.model_name
     except AIProviderUnavailable:
@@ -56,6 +60,7 @@ async def stream_course_question(
     role: str,
     language: str = "auto",
     locale: str | None = None,
+    message_history: Sequence[ModelMessage] | None = None,
 ) -> AsyncIterator[CourseQAStreamChunk]:
     """Stream the answer markdown token-by-token, then yield the final structured answer.
 
@@ -71,6 +76,7 @@ async def stream_course_question(
                 instructions=load_prompt("course_qa.md", locale=locale),
                 prompt=prompt,
                 output_type=CourseQAAnswer,
+                message_history=message_history,
             )
         ) as stream:
             async for chunk in stream:
@@ -80,7 +86,7 @@ async def stream_course_question(
                         answer_text=answer_text,
                         final=True,
                         answer=chunk.output,
-                        model_name=provider.selected_model_name(),
+                        model_name=chunk.model_name or provider.selected_model_name(),
                     )
                 else:
                     yield CourseQAStreamChunk(answer_text=answer_text, final=False)  # noqa: ASYNC119

@@ -13,8 +13,7 @@ import type {
   SavedAnalyticsViewListResponse,
   SavedAnalyticsViewRow,
 } from '@/types/analytics'
-import { apiFetch, apiJson } from '@/lib/api-client'
-import { parseApiError } from '@/lib/api/assertSuccess'
+import { apiBody, apiJson } from '@/lib/api-client'
 import { getAPIUrl } from '@services/config/config'
 
 export interface TeacherInterventionCreate {
@@ -202,16 +201,11 @@ export function getAnalyticsExportUrl(
 }
 
 export async function downloadAnalyticsExport(exportUrl: string): Promise<{ blob: Blob; filename: string }> {
-  const response = await apiFetch(exportUrl)
-
-  if (!response.ok) {
-    throw await parseApiError(response, exportUrl)
-  }
-
+  const blob = await apiBody<Blob, 'blob'>(exportUrl, { responseType: 'blob' })
   const pathWithoutQuery = exportUrl.split('?').shift() ?? exportUrl
 
   return {
-    blob: await response.blob(),
+    blob,
     filename: pathWithoutQuery.split('/').pop() ?? 'export.csv',
   }
 }

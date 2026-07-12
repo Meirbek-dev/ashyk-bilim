@@ -14,7 +14,7 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { reportClientError } from '@/services/telemetry/client'
 
@@ -35,7 +35,7 @@ interface ReadinessPayload {
 function readinessQueryOptions(assessmentUuid: string, enabled: boolean) {
   return queryOptions({
     queryKey: queryKeys.assessments.readiness(assessmentUuid),
-    queryFn: () => apiFetcher<ReadinessPayload>(`assessments/${assessmentUuid}/readiness`),
+    queryFn: () => apiJson<ReadinessPayload>(`assessments/${assessmentUuid}/readiness`),
     enabled,
     retry: false,
   })

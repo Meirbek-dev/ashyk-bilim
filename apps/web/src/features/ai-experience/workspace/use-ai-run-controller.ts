@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { UseMutationResult } from '@tanstack/react-query'
 
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 
 import { useAIRunStatus } from '../api/use-ai-run-status'
 import type { AIRunStatusPayload } from '../api/use-ai-run-status'
@@ -22,7 +22,7 @@ export interface AIArtifactPayload<T = unknown> {
 export function aiRunArtifactsQueryOptions<T = unknown>(runUuid: string, enabled: boolean) {
   return {
     queryKey: ['ai-run-artifacts', runUuid],
-    queryFn: () => apiFetcher<AIArtifactPayload<T>[]>(`ai/runs/${runUuid}/artifacts`),
+    queryFn: () => apiJson<AIArtifactPayload<T>[]>(`ai/runs/${runUuid}/artifacts`),
     enabled: enabled && Boolean(runUuid),
   }
 }
@@ -31,18 +31,31 @@ type QueueMutation<Payload> = UseMutationResult<AIRunStatusPayload, Error, Paylo
 
 export function useAIRunController<Payload, Artifact = unknown>({
   invalidateQueryKeys = [],
+  persistenceKey,
   queue,
 }: {
   invalidateQueryKeys?: unknown[][]
+  persistenceKey?: string
   queue: QueueMutation<Payload>
 }) {
-  const [runUuid, setRunUuid] = useState<string | null>(null)
+  const [runUuid, setRunUuid] = useState<string | null>(() => {
+    if (!persistenceKey || typeof globalThis.sessionStorage === 'undefined') return null
+    return globalThis.sessionStorage.getItem(`ai-run:${persistenceKey}`)
+  })
   const invalidatedRunUuidRef = useRef<string | null>(null)
   const queryClient = useQueryClient()
   const stream = useAIRunStream(runUuid ? `ai/runs/${runUuid}/stream` : null)
   const status = useAIRunStatus(runUuid ?? '', Boolean(runUuid))
   const cancel = useCancelAIRun()
-  const state = stream.state
+  const terminalStatusState =
+    status.data?.status === 'finished'
+      ? 'complete'
+      : status.data?.status === 'error'
+        ? 'failed'
+        : status.data?.status === 'aborted'
+          ? 'cancelled'
+          : null
+  const state = terminalStatusState ?? stream.state
   const terminal = isTerminalAIState(state)
   const artifacts = useQuery(aiRunArtifactsQueryOptions<Artifact>(runUuid ?? '', Boolean(runUuid && terminal)))
 
@@ -55,6 +68,13 @@ export function useAIRunController<Payload, Artifact = unknown>({
       void queryClient.invalidateQueries({ queryKey })
     }
   }, [invalidateQueryKeys, queryClient, runUuid, terminal])
+
+  useEffect(() => {
+    if (!persistenceKey) return
+    const key = `ai-run:${persistenceKey}`
+    if (runUuid) globalThis.sessionStorage.setItem(key, runUuid)
+    else globalThis.sessionStorage.removeItem(key)
+  }, [persistenceKey, runUuid])
 
   const latestArtifact = useMemo(
     () => artifacts.data?.find(artifact => artifact.final) ?? artifacts.data?.[0],

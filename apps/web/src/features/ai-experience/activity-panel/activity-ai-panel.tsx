@@ -1,7 +1,6 @@
 'use client'
 
 import { BotIcon, BookOpenCheckIcon, PanelRightCloseIcon, ShieldCheckIcon } from 'lucide-react'
-import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 
@@ -17,23 +16,12 @@ import { cn } from '@/lib/utils'
 import { useActivityAIUrlState } from './activity-ai-url-state'
 import type { ActivityAIMode } from './activity-ai-url-state'
 import { useAIScopeCapabilities } from './use-ai-scope-capabilities'
-import type { AIScope } from './use-ai-scope-capabilities'
+import type { AIScope, AIScopeCapability } from './use-ai-scope-capabilities'
 
 interface ActivityAIPanelProps {
   children: React.ReactNode
   className?: string | undefined
   scope: AIScope
-}
-
-const MODE_LABELS: Record<ActivityAIMode, string> = {
-  ask: 'Ask',
-  explain: 'Explain',
-  practice: 'Practice',
-  sources: 'Sources',
-  review: 'Review',
-  analyze: 'Analyze',
-  'draft-feedback': 'Draft feedback',
-  remediation: 'Remediation',
 }
 
 type ActivityAILayout = 'chat' | 'compact' | 'wide'
@@ -42,36 +30,9 @@ export function getAIModeLayout(mode: ActivityAIMode, surface: AIScope['surface'
   if (surface === 'admin') return 'wide'
   if (mode === 'review' || mode === 'analyze' || mode === 'draft-feedback' || mode === 'remediation') return 'wide'
   // Conversational, turn-based modes get more room than a narrow "compact" report tab so a
-  // thread history rail has somewhere to live — see QAPanel's own container query.
+  // thread history rail has somewhere to live. See QAPanel's own container query.
   if (mode === 'ask' || mode === 'explain' || mode === 'practice') return 'chat'
   return 'compact'
-}
-
-export function getActivityAIDockWidth(layout: ActivityAILayout) {
-  if (layout === 'wide') return 'min(48rem, 46vw)'
-  if (layout === 'chat') return 'min(34rem, 60vw)'
-  return 'min(26rem, calc(100vw - 2rem))'
-}
-
-export function useActivityAIDockStyle({
-  defaultMode,
-  enabled = true,
-  surface,
-}: {
-  defaultMode: ActivityAIMode
-  enabled?: boolean | undefined
-  surface: AIScope['surface']
-}): CSSProperties | undefined {
-  const isMobile = useIsMobile()
-  const { mode, open } = useActivityAIUrlState(defaultMode)
-  const layout = getAIModeLayout(mode, surface)
-
-  return useMemo(() => {
-    if (!enabled || !open || isMobile) return undefined
-    return {
-      paddingInlineEnd: `calc(${getActivityAIDockWidth(layout)} + 1rem)`,
-    }
-  }, [enabled, isMobile, layout, open])
 }
 
 export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelProps) {
@@ -107,7 +68,14 @@ export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelP
             </DrawerTitle>
             <DrawerDescription>{t('contextDescription')}</DrawerDescription>
           </DrawerHeader>
-          <PanelBody className={className} layout="compact" modes={modes} scope={scope} visibility={visibility}>
+          <PanelBody
+            className={className}
+            {...(capabilities.data?.context ? { context: capabilities.data.context } : {})}
+            layout={layout}
+            modes={modes}
+            scope={scope}
+            visibility={visibility}
+          >
             {children}
           </PanelBody>
         </DrawerContent>
@@ -123,7 +91,7 @@ export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelP
       data-ai-layout={layout}
       className={cn(
         'bg-background text-foreground fixed end-0 top-14 bottom-0 z-40 flex min-h-0 border-s shadow-lg',
-        'w-[min(26rem,calc(100vw-2rem))] data-[ai-layout=chat]:w-[min(34rem,60vw)] data-[ai-layout=wide]:w-[min(48rem,46vw)]',
+        'w-[min(34rem,calc(100vw-2rem))] xl:sticky xl:top-14 xl:z-20 xl:h-[calc(100dvh-3.5rem)] xl:w-full xl:shadow-none',
         className,
       )}
       onKeyDown={event => {
@@ -143,7 +111,13 @@ export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelP
             <PanelRightCloseIcon aria-hidden="true" />
           </Button>
         </div>
-        <PanelBody layout={layout} modes={modes} scope={scope} visibility={visibility}>
+        <PanelBody
+          {...(capabilities.data?.context ? { context: capabilities.data.context } : {})}
+          layout={layout}
+          modes={modes}
+          scope={scope}
+          visibility={visibility}
+        >
           {children}
         </PanelBody>
       </div>
@@ -154,6 +128,7 @@ export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelP
 function PanelBody({
   children,
   className,
+  context,
   layout,
   modes,
   scope,
@@ -161,6 +136,7 @@ function PanelBody({
 }: {
   children: React.ReactNode
   className?: string | undefined
+  context?: AIScopeCapability['context']
   layout: ActivityAILayout
   modes: ActivityAIMode[]
   scope: AIScope
@@ -169,22 +145,29 @@ function PanelBody({
   const t = useTranslations('Activities.AiAssistantPanel')
   const { mode, setMode } = useActivityAIUrlState(scope.surface === 'student-activity' ? 'ask' : 'review')
   const activeMode = modes.includes(mode) ? mode : (modes[0] ?? 'ask')
-  const sourceCount = modes.length
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col', className)} data-ai-layout={layout}>
-      <div className="flex flex-col gap-3 border-b p-3">
+      <div className="bg-muted/30 flex flex-col gap-3 border-b p-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <BookOpenCheckIcon className="text-muted-foreground mt-0.5 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{t('contextLabel')}</p>
+            <p className="truncate text-sm font-medium">
+              {context?.activity_label
+                ? `${context.course_label} / ${context.activity_label}`
+                : (context?.course_label ?? t('courseContext'))}
+            </p>
+            <p className="text-muted-foreground text-xs">{t('sourceCount', { count: context?.source_count ?? 0 })}</p>
+          </div>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">
             <ShieldCheckIcon data-icon="inline-start" aria-hidden="true" />
-            {visibility === 'student' ? t('studentMode') : visibility}
+            {t(`visibility.${visibility}`)}
           </Badge>
-          <Badge variant="outline">
-            <BookOpenCheckIcon data-icon="inline-start" aria-hidden="true" />
-            {t('sourcesAvailable', { count: sourceCount })}
-          </Badge>
+          <span className="text-muted-foreground text-xs">{t('approvalBoundary')}</span>
         </div>
-        <p className="text-muted-foreground text-xs leading-normal">{t('approvalBoundary')}</p>
         <Separator />
         <ScrollArea className="max-w-full">
           <ToggleGroup
@@ -199,23 +182,21 @@ function PanelBody({
           >
             {modes.map(item => (
               <ToggleGroupItem key={item} value={item}>
-                {MODE_LABELS[item]}
+                {t(`modes.${item}`)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
         </ScrollArea>
       </div>
-      <ScrollArea className="min-h-0 flex-1 overscroll-contain">
-        <div
-          className={cn(
-            'flex min-h-full flex-col gap-4 p-4',
-            layout === 'wide' || layout === 'chat' ? 'max-w-none' : 'max-w-[30rem]',
-          )}
-          aria-live="polite"
-        >
-          {children}
-        </div>
-      </ScrollArea>
+      {layout === 'chat' ? (
+        <div className="flex min-h-0 flex-1 flex-col p-4">{children}</div>
+      ) : (
+        <ScrollArea className="min-h-0 flex-1 overscroll-contain">
+          <div className={cn('flex min-h-full flex-col gap-4 p-4', layout === 'wide' ? 'max-w-none' : 'max-w-[30rem]')}>
+            {children}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   )
 }

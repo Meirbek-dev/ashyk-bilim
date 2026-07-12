@@ -79,7 +79,7 @@ export type CourseWizardValues = v.InferOutput<typeof courseWizardSchema>
 export const courseCreateSchema = v.pipe(
   v.object({
     title: v.pipe(v.string(), v.minLength(1, 'title_required'), v.maxLength(100, 'title_too_long')),
-    description: v.pipe(v.string(), v.minLength(1, 'description_required'), v.maxLength(8000, 'description_too_long')),
+    description: v.pipe(v.string(), v.maxLength(8000, 'description_too_long')),
     structureMode: v.picklist(['blank', 'starter', 'copy-outline'] as const),
     sourceCourseUuid: v.optional(v.string()),
     initialVisibility: v.picklist(['private', 'public'] as const),

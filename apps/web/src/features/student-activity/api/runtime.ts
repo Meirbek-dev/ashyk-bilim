@@ -1,11 +1,11 @@
-import { apiFetch, apiFetcher, errorHandling } from '@/lib/api-client'
-import type { components } from '@/lib/api/generated'
+import { apiJson } from '@/lib/api-client'
+import type * as schemas from '@/lib/api/generated/api.schemas'
 
-export type StudentActivityRuntime = components['schemas']['StudentActivityRuntime']
-export type StudentActivityActionRequest = components['schemas']['StudentActivityActionRequest']
+export type StudentActivityRuntime = schemas.StudentActivityRuntime
+export type StudentActivityActionRequest = schemas.StudentActivityActionRequest
 
 export function getStudentActivityRuntime(courseUuid: string, activityUuid: string) {
-  return apiFetcher<StudentActivityRuntime>(`courses/${courseUuid}/activities/${activityUuid}/runtime`)
+  return apiJson<StudentActivityRuntime>(`courses/${courseUuid}/activities/${activityUuid}/runtime`)
 }
 
 export function runStudentActivityAction(
@@ -13,9 +13,9 @@ export function runStudentActivityAction(
   activityUuid: string,
   action: StudentActivityActionRequest,
 ) {
-  return apiFetch(`courses/${courseUuid}/activities/${activityUuid}/actions`, {
+  return apiJson<StudentActivityRuntime>(`courses/${courseUuid}/activities/${activityUuid}/actions`, {
     method: 'POST',
     body: JSON.stringify(action),
     headers: { 'Content-Type': 'application/json' },
-  }).then(response => errorHandling<StudentActivityRuntime>(response))
+  })
 }

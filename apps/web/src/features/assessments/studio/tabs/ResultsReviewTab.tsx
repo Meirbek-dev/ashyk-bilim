@@ -29,7 +29,7 @@ import { getReleaseState, getSubmissionDisplayName } from '@/features/grading/do
 import { getSubmissionViolations } from '@/features/grading/domain/types'
 import type { ReleaseState, Submission, SubmissionStatus, SubmissionUser } from '@/features/grading/domain'
 import { cn } from '@/lib/utils'
-import { apiFetch, apiFetcher } from '@/lib/api-client'
+import { apiBody, apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import Link from '@components/ui/AppLink'
 import { Badge } from '@/components/ui/badge'
@@ -92,21 +92,21 @@ interface ReviewQueueRead {
 const statsQueryOptions = (assessmentUuid: string) =>
   queryOptions({
     queryKey: queryKeys.assessments.stats(assessmentUuid),
-    queryFn: () => apiFetcher<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
+    queryFn: () => apiJson<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
     staleTime: 30_000,
   })
 
 const itemAnalyticsQueryOptions = (assessmentUuid: string) =>
   queryOptions({
     queryKey: queryKeys.assessments.itemAnalytics(assessmentUuid),
-    queryFn: () => apiFetcher<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`),
+    queryFn: () => apiJson<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`),
     staleTime: 30_000,
   })
 
 const queueQueryOptions = (assessmentUuid: string, queuePath: string) =>
   queryOptions({
     queryKey: ['assessments', assessmentUuid, 'operate-queue', queuePath],
-    queryFn: () => apiFetcher<ReviewQueueRead>(queuePath),
+    queryFn: () => apiJson<ReviewQueueRead>(queuePath),
     staleTime: 5000,
   })
 
@@ -175,9 +175,9 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   const exportCsv = () => {
     startExportTransition(async () => {
       try {
-        const response = await apiFetch(`assessments/${assessmentUuid}/submissions/export`)
-        if (!response.ok) throw new Error(t('exportFailed'))
-        const csv = await response.text()
+        const csv = await apiBody<string, 'text'>(`assessments/${assessmentUuid}/submissions/export`, {
+          responseType: 'text',
+        })
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
         const anchor = document.createElement('a')

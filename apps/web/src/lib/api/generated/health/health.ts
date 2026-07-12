@@ -20,7 +20,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type { ApiErrorEnvelope, HealthStatusResponse } from '../api.schemas'
+import { ApiErrorEnvelope, HealthStatusResponse } from '../zod'
 
 import { orvalMutator } from '../../orval-mutator'
 import type { ErrorType } from '../../orval-mutator'
@@ -50,10 +50,14 @@ export const getHealthApiV1HealthGetUrl = () => {
  * @summary Health
  */
 export const healthApiV1HealthGet = async (options?: RequestInit): Promise<HealthStatusResponse> => {
-  return orvalMutator<HealthStatusResponse>(getHealthApiV1HealthGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<HealthStatusResponse>(
+    getHealthApiV1HealthGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    HealthStatusResponse,
+  )
 }
 
 export const getHealthApiV1HealthGetQueryKey = () => {
@@ -238,10 +242,14 @@ export const getHealthLiveApiV1HealthLiveGetUrl = () => {
  * @summary Health Live
  */
 export const healthLiveApiV1HealthLiveGet = async (options?: RequestInit): Promise<HealthStatusResponse> => {
-  return orvalMutator<HealthStatusResponse>(getHealthLiveApiV1HealthLiveGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<HealthStatusResponse>(
+    getHealthLiveApiV1HealthLiveGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    HealthStatusResponse,
+  )
 }
 
 export const getHealthLiveApiV1HealthLiveGetQueryKey = () => {
@@ -430,10 +438,14 @@ export const getHealthReadyApiV1HealthReadyGetUrl = () => {
  * @summary Health Ready
  */
 export const healthReadyApiV1HealthReadyGet = async (options?: RequestInit): Promise<HealthStatusResponse> => {
-  return orvalMutator<HealthStatusResponse>(getHealthReadyApiV1HealthReadyGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<HealthStatusResponse>(
+    getHealthReadyApiV1HealthReadyGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    HealthStatusResponse,
+  )
 }
 
 export const getHealthReadyApiV1HealthReadyGetQueryKey = () => {

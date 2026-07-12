@@ -45,8 +45,7 @@ import { useAssessmentStudioContext } from '@/features/assessments/studio/contex
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
 import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge'
 import QuestionInspectorPanel from './QuestionInspectorPanel'
-import { apiFetch } from '@/lib/api-client'
-import { responseError } from '@/features/assessments/studio/utils'
+import { apiJson } from '@/lib/api-client'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -217,7 +216,7 @@ export default function BuilderCanvasTab({
       try {
         await Promise.all(
           items.map(async item => {
-            const response = await apiFetch(`assessments/${assessmentUuid}/items/${item.item_uuid}`, {
+            await apiJson(`assessments/${assessmentUuid}/items/${item.item_uuid}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -233,11 +232,6 @@ export default function BuilderCanvasTab({
                   : {}),
               }),
             })
-            if (!response.ok) {
-              throw new Error(
-                await responseError(response, t('failedToSaveItem', { itemNoun: itemNoun.toLowerCase() })),
-              )
-            }
           }),
         )
         await refresh()
@@ -250,20 +244,18 @@ export default function BuilderCanvasTab({
         setIsApplyingBulk(false)
       }
     },
-    [assessmentUuid, itemNoun, items, refresh, setSelectedIssueCode, t, tBuilder],
+    [assessmentUuid, items, refresh, setSelectedIssueCode, tBuilder],
   )
 
   const createItem = (kind: SupportedStudioItemKind) => {
     startCreateTransition(async () => {
       try {
         const body = buildDefaultItemPayload(kind, t('defaultItemTitle'))
-        const response = await apiFetch(`assessments/${assessmentUuid}/items`, {
+        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessmentUuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
-        if (!response.ok) throw new Error(await responseError(response, t('createFailed', { itemNoun })))
-        const created = (await response.json()) as { item_uuid?: string }
         toast.success(t('itemCreated', { itemNoun }))
         if (typeof created.item_uuid === 'string') {
           await onItemCreated(created.item_uuid)
@@ -279,7 +271,7 @@ export default function BuilderCanvasTab({
     if (!itemState) return
     startDuplicateTransition(async () => {
       try {
-        const response = await apiFetch(`assessments/${assessmentUuid}/items`, {
+        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessmentUuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -290,8 +282,6 @@ export default function BuilderCanvasTab({
             metadata: structuredClone(itemState.metadata),
           }),
         })
-        if (!response.ok) throw new Error(await responseError(response, t('duplicateFailed', { itemNoun })))
-        const created = (await response.json()) as { item_uuid?: string }
         toast.success(t('itemDuplicated', { itemNoun }))
         if (typeof created.item_uuid === 'string') {
           await onItemDuplicated(created.item_uuid)
@@ -307,10 +297,9 @@ export default function BuilderCanvasTab({
     if (!itemState) return
     startDeleteTransition(async () => {
       try {
-        const response = await apiFetch(`assessments/${assessmentUuid}/items/${itemState.item_uuid}`, {
+        await apiJson(`assessments/${assessmentUuid}/items/${itemState.item_uuid}`, {
           method: 'DELETE',
         })
-        if (!response.ok) throw new Error(await responseError(response, t('deleteFailed', { itemNoun })))
         toast.success(t('itemDeleted', { itemNoun }))
         await onItemDeleted()
       } catch (error) {

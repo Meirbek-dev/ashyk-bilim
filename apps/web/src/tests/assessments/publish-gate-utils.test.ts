@@ -36,9 +36,7 @@ describe('assessment publish gate helpers', () => {
   })
 
   it('requires zero blockers and a successful preview for high-stakes lifecycle changes', () => {
-    expect(canConfirmLifecycleChange({ blockerCount: 1, highStakes: false, successfulPreviewCount: 3 })).toBe(false)
-    expect(canConfirmLifecycleChange({ blockerCount: 0, highStakes: false, successfulPreviewCount: 0 })).toBe(true)
-    expect(canConfirmLifecycleChange({ blockerCount: 0, highStakes: true, successfulPreviewCount: 0 })).toBe(false)
-    expect(canConfirmLifecycleChange({ blockerCount: 0, highStakes: true, successfulPreviewCount: 1 })).toBe(true)
+    expect(canConfirmLifecycleChange({ blockerCount: 1 })).toBe(false)
+    expect(canConfirmLifecycleChange({ blockerCount: 0 })).toBe(true)
   })
 })

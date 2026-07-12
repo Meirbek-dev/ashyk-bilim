@@ -1,6 +1,6 @@
 'use client'
 
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { mutationOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
@@ -24,7 +24,11 @@ export interface CreateExamWithActivityResponse {
 async function createExamWithActivityRequest(
   input: CreateExamWithActivityInput,
 ): Promise<CreateExamWithActivityResponse> {
-  const response = await apiFetch('assessments', {
+  const payload = await apiJson<{
+    detail?: string
+    assessment_uuid?: string
+    activity_uuid?: string
+  }>('assessments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -37,16 +41,6 @@ async function createExamWithActivityRequest(
       policy: buildExamPolicyPatch(input.settings),
     }),
   })
-
-  const payload = (await response.json().catch(() => ({}))) as {
-    detail?: string
-    assessment_uuid?: string
-    activity_uuid?: string
-  }
-
-  if (!response.ok) {
-    throw new Error(payload.detail || 'Failed to create exam')
-  }
 
   return {
     ...payload,

@@ -10,6 +10,7 @@ from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
+from src.services.ai.context.course_context import assemble_course_context_bundle
 from src.services.ai.policy import derive_course_ai_role
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 
@@ -26,6 +27,13 @@ class AIFeatureCapability(PydanticStrictBaseModel):
     reason: str | None = None
 
 
+class AIContextSummary(PydanticStrictBaseModel):
+    course_label: str
+    activity_label: str | None = None
+    activity_uuid: str | None = None
+    source_count: int = 0
+
+
 class AIScopeCapabilityRead(PydanticStrictBaseModel):
     available: bool
     role: AIUserRole
@@ -35,6 +43,7 @@ class AIScopeCapabilityRead(PydanticStrictBaseModel):
     reason: str | None = None
     modes: list[str]
     features: list[AIFeatureCapability]
+    context: AIContextSummary | None = None
 
 
 def _activity_statement(course_id: int, activity_uuid: str) -> SelectOfScalar[Activity]:
@@ -83,11 +92,7 @@ async def api_ai_scope_capabilities(
 
     role = derive_course_ai_role(db_session, course, current_user)
     context_visibility = _role_context(role)
-    activity = (
-        db_session.exec(_activity_statement(course.id, activity_uuid)).first()
-        if activity_uuid
-        else None
-    )
+    activity = db_session.exec(_activity_statement(course.id, activity_uuid)).first() if activity_uuid else None
     student_restricted_activity = (
         role == "student"
         and activity is not None
@@ -97,6 +102,18 @@ async def api_ai_scope_capabilities(
             ActivityTypeEnum.TYPE_CODE_CHALLENGE,
             ActivityTypeEnum.TYPE_CUSTOM,
         }
+    )
+    context_bundle = assemble_course_context_bundle(
+        db_session,
+        course,
+        include_unpublished=role != "student",
+        activity_uuid=activity.activity_uuid if activity else None,
+    )
+    context_summary = AIContextSummary(
+        course_label=course.name,
+        activity_label=activity.name if activity else None,
+        activity_uuid=activity.activity_uuid if activity else None,
+        source_count=len(context_bundle.sources),
     )
 
     features = [
@@ -113,16 +130,10 @@ async def api_ai_scope_capabilities(
         if _feature_enabled("course_qa_enabled"):
             modes.append("ask")
         if role == "student" and _feature_enabled("study_companion_enabled"):
-            modes.extend(["explain", "practice", "sources"])
+            modes.extend(["explain", "practice"])
     if config.ai_enabled and role != "student":
-        if _feature_enabled("lecture_authoring_enabled"):
-            modes.append("review")
-        if _feature_enabled("course_analysis_enabled"):
+        if surface == "course-page" and _feature_enabled("course_analysis_enabled"):
             modes.append("analyze")
-        if submission_uuid and _feature_enabled("submission_analysis_enabled"):
-            modes.append("draft-feedback")
-        if submission_uuid and _feature_enabled("remediation_enabled"):
-            modes.append("remediation")
         if _feature_enabled("course_qa_enabled") and "ask" not in modes:
             modes.append("ask")
 
@@ -143,4 +154,5 @@ async def api_ai_scope_capabilities(
         reason=reason,
         modes=modes,
         features=features,
+        context=context_summary,
     )

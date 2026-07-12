@@ -3,16 +3,14 @@
 import type { APIError } from '@/lib/api/assertSuccess'
 import type { SearchResult } from '@/lib/api/generated/api.schemas'
 import { useApiSearchPlatformContentApiV1SearchGet } from '@/lib/api/generated/search/search'
-import type { CustomResponseTyping } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 
-function toSearchResponse(data: SearchResult): CustomResponseTyping<SearchResult> {
-  return {
-    success: true,
-    data,
-    status: 200,
-    HTTPmessage: 'OK',
-  }
+interface SearchQueryResult {
+  data: SearchResult
+}
+
+function toSearchQueryResult(data: unknown): SearchQueryResult {
+  return { data: data as SearchResult }
 }
 
 export function useSearchContent(query: string, options?: { page?: number; limit?: number; enabled?: boolean }) {
@@ -20,7 +18,7 @@ export function useSearchContent(query: string, options?: { page?: number; limit
   const page = options?.page ?? 1
   const limit = options?.limit ?? 20
 
-  return useApiSearchPlatformContentApiV1SearchGet<CustomResponseTyping<SearchResult>, APIError>(
+  return useApiSearchPlatformContentApiV1SearchGet<SearchQueryResult, APIError>(
     {
       query: normalizedQuery || '__disabled__',
       page,
@@ -30,7 +28,7 @@ export function useSearchContent(query: string, options?: { page?: number; limit
       query: {
         queryKey: queryKeys.search.content(normalizedQuery || '__disabled__', page, limit),
         enabled: (options?.enabled ?? true) && normalizedQuery.length > 0,
-        select: toSearchResponse,
+        select: toSearchQueryResult,
       },
     },
   )

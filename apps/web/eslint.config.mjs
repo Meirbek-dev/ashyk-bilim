@@ -487,23 +487,40 @@ export default defineConfig(
   {
     name: 'api-client-guard',
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/lib/api-client.ts', 'src/lib/auth/server-auth-fetch.ts', 'src/lib/cache/revalidate.ts'],
+    ignores: ['src/app/api/avatar/route.ts', 'src/app/api/diagnostics/route.ts', 'src/lib/auth/server-auth-fetch.ts'],
     rules: {
       'no-restricted-globals': [
-        'warn',
+        'error',
         {
           name: 'fetch',
           message: 'Use the shared API client so auth refresh, trace context, retry, and APIError parsing stay intact.',
         },
       ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='globalThis'][property.name='fetch']",
+          message: 'Use the shared API client or an explicit server proxy transport.',
+        },
+      ],
       'no-restricted-imports': [
-        'warn',
+        'error',
         {
           paths: [
             {
               name: '@/lib/api-client',
-              importNames: ['apiFetch', 'apiFetchRaw'],
-              message: 'Prefer apiJson/apiResult/apiBody. Raw responses bypass normalized API error handling.',
+              importNames: [
+                'apiFetchRaw',
+                'apiFetch',
+                'apiFetcher',
+                'apiFetcherWithHeaders',
+                'fetchResponseMetadata',
+                'getResponseMetadata',
+                'errorHandling',
+                'apiStreamFetch',
+                'CustomResponseTyping',
+              ],
+              message: 'Use apiJson/apiResult/apiBody. The legacy API client surface has been removed.',
             },
           ],
         },

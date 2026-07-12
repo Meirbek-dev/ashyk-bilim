@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   AdminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGetParams,
   AdminAnalyticsResponse,
   ApiErrorEnvelope,
@@ -57,9 +57,9 @@ import type {
   TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetParams,
   TeacherOverviewResponse,
   TeacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGetParams,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, stringifyQueryParam, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -86,7 +86,7 @@ export const getAdminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGetUrl 
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -110,6 +110,7 @@ export const adminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGet = asyn
       ...options,
       method: 'GET',
     },
+    AdminAnalyticsResponse,
   )
 }
 
@@ -383,7 +384,7 @@ export const getTeacherAssessmentsPlatformApiV1AnalyticsTeacherAssessmentsGetUrl
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -407,6 +408,7 @@ export const teacherAssessmentsPlatformApiV1AnalyticsTeacherAssessmentsGet = asy
       ...options,
       method: 'GET',
     },
+    TeacherAssessmentListResponse,
   )
 }
 
@@ -683,7 +685,7 @@ export const getTeacherAssessmentDetailPlatformApiV1AnalyticsTeacherAssessmentsA
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -713,6 +715,7 @@ export const teacherAssessmentDetailPlatformApiV1AnalyticsTeacherAssessmentsAsse
       ...options,
       method: 'GET',
     },
+    TeacherAssessmentDetailResponse,
   )
 }
 
@@ -1144,7 +1147,7 @@ export const getTeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1162,10 +1165,14 @@ export const teacherCoursesPlatformApiV1AnalyticsTeacherCoursesGet = async (
   params?: TeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetParams,
   options?: RequestInit,
 ): Promise<TeacherCourseListResponse> => {
-  return orvalMutator<TeacherCourseListResponse>(getTeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<TeacherCourseListResponse>(
+    getTeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    TeacherCourseListResponse,
+  )
 }
 
 export const getTeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetQueryKey = (
@@ -1412,7 +1419,7 @@ export const getTeacherCourseDetailByUuidPlatformApiV1AnalyticsTeacherCoursesByU
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1437,6 +1444,7 @@ export const teacherCourseDetailByUuidPlatformApiV1AnalyticsTeacherCoursesByUuid
       ...options,
       method: 'GET',
     },
+    TeacherCourseDetailResponse,
   )
 }
 
@@ -1744,7 +1752,7 @@ export const getTeacherCourseDetailPlatformApiV1AnalyticsTeacherCoursesCourseIdG
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1769,6 +1777,7 @@ export const teacherCourseDetailPlatformApiV1AnalyticsTeacherCoursesCourseIdGet 
       ...options,
       method: 'GET',
     },
+    TeacherCourseDetailResponse,
   )
 }
 
@@ -2067,7 +2076,7 @@ export const getTeacherDrillthroughPlatformApiV1AnalyticsTeacherDrillThroughMetr
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2092,6 +2101,7 @@ export const teacherDrillthroughPlatformApiV1AnalyticsTeacherDrillThroughMetricG
       ...options,
       method: 'GET',
     },
+    DrillThroughResponse,
   )
 }
 
@@ -2385,7 +2395,7 @@ export const getTeacherAssessmentOutcomesExportPlatformApiV1AnalyticsTeacherExpo
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2409,6 +2419,7 @@ export const teacherAssessmentOutcomesExportPlatformApiV1AnalyticsTeacherExports
       ...options,
       method: 'GET',
     },
+    voidParser,
   )
 }
 
@@ -2773,7 +2784,7 @@ export const getTeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsv
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2791,10 +2802,14 @@ export const teacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGet
   params?: TeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetParams,
   options?: RequestInit,
 ): Promise<void> => {
-  return orvalMutator<void>(getTeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<void>(
+    getTeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    voidParser,
+  )
 }
 
 export const getTeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetQueryKey = (
@@ -3071,7 +3086,7 @@ export const getTeacherCourseProgressExportPlatformApiV1AnalyticsTeacherExportsC
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -3095,6 +3110,7 @@ export const teacherCourseProgressExportPlatformApiV1AnalyticsTeacherExportsCour
       ...options,
       method: 'GET',
     },
+    voidParser,
   )
 }
 
@@ -3413,7 +3429,7 @@ export const getTeacherGradingBacklogExportPlatformApiV1AnalyticsTeacherExportsG
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -3437,6 +3453,7 @@ export const teacherGradingBacklogExportPlatformApiV1AnalyticsTeacherExportsGrad
       ...options,
       method: 'GET',
     },
+    voidParser,
   )
 }
 
@@ -3755,7 +3772,7 @@ export const getTeacherInterventionsPlatformApiV1AnalyticsTeacherInterventionsGe
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -3779,6 +3796,7 @@ export const teacherInterventionsPlatformApiV1AnalyticsTeacherInterventionsGet =
       ...options,
       method: 'GET',
     },
+    TeacherInterventionListResponse,
   )
 }
 
@@ -4053,7 +4071,7 @@ export const getCreateTeacherInterventionPlatformApiV1AnalyticsTeacherInterventi
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -4080,6 +4098,7 @@ export const createTeacherInterventionPlatformApiV1AnalyticsTeacherInterventions
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(teacherInterventionCreate),
     },
+    TeacherInterventionRow,
   )
 }
 
@@ -4177,7 +4196,7 @@ export const getTeacherAtRiskLearnersPlatformApiV1AnalyticsTeacherLearnersAtRisk
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -4201,6 +4220,7 @@ export const teacherAtRiskLearnersPlatformApiV1AnalyticsTeacherLearnersAtRiskGet
       ...options,
       method: 'GET',
     },
+    AtRiskLearnersResponse,
   )
 }
 
@@ -4478,7 +4498,7 @@ export const getTeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -4496,10 +4516,14 @@ export const teacherOverviewPlatformApiV1AnalyticsTeacherOverviewGet = async (
   params?: TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetParams,
   options?: RequestInit,
 ): Promise<TeacherOverviewResponse> => {
-  return orvalMutator<TeacherOverviewResponse>(getTeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<TeacherOverviewResponse>(
+    getTeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    TeacherOverviewResponse,
+  )
 }
 
 export const getTeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetQueryKey = (
@@ -4765,7 +4789,7 @@ export const getTeacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGetUrl =
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -4789,6 +4813,7 @@ export const teacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGet = async
       ...options,
       method: 'GET',
     },
+    SavedAnalyticsViewListResponse,
   )
 }
 
@@ -5060,7 +5085,7 @@ export const getSaveTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsPostU
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -5087,6 +5112,7 @@ export const saveTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsPost = a
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(savedAnalyticsViewCreate),
     },
+    SavedAnalyticsViewRow,
   )
 }
 
@@ -5184,7 +5210,7 @@ export const getDeleteTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsVie
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -5209,6 +5235,7 @@ export const deleteTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsViewId
       ...options,
       method: 'DELETE',
     },
+    voidParser,
   )
 }
 

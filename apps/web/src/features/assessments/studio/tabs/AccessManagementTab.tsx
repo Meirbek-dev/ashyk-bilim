@@ -18,8 +18,7 @@ import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { responseError } from '@/features/assessments/studio/utils'
-import { apiFetch, apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -104,10 +103,10 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
 
   const loadAccess = useCallback(async () => {
     const [accessData, usersData, groupsData, overrideData] = await Promise.all([
-      apiFetcher<AccessRead>(`assessments/${assessmentUuid}/access`),
+      apiJson<AccessRead>(`assessments/${assessmentUuid}/access`),
       fetchEligibleUsers(assessmentUuid, ''),
       fetchEligibleGroups(assessmentUuid, ''),
-      apiFetcher<StudentPolicyOverride[]>(`assessments/${assessmentUuid}/overrides`),
+      apiJson<StudentPolicyOverride[]>(`assessments/${assessmentUuid}/overrides`),
     ])
     setAccess(accessData)
     setEligibleUsers(usersData)
@@ -222,7 +221,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
     startTransition(async () => {
       try {
         setLastSaveError(null)
-        const response = await apiFetch(`assessments/${assessmentUuid}/access`, {
+        const next = await apiJson<AccessRead>(`assessments/${assessmentUuid}/access`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -231,8 +230,6 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
             usergroup_ids: mode === 'RESTRICTED' ? [...selectedGroups] : [],
           }),
         })
-        if (!response.ok) throw new Error(await responseError(response, t('saveFailed')))
-        const next = (await response.json()) as AccessRead
         setAccess(next)
         setMode(next.mode)
         setSelectedUsers(new Set(next.users.map(user => user.id)))
@@ -265,7 +262,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
         const nextOverrides = await Promise.all(
           targetUserIds.map(async userId => {
             const existing = overrideByUserId.get(userId)
-            const response = await apiFetch(
+            return apiJson<StudentPolicyOverride>(
               existing
                 ? `assessments/${assessmentUuid}/overrides/${userId}`
                 : `assessments/${assessmentUuid}/overrides`,
@@ -275,8 +272,6 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
                 body: JSON.stringify(existing ? payload : { user_id: userId, ...payload }),
               },
             )
-            if (!response.ok) throw new Error(await responseError(response, t('overrideSaveFailed')))
-            return (await response.json()) as StudentPolicyOverride
           }),
         )
         setOverrides(current => {
@@ -307,8 +302,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
     (userId: number) => {
       startOverrideTransition(async () => {
         try {
-          const response = await apiFetch(`assessments/${assessmentUuid}/overrides/${userId}`, { method: 'DELETE' })
-          if (!response.ok) throw new Error(await responseError(response, t('overrideDeleteFailed')))
+          await apiJson(`assessments/${assessmentUuid}/overrides/${userId}`, { method: 'DELETE' })
           setOverrides(current => current.filter(override => override.user_id !== userId))
           toast.success(t('overrideDeleted'))
         } catch (error) {
@@ -464,11 +458,11 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
 }
 
 function fetchEligibleUsers(assessmentUuid: string, query: string) {
-  return apiFetcher<AccessUser[]>(buildEligibleLearnersPath(assessmentUuid, query))
+  return apiJson<AccessUser[]>(buildEligibleLearnersPath(assessmentUuid, query))
 }
 
 function fetchEligibleGroups(assessmentUuid: string, query: string) {
-  return apiFetcher<AccessUserGroup[]>(buildEligibleGroupsPath(assessmentUuid, query))
+  return apiJson<AccessUserGroup[]>(buildEligibleGroupsPath(assessmentUuid, query))
 }
 
 function Metric({ label, value }: { label: string; value: number }) {

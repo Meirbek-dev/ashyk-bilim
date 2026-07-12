@@ -14,6 +14,7 @@ const gradingQueryMocks = vi.hoisted(() => ({
   courseGradebookQueryOptions: vi.fn(() => ({ queryKey: ['gradebook'] })),
   courseGradebookExportUrl: vi.fn(() => '/api/grading/courses/course_gradebook/gradebook/export'),
 }))
+const mobileMocks = vi.hoisted(() => ({ isMobile: false }))
 
 let gradebook: CourseGradebookResponse
 let queryState: {
@@ -64,6 +65,10 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/dash/courses/course_gradebook/gradebook',
   useRouter: () => navigationMocks,
   useSearchParams: () => navigationMocks.searchParams,
+}))
+
+vi.mock('@/hooks/use-mobile', () => ({
+  useIsMobile: () => mobileMocks.isMobile,
 }))
 
 function baseGradebook(): CourseGradebookResponse {
@@ -192,6 +197,7 @@ describe('CourseGradebookCommandCenter', () => {
     navigationMocks.searchParams = new URLSearchParams()
     gradingQueryMocks.courseGradebookQueryOptions.mockClear()
     gradingQueryMocks.courseGradebookExportUrl.mockClear()
+    mobileMocks.isMobile = false
   })
 
   it('renders matrix statuses from canonical activity progress cells', () => {
@@ -218,7 +224,7 @@ describe('CourseGradebookCommandCenter', () => {
     expect(gradingQueryMocks.courseGradebookQueryOptions).toHaveBeenCalledWith('course_gradebook', {
       activityType: 'TYPE_DYNAMIC',
       page: 2,
-      pageSize: 100,
+      pageSize: 25,
       savedFilter: 'returned',
       search: 'student',
     })
@@ -267,6 +273,19 @@ describe('CourseGradebookCommandCenter', () => {
 
     fireEvent.click(within(screen.getByRole('table')).getByText('states.needs_grading'))
 
+    expect(navigationMocks.push).toHaveBeenCalledWith(
+      '/dash/courses/gradebook/activity/manual_assessment/review?submission=submission_manual_assessment',
+    )
+  })
+
+  it('uses a learner-first review list on mobile instead of the matrix', () => {
+    mobileMocks.isMobile = true
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    const learnerSection = screen.getByRole('heading', { name: 'Student One' }).closest('section')
+    expect(learnerSection).not.toBeNull()
+    fireEvent.click(within(learnerSection!).getByRole('button', { name: /ManualAssessment/ }))
     expect(navigationMocks.push).toHaveBeenCalledWith(
       '/dash/courses/gradebook/activity/manual_assessment/review?submission=submission_manual_assessment',
     )

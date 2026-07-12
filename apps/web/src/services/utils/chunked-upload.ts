@@ -5,8 +5,8 @@
  * Bypasses nginx request size limits and provides progress tracking.
  */
 
-import { apiFetch } from '@/lib/api-client'
-import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
+import { apiJson } from '@/lib/api-client'
+import { clientApiError } from '@/lib/api/assertSuccess'
 
 // Default chunk size: 2MB (small enough to bypass most nginx configs)
 const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024
@@ -92,17 +92,11 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     initiateFormData.append('total_chunks', totalChunks.toString())
     initiateFormData.append('file_size', file.size.toString())
 
-    const initiateResponse = await apiFetch('uploads/initiate', {
+    const { upload_uuid: upload_id } = await apiJson<{ upload_uuid: string }>('uploads/initiate', {
       method: 'POST',
       body: initiateFormData,
       timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
     })
-
-    if (!initiateResponse.ok) {
-      throw await parseApiError(initiateResponse, 'uploads/initiate')
-    }
-
-    const { upload_uuid: upload_id } = await initiateResponse.json()
     console.log(`Upload initiated with ID: ${upload_id}`)
 
     // Step 2: Upload chunks sequentially
@@ -119,15 +113,11 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
       chunkFormData.append('chunk_index', i.toString())
       chunkFormData.append('chunk', chunk, `chunk_${i}`)
 
-      const chunkResponse = await apiFetch('uploads/chunk', {
+      await apiJson('uploads/chunk', {
         method: 'POST',
         body: chunkFormData,
         timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
       })
-
-      if (!chunkResponse.ok) {
-        throw await parseApiError(chunkResponse, 'uploads/chunk')
-      }
 
       uploadedBytes += chunk.size
 
@@ -152,24 +142,18 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     const completeFormData = new FormData()
     completeFormData.append('upload_id', upload_id)
 
-    const completeResponse = await apiFetch('uploads/complete', {
+    const result = await apiJson<{ filename: string; file_size: number; message?: string }>('uploads/complete', {
       method: 'POST',
       body: completeFormData,
       timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
     })
-
-    if (!completeResponse.ok) {
-      throw await parseApiError(completeResponse, 'uploads/complete')
-    }
-
-    const result = await completeResponse.json()
     console.log('Upload completed successfully')
 
     return {
       success: true,
       filename: result.filename,
       fileSize: result.file_size,
-      message: result.message,
+      ...(result.message === undefined ? {} : { message: result.message }),
     }
   } catch (error) {
     if (onError) {

@@ -1,10 +1,9 @@
 import { CheckCircle2Icon, CircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 
-import { aiStateProgress, buildAIStages } from '../lib/ai-run-state'
+import { buildAIStages } from '../lib/ai-run-state'
 import type { AIWorkState } from '../lib/ai-run-state'
 
 interface AIRunTimelineProps {
@@ -14,8 +13,6 @@ interface AIRunTimelineProps {
 
 export function AIRunTimeline({ state, className }: AIRunTimelineProps) {
   const t = useTranslations('AiExperience.states.labels')
-  const progress = aiStateProgress(state)
-
   const translatedLabels = {
     idle: t('idle'),
     confirming: t('confirming'),
@@ -31,12 +28,9 @@ export function AIRunTimeline({ state, className }: AIRunTimelineProps) {
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
-      <Progress value={progress}>
-        <div className="flex w-full items-center justify-between gap-3">
-          <span className="text-sm font-medium">{translatedLabels[state]}</span>
-          <span className="text-muted-foreground text-sm tabular-nums">{progress}%</span>
-        </div>
-      </Progress>
+      <p className="text-sm font-medium" aria-live="polite">
+        {translatedLabels[state]}
+      </p>
       <ol className="grid gap-2 sm:grid-cols-5">
         {buildAIStages(state, translatedLabels).map(stage => (
           <li key={stage.state} className="flex min-w-0 items-center gap-2 text-sm">

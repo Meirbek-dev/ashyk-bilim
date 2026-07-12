@@ -10,17 +10,20 @@ export function syncUserThemeMutationOptions(queryClient: QueryClient, userId: n
   return mutationOptions<void, Error, string>({
     mutationFn: (theme: string) => updateUserTheme(userId, theme),
     onSuccess: async (_data, theme) => {
-      queryClient.setQueryData<UserSessionResponse | undefined>(['auth', 'me', userId], (current: UserSessionResponse | undefined) => {
-        if (!current) return current
+      queryClient.setQueryData<UserSessionResponse | undefined>(
+        ['auth', 'me', userId],
+        (current: UserSessionResponse | undefined) => {
+          if (!current) return current
 
-        return {
-          ...current,
-          user: {
-            ...current.user,
-            theme,
-          },
-        }
-      })
+          return {
+            ...current,
+            user: {
+              ...current.user,
+              theme,
+            },
+          }
+        },
+      )
 
       await queryClient.invalidateQueries({
         queryKey: queryKeys.users.byId(userId),

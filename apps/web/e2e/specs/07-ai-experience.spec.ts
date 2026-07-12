@@ -3,7 +3,6 @@ import { getEnv } from '../env'
 
 const courseUuid = getEnv('E2E_COURSE_UUID') ?? ''
 const activityId = getEnv('E2E_EXAM_ACTIVITY_ID') ?? ''
-const lectureActivityId = getEnv('E2E_DYNAMIC_ACTIVITY_ID') ?? activityId
 const submissionUuid = getEnv('E2E_SUBMISSION_UUID') ?? ''
 
 testAsTeacher.beforeEach(async ({ page }) => {
@@ -50,15 +49,6 @@ testAsTeacher('teacher can analyze a submission and generate a remediation gate'
   await expect(page.getByText(/1 knowledge gaps/i)).toBeVisible()
   await page.getByRole('button', { name: /generate remediation gate/i }).click()
   await expect(page.getByText(/Adaptive remediation/i)).toBeVisible()
-})
-
-testAsTeacher('teacher can run lecture review from the authoring studio', async ({ page }) => {
-  testAsTeacher.skip(!courseUuid || !lectureActivityId, 'Set E2E_COURSE_UUID and E2E_DYNAMIC_ACTIVITY_ID first.')
-
-  await page.goto(`/en/dash/courses/${courseUuid}/activity/${lectureActivityId}/studio`)
-  await page.getByRole('button', { name: /^review$/i }).click()
-
-  await expect(page.getByText(/Add a concrete example/i)).toBeVisible()
 })
 
 async function mockAI(page: import('@playwright/test').Page) {
@@ -143,8 +133,14 @@ async function mockAI(page: import('@playwright/test').Page) {
         context_visibility: 'teacher',
         restricted: false,
         reason: null,
-        modes: ['ask', 'review', 'analyze', 'sources'],
+        modes: ['ask', 'analyze'],
         features: [],
+        context: {
+          course_label: 'E2E course',
+          activity_label: null,
+          activity_uuid: null,
+          source_count: 2,
+        },
       },
     }),
   )
@@ -165,11 +161,13 @@ async function mockAI(page: import('@playwright/test').Page) {
     route.fulfill({
       contentType: 'text/event-stream',
       body: [
-        'data: {"state":"collecting_context"}',
+        'data: {"type":"RUN_STARTED","threadId":"thread_e2e","runId":"run_course_analysis_e2e"}',
         '',
-        'data: {"state":"running"}',
+        'data: {"type":"CUSTOM","name":"run_state","value":{"state":"collecting_context"}}',
         '',
-        'data: {"state":"needs_human_review"}',
+        'data: {"type":"CUSTOM","name":"run_state","value":{"state":"checking_evidence"}}',
+        '',
+        'data: {"type":"RUN_FINISHED","threadId":"thread_e2e","runId":"run_course_analysis_e2e"}',
         '',
       ].join('\n'),
     }),
@@ -194,14 +192,28 @@ async function mockAI(page: import('@playwright/test').Page) {
         : [],
     })
   })
-  await page.route('**/api/v1/ai/qa/*/ask/queue', route => {
+  await page.route('**/api/v1/ai/qa/*/chat', route => {
     qaReady = true
     return route.fulfill({
-      json: {
-        run_uuid: 'run_qa_e2e',
-        status: 'queued',
-        run_metadata: { thread_uuid: 'thread_e2e' },
-      },
+      contentType: 'text/event-stream',
+      body: [
+        'data: {"type":"RUN_STARTED","threadId":"thread_e2e","runId":"run_qa_e2e"}',
+        '',
+        'data: {"type":"TEXT_MESSAGE_START","messageId":"msg_ai","role":"assistant"}',
+        '',
+        'data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_ai","delta":"Review the worked example before the quiz."}',
+        '',
+        'data: {"type":"TEXT_MESSAGE_END","messageId":"msg_ai"}',
+        '',
+        'data: {"type":"TOOL_CALL_START","toolCallId":"tool_1","toolCallName":"course_citations","parentMessageId":"msg_ai"}',
+        '',
+        `data: ${JSON.stringify({ type: 'TOOL_CALL_RESULT', messageId: 'msg_tool', toolCallId: 'tool_1', content: JSON.stringify({ citations: qaMessages[1]?.citations_json.citations }) })}`,
+        '',
+        'data: {"type":"TOOL_CALL_END","toolCallId":"tool_1"}',
+        '',
+        'data: {"type":"RUN_FINISHED","threadId":"thread_e2e","runId":"run_qa_e2e","result":{"thread_uuid":"thread_e2e","message_uuid":"msg_ai"}}',
+        '',
+      ].join('\n'),
     })
   })
   await page.route('**/api/v1/ai/submission-analysis/*/latest', route => route.fulfill({ json: null }))
@@ -238,29 +250,6 @@ async function mockAI(page: import('@playwright/test').Page) {
           citations: [],
         },
         test_json: { questions: [] },
-      },
-    }),
-  )
-  await page.route('**/api/v1/ai/lecture-authoring/*/critique', route =>
-    route.fulfill({
-      json: {
-        review_uuid: 'lecture_review_e2e',
-        status: 'needs_human_review',
-        language: 'en',
-        suggestions_json: {
-          summary: 'Add a concrete example.',
-          suggestions: [
-            {
-              suggestion_id: 's1',
-              title: 'Add a concrete example',
-              location: 'Intro',
-              rationale: 'Learners need a worked scenario.',
-              priority: 'high',
-            },
-          ],
-          citations: [],
-        },
-        dismissed_json: {},
       },
     }),
   )

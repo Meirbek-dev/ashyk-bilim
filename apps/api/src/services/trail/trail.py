@@ -278,18 +278,23 @@ async def add_course_to_trail(
     course_uuid: str,
     db_session: Session,
 ) -> TrailRead:
-    course_stmt = select(Course).where(Course.course_uuid == course_uuid)
+    from src.services.courses.access import user_has_course_access
+
+    normalized_uuid = course_uuid.removeprefix("course_")
+    course_stmt = select(Course).where(
+        col(Course.course_uuid).in_((course_uuid, normalized_uuid, f"course_{normalized_uuid}"))
+    )
     course = db_session.exec(course_stmt).first()
 
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
 
+    if not user_has_course_access(user.id, course, db_session):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Course access is not available")
+
     # check if run already exists
     run_stmt = select(TrailRun).where(TrailRun.course_id == course.id, TrailRun.user_id == user.id)
     trailrun = db_session.exec(run_stmt).first()
-
-    if trailrun:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Запуск учебного трека уже существует")
 
     trail = await check_trail_presence(
         user_id=user.id,
@@ -297,6 +302,9 @@ async def add_course_to_trail(
         user=user,
         db_session=db_session,
     )
+
+    if trailrun:
+        return _hydrate_trail(trail, user.id, db_session)
 
     trail_run_stmt = select(TrailRun).where(
         TrailRun.trail_id == trail.id,

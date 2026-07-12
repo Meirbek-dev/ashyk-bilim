@@ -248,7 +248,7 @@ const CoursesHome = ({
           ),
         )
 
-        const successCount = results.filter(result => result.status === 'fulfilled' && result.value.success).length
+        const successCount = results.filter(result => result.status === 'fulfilled').length
         const failedCount = targetCourses.length - successCount
 
         if (successCount > 0) {

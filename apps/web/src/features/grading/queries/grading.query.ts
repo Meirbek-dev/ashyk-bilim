@@ -1,6 +1,6 @@
 'use client'
 
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import type {
   CourseGradebookResponse,
   Submission,
@@ -50,7 +50,7 @@ export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid
   return queryOptions({
     queryKey: queryKeys.grading.detail(submissionUuid, assessmentUuid),
     queryFn: async () =>
-      normalizeSubmission(await apiFetcher<Submission>(`assessments/${assessmentUuid}/submissions/${submissionUuid}`)),
+      normalizeSubmission(await apiJson<Submission>(`assessments/${assessmentUuid}/submissions/${submissionUuid}`)),
     staleTime: 2000,
   })
 }
@@ -71,7 +71,7 @@ export function courseGradebookQueryOptions(courseUuid: string, params?: CourseG
     queryKey: [...queryKeys.grading.gradebook(courseUuid), query] as const,
     queryFn: async () =>
       normalizeCourseGradebookResponse(
-        await apiFetcher<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook${query ? `?${query}` : ''}`),
+        await apiJson<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook${query ? `?${query}` : ''}`),
       ),
     staleTime: 5000,
   })
@@ -84,7 +84,7 @@ export function courseGradebookExportUrl(courseUuid: string) {
 export function submissionStatsQueryOptions(assessmentUuid: string) {
   return queryOptions({
     queryKey: queryKeys.grading.stats(assessmentUuid),
-    queryFn: () => apiFetcher<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
+    queryFn: () => apiJson<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
     staleTime: 5000,
   })
 }
@@ -94,9 +94,7 @@ export function submissionsQueryOptions(params: SubmissionListQueryParams) {
     queryKey: queryKeys.grading.submissions(params),
     queryFn: async () => {
       const path = `assessments/${params.assessmentUuid}/submissions`
-      return normalizeSubmissionsPage(
-        await apiFetcher<SubmissionsPage>(`${path}?${buildSubmissionsSearchParams(params)}`),
-      )
+      return normalizeSubmissionsPage(await apiJson<SubmissionsPage>(`${path}?${buildSubmissionsSearchParams(params)}`))
     },
   })
 }

@@ -2,7 +2,7 @@
 
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { apiFetcher, apiJson } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import type { AIRunStatusPayload } from '@/features/ai-experience'
 
 export interface SubmissionAnalysis {
@@ -22,7 +22,7 @@ export interface SubmissionAnalysis {
 export function latestSubmissionAnalysisQueryOptions(submissionUuid: string) {
   return queryOptions({
     queryKey: ['submission-analysis', submissionUuid],
-    queryFn: () => apiFetcher<SubmissionAnalysis | null>(`ai/submission-analysis/${submissionUuid}/latest`),
+    queryFn: () => apiJson<SubmissionAnalysis | null>(`ai/submission-analysis/${submissionUuid}/latest`),
     enabled: Boolean(submissionUuid),
   })
 }

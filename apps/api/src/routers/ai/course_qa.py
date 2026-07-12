@@ -3,40 +3,26 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import Field
 from sqlmodel import Session, col, select
 
 from src.auth.users import get_public_user
 from src.db.ai_qa_thread import AIQAMessage, AIQAMessageRead
-from src.db.ai_runtime import AIRun, AIThread
+from src.db.ai_runtime import AIThread
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
-from src.routers.ai.runs import AIRunStatusRead
 from src.services.ai.operations import (
-    ask_course_question,
+    get_course_question_replay,
     prepare_course_question_stream,
-    queue_course_question,
     stream_course_question_events,
 )
 from src.services.ai.policy import require_ai_course_read
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 
 router = APIRouter(prefix="/qa")
-
-
-class CourseQARequest(PydanticStrictBaseModel):
-    question: str
-    thread_uuid: str | None = None
-    language: str = "auto"
-
-
-class CourseQAResponse(PydanticStrictBaseModel):
-    thread_uuid: str
-    user_message: AIQAMessageRead
-    assistant_message: AIQAMessageRead
 
 
 class AIQAThreadSummaryRead(PydanticStrictBaseModel):
@@ -73,53 +59,10 @@ def _latest_user_question(messages: list[CourseQAWireMessage]) -> str | None:
         if message.content:
             return message.content
         if message.parts:
-            text = "".join(
-                str(part.get("content") or "")
-                for part in message.parts
-                if part.get("type") == "text"
-            )
+            text = "".join(str(part.get("content") or "") for part in message.parts if part.get("type") == "text")
             if text:
                 return text
     return None
-
-
-@router.post("/{course_uuid}/ask", response_model=CourseQAResponse)
-async def api_ask_course_question(
-    course_uuid: str,
-    payload: CourseQARequest,
-    current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)],
-) -> CourseQAResponse:
-    thread, user_message, assistant_message = await ask_course_question(
-        db_session,
-        course_uuid,
-        current_user,
-        question=payload.question,
-        thread_uuid=payload.thread_uuid,
-        language=payload.language,
-    )
-    return CourseQAResponse(
-        thread_uuid=thread.thread_uuid,
-        user_message=AIQAMessageRead.model_validate(user_message),
-        assistant_message=AIQAMessageRead.model_validate(assistant_message),
-    )
-
-
-@router.post("/{course_uuid}/ask/queue", response_model=AIRunStatusRead)
-async def api_queue_course_question(
-    course_uuid: str,
-    payload: CourseQARequest,
-    current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)],
-) -> AIRun:
-    return await queue_course_question(
-        db_session,
-        course_uuid,
-        current_user,
-        question=payload.question,
-        thread_uuid=payload.thread_uuid,
-        language=payload.language,
-    )
 
 
 @router.post("/{course_uuid}/chat", response_class=StreamingResponse)
@@ -140,7 +83,7 @@ async def api_stream_course_question(
     if not question:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Сообщение пользователя не найдено",
+            detail="COURSE_QA_USER_MESSAGE_REQUIRED",
         )
 
     forwarded = payload.forwardedProps
@@ -148,6 +91,48 @@ async def api_stream_course_question(
     thread_uuid = thread_uuid if isinstance(thread_uuid, str) and thread_uuid else None
     language = forwarded.get("language")
     language = language if isinstance(language, str) and language else "auto"
+    activity_uuid = forwarded.get("activity_uuid")
+    activity_uuid = activity_uuid if isinstance(activity_uuid, str) and activity_uuid else None
+    client_turn_id = forwarded.get("client_turn_id")
+    client_turn_id = client_turn_id if isinstance(client_turn_id, str) and client_turn_id else None
+
+    replay = (
+        get_course_question_replay(
+            db_session,
+            course_uuid,
+            current_user,
+            client_turn_id=client_turn_id,
+            question=question,
+        )
+        if client_turn_id
+        else None
+    )
+
+    if replay is not None:
+        replay_thread, _, replay_assistant = replay
+
+        async def replay_stream() -> AsyncIterator[str]:
+            message_id = replay_assistant.message_uuid
+            events: list[dict[str, object]] = [
+                {"type": "RUN_STARTED", "threadId": payload.threadId, "runId": payload.runId},
+                {"type": "TEXT_MESSAGE_START", "messageId": message_id, "role": "assistant"},
+                {"type": "TEXT_MESSAGE_CONTENT", "messageId": message_id, "delta": replay_assistant.content},
+                {"type": "TEXT_MESSAGE_END", "messageId": message_id},
+                {
+                    "type": "RUN_FINISHED",
+                    "threadId": payload.threadId,
+                    "runId": payload.runId,
+                    "result": {
+                        "thread_uuid": replay_thread.thread_uuid,
+                        "message_uuid": replay_assistant.message_uuid,
+                        "replayed": True,
+                    },
+                },
+            ]
+            for event in events:
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+        return StreamingResponse(replay_stream(), media_type="text/event-stream")
 
     session = prepare_course_question_stream(
         db_session,
@@ -156,6 +141,8 @@ async def api_stream_course_question(
         question=question,
         thread_uuid=thread_uuid,
         language=language,
+        activity_uuid=activity_uuid,
+        client_turn_id=client_turn_id,
     )
 
     async def event_stream() -> AsyncIterator[str]:
@@ -175,6 +162,7 @@ async def api_list_course_qa_threads(
     course_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 30,
 ) -> list[AIQAThreadSummaryRead]:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
@@ -186,19 +174,24 @@ async def api_list_course_qa_threads(
             select(AIThread)
             .where(AIThread.course_id == course.id, AIThread.user_id == current_user.id)
             .order_by(col(AIThread.updated_at).desc())
+            .limit(limit)
         ).all()
     )
+    thread_ids = [thread.id for thread in threads if thread.id is not None]
+    messages_by_thread: dict[int, list[AIQAMessage]] = {thread_id: [] for thread_id in thread_ids}
+    if thread_ids:
+        messages = db_session.exec(
+            select(AIQAMessage)
+            .where(col(AIQAMessage.thread_id).in_(thread_ids))
+            .order_by(col(AIQAMessage.created_at).desc())
+        ).all()
+        for message in messages:
+            messages_by_thread.setdefault(message.thread_id, []).append(message)
     summaries: list[AIQAThreadSummaryRead] = []
     for thread in threads:
         if thread.id is None:
             continue
-        messages = list(
-            db_session.exec(
-                select(AIQAMessage)
-                .where(AIQAMessage.thread_id == thread.id)
-                .order_by(col(AIQAMessage.created_at).desc())
-            ).all()
-        )
+        messages = messages_by_thread.get(thread.id, [])
         if not messages:
             continue
         last_message = messages[0]
@@ -214,9 +207,7 @@ async def api_list_course_qa_threads(
     return summaries
 
 
-@router.get(
-    "/{course_uuid}/threads/{thread_uuid}", response_model=list[AIQAMessageRead]
-)
+@router.get("/{course_uuid}/threads/{thread_uuid}", response_model=list[AIQAMessageRead])
 async def api_get_course_qa_thread(
     course_uuid: str,
     thread_uuid: str,
@@ -224,32 +215,22 @@ async def api_get_course_qa_thread(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[AIQAMessage]:
     thread = db_session.exec(
-        select(AIThread).where(
-            AIThread.thread_uuid == thread_uuid, AIThread.user_id == current_user.id
-        )
+        select(AIThread).where(AIThread.thread_uuid == thread_uuid, AIThread.user_id == current_user.id)
     ).first()
     if thread is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_THREAD_NOT_FOUND")
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None or thread.course_id != course.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_THREAD_NOT_FOUND")
     require_ai_course_read(db_session, course, current_user)
     return list(
         db_session.exec(
-            select(AIQAMessage)
-            .where(AIQAMessage.thread_id == thread.id)
-            .order_by(col(AIQAMessage.created_at))
+            select(AIQAMessage).where(AIQAMessage.thread_id == thread.id).order_by(col(AIQAMessage.created_at))
         ).all()
     )
 
 
-@router.delete(
-    "/{course_uuid}/threads/{thread_uuid}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/{course_uuid}/threads/{thread_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 async def api_delete_course_qa_thread(
     course_uuid: str,
     thread_uuid: str,
@@ -257,19 +238,13 @@ async def api_delete_course_qa_thread(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> None:
     thread = db_session.exec(
-        select(AIThread).where(
-            AIThread.thread_uuid == thread_uuid, AIThread.user_id == current_user.id
-        )
+        select(AIThread).where(AIThread.thread_uuid == thread_uuid, AIThread.user_id == current_user.id)
     ).first()
     if thread is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_THREAD_NOT_FOUND")
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None or thread.course_id != course.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_THREAD_NOT_FOUND")
     require_ai_course_read(db_session, course, current_user)
     db_session.delete(thread)
     db_session.commit()

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import json
 import re
 from collections.abc import AsyncIterator
@@ -8,6 +10,7 @@ from typing import cast
 from uuid import uuid4
 
 from fastapi import HTTPException, status
+from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
 from sqlalchemy import func
 from sqlmodel import Session, col, select
 
@@ -32,10 +35,7 @@ from src.db.courses.courses import Course
 from src.db.grading.submissions import Submission
 from src.db.users import PublicUser, User
 from src.services.ai.agents.course_analyst import analyze_course
-from src.services.ai.agents.course_qa import (
-    answer_course_question,
-    stream_course_question,
-)
+from src.services.ai.agents.course_qa import stream_course_question
 from src.services.ai.agents.lecture_author import critique_lecture
 from src.services.ai.agents.remediation_generator import generate_remediation
 from src.services.ai.agents.study_companion import StudyMode, answer_study_prompt
@@ -65,6 +65,8 @@ SECRET_PATTERNS = (
     re.compile(r"\bsk-(?:proj-|or-v1-)?[A-Za-z0-9_-]{16,}\b"),
     re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b", re.IGNORECASE),
 )
+QA_HISTORY_MESSAGE_LIMIT = 12
+QA_HISTORY_CHARACTER_LIMIT = 12_000
 
 
 class AIRunCancelled(RuntimeError):
@@ -110,44 +112,163 @@ def _require_enabled(feature_flag: str) -> None:
     if not config.ai_enabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Функция ИИ отключена",
+            detail="AI_DISABLED",
         )
     if not bool(getattr(config, feature_flag)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Функция ИИ '{feature_flag}' отключена",
+            detail=f"AI_FEATURE_DISABLED:{feature_flag}",
         )
 
 
 def _course_or_404(db_session: Session, course_uuid: str) -> Course:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="COURSE_NOT_FOUND")
     return course
 
 
-def _submission_or_404(db_session: Session, submission_uuid: str) -> Submission:
-    submission = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == submission_uuid)
-    ).first()
-    if submission is None or submission.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Решение не найдено"
+def _owned_course_thread(
+    db_session: Session,
+    *,
+    course_id: int,
+    user_id: int | None,
+    thread_uuid: str,
+) -> AIThread:
+    thread = db_session.exec(
+        select(AIThread).where(
+            AIThread.thread_uuid == thread_uuid,
+            AIThread.user_id == user_id,
+            AIThread.course_id == course_id,
         )
+    ).first()
+    if thread is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_THREAD_NOT_FOUND")
+    return thread
+
+
+def _course_activity_or_404(
+    db_session: Session,
+    *,
+    course_id: int,
+    activity_uuid: str,
+    include_unpublished: bool,
+) -> Activity:
+    activity = db_session.exec(
+        select(Activity).where(
+            Activity.course_id == course_id,
+            col(Activity.activity_uuid).in_([activity_uuid, activity_uuid.removeprefix("activity_")]),
+        )
+    ).first()
+    if activity is None or (not include_unpublished and not activity.published):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_CONTEXT_NOT_FOUND")
+    return activity
+
+
+def _qa_message_history(
+    db_session: Session,
+    *,
+    thread_id: int,
+    exclude_message_uuid: str | None = None,
+) -> list[ModelMessage]:
+    statement = select(AIQAMessage).where(AIQAMessage.thread_id == thread_id)
+    if exclude_message_uuid:
+        statement = statement.where(AIQAMessage.message_uuid != exclude_message_uuid)
+    stored = list(
+        db_session.exec(statement.order_by(col(AIQAMessage.created_at).desc()).limit(QA_HISTORY_MESSAGE_LIMIT)).all()
+    )
+    selected: list[AIQAMessage] = []
+    character_count = 0
+    for message in stored:
+        if message.role not in {"user", "assistant"} or not message.content.strip():
+            continue
+        next_count = character_count + len(message.content)
+        if selected and next_count > QA_HISTORY_CHARACTER_LIMIT:
+            break
+        selected.append(message)
+        character_count = next_count
+
+    history: list[ModelMessage] = []
+    for message in reversed(selected):
+        if message.role == "user":
+            history.append(ModelRequest(parts=[UserPromptPart(content=message.content)]))
+        else:
+            history.append(ModelResponse(parts=[TextPart(content=message.content)]))
+    return history
+
+
+def get_course_question_replay(
+    db_session: Session,
+    course_uuid: str,
+    user: PublicUser,
+    *,
+    client_turn_id: str,
+    question: str,
+) -> tuple[AIThread, AIQAMessage, AIQAMessage] | None:
+    course = _course_or_404(db_session, course_uuid)
+    assert course.id is not None
+    require_ai_course_read(db_session, course, user)
+    user_message = db_session.exec(
+        select(AIQAMessage).where(
+            AIQAMessage.course_id == course.id,
+            AIQAMessage.user_id == user.id,
+            AIQAMessage.client_turn_id == client_turn_id,
+        )
+    ).first()
+    if user_message is None:
+        return None
+    if user_message.content != question:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="AI_TURN_ID_REUSED")
+
+    thread = db_session.get(AIThread, user_message.thread_id)
+    if thread is None or thread.course_id != course.id or thread.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_THREAD_NOT_FOUND")
+    candidates = db_session.exec(
+        select(AIQAMessage)
+        .where(
+            AIQAMessage.thread_id == thread.id,
+            AIQAMessage.role == "assistant",
+            AIQAMessage.created_at >= user_message.created_at,
+        )
+        .order_by(col(AIQAMessage.created_at))
+    ).all()
+    assistant_message = next(
+        (
+            candidate
+            for candidate in candidates
+            if candidate.message_metadata.get("reply_to_message_uuid") == user_message.message_uuid
+        ),
+        None,
+    )
+    if assistant_message is None:
+        runs = db_session.exec(
+            select(AIRun).where(AIRun.thread_id == thread.id).order_by(col(AIRun.started_at).desc())
+        ).all()
+        matching_run = next(
+            (run for run in runs if run.run_metadata.get("client_turn_id") == client_turn_id),
+            None,
+        )
+        if matching_run is not None and matching_run.status in {
+            AIRunStatus.QUEUED.value,
+            AIRunStatus.RUNNING.value,
+        }:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="AI_TURN_IN_PROGRESS")
+        return None
+    return thread, user_message, assistant_message
+
+
+def _submission_or_404(db_session: Session, submission_uuid: str) -> Submission:
+    submission = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
+    if submission is None or submission.id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SUBMISSION_NOT_FOUND")
     return submission
 
 
-def _activity_for_submission(
-    db_session: Session, submission: Submission
-) -> Activity | None:
+def _activity_for_submission(db_session: Session, submission: Submission) -> Activity | None:
     return db_session.get(Activity, submission.activity_id)
 
 
-def _require_course_update(
-    db_session: Session, course: Course, user: PublicUser
-) -> None:
+def _require_course_update(db_session: Session, course: Course, user: PublicUser) -> None:
     require_ai_course_update(db_session, course, user)
 
 
@@ -219,14 +340,11 @@ def _ensure_run_not_cancelled(db_session: Session, run: AIRun) -> None:
         raise AIRunCancelled("Запуск ИИ был отменен")
 
 
-def _emit_run_event(
-    db_session: Session, run: AIRun, event_type: str, payload: JsonObject | None = None
-) -> None:
+def _emit_run_event(db_session: Session, run: AIRun, event_type: str, payload: JsonObject | None = None) -> None:
     assert run.id is not None
+    db_session.exec(select(AIRun.id).where(AIRun.id == run.id).with_for_update()).one()
     sequence = db_session.exec(
-        select(func.coalesce(func.max(AIEvent.sequence), 0)).where(
-            AIEvent.run_id == run.id
-        )
+        select(func.coalesce(func.max(AIEvent.sequence), 0)).where(AIEvent.run_id == run.id)
     ).one()
     db_session.add(
         AIEvent(
@@ -254,9 +372,7 @@ def _finish_run(
     citations = _safe_citations(citations)
     _ensure_run_not_cancelled(db_session, run)
     validation = validate_citations(citations, context_sources or [])
-    trusted_citations = (
-        validation.valid_citations if context_sources is not None else citations
-    )
+    trusted_citations = validation.valid_citations if context_sources is not None else citations
     _emit_run_event(
         db_session,
         run,
@@ -265,23 +381,17 @@ def _finish_run(
     )
     run.run_metadata = {
         **dict(run.run_metadata or {}),
-        "citation_validation": validation.metadata
-        if context_sources is not None
-        else {"validation": "not_applicable"},
+        "citation_validation": validation.metadata if context_sources is not None else {"validation": "not_applicable"},
     }
     run.status = AIRunStatus.FINISHED.value
     run.model_name = model_name
     run.input_tokens = input_tokens
-    run.output_tokens = TokenBudgetService(
-        get_settings().integrations.ai
-    ).estimate_tokens(
+    run.output_tokens = TokenBudgetService(get_settings().integrations.ai).estimate_tokens(
         json.dumps(artifact, ensure_ascii=False),
         model_name,
     )
     run.completed_at = utc_now()
-    run.duration_ms = int(
-        (run.completed_at - run.started_at).total_seconds() * 1000
-    )
+    run.duration_ms = int((run.completed_at - run.started_at).total_seconds() * 1000)
     db_session.add(run)
     db_session.flush()
     assert run.id is not None
@@ -316,17 +426,13 @@ def _finish_run(
             "model_name": model_name,
             "input_tokens": input_tokens,
             "citations_valid": len(trusted_citations),
-            "citations_invalid": len(validation.invalid_citations)
-            if context_sources is not None
-            else 0,
+            "citations_invalid": len(validation.invalid_citations) if context_sources is not None else 0,
         },
     )
     return trusted_citations
 
 
-def _emit_execution_events(
-    db_session: Session, run: AIRun, *, source_count: int, input_tokens: int
-) -> None:
+def _emit_execution_events(db_session: Session, run: AIRun, *, source_count: int, input_tokens: int) -> None:
     _emit_run_event(
         db_session,
         run,
@@ -363,13 +469,21 @@ def _fail_run(db_session: Session, run: AIRun, error_code: str) -> None:
     run.status = AIRunStatus.ERROR.value
     run.error_code = error_code
     run.completed_at = utc_now()
-    run.duration_ms = int(
-        (run.completed_at - run.started_at).total_seconds() * 1000
-    )
+    run.duration_ms = int((run.completed_at - run.started_at).total_seconds() * 1000)
     db_session.add(run)
-    _emit_run_event(
-        db_session, run, "failed", {"state": "failed", "error_code": error_code}
-    )
+    _emit_run_event(db_session, run, "failed", {"state": "failed", "error_code": error_code})
+
+
+def _abort_run(db_session: Session, run: AIRun) -> None:
+    db_session.refresh(run)
+    if run.status == AIRunStatus.FINISHED.value:
+        return
+    run.status = AIRunStatus.ABORTED.value
+    run.error_code = "CANCELLED"
+    run.completed_at = utc_now()
+    run.duration_ms = int((run.completed_at - run.started_at).total_seconds() * 1000)
+    db_session.add(run)
+    _emit_run_event(db_session, run, "cancelled", {"state": "cancelled"})
 
 
 def _assert_budget(
@@ -388,15 +502,22 @@ def _assert_budget(
             remediation=remediation,
         )
     except TokenBudgetExceeded as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
 
 
 async def _enqueue_run(run: AIRun) -> None:
     from src.worker.tasks.ai import execute_ai_run_task
 
     await execute_ai_run_task.kiq(run.run_uuid)
+
+
+async def _enqueue_or_fail(db_session: Session, run: AIRun) -> None:
+    try:
+        await _enqueue_run(run)
+    except Exception:
+        _fail_run(db_session, run, "AI_QUEUE_UNAVAILABLE")
+        db_session.commit()
+        raise
 
 
 def _public_user_for_run(db_session: Session, run: AIRun) -> PublicUser:
@@ -463,16 +584,6 @@ async def execute_queued_ai_run(db_session: Session, run_uuid: str) -> None:
                 language=str(metadata.get("language") or "auto"),
                 run=run,
             )
-        elif kind == "course_qa":
-            await ask_course_question(
-                db_session,
-                str(metadata["course_uuid"]),
-                user,
-                question=str(metadata.get("question") or ""),
-                thread_uuid=cast("str | None", metadata.get("thread_uuid")),
-                language=str(metadata.get("language") or "auto"),
-                run=run,
-            )
         else:
             _fail_run(db_session, run, "AI_RUN_KIND_UNSUPPORTED")
             db_session.commit()
@@ -488,9 +599,7 @@ async def execute_queued_ai_run(db_session: Session, run_uuid: str) -> None:
         raise
 
 
-async def queue_course_analysis(
-    db_session: Session, course_uuid: str, user: PublicUser, language: str
-) -> AIRun:
+async def queue_course_analysis(db_session: Session, course_uuid: str, user: PublicUser, language: str) -> AIRun:
     _require_enabled("course_analysis_enabled")
     course = _course_or_404(db_session, course_uuid)
     _require_course_update(db_session, course, user)
@@ -505,7 +614,7 @@ async def queue_course_analysis(
     )
     db_session.commit()
     db_session.refresh(run)
-    await _enqueue_run(run)
+    await _enqueue_or_fail(db_session, run)
     return run
 
 
@@ -519,9 +628,7 @@ async def queue_submission_analysis(
     run = _create_run(
         db_session,
         user=user,
-        role=AIThreadRole.TEACHER.value
-        if user.id != submission.user_id
-        else AIThreadRole.STUDENT.value,
+        role=AIThreadRole.TEACHER.value if user.id != submission.user_id else AIThreadRole.STUDENT.value,
         kind="submission_analysis",
         activity_id=activity.id if activity else None,
         metadata={"submission_uuid": submission_uuid, "language": language},
@@ -529,7 +636,7 @@ async def queue_submission_analysis(
     )
     db_session.commit()
     db_session.refresh(run)
-    await _enqueue_run(run)
+    await _enqueue_or_fail(db_session, run)
     return run
 
 
@@ -547,9 +654,7 @@ async def queue_remediation_generation(
     run = _create_run(
         db_session,
         user=user,
-        role=AIThreadRole.TEACHER.value
-        if user.id != submission.user_id
-        else AIThreadRole.STUDENT.value,
+        role=AIThreadRole.TEACHER.value if user.id != submission.user_id else AIThreadRole.STUDENT.value,
         kind="remediation",
         activity_id=submission.activity_id,
         metadata={
@@ -561,7 +666,7 @@ async def queue_remediation_generation(
     )
     db_session.commit()
     db_session.refresh(run)
-    await _enqueue_run(run)
+    await _enqueue_or_fail(db_session, run)
     return run
 
 
@@ -593,7 +698,7 @@ async def queue_study_companion(
     )
     db_session.commit()
     db_session.refresh(run)
-    await _enqueue_run(run)
+    await _enqueue_or_fail(db_session, run)
     return run
 
 
@@ -610,9 +715,7 @@ async def queue_lecture_review(
     _require_course_update(db_session, course, user)
     activity = (
         db_session.exec(
-            select(Activity).where(
-                Activity.activity_uuid == activity_uuid, Activity.course_id == course.id
-            )
+            select(Activity).where(Activity.activity_uuid == activity_uuid, Activity.course_id == course.id)
         ).first()
         if activity_uuid
         else None
@@ -633,51 +736,7 @@ async def queue_lecture_review(
     )
     db_session.commit()
     db_session.refresh(run)
-    await _enqueue_run(run)
-    return run
-
-
-async def queue_course_question(
-    db_session: Session,
-    course_uuid: str,
-    user: PublicUser,
-    *,
-    question: str,
-    thread_uuid: str | None,
-    language: str,
-) -> AIRun:
-    _require_enabled("course_qa_enabled")
-    course = _course_or_404(db_session, course_uuid)
-    role = derive_course_ai_role(db_session, course, user)
-    thread = (
-        db_session.exec(
-            select(AIThread).where(
-                AIThread.thread_uuid == thread_uuid,
-                AIThread.user_id == user.id,
-                AIThread.course_id == course.id,
-            )
-        ).first()
-        if thread_uuid
-        else None
-    )
-    run = _create_run(
-        db_session,
-        user=user,
-        role=role,
-        kind="course_qa",
-        course_id=course.id,
-        metadata={
-            "course_uuid": course_uuid,
-            "question": question,
-            **({"thread_uuid": thread_uuid} if thread_uuid else {}),
-            "language": language,
-        },
-        queued=True,
-        thread=thread,
-    )
-    db_session.commit()
-    db_session.refresh(run)
-    await _enqueue_run(run)
+    await _enqueue_or_fail(db_session, run)
     return run
 
 
@@ -693,9 +752,7 @@ async def run_course_analysis(
     course = _course_or_404(db_session, course_uuid)
     _require_course_update(db_session, course, user)
     provider, token_budget = _settings_provider()
-    context_bundle = assemble_course_context_bundle(
-        db_session, course, include_unpublished=True
-    )
+    context_bundle = assemble_course_context_bundle(db_session, course, include_unpublished=True)
     context = render_context_bundle(context_bundle)
     input_tokens = _assert_budget(token_budget, db_session, user, context)
     if run is None:
@@ -720,14 +777,10 @@ async def run_course_analysis(
             source_count=len(context_bundle.sources),
             input_tokens=input_tokens,
         )
-        report, model_name = await analyze_course(
-            provider, context, language=language, locale=user.locale
-        )
+        report, model_name = await analyze_course(provider, context, language=language, locale=user.locale)
         _emit_validation_event(db_session, run)
         artifact = _safe_artifact(report.model_dump(mode="json"))
-        citations = _safe_citations(
-            [citation.model_dump(mode="json") for citation in report.citations]
-        )
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         trusted_citations = _finish_run(
             db_session,
             run,
@@ -750,6 +803,7 @@ async def run_course_analysis(
             report_json=artifact,
             evidence_json={"citations": cast("list[JsonValue]", trusted_citations)},
             model_name=model_name,
+            content_hash=hashlib.sha256(context.encode()).hexdigest(),
         )
         db_session.add(analysis)
         db_session.commit()
@@ -773,9 +827,7 @@ async def run_submission_analysis(
     submission = _submission_or_404(db_session, submission_uuid)
     require_ai_submission_access(db_session, submission, user)
     provider, token_budget = _settings_provider()
-    context_bundle, metadata = assemble_submission_context_bundle(
-        db_session, submission
-    )
+    context_bundle, metadata = assemble_submission_context_bundle(db_session, submission)
     context = render_context_bundle(context_bundle)
     input_tokens = _assert_budget(token_budget, db_session, user, context)
     activity = _activity_for_submission(db_session, submission)
@@ -783,9 +835,7 @@ async def run_submission_analysis(
         run = _create_run(
             db_session,
             user=user,
-            role=AIThreadRole.TEACHER.value
-            if user.id != submission.user_id
-            else AIThreadRole.STUDENT.value,
+            role=AIThreadRole.TEACHER.value if user.id != submission.user_id else AIThreadRole.STUDENT.value,
             kind="submission_analysis",
             activity_id=activity.id if activity else None,
             metadata={
@@ -804,14 +854,10 @@ async def run_submission_analysis(
             source_count=len(context_bundle.sources),
             input_tokens=input_tokens,
         )
-        report, model_name = await analyze_submission(
-            provider, context, language=language, locale=user.locale
-        )
+        report, model_name = await analyze_submission(provider, context, language=language, locale=user.locale)
         _emit_validation_event(db_session, run)
         artifact = _safe_artifact(report.model_dump(mode="json"))
-        citations = _safe_citations(
-            [citation.model_dump(mode="json") for citation in report.citations]
-        )
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         trusted_citations = _finish_run(
             db_session,
             run,
@@ -857,26 +903,18 @@ async def run_remediation_generation(
     _require_enabled("remediation_enabled")
     submission = _submission_or_404(db_session, submission_uuid)
     require_ai_submission_access(db_session, submission, user)
-    context_bundle, metadata = assemble_submission_context_bundle(
-        db_session, submission
-    )
+    context_bundle, metadata = assemble_submission_context_bundle(db_session, submission)
     context = render_context_bundle(context_bundle)
     provider, token_budget = _settings_provider()
-    input_tokens = _assert_budget(
-        token_budget, db_session, user, context, remediation=True
-    )
+    input_tokens = _assert_budget(token_budget, db_session, user, context, remediation=True)
     latest_analysis = db_session.exec(
         select(AISubmissionAnalysis)
         .where(AISubmissionAnalysis.submission_id == submission.id)
         .order_by(col(AISubmissionAnalysis.created_at).desc())
     ).first()
     if latest_analysis is None:
-        latest_analysis = await run_submission_analysis(
-            db_session, submission_uuid, user, language
-        )
-    analysis_report = SubmissionAnalysisReport.model_validate(
-        latest_analysis.analysis_json
-    )
+        latest_analysis = await run_submission_analysis(db_session, submission_uuid, user, language)
+    analysis_report = SubmissionAnalysisReport.model_validate(latest_analysis.analysis_json)
     if run is None:
         run = _create_run(
             db_session,
@@ -906,12 +944,8 @@ async def run_remediation_generation(
         )
         _emit_validation_event(db_session, run)
         artifact = _safe_artifact(bundle.model_dump(mode="json"))
-        citations = _safe_citations(
-            [citation.model_dump(mode="json") for citation in bundle.citations]
-        )
-        questions = _redact_json(
-            [question.model_dump(mode="json") for question in bundle.practice_questions]
-        )
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in bundle.citations])
+        questions = _redact_json([question.model_dump(mode="json") for question in bundle.practice_questions])
         _finish_run(
             db_session,
             run,
@@ -960,13 +994,9 @@ async def run_study_companion(
     course = _course_or_404(db_session, course_uuid)
     require_ai_course_read(db_session, course, user)
     provider, token_budget = _settings_provider()
-    context_bundle = assemble_course_context_bundle(
-        db_session, course, include_unpublished=False
-    )
+    context_bundle = assemble_course_context_bundle(db_session, course, include_unpublished=False)
     context = render_context_bundle(context_bundle)
-    input_tokens = _assert_budget(
-        token_budget, db_session, user, f"{question}\n{context}"
-    )
+    input_tokens = _assert_budget(token_budget, db_session, user, f"{question}\n{context}")
     if run is None:
         run = _create_run(
             db_session,
@@ -1001,9 +1031,7 @@ async def run_study_companion(
         )
         _emit_validation_event(db_session, run)
         artifact = _safe_artifact(answer.model_dump(mode="json"))
-        citations = _safe_citations(
-            [citation.model_dump(mode="json") for citation in answer.citations]
-        )
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in answer.citations])
         _finish_run(
             db_session,
             run,
@@ -1035,16 +1063,12 @@ async def run_lecture_review(
     course = _course_or_404(db_session, course_uuid)
     _require_course_update(db_session, course, user)
     provider, token_budget = _settings_provider()
-    context_bundle = assemble_course_context_bundle(
-        db_session, course, include_unpublished=True
-    )
+    context_bundle = assemble_course_context_bundle(db_session, course, include_unpublished=True)
     context = render_context_bundle(context_bundle)
     input_tokens = _assert_budget(token_budget, db_session, user, context)
     activity = (
         db_session.exec(
-            select(Activity).where(
-                Activity.activity_uuid == activity_uuid, Activity.course_id == course.id
-            )
+            select(Activity).where(Activity.activity_uuid == activity_uuid, Activity.course_id == course.id)
         ).first()
         if activity_uuid
         else None
@@ -1073,14 +1097,10 @@ async def run_lecture_review(
             source_count=len(context_bundle.sources),
             input_tokens=input_tokens,
         )
-        report, model_name = await critique_lecture(
-            provider, context, language=language, locale=user.locale
-        )
+        report, model_name = await critique_lecture(provider, context, language=language, locale=user.locale)
         _emit_validation_event(db_session, run)
         artifact = _safe_artifact(report.model_dump(mode="json"))
-        citations = _safe_citations(
-            [citation.model_dump(mode="json") for citation in report.citations]
-        )
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         _finish_run(
             db_session,
             run,
@@ -1112,145 +1132,6 @@ async def run_lecture_review(
         raise
 
 
-async def ask_course_question(
-    db_session: Session,
-    course_uuid: str,
-    user: PublicUser,
-    *,
-    question: str,
-    thread_uuid: str | None,
-    language: str,
-    run: AIRun | None = None,
-) -> tuple[AIThread, AIQAMessage, AIQAMessage]:
-    _require_enabled("course_qa_enabled")
-    course = _course_or_404(db_session, course_uuid)
-    assert course.id is not None
-    provider, token_budget = _settings_provider()
-    role = derive_course_ai_role(db_session, course, user)
-    include_unpublished = role in {
-        AIThreadRole.TEACHER.value,
-        AIThreadRole.AUTHOR.value,
-        AIThreadRole.ADMIN.value,
-    }
-    context_bundle = assemble_course_context_bundle(
-        db_session, course, include_unpublished=include_unpublished
-    )
-    context = render_context_bundle(context_bundle)
-    input_tokens = _assert_budget(
-        token_budget, db_session, user, f"{question}\n{context}"
-    )
-
-    thread = (
-        db_session.exec(
-            select(AIThread).where(
-                AIThread.thread_uuid == thread_uuid, AIThread.user_id == user.id
-            )
-        ).first()
-        if thread_uuid
-        else None
-    )
-    if thread is None and run is not None:
-        queued_thread = db_session.get(AIThread, run.thread_id)
-        if queued_thread is not None and queued_thread.user_id == user.id:
-            thread = queued_thread
-            thread.course_id = course.id
-            thread.role = role
-            thread.title = thread.title or question[:80]
-    if thread is None:
-        thread = AIThread(
-            thread_uuid=_new_uuid("thread"),
-            user_id=user.id,
-            role=role,
-            course_id=course.id,
-            title=question[:80],
-        )
-        db_session.add(thread)
-        db_session.flush()
-    assert thread.id is not None
-    user_message = AIQAMessage(
-        message_uuid=_new_uuid("msg"),
-        thread_id=thread.id,
-        course_id=course.id,
-        user_id=user.id,
-        role="user",
-        content=question,
-    )
-    db_session.add(user_message)
-    if run is None:
-        run = _create_run(
-            db_session,
-            user=user,
-            role=role,
-            kind="course_qa",
-            course_id=course.id,
-            metadata={
-                "course_uuid": course_uuid,
-                "thread_uuid": thread.thread_uuid,
-                "question": question,
-                "language": language,
-                "context_source_count": len(context_bundle.sources),
-            },
-        )
-    else:
-        _mark_run_running(db_session, run)
-    try:
-        _emit_execution_events(
-            db_session,
-            run,
-            source_count=len(context_bundle.sources),
-            input_tokens=input_tokens,
-        )
-        answer, model_name = await answer_course_question(
-            provider,
-            context,
-            question,
-            role=role,
-            language=language,
-            locale=user.locale,
-        )
-        _emit_validation_event(db_session, run)
-        artifact = _safe_artifact(answer.model_dump(mode="json"))
-        citations = _safe_citations(
-            [citation.model_dump(mode="json") for citation in answer.citations]
-        )
-        trusted_citations = _finish_run(
-            db_session,
-            run,
-            model_name=model_name,
-            kind="course_qa",
-            artifact=artifact,
-            citations=citations,
-            input_tokens=input_tokens,
-            context_sources=context_bundle.sources,
-        )
-        assistant_message = AIQAMessage(
-            message_uuid=_new_uuid("msg"),
-            thread_id=thread.id,
-            course_id=course.id,
-            user_id=user.id,
-            role="assistant",
-            content=str(artifact.get("answer_markdown") or ""),
-            confidence=answer.confidence,
-            citations_json={"citations": cast("list[JsonValue]", trusted_citations)},
-            message_metadata={
-                "model_name": model_name,
-                "out_of_scope": answer.out_of_scope,
-            },
-        )
-        thread.updated_at = utc_now()
-        db_session.add(assistant_message)
-        db_session.add(thread)
-        db_session.commit()
-        db_session.refresh(thread)
-        db_session.refresh(user_message)
-        db_session.refresh(assistant_message)
-        return thread, user_message, assistant_message
-    except Exception:
-        _fail_run(db_session, run, "COURSE_QA_FAILED")
-        db_session.commit()
-        raise
-
-
 @dataclass
 class QAStreamSession:
     """Eagerly-prepared, already-committed state for one streamed Q&A turn.
@@ -1274,6 +1155,7 @@ class QAStreamSession:
     user: PublicUser
     context_sources: list[AIContextSource]
     input_tokens: int
+    message_history: list[ModelMessage]
 
 
 def prepare_course_question_stream(
@@ -1284,6 +1166,8 @@ def prepare_course_question_stream(
     question: str,
     thread_uuid: str | None,
     language: str,
+    activity_uuid: str | None = None,
+    client_turn_id: str | None = None,
 ) -> QAStreamSession:
     _require_enabled("course_qa_enabled")
     course = _course_or_404(db_session, course_uuid)
@@ -1295,44 +1179,70 @@ def prepare_course_question_stream(
         AIThreadRole.AUTHOR.value,
         AIThreadRole.ADMIN.value,
     }
+    activity = None
+    if activity_uuid:
+        activity = _course_activity_or_404(
+            db_session,
+            course_id=course.id,
+            activity_uuid=activity_uuid,
+            include_unpublished=include_unpublished,
+        )
     context_bundle = assemble_course_context_bundle(
-        db_session, course, include_unpublished=include_unpublished
+        db_session,
+        course,
+        include_unpublished=include_unpublished,
+        activity_uuid=activity_uuid,
     )
     context = render_context_bundle(context_bundle)
-    input_tokens = _assert_budget(
-        token_budget, db_session, user, f"{question}\n{context}"
-    )
+    input_tokens = _assert_budget(token_budget, db_session, user, f"{question}\n{context}")
 
-    thread = (
+    existing_user_message = (
         db_session.exec(
-            select(AIThread).where(
-                AIThread.thread_uuid == thread_uuid, AIThread.user_id == user.id
+            select(AIQAMessage).where(
+                AIQAMessage.course_id == course.id,
+                AIQAMessage.user_id == user.id,
+                AIQAMessage.client_turn_id == client_turn_id,
             )
         ).first()
-        if thread_uuid
+        if client_turn_id
         else None
     )
+    if existing_user_message is not None and existing_user_message.content != question:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="AI_TURN_ID_REUSED")
+    thread = db_session.get(AIThread, existing_user_message.thread_id) if existing_user_message else None
+    if thread is not None and (thread.course_id != course.id or thread.user_id != user.id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_THREAD_NOT_FOUND")
+    if thread is None and thread_uuid:
+        thread = _owned_course_thread(db_session, course_id=course.id, user_id=user.id, thread_uuid=thread_uuid)
     if thread is None:
         thread = AIThread(
             thread_uuid=_new_uuid("thread"),
             user_id=user.id,
             role=role,
             course_id=course.id,
+            activity_id=activity.id if activity else None,
             title=question[:80],
         )
         db_session.add(thread)
         db_session.flush()
     assert thread.id is not None
+    message_history = _qa_message_history(
+        db_session,
+        thread_id=thread.id,
+        exclude_message_uuid=existing_user_message.message_uuid if existing_user_message else None,
+    )
 
-    user_message = AIQAMessage(
+    user_message = existing_user_message or AIQAMessage(
         message_uuid=_new_uuid("msg"),
         thread_id=thread.id,
         course_id=course.id,
         user_id=user.id,
         role="user",
+        client_turn_id=client_turn_id,
         content=question,
     )
-    db_session.add(user_message)
+    if existing_user_message is None:
+        db_session.add(user_message)
 
     run = _create_run(
         db_session,
@@ -1346,6 +1256,9 @@ def prepare_course_question_stream(
             "question": question,
             "language": language,
             "context_source_count": len(context_bundle.sources),
+            "activity_uuid": activity_uuid,
+            "client_turn_id": client_turn_id,
+            "retry_count": 1 if existing_user_message else 0,
         },
         thread=thread,
     )
@@ -1367,6 +1280,7 @@ def prepare_course_question_stream(
         user=user,
         context_sources=context_bundle.sources,
         input_tokens=input_tokens,
+        message_history=message_history,
     )
 
 
@@ -1388,6 +1302,7 @@ async def stream_course_question_events(
     run = session.run
     message_id = _new_uuid("msg")
     yield {"type": "RUN_STARTED", "threadId": thread_id, "runId": run_id}
+    last_text = ""
     try:
         _emit_execution_events(
             db_session,
@@ -1402,7 +1317,6 @@ async def stream_course_question_events(
             "messageId": message_id,
             "role": "assistant",
         }
-        last_text = ""
         final_answer: CourseQAAnswer | None = None
         model_name: str | None = None
         async for chunk in stream_course_question(
@@ -1412,11 +1326,18 @@ async def stream_course_question_events(
             role=session.role,
             language=session.language,
             locale=session.locale,
+            message_history=session.message_history,
         ):
+            if not last_text and chunk.answer_text:
+                first_text_at = utc_now()
+                run.run_metadata = {
+                    **dict(run.run_metadata or {}),
+                    "time_to_first_text_ms": int((first_text_at - run.started_at).total_seconds() * 1000),
+                }
+                db_session.add(run)
+                db_session.commit()
             if chunk.answer_text != last_text:
-                delta = (
-                    chunk.answer_text.removeprefix(last_text)
-                )
+                delta = chunk.answer_text.removeprefix(last_text)
                 if delta:
                     yield {
                         "type": "TEXT_MESSAGE_CONTENT",
@@ -1434,9 +1355,7 @@ async def stream_course_question_events(
 
         _emit_validation_event(db_session, run)
         artifact = _safe_artifact(final_answer.model_dump(mode="json"))
-        citations = _safe_citations(
-            [citation.model_dump(mode="json") for citation in final_answer.citations]
-        )
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in final_answer.citations])
         trusted_citations = _finish_run(
             db_session,
             run,
@@ -1462,6 +1381,7 @@ async def stream_course_question_events(
             message_metadata={
                 "model_name": model_name,
                 "out_of_scope": final_answer.out_of_scope,
+                "reply_to_message_uuid": session.user_message.message_uuid,
             },
         )
         session.thread.updated_at = utc_now()
@@ -1482,9 +1402,7 @@ async def stream_course_question_events(
                 "type": "TOOL_CALL_RESULT",
                 "messageId": _new_uuid("msg"),
                 "toolCallId": tool_call_id,
-                "content": json.dumps(
-                    {"citations": trusted_citations}, ensure_ascii=False
-                ),
+                "content": json.dumps({"citations": trusted_citations}, ensure_ascii=False),
             }
             yield {"type": "TOOL_CALL_END", "toolCallId": tool_call_id}
 
@@ -1499,11 +1417,32 @@ async def stream_course_question_events(
                 "follow_up_suggestions": cast("list[JsonValue]", final_answer.follow_up_suggestions),
             },
         }
+    except asyncio.CancelledError:
+        if last_text:
+            assert session.thread.id is not None
+            assert session.course.id is not None
+            db_session.add(
+                AIQAMessage(
+                    message_uuid=_new_uuid("msg"),
+                    thread_id=session.thread.id,
+                    course_id=session.course.id,
+                    user_id=session.user.id,
+                    role="assistant",
+                    content=last_text,
+                    message_metadata={
+                        "incomplete": True,
+                        "reply_to_message_uuid": session.user_message.message_uuid,
+                    },
+                )
+            )
+        _abort_run(db_session, run)
+        db_session.commit()
+        raise
     except AIRunCancelled:
         db_session.commit()
         yield {
             "type": "RUN_ERROR",
-            "message": "Запуск ИИ был отменен",
+            "message": "AI_RUN_CANCELLED",
             "code": "CANCELLED",
         }
     except Exception:
@@ -1511,26 +1450,44 @@ async def stream_course_question_events(
         db_session.commit()
         yield {
             "type": "RUN_ERROR",
-            "message": "Не удалось получить ответ ИИ",
+            "message": "COURSE_QA_FAILED",
             "code": "COURSE_QA_FAILED",
         }
+    finally:
+        db_session.refresh(run)
+        if run.status not in {
+            AIRunStatus.FINISHED.value,
+            AIRunStatus.ERROR.value,
+            AIRunStatus.ABORTED.value,
+        }:
+            if last_text:
+                assert session.thread.id is not None
+                assert session.course.id is not None
+                db_session.add(
+                    AIQAMessage(
+                        message_uuid=_new_uuid("msg"),
+                        thread_id=session.thread.id,
+                        course_id=session.course.id,
+                        user_id=session.user.id,
+                        role="assistant",
+                        content=last_text,
+                        message_metadata={
+                            "incomplete": True,
+                            "reply_to_message_uuid": session.user_message.message_uuid,
+                        },
+                    )
+                )
+            _abort_run(db_session, run)
+            db_session.commit()
 
 
-def publish_course_analysis(
-    db_session: Session, analysis_uuid: str, user: PublicUser
-) -> AICourseAnalysis:
-    analysis = db_session.exec(
-        select(AICourseAnalysis).where(AICourseAnalysis.analysis_uuid == analysis_uuid)
-    ).first()
+def publish_course_analysis(db_session: Session, analysis_uuid: str, user: PublicUser) -> AICourseAnalysis:
+    analysis = db_session.exec(select(AICourseAnalysis).where(AICourseAnalysis.analysis_uuid == analysis_uuid)).first()
     if analysis is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Анализ не найден"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Анализ не найден")
     course = db_session.get(Course, analysis.course_id)
     if course is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
     _require_course_update(db_session, course, user)
     analysis.status = "published"
     analysis.published_at = utc_now()
@@ -1540,9 +1497,7 @@ def publish_course_analysis(
     return analysis
 
 
-def active_remediation_gate(
-    db_session: Session, *, user_id: int, activity_id: int
-) -> AIRemediationSession | None:
+def active_remediation_gate(db_session: Session, *, user_id: int, activity_id: int) -> AIRemediationSession | None:
     return db_session.exec(
         select(AIRemediationSession).where(
             AIRemediationSession.student_user_id == user_id,

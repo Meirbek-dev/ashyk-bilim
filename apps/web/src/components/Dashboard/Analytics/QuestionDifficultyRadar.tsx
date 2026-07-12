@@ -18,7 +18,7 @@ export default function QuestionDifficultyRadar({ title, description, data }: Qu
   const radarData = data.slice(0, MAX).map(row => ({
     label: row.question_label,
     accuracy: row.accuracy_pct ?? 0,
-    discrimination: (row).discrimination_index ?? 0,
+    discrimination: row.discrimination_index ?? 0,
   }))
 
   return (

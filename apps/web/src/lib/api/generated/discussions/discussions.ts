@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   ApiGetCourseDiscussionsApiV1CoursesCourseUuidDiscussionsGetParams,
   ApiGetDiscussionRepliesApiV1CoursesCourseUuidDiscussionsDiscussionUuidRepliesGetParams,
@@ -34,9 +34,9 @@ import type {
   DiscussionLikeRead,
   DiscussionMessageResponse,
   DiscussionToggleResponse,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -64,7 +64,7 @@ export const getApiGetCourseDiscussionsApiV1CoursesCourseUuidDiscussionsGetUrl =
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -90,6 +90,7 @@ export const apiGetCourseDiscussionsApiV1CoursesCourseUuidDiscussionsGet = async
       ...options,
       method: 'GET',
     },
+    arrayParser(CourseDiscussionReadWithPermissions),
   )
 }
 
@@ -398,6 +399,7 @@ export const apiCreateCourseDiscussionApiV1CoursesCourseUuidDiscussionsPost = as
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(courseDiscussionCreate),
     },
+    CourseDiscussionRead,
   )
 }
 
@@ -494,6 +496,7 @@ export const apiDeleteCourseDiscussionApiV1CoursesCourseUuidDiscussionsDiscussio
       ...options,
       method: 'DELETE',
     },
+    DiscussionMessageResponse,
   )
 }
 
@@ -597,6 +600,7 @@ export const apiUpdateCourseDiscussionApiV1CoursesCourseUuidDiscussionsDiscussio
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(courseDiscussionUpdate),
     },
+    CourseDiscussionRead,
   )
 }
 
@@ -702,6 +706,7 @@ export const apiToggleCourseDiscussionDislikeApiV1CoursesCourseUuidDiscussionsDi
       ...options,
       method: 'PUT',
     },
+    DiscussionToggleResponse,
   )
 }
 
@@ -816,6 +821,7 @@ export const apiUnlikeCourseDiscussionApiV1CoursesCourseUuidDiscussionsDiscussio
       ...options,
       method: 'DELETE',
     },
+    DiscussionMessageResponse,
   )
 }
 
@@ -917,6 +923,7 @@ export const apiLikeCourseDiscussionApiV1CoursesCourseUuidDiscussionsDiscussionU
       ...options,
       method: 'POST',
     },
+    DiscussionLikeRead,
   )
 }
 
@@ -1020,6 +1027,7 @@ export const apiToggleCourseDiscussionLikeApiV1CoursesCourseUuidDiscussionsDiscu
       ...options,
       method: 'PUT',
     },
+    DiscussionToggleResponse,
   )
 }
 
@@ -1108,7 +1116,7 @@ export const getApiGetDiscussionRepliesApiV1CoursesCourseUuidDiscussionsDiscussi
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1139,6 +1147,7 @@ export const apiGetDiscussionRepliesApiV1CoursesCourseUuidDiscussionsDiscussionU
       ...options,
       method: 'GET',
     },
+    arrayParser(CourseDiscussionRead),
   )
 }
 

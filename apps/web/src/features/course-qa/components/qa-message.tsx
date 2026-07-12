@@ -17,6 +17,9 @@ export function QAMessageView({ courseUuid, message }: { courseUuid?: string | n
             {message.role === 'assistant' ? <AIConfidenceMeter confidence={message.confidence} /> : null}
           </div>
           <AIStreamingText text={message.content} />
+          {message.message_metadata?.incomplete === true ? (
+            <p className="text-muted-foreground text-xs">{t('incomplete')}</p>
+          ) : null}
           {message.role === 'assistant' ? <AIEvidencePanel citations={citations} courseUuid={courseUuid} /> : null}
         </div>
       </MessageContent>

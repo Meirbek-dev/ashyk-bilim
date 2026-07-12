@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ActivityOrderPayload,
   ApiErrorEnvelope,
   ChapterCreateRequest,
@@ -32,7 +32,7 @@ import type {
   ChapterRead,
   ChapterUpdate,
   ChapterUpdateOrder,
-} from '../api.schemas'
+} from '../zod'
 
 import { orvalMutator } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
@@ -65,12 +65,16 @@ export const apiCreateCoursechapterApiV1ChaptersPost = async (
   chapterCreateRequest: ChapterCreateRequest,
   options?: RequestInit,
 ): Promise<ChapterRead> => {
-  return orvalMutator<ChapterRead>(getApiCreateCoursechapterApiV1ChaptersPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(chapterCreateRequest),
-  })
+  return orvalMutator<ChapterRead>(
+    getApiCreateCoursechapterApiV1ChaptersPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(chapterCreateRequest),
+    },
+    ChapterRead,
+  )
 }
 
 export const getApiCreateCoursechapterApiV1ChaptersPostMutationOptions = <
@@ -158,6 +162,7 @@ export const apiReorderChaptersAndActivitiesApiV1ChaptersCourseCourseUuidOrderPa
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(chapterUpdateOrder),
     },
+    ChapterDetailResponse,
   )
 }
 
@@ -244,10 +249,14 @@ export const apiDeleteCoursechapterApiV1ChaptersChapterUuidDelete = async (
   chapterUuid: string,
   options?: RequestInit,
 ): Promise<ChapterDetailResponse> => {
-  return orvalMutator<ChapterDetailResponse>(getApiDeleteCoursechapterApiV1ChaptersChapterUuidDeleteUrl(chapterUuid), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<ChapterDetailResponse>(
+    getApiDeleteCoursechapterApiV1ChaptersChapterUuidDeleteUrl(chapterUuid),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    ChapterDetailResponse,
+  )
 }
 
 export const getApiDeleteCoursechapterApiV1ChaptersChapterUuidDeleteMutationOptions = <
@@ -328,10 +337,14 @@ export const apiGetCoursechapterApiV1ChaptersChapterUuidGet = async (
   chapterUuid: string,
   options?: RequestInit,
 ): Promise<ChapterRead> => {
-  return orvalMutator<ChapterRead>(getApiGetCoursechapterApiV1ChaptersChapterUuidGetUrl(chapterUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<ChapterRead>(
+    getApiGetCoursechapterApiV1ChaptersChapterUuidGetUrl(chapterUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    ChapterRead,
+  )
 }
 
 export const getApiGetCoursechapterApiV1ChaptersChapterUuidGetQueryKey = (chapterUuid: string) => {
@@ -563,12 +576,16 @@ export const apiUpdateCoursechapterApiV1ChaptersChapterUuidPatch = async (
   chapterUpdate: ChapterUpdate,
   options?: RequestInit,
 ): Promise<ChapterRead> => {
-  return orvalMutator<ChapterRead>(getApiUpdateCoursechapterApiV1ChaptersChapterUuidPatchUrl(chapterUuid), {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(chapterUpdate),
-  })
+  return orvalMutator<ChapterRead>(
+    getApiUpdateCoursechapterApiV1ChaptersChapterUuidPatchUrl(chapterUuid),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(chapterUpdate),
+    },
+    ChapterRead,
+  )
 }
 
 export const getApiUpdateCoursechapterApiV1ChaptersChapterUuidPatchMutationOptions = <
@@ -663,6 +680,7 @@ export const apiMoveActivityToOrderApiV1ChaptersChapterUuidActivitiesActivityUui
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(activityOrderPayload),
     },
+    ChapterDetailResponse,
   )
 }
 
@@ -756,12 +774,16 @@ export const apiMoveChapterToOrderApiV1ChaptersChapterUuidOrderPatch = async (
   chapterOrderPayload: ChapterOrderPayload,
   options?: RequestInit,
 ): Promise<ChapterRead> => {
-  return orvalMutator<ChapterRead>(getApiMoveChapterToOrderApiV1ChaptersChapterUuidOrderPatchUrl(chapterUuid), {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(chapterOrderPayload),
-  })
+  return orvalMutator<ChapterRead>(
+    getApiMoveChapterToOrderApiV1ChaptersChapterUuidOrderPatchUrl(chapterUuid),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(chapterOrderPayload),
+    },
+    ChapterRead,
+  )
 }
 
 export const getApiMoveChapterToOrderApiV1ChaptersChapterUuidOrderPatchMutationOptions = <

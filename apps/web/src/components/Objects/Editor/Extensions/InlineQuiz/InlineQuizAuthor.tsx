@@ -30,7 +30,7 @@ export default function InlineQuizAuthor({ assessmentUuid }: InlineQuizAuthorPro
     setIsCreating(true)
     try {
       // TODO: Wire to actual API call once the route is implemented
-      // const response = await apiFetch('/assessments/inline-quiz', { method: 'POST', body: { activity_id: ... } });
+      // const response = await apiJson('/assessments/inline-quiz', { method: 'POST', body: { activity_id: ... } });
       // onAssessmentCreated(response.assessment_uuid);
       // setIsEditorOpen(true);
     } catch (error) {

@@ -16,12 +16,16 @@ from src.db.courses.course_updates import (
 from src.db.courses.courses import (
     CourseAccessUpdate,
     CourseCreate,
+    CourseLifecycleResult,
+    CourseLifecycleUpdate,
     CourseMetadataUpdate,
     CourseRead,
+    CourseReadinessResponse,
     FullCourseRead,
     ThumbnailType,
 )
 from src.db.courses.enhanced_responses import CourseReadWithPermissions
+from src.db.learner_course_state import LearnerCourseState
 from src.db.resource_authors import ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.student_activity_runtime import (
@@ -44,11 +48,13 @@ from src.services.courses.courses import (
     delete_course,
     get_course,
     get_course_meta,
+    get_course_readiness,
     get_course_user_rights,
     get_courses,
     list_editable_courses,
     search_courses,
     update_course_access,
+    update_course_lifecycle,
     update_course_metadata,
     update_course_thumbnail,
 )
@@ -58,6 +64,7 @@ from src.services.courses.updates import (
     get_updates_by_course_uuid,
     update_update,
 )
+from src.services.learner_course_state import get_learner_course_state
 from src.services.student_activity_runtime import (
     get_student_activity_runtime,
     run_student_activity_action,
@@ -487,6 +494,39 @@ async def api_update_course_access(
     assert db_session is not None
     assert current_user is not None
     return await update_course_access(request, course_uuid, access_object, current_user, db_session)
+
+
+@router.get("/{course_uuid}/readiness", response_model=CourseReadinessResponse)
+async def api_get_course_readiness(
+    course_uuid: str,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+) -> CourseReadinessResponse:
+    return get_course_readiness(course_uuid, current_user, db_session)
+
+
+@router.get("/{course_uuid}/learner-state", response_model=LearnerCourseState)
+async def api_get_learner_course_state(
+    course_uuid: str,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+) -> LearnerCourseState:
+    return get_learner_course_state(course_uuid, current_user, db_session)
+
+
+@router.post("/{course_uuid}/lifecycle", response_model=CourseLifecycleResult)
+async def api_update_course_lifecycle(
+    course_uuid: str,
+    lifecycle_object: CourseLifecycleUpdate,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+) -> CourseLifecycleResult:
+    return await update_course_lifecycle(
+        course_uuid,
+        lifecycle_object,
+        current_user,
+        db_session,
+    )
 
 
 @router.delete("/{course_uuid}", response_model=CourseDetailResponse)

@@ -16,8 +16,10 @@ import {
 import type {
   ActivityProgressCell,
   CourseGradebookResponse,
+  GradebookActivity,
   GradebookFilters,
   GradebookRollupKind,
+  GradebookStudent,
   TeacherAction,
 } from '@/features/grading/domain'
 import { Button } from '@/components/ui/button'
@@ -25,19 +27,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import GradebookToolbar, { labelActivityType } from './GradebookToolbar'
 import GradebookActivityCell, { progressStateLabelKey } from './GradebookActivityCell'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 interface CourseGradebookCommandCenterProps {
   courseUuid: string
 }
 
 const ROLLUP_KINDS: GradebookRollupKind[] = ['activity_category', 'cohort', 'learner', 'activity']
-const PAGE_SIZE = 100
+const PAGE_SIZE = 25
 
 export default function CourseGradebookCommandCenter({ courseUuid }: CourseGradebookCommandCenterProps) {
   const t = useTranslations('Features.Grading.Gradebook')
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const isMobile = useIsMobile()
   const [page, setPage] = useState(() => normalizePage(searchParams.get('page')))
   const [filters, setFilters] = useState<GradebookFilters>({
     savedFilter: normalizeSavedFilter(searchParams.get('filter')),
@@ -84,7 +88,9 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   const activityTypes = useMemo(
     () =>
       data?.page_info?.activity_types ??
-      [...new Set((data?.activities ?? []).map(activity => activity.activity_type))].toSorted((a, b) => a.localeCompare(b)),
+      [...new Set((data?.activities ?? []).map(activity => activity.activity_type))].toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
     [data?.activities, data?.page_info?.activity_types],
   )
   const visibleActivities = useMemo(
@@ -173,75 +179,84 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
 
       <TeacherActionsPanel data={data} onOpenAction={openTeacherAction} onOpenActivity={openActivityReview} />
 
-      <div className="border-border overflow-x-auto rounded-lg border">
-        <Table className="min-w-[980px] table-fixed">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="bg-background sticky left-0 z-10 w-64">{t('learner')}</TableHead>
-              {visibleActivities.map(activity => (
-                <TableHead key={activity.id} className="w-44 align-bottom">
-                  <button
-                    type="button"
-                    className="hover:text-primary focus-visible:ring-ring block w-full rounded-sm text-left outline-none focus-visible:ring-2"
-                    onClick={() => openActivityReview(activity.id)}
-                  >
-                    <span className="line-clamp-2 text-xs font-semibold">{activity.name}</span>
-                    <span className="text-muted-foreground mt-1 block text-[11px]">
-                      {labelActivityType(t, activity.activity_type)}
-                    </span>
-                  </button>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visibleStudents.length === 0 ? (
+      {isMobile ? (
+        <MobileGradebookList
+          students={visibleStudents}
+          activities={visibleActivities}
+          cellMap={cellMap}
+          onOpenCell={openCell}
+        />
+      ) : (
+        <div className="border-border overflow-x-auto rounded-lg border">
+          <Table className="min-w-[980px] table-fixed">
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={visibleActivities.length + 1} className="h-32 text-center">
-                  <div className="text-sm font-medium">{t('emptyTitle')}</div>
-                  <div className="text-muted-foreground mt-1 text-xs">{t('emptyDescription')}</div>
-                </TableCell>
+                <TableHead className="bg-background sticky left-0 z-10 w-64">{t('learner')}</TableHead>
+                {visibleActivities.map(activity => (
+                  <TableHead key={activity.id} className="w-44 align-bottom">
+                    <button
+                      type="button"
+                      className="hover:text-primary focus-visible:ring-ring block w-full rounded-sm text-left outline-none focus-visible:ring-2"
+                      onClick={() => openActivityReview(activity.id)}
+                    >
+                      <span className="line-clamp-2 text-xs font-semibold">{activity.name}</span>
+                      <span className="text-muted-foreground mt-1 block text-[11px]">
+                        {labelActivityType(t, activity.activity_type)}
+                      </span>
+                    </button>
+                  </TableHead>
+                ))}
               </TableRow>
-            ) : null}
-            {visibleStudents.map(student => (
-              <TableRow key={student.id}>
-                <TableCell className="bg-background sticky left-0 z-10 w-64">
-                  <span className="block truncate text-sm font-medium">{gradebookLearnerName(student)}</span>
-                  <span className="text-muted-foreground block truncate text-xs">{student.email}</span>
-                </TableCell>
-                {visibleActivities.map(activity => {
-                  const key = gradebookCellKey(student.id, activity.id)
-                  const cell = cellMap.get(key) ?? emptyGradebookCell(student.id, activity.id)
-                  const selected = selectedKeys.has(key)
-                  return (
-                    <GradebookActivityCell
-                      key={key}
-                      cell={cell}
-                      selected={selected}
-                      labels={{
-                        actionRequired: t('actionRequired'),
-                        attempts: t('attempts', { count: cell.attempt_count }),
-                        late: t('late'),
-                        selectCell: t('selectCell'),
-                        state: t(progressStateLabelKey(cell.state)),
-                      }}
-                      onOpen={() => openCell(cell)}
-                      onSelect={checked => {
-                        setSelectedKeys(current => {
-                          const next = new Set(current)
-                          if (checked) next.add(key)
-                          else next.delete(key)
-                          return next
-                        })
-                      }}
-                    />
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {visibleStudents.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={visibleActivities.length + 1} className="h-32 text-center">
+                    <div className="text-sm font-medium">{t('emptyTitle')}</div>
+                    <div className="text-muted-foreground mt-1 text-xs">{t('emptyDescription')}</div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {visibleStudents.map(student => (
+                <TableRow key={student.id}>
+                  <TableCell className="bg-background sticky left-0 z-10 w-64">
+                    <span className="block truncate text-sm font-medium">{gradebookLearnerName(student)}</span>
+                    <span className="text-muted-foreground block truncate text-xs">{student.email}</span>
+                  </TableCell>
+                  {visibleActivities.map(activity => {
+                    const key = gradebookCellKey(student.id, activity.id)
+                    const cell = cellMap.get(key) ?? emptyGradebookCell(student.id, activity.id)
+                    const selected = selectedKeys.has(key)
+                    return (
+                      <GradebookActivityCell
+                        key={key}
+                        cell={cell}
+                        selected={selected}
+                        labels={{
+                          actionRequired: t('actionRequired'),
+                          attempts: t('attempts', { count: cell.attempt_count }),
+                          late: t('late'),
+                          selectCell: t('selectCell'),
+                          state: t(progressStateLabelKey(cell.state)),
+                        }}
+                        onOpen={() => openCell(cell)}
+                        onSelect={checked => {
+                          setSelectedKeys(current => {
+                            const next = new Set(current)
+                            if (checked) next.add(key)
+                            else next.delete(key)
+                            return next
+                          })
+                        }}
+                      />
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       {data.page_info ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-muted-foreground text-sm">
@@ -280,6 +295,69 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
           </div>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+function MobileGradebookList({
+  students,
+  activities,
+  cellMap,
+  onOpenCell,
+}: {
+  students: GradebookStudent[]
+  activities: GradebookActivity[]
+  cellMap: Map<string, ActivityProgressCell>
+  onOpenCell: (cell: ActivityProgressCell) => void
+}) {
+  const t = useTranslations('Features.Grading.Gradebook')
+  if (students.length === 0) {
+    return (
+      <div className="rounded-lg border p-6 text-center">
+        <p className="text-sm font-medium">{t('emptyTitle')}</p>
+        <p className="text-muted-foreground mt-1 text-xs">{t('emptyDescription')}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {students.map(student => {
+        const cells = activities.map(activity => ({
+          activity,
+          cell: cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity.id),
+        }))
+        const relevant = cells.filter(({ cell }) => cell.state !== 'NOT_STARTED' || cell.teacher_action_required)
+        const visible = (relevant.length > 0 ? relevant : cells).slice(0, 5)
+        return (
+          <section key={student.id} className="rounded-lg border p-4">
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-semibold">{gradebookLearnerName(student)}</h2>
+              <p className="text-muted-foreground truncate text-xs">{student.email}</p>
+            </div>
+            <div className="mt-3 flex flex-col gap-2">
+              {visible.map(({ activity, cell }) => (
+                <Button
+                  key={activity.id}
+                  type="button"
+                  variant="outline"
+                  className="h-auto min-h-11 justify-between px-3 py-2 text-left"
+                  disabled={!cell.latest_submission_uuid}
+                  onClick={() => onOpenCell(cell)}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium">{activity.name}</span>
+                    <span className="text-muted-foreground block text-xs">{t(progressStateLabelKey(cell.state))}</span>
+                  </span>
+                  {cell.teacher_action_required ? (
+                    <span className="text-xs font-medium">{t('submissionReview')}</span>
+                  ) : null}
+                </Button>
+              ))}
+            </div>
+          </section>
+        )
+      })}
     </div>
   )
 }

@@ -14,7 +14,6 @@ interface CourseHealthTableProps {
   serverPaginated?: boolean
 }
 
-
 export default function CourseHealthTable({ rows, storageKey, serverPaginated }: CourseHealthTableProps) {
   const t = useTranslations('TeacherAnalytics')
   const columns: DataTableColumnDef<TeacherCourseRow>[] = [

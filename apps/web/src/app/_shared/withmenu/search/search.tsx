@@ -175,7 +175,7 @@ const SearchPage = () => {
   const perPage = 9
   const selectedType = type
   const searchResultsQuery = useSearchContent(query, { page, limit: perPage })
-  const rawSearchResults = searchResultsQuery.data?.data as SearchResults | undefined
+  const rawSearchResults = searchResultsQuery.data?.data as unknown as SearchResults | undefined
   const searchResults: SearchResults = query.trim()
     ? {
         courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses : [],

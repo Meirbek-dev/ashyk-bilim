@@ -18,6 +18,7 @@ from src.routers import (
     trail,
     usergroups,
     users,
+    work_queue,
 )
 from src.routers.ai.router import router as ai_router
 from src.routers.assessments import unified as assessment_unified
@@ -49,6 +50,7 @@ v1_router.include_router(
 
 # Core domain routes
 v1_router.include_router(users.router, prefix="/users", tags=["users"])
+v1_router.include_router(work_queue.router, prefix="/me", tags=["work"])
 v1_router.include_router(usergroups.router, prefix="/usergroups", tags=["usergroups"])
 v1_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 v1_router.include_router(platform.router, prefix="", tags=["platform"])

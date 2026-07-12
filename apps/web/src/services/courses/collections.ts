@@ -1,6 +1,6 @@
 'use server'
 
-import { apiFetch, errorHandling } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { tags } from '@/lib/cacheTags'
 
 import { getAPIUrl } from '../config/config'
@@ -10,43 +10,36 @@ import { getAPIUrl } from '../config/config'
 */
 
 export async function deleteCollection(collection_uuid: string): Promise<AppPayload> {
-  const result = await apiFetch(`collections/${collection_uuid}`, {
+  const data = await apiJson<AppPayload>(`collections/${collection_uuid}`, {
     method: 'DELETE',
   })
-  const data_result = await errorHandling<AppPayload>(result)
 
-  if (result.ok) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.collections, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.collections, 'max')
 
-  return data_result
+  return data
 }
 
 export async function createCollection(collection: AppCollection): Promise<AppCollection> {
-  const result = await apiFetch('collections/', {
+  const data = await apiJson<AppCollection>('collections/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(collection),
   })
-  const data_result = await errorHandling<AppCollection>(result)
 
-  if (result.ok) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.collections, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.collections, 'max')
 
-  return data_result
+  return data
 }
 
 async function fetchCollectionById(collection_uuid: string): Promise<AppCollection> {
-  const result = await apiFetch(`collections/collection_${collection_uuid}`, {
+  return apiJson<AppCollection>(`collections/collection_${collection_uuid}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return await errorHandling<AppCollection>(result)
 }
 
 export async function getCollectionById(collection_uuid: string, _next?: unknown) {
@@ -57,13 +50,12 @@ export async function getCollectionById(collection_uuid: string, _next?: unknown
  * Cached fetch for collections
  */
 async function fetchCollections(): Promise<AppCollection[]> {
-  const result = await apiFetch('collections/page/1/limit/20', {
+  return apiJson<AppCollection[]>('collections/page/1/limit/20', {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return await errorHandling<AppCollection[]>(result)
 }
 
 export async function getCollections(_next?: unknown) {

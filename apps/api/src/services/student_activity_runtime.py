@@ -35,7 +35,6 @@ from src.services.ai.operations import active_remediation_gate
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 from src.services.progress.submissions import (
     mark_manual_activity_complete,
-    recalculate_course_progress,
     unmark_manual_activity_complete,
 )
 from src.services.trail.trail import add_activity_to_trail, remove_activity_from_trail
@@ -70,7 +69,7 @@ async def get_student_activity_runtime(
         can_view = True
 
     chapters = _get_course_chapters(course.id, db_session)
-    activities_by_chapter = _get_course_activities(course.id, db_session)
+    activities_by_chapter = _get_course_activities(course.id, db_session, include_unpublished=can_update)
     progress_by_activity = _get_progress_by_activity(course.id, current_user, db_session)
     outline = _build_outline(chapters, activities_by_chapter, progress_by_activity)
     flat_items = [item for chapter in outline for item in chapter.activities]
@@ -189,13 +188,17 @@ def _get_course_chapters(course_id: int, db_session: Session) -> list[Chapter]:
     )
 
 
-def _get_course_activities(course_id: int, db_session: Session) -> dict[int, list[Activity]]:
+def _get_course_activities(
+    course_id: int,
+    db_session: Session,
+    *,
+    include_unpublished: bool,
+) -> dict[int, list[Activity]]:
+    statement = select(Activity).where(Activity.course_id == course_id)
+    if not include_unpublished:
+        statement = statement.where(Activity.published)
     rows = list(
-        db_session.exec(
-            select(Activity)
-            .where(Activity.course_id == course_id)
-            .order_by(col(Activity.chapter_id), col(Activity.order), col(Activity.id))
-        ).all()
+        db_session.exec(statement.order_by(col(Activity.chapter_id), col(Activity.order), col(Activity.id))).all()
     )
     by_chapter: dict[int, list[Activity]] = {}
     for activity in rows:
@@ -210,7 +213,6 @@ def _get_progress_by_activity(
 ) -> dict[int, ActivityProgress]:
     if isinstance(current_user, AnonymousUser):
         return {}
-    recalculate_course_progress(course_id, current_user.id, db_session, commit=True)
     rows = db_session.exec(
         select(ActivityProgress).where(
             ActivityProgress.course_id == course_id,

@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiAddResourcesToUsergroupApiV1UsergroupsUsergroupIdAddResourcesPostParams,
   ApiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPostParams,
   ApiDeleteResourcesFromUsergroupApiV1UsergroupsUsergroupIdRemoveResourcesDeleteParams,
@@ -33,9 +33,9 @@ import type {
   UserGroupRead,
   UserGroupUpdate,
   UserRead,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -64,10 +64,14 @@ export const getApiGetUsergroupsApiV1UsergroupsGetUrl = () => {
  * @summary Api Get Usergroups
  */
 export const apiGetUsergroupsApiV1UsergroupsGet = async (options?: RequestInit): Promise<UserGroupRead[]> => {
-  return orvalMutator<UserGroupRead[]>(getApiGetUsergroupsApiV1UsergroupsGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserGroupRead[]>(
+    getApiGetUsergroupsApiV1UsergroupsGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(UserGroupRead),
+  )
 }
 
 export const getApiGetUsergroupsApiV1UsergroupsGetQueryKey = () => {
@@ -272,12 +276,16 @@ export const apiCreateUsergroupApiV1UsergroupsPost = async (
   userGroupCreate: UserGroupCreate,
   options?: RequestInit,
 ): Promise<UserGroupRead> => {
-  return orvalMutator<UserGroupRead>(getApiCreateUsergroupApiV1UsergroupsPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(userGroupCreate),
-  })
+  return orvalMutator<UserGroupRead>(
+    getApiCreateUsergroupApiV1UsergroupsPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(userGroupCreate),
+    },
+    UserGroupRead,
+  )
 }
 
 export const getApiCreateUsergroupApiV1UsergroupsPostMutationOptions = <
@@ -362,6 +370,7 @@ export const apiGetUsergroupsbyResourceApiV1UsergroupsResourceResourceUuidGet = 
       ...options,
       method: 'GET',
     },
+    arrayParser(UserGroupRead),
   )
 }
 
@@ -649,10 +658,14 @@ export const apiDeleteUsergroupApiV1UsergroupsUsergroupIdDelete = async (
   usergroupId: number,
   options?: RequestInit,
 ): Promise<string> => {
-  return orvalMutator<string>(getApiDeleteUsergroupApiV1UsergroupsUsergroupIdDeleteUrl(usergroupId), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<string>(
+    getApiDeleteUsergroupApiV1UsergroupsUsergroupIdDeleteUrl(usergroupId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    stringParser,
+  )
 }
 
 export const getApiDeleteUsergroupApiV1UsergroupsUsergroupIdDeleteMutationOptions = <
@@ -734,10 +747,14 @@ export const apiGetUsergroupApiV1UsergroupsUsergroupIdGet = async (
   usergroupId: number,
   options?: RequestInit,
 ): Promise<UserGroupRead> => {
-  return orvalMutator<UserGroupRead>(getApiGetUsergroupApiV1UsergroupsUsergroupIdGetUrl(usergroupId), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserGroupRead>(
+    getApiGetUsergroupApiV1UsergroupsUsergroupIdGetUrl(usergroupId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserGroupRead,
+  )
 }
 
 export const getApiGetUsergroupApiV1UsergroupsUsergroupIdGetQueryKey = (usergroupId: number) => {
@@ -972,12 +989,16 @@ export const apiUpdateUsergroupApiV1UsergroupsUsergroupIdPut = async (
   userGroupUpdate: UserGroupUpdate,
   options?: RequestInit,
 ): Promise<UserGroupRead> => {
-  return orvalMutator<UserGroupRead>(getApiUpdateUsergroupApiV1UsergroupsUsergroupIdPutUrl(usergroupId), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(userGroupUpdate),
-  })
+  return orvalMutator<UserGroupRead>(
+    getApiUpdateUsergroupApiV1UsergroupsUsergroupIdPutUrl(usergroupId),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(userGroupUpdate),
+    },
+    UserGroupRead,
+  )
 }
 
 export const getApiUpdateUsergroupApiV1UsergroupsUsergroupIdPutMutationOptions = <
@@ -1055,7 +1076,7 @@ export const getApiAddResourcesToUsergroupApiV1UsergroupsUsergroupIdAddResources
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1081,6 +1102,7 @@ export const apiAddResourcesToUsergroupApiV1UsergroupsUsergroupIdAddResourcesPos
       ...options,
       method: 'POST',
     },
+    stringParser,
   )
 }
 
@@ -1163,7 +1185,7 @@ export const getApiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPostUrl 
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1185,10 +1207,14 @@ export const apiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPost = asyn
   params: ApiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPostParams,
   options?: RequestInit,
 ): Promise<string> => {
-  return orvalMutator<string>(getApiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPostUrl(usergroupId, params), {
-    ...options,
-    method: 'POST',
-  })
+  return orvalMutator<string>(
+    getApiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPostUrl(usergroupId, params),
+    {
+      ...options,
+      method: 'POST',
+    },
+    stringParser,
+  )
 }
 
 export const getApiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPostMutationOptions = <
@@ -1269,7 +1295,7 @@ export const getApiDeleteResourcesFromUsergroupApiV1UsergroupsUsergroupIdRemoveR
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1295,6 +1321,7 @@ export const apiDeleteResourcesFromUsergroupApiV1UsergroupsUsergroupIdRemoveReso
       ...options,
       method: 'DELETE',
     },
+    stringParser,
   )
 }
 
@@ -1390,7 +1417,7 @@ export const getApiDeleteUsersFromUsergroupApiV1UsergroupsUsergroupIdRemoveUsers
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -1416,6 +1443,7 @@ export const apiDeleteUsersFromUsergroupApiV1UsergroupsUsergroupIdRemoveUsersDel
       ...options,
       method: 'DELETE',
     },
+    stringParser,
   )
 }
 
@@ -1502,10 +1530,14 @@ export const apiGetUsersLinkedToUsergroupApiV1UsergroupsUsergroupIdUsersGet = as
   usergroupId: number,
   options?: RequestInit,
 ): Promise<UserRead[]> => {
-  return orvalMutator<UserRead[]>(getApiGetUsersLinkedToUsergroupApiV1UsergroupsUsergroupIdUsersGetUrl(usergroupId), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UserRead[]>(
+    getApiGetUsersLinkedToUsergroupApiV1UsergroupsUsergroupIdUsersGetUrl(usergroupId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(UserRead),
+  )
 }
 
 export const getApiGetUsersLinkedToUsergroupApiV1UsergroupsUsergroupIdUsersGetQueryKey = (usergroupId: number) => {

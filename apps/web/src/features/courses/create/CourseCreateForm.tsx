@@ -1,35 +1,23 @@
 'use client'
 
-import { useCallback } from 'react'
 import { Controller } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { Separator } from '@/components/ui/separator'
 
 import { useCourseCreateForm } from './useCourseCreateForm'
 import { useCreateCourseMutation } from './useCreateCourseMutation'
-import { BasicsSection, StructureSection, VisibilitySection, DestinationSection } from './CourseCreateSections'
-import { CourseCreateReviewPanel } from './CourseCreateReviewPanel'
+import { StructureSection } from './CourseCreateSections'
 import { SourceCourseCombobox } from './SourceCourseCombobox'
+import { Button } from '@/components/ui/button'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
 
 export function CourseCreateForm() {
   const t = useTranslations('DashPage.CourseManagement.Create')
   const router = useRouter()
-
-  const {
-    form,
-    title,
-    description,
-    structureMode,
-    sourceCourseUuid,
-    initialVisibility,
-    destination,
-    blockingReason,
-    completedCount,
-    totalRequired,
-  } = useCourseCreateForm()
-
+  const { form, structureMode, sourceCourseUuid } = useCourseCreateForm()
   const { mutate, isPending } = useCreateCourseMutation()
 
   const handleSubmit = form.handleSubmit(async values => {
@@ -37,138 +25,78 @@ export function CourseCreateForm() {
     const result = await mutate(
       {
         title: values.title,
-        description: values.description,
+        description: '',
         structureMode: values.structureMode,
-        initialVisibility: values.initialVisibility,
-        ...(sourceCourseUuidValue !== undefined && { sourceCourseUuid: sourceCourseUuidValue }),
+        initialVisibility: 'private',
+        ...(sourceCourseUuidValue ? { sourceCourseUuid: sourceCourseUuidValue } : {}),
       },
-      values.destination,
+      'overview',
     )
 
     if (result.status === 'error') {
       toast.error(result.message)
       return
     }
-
     if (result.status === 'partial') {
-      toast.warning(
-        t('toasts.partial', {
-          imported: result.importedChapterCount,
-          failed: result.failedChapterCount,
-        }),
-      )
+      toast.warning(t('toasts.partial', { imported: result.importedChapterCount, failed: result.failedChapterCount }))
     } else {
       toast.success(t('toasts.created'))
     }
-
     router.replace(result.destinationPath)
   })
 
-  const handleCancel = useCallback(() => {
-    router.push('/dash/courses')
-  }, [router])
-
   return (
-    <form onSubmit={handleSubmit} noValidate aria-label={t('formLabel')} className="relative">
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        {/* Left: form sections */}
-        <div className="flex flex-col gap-6">
-          <div className="bg-card rounded-lg border p-6">
-            <BasicsSection
-              register={form.register}
-              {...(form.formState.errors.title !== undefined && { titleError: form.formState.errors.title })}
-              {...(form.formState.errors.description !== undefined && {
-                descriptionError: form.formState.errors.description,
-              })}
-              titleValue={title}
-              descriptionValue={description}
-              onDescriptionChange={val =>
-                form.setValue('description', val, { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
-              }
-              onDescriptionBlur={() => form.trigger('description')}
+    <form onSubmit={handleSubmit} noValidate aria-label={t('formLabel')} className="mx-auto max-w-3xl">
+      <div className="bg-card flex flex-col gap-6 rounded-lg border p-5 sm:p-6">
+        <FieldGroup>
+          <Field data-invalid={Boolean(form.formState.errors.title)}>
+            <FieldLabel htmlFor="course-title">{t('basics.courseTitle')}</FieldLabel>
+            <Input
+              id="course-title"
+              type="text"
+              autoComplete="off"
+              aria-invalid={Boolean(form.formState.errors.title)}
+              placeholder={t('basics.courseTitlePlaceholder')}
+              {...form.register('title')}
             />
-          </div>
+            <FieldDescription>{t('quickCreateTitleHelp')}</FieldDescription>
+            <FieldError errors={form.formState.errors.title ? [{ message: t('review.blockingReasons.title') }] : []} />
+          </Field>
+        </FieldGroup>
 
-          <div className="bg-card rounded-lg border p-6">
-            <Controller
-              control={form.control}
-              name="structureMode"
-              render={({ field }) => (
-                <StructureSection
-                  value={field.value}
-                  onChange={val => {
-                    field.onChange(val)
-                    if (val !== 'copy-outline') {
-                      form.setValue('sourceCourseUuid', '')
-                    }
-                  }}
-                  sourceCourseCombobox={
-                    <SourceCourseCombobox
-                      id="source-course-combobox"
-                      value={sourceCourseUuid ?? ''}
-                      onSelect={(uuid, name) => {
-                        form.setValue('sourceCourseUuid', uuid, { shouldDirty: true })
-                        void name
-                      }}
-                    />
-                  }
+        <Controller
+          control={form.control}
+          name="structureMode"
+          render={({ field }) => (
+            <StructureSection
+              value={field.value}
+              onChange={value => {
+                field.onChange(value)
+                if (value !== 'copy-outline') form.setValue('sourceCourseUuid', '')
+              }}
+              sourceCourseCombobox={
+                <SourceCourseCombobox
+                  id="source-course-combobox"
+                  value={sourceCourseUuid ?? ''}
+                  onSelect={uuid => form.setValue('sourceCourseUuid', uuid, { shouldDirty: true })}
                 />
-              )}
+              }
             />
-          </div>
+          )}
+        />
 
-          <div className="bg-card rounded-lg border p-6">
-            <Controller
-              control={form.control}
-              name="initialVisibility"
-              render={({ field }) => <VisibilitySection value={field.value} onChange={field.onChange} />}
-            />
-          </div>
+        {structureMode === 'copy-outline' && form.formState.errors.sourceCourseUuid ? (
+          <FieldError>{t('review.blockingReasons.source')}</FieldError>
+        ) : null}
 
-          <div className="bg-card rounded-lg border p-6">
-            <Controller
-              control={form.control}
-              name="destination"
-              render={({ field }) => <DestinationSection value={field.value} onChange={field.onChange} />}
-            />
-          </div>
-
-          {/* Mobile: inline review + actions */}
-          <div className="xl:hidden">
-            <Separator className="mb-6" />
-            <CourseCreateReviewPanel
-              title={title}
-              structureMode={structureMode}
-              sourceCourseUuid={sourceCourseUuid ?? ''}
-              initialVisibility={initialVisibility}
-              destination={destination}
-              completedCount={completedCount}
-              totalRequired={totalRequired}
-              blockingReason={blockingReason}
-              isPending={isPending}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-            />
-          </div>
-        </div>
-
-        {/* Right: sticky review panel (desktop only) */}
-        <div className="hidden xl:block">
-          <div className="sticky top-6">
-            <CourseCreateReviewPanel
-              title={title}
-              structureMode={structureMode}
-              sourceCourseUuid={sourceCourseUuid ?? ''}
-              initialVisibility={initialVisibility}
-              destination={destination}
-              completedCount={completedCount}
-              totalRequired={totalRequired}
-              blockingReason={blockingReason}
-              isPending={isPending}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-            />
-          </div>
+        <div className="flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push('/dash/courses')}>
+            {t('actions.cancel')}
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? <Spinner data-icon="inline-start" /> : null}
+            {isPending ? t('actions.creating') : t('actions.create')}
+          </Button>
         </div>
       </div>
     </form>

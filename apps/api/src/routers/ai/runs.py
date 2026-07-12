@@ -40,6 +40,11 @@ class AIArtifactRead(PydanticStrictBaseModel):
     final: bool
 
 
+class AIRunStreamRequest(PydanticStrictBaseModel):
+    threadId: str  # noqa: N815
+    runId: str  # noqa: N815
+
+
 def _run_or_404(db_session: Session, run_uuid: str) -> AIRun:
     run = db_session.exec(select(AIRun).where(AIRun.run_uuid == run_uuid)).first()
     if run is None:
@@ -70,6 +75,28 @@ def _stream_payload(event: AIEvent) -> dict[str, object]:
         "state": state,
         "message": payload.get("message"),
         "payload": payload,
+    }
+
+
+def _ag_ui_event(event: AIEvent) -> dict[str, object]:
+    return {
+        "type": "CUSTOM",
+        "name": event.event_type,
+        "value": _stream_payload(event),
+    }
+
+
+def _ag_ui_terminal_event(run: AIRun, payload: AIRunStreamRequest) -> dict[str, object]:
+    if run.status == AIRunStatus.FINISHED.value:
+        return {
+            "type": "RUN_FINISHED",
+            "threadId": payload.threadId,
+            "runId": payload.runId,
+        }
+    return {
+        "type": "RUN_ERROR",
+        "message": "AI run was cancelled" if run.status == AIRunStatus.ABORTED.value else "AI run failed",
+        "code": "CANCELLED" if run.status == AIRunStatus.ABORTED.value else (run.error_code or "AI_RUN_FAILED"),
     }
 
 
@@ -113,9 +140,10 @@ async def api_get_ai_run_artifacts(
     )
 
 
-@router.get("/{run_uuid}/stream", response_class=StreamingResponse)
+@router.post("/{run_uuid}/stream", response_class=StreamingResponse)
 async def api_stream_ai_run_events(
     run_uuid: str,
+    payload: AIRunStreamRequest,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> StreamingResponse:
@@ -123,6 +151,7 @@ async def api_stream_ai_run_events(
     require_ai_run_access(db_session, run, current_user)
 
     async def iter_events() -> AsyncIterator[str]:
+        yield f"event: run\ndata: {json.dumps({'type': 'RUN_STARTED', 'threadId': payload.threadId, 'runId': payload.runId})}\n\n"
         last_sequence = 0
         while True:
             db_session.expire_all()
@@ -134,9 +163,12 @@ async def api_stream_ai_run_events(
             ).all()
             for event in events:
                 last_sequence = max(last_sequence, event.sequence)
-                yield f"data: {json.dumps(_stream_payload(event), ensure_ascii=False)}\n\n"
+                yield f"id: {event.event_id}\nevent: run\ndata: {json.dumps(_ag_ui_event(event), ensure_ascii=False)}\n\n"
             if fresh_run.status in TERMINAL_STATUSES:
+                yield f"event: run\ndata: {json.dumps(_ag_ui_terminal_event(fresh_run, payload), ensure_ascii=False)}\n\n"
                 break
+            if not events:
+                yield ": heartbeat\n\n"
             await asyncio.sleep(1)
 
     return StreamingResponse(iter_events(), media_type="text/event-stream")
@@ -158,6 +190,7 @@ async def api_cancel_ai_run(
     run.completed_at = utc_now()
     db_session.add(run)
     assert run.id is not None
+    db_session.exec(select(AIRun.id).where(AIRun.id == run.id).with_for_update()).one()
     next_sequence = (
         db_session.exec(
             select(col(AIEvent.sequence)).where(AIEvent.run_id == run.id).order_by(col(AIEvent.sequence).desc())
@@ -170,7 +203,7 @@ async def api_cancel_ai_run(
             event_id=f"event_cancel_{run.run_uuid}",
             event_type="aborted",
             sequence=next_sequence,
-            payload_json={"message": "Запуск ИИ отменен", "state": "cancelled"},
+            payload_json={"state": "cancelled", "error_code": "CANCELLED"},
         )
     )
     db_session.commit()

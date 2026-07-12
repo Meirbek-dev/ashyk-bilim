@@ -1,5 +1,5 @@
-import { apiFetch } from '@/lib/api-client'
-import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
+import { apiJson } from '@/lib/api-client'
+import { clientApiError } from '@/lib/api/assertSuccess'
 import type { components } from '@/lib/api/generated'
 import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload'
 
@@ -80,17 +80,11 @@ async function uploadFormData(
   formData: FormData,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
-  const result = await apiFetch(path, {
+  const json = await apiJson<ActivityRead>(path, {
     method: 'POST',
     body: formData,
     timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
   })
-
-  if (!result.ok) {
-    throw await parseApiError(result, path)
-  }
-
-  const json = (await result.json())
   if (onProgress) {
     try {
       onProgress({ percentage: 100 })
@@ -177,17 +171,11 @@ async function createVideoActivityChunked(
     formData.append('details', buildVideoDetails(data.details))
   }
 
-  const result = await apiFetch('activities/video', {
+  return apiJson<ActivityRead>('activities/video', {
     method: 'POST',
     body: formData,
     timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
   })
-
-  if (!result.ok) {
-    throw await parseApiError(result, 'activities/video')
-  }
-
-  return (await result.json())
 }
 
 async function createPdfActivityStandard(

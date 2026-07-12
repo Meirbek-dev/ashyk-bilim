@@ -17,7 +17,7 @@ import { queryOptions, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -151,14 +151,10 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     if (!assessmentUuid || !vm.canEdit) return
     setIsStarting(true)
     try {
-      const response = await apiFetch(`assessments/${assessmentUuid}/start`, {
+      await apiJson(`assessments/${assessmentUuid}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload.detail || t('errorStartingExam'))
-      }
       toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('examStarted'))
       await handleComplete()
     } catch (error) {

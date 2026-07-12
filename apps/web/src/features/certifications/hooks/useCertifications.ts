@@ -2,7 +2,7 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { UseQueryResult } from '@tanstack/react-query'
-import type { CustomResponseTyping } from '@/lib/api-client'
+import type { apiResult } from '@/lib/api-client'
 import {
   certificateDetailQueryOptions,
   userCertificatesQueryOptions,
@@ -33,12 +33,12 @@ export function useUserCertificates(): UseQueryResult<AppCertification[]> {
 
 export function useUserCertificateByCourse(
   courseUuid: string | null | undefined,
-): UseQueryResult<CustomResponseTyping<AppCertification[]>> {
+): UseQueryResult<Awaited<ReturnType<typeof apiResult<AppCertification[]>>>> {
   return useQuery(userCourseCertificateHookOptions(courseUuid))
 }
 
 export function useCertificateByUuid(
   certificateUuid: string | null | undefined,
-): UseQueryResult<CustomResponseTyping<AppCertification>> {
+): UseQueryResult<Awaited<ReturnType<typeof apiResult<AppCertification>>>> {
   return useQuery(certificateDetailHookOptions(certificateUuid))
 }

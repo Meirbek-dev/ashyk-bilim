@@ -10,6 +10,10 @@ export default defineConfig({
       mode: 'tags-split',
       client: 'react-query',
       httpClient: 'fetch',
+      schemas: {
+        type: 'zod',
+        path: 'src/lib/api/generated/zod',
+      },
       tagsSplitDeduplication: true,
       override: {
         fetch: {
@@ -23,10 +27,15 @@ export default defineConfig({
           useSuspenseQuery: true,
           signal: true,
         },
+        zod: {
+          generate: {
+            response: true,
+          },
+          strict: {
+            response: true,
+          },
+        },
       },
-    },
-    hooks: {
-      afterAllFilesWrite: ['node scripts/postprocess-orval-output.mjs', 'vp fmt --write'],
     },
   },
 })

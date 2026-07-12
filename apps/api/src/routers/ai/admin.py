@@ -1,12 +1,13 @@
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import case, func
 from sqlmodel import Session, col, select
 
 from config.config import get_settings
 from src.auth.users import get_public_user
-from src.db.ai_runtime import AIEvalResult, AIRun
+from src.db.ai_runtime import AIArtifactRecord, AIEvalResult, AIEvent, AIRun
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
@@ -66,6 +67,38 @@ class AIEvalDashboardRead(PydanticStrictBaseModel):
     recent_evals: list[AIEvalResultRead]
 
 
+class AIOperationRunRead(PydanticStrictBaseModel):
+    run_uuid: str
+    status: str
+    feature: str
+    model_name: str | None = None
+    error_code: str | None = None
+    duration_ms: int | None = None
+    time_to_first_text_ms: int | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cost_estimate: float | None = None
+    retry_count: int = 0
+    started_at: datetime
+    completed_at: datetime | None = None
+    stuck: bool = False
+    context: JsonObject
+
+
+class AIOperationEventRead(PydanticStrictBaseModel):
+    event_id: str
+    sequence: int
+    event_type: str
+    created_at: datetime
+    payload: JsonObject
+
+
+class AIOperationRunDetailRead(PydanticStrictBaseModel):
+    run: AIOperationRunRead
+    events: list[AIOperationEventRead]
+    artifact_uuids: list[str]
+
+
 def _feature_settings() -> list[AIFeatureSetting]:
     config = get_settings().integrations.ai
     keys = [
@@ -78,6 +111,48 @@ def _feature_settings() -> list[AIFeatureSetting]:
         "semantic_memory_enabled",
     ]
     return [AIFeatureSetting(key=key, enabled=bool(getattr(config, key))) for key in keys]
+
+
+def _safe_run_context(metadata: JsonObject) -> JsonObject:
+    allowed = {
+        "activity_uuid",
+        "citation_validation",
+        "context_source_count",
+        "course_uuid",
+        "kind",
+        "submission_uuid",
+        "thread_uuid",
+        "time_to_first_text_ms",
+        "retry_count",
+    }
+    return {key: value for key, value in metadata.items() if key in allowed}
+
+
+def _operation_run(run: AIRun, *, now: datetime) -> AIOperationRunRead:
+    metadata = dict(run.run_metadata or {})
+    started_at = run.started_at if run.started_at.tzinfo else run.started_at.replace(tzinfo=UTC)
+    age = now - started_at
+    return AIOperationRunRead(
+        run_uuid=run.run_uuid,
+        status=run.status,
+        feature=str(metadata.get("kind") or "unknown"),
+        model_name=run.model_name,
+        error_code=run.error_code,
+        duration_ms=run.duration_ms,
+        time_to_first_text_ms=(
+            int(metadata["time_to_first_text_ms"])
+            if isinstance(metadata.get("time_to_first_text_ms"), int | float)
+            else None
+        ),
+        input_tokens=run.input_tokens,
+        output_tokens=run.output_tokens,
+        cost_estimate=float(run.cost_estimate) if run.cost_estimate is not None else None,
+        retry_count=int(metadata.get("retry_count") or 0),
+        started_at=run.started_at,
+        completed_at=run.completed_at,
+        stuck=run.status in {"queued", "running"} and age > timedelta(minutes=10),
+        context=_safe_run_context(metadata),
+    )
 
 
 @router.get("/settings", response_model=AIAdminSettingsRead)
@@ -142,4 +217,60 @@ async def api_ai_eval_dashboard(
             average_score=float(eval_row[3]) if eval_row[3] is not None else None,
         ),
         recent_evals=[AIEvalResultRead.model_validate(item) for item in recent],
+    )
+
+
+@router.get("/runs", response_model=list[AIOperationRunRead])
+async def api_ai_operation_runs(
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+    days: Annotated[int, Query(ge=1, le=90)] = 7,
+    run_status: Annotated[str | None, Query(alias="status")] = None,
+    feature: Annotated[str | None, Query()] = None,
+    provider: Annotated[str | None, Query()] = None,
+    course_uuid: Annotated[str | None, Query()] = None,
+) -> list[AIOperationRunRead]:
+    require_ai_admin(current_user, db_session)
+    now = datetime.now(UTC)
+    statement = select(AIRun).where(AIRun.started_at >= now - timedelta(days=days))
+    if run_status:
+        statement = statement.where(AIRun.status == run_status)
+    runs = db_session.exec(statement.order_by(col(AIRun.started_at).desc()).limit(200)).all()
+    result = [_operation_run(run, now=now) for run in runs]
+    if feature:
+        result = [run for run in result if run.feature == feature]
+    if provider:
+        result = [run for run in result if provider.casefold() in (run.model_name or "").casefold()]
+    if course_uuid:
+        result = [run for run in result if run.context.get("course_uuid") == course_uuid]
+    return result
+
+
+@router.get("/runs/{run_uuid}", response_model=AIOperationRunDetailRead)
+async def api_ai_operation_run_detail(
+    run_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AIOperationRunDetailRead:
+    require_ai_admin(current_user, db_session)
+    run = db_session.exec(select(AIRun).where(AIRun.run_uuid == run_uuid)).first()
+    if run is None or run.id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI_RUN_NOT_FOUND")
+    events = db_session.exec(select(AIEvent).where(AIEvent.run_id == run.id).order_by(col(AIEvent.sequence))).all()
+    artifacts = db_session.exec(
+        select(AIArtifactRecord).where(AIArtifactRecord.run_id == run.id).order_by(col(AIArtifactRecord.created_at))
+    ).all()
+    return AIOperationRunDetailRead(
+        run=_operation_run(run, now=datetime.now(UTC)),
+        events=[
+            AIOperationEventRead(
+                event_id=event.event_id,
+                sequence=event.sequence,
+                event_type=event.event_type,
+                created_at=event.created_at,
+                payload=_safe_run_context(dict(event.payload_json or {})),
+            )
+            for event in events
+        ],
+        artifact_uuids=[artifact.artifact_uuid for artifact in artifacts],
     )

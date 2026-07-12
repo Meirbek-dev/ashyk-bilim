@@ -23,16 +23,16 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   CollectionCreate,
   CollectionDetailResponse,
   CollectionRead,
   CollectionReadWithPermissions,
   CollectionUpdate,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -64,12 +64,16 @@ export const apiCreateCollectionApiV1CollectionsPost = async (
   collectionCreate: CollectionCreate,
   options?: RequestInit,
 ): Promise<CollectionRead> => {
-  return orvalMutator<CollectionRead>(getApiCreateCollectionApiV1CollectionsPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(collectionCreate),
-  })
+  return orvalMutator<CollectionRead>(
+    getApiCreateCollectionApiV1CollectionsPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(collectionCreate),
+    },
+    CollectionRead,
+  )
 }
 
 export const getApiCreateCollectionApiV1CollectionsPostMutationOptions = <
@@ -155,6 +159,7 @@ export const apiGetPlatformCollectionsApiV1CollectionsPagePageLimitLimitGet = as
       ...options,
       method: 'GET',
     },
+    arrayParser(CollectionReadWithPermissions),
   )
 }
 
@@ -461,6 +466,7 @@ export const apiDeleteCollectionApiV1CollectionsCollectionUuidDelete = async (
       ...options,
       method: 'DELETE',
     },
+    CollectionDetailResponse,
   )
 }
 
@@ -549,6 +555,7 @@ export const apiGetCollectionApiV1CollectionsCollectionUuidGet = async (
       ...options,
       method: 'GET',
     },
+    CollectionReadWithPermissions,
   )
 }
 
@@ -804,12 +811,16 @@ export const apiUpdateCollectionApiV1CollectionsCollectionUuidPut = async (
   collectionUpdate: CollectionUpdate,
   options?: RequestInit,
 ): Promise<CollectionRead> => {
-  return orvalMutator<CollectionRead>(getApiUpdateCollectionApiV1CollectionsCollectionUuidPutUrl(collectionUuid), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(collectionUpdate),
-  })
+  return orvalMutator<CollectionRead>(
+    getApiUpdateCollectionApiV1CollectionsCollectionUuidPutUrl(collectionUuid),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(collectionUpdate),
+    },
+    CollectionRead,
+  )
 }
 
 export const getApiUpdateCollectionApiV1CollectionsCollectionUuidPutMutationOptions = <

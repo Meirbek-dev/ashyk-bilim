@@ -18,7 +18,6 @@ def user_has_course_access(user_id: int, course: Course, db_session: Session) ->
     Access is granted when any of the following is true:
     - The course is public.
     - The user is an active author/contributor of the course.
-    - The course has no linked user-groups (open enrollment).
     - The user belongs to at least one user-group linked to the course.
     """
     if course.public:
@@ -30,12 +29,6 @@ def user_has_course_access(user_id: int, course: Course, db_session: Session) ->
         ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
     )
     if db_session.exec(author_stmt).first() is not None:
-        return True
-
-    linked_groups = db_session.exec(
-        select(UserGroupResource.id).where(UserGroupResource.resource_uuid == course.course_uuid)
-    ).all()
-    if not linked_groups:
         return True
 
     member_stmt = (

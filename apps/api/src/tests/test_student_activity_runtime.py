@@ -12,10 +12,16 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.db.courses.activities import ActivityTypeEnum
 from src.db.grading.progress import ActivityProgressState
+from src.db.learner_course_state import (
+    LearnerCertificateState,
+    LearnerCourseActivityState,
+    LearnerCourseProgressState,
+)
 from src.db.student_activity_runtime import (
     StudentActivityNavItem,
     StudentActivityProgressRuntime,
 )
+from src.services.learner_course_state import _next_action, _product_state
 from src.services.student_activity_runtime import (
     _derive_primary_action,
     _normalize_state,
@@ -103,6 +109,42 @@ def test_primary_action_for_submitted_and_completed_activities_guides_user() -> 
 
     assert submitted_without_next.id == "back_to_course"
     assert passed_without_next.id == "back_to_course"
+
+
+def test_learner_course_state_uses_canonical_progress_states() -> None:
+    assert _product_state(ActivityProgressState.RETURNED) == "returned"
+    assert _product_state(ActivityProgressState.GRADED) == "graded_hidden"
+    assert _product_state(ActivityProgressState.PASSED) == "passed"
+    assert _product_state(None) == "not_started"
+
+
+def test_returned_revision_is_the_first_course_action() -> None:
+    action = _next_action(
+        enrolled=True,
+        course_uuid="course_state",
+        activities=[
+            LearnerCourseActivityState(
+                id=1,
+                uuid="activity_next",
+                title="Next lesson",
+                type="TYPE_DYNAMIC",
+                state="not_started",
+            ),
+            LearnerCourseActivityState(
+                id=2,
+                uuid="activity_returned",
+                title="Revise portfolio",
+                type="TYPE_FILE_SUBMISSION",
+                state="returned",
+            ),
+        ],
+        certificate=LearnerCertificateState(),
+        progress=LearnerCourseProgressState(total_required_count=2),
+    )
+
+    assert action.id == "revise"
+    assert action.activity_uuid == "activity_returned"
+    assert action.reason == "returned_for_revision"
 
 
 def test_final_invariant_migration_targets_deprecated_tables() -> None:

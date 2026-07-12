@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypeVar
 
@@ -10,6 +10,7 @@ from config.config import AIConfig, secret_value
 
 if TYPE_CHECKING:
     from pydantic_ai import Agent
+    from pydantic_ai.messages import ModelMessage
 
 OutputT = TypeVar("OutputT", bound=BaseModel)
 
@@ -35,6 +36,7 @@ class AIModelStreamChunk[OutputT: BaseModel]:
 
     output: OutputT
     final: bool
+    model_name: str | None = None
 
 
 class ModelProvider:
@@ -52,9 +54,7 @@ class ModelProvider:
     def enabled(self) -> bool:
         return bool(self.config.ai_enabled and secret_value(self.config.openai_api_key))
 
-    def _build_agent(
-        self, *, instructions: str, output_type: type[OutputT]
-    ) -> tuple[Agent[None, OutputT], str]:
+    def _build_agent(self, *, instructions: str, output_type: type[OutputT]) -> tuple[Agent[None, OutputT], str]:
         from openai import AsyncOpenAI
         from pydantic_ai import Agent
         from pydantic_ai.models.fallback import FallbackModel
@@ -99,16 +99,15 @@ class ModelProvider:
         instructions: str,
         prompt: str,
         output_type: type[OutputT],
+        message_history: Sequence[ModelMessage] | None = None,
     ) -> AIModelResult[OutputT]:
         if not self.enabled():
             msg = "Провайдер ИИ отключен или не задан PLATFORM_OPENAI_API_KEY"
             raise AIProviderUnavailable(msg)
 
-        agent, selected_name = self._build_agent(
-            instructions=instructions, output_type=output_type
-        )
-        result = await agent.run(prompt)
-        return AIModelResult(output=result.output, model_name=selected_name)
+        agent, selected_name = self._build_agent(instructions=instructions, output_type=output_type)
+        result = await agent.run(prompt, message_history=message_history)
+        return AIModelResult(output=result.output, model_name=result.response.model_name or selected_name)
 
     async def run_structured_stream(
         self,
@@ -116,6 +115,7 @@ class ModelProvider:
         instructions: str,
         prompt: str,
         output_type: type[OutputT],
+        message_history: Sequence[ModelMessage] | None = None,
     ) -> AsyncGenerator[AIModelStreamChunk[OutputT]]:
         """Stream partial, then final, validated output for ``output_type``.
 
@@ -126,18 +126,20 @@ class ModelProvider:
             msg = "Провайдер ИИ отключен или не задан PLATFORM_OPENAI_API_KEY"
             raise AIProviderUnavailable(msg)
 
-        agent, _selected_name = self._build_agent(
-            instructions=instructions, output_type=output_type
-        )
+        agent, selected_name = self._build_agent(instructions=instructions, output_type=output_type)
         # ASYNC119 (preview): yielding inside `agent.run_stream`'s context manager is the
         # documented pydantic-ai streaming pattern. Callers consume this via
         # `contextlib.aclosing` (see `stream_course_question`) so `.aclose()` still runs
         # `__aexit__` correctly if the caller stops iterating early.
-        async with agent.run_stream(prompt) as stream:
+        async with agent.run_stream(prompt, message_history=message_history) as stream:
             async for partial in stream.stream_output(debounce_by=0.12):
                 yield AIModelStreamChunk(output=partial, final=False)  # noqa: ASYNC119
             final_output = await stream.get_output()
-            yield AIModelStreamChunk(output=final_output, final=True)  # noqa: ASYNC119
+            yield AIModelStreamChunk(  # noqa: ASYNC119
+                output=final_output,
+                final=True,
+                model_name=stream.response.model_name or selected_name,
+            )
 
     def selected_model_name(self) -> str:
         """The model name that will be used for a run, without building an agent."""

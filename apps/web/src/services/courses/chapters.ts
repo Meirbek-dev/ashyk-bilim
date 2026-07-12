@@ -1,6 +1,6 @@
 'use server'
 
-import { apiFetch, errorHandling } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import type { CourseOrderPayload } from '@/schemas/chapterSchemas'
 import { courseTag, tags } from '@/lib/cacheTags'
 
@@ -9,12 +9,11 @@ import { courseTag, tags } from '@/lib/cacheTags'
 */
 
 export async function updateChapter(chapterUuid: string, data: AppPayload): Promise<AppChapter> {
-  const result = await apiFetch(`chapters/${chapterUuid}`, {
+  const response = await apiJson<AppChapter>(`chapters/${chapterUuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const response = await errorHandling<AppChapter>(result)
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -23,12 +22,11 @@ export async function updateChapter(chapterUuid: string, data: AppPayload): Prom
 }
 
 export async function updateCourseOrderStructure(course_uuid: string, data: CourseOrderPayload) {
-  const result = await apiFetch(`chapters/course/${course_uuid}/order`, {
+  const response = await apiJson(`chapters/course/${course_uuid}/order`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const response = await errorHandling(result)
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -38,12 +36,11 @@ export async function updateCourseOrderStructure(course_uuid: string, data: Cour
 }
 
 export async function createChapter(data: AppPayload): Promise<AppChapter> {
-  const result = await apiFetch('chapters', {
+  const response = await apiJson<AppChapter>('chapters', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const response = await errorHandling<AppChapter>(result)
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -52,8 +49,7 @@ export async function createChapter(data: AppPayload): Promise<AppChapter> {
 }
 
 export async function deleteChapter(chapterUuid: string) {
-  const result = await apiFetch(`chapters/${chapterUuid}`, { method: 'DELETE' })
-  const response = await errorHandling(result)
+  const response = await apiJson(`chapters/${chapterUuid}`, { method: 'DELETE' })
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')

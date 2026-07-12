@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
+import path from 'node:path'
 
-import { findBunStoreFile } from './package-tooling.mjs'
+const require = createRequire(import.meta.url)
+const vitestPackagePath = require.resolve('vitest/package.json')
+const vitestPackage = require(vitestPackagePath)
+const vitestBin = path.resolve(path.dirname(vitestPackagePath), vitestPackage.bin.vitest)
 
-const vitestEntry = findBunStoreFile(
-  '@voidzero-dev+vite-plus-test@',
-  'node_modules/@voidzero-dev/vite-plus-test/vitest.mjs',
-)
-
-const result = spawnSync(process.execPath, [vitestEntry, ...process.argv.slice(2)], {
+const result = spawnSync('bun', [vitestBin, ...process.argv.slice(2)], {
   cwd: process.cwd(),
   env: process.env,
   stdio: 'inherit',
+  shell: process.platform === 'win32',
 })
 
 if (result.error) {

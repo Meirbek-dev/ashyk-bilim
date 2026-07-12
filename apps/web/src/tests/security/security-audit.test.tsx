@@ -14,9 +14,9 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-// Mock apiFetch
+// Mock apiJson
 vi.mock('@/lib/api-client', () => ({
-  apiFetch: vi.fn(),
+  apiJson: vi.fn(),
 }))
 
 const mockUser = {

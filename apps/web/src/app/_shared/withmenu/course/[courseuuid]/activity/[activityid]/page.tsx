@@ -89,7 +89,9 @@ const ActivityPage = async (params: { params: Promise<{ courseuuid: string; acti
 
   const course: CourseStructure = {
     ...course_meta,
-    chapters: (course_meta?.chapters ?? []).map(chapter => (Object.assign(chapter, { activities: chapter.activities ?? [] }))),
+    chapters: (course_meta?.chapters ?? []).map(chapter =>
+      Object.assign(chapter, { activities: chapter.activities ?? [] }),
+    ),
   }
 
   const queryClient = new QueryClient()

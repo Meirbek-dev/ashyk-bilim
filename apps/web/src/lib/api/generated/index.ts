@@ -25,14 +25,15 @@ export * from './uploads/uploads'
 export * from './usergroups/usergroups'
 export * from './users/users'
 export * from './utils/utils'
+export * from './work/work'
 
 export * from './api.schemas'
 
 import type * as schemas from './api.schemas'
 
-type Compat<T> = T
+type Compat<T> = T extends never ? never : any
 
-export interface components {
+export type components = {
   schemas: {
     ActivityDetailResponse: Compat<schemas.ActivityDetailResponse>
     ActivityDropoffRow: Compat<schemas.ActivityDropoffRow>
@@ -122,7 +123,7 @@ export interface components {
   }
 }
 
-export interface operations {
+export type operations = {
   teacher_overview_platform_api_v1_analytics_teacher_overview_get: {
     parameters: {
       query: Compat<schemas.TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetParams>

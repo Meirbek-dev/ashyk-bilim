@@ -10,7 +10,7 @@
  */
 
 import { getAPIUrl, getServerAPIUrl } from '@services/config/config'
-import { ofetch } from 'ofetch'
+import { fetch as transportFetch, ofetch } from 'ofetch'
 import type { FetchOptions, FetchResponse, MappedResponseType, ResponseType } from 'ofetch'
 import { buildLoginRedirect, isAuthRoute } from '@/lib/auth/redirect'
 import { AUTH_COOKIE_NAMES } from '@/lib/auth/types'
@@ -206,7 +206,7 @@ function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cleanup:
 
 function getFetchErrorResponse(error: unknown): FetchResponse<unknown> | null {
   const response = error && typeof error === 'object' ? (error as { response?: unknown }).response : null
-  return response instanceof Response ? (response as FetchResponse<unknown>) : null
+  return response instanceof Response ? response : null
 }
 
 function getHeaderValue(headers: HeadersInit | undefined, name: string): string | null {
@@ -250,7 +250,7 @@ export function getBrowserReturnTo(): string {
 }
 
 export async function refreshBrowserSession(returnTo: string): Promise<boolean> {
-  authRefreshPromise ??= fetch(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`, {
+  authRefreshPromise ??= transportFetch(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`, {
     method: 'GET',
     headers: {
       accept: 'application/json',
@@ -396,11 +396,7 @@ async function rawTransportFetch(path: string, init: ApiFetchInit = {}): Promise
   }
 }
 
-/**
- * Raw escape hatch. Prefer `apiJson`, `apiResult`, or `apiBody`; using this
- * means the caller owns status/error handling.
- */
-export async function apiFetchRaw(path: string, init: ApiFetchInit = {}): Promise<Response> {
+async function apiFetchRaw(path: string, init: ApiFetchInit = {}): Promise<Response> {
   const isServer = typeof globalThis.window === 'undefined'
 
   let response = await rawTransportFetch(path, init)
@@ -413,11 +409,6 @@ export async function apiFetchRaw(path: string, init: ApiFetchInit = {}): Promis
   }
 
   return response
-}
-
-/** @deprecated Prefer `apiJson`, `apiResult`, or the explicit `apiFetchRaw` escape hatch. */
-export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
-  return apiFetchRaw(path, init)
 }
 
 export async function apiBody<T = unknown, R extends ResponseType = 'json'>(
@@ -451,10 +442,6 @@ export async function apiBody<T = unknown, R extends ResponseType = 'json'>(
   return (await response.json()) as MappedResponseType<R, T>
 }
 
-export const apiFetcher = async <T = unknown>(url: string): Promise<T> => {
-  return apiJson<T>(url, { method: 'GET' })
-}
-
 export async function apiJson<T = unknown>(
   path: string,
   init: ApiFetchInit = {},
@@ -468,7 +455,7 @@ export async function apiResult<T = unknown>(
   path: string,
   init: ApiFetchInit = {},
   parse?: (data: unknown) => T,
-): Promise<{ data: T; headers: Record<string, string>; requestId: string | null }> {
+): Promise<{ data: T; headers: Record<string, string>; requestId: string | null; status: number; statusText: string }> {
   const response = await apiFetchRaw(path, init)
   if (!response.ok) {
     throw await parseApiError(response, path)
@@ -483,65 +470,7 @@ export async function apiResult<T = unknown>(
     data,
     headers,
     requestId: response.headers.get('x-request-id'),
-  }
-}
-
-export async function apiStreamFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
-  return apiFetchRaw(path, {
-    ...init,
-    cache: init.cache ?? 'no-store',
-    timeoutMs: init.timeoutMs ?? false,
-  })
-}
-
-export const fetchResponseMetadata = async <T = unknown>(url: string): Promise<CustomResponseTyping<T>> => {
-  const response = await apiFetchRaw(url, {
-    method: 'GET',
-  })
-  return getResponseMetadata<T>(response)
-}
-
-export const apiFetcherWithHeaders = async (
-  url: string,
-): Promise<{ data: unknown; headers: Record<string, string> }> => {
-  const { data, headers } = await apiResult(url, { method: 'GET' })
-  return { data, headers }
-}
-
-export async function errorHandling<T = unknown>(res: Response): Promise<T> {
-  if (!res.ok) {
-    throw await parseApiError(res)
-  }
-  return res.json() as Promise<T>
-}
-
-export interface CustomResponseTyping<T = unknown> {
-  success: boolean
-  data: T
-  status: number
-  HTTPmessage: string
-}
-
-export const getResponseMetadata = async <T = unknown>(response: Response): Promise<CustomResponseTyping<T>> => {
-  if (!response.ok) {
-    throw await parseApiError(response)
-  }
-
-  let data: unknown = null
-  try {
-    data = await response.json()
-  } catch (error) {
-    console.warn('Failed to parse response JSON in getResponseMetadata', {
-      status: response.status,
-      statusText: response.statusText,
-      error,
-    })
-  }
-
-  return {
-    success: true,
-    data: data as T,
     status: response.status,
-    HTTPmessage: response.statusText,
+    statusText: response.statusText,
   }
 }

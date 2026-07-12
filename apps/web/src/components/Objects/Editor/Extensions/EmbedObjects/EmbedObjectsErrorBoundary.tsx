@@ -73,15 +73,10 @@ export class EmbedObjectsErrorBoundary extends Component<
   public override render() {
     if (this.state.hasError) {
       return (
-        <EmbedObjectsErrorFallback
-          message={this.props.message}
-          error={this.state.error}
-          title={this.props.title}
-        />
+        <EmbedObjectsErrorFallback message={this.props.message} error={this.state.error} title={this.props.title} />
       )
     }
 
     return this.props.children
   }
 }
-

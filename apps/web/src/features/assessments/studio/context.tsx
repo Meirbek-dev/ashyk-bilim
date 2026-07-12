@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { useQuery, useQueryClient, queryOptions } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import type { KindAuthorProps } from '@/features/assessments/registry'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
@@ -50,7 +50,7 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
   } = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-      queryFn: () => apiFetcher<AssessmentStudioDetail>(`assessments/activity/${normalizedActivityUuid}`),
+      queryFn: () => apiJson<AssessmentStudioDetail>(`assessments/activity/${normalizedActivityUuid}`),
       enabled: Boolean(normalizedActivityUuid),
     }),
   )
@@ -72,7 +72,7 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
   const readinessQuery = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
-      queryFn: () => apiFetcher<StudioReadinessPayload>(`assessments/${assessment?.assessment_uuid}/readiness`),
+      queryFn: () => apiJson<StudioReadinessPayload>(`assessments/${assessment?.assessment_uuid}/readiness`),
       enabled: Boolean(assessment?.assessment_uuid),
       retry: false,
     }),

@@ -3,7 +3,7 @@ import { ChartColumn, PanelLeft, Send, Settings2, UsersRound } from 'lucide-reac
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { useAssessmentStudioContext } from '../context'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import {
@@ -24,7 +24,6 @@ import type { AssessmentWorkspaceNavItem } from '../workspace/AssessmentWorkspac
 import {
   buildAssessmentPatch,
   getAssessmentEditorIssues,
-  responseError,
   serializeAssessmentState,
   serializeItemState,
   toAssessmentEditorState,
@@ -129,12 +128,11 @@ export function NativeItemAuthor({
     async (nextState: AssessmentEditorState) => {
       setAssessmentSaveState('saving')
       try {
-        const response = await apiFetch(`assessments/${assessment.assessment_uuid}`, {
+        await apiJson(`assessments/${assessment.assessment_uuid}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(buildAssessmentPatch(mode, assessment, nextState)),
         })
-        if (!response.ok) throw new Error(await responseError(response, 'Failed to save assessment settings'))
         lastSavedAssessmentRef.current = serializeAssessmentState(nextState)
         setAssessmentSaveState('saved')
         await refresh()
@@ -150,7 +148,7 @@ export function NativeItemAuthor({
     async (nextItem: EditableItem) => {
       setItemSaveState('saving')
       try {
-        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${nextItem.item_uuid}`, {
+        await apiJson(`assessments/${assessment.assessment_uuid}/items/${nextItem.item_uuid}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -161,11 +159,6 @@ export function NativeItemAuthor({
             metadata: nextItem.metadata,
           }),
         })
-        if (!response.ok) {
-          throw new Error(
-            await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
-          )
-        }
         lastSavedItemRef.current = serializeItemState(nextItem)
         setItemSaveState('saved')
         await refresh()
@@ -227,7 +220,7 @@ export function NativeItemAuthor({
       const previousOrder = localOrderedUuids
       setLocalOrderedUuids(orderedUuids)
       try {
-        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items:reorder`, {
+        await apiJson(`assessments/${assessment.assessment_uuid}/items:reorder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -237,7 +230,6 @@ export function NativeItemAuthor({
             })),
           }),
         })
-        if (!response.ok) throw new Error(await responseError(response, t('reorderFailed')))
         await refresh()
       } catch (error) {
         setLocalOrderedUuids(previousOrder)
@@ -250,16 +242,11 @@ export function NativeItemAuthor({
   const updateItemMetadata = useCallback(
     async (itemUuid: string, metadata: EditableItem['metadata']) => {
       try {
-        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${itemUuid}`, {
+        await apiJson(`assessments/${assessment.assessment_uuid}/items/${itemUuid}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ metadata }),
         })
-        if (!response.ok) {
-          throw new Error(
-            await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
-          )
-        }
         await refresh()
       } catch (error) {
         toast.error(
@@ -274,7 +261,7 @@ export function NativeItemAuthor({
   const setLifecycle = useCallback(
     async (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => {
       try {
-        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/lifecycle`, {
+        await apiJson(`assessments/${assessment.assessment_uuid}/lifecycle`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -283,7 +270,6 @@ export function NativeItemAuthor({
             audit_note: auditNote?.trim() || null,
           }),
         })
-        if (!response.ok) throw new Error(await responseError(response, 'Failed to update lifecycle'))
         await refresh()
         toast.success(t('lifecycleChanged', { state: lifecycle }))
       } catch (error) {

@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   ApiGetCourseMetaApiV1CoursesCourseUuidMetaGetParams,
   ApiGetPlatformEditableCoursesApiV1CoursesEditablePagePageLimitLimitGetParams,
@@ -37,20 +37,24 @@ import type {
   CourseContributorMutationResponse,
   CourseContributorResponse,
   CourseDetailResponse,
+  CourseLifecycleResult,
+  CourseLifecycleUpdate,
   CourseMetadataUpdate,
   CourseRead,
   CourseReadWithPermissions,
+  CourseReadinessResponse,
   CourseUpdateCreate,
   CourseUpdateDeleteResponse,
   CourseUpdateRead,
   CourseUpdateUpdate,
   CourseUserRightsResponse,
   FullCourseRead,
+  LearnerCourseState,
   StudentActivityActionRequest,
   StudentActivityRuntime,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -130,11 +134,15 @@ export const apiCreateCourseApiV1CoursesPost = async (
     formData.append(`thumbnail_type`, bodyApiCreateCourseApiV1CoursesPost.thumbnail_type)
   }
 
-  return orvalMutator<CourseRead>(getApiCreateCourseApiV1CoursesPostUrl(), {
-    ...options,
-    method: 'POST',
-    body: formData,
-  })
+  return orvalMutator<CourseRead>(
+    getApiCreateCourseApiV1CoursesPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      body: formData,
+    },
+    CourseRead,
+  )
 }
 
 export const getApiCreateCourseApiV1CoursesPostMutationOptions = <
@@ -210,7 +218,7 @@ export const getApiGetPlatformEditableCoursesApiV1CoursesEditablePagePageLimitLi
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -236,6 +244,7 @@ export const apiGetPlatformEditableCoursesApiV1CoursesEditablePagePageLimitLimit
       ...options,
       method: 'GET',
     },
+    arrayParser(CourseReadWithPermissions),
   )
 }
 
@@ -564,6 +573,7 @@ export const apiGetPlatformCoursesApiV1CoursesPagePageLimitLimitGet = async (
       ...options,
       method: 'GET',
     },
+    arrayParser(CourseReadWithPermissions),
   )
 }
 
@@ -829,7 +839,7 @@ export const getApiSearchPlatformCoursesApiV1CoursesSearchGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -845,10 +855,14 @@ export const apiSearchPlatformCoursesApiV1CoursesSearchGet = async (
   params: ApiSearchPlatformCoursesApiV1CoursesSearchGetParams,
   options?: RequestInit,
 ): Promise<CourseRead[]> => {
-  return orvalMutator<CourseRead[]>(getApiSearchPlatformCoursesApiV1CoursesSearchGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<CourseRead[]>(
+    getApiSearchPlatformCoursesApiV1CoursesSearchGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(CourseRead),
+  )
 }
 
 export const getApiSearchPlatformCoursesApiV1CoursesSearchGetQueryKey = (
@@ -1081,10 +1095,14 @@ export const apiDeleteCourseApiV1CoursesCourseUuidDelete = async (
   courseUuid: string,
   options?: RequestInit,
 ): Promise<CourseDetailResponse> => {
-  return orvalMutator<CourseDetailResponse>(getApiDeleteCourseApiV1CoursesCourseUuidDeleteUrl(courseUuid), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<CourseDetailResponse>(
+    getApiDeleteCourseApiV1CoursesCourseUuidDeleteUrl(courseUuid),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    CourseDetailResponse,
+  )
 }
 
 export const getApiDeleteCourseApiV1CoursesCourseUuidDeleteMutationOptions = <
@@ -1166,10 +1184,14 @@ export const apiGetCourseApiV1CoursesCourseUuidGet = async (
   courseUuid: string,
   options?: RequestInit,
 ): Promise<CourseRead> => {
-  return orvalMutator<CourseRead>(getApiGetCourseApiV1CoursesCourseUuidGetUrl(courseUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<CourseRead>(
+    getApiGetCourseApiV1CoursesCourseUuidGetUrl(courseUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    CourseRead,
+  )
 }
 
 export const getApiGetCourseApiV1CoursesCourseUuidGetQueryKey = (courseUuid: string) => {
@@ -1389,12 +1411,16 @@ export const apiUpdateCourseAccessApiV1CoursesCourseUuidAccessPut = async (
   courseAccessUpdate: CourseAccessUpdate,
   options?: RequestInit,
 ): Promise<CourseRead> => {
-  return orvalMutator<CourseRead>(getApiUpdateCourseAccessApiV1CoursesCourseUuidAccessPutUrl(courseUuid), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(courseAccessUpdate),
-  })
+  return orvalMutator<CourseRead>(
+    getApiUpdateCourseAccessApiV1CoursesCourseUuidAccessPutUrl(courseUuid),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(courseAccessUpdate),
+    },
+    CourseRead,
+  )
 }
 
 export const getApiUpdateCourseAccessApiV1CoursesCourseUuidAccessPutMutationOptions = <
@@ -1488,6 +1514,7 @@ export const apiRunStudentActivityActionApiV1CoursesCourseUuidActivitiesActivity
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(studentActivityActionRequest),
     },
+    StudentActivityRuntime,
   )
 }
 
@@ -1590,6 +1617,7 @@ export const apiGetStudentActivityRuntimeApiV1CoursesCourseUuidActivitiesActivit
       ...options,
       method: 'GET',
     },
+    StudentActivityRuntime,
   )
 }
 
@@ -1941,6 +1969,7 @@ export const apiApplyCourseContributorApiV1CoursesCourseUuidApplyContributorPost
       ...options,
       method: 'POST',
     },
+    CourseContributorApplicationResponse,
   )
 }
 
@@ -2038,6 +2067,7 @@ export const apiAddBulkCourseContributorsApiV1CoursesCourseUuidBulkAddContributo
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(apiAddBulkCourseContributorsApiV1CoursesCourseUuidBulkAddContributorsPostBody),
     },
+    CourseBulkContributorResponse,
   )
 }
 
@@ -2135,6 +2165,7 @@ export const apiRemoveBulkCourseContributorsApiV1CoursesCourseUuidBulkRemoveCont
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(apiRemoveBulkCourseContributorsApiV1CoursesCourseUuidBulkRemoveContributorsDeleteBody),
     },
+    CourseBulkContributorResponse,
   )
 }
 
@@ -2234,6 +2265,7 @@ export const apiGetCourseContributorsApiV1CoursesCourseUuidContributorsGet = asy
       ...options,
       method: 'GET',
     },
+    arrayParser(CourseContributorResponse),
   )
 }
 
@@ -2513,7 +2545,7 @@ export const getApiUpdateCourseContributorApiV1CoursesCourseUuidContributorsCont
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2546,6 +2578,7 @@ export const apiUpdateCourseContributorApiV1CoursesCourseUuidContributorsContrib
       ...options,
       method: 'PUT',
     },
+    CourseContributorMutationResponse,
   )
 }
 
@@ -2646,6 +2679,388 @@ export const useApiUpdateCourseContributorApiV1CoursesCourseUuidContributorsCont
     queryClient,
   )
 }
+export const getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetUrl = (courseUuid: string) => {
+  return `/api/v1/courses/${courseUuid}/learner-state`
+}
+
+/**
+ * @summary Api Get Learner Course State
+ */
+export const apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet = async (
+  courseUuid: string,
+  options?: RequestInit,
+): Promise<LearnerCourseState> => {
+  return orvalMutator<LearnerCourseState>(
+    getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetUrl(courseUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    LearnerCourseState,
+  )
+}
+
+export const getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetQueryKey = (courseUuid: string) => {
+  return [`/api/v1/courses/${courseUuid}/learner-state`] as const
+}
+
+export const getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetQueryKey(courseUuid)
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>
+  > = ({ signal }) =>
+    apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet(courseUuid, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseUuid !== null && courseUuid !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>
+>
+export type ApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetQueryError = ErrorType<ApiErrorEnvelope>
+
+export function useApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet<
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+          TError,
+          Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet<
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+          TError,
+          Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet<
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Get Learner Course State
+ */
+
+export function useApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet<
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetQueryOptions(courseUuid, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetQueryKey(courseUuid)
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>
+  > = ({ signal }) =>
+    apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet(courseUuid, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>
+>
+export type ApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetSuspenseQueryError =
+  ErrorType<ApiErrorEnvelope>
+
+export function useApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetSuspense<
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetSuspense<
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetSuspense<
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Get Learner Course State
+ */
+
+export function useApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetSuspense<
+  TData = Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getApiGetLearnerCourseStateApiV1CoursesCourseUuidLearnerStateGetSuspenseQueryOptions(
+    courseUuid,
+    options,
+  )
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getApiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePostUrl = (courseUuid: string) => {
+  return `/api/v1/courses/${courseUuid}/lifecycle`
+}
+
+/**
+ * @summary Api Update Course Lifecycle
+ */
+export const apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost = async (
+  courseUuid: string,
+  courseLifecycleUpdate: CourseLifecycleUpdate,
+  options?: RequestInit,
+): Promise<CourseLifecycleResult> => {
+  return orvalMutator<CourseLifecycleResult>(
+    getApiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePostUrl(courseUuid),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(courseLifecycleUpdate),
+    },
+    CourseLifecycleResult,
+  )
+}
+
+export const getApiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePostMutationOptions = <
+  TError = ErrorType<ApiErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost>>,
+    TError,
+    { courseUuid: string; data: BodyType<CourseLifecycleUpdate> },
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost>>,
+  TError,
+  { courseUuid: string; data: BodyType<CourseLifecycleUpdate> },
+  TContext
+> => {
+  const mutationKey = ['apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost']
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost>>,
+    { courseUuid: string; data: BodyType<CourseLifecycleUpdate> }
+  > = props => {
+    const { courseUuid, data } = props ?? {}
+
+    return apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost(courseUuid, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ApiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost>>
+>
+export type ApiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePostMutationBody = BodyType<CourseLifecycleUpdate>
+export type ApiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePostMutationError = ErrorType<ApiErrorEnvelope>
+
+/**
+ * @summary Api Update Course Lifecycle
+ */
+export const useApiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost = <
+  TError = ErrorType<ApiErrorEnvelope>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost>>,
+      TError,
+      { courseUuid: string; data: BodyType<CourseLifecycleUpdate> },
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof apiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePost>>,
+  TError,
+  { courseUuid: string; data: BodyType<CourseLifecycleUpdate> },
+  TContext
+> => {
+  return useMutation(
+    getApiUpdateCourseLifecycleApiV1CoursesCourseUuidLifecyclePostMutationOptions(options),
+    queryClient,
+  )
+}
 export const getApiGetCourseMetaApiV1CoursesCourseUuidMetaGetUrl = (
   courseUuid: string,
   params?: ApiGetCourseMetaApiV1CoursesCourseUuidMetaGetParams,
@@ -2654,7 +3069,7 @@ export const getApiGetCourseMetaApiV1CoursesCourseUuidMetaGetUrl = (
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -2678,10 +3093,14 @@ export const apiGetCourseMetaApiV1CoursesCourseUuidMetaGet = async (
   params?: ApiGetCourseMetaApiV1CoursesCourseUuidMetaGetParams,
   options?: RequestInit,
 ): Promise<FullCourseRead> => {
-  return orvalMutator<FullCourseRead>(getApiGetCourseMetaApiV1CoursesCourseUuidMetaGetUrl(courseUuid, params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<FullCourseRead>(
+    getApiGetCourseMetaApiV1CoursesCourseUuidMetaGetUrl(courseUuid, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    FullCourseRead,
+  )
 }
 
 export const getApiGetCourseMetaApiV1CoursesCourseUuidMetaGetQueryKey = (
@@ -2928,12 +3347,16 @@ export const apiUpdateCourseMetadataApiV1CoursesCourseUuidMetadataPut = async (
   courseMetadataUpdate: CourseMetadataUpdate,
   options?: RequestInit,
 ): Promise<CourseRead> => {
-  return orvalMutator<CourseRead>(getApiUpdateCourseMetadataApiV1CoursesCourseUuidMetadataPutUrl(courseUuid), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(courseMetadataUpdate),
-  })
+  return orvalMutator<CourseRead>(
+    getApiUpdateCourseMetadataApiV1CoursesCourseUuidMetadataPutUrl(courseUuid),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(courseMetadataUpdate),
+    },
+    CourseRead,
+  )
 }
 
 export const getApiUpdateCourseMetadataApiV1CoursesCourseUuidMetadataPutMutationOptions = <
@@ -3003,6 +3426,291 @@ export const useApiUpdateCourseMetadataApiV1CoursesCourseUuidMetadataPut = <
 > => {
   return useMutation(getApiUpdateCourseMetadataApiV1CoursesCourseUuidMetadataPutMutationOptions(options), queryClient)
 }
+export const getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetUrl = (courseUuid: string) => {
+  return `/api/v1/courses/${courseUuid}/readiness`
+}
+
+/**
+ * @summary Api Get Course Readiness
+ */
+export const apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet = async (
+  courseUuid: string,
+  options?: RequestInit,
+): Promise<CourseReadinessResponse> => {
+  return orvalMutator<CourseReadinessResponse>(
+    getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetUrl(courseUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    CourseReadinessResponse,
+  )
+}
+
+export const getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetQueryKey = (courseUuid: string) => {
+  return [`/api/v1/courses/${courseUuid}/readiness`] as const
+}
+
+export const getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetQueryKey(courseUuid)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>> = ({
+    signal,
+  }) => apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet(courseUuid, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseUuid !== null && courseUuid !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>
+>
+export type ApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetQueryError = ErrorType<ApiErrorEnvelope>
+
+export function useApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet<
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+          TError,
+          Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet<
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+          TError,
+          Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet<
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Get Course Readiness
+ */
+
+export function useApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet<
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetQueryOptions(courseUuid, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetQueryKey(courseUuid)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>> = ({
+    signal,
+  }) => apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet(courseUuid, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>
+>
+export type ApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetSuspenseQueryError = ErrorType<ApiErrorEnvelope>
+
+export function useApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetSuspense<
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetSuspense<
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetSuspense<
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Get Course Readiness
+ */
+
+export function useApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetSuspense<
+  TData = Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  courseUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiGetCourseReadinessApiV1CoursesCourseUuidReadinessGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getApiGetCourseReadinessApiV1CoursesCourseUuidReadinessGetSuspenseQueryOptions(
+    courseUuid,
+    options,
+  )
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getApiGetCourseUserRightsApiV1CoursesCourseUuidRightsGetUrl = (courseUuid: string) => {
   return `/api/v1/courses/${courseUuid}/rights`
 }
@@ -3095,6 +3803,7 @@ export const apiGetCourseUserRightsApiV1CoursesCourseUuidRightsGet = async (
       ...options,
       method: 'GET',
     },
+    CourseUserRightsResponse,
   )
 }
 
@@ -3372,11 +4081,15 @@ export const apiCreateCourseThumbnailApiV1CoursesCourseUuidThumbnailPut = async 
     formData.append(`thumbnail_type`, bodyApiCreateCourseThumbnailApiV1CoursesCourseUuidThumbnailPut.thumbnail_type)
   }
 
-  return orvalMutator<CourseRead>(getApiCreateCourseThumbnailApiV1CoursesCourseUuidThumbnailPutUrl(courseUuid), {
-    ...options,
-    method: 'PUT',
-    body: formData,
-  })
+  return orvalMutator<CourseRead>(
+    getApiCreateCourseThumbnailApiV1CoursesCourseUuidThumbnailPutUrl(courseUuid),
+    {
+      ...options,
+      method: 'PUT',
+      body: formData,
+    },
+    CourseRead,
+  )
 }
 
 export const getApiCreateCourseThumbnailApiV1CoursesCourseUuidThumbnailPutMutationOptions = <
@@ -3470,6 +4183,7 @@ export const apiDeleteCourseUpdateApiV1CoursesCourseUuidUpdateCourseupdateUuidDe
       ...options,
       method: 'DELETE',
     },
+    CourseUpdateDeleteResponse,
   )
 }
 
@@ -3573,6 +4287,7 @@ export const apiUpdateCourseUpdateApiV1CoursesCourseUuidUpdateCourseupdateUuidPu
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(courseUpdateUpdate),
     },
+    CourseUpdateRead,
   )
 }
 
@@ -3665,10 +4380,14 @@ export const apiGetCourseUpdatesApiV1CoursesCourseUuidUpdatesGet = async (
   courseUuid: string,
   options?: RequestInit,
 ): Promise<CourseUpdateRead[]> => {
-  return orvalMutator<CourseUpdateRead[]>(getApiGetCourseUpdatesApiV1CoursesCourseUuidUpdatesGetUrl(courseUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<CourseUpdateRead[]>(
+    getApiGetCourseUpdatesApiV1CoursesCourseUuidUpdatesGetUrl(courseUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(CourseUpdateRead),
+  )
 }
 
 export const getApiGetCourseUpdatesApiV1CoursesCourseUuidUpdatesGetQueryKey = (courseUuid: string) => {
@@ -3923,12 +4642,16 @@ export const apiCreateCourseUpdateApiV1CoursesCourseUuidUpdatesPost = async (
   courseUpdateCreate: CourseUpdateCreate,
   options?: RequestInit,
 ): Promise<CourseUpdateRead> => {
-  return orvalMutator<CourseUpdateRead>(getApiCreateCourseUpdateApiV1CoursesCourseUuidUpdatesPostUrl(courseUuid), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(courseUpdateCreate),
-  })
+  return orvalMutator<CourseUpdateRead>(
+    getApiCreateCourseUpdateApiV1CoursesCourseUuidUpdatesPostUrl(courseUuid),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(courseUpdateCreate),
+    },
+    CourseUpdateRead,
+  )
 }
 
 export const getApiCreateCourseUpdateApiV1CoursesCourseUuidUpdatesPostMutationOptions = <

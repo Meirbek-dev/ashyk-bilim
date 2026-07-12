@@ -23,35 +23,40 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   AIAdminSettingsRead,
   AIArtifactRead,
   AICourseAnalysisRead,
   AIEvalDashboardRead,
   AILectureReviewRead,
+  AIOperationRunDetailRead,
+  AIOperationRunRead,
   AIQAMessageRead,
   AIQAThreadSummaryRead,
   AIRemediationSessionRead,
   AIRunEventRead,
   AIRunStatusRead,
+  AIRunStreamRequest,
   AIScopeCapabilityRead,
   AISubmissionAnalysisRead,
   AIUsageSummary,
+  ApiAiOperationRunsApiV1AiAdminRunsGetParams,
   ApiAiScopeCapabilitiesApiV1AiCapabilitiesScopeCourseUuidGetParams,
   ApiErrorEnvelope,
+  ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   CourseAnalysisRequest,
-  CourseQARequest,
-  CourseQAResponse,
+  CourseQAChatRequest,
   DismissSuggestionRequest,
+  FindingReviewRequest,
   JsonObject,
   LectureReviewRequest,
   RemediationCompletionRequest,
   RemediationRequest,
   StudyCompanionRequest,
   SubmissionAnalysisRequest,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser, nullableParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -79,10 +84,14 @@ export const getApiAiEvalDashboardApiV1AiAdminEvalsGetUrl = () => {
  * @summary Api Ai Eval Dashboard
  */
 export const apiAiEvalDashboardApiV1AiAdminEvalsGet = async (options?: RequestInit): Promise<AIEvalDashboardRead> => {
-  return orvalMutator<AIEvalDashboardRead>(getApiAiEvalDashboardApiV1AiAdminEvalsGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AIEvalDashboardRead>(
+    getApiAiEvalDashboardApiV1AiAdminEvalsGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AIEvalDashboardRead,
+  )
 }
 
 export const getApiAiEvalDashboardApiV1AiAdminEvalsGetQueryKey = () => {
@@ -275,6 +284,496 @@ export function useApiAiEvalDashboardApiV1AiAdminEvalsGetSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getApiAiOperationRunsApiV1AiAdminRunsGetUrl = (params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0 ? `/api/v1/ai/admin/runs?${stringifiedParams}` : `/api/v1/ai/admin/runs`
+}
+
+/**
+ * @summary Api Ai Operation Runs
+ */
+export const apiAiOperationRunsApiV1AiAdminRunsGet = async (
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: RequestInit,
+): Promise<AIOperationRunRead[]> => {
+  return orvalMutator<AIOperationRunRead[]>(
+    getApiAiOperationRunsApiV1AiAdminRunsGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(AIOperationRunRead),
+  )
+}
+
+export const getApiAiOperationRunsApiV1AiAdminRunsGetQueryKey = (
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+) => {
+  return [`/api/v1/ai/admin/runs`, ...(params ? [params] : [])] as const
+}
+
+export const getApiAiOperationRunsApiV1AiAdminRunsGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getApiAiOperationRunsApiV1AiAdminRunsGetQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>> = ({ signal }) =>
+    apiAiOperationRunsApiV1AiAdminRunsGet(params, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiAiOperationRunsApiV1AiAdminRunsGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>
+>
+export type ApiAiOperationRunsApiV1AiAdminRunsGetQueryError = ErrorType<ApiErrorEnvelope>
+
+export function useApiAiOperationRunsApiV1AiAdminRunsGet<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params: undefined | ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+          TError,
+          Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiAiOperationRunsApiV1AiAdminRunsGet<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+          TError,
+          Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiAiOperationRunsApiV1AiAdminRunsGet<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Ai Operation Runs
+ */
+
+export function useApiAiOperationRunsApiV1AiAdminRunsGet<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getApiAiOperationRunsApiV1AiAdminRunsGetQueryOptions(params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getApiAiOperationRunsApiV1AiAdminRunsGetSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getApiAiOperationRunsApiV1AiAdminRunsGetQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>> = ({ signal }) =>
+    apiAiOperationRunsApiV1AiAdminRunsGet(params, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiAiOperationRunsApiV1AiAdminRunsGetSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>
+>
+export type ApiAiOperationRunsApiV1AiAdminRunsGetSuspenseQueryError = ErrorType<ApiErrorEnvelope>
+
+export function useApiAiOperationRunsApiV1AiAdminRunsGetSuspense<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params: undefined | ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiAiOperationRunsApiV1AiAdminRunsGetSuspense<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiAiOperationRunsApiV1AiAdminRunsGetSuspense<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Ai Operation Runs
+ */
+
+export function useApiAiOperationRunsApiV1AiAdminRunsGetSuspense<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  params?: ApiAiOperationRunsApiV1AiAdminRunsGetParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunsApiV1AiAdminRunsGet>>, TError, TData>
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getApiAiOperationRunsApiV1AiAdminRunsGetSuspenseQueryOptions(params, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetUrl = (runUuid: string) => {
+  return `/api/v1/ai/admin/runs/${runUuid}`
+}
+
+/**
+ * @summary Api Ai Operation Run Detail
+ */
+export const apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet = async (
+  runUuid: string,
+  options?: RequestInit,
+): Promise<AIOperationRunDetailRead> => {
+  return orvalMutator<AIOperationRunDetailRead>(
+    getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetUrl(runUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AIOperationRunDetailRead,
+  )
+}
+
+export const getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetQueryKey = (runUuid: string) => {
+  return [`/api/v1/ai/admin/runs/${runUuid}`] as const
+}
+
+export const getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>, TError, TData>
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetQueryKey(runUuid)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>> = ({
+    signal,
+  }) => apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet(runUuid, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: runUuid !== null && runUuid !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>
+>
+export type ApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetQueryError = ErrorType<ApiErrorEnvelope>
+
+export function useApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+          TError,
+          Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+          TError,
+          Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>, TError, TData>
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Ai Operation Run Detail
+ */
+
+export function useApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>, TError, TData>
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetQueryOptions(runUuid, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetQueryKey(runUuid)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>> = ({
+    signal,
+  }) => apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet(runUuid, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>
+>
+export type ApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetSuspenseQueryError = ErrorType<ApiErrorEnvelope>
+
+export function useApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetSuspense<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetSuspense<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetSuspense<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Api Ai Operation Run Detail
+ */
+
+export function useApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetSuspense<
+  TData = Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+  TError = ErrorType<ApiErrorEnvelope>,
+>(
+  runUuid: string,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof apiAiOperationRunDetailApiV1AiAdminRunsRunUuidGet>>,
+        TError,
+        TData
+      >
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getApiAiOperationRunDetailApiV1AiAdminRunsRunUuidGetSuspenseQueryOptions(runUuid, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getApiAiAdminSettingsApiV1AiAdminSettingsGetUrl = () => {
   return `/api/v1/ai/admin/settings`
 }
@@ -285,10 +784,14 @@ export const getApiAiAdminSettingsApiV1AiAdminSettingsGetUrl = () => {
 export const apiAiAdminSettingsApiV1AiAdminSettingsGet = async (
   options?: RequestInit,
 ): Promise<AIAdminSettingsRead> => {
-  return orvalMutator<AIAdminSettingsRead>(getApiAiAdminSettingsApiV1AiAdminSettingsGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AIAdminSettingsRead>(
+    getApiAiAdminSettingsApiV1AiAdminSettingsGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AIAdminSettingsRead,
+  )
 }
 
 export const getApiAiAdminSettingsApiV1AiAdminSettingsGetQueryKey = () => {
@@ -495,7 +998,7 @@ export const getApiAiScopeCapabilitiesApiV1AiCapabilitiesScopeCourseUuidGetUrl =
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -520,6 +1023,7 @@ export const apiAiScopeCapabilitiesApiV1AiCapabilitiesScopeCourseUuidGet = async
       ...options,
       method: 'GET',
     },
+    AIScopeCapabilityRead,
   )
 }
 
@@ -807,6 +1311,104 @@ export function useApiAiScopeCapabilitiesApiV1AiCapabilitiesScopeCourseUuidGetSu
   return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getApiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPostUrl = (
+  analysisUuid: string,
+) => {
+  return `/api/v1/ai/course-analysis/${analysisUuid}/findings/review`
+}
+
+/**
+ * @summary Api Review Course Finding
+ */
+export const apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost = async (
+  analysisUuid: string,
+  findingReviewRequest: FindingReviewRequest,
+  options?: RequestInit,
+): Promise<AICourseAnalysisRead> => {
+  return orvalMutator<AICourseAnalysisRead>(
+    getApiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPostUrl(analysisUuid),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(findingReviewRequest),
+    },
+    AICourseAnalysisRead,
+  )
+}
+
+export const getApiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPostMutationOptions = <
+  TError = ErrorType<ApiErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost>>,
+    TError,
+    { analysisUuid: string; data: BodyType<FindingReviewRequest> },
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost>>,
+  TError,
+  { analysisUuid: string; data: BodyType<FindingReviewRequest> },
+  TContext
+> => {
+  const mutationKey = ['apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost']
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost>>,
+    { analysisUuid: string; data: BodyType<FindingReviewRequest> }
+  > = props => {
+    const { analysisUuid, data } = props ?? {}
+
+    return apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost(analysisUuid, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ApiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost>>
+>
+export type ApiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPostMutationBody =
+  BodyType<FindingReviewRequest>
+export type ApiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPostMutationError =
+  ErrorType<ApiErrorEnvelope>
+
+/**
+ * @summary Api Review Course Finding
+ */
+export const useApiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost = <
+  TError = ErrorType<ApiErrorEnvelope>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost>>,
+      TError,
+      { analysisUuid: string; data: BodyType<FindingReviewRequest> },
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof apiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPost>>,
+  TError,
+  { analysisUuid: string; data: BodyType<FindingReviewRequest> },
+  TContext
+> => {
+  return useMutation(
+    getApiReviewCourseFindingApiV1AiCourseAnalysisAnalysisUuidFindingsReviewPostMutationOptions(options),
+    queryClient,
+  )
+}
 export const getApiPublishCourseAnalysisApiV1AiCourseAnalysisAnalysisUuidPublishPostUrl = (analysisUuid: string) => {
   return `/api/v1/ai/course-analysis/${analysisUuid}/publish`
 }
@@ -824,6 +1426,7 @@ export const apiPublishCourseAnalysisApiV1AiCourseAnalysisAnalysisUuidPublishPos
       ...options,
       method: 'POST',
     },
+    AICourseAnalysisRead,
   )
 }
 
@@ -918,6 +1521,7 @@ export const apiAnalyzeCourseApiV1AiCourseAnalysisCourseUuidAnalyzePost = async 
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(courseAnalysisRequest),
     },
+    AICourseAnalysisRead,
   )
 }
 
@@ -1008,6 +1612,7 @@ export const apiQueueCourseAnalysisApiV1AiCourseAnalysisCourseUuidAnalyzeQueuePo
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(courseAnalysisRequest),
     },
+    AIRunStatusRead,
   )
 }
 
@@ -1100,6 +1705,7 @@ export const apiLatestCourseAnalysisApiV1AiCourseAnalysisCourseUuidLatestGet = a
       ...options,
       method: 'GET',
     },
+    nullableParser(AICourseAnalysisRead),
   )
 }
 
@@ -1395,6 +2001,7 @@ export const apiDismissLectureSuggestionApiV1AiLectureAuthoringReviewsReviewUuid
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(dismissSuggestionRequest),
     },
+    AILectureReviewRead,
   )
 }
 
@@ -1491,6 +2098,7 @@ export const apiListLectureReviewsApiV1AiLectureAuthoringCourseIdReviewsGet = as
       ...options,
       method: 'GET',
     },
+    arrayParser(AILectureReviewRead),
   )
 }
 
@@ -1781,6 +2389,7 @@ export const apiCritiqueLectureApiV1AiLectureAuthoringCourseUuidCritiquePost = a
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(lectureReviewRequest),
     },
+    AILectureReviewRead,
   )
 }
 
@@ -1874,6 +2483,7 @@ export const apiQueueLectureReviewApiV1AiLectureAuthoringCourseUuidCritiqueQueue
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(lectureReviewRequest),
     },
+    AIRunStatusRead,
   )
 }
 
@@ -1949,44 +2559,54 @@ export const useApiQueueLectureReviewApiV1AiLectureAuthoringCourseUuidCritiqueQu
     queryClient,
   )
 }
-export const getApiAskCourseQuestionApiV1AiQaCourseUuidAskPostUrl = (courseUuid: string) => {
-  return `/api/v1/ai/qa/${courseUuid}/ask`
+export const getApiStreamCourseQuestionApiV1AiQaCourseUuidChatPostUrl = (courseUuid: string) => {
+  return `/api/v1/ai/qa/${courseUuid}/chat`
 }
 
 /**
- * @summary Api Ask Course Question
+ * AG-UI-compatible chat transport for course Q&A, consumed by `useChat`.
+ *
+ * Auth, budget checks, and thread/message persistence all happen eagerly
+ * below (before the stream starts) so they surface as a normal HTTP error
+ * status; only the model call and final persistence happen inside the
+ * generator, where failures become a RUN_ERROR event instead.
+ * @summary Api Stream Course Question
  */
-export const apiAskCourseQuestionApiV1AiQaCourseUuidAskPost = async (
+export const apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost = async (
   courseUuid: string,
-  courseQARequest: CourseQARequest,
+  courseQAChatRequest: CourseQAChatRequest,
   options?: RequestInit,
-): Promise<CourseQAResponse> => {
-  return orvalMutator<CourseQAResponse>(getApiAskCourseQuestionApiV1AiQaCourseUuidAskPostUrl(courseUuid), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(courseQARequest),
-  })
+): Promise<void> => {
+  return orvalMutator<void>(
+    getApiStreamCourseQuestionApiV1AiQaCourseUuidChatPostUrl(courseUuid),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(courseQAChatRequest),
+    },
+    voidParser,
+  )
 }
 
-export const getApiAskCourseQuestionApiV1AiQaCourseUuidAskPostMutationOptions = <
+export const getApiStreamCourseQuestionApiV1AiQaCourseUuidChatPostMutationOptions = <
   TError = ErrorType<ApiErrorEnvelope>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof apiAskCourseQuestionApiV1AiQaCourseUuidAskPost>>,
+    Awaited<ReturnType<typeof apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost>>,
     TError,
-    { courseUuid: string; data: BodyType<CourseQARequest> },
+    { courseUuid: string; data: BodyType<CourseQAChatRequest> },
     TContext
   >
   request?: SecondParameter<typeof orvalMutator>
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof apiAskCourseQuestionApiV1AiQaCourseUuidAskPost>>,
+  Awaited<ReturnType<typeof apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost>>,
   TError,
-  { courseUuid: string; data: BodyType<CourseQARequest> },
+  { courseUuid: string; data: BodyType<CourseQAChatRequest> },
   TContext
 > => {
-  const mutationKey = ['apiAskCourseQuestionApiV1AiQaCourseUuidAskPost']
+  const mutationKey = ['apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost']
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
       ? options
@@ -1994,137 +2614,65 @@ export const getApiAskCourseQuestionApiV1AiQaCourseUuidAskPostMutationOptions = 
     : { mutation: { mutationKey }, request: undefined }
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof apiAskCourseQuestionApiV1AiQaCourseUuidAskPost>>,
-    { courseUuid: string; data: BodyType<CourseQARequest> }
+    Awaited<ReturnType<typeof apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost>>,
+    { courseUuid: string; data: BodyType<CourseQAChatRequest> }
   > = props => {
     const { courseUuid, data } = props ?? {}
 
-    return apiAskCourseQuestionApiV1AiQaCourseUuidAskPost(courseUuid, data, requestOptions)
+    return apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost(courseUuid, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
 }
 
-export type ApiAskCourseQuestionApiV1AiQaCourseUuidAskPostMutationResult = NonNullable<
-  Awaited<ReturnType<typeof apiAskCourseQuestionApiV1AiQaCourseUuidAskPost>>
+export type ApiStreamCourseQuestionApiV1AiQaCourseUuidChatPostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost>>
 >
-export type ApiAskCourseQuestionApiV1AiQaCourseUuidAskPostMutationBody = BodyType<CourseQARequest>
-export type ApiAskCourseQuestionApiV1AiQaCourseUuidAskPostMutationError = ErrorType<ApiErrorEnvelope>
+export type ApiStreamCourseQuestionApiV1AiQaCourseUuidChatPostMutationBody = BodyType<CourseQAChatRequest>
+export type ApiStreamCourseQuestionApiV1AiQaCourseUuidChatPostMutationError = ErrorType<ApiErrorEnvelope>
 
 /**
- * @summary Api Ask Course Question
+ * @summary Api Stream Course Question
  */
-export const useApiAskCourseQuestionApiV1AiQaCourseUuidAskPost = <
+export const useApiStreamCourseQuestionApiV1AiQaCourseUuidChatPost = <
   TError = ErrorType<ApiErrorEnvelope>,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof apiAskCourseQuestionApiV1AiQaCourseUuidAskPost>>,
+      Awaited<ReturnType<typeof apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost>>,
       TError,
-      { courseUuid: string; data: BodyType<CourseQARequest> },
+      { courseUuid: string; data: BodyType<CourseQAChatRequest> },
       TContext
     >
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
-  Awaited<ReturnType<typeof apiAskCourseQuestionApiV1AiQaCourseUuidAskPost>>,
+  Awaited<ReturnType<typeof apiStreamCourseQuestionApiV1AiQaCourseUuidChatPost>>,
   TError,
-  { courseUuid: string; data: BodyType<CourseQARequest> },
+  { courseUuid: string; data: BodyType<CourseQAChatRequest> },
   TContext
 > => {
-  return useMutation(getApiAskCourseQuestionApiV1AiQaCourseUuidAskPostMutationOptions(options), queryClient)
+  return useMutation(getApiStreamCourseQuestionApiV1AiQaCourseUuidChatPostMutationOptions(options), queryClient)
 }
-export const getApiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePostUrl = (courseUuid: string) => {
-  return `/api/v1/ai/qa/${courseUuid}/ask/queue`
-}
-
-/**
- * @summary Api Queue Course Question
- */
-export const apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost = async (
+export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetUrl = (
   courseUuid: string,
-  courseQARequest: CourseQARequest,
-  options?: RequestInit,
-): Promise<AIRunStatusRead> => {
-  return orvalMutator<AIRunStatusRead>(getApiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePostUrl(courseUuid), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(courseQARequest),
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
+) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
   })
-}
 
-export const getApiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePostMutationOptions = <
-  TError = ErrorType<ApiErrorEnvelope>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost>>,
-    TError,
-    { courseUuid: string; data: BodyType<CourseQARequest> },
-    TContext
-  >
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost>>,
-  TError,
-  { courseUuid: string; data: BodyType<CourseQARequest> },
-  TContext
-> => {
-  const mutationKey = ['apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost']
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
+  const stringifiedParams = normalizedParams.toString()
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost>>,
-    { courseUuid: string; data: BodyType<CourseQARequest> }
-  > = props => {
-    const { courseUuid, data } = props ?? {}
-
-    return apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost(courseUuid, data, requestOptions)
-  }
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type ApiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePostMutationResult = NonNullable<
-  Awaited<ReturnType<typeof apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost>>
->
-export type ApiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePostMutationBody = BodyType<CourseQARequest>
-export type ApiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePostMutationError = ErrorType<ApiErrorEnvelope>
-
-/**
- * @summary Api Queue Course Question
- */
-export const useApiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost = <
-  TError = ErrorType<ApiErrorEnvelope>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost>>,
-      TError,
-      { courseUuid: string; data: BodyType<CourseQARequest> },
-      TContext
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof apiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePost>>,
-  TError,
-  { courseUuid: string; data: BodyType<CourseQARequest> },
-  TContext
-> => {
-  return useMutation(getApiQueueCourseQuestionApiV1AiQaCourseUuidAskQueuePostMutationOptions(options), queryClient)
-}
-export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetUrl = (courseUuid: string) => {
-  return `/api/v1/ai/qa/${courseUuid}/threads`
+  return stringifiedParams.length > 0
+    ? `/api/v1/ai/qa/${courseUuid}/threads?${stringifiedParams}`
+    : `/api/v1/ai/qa/${courseUuid}/threads`
 }
 
 /**
@@ -2132,16 +2680,24 @@ export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetUrl = (course
  */
 export const apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet = async (
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: RequestInit,
 ): Promise<AIQAThreadSummaryRead[]> => {
-  return orvalMutator<AIQAThreadSummaryRead[]>(getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetUrl(courseUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AIQAThreadSummaryRead[]>(
+    getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetUrl(courseUuid, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(AIQAThreadSummaryRead),
+  )
 }
 
-export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryKey = (courseUuid: string) => {
-  return [`/api/v1/ai/qa/${courseUuid}/threads`] as const
+export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryKey = (
+  courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
+) => {
+  return [`/api/v1/ai/qa/${courseUuid}/threads`, ...(params ? [params] : [])] as const
 }
 
 export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryOptions = <
@@ -2149,6 +2705,7 @@ export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryOptions 
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet>>, TError, TData>
@@ -2158,11 +2715,12 @@ export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryOptions 
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryKey(courseUuid)
+  const queryKey =
+    queryOptions?.queryKey ?? getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryKey(courseUuid, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet>>> = ({
     signal,
-  }) => apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet(courseUuid, { signal, ...requestOptions })
+  }) => apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet(courseUuid, params, { signal, ...requestOptions })
 
   return {
     queryKey,
@@ -2186,6 +2744,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet<
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params: undefined | ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options: {
     query: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet>>, TError, TData>
@@ -2207,6 +2766,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet<
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet>>, TError, TData>
@@ -2228,6 +2788,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet<
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet>>, TError, TData>
@@ -2245,6 +2806,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet<
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet>>, TError, TData>
@@ -2253,7 +2815,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet<
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryOptions(courseUuid, options)
+  const queryOptions = getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryOptions(courseUuid, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -2267,6 +2829,7 @@ export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspenseQuery
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -2280,11 +2843,12 @@ export const getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspenseQuery
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryKey(courseUuid)
+  const queryKey =
+    queryOptions?.queryKey ?? getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetQueryKey(courseUuid, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet>>> = ({
     signal,
-  }) => apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet(courseUuid, { signal, ...requestOptions })
+  }) => apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet(courseUuid, params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
     Awaited<ReturnType<typeof apiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGet>>,
@@ -2303,6 +2867,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspense<
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params: undefined | ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options: {
     query: Partial<
       UseSuspenseQueryOptions<
@@ -2320,6 +2885,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspense<
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -2337,6 +2903,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspense<
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -2358,6 +2925,7 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspense<
   TError = ErrorType<ApiErrorEnvelope>,
 >(
   courseUuid: string,
+  params?: ApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -2370,7 +2938,11 @@ export function useApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspense<
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspenseQueryOptions(courseUuid, options)
+  const queryOptions = getApiListCourseQaThreadsApiV1AiQaCourseUuidThreadsGetSuspenseQueryOptions(
+    courseUuid,
+    params,
+    options,
+  )
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -2400,6 +2972,7 @@ export const apiDeleteCourseQaThreadApiV1AiQaCourseUuidThreadsThreadUuidDelete =
       ...options,
       method: 'DELETE',
     },
+    voidParser,
   )
 }
 
@@ -2494,6 +3067,7 @@ export const apiGetCourseQaThreadApiV1AiQaCourseUuidThreadsThreadUuidGet = async
       ...options,
       method: 'GET',
     },
+    arrayParser(AIQAMessageRead),
   )
 }
 
@@ -2800,6 +3374,7 @@ export const apiGetRemediationSessionApiV1AiRemediationSessionsSessionUuidGet = 
       ...options,
       method: 'GET',
     },
+    AIRemediationSessionRead,
   )
 }
 
@@ -3093,6 +3668,7 @@ export const apiCompleteRemediationApiV1AiRemediationSessionsSessionUuidComplete
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(remediationCompletionRequest),
     },
+    AIRemediationSessionRead,
   )
 }
 
@@ -3185,6 +3761,7 @@ export const apiListStudentRemediationApiV1AiRemediationStudentStudentUserIdGet 
       ...options,
       method: 'GET',
     },
+    arrayParser(AIRemediationSessionRead),
   )
 }
 
@@ -3482,6 +4059,7 @@ export const apiGenerateRemediationApiV1AiRemediationSubmissionUuidGeneratePost 
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(remediationRequest),
     },
+    AIRemediationSessionRead,
   )
 }
 
@@ -3577,6 +4155,7 @@ export const apiQueueRemediationApiV1AiRemediationSubmissionUuidGenerateQueuePos
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(remediationRequest),
     },
+    AIRunStatusRead,
   )
 }
 
@@ -3663,10 +4242,14 @@ export const apiGetAiRunApiV1AiRunsRunUuidGet = async (
   runUuid: string,
   options?: RequestInit,
 ): Promise<AIRunStatusRead> => {
-  return orvalMutator<AIRunStatusRead>(getApiGetAiRunApiV1AiRunsRunUuidGetUrl(runUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AIRunStatusRead>(
+    getApiGetAiRunApiV1AiRunsRunUuidGetUrl(runUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AIRunStatusRead,
+  )
 }
 
 export const getApiGetAiRunApiV1AiRunsRunUuidGetQueryKey = (runUuid: string) => {
@@ -3880,10 +4463,14 @@ export const apiGetAiRunArtifactsApiV1AiRunsRunUuidArtifactsGet = async (
   runUuid: string,
   options?: RequestInit,
 ): Promise<AIArtifactRead[]> => {
-  return orvalMutator<AIArtifactRead[]>(getApiGetAiRunArtifactsApiV1AiRunsRunUuidArtifactsGetUrl(runUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AIArtifactRead[]>(
+    getApiGetAiRunArtifactsApiV1AiRunsRunUuidArtifactsGetUrl(runUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(AIArtifactRead),
+  )
 }
 
 export const getApiGetAiRunArtifactsApiV1AiRunsRunUuidArtifactsGetQueryKey = (runUuid: string) => {
@@ -4131,10 +4718,14 @@ export const apiCancelAiRunApiV1AiRunsRunUuidCancelPost = async (
   runUuid: string,
   options?: RequestInit,
 ): Promise<AIRunStatusRead> => {
-  return orvalMutator<AIRunStatusRead>(getApiCancelAiRunApiV1AiRunsRunUuidCancelPostUrl(runUuid), {
-    ...options,
-    method: 'POST',
-  })
+  return orvalMutator<AIRunStatusRead>(
+    getApiCancelAiRunApiV1AiRunsRunUuidCancelPostUrl(runUuid),
+    {
+      ...options,
+      method: 'POST',
+    },
+    AIRunStatusRead,
+  )
 }
 
 export const getApiCancelAiRunApiV1AiRunsRunUuidCancelPostMutationOptions = <
@@ -4212,10 +4803,14 @@ export const apiGetAiRunEventsApiV1AiRunsRunUuidEventsGet = async (
   runUuid: string,
   options?: RequestInit,
 ): Promise<AIRunEventRead[]> => {
-  return orvalMutator<AIRunEventRead[]>(getApiGetAiRunEventsApiV1AiRunsRunUuidEventsGetUrl(runUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AIRunEventRead[]>(
+    getApiGetAiRunEventsApiV1AiRunsRunUuidEventsGetUrl(runUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(AIRunEventRead),
+  )
 }
 
 export const getApiGetAiRunEventsApiV1AiRunsRunUuidEventsGetQueryKey = (runUuid: string) => {
@@ -4432,257 +5027,97 @@ export function useApiGetAiRunEventsApiV1AiRunsRunUuidEventsGetSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetUrl = (runUuid: string) => {
+export const getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamPostUrl = (runUuid: string) => {
   return `/api/v1/ai/runs/${runUuid}/stream`
 }
 
 /**
  * @summary Api Stream Ai Run Events
  */
-export const apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet = async (
+export const apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost = async (
   runUuid: string,
+  aIRunStreamRequest: AIRunStreamRequest,
   options?: RequestInit,
 ): Promise<void> => {
-  return orvalMutator<void>(getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetUrl(runUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<void>(
+    getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamPostUrl(runUuid),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(aIRunStreamRequest),
+    },
+    voidParser,
+  )
 }
 
-export const getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetQueryKey = (runUuid: string) => {
-  return [`/api/v1/ai/runs/${runUuid}/stream`] as const
-}
-
-export const getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetQueryOptions = <
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
+export const getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamPostMutationOptions = <
   TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>, TError, TData>
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetQueryKey(runUuid)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>> = ({
-    signal,
-  }) => apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet(runUuid, { signal, ...requestOptions })
-
-  return { queryKey, queryFn, enabled: runUuid !== null && runUuid !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost>>,
     TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+    { runUuid: string; data: BodyType<AIRunStreamRequest> },
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost>>,
+  TError,
+  { runUuid: string; data: BodyType<AIRunStreamRequest> },
+  TContext
+> => {
+  const mutationKey = ['apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost']
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost>>,
+    { runUuid: string; data: BodyType<AIRunStreamRequest> }
+  > = props => {
+    const { runUuid, data } = props ?? {}
+
+    return apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost(runUuid, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
 }
 
-export type ApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetQueryResult = NonNullable<
-  Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>
+export type ApiStreamAiRunEventsApiV1AiRunsRunUuidStreamPostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost>>
 >
-export type ApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetQueryError = ErrorType<ApiErrorEnvelope>
+export type ApiStreamAiRunEventsApiV1AiRunsRunUuidStreamPostMutationBody = BodyType<AIRunStreamRequest>
+export type ApiStreamAiRunEventsApiV1AiRunsRunUuidStreamPostMutationError = ErrorType<ApiErrorEnvelope>
 
-export function useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet<
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-  TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options: {
-    query: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>, TError, TData>
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-          TError,
-          Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet<
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-  TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>, TError, TData>
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-          TError,
-          Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet<
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-  TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>, TError, TData>
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Api Stream Ai Run Events
  */
-
-export function useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet<
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
+export const useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost = <
   TError = ErrorType<ApiErrorEnvelope>,
+  TContext = unknown,
 >(
-  runUuid: string,
   options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>, TError, TData>
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost>>,
+      TError,
+      { runUuid: string; data: BodyType<AIRunStreamRequest> },
+      TContext
     >
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetQueryOptions(runUuid, options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
+): UseMutationResult<
+  Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamPost>>,
+  TError,
+  { runUuid: string; data: BodyType<AIRunStreamRequest> },
+  TContext
+> => {
+  return useMutation(getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamPostMutationOptions(options), queryClient)
 }
-
-export const getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-  TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-        TError,
-        TData
-      >
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetQueryKey(runUuid)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>> = ({
-    signal,
-  }) => apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet(runUuid, { signal, ...requestOptions })
-
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetSuspenseQueryResult = NonNullable<
-  Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>
->
-export type ApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetSuspenseQueryError = ErrorType<ApiErrorEnvelope>
-
-export function useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetSuspense<
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-  TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options: {
-    query: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-        TError,
-        TData
-      >
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetSuspense<
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-  TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-        TError,
-        TData
-      >
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetSuspense<
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-  TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-        TError,
-        TData
-      >
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Api Stream Ai Run Events
- */
-
-export function useApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetSuspense<
-  TData = Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-  TError = ErrorType<ApiErrorEnvelope>,
->(
-  runUuid: string,
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof apiStreamAiRunEventsApiV1AiRunsRunUuidStreamGet>>,
-        TError,
-        TData
-      >
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getApiStreamAiRunEventsApiV1AiRunsRunUuidStreamGetSuspenseQueryOptions(runUuid, options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
 export const getApiStudyCompanionApiV1AiStudyCourseUuidAskPostUrl = (courseUuid: string) => {
   return `/api/v1/ai/study/${courseUuid}/ask`
 }
@@ -4695,12 +5130,16 @@ export const apiStudyCompanionApiV1AiStudyCourseUuidAskPost = async (
   studyCompanionRequest: StudyCompanionRequest,
   options?: RequestInit,
 ): Promise<JsonObject> => {
-  return orvalMutator<JsonObject>(getApiStudyCompanionApiV1AiStudyCourseUuidAskPostUrl(courseUuid), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(studyCompanionRequest),
-  })
+  return orvalMutator<JsonObject>(
+    getApiStudyCompanionApiV1AiStudyCourseUuidAskPostUrl(courseUuid),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(studyCompanionRequest),
+    },
+    JsonObject,
+  )
 }
 
 export const getApiStudyCompanionApiV1AiStudyCourseUuidAskPostMutationOptions = <
@@ -4782,12 +5221,16 @@ export const apiQueueStudyCompanionApiV1AiStudyCourseUuidAskQueuePost = async (
   studyCompanionRequest: StudyCompanionRequest,
   options?: RequestInit,
 ): Promise<AIRunStatusRead> => {
-  return orvalMutator<AIRunStatusRead>(getApiQueueStudyCompanionApiV1AiStudyCourseUuidAskQueuePostUrl(courseUuid), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(studyCompanionRequest),
-  })
+  return orvalMutator<AIRunStatusRead>(
+    getApiQueueStudyCompanionApiV1AiStudyCourseUuidAskQueuePostUrl(courseUuid),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(studyCompanionRequest),
+    },
+    AIRunStatusRead,
+  )
 }
 
 export const getApiQueueStudyCompanionApiV1AiStudyCourseUuidAskQueuePostMutationOptions = <
@@ -4879,6 +5322,7 @@ export const apiAnalyzeSubmissionApiV1AiSubmissionAnalysisSubmissionUuidAnalyzeP
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(submissionAnalysisRequest),
     },
+    AISubmissionAnalysisRead,
   )
 }
 
@@ -4976,6 +5420,7 @@ export const apiQueueSubmissionAnalysisApiV1AiSubmissionAnalysisSubmissionUuidAn
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       body: JSON.stringify(submissionAnalysisRequest),
     },
+    AIRunStatusRead,
   )
 }
 
@@ -5075,6 +5520,7 @@ export const apiLatestSubmissionAnalysisApiV1AiSubmissionAnalysisSubmissionUuidL
       ...options,
       method: 'GET',
     },
+    nullableParser(AISubmissionAnalysisRead),
   )
 }
 
@@ -5367,10 +5813,14 @@ export const getApiAiUsageApiV1AiUsageGetUrl = () => {
  * @summary Api Ai Usage
  */
 export const apiAiUsageApiV1AiUsageGet = async (options?: RequestInit): Promise<AIUsageSummary> => {
-  return orvalMutator<AIUsageSummary>(getApiAiUsageApiV1AiUsageGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AIUsageSummary>(
+    getApiAiUsageApiV1AiUsageGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AIUsageSummary,
+  )
 }
 
 export const getApiAiUsageApiV1AiUsageGetQueryKey = () => {
@@ -5557,10 +6007,14 @@ export const getApiAiBudgetApiV1AiUsageBudgetGetUrl = () => {
  * @summary Api Ai Budget
  */
 export const apiAiBudgetApiV1AiUsageBudgetGet = async (options?: RequestInit): Promise<AIUsageSummary> => {
-  return orvalMutator<AIUsageSummary>(getApiAiBudgetApiV1AiUsageBudgetGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<AIUsageSummary>(
+    getApiAiBudgetApiV1AiUsageBudgetGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AIUsageSummary,
+  )
 }
 
 export const getApiAiBudgetApiV1AiUsageBudgetGetQueryKey = () => {

@@ -526,13 +526,13 @@ def _completion_satisfied(
     if rule == AssessmentCompletionRule.SUBMITTED.value:
         return status != SubmissionStatus.DRAFT.value
     if rule == AssessmentCompletionRule.GRADED.value:
-        return status in {
-            SubmissionStatus.GRADED.value,
-            SubmissionStatus.PUBLISHED.value,
-        }
+        # A saved grade is teacher-only until it is published. Treating GRADED
+        # as learner completion leaks the decision through progress and can
+        # unlock a certificate before feedback is released.
+        return status == SubmissionStatus.PUBLISHED.value
     if rule == AssessmentCompletionRule.PASSED.value:
         return (
-            status in {SubmissionStatus.GRADED.value, SubmissionStatus.PUBLISHED.value}
+            status == SubmissionStatus.PUBLISHED.value
             and score is not None
             and score >= _policy_passing_score(policy)
         )

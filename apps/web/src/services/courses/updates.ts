@@ -1,34 +1,28 @@
 'use server'
 
-import { apiFetch, getResponseMetadata } from '@/lib/api-client'
+import { apiResult } from '@/lib/api-client'
 import { tags } from '@/lib/cacheTags'
 
 export async function createCourseUpdate(body: AppPayload) {
-  const result = await apiFetch(`courses/${body.course_uuid}/updates`, {
+  const data = await apiResult(`courses/${body.course_uuid}/updates`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.courses, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
 
-  return metadata
+  return data
 }
 
 export async function deleteCourseUpdate(course_uuid: string, update_uuid: number) {
-  const result = await apiFetch(`courses/${course_uuid}/update/${update_uuid}`, {
+  const data = await apiResult(`courses/${course_uuid}/update/${update_uuid}`, {
     method: 'DELETE',
   })
-  const metadata = await getResponseMetadata(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.courses, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
 
-  return metadata
+  return data
 }

@@ -174,7 +174,7 @@ const Users = () => {
       const toastId = toast.loading(t('removingUser'))
       try {
         const res = await removeUser(user_id)
-        if (res.success || res.status === 200) {
+        if (res.status === 200) {
           await queryClient.invalidateQueries({
             queryKey: membersQueryOptions(1, USERS_PER_PAGE).queryKey.slice(0, 2),
           })

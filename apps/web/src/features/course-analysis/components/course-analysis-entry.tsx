@@ -26,6 +26,7 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
   const queue = useQueueCourseAnalysis(courseUuid)
   const run = useAIRunController({
     invalidateQueryKeys: [latestCourseAnalysisQueryOptions(courseUuid).queryKey],
+    persistenceKey: `course-analysis:${courseUuid}`,
     queue,
   })
   const publish = usePublishCourseAnalysis(courseUuid)

@@ -11,12 +11,11 @@ import {
 import { createFileActivity } from '@services/courses/activity-uploads'
 import type { ActivityCreateValues, ActivityUpdateValues } from '@/schemas/activitySchemas'
 import { courseKeys } from '@/hooks/courses/courseKeys'
-import { assertSuccess } from '@/lib/api/assertSuccess'
 
 export function updateActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
     mutationFn: async ({ activityUuid, payload }: { activityUuid: string; payload: Partial<ActivityUpdateValues> }) =>
-      assertSuccess(await updateActivity(payload, activityUuid)),
+      updateActivity(payload, activityUuid),
     onMutate: async ({ activityUuid, payload }) => {
       const activityKey = courseKeys.activity(activityUuid)
 
@@ -83,7 +82,7 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
 
 export function deleteActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
-    mutationFn: async (activityUuid: string) => assertSuccess(await deleteActivity(activityUuid)),
+    mutationFn: async (activityUuid: string) => deleteActivity(activityUuid),
     onMutate: async (activityUuid: string) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
@@ -125,7 +124,7 @@ export function createActivityMutationOptions(queryClient: QueryClient, structur
         ...payload,
         details: payload.details as AppPayload['details'],
       }
-      return assertSuccess(await createActivity(data, chapterId))
+      return createActivity(data, chapterId)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: structureKey })
@@ -170,7 +169,7 @@ export function createExternalVideoMutationOptions(queryClient: QueryClient, str
       activityPayload: Partial<ActivityCreateValues>
       chapterId: number
       externalVideoData: Record<string, unknown>
-    }) => assertSuccess(await createExternalVideoActivity(externalVideoData, activityPayload, chapterId)),
+    }) => createExternalVideoActivity(externalVideoData, activityPayload, chapterId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: structureKey })
     },

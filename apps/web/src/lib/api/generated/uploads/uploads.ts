@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   BodyCompleteChunkedUploadApiV1UploadsCompletePost,
   BodyInitiateChunkedUploadApiV1UploadsInitiatePost,
@@ -37,9 +37,9 @@ import type {
   UploadFinalize,
   UploadRead,
   UploadUrlResponse,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -70,12 +70,16 @@ export const createAssessmentUploadApiV1UploadsPost = async (
   uploadCreate: UploadCreate,
   options?: RequestInit,
 ): Promise<UploadCreateResponse> => {
-  return orvalMutator<UploadCreateResponse>(getCreateAssessmentUploadApiV1UploadsPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(uploadCreate),
-  })
+  return orvalMutator<UploadCreateResponse>(
+    getCreateAssessmentUploadApiV1UploadsPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(uploadCreate),
+    },
+    UploadCreateResponse,
+  )
 }
 
 export const getCreateAssessmentUploadApiV1UploadsPostMutationOptions = <
@@ -167,11 +171,15 @@ export const uploadChunkApiV1UploadsChunkPost = async (
   formData.append(`chunk_index`, bodyUploadChunkApiV1UploadsChunkPost.chunk_index.toString())
   formData.append(`upload_id`, bodyUploadChunkApiV1UploadsChunkPost.upload_id)
 
-  return orvalMutator<ChunkedUploadChunkResponse>(getUploadChunkApiV1UploadsChunkPostUrl(), {
-    ...options,
-    method: 'POST',
-    body: formData,
-  })
+  return orvalMutator<ChunkedUploadChunkResponse>(
+    getUploadChunkApiV1UploadsChunkPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      body: formData,
+    },
+    ChunkedUploadChunkResponse,
+  )
 }
 
 export const getUploadChunkApiV1UploadsChunkPostMutationOptions = <
@@ -250,10 +258,14 @@ export const cancelChunkedUploadApiV1UploadsChunkedUploadIdDelete = async (
   uploadId: string,
   options?: RequestInit,
 ): Promise<void> => {
-  return orvalMutator<void>(getCancelChunkedUploadApiV1UploadsChunkedUploadIdDeleteUrl(uploadId), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<void>(
+    getCancelChunkedUploadApiV1UploadsChunkedUploadIdDeleteUrl(uploadId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
 }
 
 export const getCancelChunkedUploadApiV1UploadsChunkedUploadIdDeleteMutationOptions = <
@@ -344,12 +356,16 @@ export const completeChunkedUploadApiV1UploadsCompletePost = async (
   const formUrlEncoded = new URLSearchParams()
   formUrlEncoded.append(`upload_id`, bodyCompleteChunkedUploadApiV1UploadsCompletePost.upload_id)
 
-  return orvalMutator<ChunkedUploadCompleteResponse>(getCompleteChunkedUploadApiV1UploadsCompletePostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...options?.headers },
-    body: formUrlEncoded,
-  })
+  return orvalMutator<ChunkedUploadCompleteResponse>(
+    getCompleteChunkedUploadApiV1UploadsCompletePostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...options?.headers },
+      body: formUrlEncoded,
+    },
+    ChunkedUploadCompleteResponse,
+  )
 }
 
 export const getCompleteChunkedUploadApiV1UploadsCompletePostMutationOptions = <
@@ -456,12 +472,16 @@ export const initiateChunkedUploadApiV1UploadsInitiatePost = async (
     formUrlEncoded.append(`uuid`, bodyInitiateChunkedUploadApiV1UploadsInitiatePost.uuid)
   }
 
-  return orvalMutator<ChunkedUploadInitiateResponse>(getInitiateChunkedUploadApiV1UploadsInitiatePostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...options?.headers },
-    body: formUrlEncoded,
-  })
+  return orvalMutator<ChunkedUploadInitiateResponse>(
+    getInitiateChunkedUploadApiV1UploadsInitiatePostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...options?.headers },
+      body: formUrlEncoded,
+    },
+    ChunkedUploadInitiateResponse,
+  )
 }
 
 export const getInitiateChunkedUploadApiV1UploadsInitiatePostMutationOptions = <
@@ -550,10 +570,14 @@ export const getUploadStatusApiV1UploadsStatusUploadIdGet = async (
   uploadId: string,
   options?: RequestInit,
 ): Promise<ChunkedUploadStatusResponse> => {
-  return orvalMutator<ChunkedUploadStatusResponse>(getGetUploadStatusApiV1UploadsStatusUploadIdGetUrl(uploadId), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<ChunkedUploadStatusResponse>(
+    getGetUploadStatusApiV1UploadsStatusUploadIdGetUrl(uploadId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    ChunkedUploadStatusResponse,
+  )
 }
 
 export const getGetUploadStatusApiV1UploadsStatusUploadIdGetQueryKey = (uploadId: string) => {
@@ -785,10 +809,14 @@ export const deleteAssessmentUploadApiV1UploadsUploadIdDelete = async (
   uploadId: string,
   options?: RequestInit,
 ): Promise<void> => {
-  return orvalMutator<void>(getDeleteAssessmentUploadApiV1UploadsUploadIdDeleteUrl(uploadId), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<void>(
+    getDeleteAssessmentUploadApiV1UploadsUploadIdDeleteUrl(uploadId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
 }
 
 export const getDeleteAssessmentUploadApiV1UploadsUploadIdDeleteMutationOptions = <
@@ -869,10 +897,14 @@ export const putAssessmentUploadBytesApiV1UploadsUploadIdBytesPut = async (
   uploadId: string,
   options?: RequestInit,
 ): Promise<UploadRead> => {
-  return orvalMutator<UploadRead>(getPutAssessmentUploadBytesApiV1UploadsUploadIdBytesPutUrl(uploadId), {
-    ...options,
-    method: 'PUT',
-  })
+  return orvalMutator<UploadRead>(
+    getPutAssessmentUploadBytesApiV1UploadsUploadIdBytesPutUrl(uploadId),
+    {
+      ...options,
+      method: 'PUT',
+    },
+    UploadRead,
+  )
 }
 
 export const getPutAssessmentUploadBytesApiV1UploadsUploadIdBytesPutMutationOptions = <
@@ -954,12 +986,16 @@ export const finalizeAssessmentUploadApiV1UploadsUploadIdFinalizePost = async (
   uploadFinalize: UploadFinalize,
   options?: RequestInit,
 ): Promise<UploadRead> => {
-  return orvalMutator<UploadRead>(getFinalizeAssessmentUploadApiV1UploadsUploadIdFinalizePostUrl(uploadId), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(uploadFinalize),
-  })
+  return orvalMutator<UploadRead>(
+    getFinalizeAssessmentUploadApiV1UploadsUploadIdFinalizePostUrl(uploadId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(uploadFinalize),
+    },
+    UploadRead,
+  )
 }
 
 export const getFinalizeAssessmentUploadApiV1UploadsUploadIdFinalizePostMutationOptions = <
@@ -1041,10 +1077,14 @@ export const getAssessmentUploadUrlApiV1UploadsUploadIdUrlGet = async (
   uploadId: string,
   options?: RequestInit,
 ): Promise<UploadUrlResponse> => {
-  return orvalMutator<UploadUrlResponse>(getGetAssessmentUploadUrlApiV1UploadsUploadIdUrlGetUrl(uploadId), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<UploadUrlResponse>(
+    getGetAssessmentUploadUrlApiV1UploadsUploadIdUrlGetUrl(uploadId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UploadUrlResponse,
+  )
 }
 
 export const getGetAssessmentUploadUrlApiV1UploadsUploadIdUrlGetQueryKey = (uploadId: string) => {

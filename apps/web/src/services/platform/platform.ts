@@ -1,7 +1,6 @@
 'use server'
 
-import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
-import type { CustomResponseTyping } from '@/lib/api-client'
+import { apiJson, apiResult } from '@/lib/api-client'
 import { getServerAPIUrl } from '@services/config/config'
 import type { components } from '@/lib/api/generated'
 import { tags } from '@/lib/cacheTags'
@@ -10,23 +9,14 @@ import { requireSession } from '@/lib/auth/session'
 type PlatformRead = components['schemas']['PlatformRead']
 type PlatformDetailResponse = components['schemas']['PlatformDetailResponse']
 
-type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
-  data: T | null
-}
-
-async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
-  return await getResponseMetadata(response)
-}
-
 async function fetchPlatform(): Promise<PlatformRead | null> {
   try {
-    const result = await apiFetch('platform', {
+    return await apiJson<PlatformRead>('platform', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       baseUrl: getServerAPIUrl(),
       timeoutMs: 8000,
     })
-    return await errorHandling(result)
   } catch {
     return null
   }
@@ -40,16 +30,13 @@ export async function getPlatform() {
   return fetchPlatform()
 }
 
-export async function removeUser(user_id: number): Promise<ResponseMetadata<PlatformDetailResponse>> {
+export async function removeUser(user_id: number) {
   await requireSession()
-  const result = await apiFetch(`members/${user_id}`, { method: 'DELETE' })
-  const metadata = await getTypedResponseMetadata<PlatformDetailResponse>(result)
+  const data = await apiResult<PlatformDetailResponse>(`members/${user_id}`, { method: 'DELETE' })
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.platform, 'max')
-    revalidateTag(tags.users, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.platform, 'max')
+  revalidateTag(tags.users, 'max')
 
-  return metadata
+  return data
 }

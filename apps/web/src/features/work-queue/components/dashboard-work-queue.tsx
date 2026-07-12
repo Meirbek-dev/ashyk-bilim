@@ -1,12 +1,24 @@
-import { ArrowRight, BarChart3, BookOpen, BriefcaseBusiness, CheckCircle2, Inbox, ShieldCheck } from 'lucide-react'
+'use client'
+
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  BriefcaseBusiness,
+  CalendarClock,
+  CheckCircle2,
+  Inbox,
+  ShieldCheck,
+} from 'lucide-react'
+import { useLocale } from 'next-intl'
 
 import AppLink from '@/components/ui/AppLink'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Separator } from '@/components/ui/separator'
 import { LmsStatusBadge } from '@/features/lms-status'
+import { cn } from '@/lib/utils'
 
 import type { DashboardToolItem, WorkQueueAudience, WorkQueueItem, WorkQueueSection } from '../types'
 
@@ -47,7 +59,7 @@ export function DashboardWorkQueue({ sections, tools, copy }: DashboardWorkQueue
           <p className="text-muted-foreground max-w-3xl text-sm/relaxed">{copy.description}</p>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="divide-border border-y">
           {sections.map(section => (
             <WorkQueueSectionView key={section.audience} section={section} />
           ))}
@@ -64,7 +76,7 @@ export function DashboardWorkQueue({ sections, tools, copy }: DashboardWorkQueue
           </h2>
           <p className="text-muted-foreground max-w-2xl text-sm/relaxed">{copy.toolsDescription}</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="divide-border grid border-y md:grid-cols-2 md:divide-x lg:grid-cols-3">
           {tools.map(tool => (
             <DashboardToolCard key={tool.id} tool={tool} openLabel={copy.openLabel} />
           ))}
@@ -76,60 +88,96 @@ export function DashboardWorkQueue({ sections, tools, copy }: DashboardWorkQueue
 
 function WorkQueueSectionView({ section }: { section: WorkQueueSection }) {
   const Icon = audienceIcon[section.audience]
+  const groups = groupQueueItems(section.items)
 
   return (
-    <Card data-testid={`work-queue-${section.audience}`}>
-      <CardHeader>
+    <section className="py-6 first:pt-5 last:pb-5" data-testid={`work-queue-${section.audience}`}>
+      <header className="flex items-start justify-between gap-4 px-1 pb-4">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
+          <span className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-md">
             <Icon aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <CardTitle>{section.title}</CardTitle>
-            <CardDescription className="text-pretty">{section.description}</CardDescription>
+            <h3 className="text-base font-semibold">{section.title}</h3>
+            <p className="text-muted-foreground mt-0.5 text-sm text-pretty">{section.description}</p>
           </div>
         </div>
-        <CardAction>
-          <Badge variant="outline">{section.items.length}</Badge>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        {section.items.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {section.items.map(item => (
-              <WorkQueueCard key={item.id} item={item} />
-            ))}
-          </div>
-        ) : (
-          <WorkQueueEmpty section={section} />
-        )}
-      </CardContent>
-    </Card>
+        <Badge variant="outline" className="font-mono tabular-nums">
+          {section.items.length}
+        </Badge>
+      </header>
+      {section.items.length > 0 ? (
+        <div className="border-y">
+          {groups.map(group => (
+            <section key={group.label ?? 'all'} aria-label={group.label ?? undefined}>
+              {group.label ? (
+                <h4 className="bg-muted/40 text-muted-foreground border-b px-3 py-2 text-xs font-medium">
+                  {group.label}
+                </h4>
+              ) : null}
+              <div className="divide-border divide-y">
+                {group.items.map(item => (
+                  <WorkQueueRow key={item.id} item={item} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <WorkQueueEmpty section={section} />
+      )}
+    </section>
   )
 }
 
-function WorkQueueCard({ item }: { item: WorkQueueItem }) {
+function groupQueueItems(items: WorkQueueItem[]) {
+  const groups = new Map<string | null, WorkQueueItem[]>()
+  for (const item of items) {
+    const label = item.groupLabel ?? null
+    const group = groups.get(label) ?? []
+    group.push(item)
+    groups.set(label, group)
+  }
+  return [...groups].map(([label, groupItems]) => ({ label, items: groupItems }))
+}
+
+function WorkQueueRow({ item }: { item: WorkQueueItem }) {
+  const locale = useLocale()
+  const timestamp = item.dueAt ?? item.createdAt
+
   return (
     <article
-      className="bg-background flex min-w-0 flex-col gap-4 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
+      className={cn(
+        'grid min-w-0 gap-4 border-l-2 border-l-transparent px-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center',
+        item.priority === 'critical' && 'border-l-destructive bg-destructive/3',
+        item.priority === 'high' && 'border-l-amber-500 bg-amber-500/3',
+      )}
       data-testid={`work-queue-item-${item.id}`}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <LmsStatusBadge status={item.status} />
-          <Badge variant="outline">{item.sourceLabel}</Badge>
-          {item.metric ? (
-            <Badge variant="secondary" className="font-mono tabular-nums">
-              {item.metric.value} {item.metric.label}
-            </Badge>
+      <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(10rem,0.7fr)_minmax(0,1.3fr)] lg:items-center lg:gap-5">
+        <div className="min-w-0">
+          <h4 className="text-sm font-semibold text-pretty">{item.title}</h4>
+          <p className="text-muted-foreground mt-1 text-xs">{item.sourceLabel}</p>
+          {timestamp ? (
+            <time className="text-muted-foreground mt-1 flex items-center gap-1 text-xs" dateTime={timestamp}>
+              <CalendarClock className="size-3.5" aria-hidden />
+              {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(timestamp))}
+            </time>
           ) : null}
         </div>
-        <div className="flex min-w-0 flex-col gap-1">
-          <h3 className="text-sm font-semibold text-pretty">{item.title}</h3>
+        <div className="min-w-0">
           <p className="text-muted-foreground text-sm/relaxed text-pretty">{item.description}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <LmsStatusBadge status={item.status} />
+            {item.metric ? (
+              <Badge variant="secondary" className="font-mono tabular-nums">
+                {item.metric.value} {item.metric.label}
+              </Badge>
+            ) : null}
+          </div>
         </div>
       </div>
-      <Button nativeButton={false} render={<AppLink href={item.href} />} className="md:self-end">
+      <Button nativeButton={false} render={<AppLink href={item.href} />} className="w-full sm:w-auto">
         {item.primaryActionLabel}
         <ArrowRight data-icon="inline-end" aria-hidden="true" />
       </Button>
@@ -156,22 +204,18 @@ function WorkQueueEmpty({ section }: { section: WorkQueueSection }) {
 
 function DashboardToolCard({ tool, openLabel }: { tool: DashboardToolItem; openLabel: string }) {
   return (
-    <Card size="sm">
-      <CardHeader>
-        <CardTitle className="text-sm">{tool.title}</CardTitle>
-        <CardDescription className="text-pretty">{tool.description}</CardDescription>
-        {tool.badge ? (
-          <CardAction>
-            <Badge variant="outline">{tool.badge}</Badge>
-          </CardAction>
-        ) : null}
-      </CardHeader>
-      <CardContent>
-        <Button variant="outline" nativeButton={false} render={<AppLink href={tool.href} />}>
-          {openLabel}
-          <BarChart3 data-icon="inline-end" aria-hidden="true" />
-        </Button>
-      </CardContent>
-    </Card>
+    <article className="flex min-w-0 flex-col justify-between gap-4 p-4">
+      <div>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-sm font-semibold">{tool.title}</h3>
+          {tool.badge ? <Badge variant="outline">{tool.badge}</Badge> : null}
+        </div>
+        <p className="text-muted-foreground mt-1 text-sm text-pretty">{tool.description}</p>
+      </div>
+      <Button variant="ghost" nativeButton={false} render={<AppLink href={tool.href} />} className="self-start px-0">
+        {openLabel}
+        <BarChart3 data-icon="inline-end" aria-hidden="true" />
+      </Button>
+    </article>
   )
 }

@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ApiErrorEnvelope,
   ApiGetPlatformUsersApiV1MembersGetParams,
   BodyApiUpdateAppLogoApiV1LogoPut,
@@ -32,9 +32,9 @@ import type {
   PlatformDetailResponse,
   PlatformRead,
   PlatformUpdate,
-} from '../api.schemas'
+} from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -71,11 +71,15 @@ export const apiUpdateAppLogoApiV1LogoPut = async (
   const formData = new FormData()
   formData.append(`logo_file`, bodyApiUpdateAppLogoApiV1LogoPut.logo_file)
 
-  return orvalMutator<PlatformDetailResponse>(getApiUpdateAppLogoApiV1LogoPutUrl(), {
-    ...options,
-    method: 'PUT',
-    body: formData,
-  })
+  return orvalMutator<PlatformDetailResponse>(
+    getApiUpdateAppLogoApiV1LogoPutUrl(),
+    {
+      ...options,
+      method: 'PUT',
+      body: formData,
+    },
+    PlatformDetailResponse,
+  )
 }
 
 export const getApiUpdateAppLogoApiV1LogoPutMutationOptions = <
@@ -147,7 +151,7 @@ export const getApiGetPlatformUsersApiV1MembersGetUrl = (params?: ApiGetPlatform
 
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
   })
 
@@ -163,10 +167,14 @@ export const apiGetPlatformUsersApiV1MembersGet = async (
   params?: ApiGetPlatformUsersApiV1MembersGetParams,
   options?: RequestInit,
 ): Promise<PaginatedPlatformUsers> => {
-  return orvalMutator<PaginatedPlatformUsers>(getApiGetPlatformUsersApiV1MembersGetUrl(params), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<PaginatedPlatformUsers>(
+    getApiGetPlatformUsersApiV1MembersGetUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    PaginatedPlatformUsers,
+  )
 }
 
 export const getApiGetPlatformUsersApiV1MembersGetQueryKey = (params?: ApiGetPlatformUsersApiV1MembersGetParams) => {
@@ -383,10 +391,14 @@ export const apiRemoveUserFromPlatformApiV1MembersUserIdDelete = async (
   userId: number,
   options?: RequestInit,
 ): Promise<PlatformDetailResponse> => {
-  return orvalMutator<PlatformDetailResponse>(getApiRemoveUserFromPlatformApiV1MembersUserIdDeleteUrl(userId), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<PlatformDetailResponse>(
+    getApiRemoveUserFromPlatformApiV1MembersUserIdDeleteUrl(userId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    PlatformDetailResponse,
+  )
 }
 
 export const getApiRemoveUserFromPlatformApiV1MembersUserIdDeleteMutationOptions = <
@@ -479,6 +491,7 @@ export const apiUpdatePlatformUserRoleApiV1MembersUserIdRoleRoleIdPut = async (
       ...options,
       method: 'PUT',
     },
+    PlatformDetailResponse,
   )
 }
 
@@ -562,10 +575,14 @@ export const getApiGetPlatformApiV1PlatformGetUrl = () => {
  * @summary Api Get Platform
  */
 export const apiGetPlatformApiV1PlatformGet = async (options?: RequestInit): Promise<PlatformRead> => {
-  return orvalMutator<PlatformRead>(getApiGetPlatformApiV1PlatformGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<PlatformRead>(
+    getApiGetPlatformApiV1PlatformGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    PlatformRead,
+  )
 }
 
 export const getApiGetPlatformApiV1PlatformGetQueryKey = () => {
@@ -760,12 +777,16 @@ export const apiUpdatePlatformApiV1PlatformPut = async (
   platformUpdate: PlatformUpdate,
   options?: RequestInit,
 ): Promise<PlatformRead> => {
-  return orvalMutator<PlatformRead>(getApiUpdatePlatformApiV1PlatformPutUrl(), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(platformUpdate),
-  })
+  return orvalMutator<PlatformRead>(
+    getApiUpdatePlatformApiV1PlatformPutUrl(),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(platformUpdate),
+    },
+    PlatformRead,
+  )
 }
 
 export const getApiUpdatePlatformApiV1PlatformPutMutationOptions = <
@@ -849,11 +870,15 @@ export const apiUpdatePlatformThumbnailApiV1ThumbnailPut = async (
   const formData = new FormData()
   formData.append(`thumbnail_file`, bodyApiUpdatePlatformThumbnailApiV1ThumbnailPut.thumbnail_file)
 
-  return orvalMutator<PlatformDetailResponse>(getApiUpdatePlatformThumbnailApiV1ThumbnailPutUrl(), {
-    ...options,
-    method: 'PUT',
-    body: formData,
-  })
+  return orvalMutator<PlatformDetailResponse>(
+    getApiUpdatePlatformThumbnailApiV1ThumbnailPutUrl(),
+    {
+      ...options,
+      method: 'PUT',
+      body: formData,
+    },
+    PlatformDetailResponse,
+  )
 }
 
 export const getApiUpdatePlatformThumbnailApiV1ThumbnailPutMutationOptions = <

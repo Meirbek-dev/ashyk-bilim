@@ -27,6 +27,9 @@ export interface WorkQueueItem {
   sourceLabel: string
   status: LmsStatus
   priority: WorkQueuePriority
+  dueAt?: string | null
+  createdAt?: string | null
+  groupLabel?: string
   metric?: WorkQueueMetric
 }
 

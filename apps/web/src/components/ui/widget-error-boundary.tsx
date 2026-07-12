@@ -1,7 +1,5 @@
 'use client'
 
- 
-
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { QueryErrorResetBoundary } from '@tanstack/react-query'
@@ -58,7 +56,7 @@ class BaseWidgetErrorBoundary extends Component<
 
   private readonly handleReset = () => {
     this.props.onQueryReset?.()
-     
+
     this.setState({ error: null, hasError: false })
   }
 
@@ -107,4 +105,3 @@ export function WidgetErrorBoundary(props: WidgetErrorBoundaryProps) {
     </QueryErrorResetBoundary>
   )
 }
-

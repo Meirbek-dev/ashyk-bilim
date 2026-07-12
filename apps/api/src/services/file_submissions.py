@@ -493,6 +493,18 @@ async def list_file_submission_submissions(
     )
 
 
+async def get_file_submission_submission(
+    file_submission_uuid: str,
+    attempt_uuid: str,
+    current_user: PublicUser,
+    db_session: Session,
+) -> FileSubmissionAttemptRead:
+    file_submission, _activity, course = _get_context(file_submission_uuid, db_session)
+    _require_grade(current_user, course, db_session)
+    attempt = _get_attempt_or_404(file_submission, attempt_uuid, db_session)
+    return _build_attempt_read(attempt, db_session, include_user=True)
+
+
 async def grade_file_submission_attempt(
     file_submission_uuid: str,
     attempt_uuid: str,
@@ -856,10 +868,9 @@ def _project_file_submission_progress(
     elif status_value == FileSubmissionAttemptStatus.RETURNED.value:
         state = ActivityProgressState.RETURNED
         status_reason = "returned_for_revision"
-    elif status_value in {
-        FileSubmissionAttemptStatus.GRADED.value,
-        FileSubmissionAttemptStatus.PUBLISHED.value,
-    }:
+    elif status_value == FileSubmissionAttemptStatus.GRADED.value:
+        state = ActivityProgressState.GRADED
+    elif status_value == FileSubmissionAttemptStatus.PUBLISHED.value:
         state = ActivityProgressState.PASSED if passed else ActivityProgressState.FAILED
         completed_at = attempt.graded_at or attempt.submitted_at or attempt.updated_at
 

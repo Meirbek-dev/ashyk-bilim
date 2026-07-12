@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
-import { apiFetch, apiJson, getResponseMetadata } from '@/lib/api-client'
+import { apiJson, apiResult } from '@/lib/api-client'
 import { APIError, isApiError } from '@/lib/api/assertSuccess'
 
 // Mock the config and auth redirect to avoid side effects
@@ -13,7 +13,7 @@ vi.mock('@/lib/auth/redirect', () => ({
   isAuthRoute: () => false,
 }))
 
-describe('apiFetch timeout', () => {
+describe('apiJson timeout', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     global.fetch = vi.fn()
@@ -21,6 +21,7 @@ describe('apiFetch timeout', () => {
   })
 
   afterEach(() => {
+    vi.clearAllTimers()
     vi.useRealTimers()
   })
 
@@ -48,17 +49,19 @@ describe('apiFetch timeout', () => {
       })
     })
 
-    const promise = apiFetch('test-endpoint')
+    const promise = apiJson('test-endpoint')
+
+    const rejection = expect(promise).rejects.toMatchObject({
+      code: 'CLIENT_TIMEOUT',
+      status: 0,
+    })
 
     // Default GET requests retry once, so two 30s timeouts are expected.
     await vi.advanceTimersByTimeAsync(31000)
     await vi.advanceTimersByTimeAsync(200)
     await vi.advanceTimersByTimeAsync(31000)
 
-    await expect(promise).rejects.toMatchObject({
-      code: 'CLIENT_TIMEOUT',
-      status: 0,
-    })
+    await rejection
 
     expect((global.fetch as any).mock.calls).toHaveLength(2)
     const lastCall = (global.fetch as any).mock.calls[1]
@@ -69,8 +72,7 @@ describe('apiFetch timeout', () => {
   it('should resolve normally if within timeout', async () => {
     ;(global.fetch as any).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
 
-    const response = await apiFetch('test-endpoint')
-    const data = await response.json()
+    const data = await apiJson<{ ok: boolean }>('test-endpoint')
 
     expect(data.ok).toBe(true)
   })
@@ -117,8 +119,8 @@ describe('apiFetch timeout', () => {
     })
 
     const [first, second] = await Promise.all([
-      apiFetch('needs-auth', { timeoutMs: false }),
-      apiFetch('needs-auth', { timeoutMs: false }),
+      apiResult('needs-auth', { timeoutMs: false }),
+      apiResult('needs-auth', { timeoutMs: false }),
     ])
 
     expect(first.status).toBe(200)
@@ -167,19 +169,21 @@ describe('apiFetch timeout', () => {
     ).rejects.toThrow('Response validation failed')
   })
 
-  it('getResponseMetadata throws normalized API errors for non-2xx responses', async () => {
-    const response = new Response(
-      JSON.stringify({
-        code: 'NOPE',
-        message: 'Nope',
-        details: null,
-        field_errors: [],
-        request_id: 'req-nope',
-      }),
-      { status: 400 },
+  it('apiResult throws normalized API errors for non-2xx responses', async () => {
+    ;(global.fetch as any).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          code: 'NOPE',
+          message: 'Nope',
+          details: null,
+          field_errors: [],
+          request_id: 'req-nope',
+        }),
+        { status: 400 },
+      ),
     )
 
-    await expect(getResponseMetadata(response)).rejects.toMatchObject({
+    await expect(apiResult('nope')).rejects.toMatchObject({
       code: 'NOPE',
       requestId: 'req-nope',
       status: 400,
@@ -189,7 +193,7 @@ describe('apiFetch timeout', () => {
   it('throws typed network errors when fetch rejects before a response exists', async () => {
     ;(global.fetch as any).mockRejectedValue(new TypeError('fetch failed'))
 
-    await expect(apiFetch('network-down', { timeoutMs: false })).rejects.toMatchObject({
+    await expect(apiJson('network-down', { method: 'POST', timeoutMs: false })).rejects.toMatchObject({
       code: 'NETWORK_UNAVAILABLE',
       status: 0,
     })
@@ -210,7 +214,7 @@ describe('apiFetch timeout', () => {
     )
 
     try {
-      await apiJson('rate-limited')
+      await apiJson('rate-limited', { method: 'POST' })
       throw new Error('Expected apiJson to throw')
     } catch (error) {
       expect(error).toBeInstanceOf(APIError)

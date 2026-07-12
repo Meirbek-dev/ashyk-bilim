@@ -20,9 +20,9 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type { ApiErrorEnvelope, Judge0LanguageRead } from '../api.schemas'
+import { ApiErrorEnvelope, Judge0LanguageRead } from '../zod'
 
-import { orvalMutator } from '../../orval-mutator'
+import { orvalMutator, arrayParser } from '../../orval-mutator'
 import type { ErrorType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -52,10 +52,14 @@ export const getApiGetCodeExecutionLanguagesApiV1CodeExecutionLanguagesGetUrl = 
 export const apiGetCodeExecutionLanguagesApiV1CodeExecutionLanguagesGet = async (
   options?: RequestInit,
 ): Promise<Judge0LanguageRead[]> => {
-  return orvalMutator<Judge0LanguageRead[]>(getApiGetCodeExecutionLanguagesApiV1CodeExecutionLanguagesGetUrl(), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<Judge0LanguageRead[]>(
+    getApiGetCodeExecutionLanguagesApiV1CodeExecutionLanguagesGetUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(Judge0LanguageRead),
+  )
 }
 
 export const getApiGetCodeExecutionLanguagesApiV1CodeExecutionLanguagesGetQueryKey = () => {

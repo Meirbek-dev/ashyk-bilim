@@ -5,7 +5,7 @@ import { connection } from 'next/server'
 import { redirect as nextRedirect, unstable_rethrow } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { redirect as localeRedirect } from '@/i18n/navigation'
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { isAccessTokenExpired } from './cookie-bridge'
 import { buildReturnTo } from './return-to'
 import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from './types'
@@ -47,12 +47,9 @@ export const getSession = cache(async (): Promise<Session | null> => {
       return null
     }
 
-    const res = await apiFetch('auth/me')
-    if (!res.ok) {
-      return null
-    }
-
-    const sessionData = await res.json()
+    const sessionData = await apiJson<
+      Session & { expires_at?: number; permissions?: string[]; session_version?: number | null }
+    >('auth/me')
     return {
       ...sessionData,
       expiresAt: sessionData.expires_at ?? 0,

@@ -1,8 +1,7 @@
 'use server'
 
-import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
-import type { CustomResponseTyping } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated'
 import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
@@ -18,14 +17,6 @@ export interface UrlPreviewResponse {
   favicon?: string | null
   og_type?: string | null
   og_url?: string | null
-}
-
-type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
-  data: T | null
-}
-
-async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
-  return await getResponseMetadata(response)
 }
 
 interface ActivityInvalidationOptions {
@@ -51,18 +42,15 @@ export async function createActivity(data: AppPayload, chapter_id: number, optio
   }
   data.chapter_id = chapter_id
 
-  const result = await apiFetch('activities/', {
+  const createdActivity = await apiJson<ActivityRead>('activities/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const metadata = await getTypedResponseMetadata<ActivityRead>(result)
 
-  if (metadata.success) {
-    await invalidateActivityCache(options?.courseUuid)
-  }
+  await invalidateActivityCache(options?.courseUuid)
 
-  return metadata
+  return createdActivity
 }
 
 export async function createExternalVideoActivity(
@@ -96,30 +84,26 @@ export async function createExternalVideoActivity(
     details: JSON.stringify(videoDetails),
   }
 
-  const result = await apiFetch('activities/external_video', {
+  const createdActivity = await apiJson<ActivityRead>('activities/external_video', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  const metadata = await getTypedResponseMetadata<ActivityRead>(result)
 
-  if (metadata.success) {
-    await invalidateActivityCache(options?.courseUuid)
-  }
+  await invalidateActivityCache(options?.courseUuid)
 
-  return metadata
+  return createdActivity
 }
 
 async function fetchActivity(activity_uuid: string): Promise<Activity> {
   const canonicalActivityUuid = activity_uuid.startsWith('activity_') ? activity_uuid : `activity_${activity_uuid}`
 
-  const result = await apiFetch(`activities/${canonicalActivityUuid}`, {
+  return apiJson<Activity>(`activities/${canonicalActivityUuid}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return (await errorHandling(result))
 }
 
 export async function getActivity(activity_uuid: string, _next?: unknown): Promise<Activity> {
@@ -127,37 +111,30 @@ export async function getActivity(activity_uuid: string, _next?: unknown): Promi
 }
 
 export async function deleteActivity(activity_uuid: string) {
-  const result = await apiFetch(`activities/${activity_uuid}`, {
+  const activity = await apiJson<ActivityDetailResponse>(`activities/${activity_uuid}`, {
     method: 'DELETE',
   })
-  const metadata = await getTypedResponseMetadata<ActivityDetailResponse>(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.activities, 'max')
-    revalidateTag(tags.courses, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.activities, 'max')
+  revalidateTag(tags.courses, 'max')
 
-  return metadata
+  return activity
 }
 
 export async function updateActivity(data: Record<string, unknown>, activity_uuid: string) {
-  const result = await apiFetch(`activities/${activity_uuid}`, {
+  const activity = await apiJson<ActivityRead>(`activities/${activity_uuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const metadata = await getTypedResponseMetadata<ActivityRead>(result)
 
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.activities, 'max')
-  }
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.activities, 'max')
 
-  return metadata
+  return activity
 }
 
 export async function getUrlPreview(url: string): Promise<UrlPreviewResponse> {
-  const result = await apiFetch(`utils/link-preview?url=${url}`)
-  return (await result.json()) as UrlPreviewResponse
+  return apiJson<UrlPreviewResponse>(`utils/link-preview?url=${url}`)
 }

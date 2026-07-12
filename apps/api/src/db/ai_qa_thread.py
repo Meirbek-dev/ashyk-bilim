@@ -16,6 +16,7 @@ class AIQAMessage(SQLModelStrictBaseModel, table=True):
         Index("idx_ai_qa_message_uuid", "message_uuid", unique=True),
         Index("idx_ai_qa_thread_order", "thread_id", "created_at"),
         Index("idx_ai_qa_course_user", "course_id", "user_id", "created_at"),
+        Index("idx_ai_qa_client_turn", "course_id", "user_id", "client_turn_id", unique=True),
     )
 
     id: int | None = Field(default=None, primary_key=True)
@@ -27,6 +28,7 @@ class AIQAMessage(SQLModelStrictBaseModel, table=True):
         sa_column=Column(ForeignKey("user.id", ondelete="SET NULL"), nullable=True),
     )
     role: str = Field(sa_column=Column(String, nullable=False))
+    client_turn_id: str | None = Field(default=None, sa_column=Column(String, nullable=True))
     content: str
     confidence: str | None = None
     citations_json: JsonObject = Field(
@@ -45,6 +47,7 @@ class AIQAMessageRead(PydanticStrictBaseModel):
     course_id: int
     user_id: int | None = None
     role: str
+    client_turn_id: str | None = None
     content: str
     confidence: str | None = None
     citations_json: JsonObject = PydanticField(default_factory=dict)

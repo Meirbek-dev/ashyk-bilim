@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { EventType } from '@ag-ui/client'
+import type { BaseEvent, CustomEvent } from '@ag-ui/client'
 
-import { apiStreamFetch } from '@/lib/api-client'
-
+import { createAGUIAgent } from '@/lib/ag-ui-transport'
 import type { AIWorkState } from '../lib/ai-run-state'
 
 export interface AIRunStreamEvent {
@@ -12,52 +13,113 @@ export interface AIRunStreamEvent {
   payload?: unknown
 }
 
+interface AIRunStreamSnapshot {
+  error: Error | null
+  events: AIRunStreamEvent[]
+  path: string | null
+  state: AIWorkState
+}
+
+function customEventPayload(event: CustomEvent): AIRunStreamEvent | null {
+  const value = event.value
+  if (!value || typeof value !== 'object' || !('state' in value)) return null
+  const state = value.state
+  if (
+    state !== 'idle' &&
+    state !== 'queued' &&
+    state !== 'running' &&
+    state !== 'complete' &&
+    state !== 'failed' &&
+    state !== 'cancelled'
+  ) {
+    return null
+  }
+  const message = 'message' in value && typeof value.message === 'string' ? value.message : undefined
+  return message ? { state, message, payload: value } : { state, payload: value }
+}
+
+function toRunStreamEvent(event: BaseEvent): AIRunStreamEvent | null {
+  switch (event.type) {
+    case EventType.RUN_STARTED: {
+      return { state: 'running', payload: event }
+    }
+    case EventType.RUN_FINISHED: {
+      return { state: 'complete', payload: event }
+    }
+    case EventType.RUN_ERROR: {
+      const message = typeof event.message === 'string' ? event.message : undefined
+      return message ? { state: 'failed', message, payload: event } : { state: 'failed', payload: event }
+    }
+    case EventType.TEXT_MESSAGE_CONTENT:
+    case EventType.REASONING_MESSAGE_CONTENT: {
+      const message = typeof event.delta === 'string' ? event.delta : undefined
+      return message ? { state: 'running', message, payload: event } : { state: 'running', payload: event }
+    }
+    case EventType.CUSTOM: {
+      return customEventPayload(event as CustomEvent)
+    }
+    case EventType.STATE_SNAPSHOT:
+    case EventType.STATE_DELTA: {
+      return { state: 'running', payload: event }
+    }
+    default: {
+      return null
+    }
+  }
+}
+
 export function useAIRunStream(path: string | null) {
-  const [events, setEvents] = useState<AIRunStreamEvent[]>([])
-  const [state, setState] = useState<AIWorkState>('idle')
-  const [error, setError] = useState<Error | null>(null)
+  const [snapshot, setSnapshot] = useState<AIRunStreamSnapshot>({ error: null, events: [], path: null, state: 'idle' })
+
+  const agent = useMemo(() => (path ? createAGUIAgent(path) : null), [path])
+  const current: AIRunStreamSnapshot =
+    snapshot.path === path ? snapshot : { error: null, events: [], path, state: path ? 'queued' : 'idle' }
 
   useEffect(() => {
-    if (!path) return
-    const activePath = path
-    const controller = new AbortController()
-    let buffer = ''
+    if (!agent) return
 
-    async function readStream() {
-      try {
-        setState('queued')
-        const response = await apiStreamFetch(activePath, { signal: controller.signal, timeoutMs: false })
-        if (!response.body) throw new Error('AI stream response had no body')
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        while (!controller.signal.aborted) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          const chunks = buffer.split('\n\n')
-          buffer = chunks.pop() ?? ''
-          for (const chunk of chunks) {
-            const line = chunk
-              .split('\n')
-              .find(part => part.startsWith('data:'))
-              ?.replace(/^data:\s*/, '')
-            if (!line) continue
-            const event = JSON.parse(line) as AIRunStreamEvent
-            setEvents(current => [...current, event])
-            setState(event.state)
-          }
-        }
-      } catch (streamError) {
-        if (!controller.signal.aborted) {
-          setError(streamError instanceof Error ? streamError : new Error('AI stream failed'))
-          setState('failed')
-        }
-      }
+    const abortController = new AbortController()
+
+    void agent
+      .runAgent(
+        { abortController },
+        {
+          onEvent: ({ event }) => {
+            const streamEvent = toRunStreamEvent(event)
+            if (!streamEvent) return
+            setSnapshot(currentSnapshot => ({
+              error: null,
+              events: currentSnapshot.path === path ? [...currentSnapshot.events, streamEvent] : [streamEvent],
+              path,
+              state: streamEvent.state,
+            }))
+          },
+          onRunFailed: ({ error: runError }) => {
+            if (abortController.signal.aborted) return
+            setSnapshot(currentSnapshot => ({
+              error: runError,
+              events: currentSnapshot.path === path ? currentSnapshot.events : [],
+              path,
+              state: 'failed',
+            }))
+          },
+        },
+      )
+      .catch((runError: unknown) => {
+        if (abortController.signal.aborted) return
+        setSnapshot(currentSnapshot => ({
+          error: runError instanceof Error ? runError : new Error('AI stream failed'),
+          events: currentSnapshot.path === path ? currentSnapshot.events : [],
+          path,
+          state: 'failed',
+        }))
+      })
+
+    return () => {
+      abortController.abort()
+      agent.abortRun()
     }
+  }, [agent, path])
 
-    void readStream()
-    return () => controller.abort()
-  }, [path])
-
-  return { events, state, error }
+  return { events: current.events, state: current.state, error: current.error }
 }

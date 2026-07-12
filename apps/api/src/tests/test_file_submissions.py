@@ -23,13 +23,14 @@ from src.db.file_submissions import (
     FileSubmissionAttemptStatus,
     FileSubmissionLifecycle,
 )
-from src.db.grading.progress import ActivityProgress, CourseProgress
+from src.db.grading.progress import ActivityProgress, ActivityProgressState, CourseProgress
 from src.db.uploads import Upload
 from src.db.users import PublicUser, User
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
 from src.routers.file_submissions import router as file_submissions_router
+from src.services.file_submissions import _project_file_submission_progress
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -104,6 +105,7 @@ def _make_app(
     from src.services import file_submissions
 
     monkeypatch.setattr(file_submissions, "_require_submit_access", lambda *_a, **_kw: None)
+    monkeypatch.setattr(file_submissions, "_require_grade", lambda *_a, **_kw: None)
     monkeypatch.setattr(file_submissions, "recalculate_course_progress", lambda *_a, **_kw: None)
 
     return app
@@ -247,6 +249,57 @@ def test_start_draft_when_returned_and_max_attempts_reached(
     assert response.json()["status"] == "RETURNED"
 
 
+def test_saved_grade_stays_hidden_from_learner_progress_until_published(
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("src.services.file_submissions.recalculate_course_progress", lambda *_a, **_kw: None)
+    file_submission_uuid = _seed_file_submission(db_session_factory)
+
+    with db_session_factory() as session:
+        file_submission = session.exec(
+            select(FileSubmissionActivity).where(
+                FileSubmissionActivity.file_submission_uuid == file_submission_uuid
+            )
+        ).one()
+        activity = session.get_one(Activity, file_submission.activity_id)
+        now = datetime.now(UTC)
+        attempt = FileSubmissionAttempt(
+            attempt_uuid="filesub_attempt_saved_grade",
+            file_submission_id=file_submission.id,
+            activity_id=activity.id,
+            user_id=student_user.id,
+            status=FileSubmissionAttemptStatus.GRADED,
+            attempt_number=1,
+            final_score=90,
+            started_at=now,
+            submitted_at=now,
+            graded_at=now,
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(attempt)
+        session.flush()
+
+        _project_file_submission_progress(attempt, file_submission, activity, session)
+        session.flush()
+
+        progress = session.exec(
+            select(ActivityProgress).where(
+                ActivityProgress.activity_id == activity.id,
+                ActivityProgress.user_id == student_user.id,
+            )
+        ).one()
+        assert progress.state == ActivityProgressState.GRADED
+        assert progress.completed_at is None
+
+        attempt.status = FileSubmissionAttemptStatus.PUBLISHED
+        _project_file_submission_progress(attempt, file_submission, activity, session)
+        session.flush()
+
+        assert progress.state == ActivityProgressState.PASSED
+        assert progress.completed_at is not None
+
+
 def test_save_draft_when_returned_and_max_attempts_reached(
     db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -370,3 +423,39 @@ def test_submit_when_returned_and_max_attempts_reached(
 
     assert response.status_code == 200
     assert response.json()["status"] == "SUBMITTED"
+
+
+def test_teacher_can_open_a_deep_linked_submission_outside_the_queue_page(
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    file_submission_uuid = _seed_file_submission(db_session_factory)
+    with db_session_factory() as session:
+        file_submission = session.exec(
+            select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == file_submission_uuid)
+        ).one()
+        activity = session.get(Activity, file_submission.activity_id)
+        now = datetime.now(UTC)
+        session.add(
+            FileSubmissionAttempt(
+                attempt_uuid="filesub_attempt_deep_link",
+                file_submission_id=file_submission.id,
+                activity_id=activity.id,
+                user_id=student_user.id,
+                status=FileSubmissionAttemptStatus.SUBMITTED,
+                attempt_number=1,
+                started_at=now,
+                submitted_at=now,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        session.commit()
+
+    client = TestClient(_make_app(db_session_factory, student_user, monkeypatch))
+    response = client.get(
+        f"/file-submissions/{file_submission_uuid}/submissions/filesub_attempt_deep_link"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["attempt_uuid"] == "filesub_attempt_deep_link"
+    assert response.json()["user"]["username"] == "student.filesub"

@@ -7,13 +7,13 @@ import {
   bulkRemoveContributors,
   editContributor,
   updateCourseAccess,
+  updateCourseLifecycle,
   updateCourseMetadata,
   updateCourseThumbnail,
 } from '@services/courses/courses'
 import type { CourseAccessValues, CourseGeneralValues } from '@/schemas/courseSchemas'
 import type { CourseEditorBundle } from '@services/courses/editor'
 import { courseKeys } from '@/hooks/courses/courseKeys'
-import { assertSuccess } from '@/lib/api/assertSuccess'
 import { useCourseEditorStore } from '@/stores/courses'
 
 interface MutationOptions {
@@ -68,7 +68,7 @@ export function updateCourseMetadataMutationOptions(
 ) {
   return mutationOptions({
     mutationFn: async ({ options, payload }: { options: MutationOptions; payload: Partial<CourseGeneralValues> }) =>
-      assertSuccess(await updateCourseMetadata(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate))),
+      updateCourseMetadata(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate)),
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
@@ -104,7 +104,9 @@ export function updateCourseAccessMutationOptions(
       options: MutationOptions
       payload: Partial<CourseAccessValues & { open_to_contributors?: boolean }>
     }) =>
-      assertSuccess(await updateCourseAccess(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate))),
+      typeof payload.public === 'boolean'
+        ? updateCourseLifecycle(courseUuid, payload.public, buildMutationOptions(options.lastKnownUpdateDate))
+        : updateCourseAccess(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate)),
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
@@ -134,9 +136,7 @@ export function updateCourseThumbnailMutationOptions(
 ) {
   return mutationOptions({
     mutationFn: async ({ formData, options }: { formData: FormData; options: MutationOptions }) =>
-      assertSuccess(
-        await updateCourseThumbnail(courseUuid, formData, buildMutationOptions(options.lastKnownUpdateDate)),
-      ),
+      updateCourseThumbnail(courseUuid, formData, buildMutationOptions(options.lastKnownUpdateDate)),
     onSuccess: async (response: Awaited<ReturnType<typeof updateCourseThumbnail>>) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([
@@ -155,7 +155,7 @@ export function addCourseContributorsMutationOptions(courseUuid: string, queryCl
       options: MutationOptions
       usernames: string[]
       users: ContributorDraftUser[]
-    }) => assertSuccess(await bulkAddContributors(courseUuid, usernames)),
+    }) => bulkAddContributors(courseUuid, usernames),
     onMutate: async ({ users }: { users: ContributorDraftUser[]; usernames: string[]; options: MutationOptions }) => {
       const editorBundleKey = courseKeys.editorBundle(courseUuid)
       if (!editorBundleKey) {
@@ -215,10 +215,7 @@ export function updateCourseContributorMutationOptions(courseUuid: string, query
       contributorUserId: number
       options: MutationOptions
       payload: ContributorMutationPayload
-    }) =>
-      assertSuccess(
-        await editContributor(courseUuid, contributorUserId, payload.authorship, payload.authorship_status),
-      ),
+    }) => editContributor(courseUuid, contributorUserId, payload.authorship, payload.authorship_status),
     onMutate: async ({
       contributorUserId,
       payload,
@@ -269,7 +266,7 @@ export function updateCourseContributorMutationOptions(courseUuid: string, query
 export function removeCourseContributorsMutationOptions(courseUuid: string, queryClient: QueryClient) {
   return mutationOptions({
     mutationFn: async ({ usernames }: { options: MutationOptions; userIds: number[]; usernames: string[] }) =>
-      assertSuccess(await bulkRemoveContributors(courseUuid, usernames)),
+      bulkRemoveContributors(courseUuid, usernames),
     onMutate: async ({ userIds, usernames }: { options: MutationOptions; userIds: number[]; usernames: string[] }) => {
       const editorBundleKey = courseKeys.editorBundle(courseUuid)
       if (!editorBundleKey) {

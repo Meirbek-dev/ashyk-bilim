@@ -25,7 +25,7 @@ import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/do
 import type { ClassifiedValidationIssue } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
-import { apiFetcher } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,14 +36,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { CalendarDateTimePicker } from '@/components/ui/calendar'
-import { PREVIEW_SCENARIOS, canConfirmLifecycleChange, isHighStakesAssessment } from './publishGateUtils'
-import type { PreviewScenarioId } from './publishGateUtils'
+import { canConfirmLifecycleChange, isHighStakesAssessment } from './publishGateUtils'
+import { Link } from '@/i18n/navigation'
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>
 type AssessmentLifecycle = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED'
@@ -79,7 +78,7 @@ interface AccessRead {
 const assessmentAccessQueryOptions = (assessmentUuid: string) =>
   queryOptions({
     queryKey: ['assessments', assessmentUuid, 'access', 'publish-gate'],
-    queryFn: () => apiFetcher<AccessRead>(`assessments/${assessmentUuid}/access`),
+    queryFn: () => apiJson<AccessRead>(`assessments/${assessmentUuid}/access`),
     staleTime: 30_000,
   })
 
@@ -104,9 +103,6 @@ export default function PublishDashboardTab({
   const [scheduledAt, setScheduledAt] = useState('')
   const [pendingAction, setPendingAction] = useState<'publish' | 'schedule' | null>(null)
   const [auditNote, setAuditNote] = useState('')
-  const [activeScenario, setActiveScenario] = useState<PreviewScenarioId>('genericLearner')
-  const [previewedScenarios, setPreviewedScenarios] = useState<Set<PreviewScenarioId>>(new Set())
-  const [specificLearner, setSpecificLearner] = useState('')
   const [isPending, startTransition] = useTransition()
   const accessQuery = useQuery(assessmentAccessQueryOptions(assessmentUuid))
 
@@ -130,11 +126,11 @@ export default function PublishDashboardTab({
   const isPublished = lifecycle === 'PUBLISHED'
   const isScheduled = lifecycle === 'SCHEDULED'
   const highStakes = isHighStakesAssessment(assessmentState)
-  const canConfirmGate = canConfirmLifecycleChange({
-    blockerCount: classifiedIssues.length,
-    highStakes,
-    successfulPreviewCount: previewedScenarios.size,
-  })
+  const canConfirmGate =
+    canConfirmLifecycleChange({
+      blockerCount: classifiedIssues.length,
+    }) &&
+    (!highStakes || auditNote.trim().length > 0)
 
   const handlePublish = () => {
     startTransition(() => {
@@ -255,17 +251,7 @@ export default function PublishDashboardTab({
         </div>
       </div>
 
-      <StudentPreviewPanel
-        activeScenario={activeScenario}
-        previewedScenarios={previewedScenarios}
-        specificLearner={specificLearner}
-        highStakes={highStakes}
-        onScenarioChange={setActiveScenario}
-        onSpecificLearnerChange={setSpecificLearner}
-        onRunPreview={() => {
-          setPreviewedScenarios(current => new Set(current).add(activeScenario))
-        }}
-      />
+      <StudentPreviewPanel assessmentUuid={assessmentUuid} />
 
       <LifecycleAuditTimeline
         lifecycle={lifecycle}
@@ -392,7 +378,6 @@ export default function PublishDashboardTab({
         attemptLimit={assessmentState.maxAttempts || tPublish('unlimited')}
         effectiveLearnerCount={accessQuery.data?.effective_user_count ?? null}
         highStakes={highStakes}
-        previewCount={previewedScenarios.size}
         canConfirm={canConfirmGate}
         auditNote={auditNote}
         onAuditNoteChange={setAuditNote}
@@ -450,94 +435,29 @@ function LifecycleAuditTimeline({
   )
 }
 
-function StudentPreviewPanel({
-  activeScenario,
-  previewedScenarios,
-  specificLearner,
-  highStakes,
-  onScenarioChange,
-  onSpecificLearnerChange,
-  onRunPreview,
-}: {
-  activeScenario: PreviewScenarioId
-  previewedScenarios: Set<PreviewScenarioId>
-  specificLearner: string
-  highStakes: boolean
-  onScenarioChange: (scenario: PreviewScenarioId) => void
-  onSpecificLearnerChange: (value: string) => void
-  onRunPreview: () => void
-}) {
+function StudentPreviewPanel({ assessmentUuid }: { assessmentUuid: string }) {
   const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
-  const scenario = PREVIEW_SCENARIOS.find(item => item.id === activeScenario) ?? {
-    id: 'genericLearner',
-    titleKey: 'previewScenarioGeneric',
-    descriptionKey: 'previewScenarioGenericDesc',
-    outcomeKey: 'previewOutcomeGeneric',
-  }
-  const currentScenarioComplete = previewedScenarios.has(activeScenario)
 
   return (
     <section className="bg-card rounded-lg border p-5 shadow-sm">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <div className="bg-muted rounded-md border p-2">
-            <Eye className="text-muted-foreground size-5" />
+            <Eye className="text-muted-foreground size-5" aria-hidden />
           </div>
           <div>
             <h2 className="text-base font-semibold">{tPublish('previewGateTitle')}</h2>
-            <p className="text-muted-foreground text-sm">
-              {highStakes ? tPublish('previewGateHighStakesDesc') : tPublish('previewGateDesc')}
-            </p>
+            <p className="text-muted-foreground max-w-2xl text-sm">{tPublish('honestPreviewDescription')}</p>
           </div>
         </div>
-        <Badge variant={previewedScenarios.size > 0 ? 'success' : highStakes ? 'warning' : 'outline'}>
-          {tPublish('previewCompletedCount', { count: previewedScenarios.size })}
-        </Badge>
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {PREVIEW_SCENARIOS.map(item => (
-            <Button
-              key={item.id}
-              type="button"
-              variant={activeScenario === item.id ? 'default' : 'outline'}
-              className="h-auto justify-start px-3 py-2 text-left"
-              onClick={() => onScenarioChange(item.id)}
-            >
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium">{tPublish(item.titleKey)}</span>
-                <span className="block truncate text-xs opacity-80">{tPublish(item.descriptionKey)}</span>
-              </span>
-            </Button>
-          ))}
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-semibold">{tPublish(scenario.titleKey)}</p>
-              <p className="text-muted-foreground mt-1 text-xs">{tPublish(scenario.outcomeKey)}</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="preview-specific-learner">{tPublish('specificLearnerLabel')}</Label>
-              <Input
-                id="preview-specific-learner"
-                value={specificLearner}
-                disabled={activeScenario !== 'specificLearner'}
-                placeholder={tPublish('specificLearnerPlaceholder')}
-                onChange={event => onSpecificLearnerChange(event.target.value)}
-              />
-            </div>
-            <Button className="w-full" onClick={onRunPreview}>
-              <Eye className="size-4" />
-              {currentScenarioComplete ? tPublish('rerunPreview') : tPublish('runPreview')}
-            </Button>
-            <p className="text-muted-foreground text-xs" aria-live="polite">
-              {currentScenarioComplete ? tPublish('previewScenarioPassed') : tPublish('previewScenarioPending')}
-            </p>
-          </div>
-        </div>
+        <Button
+          variant="outline"
+          nativeButton={false}
+          render={<Link href={`/assessments/${assessmentUuid}`} target="_blank" />}
+        >
+          <ExternalLink data-icon="inline-end" aria-hidden />
+          {tPublish('openLearnerPreview')}
+        </Button>
       </div>
     </section>
   )
@@ -560,7 +480,6 @@ function LifecycleConfirmationDialog({
   attemptLimit,
   effectiveLearnerCount,
   highStakes,
-  previewCount,
   canConfirm,
   auditNote,
   onAuditNoteChange,
@@ -576,7 +495,6 @@ function LifecycleConfirmationDialog({
   attemptLimit: string
   effectiveLearnerCount: number | null
   highStakes: boolean
-  previewCount: number
   canConfirm: boolean
   auditNote: string
   onAuditNoteChange: (value: string) => void
@@ -611,7 +529,6 @@ function LifecycleConfirmationDialog({
               }
             />
             <ImpactRow label={tPublish('impactAttempts')} value={attemptLimit} />
-            <ImpactRow label={tPublish('impactPreviews')} value={String(previewCount)} />
             {isSchedule ? (
               <ImpactRow
                 label={tPublish('impactSchedule')}
@@ -636,8 +553,8 @@ function LifecycleConfirmationDialog({
 
           {!canConfirm ? (
             <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
-              {highStakes && previewCount === 0
-                ? tPublish('previewRequiredBeforePublish')
+              {highStakes && auditNote.trim().length === 0
+                ? tPublish('auditNoteRequiredBeforePublish')
                 : tPublish('blockersRequiredBeforePublish')}
             </div>
           ) : null}

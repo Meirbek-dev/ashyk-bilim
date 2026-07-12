@@ -1,90 +1,92 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { BookOpenCheckIcon, HistoryIcon, MessageCircleQuestionIcon, PlusIcon } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+import { BookOpenCheckIcon, HistoryIcon, MessageCircleQuestionIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { InlineError } from '@/components/ui/error-state'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { AICommandList, AIRunProgress, useActivityAIUrlState, useAIRunController } from '@/features/ai-experience'
+import { AICommandList, useActivityAIUrlState } from '@/features/ai-experience'
 
-import { useQAThread, useQueueCourseQuestion } from '../api/use-ask-question'
+import { useQAThread } from '../api/use-ask-question'
+import { useCourseQAChat } from '../api/use-course-qa-chat'
+import { useDeleteQAThread } from '../api/use-delete-thread'
 import { useQAThreads } from '../api/use-qa-threads'
 import { QAInput } from './qa-input'
 import { QAMessageView } from './qa-message'
 import type { QAMessage, QAThreadSummary } from '../lib/types'
 
-export function QAPanel({ courseUuid }: { courseUuid: string }) {
+export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | null; courseUuid: string }) {
   const t = useTranslations('AiExperience.qaInput')
   const { setThread, thread: selectedThreadUuid } = useActivityAIUrlState('ask')
   const threadQuery = useQAThread(courseUuid, selectedThreadUuid ?? '')
   const threadsQuery = useQAThreads(courseUuid)
-  const [localMessages, setLocalMessages] = useState<QAMessage[]>([])
-  const prevThreadRef = useRef<string | null>(selectedThreadUuid)
-  const queue = useQueueCourseQuestion(courseUuid)
-  const invalidationKeys = useMemo(
-    () => [
-      ['course-qa-threads', courseUuid],
-      ['course-qa-thread', courseUuid, selectedThreadUuid ?? ''],
-    ],
-    [courseUuid, selectedThreadUuid],
-  )
-  const run = useAIRunController({
-    invalidateQueryKeys: invalidationKeys,
-    queue,
+  const deleteThread = useDeleteQAThread(courseUuid)
+  const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null)
+  const selectThread = useCallback((nextThreadUuid: string) => setThread(nextThreadUuid), [setThread])
+  const chat = useCourseQAChat({
+    courseUuid,
+    onThread: selectThread,
+    threadUuid: selectedThreadUuid,
+    ...(activityUuid ? { activityUuid } : {}),
   })
-
-  useEffect(() => {
-    const prevThread = prevThreadRef.current
-    if (selectedThreadUuid !== prevThread) {
-      prevThreadRef.current = selectedThreadUuid
-      if (!selectedThreadUuid || prevThread) {
-        setLocalMessages([])
-      }
-    }
-  }, [selectedThreadUuid])
 
   const messages = useMemo(() => {
     const base = selectedThreadUuid && threadQuery.isSuccess ? threadQuery.data : []
-    const baseUuids = new Set(base.map(m => m.message_uuid))
-    const uniqueLocal = localMessages.filter(m => !baseUuids.has(m.message_uuid))
-    return [...base, ...uniqueLocal]
-  }, [threadQuery.data, threadQuery.isSuccess, localMessages, selectedThreadUuid])
-
-  function selectThread(nextThreadUuid: string) {
-    setThread(nextThreadUuid)
-  }
+    const pending: QAMessage[] = []
+    if (chat.pendingQuestion) {
+      pending.push({
+        message_uuid: 'pending-user',
+        role: 'user',
+        content: chat.pendingQuestion,
+        citations_json: {},
+        created_at: new Date().toISOString(),
+      })
+    }
+    if (chat.partialAnswer) {
+      pending.push({
+        message_uuid: 'pending-assistant',
+        role: 'assistant',
+        content: chat.partialAnswer,
+        citations_json: { citations: chat.citations },
+        message_metadata: { incomplete: chat.status === 'cancelled' },
+        created_at: new Date().toISOString(),
+      })
+    }
+    return [...base, ...pending]
+  }, [
+    chat.citations,
+    chat.partialAnswer,
+    chat.pendingQuestion,
+    chat.status,
+    threadQuery.data,
+    threadQuery.isSuccess,
+    selectedThreadUuid,
+  ])
 
   function submitQuestion(question: string) {
-    const pendingUserMessage: QAMessage = {
-      message_uuid: `local_${globalThis.crypto?.randomUUID?.() ?? Date.now()}`,
-      role: 'user',
-      content: question,
-      citations_json: {},
-      created_at: new Date().toISOString(),
-    }
-    setLocalMessages(current => [...current, pendingUserMessage])
-    void run
-      .start({ question, thread_uuid: selectedThreadUuid, language: 'auto' })
-      .then(response => {
-        const threadUuid = response.run_metadata?.thread_uuid
-        if (typeof threadUuid === 'string') selectThread(threadUuid)
-        return undefined
-      })
-      .catch(() => {
-        setLocalMessages(current => current.filter(message => message.message_uuid !== pendingUserMessage.message_uuid))
-      })
+    void chat.submit(question)
   }
 
   return (
-    <section className="@container/qa-panel grid min-h-0 gap-4 @[28rem]/qa-panel:grid-cols-[minmax(0,1fr)_12rem]">
+    <section className="@container/qa-panel grid h-full min-h-0 gap-4 @[28rem]/qa-panel:grid-cols-[minmax(0,1fr)_12rem]">
       <div className="flex min-h-0 flex-col gap-4">
-        <AICommandList surface="course" disabled={run.pending} onCommand={command => submitQuestion(command.prompt)} />
-        <ScrollArea className="min-h-72 rounded-lg border p-3">
+        <AICommandList surface="course" disabled={chat.pending} onCommand={command => submitQuestion(command.prompt)} />
+        <ScrollArea className="bg-background min-h-0 flex-1 rounded-lg border p-3 [content-visibility:auto]">
           {threadQuery.isError ? (
             <InlineError description={threadQuery.error.message} error={threadQuery.error} />
           ) : messages.length === 0 ? (
@@ -100,18 +102,59 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
             </div>
           )}
         </ScrollArea>
-        <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
-        {run.error ? <InlineError description={run.error.message} error={run.error} /> : null}
-        <QAInput pending={run.pending} onSubmit={submitQuestion} />
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {chat.status === 'streaming' ? t('streamingStatus') : null}
+          {chat.status === 'cancelled' ? t('cancelledStatus') : null}
+        </div>
+        {chat.errorCode ? (
+          <div className="border-destructive/30 bg-destructive/5 flex flex-wrap items-center gap-2 rounded-lg border p-3">
+            <p className="min-w-0 flex-1 text-sm">{t('error')}</p>
+            <Button type="button" size="sm" variant="outline" onClick={chat.retry}>
+              {t('retry')}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={chat.reset}>
+              {t('dismiss')}
+            </Button>
+          </div>
+        ) : null}
+        <QAInput pending={chat.pending} onStop={chat.stop} onSubmit={submitQuestion} />
       </div>
       <QAThreadList
         error={threadsQuery.error}
         currentThreadUuid={selectedThreadUuid}
         loading={threadsQuery.isLoading}
         onNewThread={() => setThread(null)}
+        onDeleteThread={setDeleteCandidate}
         onSelectThread={selectThread}
         threads={threadsQuery.isSuccess ? threadsQuery.data : []}
       />
+      <AlertDialog open={deleteCandidate !== null} onOpenChange={open => !open && setDeleteCandidate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteThread')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('deleteConfirm')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('keepThread')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteThread.isPending}
+              onClick={() => {
+                if (!deleteCandidate) return
+                const threadUuid = deleteCandidate
+                deleteThread.mutate(threadUuid, {
+                  onSuccess: () => {
+                    if (selectedThreadUuid === threadUuid) setThread(null)
+                    setDeleteCandidate(null)
+                  },
+                })
+              }}
+            >
+              {t('confirmDelete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }
@@ -161,6 +204,7 @@ function QAThreadList({
   error,
   loading,
   onNewThread,
+  onDeleteThread,
   onSelectThread,
   threads,
 }: {
@@ -168,6 +212,7 @@ function QAThreadList({
   error: Error | null
   loading: boolean
   onNewThread: () => void
+  onDeleteThread: (threadUuid: string) => void
   onSelectThread: (threadUuid: string) => void
   threads: QAThreadSummary[]
 }) {
@@ -203,21 +248,31 @@ function QAThreadList({
           {threads.map(thread => {
             const updatedAt = new Date(thread.updated_at)
             return (
-              <Button
-                key={thread.thread_uuid}
-                type="button"
-                variant={currentThreadUuid === thread.thread_uuid ? 'secondary' : 'ghost'}
-                className="h-auto min-w-0 justify-start px-2 py-2 text-start"
-                onClick={() => onSelectThread(thread.thread_uuid)}
-              >
-                <span className="flex min-w-0 flex-col gap-1">
-                  <span className="truncate text-sm">{thread.title || thread.last_message_preview}</span>
-                  <span className="text-muted-foreground flex gap-2 text-xs">
-                    <span>{t('threadMessageCount', { count: thread.message_count })}</span>
-                    <span>{dateFormatter.format(updatedAt)}</span>
+              <div key={thread.thread_uuid} className="flex min-w-0 items-center gap-1">
+                <Button
+                  type="button"
+                  variant={currentThreadUuid === thread.thread_uuid ? 'secondary' : 'ghost'}
+                  className="h-auto min-w-0 flex-1 justify-start px-2 py-2 text-start"
+                  onClick={() => onSelectThread(thread.thread_uuid)}
+                >
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="truncate text-sm">{thread.title || thread.last_message_preview}</span>
+                    <span className="text-muted-foreground flex gap-2 text-xs">
+                      <span>{t('threadMessageCount', { count: thread.message_count })}</span>
+                      <span>{dateFormatter.format(updatedAt)}</span>
+                    </span>
                   </span>
-                </span>
-              </Button>
+                </Button>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label={t('deleteThread')}
+                  onClick={() => onDeleteThread(thread.thread_uuid)}
+                >
+                  <Trash2Icon aria-hidden="true" />
+                </Button>
+              </div>
             )
           })}
         </div>

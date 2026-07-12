@@ -1,14 +1,15 @@
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 
 export function useDeleteQAThread(courseUuid: string) {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (threadUuid: string) => {
-      const response = await apiFetch(`ai/qa/${courseUuid}/threads/${threadUuid}`, { method: 'DELETE' })
-      if (!response.ok) throw new Error('Could not delete Q&A thread')
+      await apiJson(`ai/qa/${courseUuid}/threads/${threadUuid}`, { method: 'DELETE' })
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course-qa-threads', courseUuid] }),
   })
 }

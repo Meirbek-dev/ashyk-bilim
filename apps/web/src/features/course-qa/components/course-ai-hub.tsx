@@ -6,16 +6,34 @@ import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CourseAnalysisEntry } from '@/features/course-analysis/components/course-analysis-entry'
-import { useActivityAIUrlState } from '@/features/ai-experience'
+import { useActivityAIUrlState, useAIScopeCapabilities } from '@/features/ai-experience'
+import type { ActivityAIMode, AIScope } from '@/features/ai-experience'
 import { StudyCompanionPanel } from '@/features/student-study'
 
 import { QAPanel } from './qa-panel'
 
-export function CourseAIHub({ courseUuid, variant = 'inline' }: { courseUuid: string; variant?: 'inline' | 'panel' }) {
+interface CourseAIHubProps {
+  courseUuid: string
+  scope?: AIScope
+  variant?: 'inline' | 'panel'
+}
+
+export type CourseAISurfaceRoute = 'chat' | 'course-review' | 'unavailable'
+
+export function resolveCourseAISurfaceRoute(
+  mode: ActivityAIMode | undefined,
+  surface: AIScope['surface'],
+): CourseAISurfaceRoute {
+  if (mode === 'ask' || mode === 'explain' || mode === 'practice') return 'chat'
+  if (mode === 'analyze' && surface === 'course-page') return 'course-review'
+  return 'unavailable'
+}
+
+export function CourseAIHub({ courseUuid, scope, variant = 'inline' }: CourseAIHubProps) {
   const t = useTranslations('AiExperience.courseAIHub')
 
   if (variant === 'panel') {
-    return <CourseAIHubPanel courseUuid={courseUuid} />
+    return <CourseAIHubPanel courseUuid={courseUuid} {...(scope ? { scope } : {})} />
   }
 
   return (
@@ -65,17 +83,25 @@ export function CourseAIHub({ courseUuid, variant = 'inline' }: { courseUuid: st
   )
 }
 
-function CourseAIHubPanel({ courseUuid }: { courseUuid: string }) {
-  const { mode } = useActivityAIUrlState()
+function CourseAIHubPanel({ courseUuid, scope }: Pick<CourseAIHubProps, 'courseUuid' | 'scope'>) {
+  const t = useTranslations('AiExperience.courseAIHub')
+  const { mode: requestedMode } = useActivityAIUrlState()
+  const capabilities = useAIScopeCapabilities(scope ?? { courseUuid, surface: 'course-page' })
+  const availableModes = capabilities.data?.modes ?? []
+  const mode = availableModes.includes(requestedMode) ? requestedMode : availableModes[0]
+  const route = resolveCourseAISurfaceRoute(mode, scope?.surface ?? 'course-page')
 
-  if (mode === 'ask' || mode === 'sources') {
-    return <QAPanel courseUuid={courseUuid} />
+  if (route === 'chat') {
+    return <QAPanel courseUuid={courseUuid} {...(scope?.activityUuid ? { activityUuid: scope.activityUuid } : {})} />
   }
 
-  if (mode === 'review' || mode === 'analyze') {
+  if (route === 'course-review') {
     return <CourseAnalysisEntry courseUuid={courseUuid} />
   }
 
-  const studyMode = mode === 'practice' ? 'practice' : 'explain'
-  return <StudyCompanionPanel key={studyMode} courseUuid={courseUuid} initialMode={studyMode} />
+  return (
+    <p className="text-muted-foreground p-4 text-sm">
+      {capabilities.isError ? t('capabilityError') : t('unavailable')}
+    </p>
+  )
 }

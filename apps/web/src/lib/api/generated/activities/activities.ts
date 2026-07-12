@@ -23,7 +23,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import type {
+import {
   ActivityCreate,
   ActivityDetailResponse,
   ActivityRead,
@@ -33,7 +33,7 @@ import type {
   BodyApiCreateDocumentpdfActivityApiV1ActivitiesDocumentpdfPost,
   BodyApiCreateVideoActivityApiV1ActivitiesVideoPost,
   ExternalVideo,
-} from '../api.schemas'
+} from '../zod'
 
 import { orvalMutator } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
@@ -66,12 +66,16 @@ export const apiCreateActivityApiV1ActivitiesPost = async (
   activityCreate: ActivityCreate,
   options?: RequestInit,
 ): Promise<ActivityRead> => {
-  return orvalMutator<ActivityRead>(getApiCreateActivityApiV1ActivitiesPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(activityCreate),
-  })
+  return orvalMutator<ActivityRead>(
+    getApiCreateActivityApiV1ActivitiesPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(activityCreate),
+    },
+    ActivityRead,
+  )
 }
 
 export const getApiCreateActivityApiV1ActivitiesPostMutationOptions = <
@@ -168,11 +172,15 @@ export const apiCreateDocumentpdfActivityApiV1ActivitiesDocumentpdfPost = async 
     )
   }
 
-  return orvalMutator<ActivityRead>(getApiCreateDocumentpdfActivityApiV1ActivitiesDocumentpdfPostUrl(), {
-    ...options,
-    method: 'POST',
-    body: formData,
-  })
+  return orvalMutator<ActivityRead>(
+    getApiCreateDocumentpdfActivityApiV1ActivitiesDocumentpdfPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      body: formData,
+    },
+    ActivityRead,
+  )
 }
 
 export const getApiCreateDocumentpdfActivityApiV1ActivitiesDocumentpdfPostMutationOptions = <
@@ -254,12 +262,16 @@ export const apiCreateExternalVideoActivityApiV1ActivitiesExternalVideoPost = as
   externalVideo: ExternalVideo,
   options?: RequestInit,
 ): Promise<ActivityRead> => {
-  return orvalMutator<ActivityRead>(getApiCreateExternalVideoActivityApiV1ActivitiesExternalVideoPostUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(externalVideo),
-  })
+  return orvalMutator<ActivityRead>(
+    getApiCreateExternalVideoActivityApiV1ActivitiesExternalVideoPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(externalVideo),
+    },
+    ActivityRead,
+  )
 }
 
 export const getApiCreateExternalVideoActivityApiV1ActivitiesExternalVideoPostMutationOptions = <
@@ -370,11 +382,15 @@ export const apiCreateVideoActivityApiV1ActivitiesVideoPost = async (
     formData.append(`video_uploaded_path`, bodyApiCreateVideoActivityApiV1ActivitiesVideoPost.video_uploaded_path)
   }
 
-  return orvalMutator<ActivityRead>(getApiCreateVideoActivityApiV1ActivitiesVideoPostUrl(), {
-    ...options,
-    method: 'POST',
-    body: formData,
-  })
+  return orvalMutator<ActivityRead>(
+    getApiCreateVideoActivityApiV1ActivitiesVideoPostUrl(),
+    {
+      ...options,
+      method: 'POST',
+      body: formData,
+    },
+    ActivityRead,
+  )
 }
 
 export const getApiCreateVideoActivityApiV1ActivitiesVideoPostMutationOptions = <
@@ -456,10 +472,14 @@ export const apiDeleteActivityApiV1ActivitiesActivityUuidDelete = async (
   activityUuid: string,
   options?: RequestInit,
 ): Promise<ActivityDetailResponse> => {
-  return orvalMutator<ActivityDetailResponse>(getApiDeleteActivityApiV1ActivitiesActivityUuidDeleteUrl(activityUuid), {
-    ...options,
-    method: 'DELETE',
-  })
+  return orvalMutator<ActivityDetailResponse>(
+    getApiDeleteActivityApiV1ActivitiesActivityUuidDeleteUrl(activityUuid),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    ActivityDetailResponse,
+  )
 }
 
 export const getApiDeleteActivityApiV1ActivitiesActivityUuidDeleteMutationOptions = <
@@ -540,10 +560,14 @@ export const apiGetActivityApiV1ActivitiesActivityUuidGet = async (
   activityUuid: string,
   options?: RequestInit,
 ): Promise<ActivityReadWithPermissions> => {
-  return orvalMutator<ActivityReadWithPermissions>(getApiGetActivityApiV1ActivitiesActivityUuidGetUrl(activityUuid), {
-    ...options,
-    method: 'GET',
-  })
+  return orvalMutator<ActivityReadWithPermissions>(
+    getApiGetActivityApiV1ActivitiesActivityUuidGetUrl(activityUuid),
+    {
+      ...options,
+      method: 'GET',
+    },
+    ActivityReadWithPermissions,
+  )
 }
 
 export const getApiGetActivityApiV1ActivitiesActivityUuidGetQueryKey = (activityUuid: string) => {
@@ -775,12 +799,16 @@ export const apiUpdateActivityApiV1ActivitiesActivityUuidPatch = async (
   activityUpdate: ActivityUpdate,
   options?: RequestInit,
 ): Promise<ActivityRead> => {
-  return orvalMutator<ActivityRead>(getApiUpdateActivityApiV1ActivitiesActivityUuidPatchUrl(activityUuid), {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(activityUpdate),
-  })
+  return orvalMutator<ActivityRead>(
+    getApiUpdateActivityApiV1ActivitiesActivityUuidPatchUrl(activityUuid),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      body: JSON.stringify(activityUpdate),
+    },
+    ActivityRead,
+  )
 }
 
 export const getApiUpdateActivityApiV1ActivitiesActivityUuidPatchMutationOptions = <
