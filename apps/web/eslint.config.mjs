@@ -2,7 +2,6 @@
 // @ts-check
 import i18next from 'eslint-plugin-i18next'
 import { defineConfig } from 'eslint/config'
-import tseslint from 'typescript-eslint'
 import js from '@eslint/js'
 
 // Plugins
@@ -370,6 +369,8 @@ export default defineConfig(
       '*.config.{js,mjs,cjs,ts}',
       'src/lib/api/generated/**',
       'src\\lib\\api\\generated\\**',
+      '**/*.ts',
+      '**/*.tsx',
     ],
   },
 
@@ -386,18 +387,11 @@ export default defineConfig(
   ...pluginQuery.configs['flat/recommended-strict'],
 
   /* ------------------------------------------------------------------------ */
-  /* TypeScript recommended (typed)                                           */
-  /* ------------------------------------------------------------------------ */
-
-  ...tseslint.configs.recommendedTypeChecked,
-
-  /* ------------------------------------------------------------------------ */
   /* Base language options                                                    */
   /* ------------------------------------------------------------------------ */
 
   {
     plugins: {
-      '@typescript-eslint': tseslint.plugin,
       react,
       'react-hooks': /** @type {any} */ (reactHooks),
       '@next/next': next,
@@ -407,7 +401,6 @@ export default defineConfig(
     },
 
     languageOptions: {
-      parser: tseslint.parser,
       ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: {
@@ -429,55 +422,7 @@ export default defineConfig(
     name: 'js/jsx',
     files: ['**/*.{js,jsx,mjs,cjs}'],
 
-    extends: [tseslint.configs.disableTypeChecked],
-
     rules: /** @type {any} */ (COMMON_RULES),
-  },
-
-  /* ------------------------------------------------------------------------ */
-  /* TypeScript / TSX                                                         */
-  /* ------------------------------------------------------------------------ */
-
-  {
-    name: 'ts/tsx',
-    files: ['**/*.{ts,tsx}'],
-
-    rules: /** @type {any} */ ({
-      ...COMMON_RULES,
-
-      /* TypeScript */
-
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-require-imports': 'warn',
-      '@typescript-eslint/no-unsafe-function-type': 'off',
-      '@typescript-eslint/triple-slash-reference': 'warn',
-      '@typescript-eslint/no-misused-promises': 'off',
-      '@typescript-eslint/no-floating-promises': 'off',
-      '@typescript-eslint/promise-function-async': 'off',
-
-      /* Disable core rules replaced by TS or oxlint */
-
-      'no-undef': 'off',
-      'no-redeclare': 'off',
-
-      '@typescript-eslint/no-redeclare': 'off', // oxlint runs correctness on TS files too
-
-      // Should enable at some point
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/require-await': 'off',
-      '@typescript-eslint/no-redundant-type-constituents': 'off',
-      '@typescript-eslint/restrict-template-expressions': 'off',
-      '@typescript-eslint/only-throw-error': 'off',
-      '@typescript-eslint/no-unsafe-enum-comparison': 'off',
-      '@typescript-eslint/no-base-to-string': 'off',
-      '@typescript-eslint/ban-ts-comment': 'off',
-      '@typescript-eslint/prefer-promise-reject-errors': 'off',
-    }),
   },
 
   /* ------------------------------------------------------------------------ */

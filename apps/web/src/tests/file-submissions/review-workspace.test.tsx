@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import FileSubmissionReviewWorkspace from '@/features/file-submissions/review/FileSubmissionReviewWorkspace'
 import type {
-  FileSubmissionActivity,
   FileSubmissionAttempt,
 } from '@/features/file-submissions/services/file-submissions'
 
@@ -82,7 +81,7 @@ describe('file submission review workspace', () => {
       file_submission_uuid: 'file_submission_1',
       title: 'Portfolio',
       rubric: {},
-    } as FileSubmissionActivity)
+    })
     mocks.getQueue.mockResolvedValue({ items: [first, second], total: 2, page: 1, page_size: 25 })
   })
 

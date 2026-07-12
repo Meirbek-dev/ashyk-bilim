@@ -240,7 +240,9 @@ def _next_action(
     progress: LearnerCourseProgressState,
 ) -> LearnerCourseAction:
     if not enrolled:
-        return LearnerCourseAction(id="enroll", label="Start course", reason="not_enrolled", href=f"/course/{course_uuid}")
+        return LearnerCourseAction(
+            id="enroll", label="Start course", reason="not_enrolled", href=f"/course/{course_uuid}"
+        )
 
     returned = next((activity for activity in activities if activity.state == "returned"), None)
     if returned:
@@ -281,7 +283,9 @@ def _next_action(
         (
             activity
             for activity in activities
-            if activity.required and not activity.complete and activity.state not in {"submitted", "needs_grading", "graded_hidden"}
+            if activity.required
+            and not activity.complete
+            and activity.state not in {"submitted", "needs_grading", "graded_hidden"}
         ),
         None,
     )

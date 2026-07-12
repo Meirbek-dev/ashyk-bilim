@@ -34,11 +34,7 @@ def get_work_queue(
     limit: int = 50,
     cursor: str | None = None,
 ) -> WorkQueueResponse:
-    items = (
-        _learner_work(current_user, db_session)
-        if role == "learner"
-        else _teacher_work(current_user, db_session)
-    )
+    items = _learner_work(current_user, db_session) if role == "learner" else _teacher_work(current_user, db_session)
     ordered = sorted(items, key=_sort_key)
     if cursor:
         cursor_key = _decode_cursor(cursor)
@@ -259,11 +255,7 @@ def _review_submission_uuid(
         ):
             return submission.submission_uuid
 
-    expected_status = (
-        FileSubmissionAttemptStatus.GRADED
-        if awaiting_release
-        else FileSubmissionAttemptStatus.SUBMITTED
-    )
+    expected_status = FileSubmissionAttemptStatus.GRADED if awaiting_release else FileSubmissionAttemptStatus.SUBMITTED
     attempt = db_session.exec(
         select(FileSubmissionAttempt)
         .where(
@@ -283,7 +275,9 @@ def _review_href(course: Course, activity: Activity, submission_uuid: str | None
 
 def _sort_key(item: WorkItem) -> tuple[int, datetime, str]:
     rank = {"critical": 0, "high": 1, "normal": 2, "low": 3}
-    due = _as_utc(item.due_at or item.created_at) if item.due_at or item.created_at else datetime.max.replace(tzinfo=UTC)
+    due = (
+        _as_utc(item.due_at or item.created_at) if item.due_at or item.created_at else datetime.max.replace(tzinfo=UTC)
+    )
     return rank[item.priority], due, item.id
 
 

@@ -532,9 +532,7 @@ def _completion_satisfied(
         return status == SubmissionStatus.PUBLISHED.value
     if rule == AssessmentCompletionRule.PASSED.value:
         return (
-            status == SubmissionStatus.PUBLISHED.value
-            and score is not None
-            and score >= _policy_passing_score(policy)
+            status == SubmissionStatus.PUBLISHED.value and score is not None and score >= _policy_passing_score(policy)
         )
     return False
 

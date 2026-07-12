@@ -1355,9 +1355,7 @@ def get_course_readiness(
             ActivityTypeEnum.TYPE_CODE_CHALLENGE,
             ActivityTypeEnum.TYPE_CUSTOM,
         }:
-            assessment = db_session.exec(
-                select(Assessment).where(Assessment.activity_id == activity.id)
-            ).first()
+            assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
             if assessment is None or assessment.lifecycle != AssessmentLifecycle.PUBLISHED:
                 issues.append(
                     CourseReadinessIssue(
@@ -1406,12 +1404,15 @@ def get_course_readiness(
                 )
 
     warning_specs = [
-        (not bool((course.thumbnail_image or "").strip()), "COURSE_THUMBNAIL_MISSING", "Add a course thumbnail.", "general"),
+        (
+            not bool((course.thumbnail_image or "").strip()),
+            "COURSE_THUMBNAIL_MISSING",
+            "Add a course thumbnail.",
+            "general",
+        ),
         (not bool((course.learnings or "").strip()), "COURSE_OUTCOMES_MISSING", "Add learning outcomes.", "general"),
         (
-            not db_session.exec(
-                select(Certifications.id).where(Certifications.course_id == course.id)
-            ).first(),
+            not db_session.exec(select(Certifications.id).where(Certifications.course_id == course.id)).first(),
             "COURSE_CERTIFICATE_NOT_CONFIGURED",
             "No certificate is configured. This does not block publishing.",
             "certification",
@@ -1445,7 +1446,9 @@ def get_course_readiness(
     if activity_ids:
         scheduled_content_count = int(
             db_session.exec(
-                select(func.count()).select_from(Assessment).where(
+                select(func.count())
+                .select_from(Assessment)
+                .where(
                     col(Assessment.activity_id).in_(activity_ids),
                     Assessment.lifecycle == AssessmentLifecycle.SCHEDULED,
                 )

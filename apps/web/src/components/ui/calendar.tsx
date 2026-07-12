@@ -312,12 +312,13 @@ function CalendarDateTimePicker({
     },
   } as React.ComponentProps<typeof DayPicker>
 
-  React.useEffect(() => {
-    if (open) {
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
       setDraftDate(parsedValue ?? undefined)
       setDraftTime(parsedValue ? formatTimeOnly(parsedValue) : '')
     }
-  }, [open, value, parsedValue])
+    setOpen(next)
+  }
 
   const commit = () => {
     if (!draftDate) return
@@ -327,7 +328,7 @@ function CalendarDateTimePicker({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
           <Button

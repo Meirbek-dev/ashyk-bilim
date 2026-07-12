@@ -257,9 +257,7 @@ def test_saved_grade_stays_hidden_from_learner_progress_until_published(
 
     with db_session_factory() as session:
         file_submission = session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.file_submission_uuid == file_submission_uuid
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == file_submission_uuid)
         ).one()
         activity = session.get_one(Activity, file_submission.activity_id)
         now = datetime.now(UTC)
@@ -452,9 +450,7 @@ def test_teacher_can_open_a_deep_linked_submission_outside_the_queue_page(
         session.commit()
 
     client = TestClient(_make_app(db_session_factory, student_user, monkeypatch))
-    response = client.get(
-        f"/file-submissions/{file_submission_uuid}/submissions/filesub_attempt_deep_link"
-    )
+    response = client.get(f"/file-submissions/{file_submission_uuid}/submissions/filesub_attempt_deep_link")
 
     assert response.status_code == 200
     assert response.json()["attempt_uuid"] == "filesub_attempt_deep_link"

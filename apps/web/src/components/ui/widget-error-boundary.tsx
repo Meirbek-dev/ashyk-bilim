@@ -57,6 +57,7 @@ class BaseWidgetErrorBoundary extends Component<
   private readonly handleReset = () => {
     this.props.onQueryReset?.()
 
+     
     this.setState({ error: null, hasError: false })
   }
 
