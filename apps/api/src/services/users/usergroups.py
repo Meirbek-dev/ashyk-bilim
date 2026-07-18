@@ -5,6 +5,7 @@ from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.core.timezone import utcnow
+from src.db.courses.courses import Course
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 from src.db.usergroups import UserGroup, UserGroupCreate, UserGroupRead, UserGroupUpdate
@@ -382,7 +383,20 @@ async def add_resources_to_usergroup(
         resource_owner_id=usergroup.creator_id,
     )
 
-    resources_uuids_array = resources_uuids.split(",")
+    resource_uuids = list(dict.fromkeys(value.strip() for value in resources_uuids.split(",") if value.strip()))
+    if not resource_uuids:
+        raise HTTPException(status_code=422, detail="Укажите хотя бы один ресурс")
+
+    matched_uuids = {
+        course.course_uuid
+        for course in db_session.exec(select(Course).where(col(Course.course_uuid).in_(resource_uuids))).all()
+    }
+    missing_uuids = [resource_uuid for resource_uuid in resource_uuids if resource_uuid not in matched_uuids]
+    if missing_uuids:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Ресурсы не найдены: {', '.join(missing_uuids)}",
+        )
 
     # Batch fetch all existing resource links in one query
     existing_uuids = {
@@ -390,19 +404,18 @@ async def add_resources_to_usergroup(
         for ugr in db_session.exec(
             select(UserGroupResource).where(
                 UserGroupResource.usergroup_id == usergroup_id,
-                col(UserGroupResource.resource_uuid).in_(resources_uuids_array),
+                col(UserGroupResource.resource_uuid).in_(resource_uuids),
             )
         ).all()
     }
 
     current_time = utcnow()
     new_entries: list[UserGroupResource] = []
-    for resource_uuid in resources_uuids_array:
+    for resource_uuid in resource_uuids:
         if resource_uuid in existing_uuids:
             logger.error("Ресурс %s уже есть в группе пользователей", resource_uuid)
             continue
 
-        # TODO : Find a way to check if resource really exists
         new_entries.append(
             UserGroupResource(
                 usergroup_id=usergroup_id,

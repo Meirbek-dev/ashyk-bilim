@@ -166,20 +166,6 @@ const serializationCases: Array<{ title: string; doc: object }> = [
     },
   },
   {
-    title: 'inline quiz',
-    doc: {
-      type: 'doc',
-      content: [
-        {
-          type: 'inlineQuiz',
-          attrs: {
-            assessmentUuid: 'assessment_1',
-          },
-        },
-      ],
-    },
-  },
-  {
     title: 'scenarios block',
     doc: {
       type: 'doc',

@@ -3,15 +3,14 @@
   "tags": ["-lintignore"],
   "entry": ["src/app/**/*.{ts,tsx}", "src/i18n/navigation.ts", "scripts/**/*.mjs"],
   "project": ["src/**/*.{ts,tsx,mjs}"],
-  "ignore": [
-    "e2e/**/*",
-    "src/components/ui/**/*",
-    "src/components/Objects/Activities/DynamicCanva/AI/AICanvaToolkit.tsx"
-  ],
-  "ignoreDependencies": ["sharp", "shadcn", "tw-animate-css", "tailwindcss", "prosemirror-view"],
+  "ignore": ["src/components/ui/**/*"],
+  "ignoreDependencies": ["@shadcn/react", "sharp", "shadcn", "tw-animate-css", "tailwindcss", "prosemirror-view"],
+  "ignoreIssues": {
+    "src/lib/api/generated/**": ["files", "exports", "types"]
+  },
   "rules": {
     "files": "warn",
-    "exports": "warn",
+    "exports": "off",
     "types": "off",
     "duplicates": "off"
   }

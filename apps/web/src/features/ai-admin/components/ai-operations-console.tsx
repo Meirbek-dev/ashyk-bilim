@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ErrorState, InlineError } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -25,6 +26,7 @@ function percentile(values: number[], position: number) {
 
 export function AIOperationsConsole() {
   const t = useTranslations('AiExperience.operationsConsole')
+  const tErrors = useTranslations('Errors')
   const locale = useLocale()
   const [filters, setFilters] = useState<AIOperationFilters>({ days: 7 })
   const [selectedRun, setSelectedRun] = useState<string | null>(null)
@@ -35,6 +37,26 @@ export function AIOperationsConsole() {
   const date = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }), [locale])
   const metrics = useMemo(() => summarizeRuns(runs.data ?? []), [runs.data])
 
+  if (runs.isError && !runs.data) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('title')}</CardTitle>
+          <CardDescription>{t('description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ErrorState
+            title={tErrors('somethingWentWrong')}
+            description={tErrors('defaultError')}
+            error={runs.error}
+            actionLabel={tErrors('retry')}
+            onAction={() => void runs.refetch()}
+          />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -42,6 +64,9 @@ export function AIOperationsConsole() {
         <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {runs.isError ? (
+          <InlineError title={tErrors('somethingWentWrong')} description={tErrors('defaultError')} error={runs.error} />
+        ) : null}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <Select
             value={String(filters.days)}
@@ -196,8 +221,24 @@ export function AIOperationsConsole() {
             </div>
             {detail.isLoading ? (
               <Skeleton className="mt-3 h-32 w-full" />
+            ) : detail.isError && !detail.data ? (
+              <ErrorState
+                className="mt-3 min-h-48"
+                title={tErrors('somethingWentWrong')}
+                description={tErrors('defaultError')}
+                error={detail.error}
+                actionLabel={tErrors('retry')}
+                onAction={() => void detail.refetch()}
+              />
             ) : detail.data ? (
               <div className="mt-3 flex flex-col gap-3 text-sm">
+                {detail.isError ? (
+                  <InlineError
+                    title={tErrors('somethingWentWrong')}
+                    description={tErrors('defaultError')}
+                    error={detail.error}
+                  />
+                ) : null}
                 <code className="break-all">{detail.data.run.run_uuid}</code>
                 <dl className="grid gap-2 sm:grid-cols-3">
                   <Metric label={t('table.feature')} value={detail.data.run.feature} />

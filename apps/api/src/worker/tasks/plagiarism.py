@@ -44,6 +44,9 @@ async def check_file_submission_plagiarism(
     provider = get_plagiarism_provider()
     try:
         result = await provider.check(submission_uuid, file_keys)
+        if result.get("status") == "disabled":
+            logger.info("plagiarism_check_disabled submission=%s", submission_uuid)
+            return
         logger.info(
             "plagiarism_check submission=%s score=%s flagged=%s",
             submission_uuid,

@@ -126,7 +126,7 @@ Evidence:
 `apps/web/scripts/postprocess-orval-output.mjs` defines:
 
 ```ts
-type Compat<T> = T extends never ? never : any;
+type Compat<T> = T extends never ? never : any
 ```
 
 Every `components['schemas'][...]` lookup therefore becomes `any`. A reversible audit probe changed the alias to `type Compat<T> = T` and ran `vp check --no-fmt`. TypeScript reported one error:
@@ -379,7 +379,7 @@ File-submission plagiarism jobs call a provider registry whose default provider 
 | ----------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Alembic migrations with legacy table and field cleanup            | Migration history must remain immutable                                     | Never rewrite applied migrations; squash only under an explicit deployment plan                 |
 | `EDITOR_LEGACY_PATH_RE` and assessment deep-link route            | Existing bookmarks may use old URLs                                         | Remove after access logs show no old-route traffic for a defined period                         |
-| Editor JSON normalization for `blockQuiz` and other old nodes     | Stored course content may still contain old node shapes                     | Run a database audit and migration, then remove the read-time adapter                           |
+| Editor JSON normalization for other old nodes                     | Inline-quiz content is removed by migration `a4b5c6d7e8f9`                  | Remove remaining adapters after their own data migrations                                       |
 | Assessment `can_edit`, `can_save_draft`, and `can_submit` flags   | The frontend still reads all three                                          | Migrate the frontend to fine-grained actions first                                              |
 | `AssessmentAttemptProjection` and `AssessmentRead` aliases        | Backend services and frontend generated lookups still use the OpenAPI names | Rename consumers in one contract migration                                                      |
 | Legacy conflict-envelope fallback in `useAssessmentSubmission.ts` | May protect users during mixed-version deployment                           | Remove after telemetry or a deployment cutoff proves every backend returns the current envelope |

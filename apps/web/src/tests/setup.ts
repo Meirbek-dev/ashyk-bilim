@@ -1,5 +1,8 @@
-import '@testing-library/jest-dom'
-import { vi } from 'vite-plus/test'
+import '@testing-library/jest-dom/vitest'
+import { cleanup } from '@testing-library/react'
+import { afterEach, vi } from 'vite-plus/test'
+
+afterEach(cleanup)
 
 // Polyfill process.env for browser environment
 if (typeof process === 'undefined') {

@@ -36,28 +36,8 @@ function readStringAttr(attrs: Record<string, unknown> | null, key: string): str
   return typeof value === 'string' && value.trim().length > 0 ? value : null
 }
 
-function legacyBlockQuizToInlineQuiz(node: JSONContent): JSONContent {
-  const attrs = isRecord(node.attrs) ? node.attrs : null
-  const assessmentUuid =
-    readStringAttr(attrs, 'assessmentUuid') ??
-    readStringAttr(attrs, 'assessment_uuid') ??
-    readStringAttr(attrs, 'assessmentId') ??
-    readStringAttr(attrs, 'assessment_id')
-
-  return {
-    type: 'inlineQuiz',
-    attrs: {
-      assessmentUuid,
-    },
-  }
-}
-
-function removeLegacyNodes(node: JSONContent): JSONContent {
+function normalizeNode(node: JSONContent): JSONContent {
   let normalizedNode = node
-
-  if (normalizedNode.type === 'blockQuiz') {
-    return legacyBlockQuizToInlineQuiz(normalizedNode)
-  }
 
   if (normalizedNode.type === 'codeBlock') {
     normalizedNode = normalizeCodeBlockNode(normalizedNode)
@@ -69,7 +49,7 @@ function removeLegacyNodes(node: JSONContent): JSONContent {
 
   return {
     ...normalizedNode,
-    content: normalizedNode.content.map(removeLegacyNodes),
+    content: normalizedNode.content.map(normalizeNode),
   }
 }
 
@@ -130,10 +110,10 @@ function looksLikeKotlin(text: string): boolean {
   return score >= 2
 }
 
-function removeLegacyBlockQuizNodes(content: TiptapJsonDoc): TiptapJsonDoc {
+function normalizeNodes(content: TiptapJsonDoc): TiptapJsonDoc {
   return {
     ...content,
-    content: content.content.map(removeLegacyNodes),
+    content: content.content.map(normalizeNode),
   }
 }
 
@@ -141,11 +121,11 @@ export function normalizeTiptapJsonContent(content: unknown, fallback: Content =
   const parsedContent = parseMaybeJsonString(content)
 
   if (isTiptapJsonDoc(parsedContent)) {
-    return removeLegacyBlockQuizNodes(parsedContent)
+    return normalizeNodes(parsedContent)
   }
 
   if (isRecord(parsedContent) && Array.isArray(parsedContent.content)) {
-    return removeLegacyBlockQuizNodes({
+    return normalizeNodes({
       type: 'doc',
       content: parsedContent.content,
     })

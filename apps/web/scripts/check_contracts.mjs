@@ -7,6 +7,7 @@
  */
 
 import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -14,6 +15,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..', '..', '..')
 
 const TRACKED_FILES = ['apps/api/openapi.json', 'apps/web/src/lib/api/generated']
+const COMPAT_FILES = ['apps/web/scripts/postprocess-orval-output.mjs', 'apps/web/src/lib/api/generated/index.ts']
+const anyCompatAlias = /type\s+Compat<[^>]+>\s*=[^\n;]*\bany\b/u
+
+for (const relativePath of COMPAT_FILES) {
+  if (anyCompatAlias.test(readFileSync(path.join(repoRoot, relativePath), 'utf8'))) {
+    console.error(`[check:contracts] FAILED: ${relativePath} erases generated schema types with Compat<any>.`)
+    process.exit(1)
+  }
+}
 
 try {
   execSync(`git diff --exit-code -- ${TRACKED_FILES.join(' ')}`, {

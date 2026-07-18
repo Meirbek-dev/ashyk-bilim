@@ -11257,44 +11257,6 @@
         "title": "HistogramBucket",
         "type": "object"
       },
-      "InlineQuizCreate": {
-        "description": "Request body for POST /assessments/inline-quiz.",
-        "properties": {
-          "activity_id": {
-            "title": "Activity Id",
-            "type": "integer"
-          },
-          "title": {
-            "default": "Inline Quiz",
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": ["activity_id"],
-        "title": "InlineQuizCreate",
-        "type": "object"
-      },
-      "InlineQuizResponse": {
-        "description": "Response for POST /assessments/inline-quiz.",
-        "properties": {
-          "activity_id": {
-            "title": "Activity Id",
-            "type": "integer"
-          },
-          "assessment_uuid": {
-            "title": "Assessment Uuid",
-            "type": "string"
-          },
-          "is_inline": {
-            "default": true,
-            "title": "Is Inline",
-            "type": "boolean"
-          }
-        },
-        "required": ["assessment_uuid", "activity_id"],
-        "title": "InlineQuizResponse",
-        "type": "object"
-      },
       "InsightFeedItem": {
         "properties": {
           "activity_id": {
@@ -24999,61 +24961,6 @@
         "tags": ["assessments"]
       }
     },
-    "/api/v1/assessments/inline-quiz": {
-      "post": {
-        "description": "Создать новое встроенное оценивание-quiz, привязанное к родительской активности.",
-        "operationId": "api_create_inline_quiz_api_v1_assessments_inline_quiz_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InlineQuizCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InlineQuizResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Validation Error"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Внутренняя ошибка сервера"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Create Inline Quiz",
-        "tags": ["assessments"]
-      }
-    },
     "/api/v1/assessments/policy-preset/{kind}": {
       "get": {
         "description": "Вернуть настройки политики по умолчанию для заданного типа оценивания.",
@@ -36792,6 +36699,55 @@
           }
         ],
         "summary": "Put Assessment Upload Bytes",
+        "tags": ["uploads"]
+      }
+    },
+    "/api/v1/uploads/{upload_id}/download": {
+      "get": {
+        "description": "Download a finalized upload owned by the current user.",
+        "operationId": "download_assessment_upload_api_v1_uploads__upload_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "title": "Upload Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Download Assessment Upload",
         "tags": ["uploads"]
       }
     },

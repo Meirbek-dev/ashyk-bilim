@@ -1,36 +1,26 @@
-"""Plagiarism check subscriber — delegates to pluggable provider.
-
-Replaces the old stub in services/integrations/plagiarism.py.
-"""
+"""Pluggable plagiarism-provider selection."""
 
 from __future__ import annotations
 
-import logging
 from typing import Protocol, override
 
-from src.services.events.types import (
-    FileSubmissionSubmittedEvent,
-    SubmissionSubmittedEvent,
-)
 from src.types import PlagiarismCheckResult
-
-logger = logging.getLogger(__name__)
 
 
 class PlagiarismProvider(Protocol):
     """Protocol for pluggable plagiarism detection providers."""
 
     async def check(self, submission_uuid: str, file_keys: list[str]) -> PlagiarismCheckResult:
-        """Run plagiarism check. Returns a result dict with at minimum {score, flagged}."""
+        """Run a plagiarism check, or report that the provider is disabled."""
         raise NotImplementedError
 
 
-class NoopPlagiarismProvider(PlagiarismProvider):
-    """Default no-op provider — logs and returns clean."""
+class DisabledPlagiarismProvider(PlagiarismProvider):
+    """Default provider used until a real integration is configured."""
 
     @override
     async def check(self, submission_uuid: str, file_keys: list[str]) -> PlagiarismCheckResult:
-        return {"score": 0.0, "flagged": False}
+        return {"status": "disabled", "details": {"reason": "No plagiarism provider is configured"}}
 
 
 # Config-driven provider selection
@@ -41,7 +31,7 @@ def get_plagiarism_provider() -> PlagiarismProvider:
     """Return the configured plagiarism provider."""
     global _provider
     if _provider is None:
-        _provider = NoopPlagiarismProvider()
+        _provider = DisabledPlagiarismProvider()
     return _provider
 
 
@@ -49,31 +39,3 @@ def set_plagiarism_provider(provider: PlagiarismProvider) -> None:
     """Override the provider (for testing or config-driven selection)."""
     global _provider
     _provider = provider
-
-
-class PlagiarismSubscriber:
-    """Checks submissions with file uploads for plagiarism."""
-
-    async def handle(self, event: SubmissionSubmittedEvent | FileSubmissionSubmittedEvent) -> None:
-        """Only triggers when file_keys are present."""
-        if not event.file_keys:
-            return
-
-        provider = get_plagiarism_provider()
-        try:
-            submission_uuid = (
-                event.submission_uuid if isinstance(event, SubmissionSubmittedEvent) else event.attempt_uuid
-            )
-            result = await provider.check(submission_uuid, event.file_keys)
-            logger.info(
-                "plagiarism_check submission=%s score=%s flagged=%s",
-                submission_uuid,
-                result.get("score", 0),
-                result.get("flagged", False),
-            )
-        except Exception as exc:
-            logger.warning(
-                "plagiarism_check_failed submission=%s error=%s",
-                getattr(event, "submission_uuid", None) or getattr(event, "attempt_uuid", ""),
-                exc,
-            )

@@ -69,7 +69,7 @@ def _validate_policy_override_ceilings(
         })
     if errors:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "POLICY_OVERRIDE_CEILING_EXCEEDED", "errors": errors},
         )
 

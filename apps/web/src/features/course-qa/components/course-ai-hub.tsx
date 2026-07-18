@@ -4,6 +4,8 @@ import { BookOpenCheckIcon, GraduationCapIcon, MessageCircleQuestionIcon, Shield
 import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
+import { ErrorState, InlineError } from '@/components/ui/error-state'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CourseAnalysisEntry } from '@/features/course-analysis/components/course-analysis-entry'
 import { useActivityAIUrlState, useAIScopeCapabilities } from '@/features/ai-experience'
@@ -85,23 +87,55 @@ export function CourseAIHub({ courseUuid, scope, variant = 'inline' }: CourseAIH
 
 function CourseAIHubPanel({ courseUuid, scope }: Pick<CourseAIHubProps, 'courseUuid' | 'scope'>) {
   const t = useTranslations('AiExperience.courseAIHub')
+  const tErrors = useTranslations('Errors')
   const { mode: requestedMode } = useActivityAIUrlState()
   const capabilities = useAIScopeCapabilities(scope ?? { courseUuid, surface: 'course-page' })
   const availableModes = capabilities.data?.modes ?? []
   const mode = availableModes.includes(requestedMode) ? requestedMode : availableModes[0]
   const route = resolveCourseAISurfaceRoute(mode, scope?.surface ?? 'course-page')
+  const errorNotice = capabilities.isError ? (
+    <InlineError title={tErrors('somethingWentWrong')} description={t('capabilityError')} error={capabilities.error} />
+  ) : null
+
+  if (capabilities.isLoading) {
+    return <Skeleton className="h-32 w-full" />
+  }
+
+  if (capabilities.isError && !capabilities.data) {
+    return (
+      <ErrorState
+        className="min-h-48"
+        title={tErrors('somethingWentWrong')}
+        description={t('capabilityError')}
+        error={capabilities.error}
+        actionLabel={tErrors('retry')}
+        onAction={() => void capabilities.refetch()}
+      />
+    )
+  }
 
   if (route === 'chat') {
-    return <QAPanel courseUuid={courseUuid} {...(scope?.activityUuid ? { activityUuid: scope.activityUuid } : {})} />
+    return (
+      <>
+        {errorNotice}
+        <QAPanel courseUuid={courseUuid} {...(scope?.activityUuid ? { activityUuid: scope.activityUuid } : {})} />
+      </>
+    )
   }
 
   if (route === 'course-review') {
-    return <CourseAnalysisEntry courseUuid={courseUuid} />
+    return (
+      <>
+        {errorNotice}
+        <CourseAnalysisEntry courseUuid={courseUuid} />
+      </>
+    )
   }
 
   return (
-    <p className="text-muted-foreground p-4 text-sm">
-      {capabilities.isError ? t('capabilityError') : t('unavailable')}
-    </p>
+    <>
+      {errorNotice}
+      <p className="text-muted-foreground p-4 text-sm">{t('unavailable')}</p>
+    </>
   )
 }

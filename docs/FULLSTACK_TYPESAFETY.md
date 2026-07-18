@@ -1,33 +1,38 @@
-# Fullstack Typesafety Workflow
+# Full-stack Type Safety Workflow
 
 This repository treats the backend OpenAPI schema as the API contract source of truth.
 
 ## Contract Artifacts
 
 - Backend schema artifact: `apps/api/openapi.json`
-- Generated frontend types: `apps/web/lib/api/generated/schema.ts`
-- Generated type barrel: `apps/web/lib/api/generated/index.ts`
+- Generated frontend schemas: `apps/web/src/lib/api/generated/api.schemas.ts`
+- Generated type barrel: `apps/web/src/lib/api/generated/index.ts`
+- Generated API clients and validators: `apps/web/src/lib/api/generated/`
 
 ## Commands
 
-Generate both backend and frontend contract artifacts from the repository root:
+Generate the backend schema and frontend artifacts from the repository root:
 
 ```bash
 bun run generate:contracts
 ```
 
-Generate only the backend OpenAPI schema:
+Generate only the backend OpenAPI schema from the repository root:
 
 ```bash
-cd apps/api
-bun run generate:openapi
+bun run --cwd apps/api generate:openapi
 ```
 
-Generate only the frontend TypeScript contract types:
+Generate only the frontend TypeScript artifacts from the repository root:
 
 ```bash
-cd apps/web
-bun run generate:api-types
+bun run --cwd apps/web generate:api-types
+```
+
+Regenerate every artifact and fail if the result differs from the committed files:
+
+```bash
+bun run check:contracts
 ```
 
 ## Contract Rules
@@ -46,9 +51,10 @@ bun run generate:api-types
 2. Update routers to use explicit request and response models.
 3. Run `bun run generate:contracts`.
 4. Update frontend service-layer mappings if the contract changed.
-5. Run frontend typecheck.
+5. Run `bun run check:contracts` and `bun run vp check`.
 
 ## CI Enforcement
 
-The `Contract Sync` workflow regenerates the contract artifacts and fails if `apps/api/openapi.json`
-or `apps/web/lib/api/generated/schema.ts` are out of date.
+The `Contract Sync` workflow runs `bun run check:contracts`. The command regenerates the contract
+and fails when `apps/api/openapi.json` or any file under `apps/web/src/lib/api/generated/` differs
+from the committed version.

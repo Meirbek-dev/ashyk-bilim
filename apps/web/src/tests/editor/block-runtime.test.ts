@@ -68,11 +68,6 @@ const runtimeCases = [
     expectedType: 'blockPDF',
   },
   {
-    title: 'inline quiz',
-    run: (editor: Editor) => editor.commands.insertInlineQuiz(),
-    expectedType: 'inlineQuiz',
-  },
-  {
     title: 'scenario block',
     run: (editor: Editor) => editor.commands.insertScenarios(),
     expectedType: 'scenarios',

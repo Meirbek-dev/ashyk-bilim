@@ -132,6 +132,13 @@ function normalizeAuthors(authors: AuthorWithRole[] | undefined): NormalizedCour
   })
 }
 
+function normalizeChapter(chapter: FullCourseRead['chapters'][number]): AppChapter {
+  return {
+    ...chapter,
+    activities: chapter.activities.map(activity => ({ ...activity })),
+  }
+}
+
 function normalizeCourse(course: CourseRead): NormalizedCourse {
   const {
     about,
@@ -215,7 +222,7 @@ function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
     ...rest,
     about: about ?? '',
     authors: normalizeAuthors(authors),
-    chapters: chapters ?? [],
+    chapters: chapters.map(normalizeChapter),
     course_uuid: course_uuid ?? '',
     description: description ?? '',
     learnings: learnings ?? '',

@@ -15,6 +15,13 @@ export default defineConfig({
     environment: 'jsdom',
     exclude: ['**/node_modules/**', '**/.next/**', '**/dist/**', '**/e2e/**'],
     include: ['apps/web/src/tests/**/*.{test,spec}.{ts,tsx}'],
+    maxWorkers: 4,
+    setupFiles: ['apps/web/src/tests/setup.ts'],
+    server: {
+      deps: {
+        inline: ['next-intl'],
+      },
+    },
   },
   fmt: {
     printWidth: 120,

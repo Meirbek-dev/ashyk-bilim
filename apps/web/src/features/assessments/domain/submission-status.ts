@@ -42,7 +42,7 @@ const KNOWN_SUBMISSION_STATUSES = new Set<KnownSubmissionStatus>([
   'RETURNED',
 ])
 
-function isKnownSubmissionStatus(
+export function isKnownSubmissionStatus(
   status: SubmissionStatus | string | null | undefined,
 ): status is KnownSubmissionStatus {
   return typeof status === 'string' && KNOWN_SUBMISSION_STATUSES.has(status as KnownSubmissionStatus)
@@ -79,18 +79,18 @@ export function canTransitionSubmission(
   return allowedTransitions?.includes(to) ?? false
 }
 
-export function needsTeacherAction(status: SubmissionStatus): boolean {
+export function needsTeacherAction(status: SubmissionStatus | null | undefined): boolean {
   return status === 'PENDING'
 }
 
-export function canTeacherEditGrade(status: SubmissionStatus): boolean {
+export function canTeacherEditGrade(status: SubmissionStatus | null | undefined): boolean {
   return status === 'PENDING' || status === 'GRADED' || status === 'RETURNED'
 }
 
-export function canPublishGrade(status: SubmissionStatus): boolean {
+export function canPublishGrade(status: SubmissionStatus | null | undefined): boolean {
   return status === 'GRADED'
 }
 
-export function canReturnSubmission(status: SubmissionStatus): boolean {
+export function canReturnSubmission(status: SubmissionStatus | null | undefined): boolean {
   return status === 'PENDING' || status === 'GRADED' || status === 'PUBLISHED'
 }

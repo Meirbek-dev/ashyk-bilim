@@ -42,6 +42,10 @@ if (findings.length > 0) {
   }
 }
 
+if (findings.some(finding => finding.code === 'QUERY_FALLBACK_WITHOUT_ERROR_UI')) {
+  process.exitCode = 1
+}
+
 function scan(directory) {
   let entries
   try {

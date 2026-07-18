@@ -3263,7 +3263,6 @@
         "allUsers": "all users",
         "averageStreak": "Average Streak",
         "averageXP": "Average XP",
-        "backendImplementationRequired": "TODO: Backend implementation required for user streak categorization",
         "dailyCapReached": "⚡ Daily cap reached!",
         "days": "days",
         "engagementLevel": "Engagement Level",
@@ -4371,16 +4370,6 @@
       "rosterActionsImmediateDescription": "Search, add, remove, role changes, and status updates update the live contributor roster right away. Keep them separate from the policy draft above."
     },
     "Editor": {
-      "InlineQuizExtension": {
-        "title": "Inline Quiz",
-        "editQuestions": "Edit Questions",
-        "itemEditorComingSoon": "Item editor for assessment {assessmentUuid} (coming in Phase 2)",
-        "score": "Score: {score}%",
-        "quizInfo": "Inline quiz ({id}…)",
-        "submit": "Submit",
-        "close": "Close",
-        "quizNotConfigured": "Quiz not configured"
-      },
       "BadgesExtension": {
         "deepDive": "Deep Dive",
         "discussionTopic": "Discussion Topic",

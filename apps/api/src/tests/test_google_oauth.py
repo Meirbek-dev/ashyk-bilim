@@ -3,6 +3,7 @@ import uuid
 import pytest
 from fastapi_users.jwt import generate_jwt
 
+from config.config import reload_platform_config_cache
 from src.app.exceptions import AppError
 from src.security.keys import get_jwt_secret, reload_key_cache
 from src.services.auth.google_oauth import (
@@ -15,7 +16,9 @@ from src.services.auth.google_oauth import (
 
 
 @pytest.fixture(autouse=True)
-def clear_jwt_secret_cache() -> None:
+def clear_jwt_secret_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PLATFORM_JWT_SECRET", "google-oauth-test-secret-at-least-32-bytes")
+    reload_platform_config_cache()
     reload_key_cache()
 
 

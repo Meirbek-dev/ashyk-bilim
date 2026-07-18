@@ -5,9 +5,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import FileSubmissionReviewWorkspace from '@/features/file-submissions/review/FileSubmissionReviewWorkspace'
-import type {
-  FileSubmissionAttempt,
-} from '@/features/file-submissions/services/file-submissions'
+import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
 
 const mocks = vi.hoisted(() => ({
   getActivity: vi.fn(),

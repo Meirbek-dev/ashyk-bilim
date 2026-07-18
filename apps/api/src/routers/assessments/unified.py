@@ -90,11 +90,6 @@ from src.services.assessments.core import (
     update_assessment_item,
     update_student_policy_override,
 )
-from src.services.assessments.inline_quiz import (
-    InlineQuizCreate,
-    InlineQuizResponse,
-    create_inline_quiz,
-)
 from src.services.grading.teacher import export_grades_csv
 from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
 
@@ -690,19 +685,6 @@ async def api_delete_override(
     return AssessmentDetailResponse.model_validate(
         await delete_student_policy_override(assessment_uuid, user_id, current_user, db_session)
     )
-
-
-# ── Inline quiz ────────────────────────────────────────────────────────────────
-
-
-@router.post("/inline-quiz", response_model=InlineQuizResponse)
-async def api_create_inline_quiz(
-    payload: InlineQuizCreate,
-    current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)],
-) -> InlineQuizResponse:
-    """Создать новое встроенное оценивание-quiz, привязанное к родительской активности."""
-    return await create_inline_quiz(payload, current_user, db_session)
 
 
 # ── Audit trail ────────────────────────────────────────────────────────────────

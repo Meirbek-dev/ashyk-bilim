@@ -39,7 +39,7 @@ This plan is based on code inspection, existing project plans, and static scans.
 - `GradingReviewWorkspace` has the right three-pane direction, but teacher action priority still lives inside local filters and panels instead of an organization-wide grading queue.
 - `AssessmentWorkspaceShell` has a strong readiness strip and save ledger, but warning/success colors and issue chips are still local styling rather than a global LMS state language.
 - `features/assessments/domain/progress.ts` defines progress labels/classes, but the classes are raw color recipes, not semantic LMS tokens.
-- Inline quiz extensions still contain TODOs around actual API/runtime wiring. Embedded quiz UX should either be made first-class or removed from authoring choices until it is real.
+- Inline quizzes and their stored compatibility data were fully removed.
 
 ## What is already good
 
@@ -509,26 +509,17 @@ Acceptance criteria:
 - Every authoring surface shows the same save/conflict language.
 - Navigation guards cover refresh, route change, tab close, and AI panel actions when relevant.
 
-### P1.6 Make embedded quiz either real or unavailable
+### P1.6 Remove incomplete embedded quiz behavior (resolved)
 
-Current problem:
+Resolution:
 
-- Inline quiz author/attempt components still contain TODOs for actual API/runtime wiring.
-- This risks teachers creating blocks that feel supported but are not first-class assessment objects.
-
-Plan:
-
-- Option A: remove inline quiz from the insert menu until complete.
-- Option B: make inline quiz a first-class assessment embed:
-  - creates/links an assessment UUID
-  - uses standard attempt runtime
-  - participates in grading/release
-  - appears in progress, gradebook, and analytics
+- Removed inline quiz creation, authoring, fake attempts, and parser compatibility.
+- Added migration `a4b5c6d7e8f9` to purge stored nodes and backing records.
 
 Acceptance criteria:
 
 - No authoring option creates a fake or partial learning object.
-- Inline quiz behavior converges with the assessment system.
+- Existing inline quiz nodes are removed by the deployment migration.
 
 ## P2 product changes
 
@@ -650,7 +641,7 @@ Priority audits:
 - Define `LmsStatus` model.
 - Create route inventory.
 - Define learner/teacher/admin dashboard requirements.
-- Decide whether inline quiz is removed or made first-class.
+- Inline quiz decision resolved: remove the feature and migrate stored compatibility data.
 
 ### Week 2: Dashboard rewrite
 

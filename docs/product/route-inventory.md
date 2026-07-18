@@ -80,4 +80,4 @@ Routes use the localized App Router shell under `apps/web/src/app/[locale]`.
 - Learner dashboard feed does not have a dedicated backend contract yet.
 - `/dash/users/settings/users` and `/dash/admin/users` overlap; consolidate naming before a larger admin IA pass.
 - Analytics routes expose several peer views; the dashboard now links only to action-oriented destinations.
-- Inline quiz remains legacy-renderable but unavailable for new authoring until the assessment runtime is wired end to end.
+- Inline quizzes are fully removed; migration `a4b5c6d7e8f9` purges stored nodes and backing records.

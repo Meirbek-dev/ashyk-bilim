@@ -21,7 +21,6 @@ import ImageBlock from '../Extensions/Image/ImageBlock'
 import InfoCallout from '../Extensions/Callout/Info/InfoCallout'
 import MathEquationBlock from '../Extensions/MathEquation/MathEquationBlock'
 import PDFBlock from '../Extensions/PDF/PDFBlock'
-import InlineQuiz from '../Extensions/InlineQuiz/InlineQuiz'
 import Scenarios from '../Extensions/Scenarios/Scenarios'
 import UserBlock from '../Extensions/Users/UserBlock'
 import VideoBlock from '../Extensions/Video/VideoBlock'
@@ -82,7 +81,6 @@ function createActivityBlockExtensions(activity: ActivityRef, editable: boolean)
     VideoBlock.configure({ editable, activity }),
     MathEquationBlock.configure({ editable, activity }),
     PDFBlock.configure({ editable, activity }),
-    InlineQuiz.configure({ editable, activity }),
     Youtube.configure({ controls: true, modestBranding: true }),
     CodeBlockShiki.configure({
       HTMLAttributes: {

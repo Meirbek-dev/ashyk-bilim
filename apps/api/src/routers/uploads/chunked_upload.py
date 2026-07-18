@@ -2,6 +2,7 @@
 
 import hashlib
 import shutil
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Literal
@@ -16,10 +17,12 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 from ulid import ULID
 
 from src.auth.users import get_public_user
+from src.core.http import get_content_disposition_header
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.uploads import (
     Upload,
@@ -112,6 +115,25 @@ def _owned_upload(upload_uuid: str, user_id: int, db_session: Session) -> Upload
     return upload
 
 
+def _finalized_upload_path(upload: Upload, user_uuid: str) -> Path:
+    if upload.status != UploadStatus.FINALIZED:
+        raise HTTPException(status_code=409, detail="Загрузка не завершена")
+    if not upload.storage_key:
+        raise HTTPException(status_code=404, detail="Байты загрузки отсутствуют")
+
+    storage_root = (Path("content") / "users" / user_uuid).resolve()
+    path = (storage_root / upload.storage_key).resolve()
+    if not path.is_relative_to(storage_root) or not path.is_file():
+        raise HTTPException(status_code=404, detail="Байты загрузки отсутствуют")
+    return path
+
+
+def _stream_file(path: Path, *, chunk_size: int = 64 * 1024) -> Iterator[bytes]:
+    with path.open("rb") as file:
+        while chunk := file.read(chunk_size):
+            yield chunk
+
+
 def _owned_chunked_session(upload_id: str, user_id: int) -> ChunkedUploadSession:
     session = get_upload_session(upload_id)
     if session.owner_user_id != user_id:
@@ -169,7 +191,8 @@ async def put_assessment_upload_bytes(
     upload = _owned_upload(upload_id, current_user.id, db_session)
     if upload.status in {UploadStatus.FINALIZED, UploadStatus.CANCELLED}:
         raise HTTPException(status_code=409, detail="Загрузка уже закрыта")
-    if upload.expires_at < datetime.now(UTC):
+    expires_at = upload.expires_at if upload.expires_at.tzinfo else upload.expires_at.replace(tzinfo=UTC)
+    if expires_at < datetime.now(UTC):
         raise HTTPException(status_code=410, detail="Срок загрузки истек")
 
     content = await request.body()
@@ -288,6 +311,23 @@ class UploadUrlResponse(PydanticStrictBaseModel):
     expires_at: datetime
 
 
+@router.get("/{upload_id}/download", response_class=StreamingResponse)
+async def download_assessment_upload(
+    upload_id: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> StreamingResponse:
+    """Download a finalized upload owned by the current user."""
+    upload = _owned_upload(upload_id, current_user.id, db_session)
+    user_uuid = current_user.user_uuid or str(current_user.id)
+    path = _finalized_upload_path(upload, user_uuid)
+    return StreamingResponse(
+        _stream_file(path),
+        media_type=upload.content_type or "application/octet-stream",
+        headers={"Content-Disposition": get_content_disposition_header(upload.filename)},
+    )
+
+
 @router.get("/{upload_id}/url", response_model=UploadUrlResponse)
 async def get_assessment_upload_url(
     upload_id: str,
@@ -299,9 +339,7 @@ async def get_assessment_upload_url(
     upload = _owned_upload(upload_id, current_user.id, db_session)
     if upload.status != UploadStatus.FINALIZED:
         raise HTTPException(status_code=409, detail="Загрузка не завершена")
-    # In development / without a real object-store, return the finalize URL as a
-    # placeholder.  In production this would be replaced with a presigned S3 GET URL.
-    get_url = str(request.url_for("put_assessment_upload_bytes", upload_id=upload_id))
+    get_url = str(request.url_for("download_assessment_upload", upload_id=upload_id))
     expires_at = datetime.now(UTC) + timedelta(hours=1)
     return UploadUrlResponse(upload_uuid=upload_id, get_url=get_url, expires_at=expires_at)
 

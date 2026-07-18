@@ -57,7 +57,7 @@ class BaseWidgetErrorBoundary extends Component<
   private readonly handleReset = () => {
     this.props.onQueryReset?.()
 
-     
+    // oxlint-disable-next-line react/no-set-state -- Class error boundaries reset through local state.
     this.setState({ error: null, hasError: false })
   }
 

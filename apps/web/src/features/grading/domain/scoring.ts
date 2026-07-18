@@ -1,15 +1,6 @@
 import type { GradedItem } from './types'
 
-export function parseScoreInput(score: string, maxScore = 100): number | null {
-  if (score === '') return null
-  const parsed = Number.parseFloat(score)
-  if (Number.isNaN(parsed) || parsed < 0 || parsed > maxScore) return null
-  return parsed
-}
-
-export function formatPercentScore(score: number | null | undefined): string {
-  return score === null || score === undefined ? '--' : `${Math.round(score * 100) / 100}%`
-}
+export { formatPercent as formatPercentScore, parseScoreInput } from '@/features/assessments/domain/score'
 
 export function formatScoreFraction(score: number | null | undefined, maxScore = 100): string {
   return score === null || score === undefined ? '--' : `${Math.round(score * 100) / 100}/${maxScore}`

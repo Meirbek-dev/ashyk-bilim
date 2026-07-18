@@ -31,7 +31,7 @@ export * from './api.schemas'
 
 import type * as schemas from './api.schemas'
 
-type Compat<T> = T extends never ? never : any
+type Compat<T> = T
 
 export type components = {
   schemas: {

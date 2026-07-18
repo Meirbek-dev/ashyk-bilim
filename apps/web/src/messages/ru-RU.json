@@ -4385,16 +4385,6 @@
       "rosterActionsImmediateDescription": "Поиск, добавление, удаление, изменение ролей и статусов обновляют список соавторов немедленно. Храните их отдельно от черновика политики выше."
     },
     "Editor": {
-      "InlineQuizExtension": {
-        "title": "Встроенный тест",
-        "editQuestions": "Редактировать вопросы",
-        "itemEditorComingSoon": "Редактор учебных задач для оценивания {assessmentUuid} (будет в Фазе 2)",
-        "score": "Балл: {score}%",
-        "quizInfo": "Встроенный тест ({id}…)",
-        "submit": "Отправить",
-        "close": "Закрыть",
-        "quizNotConfigured": "Тест не настроен"
-      },
       "BadgesExtension": {
         "deepDive": "Глубокое погружение",
         "discussionTopic": "Тема для обсуждения",

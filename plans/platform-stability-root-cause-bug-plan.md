@@ -304,7 +304,7 @@ Root fix:
 
 Evidence:
 
-- Inline quiz editor/attempt components contain TODOs for actual API calls and rendering.
+- Inline quizzes, including their legacy parser and persisted compatibility data, have been removed.
 - Gamification profile UI has TODO-gated backend fields.
 - Locale messages include user-facing TODO text for backend implementation.
 
@@ -419,7 +419,7 @@ Tasks:
 - Convert assessment draft local storage into an explicit recovery layer with telemetry.
 - Move high-value assessment answers to server draft autosave whenever authenticated.
 - Add conflict resolution tests for stale `If-Match`, parallel saves, submit while save pending, 429 retry, offline then online, and tab reload.
-- Feature-flag inline quiz UI until it uses real assessment APIs and has E2E coverage.
+- Apply migration `a4b5c6d7e8f9` before deploying the frontend that removes inline-quiz parsing.
 - Audit `structuredClone` usage in curriculum editor, assessment studio, editor wrapper, and gamification preferences.
 
 Exit criteria:

@@ -4,6 +4,7 @@ import {
   getSubmissionStatusLabel,
   normalizeActivityProgressCell,
   normalizeSubmission,
+  parseScoreInput,
   type SubmissionStatus,
 } from '@/features/grading/domain'
 
@@ -44,5 +45,9 @@ describe('grading boundary normalization', () => {
   it('rejects unsupported transitions rather than silently defaulting them', () => {
     expect(canTransitionSubmission('UNSUPPORTED_STATUS' as unknown as SubmissionStatus, 'PENDING')).toBe(false)
     expect(canTransitionSubmission('PENDING', 'UNSUPPORTED_STATUS' as unknown as SubmissionStatus)).toBe(false)
+  })
+
+  it('treats whitespace-only score input as empty', () => {
+    expect(parseScoreInput('   ')).toBeNull()
   })
 })

@@ -4389,16 +4389,6 @@
       "rosterActionsImmediateDescription": "Іздеу, қосу, жою, рөлдер мен мәртебелерді өзгерту қатысушылар тізімін бірден жаңартады. Оларды жоғарыдағы саясат жобасынан бөлек сақтаңыз."
     },
     "Editor": {
-      "InlineQuizExtension": {
-        "title": "Кірістірілген тест",
-        "editQuestions": "Сұрақтарды өңдеу",
-        "itemEditorComingSoon": "Бағалауға арналған оқу әрекеттері редакторы {assessmentUuid} (2-кезеңде болады)",
-        "score": "Ұпай: {score}%",
-        "quizInfo": "Кірістірілген тест ({id}…)",
-        "submit": "Жіберу",
-        "close": "Жабу",
-        "quizNotConfigured": "Тест бапталмаған"
-      },
       "BadgesExtension": {
         "deepDive": "Терең талдау",
         "discussionTopic": "Талқылау тақырыбы",

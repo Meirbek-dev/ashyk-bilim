@@ -664,7 +664,7 @@ async def _save_teacher_grade(
                 submission_uuid,
             )
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(
                     f"Нельзя перейти из {current_status} в {requested_status}. "
                     f"Разрешённые переходы: {[s.value for s in allowed]}"

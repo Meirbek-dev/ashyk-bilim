@@ -277,7 +277,7 @@ async def get_collections(
 ) -> list[CollectionReadWithPermissions]:
 
     statement_public = select(Collection).where(Collection.public)
-    statement_all = select(Collection).distinct(col(Collection.id))
+    statement_all = select(Collection)
 
     statement = statement_public if current_user.id == 0 else statement_all
 

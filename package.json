@@ -10,7 +10,7 @@
     "dev": "bun run services && turbo run dev",
     "dev:web": "cd apps/web && bun run dev",
     "dev:api": "cd apps/api && uv run app.py",
-    "check:contracts": "bun run generate:contracts && git diff --exit-code -- apps/api/openapi.json apps/web/src/lib/api/generated",
+    "check:contracts": "bun run generate:contracts && bun run --cwd apps/web check:contracts",
     "generate:contracts": "bun run --cwd apps/api generate:contracts && bun run --cwd apps/web generate:contracts",
     "services": "docker-compose up -d db redis",
     "services:judge0": "docker-compose up -d db redis && docker-compose up -d --force-recreate judge0-workers judge0-server",
@@ -25,20 +25,20 @@
   "devDependencies": {
     "taze": "^19.14.1",
     "turbo": "^2.10.5",
-    "vite-plus": "^0.2.4"
+    "vite-plus": "0.2.4"
   },
   "overrides": {
     "prosemirror-model": "1.25.7",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.2",
-    "vitest": "4.1.9"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+    "vitest": "4.1.10"
   },
   "engines": {
     "bun": ">=1.3.12"
   },
   "packageManager": "bun@1.3.14",
   "catalog": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.2",
-    "vitest": "4.1.9",
-    "vite-plus": "latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+    "vitest": "4.1.10",
+    "vite-plus": "0.2.4"
   }
 }

@@ -6,7 +6,7 @@
 
 /** @vitest-environment jsdom */
 
-import { render, screen, act } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
@@ -248,28 +248,16 @@ describe('EmbedPanel focus management (Requirements 12.3)', () => {
 
 describe('EmbedPanel focus trap (Requirements 12.4)', () => {
   beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
     resetEmbedPanelStore()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('Tab key cycles focus within the dialog', async () => {
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    })
+    const user = userEvent.setup()
     render(<EmbedPanel />)
     openPanel()
 
-    // Advance timers to trigger focus management
-    act(() => {
-      vi.advanceTimersByTime(150)
-    })
-
     const dialog = screen.getByRole('dialog')
-    expect(dialog.contains(document.activeElement)).toBe(true)
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
     // Tab through all focusable elements — focus must stay inside the dialog
     for (let i = 0; i < 5; i += 1) {
@@ -279,19 +267,12 @@ describe('EmbedPanel focus trap (Requirements 12.4)', () => {
   })
 
   it('Shift+Tab key cycles focus backwards within the dialog', async () => {
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    })
+    const user = userEvent.setup()
     render(<EmbedPanel />)
     openPanel()
 
-    // Advance timers to trigger focus management
-    act(() => {
-      vi.advanceTimersByTime(150)
-    })
-
     const dialog = screen.getByRole('dialog')
-    expect(dialog.contains(document.activeElement)).toBe(true)
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
     // Shift+Tab through all focusable elements — focus must stay inside the dialog
     for (let i = 0; i < 5; i += 1) {
@@ -303,29 +284,17 @@ describe('EmbedPanel focus trap (Requirements 12.4)', () => {
 
 describe('EmbedPanel Escape key behavior (Requirements 12.6)', () => {
   beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
     resetEmbedPanelStore()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('Escape key closes the dialog', async () => {
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    })
+    const user = userEvent.setup()
     render(<EmbedPanel />)
     openPanel()
 
-    // Advance timers to move focus inside the dialog
-    act(() => {
-      vi.advanceTimersByTime(150)
-    })
-
     // Verify dialog is open and focus is inside
     const dialog = screen.getByRole('dialog')
-    expect(dialog.contains(document.activeElement)).toBe(true)
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
     await user.keyboard('{Escape}')
 
@@ -333,9 +302,7 @@ describe('EmbedPanel Escape key behavior (Requirements 12.6)', () => {
   })
 
   it('Escape key returns focus to the trigger element', async () => {
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    })
+    const user = userEvent.setup()
 
     // Create a trigger button and set it as the triggerRef in the store
     const triggerButton = document.createElement('button')
@@ -354,22 +321,12 @@ describe('EmbedPanel Escape key behavior (Requirements 12.6)', () => {
 
     render(<EmbedPanel />)
 
-    // Advance timers to move focus inside the dialog
-    act(() => {
-      vi.advanceTimersByTime(150)
-    })
-
     const dialog = screen.getByRole('dialog')
-    expect(dialog.contains(document.activeElement)).toBe(true)
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
     await user.keyboard('{Escape}')
 
-    // Advance timers for the focus-return setTimeout(0)
-    act(() => {
-      vi.advanceTimersByTime(50)
-    })
-
-    expect(document.activeElement).toBe(triggerButton)
+    await waitFor(() => expect(document.activeElement).toBe(triggerButton))
 
     // Cleanup
     document.body.removeChild(triggerButton)

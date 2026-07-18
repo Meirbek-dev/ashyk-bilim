@@ -35,23 +35,15 @@ The dashboard starts with role-aware work instead of a section launcher. Section
 
 ## Inline Quiz Decision
 
-Inline quiz is removed from new authoring entry points until it becomes first-class.
+Inline quizzes have been fully removed.
 
 Current state:
 
-- The backend schema exposes `/api/v1/assessments/inline-quiz`.
-- The TipTap node and legacy rendering path remain so existing documents do not break.
-- The author and learner NodeViews still have TODOs for real creation, item rendering, attempt state, and grading.
+- The backend no longer exposes `/api/v1/assessments/inline-quiz`.
+- Migration `a4b5c6d7e8f9` removes stored inline-quiz nodes, their backing activities, and compatibility columns.
+- The TipTap parser and authoring schema no longer register inline-quiz nodes.
+- Canonical assessments and their submissions remain accessible through normal assessment routes.
 
 Decision:
 
-- Hide inline quiz from the insert menu now.
-- Keep the extension registered for legacy content.
-- Reintroduce it only when it uses canonical assessment APIs for creation, policy, attempt, grading, analytics, and E2E coverage.
-
-Acceptance criteria for reintroduction:
-
-- Teacher creates an inline quiz from a real activity context.
-- Learner answers inline using the canonical assessment attempt runtime.
-- Grade, release state, completion state, and analytics match normal quiz behavior.
-- Playwright covers teacher authoring and learner attempt.
+- Do not expose inline-quiz authoring, parsing, or attempts.
