@@ -6,7 +6,7 @@ COPY apps/api/package.json ./apps/api/package.json
 RUN --mount=type=cache,target=/root/.bun/install/cache \
   bun install --frozen-lockfile
 
-FROM oven/bun:1-alpine AS builder
+FROM node:26-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
@@ -24,7 +24,7 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
 
 # Strip any local env files so they are never baked into the image
 RUN rm -f apps/web/.env*
-RUN bun run --cwd apps/web build
+RUN npm --prefix apps/web run build
 
 FROM node:26-alpine AS runner
 WORKDIR /app

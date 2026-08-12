@@ -16,7 +16,7 @@ const FileUploadBlockInput: FC<InputHTMLAttributes<HTMLInputElement> & { ariaLab
   return (
     <input
       className={cn(
-        'cursor-pointer rounded-lg p-3 file:mr-4 file:rounded-full file:border-0 file:file:bg-gray-200 file:px-4 file:py-2 file:text-gray-500 hover:file:cursor-pointer',
+        'cursor-pointer rounded-lg p-3 file:mr-4 file:rounded-full file:border-0 file:bg-gray-200 file:px-4 file:py-2 file:text-gray-500 hover:file:cursor-pointer',
         className,
       )}
       onChange={onChange}
