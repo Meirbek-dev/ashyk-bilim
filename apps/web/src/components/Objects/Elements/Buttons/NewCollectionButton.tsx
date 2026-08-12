@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { Button } from '@components/ui/button'
 
-const NewCollectionButton = async () => {
+async function NewCollectionButton() {
   const t = await getTranslations('Components.Button')
   return (
     <Button className="my-auto gap-2">

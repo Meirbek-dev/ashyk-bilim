@@ -41,8 +41,8 @@ class AIArtifactRead(PydanticStrictBaseModel):
 
 
 class AIRunStreamRequest(PydanticStrictBaseModel):
-    threadId: str  # noqa: N815
-    runId: str  # noqa: N815
+    threadId: str  # ruff: ignore[mixed-case-variable-in-class-scope]
+    runId: str  # ruff: ignore[mixed-case-variable-in-class-scope]
 
 
 def _run_or_404(db_session: Session, run_uuid: str) -> AIRun:

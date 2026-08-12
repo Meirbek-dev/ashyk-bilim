@@ -7,13 +7,13 @@ import { usePlatformConfig } from '@/features/platform/hooks/usePlatform'
 
 const PlatformContext = createContext<Platform | null>(null)
 
-export const PlatformContextProvider = ({
+export function PlatformContextProvider({
   children,
   initialPlatform,
 }: {
   children: ReactNode
   initialPlatform?: Platform | null | undefined
-}) => {
+}) {
   return <PlatformContext.Provider value={initialPlatform ?? null}>{children}</PlatformContext.Provider>
 }
 

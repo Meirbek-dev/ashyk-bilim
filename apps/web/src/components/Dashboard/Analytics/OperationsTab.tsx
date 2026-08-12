@@ -10,11 +10,13 @@ const AnomalyPanel = lazy(() => import('./AnomalyPanel'))
 const DataQualityPanel = lazy(() => import('./DataQualityPanel'))
 const ForecastingPanel = lazy(() => import('./ForecastingPanel'))
 
-const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-  <Card className="border-border bg-card shadow-sm">
-    <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
-  </Card>
-)
+function SectionFallback({ height = 'h-[280px]' }: { height?: string }) {
+  return (
+    <Card className="border-border bg-card shadow-sm">
+      <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
+    </Card>
+  )
+}
 
 interface OperationsTabProps {
   query: AnalyticsQuery

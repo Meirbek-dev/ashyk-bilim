@@ -13,7 +13,7 @@ interface CalloutOptions {
 
 type WarningCalloutAttrs = CalloutOptions
 
-const WarningCalloutComponent = (props: TypedNodeViewProps<WarningCalloutAttrs>) => {
+function WarningCalloutComponent(props: TypedNodeViewProps<WarningCalloutAttrs>) {
   const editorState = useEditorProvider()
   const { isEditable } = editorState
   const [dismissed, setDismissed] = useState(false)

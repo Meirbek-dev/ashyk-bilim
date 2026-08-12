@@ -1559,7 +1559,7 @@ def _build_canonical_policy(
 def _review_visibility(settings: Mapping[str, object]) -> AssessmentReviewVisibility:
     value = settings.get("review_visibility")
     if value in {"NONE", "SCORE_ONLY", "FULL"}:
-        return cast("AssessmentReviewVisibility", value)
+        return value
     if settings.get("allow_result_review") is False:
         return "NONE"
     if settings.get("show_correct_answers") is False:

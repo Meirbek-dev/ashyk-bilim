@@ -22,7 +22,7 @@ const TLDRAW_DEFAULT_HEIGHT = 500
 
 // ── TldrawNodeView ────────────────────────────────────────────────────────────
 
-const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
+function TldrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
   const { node, updateAttributes, deleteNode, getPos, editor } = props
   const { url, height: attrHeight } = node.attrs
 

@@ -200,6 +200,14 @@ describe('teacher review controls', () => {
 
   it('shows deadline extension preview and queues the selected learner override', async () => {
     const onRefresh = vi.fn().mockResolvedValue(undefined)
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 1)
+    const dueDateName = new RegExp(
+      `${dueDate.toLocaleString('en-US', { month: 'long' })} ${dueDate.getDate()}(?:st|nd|rd|th), ${dueDate.getFullYear()}`,
+      'i',
+    )
+    const expectedDueAt = new Date(dueDate)
+    expectedDueAt.setHours(14, 30, 0, 0)
     render(
       <ReviewBulkActionBar
         activityId={77}
@@ -235,7 +243,7 @@ describe('teacher review controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'deadlinePlaceholder' }))
 
     const dueAtDialog = await screen.findByRole('dialog')
-    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /July 15/i }))
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: dueDateName }))
 
     const dueAtTimeInput = dueAtDialog.querySelector('input[type="time"]')
     expect(dueAtTimeInput).not.toBeNull()
@@ -258,7 +266,7 @@ describe('teacher review controls', () => {
     })
     expect(mocks.createStudentPolicyOverrideMock).toHaveBeenNthCalledWith(1, 'assessment_review', {
       user_id: 9,
-      due_at_override: new Date('2026-07-15T14:30').toISOString(),
+      due_at_override: expectedDueAt.toISOString(),
       note: 'Medical extension',
     })
     expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineQueued')

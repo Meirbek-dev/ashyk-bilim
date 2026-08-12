@@ -16,11 +16,11 @@ interface ThemeSelectorProps {
   className?: string
 }
 
-const ColorBox = ({ color }: { color: string }) => (
-  <div className="border-border h-3 w-3 rounded-sm border" style={{ backgroundColor: color }} />
-)
+function ColorBox({ color }: { color: string }) {
+  return <div className="border-border h-3 w-3 rounded-sm border" style={{ backgroundColor: color }} />
+}
 
-const ThemeColors = ({
+function ThemeColors({
   colors,
 }: {
   colors: {
@@ -29,14 +29,16 @@ const ThemeColors = ({
     accent: string
     background: string
   }
-}) => (
-  <div className="flex gap-0.5">
-    <ColorBox color={colors.primary} />
-    <ColorBox color={colors.secondary} />
-    <ColorBox color={colors.accent} />
-    <ColorBox color={colors.background} />
-  </div>
-)
+}) {
+  return (
+    <div className="flex gap-0.5">
+      <ColorBox color={colors.primary} />
+      <ColorBox color={colors.secondary} />
+      <ColorBox color={colors.accent} />
+      <ColorBox color={colors.background} />
+    </div>
+  )
+}
 
 export function ThemeSelector({ className }: ThemeSelectorProps) {
   const { theme: currentTheme, themes, setTheme, isDark, toggleMode } = useTheme()

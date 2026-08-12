@@ -31,7 +31,7 @@ interface PropsType {
 
 const removeCollectionPrefix = (collectionid: string) => collectionid.replace('collection_', '')
 
-const CollectionMosaic = ({ courses }: { courses: AppCourse[] | number[] | undefined }) => {
+function CollectionMosaic({ courses }: { courses: AppCourse[] | number[] | undefined }) {
   if (!courses || courses.length === 0) {
     return (
       <div className="bg-muted flex h-full w-full items-center justify-center">
@@ -97,7 +97,7 @@ const CollectionMosaic = ({ courses }: { courses: AppCourse[] | number[] | undef
   )
 }
 
-const CollectionThumbnail = ({ collection }: PropsType) => {
+function CollectionThumbnail({ collection }: PropsType) {
   const t = useTranslations('Components.CollectionThumbnail')
   const tCommon = useTranslations('Common')
 
@@ -149,7 +149,7 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
   )
 }
 
-const CollectionDeleteAction = ({
+function CollectionDeleteAction({
   collection_uuid,
   collection,
   canDelete,
@@ -157,7 +157,7 @@ const CollectionDeleteAction = ({
   collection_uuid: string
   collection: AppCollection
   canDelete: boolean
-}) => {
+}) {
   const t = useTranslations('Components.CollectionThumbnail')
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)

@@ -50,7 +50,7 @@ const navigateTo = (url: string) => {
   globalThis.location.href = url
 }
 
-const NewExam = ({ chapterId, course, closeModal }: AppActivityModalProps) => {
+function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.NewExamModal')
 

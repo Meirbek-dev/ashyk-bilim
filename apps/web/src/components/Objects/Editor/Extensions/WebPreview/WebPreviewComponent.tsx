@@ -29,22 +29,26 @@ const ALIGNMENTS = [
   { value: 'right', label: <AlignRight size={16} /> },
 ]
 
-const PreviewImage = ({ src, alt }: { src: string; alt: string }) => (
-  <div className="relative -mx-6 -mt-6 mb-0 h-40 w-full overflow-hidden rounded-t-xl">
-    <NextImage src={src} alt={alt} fill className="object-cover" sizes="100vw" />
-  </div>
-)
+function PreviewImage({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="relative -mx-6 -mt-6 mb-0 h-40 w-full overflow-hidden rounded-t-xl">
+      <NextImage src={src} alt={alt} fill className="object-cover" sizes="100vw" />
+    </div>
+  )
+}
 
-const FaviconDisplay = ({ favicon, url, faviconAlt }: { favicon?: string; url: string; faviconAlt: string }) => (
-  <div className="mt-0 flex items-center border-t border-gray-100 pt-2">
-    {favicon ? (
-      <div className="relative mr-2 h-[18px] w-[18px] overflow-hidden rounded bg-gray-100">
-        <NextImage src={favicon} alt={faviconAlt} fill className="object-cover" />
-      </div>
-    ) : null}
-    <span className="truncate text-xs text-gray-500">{url}</span>
-  </div>
-)
+function FaviconDisplay({ favicon, url, faviconAlt }: { favicon?: string; url: string; faviconAlt: string }) {
+  return (
+    <div className="mt-0 flex items-center border-t border-gray-100 pt-2">
+      {favicon ? (
+        <div className="relative mr-2 h-[18px] w-[18px] overflow-hidden rounded bg-gray-100">
+          <NextImage src={favicon} alt={faviconAlt} fill className="object-cover" />
+        </div>
+      ) : null}
+      <span className="truncate text-xs text-gray-500">{url}</span>
+    </div>
+  )
+}
 
 const getAlignmentClass = (alignment: string) => {
   if (alignment === 'center') return 'justify-center'
@@ -61,7 +65,7 @@ function urlPreviewQueryOptions(url: string) {
   })
 }
 
-const AlignmentControls = ({
+function AlignmentControls({
   alignment,
   onAlignmentChange,
   alignments,
@@ -71,36 +75,38 @@ const AlignmentControls = ({
   onAlignmentChange: (value: string) => void
   alignments: typeof ALIGNMENTS
   t: (key: string, values?: Record<string, string>) => string
-}) => (
-  <div className="mt-4 flex flex-col items-center">
-    <div className="flex items-center gap-1">
-      <span className="mr-1 text-xs text-gray-500">{t('align')}:</span>
-      {alignments.map(opt => (
-        <button
-          key={opt.value}
-          aria-pressed={alignment === opt.value}
-          onClick={() => {
-            onAlignmentChange(opt.value)
-          }}
-          title={t('alignOption', { value: t(opt.value) })}
-          type="button"
-          className={`flex items-center justify-center rounded-full border p-1.5 text-gray-600 transition-colors duration-150 focus:ring-2 focus:ring-blue-300 focus:outline-none ${
-            alignment === opt.value
-              ? 'border-gray-600 bg-gray-600 text-white hover:bg-gray-700'
-              : 'border-gray-200 bg-white hover:bg-gray-100'
-          }`}
-        >
-          {opt.label}
-        </button>
-      ))}
+}) {
+  return (
+    <div className="mt-4 flex flex-col items-center">
+      <div className="flex items-center gap-1">
+        <span className="mr-1 text-xs text-gray-500">{t('align')}:</span>
+        {alignments.map(opt => (
+          <button
+            key={opt.value}
+            aria-pressed={alignment === opt.value}
+            onClick={() => {
+              onAlignmentChange(opt.value)
+            }}
+            title={t('alignOption', { value: t(opt.value) })}
+            type="button"
+            className={`flex items-center justify-center rounded-full border p-1.5 text-gray-600 transition-colors duration-150 focus:ring-2 focus:ring-blue-300 focus:outline-none ${
+              alignment === opt.value
+                ? 'border-gray-600 bg-gray-600 text-white hover:bg-gray-700'
+                : 'border-gray-200 bg-white hover:bg-gray-100'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 // The component logic is intentionally split across helper functions and local state.
 // Complexity is managed by breaking large expressions into isolated helpers.
 
-const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewProps) => {
+function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewProps) {
   const t = useTranslations('Components.WebPreview')
   const [inputUrl, setInputUrl] = useState(node.attrs.url || '')
   const [error, setError] = useState<string | null>(null)

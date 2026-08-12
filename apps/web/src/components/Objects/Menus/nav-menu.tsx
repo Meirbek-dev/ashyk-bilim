@@ -127,7 +127,7 @@ interface NavLinkProps {
   onNavigate?: () => void
 }
 
-const DesktopNavLink = ({ def, label }: NavLinkProps) => {
+function DesktopNavLink({ def, label }: NavLinkProps) {
   const { icon: Icon, href } = def
   const isActive = useIsActive(href)
 
@@ -160,7 +160,7 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
 // ----------------------------------------------------------------------
 // Mobile link — roomier tap target, primary accent dot on active
 // ----------------------------------------------------------------------
-const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
+function MobileNavLink({ def, label, onNavigate }: NavLinkProps) {
   const { icon: Icon, href } = def
   const isActive = useIsActive(href)
 

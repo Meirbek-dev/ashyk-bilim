@@ -28,7 +28,7 @@ import {
   optimizeAvatarFile,
 } from './avatar-utils'
 
-const UserEditGeneral = () => {
+function UserEditGeneral() {
   const router = useRouter()
   const { user: me } = useSession()
   const [localAvatar, setLocalAvatar] = useState<File | null>(null)

@@ -16,7 +16,7 @@ interface EditorProviderProps {
   options: EditorProviderState
 }
 
-const EditorOptionsProvider = ({ children, options }: EditorProviderProps) => {
+function EditorOptionsProvider({ children, options }: EditorProviderProps) {
   return <EditorProviderContext.Provider value={options}>{children}</EditorProviderContext.Provider>
 }
 

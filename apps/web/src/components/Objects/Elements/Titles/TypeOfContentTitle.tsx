@@ -9,7 +9,7 @@ interface TypeOfContentTitleProps {
   as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
 }
 
-const TypeOfContentTitle = ({ title, type, as: Component = 'h2' }: TypeOfContentTitleProps) => {
+function TypeOfContentTitle({ title, type, as: Component = 'h2' }: TypeOfContentTitleProps) {
   const t = useTranslations('Components.TypeOfContentTitle')
 
   let logoAltType = 'unknown'

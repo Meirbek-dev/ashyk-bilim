@@ -63,7 +63,7 @@ type ExtendedNodeViewProps = {
   }
 } & Omit<NodeViewProps, 'extension'>
 
-const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
+function VideoBlockComponent(props: ExtendedNodeViewProps) {
   const t = useTranslations('DashPage.Editor.VideoBlock')
   const fullLocale = useLocale()
   const locale = fullLocale.split('-')[0]

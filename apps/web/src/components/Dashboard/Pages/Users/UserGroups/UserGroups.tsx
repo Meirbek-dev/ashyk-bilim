@@ -77,7 +77,7 @@ function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButt
   )
 }
 
-const UserGroups = () => {
+function UserGroups() {
   const t = useTranslations('DashPage.UserSettings.usergroupsSection')
   const [userGroupManagementModal, setUserGroupManagementModal] = useState(false)
   const [createUserGroupModal, setCreateUserGroupModal] = useState(false)

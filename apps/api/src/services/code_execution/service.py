@@ -19,7 +19,7 @@ from ulid import ULID
 
 import judge0
 from config.config import get_settings, secret_value
-from judge0.clients import __version__ as JUDGE0_SDK_VERSION  # noqa: N812
+from judge0.clients import __version__ as JUDGE0_SDK_VERSION  # ruff: ignore[lowercase-imported-as-non-lowercase]
 from src.app.exceptions import AppError, ConflictAppError, dependency_unavailable
 from src.db.assessments import CodeRunTestResult, CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus

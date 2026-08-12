@@ -85,23 +85,25 @@ interface SearchBarProps {
   showSearchSuggestions?: boolean
 }
 
-const CourseResultsSkeleton = () => (
-  <div className="p-2">
-    <div className="flex items-center gap-2 px-2 py-2">
-      <div className="bg-muted h-4 w-4 animate-pulse rounded" />
-      <div className="bg-muted h-4 w-20 animate-pulse rounded" />
-    </div>
-    {[1, 2].map(i => (
-      <div key={i} className="flex items-center gap-3 p-2">
-        <div className="bg-muted h-10 w-10 animate-pulse rounded-lg" />
-        <div className="flex-1">
-          <div className="bg-muted mb-2 h-4 w-48 animate-pulse rounded" />
-          <div className="bg-muted h-3 w-32 animate-pulse rounded" />
-        </div>
+function CourseResultsSkeleton() {
+  return (
+    <div className="p-2">
+      <div className="flex items-center gap-2 px-2 py-2">
+        <div className="bg-muted h-4 w-4 animate-pulse rounded" />
+        <div className="bg-muted h-4 w-20 animate-pulse rounded" />
       </div>
-    ))}
-  </div>
-)
+      {[1, 2].map(i => (
+        <div key={i} className="flex items-center gap-3 p-2">
+          <div className="bg-muted h-10 w-10 animate-pulse rounded-lg" />
+          <div className="flex-1">
+            <div className="bg-muted mb-2 h-4 w-48 animate-pulse rounded" />
+            <div className="bg-muted h-3 w-32 animate-pulse rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false, showSearchSuggestions = false }) => {
   const t = useTranslations('Components.SearchBar')

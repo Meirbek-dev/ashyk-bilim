@@ -26,7 +26,7 @@ interface UserRow {
   }
 }
 
-const ManageUsers = (props: ManageUsersProps) => {
+function ManageUsers(props: ManageUsersProps) {
   const t = useTranslations('Components.ManageUsers')
   const queryClient = useQueryClient()
   const { data: Users } = useAllMembers()

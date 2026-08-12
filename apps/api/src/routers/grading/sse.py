@@ -202,12 +202,12 @@ async def api_feedback_stream(
                     missed = await get_events_since(submission_uuid, last_event_id)
                     for event_data in missed:
                         event_type = str(event_data.get("event", "message"))
-                        yield encode_sse(event_type, event_data)  # noqa: ASYNC119
+                        yield encode_sse(event_type, event_data)  # ruff: ignore[yield-in-context-manager-in-async-generator]
                 except Exception:
                     logger.warning("Не удалось повторно воспроизвести SSE", exc_info=True)
 
             # ── Send connected event ──────────────────────────────────────────
-            yield encode_sse(  # noqa: ASYNC119
+            yield encode_sse(  # ruff: ignore[yield-in-context-manager-in-async-generator]
                 "connected",
                 grading_event("connected", submission_uuid),
             )
@@ -215,7 +215,7 @@ async def api_feedback_stream(
             if redis is None:
                 # No Redis — just send keepalives until disconnect.
                 while not await request.is_disconnected():
-                    yield ": keepalive\n\n"  # noqa: ASYNC119
+                    yield ": keepalive\n\n"  # ruff: ignore[yield-in-context-manager-in-async-generator]
                     await asyncio.sleep(_KEEPALIVE_INTERVAL)
                 return
 
@@ -224,7 +224,7 @@ async def api_feedback_stream(
             await pubsub.subscribe(grading_channel(submission_uuid))
             try:
                 async for event in _stream_pubsub(pubsub, request, submission_uuid):
-                    yield event  # noqa: ASYNC119
+                    yield event  # ruff: ignore[yield-in-context-manager-in-async-generator]
             finally:
                 await pubsub.unsubscribe(grading_channel(submission_uuid))
                 await pubsub.aclose()  # type: ignore[no-untyped-call]

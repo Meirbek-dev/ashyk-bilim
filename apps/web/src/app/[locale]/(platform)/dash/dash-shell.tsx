@@ -6,7 +6,7 @@ import DashSidebar from '@components/Dashboard/Menus/DashSidebar'
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 
-const DashShell = ({ children }: { children: ReactNode }) => {
+function DashShell({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider defaultOpen>
       <DashSidebar className="z-50" />

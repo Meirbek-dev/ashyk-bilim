@@ -98,7 +98,7 @@ declare module '@tanstack/react-table' {
   }
 }
 
-type ColumnPinningPosition = false | 'left' | 'right'
+type ColumnPinningPosition = false | 'start' | 'end'
 
 interface PinnableColumn {
   getAfter?: (position?: ColumnPinningPosition | 'center') => number
@@ -117,19 +117,19 @@ export function getColumnPinningStyle({
   withBorder?: boolean
 }): React.CSSProperties {
   const isPinned = column.getIsPinned?.() ?? false
-  const isLastLeftPinnedColumn = isPinned === 'left' && column.getIsLastColumn?.('left')
-  const isFirstRightPinnedColumn = isPinned === 'right' && column.getIsFirstColumn?.('right')
+  const isLastStartPinnedColumn = isPinned === 'start' && column.getIsLastColumn?.('start')
+  const isFirstEndPinnedColumn = isPinned === 'end' && column.getIsFirstColumn?.('end')
 
   return {
     boxShadow: withBorder
-      ? isLastLeftPinnedColumn
+      ? isLastStartPinnedColumn
         ? '-4px 0 4px -4px var(--border) inset'
-        : isFirstRightPinnedColumn
+        : isFirstEndPinnedColumn
           ? '4px 0 4px -4px var(--border) inset'
           : undefined
       : undefined,
-    left: isPinned === 'left' ? `${column.getStart?.('left') ?? 0}px` : undefined,
-    right: isPinned === 'right' ? `${column.getAfter?.('right') ?? 0}px` : undefined,
+    insetInlineStart: isPinned === 'start' ? `${column.getStart?.('start') ?? 0}px` : undefined,
+    insetInlineEnd: isPinned === 'end' ? `${column.getAfter?.('end') ?? 0}px` : undefined,
     opacity: isPinned ? 0.97 : 1,
     position: isPinned ? 'sticky' : 'relative',
     background: isPinned ? 'var(--background)' : undefined,

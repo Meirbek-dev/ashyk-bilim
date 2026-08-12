@@ -39,7 +39,7 @@ interface LocalThumbnail {
   type: 'image' | 'video'
 }
 
-const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: ThumbnailUpdateProps) => {
+function ThumbnailUpdate({ thumbnailType, disabled = false, disabledReason }: ThumbnailUpdateProps) {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
 

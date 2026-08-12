@@ -95,7 +95,7 @@ const _certFormSchemaForTypes = v.object({
 type FormValues = v.InferOutput<typeof _certFormSchemaForTypes>
 type FormInputValues = v.InferInput<typeof _certFormSchemaForTypes>
 
-const EditCourseCertification = () => {
+function EditCourseCertification() {
   const [error, setError] = useState('')
 
   const course = useCourse()

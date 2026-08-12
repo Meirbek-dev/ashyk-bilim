@@ -120,7 +120,7 @@ const ICON_MAP = {
   calendar: Calendar,
 } as const
 
-const IconComponent = ({ iconName }: { iconName: string }) => {
+function IconComponent({ iconName }: { iconName: string }) {
   const IconElement = ICON_MAP[iconName as keyof typeof ICON_MAP]
   if (!IconElement) return null
   return <IconElement className="text-muted-foreground h-4 w-4" />
@@ -154,7 +154,7 @@ const ImageModal: FC<{
   )
 }
 
-const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
+function UserProfileClient({ userData, profile }: UserProfileClientProps) {
   const t = useTranslations('UserProfilePage')
   const [selectedImage, setSelectedImage] = useState<{
     url: string

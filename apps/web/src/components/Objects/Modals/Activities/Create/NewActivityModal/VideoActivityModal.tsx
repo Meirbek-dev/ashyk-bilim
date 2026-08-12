@@ -37,7 +37,7 @@ interface ExternalVideoObject {
   [key: string]: unknown
 }
 
-const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course }: AppActivityModalProps) => {
+function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course }: AppActivityModalProps) {
   const t = useTranslations('Components.VideoModal')
   const platform = usePlatform()
   const [video, setVideo] = useState<File | null>(null)

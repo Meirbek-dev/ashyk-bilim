@@ -37,7 +37,7 @@ const ENABLE_AVATAR_CUSTOMIZATION = false
 const getHighestUnlock = <T extends { level: number }>(level: number, unlocks: readonly T[]) =>
   unlocks.findLast(unlock => level >= unlock.level) ?? null
 
-const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
+function GamifiedUserAvatar(props: GamifiedUserAvatarProps) {
   const {
     size = 'md',
     className,

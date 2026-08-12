@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
-const ResetPasswordPage = () => {
+function ResetPasswordPage() {
   return <ResetPasswordClient />
 }
 

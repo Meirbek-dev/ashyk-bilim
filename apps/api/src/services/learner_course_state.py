@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, col, select
@@ -107,7 +108,9 @@ def get_learner_course_state(
         certificate=certificate,
         progress=progress,
     )
-    enrollment_state = "completed" if progress.progress_pct >= 100 else "in_progress" if enrolled else "not_enrolled"
+    enrollment_state: Literal["not_enrolled", "in_progress", "completed"] = (
+        "completed" if progress.progress_pct >= 100 else "in_progress" if enrolled else "not_enrolled"
+    )
 
     return LearnerCourseState(
         course_id=course.id,
@@ -119,7 +122,7 @@ def get_learner_course_state(
         permissions=LearnerCoursePermissions(
             can_discover=course.public,
             can_access=can_access,
-            can_enroll=can_access and not enrolled,
+            can_enroll=not enrolled,
         ),
         progress=progress,
         certificate=certificate,
@@ -153,6 +156,8 @@ def _activity_state(
 
 
 def _product_state(state: ActivityProgressState | None) -> LearnerWorkState:
+    if state is None:
+        return "not_started"
     mapping: dict[ActivityProgressState, LearnerWorkState] = {
         ActivityProgressState.NOT_STARTED: "not_started",
         ActivityProgressState.IN_PROGRESS: "in_progress",

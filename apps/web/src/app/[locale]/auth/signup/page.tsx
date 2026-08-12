@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
-const SignUp = async () => {
+async function SignUp() {
   return (
     <Suspense fallback={<PageLoading />}>
       <SignUpClient />

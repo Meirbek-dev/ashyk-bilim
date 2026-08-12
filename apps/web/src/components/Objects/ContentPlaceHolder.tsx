@@ -11,7 +11,7 @@ interface ProtectedTextProps {
   fallback?: string
 }
 
-const ProtectedText = ({ text, action, resource, scope, fallback }: ProtectedTextProps) => {
+function ProtectedText({ text, action, resource, scope, fallback }: ProtectedTextProps) {
   const t = useTranslations('General')
   const { can } = useSession()
   return <span>{can(resource, action, scope) ? text : (fallback ?? t('noContentYet'))}</span>

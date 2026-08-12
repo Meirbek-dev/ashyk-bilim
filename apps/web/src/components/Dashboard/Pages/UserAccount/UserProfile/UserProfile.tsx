@@ -1,6 +1,6 @@
 import UserProfileBuilder from './UserProfileBuilder'
 
-const UserProfile = () => {
+function UserProfile() {
   return (
     <div>
       <UserProfileBuilder />

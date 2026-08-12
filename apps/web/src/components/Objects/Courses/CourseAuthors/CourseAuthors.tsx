@@ -56,7 +56,7 @@ interface CourseAuthorsProps {
   courseUuid: string
 }
 
-const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: boolean }) => {
+function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: boolean }) {
   const t = useTranslations('Courses.CourseAuthors')
   const displayedAvatars = authors.slice(0, 3)
   const displayedNames = authors.slice(0, 2)
@@ -149,7 +149,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
   )
 }
 
-const UpdatesSection = ({ courseUuid }: { courseUuid: string }) => {
+function UpdatesSection({ courseUuid }: { courseUuid: string }) {
   const [selectedView, setSelectedView] = useState('list')
   const { can, isAuthenticated } = useSession()
   const canManageCourse =
@@ -219,13 +219,13 @@ const createUpdateFormSchema = (t: (key: string) => string) =>
 type UpdateFormValues = v.InferOutput<ReturnType<typeof createUpdateFormSchema>>
 type UpdateFormInputValues = v.InferInput<ReturnType<typeof createUpdateFormSchema>>
 
-const NewUpdateForm = ({
+function NewUpdateForm({
   courseUuid,
   setSelectedView,
 }: {
   courseUuid: string
   setSelectedView: (view: string) => void
-}) => {
+}) {
   const queryClient = useQueryClient()
   const t = useTranslations('Courses.CourseAuthors')
   const validationSchema = createUpdateFormSchema(t)
@@ -319,7 +319,7 @@ interface CourseUpdatePayload {
   courseupdate_uuid: number
 }
 
-const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
+function UpdatesListView({ courseUuid }: { courseUuid: string }) {
   const { can, isAuthenticated } = useSession()
   const canManageCourse =
     can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.APP)
@@ -385,7 +385,7 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
   )
 }
 
-const DeleteUpdateButton = ({ courseUuid, update }: { courseUuid: string; update: CourseUpdatePayload }) => {
+function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update: CourseUpdatePayload }) {
   const queryClient = useQueryClient()
   const t = useTranslations('Courses.CourseAuthors')
   const [isOpen, setIsOpen] = useState(false)
@@ -458,7 +458,7 @@ const DeleteUpdateButton = ({ courseUuid, update }: { courseUuid: string; update
   )
 }
 
-const CourseAuthors = ({ authors, courseUuid }: CourseAuthorsProps) => {
+function CourseAuthors({ authors, courseUuid }: CourseAuthorsProps) {
   const isMobile = useIsMobile()
 
   // Filter active authors and sort by role priority

@@ -24,7 +24,7 @@ interface CourseActionsProps {
   trailData?: AppTrailData | null | undefined
 }
 
-const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) => {
+function CoursesActions({ courseuuid, course, trailData }: CourseActionsProps) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const { user: currentUser } = useSession()

@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
-const ForgotPasswordPage = () => {
+function ForgotPasswordPage() {
   return <ForgotPasswordClient />
 }
 

@@ -82,14 +82,14 @@ async def stream_course_question(
             async for chunk in stream:
                 answer_text = getattr(chunk.output, "answer_markdown", None) or ""
                 if chunk.final:
-                    yield CourseQAStreamChunk(  # noqa: ASYNC119
+                    yield CourseQAStreamChunk(  # ruff: ignore[yield-in-context-manager-in-async-generator]
                         answer_text=answer_text,
                         final=True,
                         answer=chunk.output,
                         model_name=chunk.model_name or provider.selected_model_name(),
                     )
                 else:
-                    yield CourseQAStreamChunk(answer_text=answer_text, final=False)  # noqa: ASYNC119
+                    yield CourseQAStreamChunk(answer_text=answer_text, final=False)  # ruff: ignore[yield-in-context-manager-in-async-generator]
     except AIProviderUnavailable:
         if not provider.config.ai_draft_mode_enabled:
             raise

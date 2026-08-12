@@ -17,7 +17,7 @@ import Link from '@components/ui/AppLink'
  *   - ?error=<reason>  — failure; show an error and offer a retry link
  *   - otherwise        — redirect into the authenticated app flow
  */
-const GoogleCallbackPage = () => {
+function GoogleCallbackPage() {
   const searchParams = useSearchParams()
   const t = useTranslations('Auth.Login')
 

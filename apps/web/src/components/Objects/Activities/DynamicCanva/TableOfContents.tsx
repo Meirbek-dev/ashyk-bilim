@@ -31,7 +31,7 @@ export function useHeadingOutline(editor: Editor | null) {
   return headings
 }
 
-const TableOfContents = ({ className, editor, minItems = 2 }: TableOfContentsProps) => {
+function TableOfContents({ className, editor, minItems = 2 }: TableOfContentsProps) {
   const headings = useHeadingOutline(editor)
   const [activeId, setActiveId] = useState<string | null>(null)
   const visibleHeadings = useMemo(() => headings.filter(heading => heading.id && heading.text), [headings])

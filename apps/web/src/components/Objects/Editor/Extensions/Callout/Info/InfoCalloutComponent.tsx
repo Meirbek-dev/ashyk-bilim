@@ -13,7 +13,7 @@ interface CalloutOptions {
 
 type InfoCalloutAttrs = CalloutOptions
 
-const InfoCalloutComponent = (props: TypedNodeViewProps<InfoCalloutAttrs>) => {
+function InfoCalloutComponent(props: TypedNodeViewProps<InfoCalloutAttrs>) {
   const editorState = useEditorProvider()
   const { isEditable } = editorState
   const [dismissed, setDismissed] = useState(false)

@@ -14,7 +14,7 @@ interface TooltipProps {
   unstyled?: boolean // new prop to remove default styling
 }
 
-const ToolTip = ({ sideOffset, content, children, side = 'bottom', slateBlack, unstyled }: TooltipProps) => {
+function ToolTip({ sideOffset, content, children, side = 'bottom', slateBlack, unstyled }: TooltipProps) {
   // If caller passed a single React element, use it as the `render` prop so it becomes the trigger element
   const singleChild = Children.count(children) === 1 ? (Children.only(children) as React.ReactElement) : null
 

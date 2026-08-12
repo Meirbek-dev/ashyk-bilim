@@ -31,7 +31,7 @@ interface CourseListItem {
   thumbnail_image?: string | null
 }
 
-const NewCollection = () => {
+function NewCollection() {
   const t = useTranslations('NewCollectionPage')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')

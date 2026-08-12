@@ -46,10 +46,10 @@ class CourseQAWireMessage(PydanticStrictBaseModel):
 
 
 class CourseQAChatRequest(PydanticStrictBaseModel):
-    threadId: str  # noqa: N815
-    runId: str  # noqa: N815
+    threadId: str  # ruff: ignore[mixed-case-variable-in-class-scope]
+    runId: str  # ruff: ignore[mixed-case-variable-in-class-scope]
     messages: list[CourseQAWireMessage] = Field(default_factory=list)
-    forwardedProps: dict[str, object] = Field(default_factory=dict)  # noqa: N815
+    forwardedProps: dict[str, object] = Field(default_factory=dict)  # ruff: ignore[mixed-case-variable-in-class-scope]
 
 
 def _latest_user_question(messages: list[CourseQAWireMessage]) -> str | None:

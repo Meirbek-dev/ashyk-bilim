@@ -13,7 +13,7 @@ interface LinkInputTooltipProps {
   currentUrl?: string
 }
 
-const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputTooltipProps) => {
+function LinkInputTooltip({ onSave, onCancel, currentUrl = '' }: LinkInputTooltipProps) {
   const [url, setUrl] = useState(currentUrl)
   const t = useTranslations('DashPage.Editor.LinkInputTooltip')
 

@@ -7,9 +7,7 @@ import sqlalchemy as sa
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
-migration = importlib.import_module(
-    "migrations.versions.2026_07_17_a4b5c6d7e8f9_remove_inline_quizzes"
-)
+migration = importlib.import_module("migrations.versions.2026_07_17_a4b5c6d7e8f9_remove_inline_quizzes")
 
 
 def test_upgrade_removes_inline_quiz_data_and_columns(monkeypatch: pytest.MonkeyPatch) -> None:

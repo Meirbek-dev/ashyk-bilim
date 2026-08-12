@@ -88,7 +88,9 @@ export function arrayParser<T>(parser: ResponseParser<T>): ResponseParser<T[]> {
 }
 
 export function nullableParser<T>(parser: ResponseParser<T>): ResponseParser<T | null> {
-  return data => (data === null ? null : parseWith(parser, data))
+  return function (data) {
+    return data === null ? null : parseWith(parser, data)
+  }
 }
 
 export const stringParser: ResponseParser<string> = data => {

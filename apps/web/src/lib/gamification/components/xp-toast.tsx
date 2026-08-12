@@ -141,7 +141,7 @@ export function useXPToast() {
   )
 
   // ToastContainer component
-  const ToastContainer = () => {
+  function ToastContainer() {
     return (
       <XPNotificationContainer
         notifications={notifications}

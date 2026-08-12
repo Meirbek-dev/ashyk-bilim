@@ -11,7 +11,7 @@ const emptySubscribe = () => () => {}
 const getClientSnapshot = () => true
 const getServerSnapshot = () => false
 
-const Toaster = ({ position = 'top-center', ...props }: ToasterProps) => {
+function Toaster({ position = 'top-center', ...props }: ToasterProps) {
   const { resolvedTheme } = useTheme()
   const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
 

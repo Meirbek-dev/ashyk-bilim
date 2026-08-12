@@ -49,7 +49,7 @@ function normalizeSize(size?: Partial<PdfBlockSize> | null): PdfBlockSize {
   }
 }
 
-const PDFBlockComponent = (props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionOptions>) => {
+function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionOptions>) {
   const t = useTranslations('DashPage.Editor.PDFBlock')
   const course = useCourse()
   const [pdf, setPDF] = useState<File | null>(null)

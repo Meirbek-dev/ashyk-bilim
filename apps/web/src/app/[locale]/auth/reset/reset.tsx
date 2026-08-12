@@ -26,7 +26,7 @@ interface ResetState {
   }
 }
 
-const ResetPasswordClient = () => {
+function ResetPasswordClient() {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Auth.Reset')
   const searchParams = useSearchParams()

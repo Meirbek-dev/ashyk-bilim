@@ -28,7 +28,7 @@ interface LoginState {
   fieldErrors: { email?: string; password?: string }
 }
 
-const LoginClient = () => {
+function LoginClient() {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Auth.Login')
   const searchParams = useSearchParams()

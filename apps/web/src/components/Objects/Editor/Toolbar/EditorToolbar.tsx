@@ -18,7 +18,9 @@ import { ListDropdown } from './ListDropdown'
 import { TableDropdown } from './TableDropdown'
 import { InsertButtons } from './InsertButtons'
 
-const ToolbarSeparator = () => <Separator orientation="vertical" className="mx-1 h-4 self-center" />
+function ToolbarSeparator() {
+  return <Separator orientation="vertical" className="mx-1 h-4 self-center" />
+}
 
 /**
  * The `useTiptapState` selector for `EditorToolbar`.

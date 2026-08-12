@@ -37,7 +37,7 @@ interface CustomRoleInfo {
 
 type SessionRole = Session['roles'][number]
 
-export const HeaderProfileBox = () => {
+export function HeaderProfileBox() {
   const { isAuthenticated, session, user } = useSession()
   const { canAccessDashboard } = useNavigationPermissions()
   const t = useTranslations('Header')

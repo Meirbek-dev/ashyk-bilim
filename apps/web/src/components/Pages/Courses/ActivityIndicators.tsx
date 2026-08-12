@@ -81,7 +81,7 @@ function getActivityTypeIconColor(activityType: string): string {
   }
 }
 
-const ActivityTypeIcon = ({ activityType, size = 14 }: { activityType: string; size?: number }) => {
+function ActivityTypeIcon({ activityType, size = 14 }: { activityType: string; size?: number }) {
   const colorClass = getActivityTypeIconColor(activityType)
   switch (activityType) {
     case 'TYPE_VIDEO': {
@@ -108,7 +108,7 @@ const ActivityTypeIcon = ({ activityType, size = 14 }: { activityType: string; s
   }
 }
 
-const ActivityTooltipContent = ({
+function ActivityTooltipContent({
   activity,
   isDone,
   isCurrent,
@@ -116,7 +116,7 @@ const ActivityTooltipContent = ({
   activity: AppActivity
   isDone: boolean
   isCurrent: boolean
-}) => {
+}) {
   const t = useTranslations('ActivityIndicators')
   return (
     <div className="border-border bg-popover text-popover-foreground min-w-[200px] rounded-lg border p-3 shadow-md">
@@ -143,7 +143,7 @@ const ActivityTooltipContent = ({
   )
 }
 
-const ChapterTooltipContent = ({
+function ChapterTooltipContent({
   chapter,
   chapterNumber,
   totalActivities,
@@ -153,7 +153,7 @@ const ChapterTooltipContent = ({
   chapterNumber: number
   totalActivities: number
   completedActivities: number
-}) => {
+}) {
   const t = useTranslations('ActivityIndicators')
   const progress = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0
   const isComplete = totalActivities > 0 && completedActivities === totalActivities
@@ -193,7 +193,7 @@ const ChapterTooltipContent = ({
   )
 }
 
-const CertificationBadge = ({ courseid, isCompleted }: { courseid: string; isCompleted: boolean }) => {
+function CertificationBadge({ courseid, isCompleted }: { courseid: string; isCompleted: boolean }) {
   const t = useTranslations('Certificates.ActivityIndicators')
   return (
     <ToolTip
@@ -242,7 +242,7 @@ const CertificationBadge = ({ courseid, isCompleted }: { courseid: string; isCom
   )
 }
 
-const ActivityIndicators = (props: Props) => {
+function ActivityIndicators(props: Props) {
   const t = useTranslations('ActivityIndicators')
   const { course } = props
   const courseid = props.course_uuid.replace('course_', '')

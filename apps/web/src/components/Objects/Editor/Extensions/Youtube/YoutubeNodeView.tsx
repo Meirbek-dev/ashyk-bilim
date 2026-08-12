@@ -6,7 +6,7 @@ import { NodeViewWrapper } from '@tiptap/react'
 import type { NodeViewProps } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 
-const YoutubeNodeView = (props: NodeViewProps) => {
+function YoutubeNodeView(props: NodeViewProps) {
   const t = useTranslations('DashPage.Editor.Youtube')
   const { node } = props
   const { src, start, controls, nocookie } = node.attrs

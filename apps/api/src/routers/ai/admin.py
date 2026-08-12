@@ -12,7 +12,7 @@ from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.ai.policy import require_ai_admin
-from src.types import JsonObject
+from src.types import JsonObject, as_int
 
 router = APIRouter(prefix="/admin")
 
@@ -130,6 +130,7 @@ def _safe_run_context(metadata: JsonObject) -> JsonObject:
 
 def _operation_run(run: AIRun, *, now: datetime) -> AIOperationRunRead:
     metadata = dict(run.run_metadata or {})
+    time_to_first_text_ms = metadata.get("time_to_first_text_ms")
     started_at = run.started_at if run.started_at.tzinfo else run.started_at.replace(tzinfo=UTC)
     age = now - started_at
     return AIOperationRunRead(
@@ -140,14 +141,12 @@ def _operation_run(run: AIRun, *, now: datetime) -> AIOperationRunRead:
         error_code=run.error_code,
         duration_ms=run.duration_ms,
         time_to_first_text_ms=(
-            int(metadata["time_to_first_text_ms"])
-            if isinstance(metadata.get("time_to_first_text_ms"), int | float)
-            else None
+            int(time_to_first_text_ms) if isinstance(time_to_first_text_ms, int | float) else None
         ),
         input_tokens=run.input_tokens,
         output_tokens=run.output_tokens,
         cost_estimate=float(run.cost_estimate) if run.cost_estimate is not None else None,
-        retry_count=int(metadata.get("retry_count") or 0),
+        retry_count=as_int(metadata.get("retry_count") or 0, field="retry_count"),
         started_at=run.started_at,
         completed_at=run.completed_at,
         stuck=run.status in {"queued", "running"} and age > timedelta(minutes=10),
@@ -195,8 +194,8 @@ async def api_ai_eval_dashboard(
     eval_row = db_session.exec(
         select(
             func.count(col(AIEvalResult.id)),
-            func.coalesce(func.sum(case((col(AIEvalResult.passed) == True, 1), else_=0)), 0),  # noqa: E712
-            func.coalesce(func.sum(case((col(AIEvalResult.passed) == False, 1), else_=0)), 0),  # noqa: E712
+            func.coalesce(func.sum(case((col(AIEvalResult.passed) == True, 1), else_=0)), 0),  # ruff: ignore[true-false-comparison]
+            func.coalesce(func.sum(case((col(AIEvalResult.passed) == False, 1), else_=0)), 0),  # ruff: ignore[true-false-comparison]
             func.avg(col(AIEvalResult.score)),
         )
     ).one()

@@ -121,7 +121,7 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
   )
 }
 
-const Users = () => {
+function Users() {
   const { session: sessionData, user: currentUser, can } = useSession()
   const t = useTranslations('DashPage.UserSettings.usersSection')
   const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.APP)

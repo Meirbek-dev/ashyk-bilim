@@ -77,7 +77,7 @@ interface SearchResults {
 
 type ContentType = 'all' | 'courses' | 'collections' | 'users'
 
-const FilterButton = ({
+function FilterButton({
   type,
   count,
   icon: Icon,
@@ -91,23 +91,25 @@ const FilterButton = ({
   selectedType: ContentType
   onTypeChange: (type: ContentType) => void
   t: (key: string) => string
-}) => (
-  <Button
-    type="button"
-    variant={selectedType === type ? 'secondary' : 'ghost'}
-    size="sm"
-    onClick={() => {
-      onTypeChange(type)
-    }}
-    className="shrink-0"
-  >
-    <Icon data-icon="inline-start" />
-    <span>{t(`filter${type.charAt(0).toUpperCase() + type.slice(1)}`)}</span>
-    <span className={selectedType === type ? 'text-primary/70' : 'text-muted-foreground/60'}>({count})</span>
-  </Button>
-)
+}) {
+  return (
+    <Button
+      type="button"
+      variant={selectedType === type ? 'secondary' : 'ghost'}
+      size="sm"
+      onClick={() => {
+        onTypeChange(type)
+      }}
+      className="shrink-0"
+    >
+      <Icon data-icon="inline-start" />
+      <span>{t(`filter${type.charAt(0).toUpperCase() + type.slice(1)}`)}</span>
+      <span className={selectedType === type ? 'text-primary/70' : 'text-muted-foreground/60'}>({count})</span>
+    </Button>
+  )
+}
 
-const Pagination = ({
+function Pagination({
   totalPages,
   currentPage,
   onPageChange,
@@ -115,7 +117,7 @@ const Pagination = ({
   totalPages: number
   currentPage: number
   onPageChange: (page: number) => void
-}) => {
+}) {
   if (totalPages <= 1) return null
 
   return (
@@ -137,31 +139,35 @@ const Pagination = ({
   )
 }
 
-const LoadingState = () => (
-  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
-    {[1, 2, 3, 4, 5, 6].map(i => (
-      <div key={i} className="bg-card rounded-lg border p-4">
-        <Skeleton className="mb-4 h-32 w-full rounded-lg" />
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-3 w-1/2" />
+function LoadingState() {
+  return (
+    <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
+      {[1, 2, 3, 4, 5, 6].map(i => (
+        <div key={i} className="bg-card rounded-lg border p-4">
+          <Skeleton className="mb-4 h-32 w-full rounded-lg" />
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
         </div>
-      </div>
-    ))}
-  </div>
-)
-
-const EmptyState = ({ query, t }: { query: string; t: (key: string, params?: AppTranslationValues) => string }) => (
-  <div className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
-    <div className="bg-primary/10 mb-4 rounded-full p-4">
-      <Search className="text-primary h-8 w-8" />
+      ))}
     </div>
-    <h3 className="text-foreground mb-2 text-lg font-medium">{t('noResultsTitle')}</h3>
-    <p className="text-muted-foreground max-w-md text-sm">{t('noResultsMessage', { query })}</p>
-  </div>
-)
+  )
+}
 
-const SearchPage = () => {
+function EmptyState({ query, t }: { query: string; t: (key: string, params?: AppTranslationValues) => string }) {
+  return (
+    <div className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
+      <div className="bg-primary/10 mb-4 rounded-full p-4">
+        <Search className="text-primary h-8 w-8" />
+      </div>
+      <h3 className="text-foreground mb-2 text-lg font-medium">{t('noResultsTitle')}</h3>
+      <p className="text-muted-foreground max-w-md text-sm">{t('noResultsMessage', { query })}</p>
+    </div>
+  )
+}
+
+function SearchPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useTranslations('SearchPage')

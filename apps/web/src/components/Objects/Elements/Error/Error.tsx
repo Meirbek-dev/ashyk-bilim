@@ -8,7 +8,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 
-const ErrorUI = ({ message, submessage }: { message?: string; submessage?: string }) => {
+function ErrorUI({ message, submessage }: { message?: string; submessage?: string }) {
   const t = useTranslations('Components.ErrorUI')
   const router = useRouter()
 

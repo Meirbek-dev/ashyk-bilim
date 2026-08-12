@@ -58,12 +58,12 @@ function CourseLoadError() {
   return <ErrorUI message={t('loadError')} />
 }
 
-export const CourseProvider = ({
+export function CourseProvider({
   children,
   courseuuid,
   withUnpublishedActivities = false,
   initialCourse,
-}: CourseProviderProps) => {
+}: CourseProviderProps) {
   const openEditor = useCourseEditorStore(state => state.openEditor)
   const dirtySections = useCourseEditorStore(state => state.dirtySections)
   const [isMounted, setIsMounted] = useState(false)

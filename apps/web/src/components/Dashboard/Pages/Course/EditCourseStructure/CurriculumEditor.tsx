@@ -39,7 +39,7 @@ interface DndData {
 
 type ActiveDragData = { type: 'chapter'; chapter: AppChapter } | { type: 'activity'; activity: AppActivity }
 
-const CurriculumEditor = () => {
+function CurriculumEditor() {
   const t = useTranslations('CourseEdit.Structure')
 
   const course = useCourse()
@@ -440,24 +440,28 @@ const CurriculumEditor = () => {
 // Purely presentational — no hooks, no mutations. Render a faithful clone of the
 // actual card so the user always sees what they're dragging.
 
-const ChapterDragOverlay = ({ chapter }: { chapter: AppChapter }) => (
-  <div className="bg-card ring-ring/20 flex cursor-grabbing items-center gap-3 rounded-xl border px-4 py-3 opacity-95 shadow-2xl ring-2">
-    <GripVertical className="text-muted-foreground size-5 shrink-0" />
-    <div className="bg-muted shrink-0 rounded-lg p-2">
-      <Hexagon className="text-muted-foreground h-4 w-4" strokeWidth={2.5} />
+function ChapterDragOverlay({ chapter }: { chapter: AppChapter }) {
+  return (
+    <div className="bg-card ring-ring/20 flex cursor-grabbing items-center gap-3 rounded-xl border px-4 py-3 opacity-95 shadow-2xl ring-2">
+      <GripVertical className="text-muted-foreground size-5 shrink-0" />
+      <div className="bg-muted shrink-0 rounded-lg p-2">
+        <Hexagon className="text-muted-foreground h-4 w-4" strokeWidth={2.5} />
+      </div>
+      <span className="text-foreground truncate text-sm font-medium">{chapter.name}</span>
+      <span className="bg-muted text-muted-foreground ml-auto rounded-full px-2 py-0.5 text-xs font-medium">
+        {(chapter.activities ?? []).length}
+      </span>
     </div>
-    <span className="text-foreground truncate text-sm font-medium">{chapter.name}</span>
-    <span className="bg-muted text-muted-foreground ml-auto rounded-full px-2 py-0.5 text-xs font-medium">
-      {(chapter.activities ?? []).length}
-    </span>
-  </div>
-)
+  )
+}
 
-const ActivityDragOverlay = ({ activity }: { activity: AppActivity }) => (
-  <div className="bg-card ring-ring/20 flex cursor-grabbing items-center gap-3 rounded-lg border p-3 opacity-95 shadow-2xl ring-2">
-    <GripVertical className="text-muted-foreground size-5 shrink-0" />
-    <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
-  </div>
-)
+function ActivityDragOverlay({ activity }: { activity: AppActivity }) {
+  return (
+    <div className="bg-card ring-ring/20 flex cursor-grabbing items-center gap-3 rounded-lg border p-3 opacity-95 shadow-2xl ring-2">
+      <GripVertical className="text-muted-foreground size-5 shrink-0" />
+      <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
+    </div>
+  )
+}
 
 export default CurriculumEditor

@@ -33,7 +33,7 @@ interface SignupState {
   }
 }
 
-const SignUpClient = () => {
+function SignUpClient() {
   const t = useTranslations('Auth.Signup')
   const validationT = useTranslations('Validation')
   const [isPendingGoogle, startGoogleTransition] = useTransition()

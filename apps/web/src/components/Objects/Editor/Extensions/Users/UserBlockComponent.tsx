@@ -55,7 +55,7 @@ const AVAILABLE_ICONS = {
   calendar: Calendar,
 } as const
 
-const IconComponent = ({ iconName }: { iconName: string }) => {
+function IconComponent({ iconName }: { iconName: string }) {
   const IconElement = AVAILABLE_ICONS[iconName as keyof typeof AVAILABLE_ICONS]
   if (!IconElement) return <User className="h-4 w-4 text-gray-600" />
   return <IconElement className="h-4 w-4 text-gray-600" />
@@ -77,7 +77,7 @@ interface UserNodeAttrs {
   user_id: string | number | null
 }
 
-const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
+function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   const t = useTranslations('DashPage.Editor.UserBlock')
   const editorState = useEditorProvider()
   const { isEditable } = editorState

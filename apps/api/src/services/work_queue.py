@@ -5,6 +5,7 @@ import binascii
 import json
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import ColumnElement
 from sqlmodel import Session, col, or_, select
 
 from src.db.courses.activities import Activity
@@ -14,7 +15,7 @@ from src.db.grading.progress import ActivityProgress, ActivityProgressState
 from src.db.grading.submissions import Submission, SubmissionStatus
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.users import PublicUser, User
-from src.db.work_queue import WorkItem, WorkQueueResponse, WorkRole
+from src.db.work_queue import WorkItem, WorkPriority, WorkQueueResponse, WorkRole
 
 _LEARNER_OPEN_STATES = {
     ActivityProgressState.IN_PROGRESS,
@@ -169,8 +170,8 @@ def _teacher_work(current_user: PublicUser, db_session: Session) -> list[WorkIte
     items: list[WorkItem] = []
     for progress, activity, course, learner in rows:
         submitted_at = progress.submitted_at or progress.updated_at
-        age = now - _as_utc(submitted_at) if submitted_at else timedelta(0)
-        priority = "critical" if age >= timedelta(days=3) else "high"
+        age = now - _as_utc(submitted_at)
+        priority: WorkPriority = "critical" if age >= timedelta(days=3) else "high"
         learner_name = " ".join(part for part in [learner.first_name, learner.last_name] if part).strip()
         submission_uuid = _review_submission_uuid(progress, activity, db_session, awaiting_release=False)
         items.append(
@@ -200,7 +201,7 @@ def _teacher_work(current_user: PublicUser, db_session: Session) -> list[WorkIte
 def _awaiting_release_work(
     current_user: PublicUser,
     db_session: Session,
-    is_active_author: object,
+    is_active_author: ColumnElement[bool],
 ) -> list[WorkItem]:
     rows = db_session.exec(
         select(ActivityProgress, Activity, Course, User)
@@ -275,9 +276,8 @@ def _review_href(course: Course, activity: Activity, submission_uuid: str | None
 
 def _sort_key(item: WorkItem) -> tuple[int, datetime, str]:
     rank = {"critical": 0, "high": 1, "normal": 2, "low": 3}
-    due = (
-        _as_utc(item.due_at or item.created_at) if item.due_at or item.created_at else datetime.max.replace(tzinfo=UTC)
-    )
+    due_at = item.due_at or item.created_at
+    due = _as_utc(due_at) if due_at is not None else datetime.max.replace(tzinfo=UTC)
     return rank[item.priority], due, item.id
 
 

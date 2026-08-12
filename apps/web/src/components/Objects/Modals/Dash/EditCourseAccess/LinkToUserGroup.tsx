@@ -24,7 +24,7 @@ interface LinkToUserGroupProps {
   setUserGroupModal: (open: boolean) => void
 }
 
-const LinkToUserGroup = (props: LinkToUserGroupProps) => {
+function LinkToUserGroup(props: LinkToUserGroupProps) {
   const t = useTranslations('Components.LinkToUserGroup')
   const course = useCourse()
   const { courseStructure } = course

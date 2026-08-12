@@ -27,18 +27,20 @@ interface AuthCardProps {
   className?: string
 }
 
-const AuthCard = ({ children, className }: AuthCardProps) => (
-  <div className="flex min-h-screen items-center justify-center">
-    <div
-      className={cn(
-        'from-muted/50 to-card relative w-full max-w-sm overflow-hidden rounded-xl border bg-linear-to-b px-8 py-8 shadow-lg/5 dark:from-transparent dark:shadow-xl',
-        className,
-      )}
-    >
-      <div className="absolute inset-0 -top-px -left-px z-0" style={gridPatternStyle} />
-      <div className="relative isolate flex w-full flex-col items-center">{children}</div>
+function AuthCard({ children, className }: AuthCardProps) {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div
+        className={cn(
+          'from-muted/50 to-card relative w-full max-w-sm overflow-hidden rounded-xl border bg-linear-to-b px-8 py-8 shadow-lg/5 dark:from-transparent dark:shadow-xl',
+          className,
+        )}
+      >
+        <div className="absolute inset-0 -top-px -left-px z-0" style={gridPatternStyle} />
+        <div className="relative isolate flex w-full flex-col items-center">{children}</div>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 export default AuthCard

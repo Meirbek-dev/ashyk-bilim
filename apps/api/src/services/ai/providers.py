@@ -133,9 +133,9 @@ class ModelProvider:
         # `__aexit__` correctly if the caller stops iterating early.
         async with agent.run_stream(prompt, message_history=message_history) as stream:
             async for partial in stream.stream_output(debounce_by=0.12):
-                yield AIModelStreamChunk(output=partial, final=False)  # noqa: ASYNC119
+                yield AIModelStreamChunk(output=partial, final=False)  # ruff: ignore[yield-in-context-manager-in-async-generator]
             final_output = await stream.get_output()
-            yield AIModelStreamChunk(  # noqa: ASYNC119
+            yield AIModelStreamChunk(  # ruff: ignore[yield-in-context-manager-in-async-generator]
                 output=final_output,
                 final=True,
                 model_name=stream.response.model_name or selected_name,

@@ -32,7 +32,9 @@ const LIFECYCLE_BADGE_VARIANT: Record<AssessmentLifecycle, 'default' | 'secondar
   ARCHIVED: 'destructive',
 }
 
-const FallbackProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>
+function FallbackProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
+}
 
 export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: AssessmentStudioWorkspaceProps) {
   const t = useTranslations('Features.Assessments.Studio')

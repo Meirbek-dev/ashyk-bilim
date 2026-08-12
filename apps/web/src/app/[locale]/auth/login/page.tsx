@@ -13,6 +13,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
-const Login = async () => <LoginClient />
+async function Login() {
+  return <LoginClient />
+}
 
 export default Login

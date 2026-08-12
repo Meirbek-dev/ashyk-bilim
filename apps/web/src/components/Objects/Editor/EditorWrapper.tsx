@@ -26,7 +26,7 @@ interface EditorWrapperProps {
   platform?: Platform | null
 }
 
-const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
+function EditorWrapper(props: EditorWrapperProps): JSX.Element {
   const t = useTranslations('DashPage.Editor.EditorWrapper')
   const activityAutosave = useActivityAutosave({
     activityUuid: props.activity.activity_uuid,

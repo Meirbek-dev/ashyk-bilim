@@ -65,13 +65,13 @@ const ICON_MAP = {
   'book-open': BookOpen,
 } as const
 
-const IconComponent = ({ iconName }: { iconName: string }) => {
+function IconComponent({ iconName }: { iconName: string }) {
   const IconElement = ICON_MAP[iconName as keyof typeof ICON_MAP]
   if (!IconElement) return null
   return <IconElement className="text-muted-foreground h-4 w-4" />
 }
 
-const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
+function UserProfilePopup({ children, userId }: UserProfilePopupProps) {
   const t = useTranslations('Components.UserProfilePopup')
   const router = useRouter()
   const { isAuthenticated } = useSession()

@@ -46,7 +46,7 @@ import { getCourseReadiness } from '@services/courses/courses'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Link } from '@/i18n/navigation'
 
-const EditCourseAccess = () => {
+function EditCourseAccess() {
   const course = useCourse()
   const { courseStructure, editorData } = course
   const t = useTranslations('DashPage.Courses.Access')
@@ -162,7 +162,7 @@ const EditCourseAccess = () => {
   )
 }
 
-const CourseReadinessSummary = ({ readiness }: { readiness: Awaited<ReturnType<typeof getCourseReadiness>> }) => {
+function CourseReadinessSummary({ readiness }: { readiness: Awaited<ReturnType<typeof getCourseReadiness>> }) {
   const t = useTranslations('DashPage.Courses.Access')
   const blockers = readiness.issues.filter(issue => issue.severity === 'blocker')
   const warnings = readiness.issues.filter(issue => issue.severity === 'warning')
@@ -204,7 +204,7 @@ const CourseReadinessSummary = ({ readiness }: { readiness: Awaited<ReturnType<t
   )
 }
 
-const UserGroupsSection = ({
+function UserGroupsSection({
   courseUuid,
   error,
   usergroups,
@@ -214,7 +214,7 @@ const UserGroupsSection = ({
   error: string | null
   usergroups: AppUserGroup[]
   isLoading: boolean
-}) => {
+}) {
   const [userGroupModal, setUserGroupModal] = useState(false)
   const t = useTranslations('DashPage.Courses.Access')
 
@@ -249,7 +249,7 @@ const UserGroupsSection = ({
   )
 }
 
-const UserGroupsTable = ({
+function UserGroupsTable({
   courseUuid,
   usergroups,
   isLoading,
@@ -257,7 +257,7 @@ const UserGroupsTable = ({
   courseUuid: string
   usergroups: AppUserGroup[]
   isLoading: boolean
-}) => {
+}) {
   const t = useTranslations('DashPage.Courses.Access')
 
   if (isLoading) {
@@ -304,7 +304,7 @@ const UserGroupsTable = ({
   )
 }
 
-const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: AppUserGroup; courseUuid: string }) => {
+function UnlinkUserGroupRow({ usergroup, courseUuid }: { usergroup: AppUserGroup; courseUuid: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const course = useCourse()

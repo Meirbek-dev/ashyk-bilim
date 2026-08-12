@@ -25,7 +25,7 @@ interface NewActivityButtonProps {
   chapterId: number
 }
 
-const NewActivityButton = (props: NewActivityButtonProps) => {
+function NewActivityButton(props: NewActivityButtonProps) {
   const [newActivityModal, setNewActivityModal] = useState(false)
   const course = useCourse()
   const queryClient = useQueryClient()

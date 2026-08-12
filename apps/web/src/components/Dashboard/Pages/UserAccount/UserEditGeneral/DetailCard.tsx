@@ -39,7 +39,7 @@ const iconComponentMap = {
   calendar: Calendar,
 }
 
-const IconComponent = ({ iconName }: { iconName: string }) => {
+function IconComponent({ iconName }: { iconName: string }) {
   const IconElement = iconComponentMap[iconName as keyof typeof iconComponentMap]
   if (!IconElement) return null
   return <IconElement className="h-4 w-4" />
@@ -58,7 +58,7 @@ interface DetailCardProps {
   }[]
 }
 
-export const DetailCard = ({ id, detail, onUpdate, onRemove, onLabelChange, availableIcons }: DetailCardProps) => {
+export function DetailCard({ id, detail, onUpdate, onRemove, onLabelChange, availableIcons }: DetailCardProps) {
   const [localLabel, setLocalLabel] = useState(() => detail.label)
   const [isUserInput, setIsUserInput] = useState(false)
   const t = useTranslations('DashPage.UserAccountSettings.generalSection')

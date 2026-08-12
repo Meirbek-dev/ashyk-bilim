@@ -8,7 +8,7 @@ import { usePathname } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import type { LucideIcon } from 'lucide-react'
 
-const DashMobileMenu = () => {
+function DashMobileMenu() {
   const pathname = usePathname()
   const t = useTranslations('SidebarMenu')
   const { canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions()

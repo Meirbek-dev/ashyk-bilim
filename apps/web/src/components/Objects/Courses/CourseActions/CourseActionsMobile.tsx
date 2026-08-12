@@ -56,7 +56,7 @@ interface CourseActionsMobileProps {
 }
 
 // Component for displaying multiple authors
-const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
+function MultipleAuthors({ authors }: { authors: Author[] }) {
   const t = useTranslations('Courses.CourseActionsMobile')
 
   // Early return if no authors
@@ -133,7 +133,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
   )
 }
 
-const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMobileProps) => {
+function CourseActionsMobile({ courseuuid, course, trailData }: CourseActionsMobileProps) {
   const t = useTranslations('Courses.CourseActionsMobile')
   const router = useRouter()
   const { user: currentUser } = useSession()

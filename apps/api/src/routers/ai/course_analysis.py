@@ -18,6 +18,7 @@ from src.services.ai.context.sources import render_context_bundle
 from src.services.ai.operations import publish_course_analysis, queue_course_analysis, run_course_analysis
 from src.services.ai.policy import can_update_course, require_ai_course_read, require_ai_course_update
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
+from src.types import as_json_object
 
 router = APIRouter(prefix="/course-analysis")
 
@@ -107,7 +108,7 @@ async def api_review_course_finding(
     require_ai_course_update(db_session, course, current_user)
 
     report = dict(analysis.report_json or {})
-    reviews = dict(report.get("finding_reviews") or {})
+    reviews = as_json_object(report.get("finding_reviews") or {}, field="finding_reviews")
     reviews[payload.finding_id] = {
         "action": payload.action,
         "note": payload.note,

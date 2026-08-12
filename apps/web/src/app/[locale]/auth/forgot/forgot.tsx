@@ -20,7 +20,7 @@ interface ForgotState {
   fieldErrors: { email?: string }
 }
 
-const ForgotPasswordClient = () => {
+function ForgotPasswordClient() {
   const t = useTranslations('Auth.Forgot')
   const validationT = useTranslations('Validation')
 

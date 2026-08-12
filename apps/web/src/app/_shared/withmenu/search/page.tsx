@@ -95,7 +95,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-const SearchPageWrapper = async () => {
+async function SearchPageWrapper() {
   return (
     <div>
       <SearchPage />

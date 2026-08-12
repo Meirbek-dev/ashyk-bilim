@@ -51,7 +51,7 @@ interface UserEditFormProps {
   }
 }
 
-export const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
+export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const tIcons = useTranslations('Components.UserProfilePopup.Icons')
   const tTemplates = useTranslations('DashPage.UserAccountSettings.generalSection.detailTemplateLabels')

@@ -1502,7 +1502,7 @@ def active_remediation_gate(db_session: Session, *, user_id: int, activity_id: i
         select(AIRemediationSession).where(
             AIRemediationSession.student_user_id == user_id,
             AIRemediationSession.activity_id == activity_id,
-            AIRemediationSession.gate_mode == True,  # noqa: E712
+            AIRemediationSession.gate_mode == True,  # ruff: ignore[true-false-comparison]
             col(AIRemediationSession.status).in_(["assigned", "in_progress", "failed"]),
         )
     ).first()

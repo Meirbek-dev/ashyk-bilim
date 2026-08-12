@@ -91,7 +91,7 @@ interface MathEquationNodeAttrs {
   html?: string
 }
 
-const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAttrs>) => {
+function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAttrs>) {
   const t = useTranslations('DashPage.Editor.MathEquationBlock')
   const [equation, setEquation] = useState(props.node.attrs.math_equation)
   const isEditing = true

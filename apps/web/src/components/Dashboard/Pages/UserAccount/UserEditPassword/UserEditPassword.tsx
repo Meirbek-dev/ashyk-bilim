@@ -40,7 +40,7 @@ const createValidationSchema = (t: AppTranslator) =>
 type PasswordFormData = v.InferOutput<ReturnType<typeof createValidationSchema>>
 type PasswordFormValues = v.InferInput<ReturnType<typeof createValidationSchema>>
 
-const UserEditPassword = () => {
+function UserEditPassword() {
   const { user: viewer } = useSession()
   const t = useTranslations('DashPage.Notifications')
   const tPassword = useTranslations('DashPage.UserAccountSettings.UserAccount.EditPassword')

@@ -63,7 +63,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-const CoursePage = async (params: { params: Promise<{ courseuuid: string }> }) => {
+async function CoursePage(params: { params: Promise<{ courseuuid: string }> }) {
   const { courseuuid } = await params.params
 
   const [course_meta, session] = await Promise.all([fetchCourseMetadata(courseuuid), getSession()])

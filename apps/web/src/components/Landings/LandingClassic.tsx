@@ -36,7 +36,7 @@ interface GridProps {
 }
 
 // Empty State Components
-const EmptyState = ({
+function EmptyState({
   icon: Icon,
   title,
   description,
@@ -46,49 +46,57 @@ const EmptyState = ({
   title: string
   description: React.ReactNode
   className?: string
-}) => (
-  <div className={cn('col-span-full flex items-center justify-center py-16', className)}>
-    <div className="max-w-md space-y-3 text-center">
-      <Icon className="text-muted-foreground mx-auto h-8 w-8" strokeWidth={1.5} />
-      <div className="space-y-1.5">
-        <h3 className="text-foreground text-base font-semibold">{title}</h3>
-        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+}) {
+  return (
+    <div className={cn('col-span-full flex items-center justify-center py-16', className)}>
+      <div className="max-w-md space-y-3 text-center">
+        <Icon className="text-muted-foreground mx-auto h-8 w-8" strokeWidth={1.5} />
+        <div className="space-y-1.5">
+          <h3 className="text-foreground text-base font-semibold">{title}</h3>
+          <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+        </div>
       </div>
     </div>
-  </div>
-)
+  )
+}
 
-const EmptyCollectionsState = ({ t }: EmptyStateProps) => (
-  <EmptyState
-    icon={FolderKanban}
-    title={t('Collections.noContent')}
-    description={t('Collections.noContentDescription')}
-  />
-)
+function EmptyCollectionsState({ t }: EmptyStateProps) {
+  return (
+    <EmptyState
+      icon={FolderKanban}
+      title={t('Collections.noContent')}
+      description={t('Collections.noContentDescription')}
+    />
+  )
+}
 
-const EmptyCoursesState = ({ t }: EmptyStateProps) => (
-  <EmptyState icon={BookOpen} title={t('Courses.noContent')} description={t('Courses.noContentDescription')} />
-)
+function EmptyCoursesState({ t }: EmptyStateProps) {
+  return <EmptyState icon={BookOpen} title={t('Courses.noContent')} description={t('Courses.noContentDescription')} />
+}
 
 // Collection Grid Component
-const CollectionGrid = ({ collections }: GridProps) => (
-  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-    {collections.map((collection: AppCollection) => (
-      <CollectionThumbnail key={collection.collection_uuid} collection={collection} />
-    ))}
-  </div>
-)
+function CollectionGrid({ collections }: GridProps) {
+  return (
+    <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {collections.map((collection: AppCollection) => (
+        <CollectionThumbnail key={collection.collection_uuid} collection={collection} />
+      ))}
+    </div>
+  )
+}
 
 // Section Header Component
-const SectionHeader = ({ title, type, action }: { title: string; type: 'cou' | 'col'; action?: React.ReactNode }) => (
-  <div className="flex items-center justify-between gap-4">
-    <TypeOfContentTitle title={title} type={type} />
-    {action && <div className="flex-shrink-0">{action}</div>}
-  </div>
-)
+function SectionHeader({ title, type, action }: { title: string; type: 'cou' | 'col'; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <TypeOfContentTitle title={title} type={type} />
+      {action && <div className="flex-shrink-0">{action}</div>}
+    </div>
+  )
+}
 
 // Main Component
-const LandingClassic = async ({
+async function LandingClassic({
   courses,
   totalCourses,
   collections,
@@ -96,7 +104,7 @@ const LandingClassic = async ({
   trailData,
   isAuthenticated,
   currentPage = 1,
-}: LandingClassicProps) => {
+}: LandingClassicProps) {
   const t = await getTranslations('HomePage')
   const gamificationProfile = gamificationData?.profile
   const userRank = gamificationData?.user_rank

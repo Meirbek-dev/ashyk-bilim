@@ -15,11 +15,13 @@ const GradingBacklogPanel = lazy(() => import('./GradingBacklogPanel'))
 const TeacherKpiCharts = lazy(() => import('./TeacherKpiCharts'))
 const TeacherKpiCards = lazy(() => import('./TeacherKpiCards'))
 
-const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-  <Card className="border-border bg-card shadow-sm">
-    <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
-  </Card>
-)
+function SectionFallback({ height = 'h-[280px]' }: { height?: string }) {
+  return (
+    <Card className="border-border bg-card shadow-sm">
+      <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
+    </Card>
+  )
+}
 
 interface OverviewTabProps {
   query: AnalyticsQuery

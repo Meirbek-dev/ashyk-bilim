@@ -144,12 +144,10 @@ export function CanonicalAttemptItem({
       }
       onChange({
         kind: 'MATCHING',
-        matches: [...next.entries()].map(
-          ([matchLeft, matchRight]): MatchPair => ({
-            left: matchLeft,
-            right: matchRight,
-          }),
-        ),
+        matches: [...next.entries()].map(([matchLeft, matchRight]): MatchPair => ({
+          left: matchLeft,
+          right: matchRight,
+        })),
       })
     }
 

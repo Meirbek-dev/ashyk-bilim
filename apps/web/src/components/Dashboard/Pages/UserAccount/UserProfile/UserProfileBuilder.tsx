@@ -21,7 +21,7 @@ import type { SECTION_TYPE_KEYS, ProfileData, ProfileSection } from './types'
 import { SortableProfileSection } from './components/SortableProfileSection'
 import { SectionEditor } from './components/SectionEditor'
 
-const UserProfileBuilder = () => {
+function UserProfileBuilder() {
   const router = useRouter()
   const { user: currentUser } = useSession()
   const me = currentUser

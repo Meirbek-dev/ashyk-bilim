@@ -17,7 +17,7 @@ interface TrailCourseElementProps {
   run: AppTrailRun
 }
 
-const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
+function TrailCourseElement({ course, run }: TrailCourseElementProps) {
   const queryClient = useQueryClient()
   const courseid = course.course_uuid.replace('course_', '')
   const router = useRouter()

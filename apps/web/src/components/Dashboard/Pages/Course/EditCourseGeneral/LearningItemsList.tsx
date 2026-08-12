@@ -46,7 +46,7 @@ const createLearningItem = ({
   ...(link === undefined ? {} : { link }),
 })
 
-const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
+function LearningItemsList({ value, onChange }: LearningItemsListProps) {
   // Helper function to standardize items.
   // Uses deterministic placeholder IDs to avoid SSR/hydration mismatch;
   // real UUIDs are assigned in a post-mount effect.

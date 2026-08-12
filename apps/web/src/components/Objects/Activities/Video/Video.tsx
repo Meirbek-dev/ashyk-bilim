@@ -38,7 +38,7 @@ interface VideoActivityProps {
   }
 }
 
-const VideoActivity = ({ activity, course }: VideoActivityProps) => {
+function VideoActivity({ activity, course }: VideoActivityProps) {
   const fullLocale = useLocale()
   const locale = fullLocale.split('-')[0]
 

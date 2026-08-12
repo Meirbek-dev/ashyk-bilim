@@ -199,7 +199,7 @@ const sanitizeUrl = (url: string): string => {
 // SUB-COMPONENTS
 // ============================================================================
 
-const EmbedContent = ({
+function EmbedContent({
   embedUrl,
   sanitizedEmbedCode,
   embedType,
@@ -209,7 +209,7 @@ const EmbedContent = ({
   sanitizedEmbedCode: string
   embedType: EmbedType
   embeddedTitle?: string
-}) => {
+}) {
   const t = useTranslations('DashPage.Editor.EmbedObjects')
 
   useEffect(() => {
@@ -264,7 +264,7 @@ const EmbedContent = ({
   return null
 }
 
-const ProductIcon = ({ product, onClick }: { product: SupportedProduct; onClick: () => void }) => {
+function ProductIcon({ product, onClick }: { product: SupportedProduct; onClick: () => void }) {
   const isMobile = useIsMobile()
   const t = useTranslations('DashPage.Editor.EmbedObjects')
 
@@ -285,7 +285,7 @@ const ProductIcon = ({ product, onClick }: { product: SupportedProduct; onClick:
   )
 }
 
-const EmbedToolbar = ({
+function EmbedToolbar({
   onEdit,
   onCenter,
   onRemove,
@@ -297,39 +297,41 @@ const EmbedToolbar = ({
   onRemove: () => void
   alignment: Alignment
   t: AppTranslator
-}) => (
-  <div className="border-border bg-background/90 absolute top-2 right-2 flex items-center gap-1 rounded-lg border p-1 opacity-0 shadow-xs backdrop-blur-sm transition-opacity group-hover:opacity-100">
-    <Button
-      onClick={onEdit}
-      variant="ghost"
-      size="icon-xs"
-      className="text-muted-foreground hover:text-foreground"
-      title={t('editEmbedTitle')}
-    >
-      <Edit2 size={14} />
-    </Button>
-    <Button
-      onClick={onCenter}
-      variant="ghost"
-      size="icon-xs"
-      className="text-muted-foreground hover:text-foreground"
-      title={alignment === 'center' ? t('alignLeftTitle') : t('centerAlignTitle')}
-    >
-      <AlignCenter size={14} />
-    </Button>
-    <Button
-      onClick={onRemove}
-      variant="ghost"
-      size="icon-xs"
-      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-      title={t('removeEmbedTitle')}
-    >
-      <Trash2 size={14} />
-    </Button>
-  </div>
-)
+}) {
+  return (
+    <div className="border-border bg-background/90 absolute top-2 right-2 flex items-center gap-1 rounded-lg border p-1 opacity-0 shadow-xs backdrop-blur-sm transition-opacity group-hover:opacity-100">
+      <Button
+        onClick={onEdit}
+        variant="ghost"
+        size="icon-xs"
+        className="text-muted-foreground hover:text-foreground"
+        title={t('editEmbedTitle')}
+      >
+        <Edit2 size={14} />
+      </Button>
+      <Button
+        onClick={onCenter}
+        variant="ghost"
+        size="icon-xs"
+        className="text-muted-foreground hover:text-foreground"
+        title={alignment === 'center' ? t('alignLeftTitle') : t('centerAlignTitle')}
+      >
+        <AlignCenter size={14} />
+      </Button>
+      <Button
+        onClick={onRemove}
+        variant="ghost"
+        size="icon-xs"
+        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+        title={t('removeEmbedTitle')}
+      >
+        <Trash2 size={14} />
+      </Button>
+    </div>
+  )
+}
 
-const InputModal = ({
+function InputModal({
   activeInput,
   embedUrl,
   embedCode,
@@ -351,7 +353,7 @@ const InputModal = ({
   onSubmit: (formData: FormData) => void
   onOpenDocs: () => void
   t: AppTranslator
-}) => {
+}) {
   const urlInputRef = useRef<HTMLInputElement>(null)
   const codeInputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -477,7 +479,7 @@ const InputModal = ({
   )
 }
 
-const EmptyState = ({
+function EmptyState({
   onProductSelect,
   onUrlClick,
   onCodeClick,
@@ -489,38 +491,40 @@ const EmptyState = ({
   onCodeClick: () => void
   isEditable: boolean
   t: AppTranslator
-}) => (
-  <div className="flex h-full w-full flex-col items-center justify-center p-6">
-    <p className="text-foreground mb-5 text-center text-lg font-medium">{t('addEmbedFrom')}</p>
+}) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center p-6">
+      <p className="text-foreground mb-5 text-center text-lg font-medium">{t('addEmbedFrom')}</p>
 
-    <div className="mb-6 grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-7">
-      {SUPPORTED_PRODUCTS.map(product => (
-        <ProductIcon key={product.name} product={product} onClick={() => onProductSelect(product)} />
-      ))}
-    </div>
-
-    <p className="text-muted-foreground mb-4 max-w-md text-center text-sm">{t('clickServiceToAdd')}</p>
-
-    {isEditable && (
-      <div className="flex gap-3">
-        <Button onClick={onUrlClick} variant="outline" size="default">
-          <LinkIcon size={16} className="mr-1" />
-          {t('urlButton')}
-        </Button>
-        <Button onClick={onCodeClick} variant="outline" size="default">
-          <Code size={16} className="mr-1" />
-          {t('codeButton')}
-        </Button>
+      <div className="mb-6 grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-7">
+        {SUPPORTED_PRODUCTS.map(product => (
+          <ProductIcon key={product.name} product={product} onClick={() => onProductSelect(product)} />
+        ))}
       </div>
-    )}
-  </div>
-)
+
+      <p className="text-muted-foreground mb-4 max-w-md text-center text-sm">{t('clickServiceToAdd')}</p>
+
+      {isEditable && (
+        <div className="flex gap-3">
+          <Button onClick={onUrlClick} variant="outline" size="default">
+            <LinkIcon size={16} className="mr-1" />
+            {t('urlButton')}
+          </Button>
+          <Button onClick={onCodeClick} variant="outline" size="default">
+            <Code size={16} className="mr-1" />
+            {t('codeButton')}
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
+function EmbedObjectsComponent(props: TypedNodeViewProps<EmbedNodeAttrs>) {
   const t = useTranslations('DashPage.Editor.EmbedObjects')
   const { updateAttributes } = props
   const isMobile = useIsMobile()

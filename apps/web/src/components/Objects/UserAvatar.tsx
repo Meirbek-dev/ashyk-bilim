@@ -52,7 +52,7 @@ const predefinedIcon = {
   empty: User,
 } satisfies Record<PredefinedAvatar, typeof User>
 
-const UserAvatar = (props: UserAvatarProps) => {
+function UserAvatar(props: UserAvatarProps) {
   const t = useTranslations('Components.UserAvatar')
   const { user: currentUser } = useSession()
 

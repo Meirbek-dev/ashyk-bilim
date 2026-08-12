@@ -11,11 +11,13 @@ import { ClipboardCheck } from 'lucide-react'
 const AnalyticsRiskDistributionChart = lazy(() => import('./AnalyticsRiskDistributionChart'))
 const AtRiskLearnersTable = lazy(() => import('./AtRiskLearnersTable'))
 
-const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-  <Card className="border-border bg-card shadow-sm">
-    <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
-  </Card>
-)
+function SectionFallback({ height = 'h-[280px]' }: { height?: string }) {
+  return (
+    <Card className="border-border bg-card shadow-sm">
+      <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
+    </Card>
+  )
+}
 
 interface WatchlistTabProps {
   query: AnalyticsQuery

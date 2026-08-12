@@ -101,7 +101,7 @@ const formatDate = (dateString: string, locale: Locale) => {
   })
 }
 
-const RoleDropdown = ({
+function RoleDropdown({
   contributor,
   updateContributor,
   t,
@@ -109,36 +109,38 @@ const RoleDropdown = ({
   contributor: Contributor
   updateContributor: UpdateContributorHandler
   t: AppTranslator
-}) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger
-      render={
-        <Button
-          variant="outline"
-          className="w-[200px] justify-between"
-          disabled={contributor.authorship === 'CREATOR' || contributor.authorship_status !== 'ACTIVE'}
-        />
-      }
-    >
-      {t(contributor.authorship.toLowerCase()) || contributor.authorship}
-      <ChevronDown className="text-muted-foreground ml-2 h-4 w-4" />
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-[200px]">
-      {(['CONTRIBUTOR', 'MAINTAINER', 'REPORTER'] as ContributorRole[]).map(role => (
-        <DropdownMenuItem
-          key={role}
-          onClick={() => updateContributor(contributor.user_id, { authorship: role })}
-          className="justify-between"
-        >
-          {t(role.toLowerCase())}
-          {contributor.authorship === role && <Check className="ml-2 h-4 w-4" />}
-        </DropdownMenuItem>
-      ))}
-    </DropdownMenuContent>
-  </DropdownMenu>
-)
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            className="w-[200px] justify-between"
+            disabled={contributor.authorship === 'CREATOR' || contributor.authorship_status !== 'ACTIVE'}
+          />
+        }
+      >
+        {t(contributor.authorship.toLowerCase()) || contributor.authorship}
+        <ChevronDown className="text-muted-foreground ml-2 h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[200px]">
+        {(['CONTRIBUTOR', 'MAINTAINER', 'REPORTER'] as ContributorRole[]).map(role => (
+          <DropdownMenuItem
+            key={role}
+            onClick={() => updateContributor(contributor.user_id, { authorship: role })}
+            className="justify-between"
+          >
+            {t(role.toLowerCase())}
+            {contributor.authorship === role && <Check className="ml-2 h-4 w-4" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
-const StatusDropdown = ({
+function StatusDropdown({
   contributor,
   updateContributor,
   t,
@@ -148,38 +150,40 @@ const StatusDropdown = ({
   updateContributor: UpdateContributorHandler
   t: AppTranslator
   getStatusStyle: (s: ContributorStatus) => string
-}) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger
-      render={
-        <Button
-          variant="outline"
-          className={`w-[200px] justify-between ${getStatusStyle(contributor.authorship_status)}`}
-          disabled={contributor.authorship === 'CREATOR'}
-        />
-      }
-    >
-      {t(contributor.authorship_status.toLowerCase()) || contributor.authorship_status}
-      <ChevronDown className="ml-2 h-4 w-4" />
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-[200px]">
-      {(['ACTIVE', 'INACTIVE', 'PENDING'] as ContributorStatus[]).map(status => (
-        <DropdownMenuItem
-          key={status}
-          onClick={() =>
-            updateContributor(contributor.user_id, {
-              authorship_status: status,
-            })
-          }
-          className="justify-between"
-        >
-          {t(status.toLowerCase())}
-          {contributor.authorship_status === status && <Check className="ml-2 h-4 w-4" />}
-        </DropdownMenuItem>
-      ))}
-    </DropdownMenuContent>
-  </DropdownMenu>
-)
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            className={`w-[200px] justify-between ${getStatusStyle(contributor.authorship_status)}`}
+            disabled={contributor.authorship === 'CREATOR'}
+          />
+        }
+      >
+        {t(contributor.authorship_status.toLowerCase()) || contributor.authorship_status}
+        <ChevronDown className="ml-2 h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[200px]">
+        {(['ACTIVE', 'INACTIVE', 'PENDING'] as ContributorStatus[]).map(status => (
+          <DropdownMenuItem
+            key={status}
+            onClick={() =>
+              updateContributor(contributor.user_id, {
+                authorship_status: status,
+              })
+            }
+            className="justify-between"
+          >
+            {t(status.toLowerCase())}
+            {contributor.authorship_status === status && <Check className="ml-2 h-4 w-4" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 const sortContributors = (list: Contributor[]) => {
   const creator = list.find(c => c.authorship === 'CREATOR')
@@ -187,7 +191,7 @@ const sortContributors = (list: Contributor[]) => {
   return creator ? [creator, ...others] : others
 }
 
-const EditCourseContributors = () => {
+function EditCourseContributors() {
   const t = useTranslations('DashPage.EditCourseContributors')
   const locale = useLocale() as Locale
   const course = useCourse()

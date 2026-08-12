@@ -25,7 +25,7 @@ const createValidationSchema = (t: (key: string) => string) =>
 type UserGroupFormValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 type UserGroupInputValues = v.InferInput<ReturnType<typeof createValidationSchema>>
 
-const AddUserGroup = (props: AddUserGroupProps) => {
+function AddUserGroup(props: AddUserGroupProps) {
   const queryClient = useQueryClient()
   const t = useTranslations('Components.AddUserGroup')
   const validationSchema = createValidationSchema(t)

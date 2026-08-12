@@ -120,7 +120,7 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
   return []
 }
 
-const CourseClient = (props: CourseClientProps) => {
+function CourseClient(props: CourseClientProps) {
   const t = useTranslations('CoursePage')
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')

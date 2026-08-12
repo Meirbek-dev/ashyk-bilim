@@ -75,7 +75,7 @@ interface CourseProps {
 
 type BulkActionKind = 'publish' | 'private' | 'delete'
 
-const CoursesHome = ({
+function CoursesHome({
   courses,
   totalCourses,
   currentPage,
@@ -84,7 +84,7 @@ const CoursesHome = ({
   pageSize,
   preset,
   summaryCounts,
-}: CourseProps) => {
+}: CourseProps) {
   const t = useTranslations('DashPage.CourseManagement.Dashboard')
   const router = useRouter()
   const pathname = usePathname()

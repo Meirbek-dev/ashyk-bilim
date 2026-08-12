@@ -10,7 +10,7 @@ import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
 import type { EmbedBlockAttrs } from './EmbedBlock'
 import { resolveYouTubeVideoId } from './embed-validators'
 
-const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
+function YouTubeNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
   const { node, editor, deleteNode, getPos } = props
   const { url } = node.attrs
   const { isEditable } = editor

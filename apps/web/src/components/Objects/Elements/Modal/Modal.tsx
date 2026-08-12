@@ -30,7 +30,7 @@ interface ModalParams {
   customWidth?: string
 }
 
-const Modal = (params: ModalParams) => {
+function Modal(params: ModalParams) {
   const t = useTranslations('Components.Modal')
 
   const getMinHeight = () => {

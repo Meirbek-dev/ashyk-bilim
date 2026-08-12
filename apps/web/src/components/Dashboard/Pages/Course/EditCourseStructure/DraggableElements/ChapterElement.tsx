@@ -69,12 +69,7 @@ interface SortableActivityElementProps {
   chapterUuid: string
 }
 
-const SortableActivityElement = ({
-  activity,
-  activityIndex,
-  course_uuid,
-  chapterUuid,
-}: SortableActivityElementProps) => {
+function SortableActivityElement({ activity, activityIndex, course_uuid, chapterUuid }: SortableActivityElementProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: activity.activity_uuid,
     data: {
@@ -107,12 +102,12 @@ const SortableActivityElement = ({
   )
 }
 
-const ChapterElement = ({
+function ChapterElement({
   chapter,
   chapterIndex: _chapterIndex,
   course_uuid,
   isDraggingActivity,
-}: ChapterElementProps) => {
+}: ChapterElementProps) {
   const { deleteChapter, updateChapter } = useChapterMutations(course_uuid, true)
   const t = useTranslations('CourseEdit')
 

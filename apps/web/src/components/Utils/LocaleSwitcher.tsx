@@ -16,7 +16,7 @@ interface LocaleSwitcherProps {
   isMobile?: boolean
 }
 
-export const LocaleSwitcher = ({ className, isMobile }: LocaleSwitcherProps) => {
+export function LocaleSwitcher({ className, isMobile }: LocaleSwitcherProps) {
   const router = useRouter()
   const pathname = usePathname()
   const currentLocale = useLocale()

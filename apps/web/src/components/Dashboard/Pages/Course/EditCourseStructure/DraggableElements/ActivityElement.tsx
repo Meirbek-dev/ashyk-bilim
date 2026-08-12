@@ -113,14 +113,14 @@ const ACTIVITY_CONFIG = {
 
 const ACTION_ICON_BUTTON_CLASS = 'text-muted-foreground shadow-sm'
 
-const ActivityElement = ({
+function ActivityElement({
   activity,
   activityIndex: _activityIndex,
   course_uuid,
   isDragging,
   attributes,
   listeners,
-}: ActivityElementProps) => {
+}: ActivityElementProps) {
   const { deleteActivity, updateActivity } = useActivityMutations(course_uuid, true)
   const t = useTranslations('CourseEdit.ActivityElement')
 
@@ -382,7 +382,7 @@ const ActivityElement = ({
   )
 }
 
-const ActivityTypeBadge = ({ activityType }: { activityType: ActivityType }) => {
+function ActivityTypeBadge({ activityType }: { activityType: ActivityType }) {
   const t = useTranslations('CourseEdit.ActivityElement')
   const config = ACTIVITY_CONFIG[activityType as keyof typeof ACTIVITY_CONFIG]
   if (!config) return null
@@ -395,7 +395,7 @@ const ActivityTypeBadge = ({ activityType }: { activityType: ActivityType }) => 
   )
 }
 
-const ActivityEditButton = ({ activity, course_uuid }: { activity: Activity; course_uuid: string }) => {
+function ActivityEditButton({ activity, course_uuid }: { activity: Activity; course_uuid: string }) {
   const t = useTranslations('CourseEdit.ActivityElement')
   const course = useCourse()
 

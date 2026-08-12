@@ -6,7 +6,7 @@ interface AuthLogoProps {
   width?: number
 }
 
-const AuthLogo = ({ width = 240 }: AuthLogoProps) => {
+function AuthLogo({ width = 240 }: AuthLogoProps) {
   const t = useTranslations('Common')
   const { resolvedTheme } = useTheme()
   const src = resolvedTheme === 'dark' ? '/app_logo_light_full.svg' : '/app_logo_full.svg'

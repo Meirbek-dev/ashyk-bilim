@@ -11,11 +11,13 @@ const CourseHealthTable = lazy(() => import('./CourseHealthTable'))
 const AssessmentOutliersTable = lazy(() => import('./AssessmentOutliersTable'))
 const ContentBottlenecksTable = lazy(() => import('./ContentBottlenecksTable'))
 
-const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-  <Card className="border-border bg-card shadow-sm">
-    <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
-  </Card>
-)
+function SectionFallback({ height = 'h-[280px]' }: { height?: string }) {
+  return (
+    <Card className="border-border bg-card shadow-sm">
+      <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
+    </Card>
+  )
+}
 
 interface PerformanceTabProps {
   query: AnalyticsQuery

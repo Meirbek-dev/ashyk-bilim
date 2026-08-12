@@ -54,7 +54,7 @@ type UploadBlockComponentProps = {
   children: ReactNode
 } & HTMLAttributes<HTMLDivElement>
 
-const FileUploadBlock = ({ isLoading, isEditable, isEmpty, Icon, children }: UploadBlockComponentProps) => {
+function FileUploadBlock({ isLoading, isEditable, isEmpty, Icon, children }: UploadBlockComponentProps) {
   const t = useTranslations('DashPage.Editor.FileUploadBlock')
 
   if (isLoading) {
@@ -78,7 +78,7 @@ const FileUploadBlock = ({ isLoading, isEditable, isEmpty, Icon, children }: Upl
   )
 }
 
-const FileUploadBlockWrapper = ({ children, isEmpty, ...props }: UploadBlockComponentProps) => {
+function FileUploadBlockWrapper({ children, isEmpty, ...props }: UploadBlockComponentProps) {
   return (
     isEmpty && (
       <div

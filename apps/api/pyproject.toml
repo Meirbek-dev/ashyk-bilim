@@ -6,28 +6,28 @@ requires-python = ">=3.14.5,<3.15.0"
 
 dependencies = [
   # Framework
-  "fastapi>=0.139.0",
-  "granian[reload,uvloop]>=2.7.9",
+  "fastapi>=0.141.1",
+  "granian[reload,uvloop]>=2.8.1",
 
   # Database
-  "sqlalchemy>=2.0.51",
+  "sqlalchemy>=2.0.52",
   "sqlmodel>=0.0.39",
-  "alembic>=1.18.5",
+  "alembic>=1.19.1",
   "psycopg[binary]>=3.3.4",
   "pgvector>=0.5.0",
-  "redis>=8.0.1",
+  "redis>=8.1.0",
 
   # Validation / Config
   "pydantic[email]>=2.13.4",
-  "pydantic-settings>=2.14.2",
+  "pydantic-settings>=2.15.0",
 
   # Auth
   "fastapi-users[sqlalchemy]>=15.0.5",
   "pyjwt>=2.13.0",
 
   # AI
-  "openai>=2.45.0",
-  "pydantic-ai-slim[logfire,openai]>=2.9.0",
+  "openai>=3.0.0",
+  "pydantic-ai-slim[logfire,openai]>=2.28.0",
   "tiktoken>=0.13.0",
 
   # Async / Jobs
@@ -36,19 +36,19 @@ dependencies = [
   "taskiq-redis>=1.2.3",
 
   # API
-  "fastapi-pagination>=0.15.15",
+  "fastapi-pagination>=0.15.16",
   "python-multipart>=0.0.32",
 
   # Infra / Observability
-  "logfire[fastapi,sqlalchemy]>=4.37.0",
+  "logfire[fastapi,sqlalchemy]>=4.40.0",
 
   # Utilities
-  "cachebox>=6.1.2",
+  "cachebox>=6.2.5",
   "httpx>=0.28.1",
-  "python-ulid>=3.1.0",
-  "resend>=2.32.2",
-  "selectolax>=0.4.10",
-  "typer>=0.26.8",
+  "python-ulid>=4.0.1",
+  "resend>=2.36.0",
+  "selectolax>=0.4.11",
+  "typer>=0.27.1",
 
   # Sandbox / Execution
   "judge0>=0.0.8",
@@ -57,20 +57,20 @@ dependencies = [
 [dependency-groups]
 dev = [
   # Lint / Format
-  "ruff==0.15.19",
+  "ruff==0.16.2",
   # Type Checking
   "basedpyright>=1.39.9",
-  "mypy>=2.2.0",
-  "pyrefly>=1.1.1",
+  "mypy>=2.3.0",
+  "pyrefly>=1.2.0",
   # Testing
   "pytest>=9.1.1",
   "pytest-asyncio>=1.4.0",
   "pytest-cov>=7.1.0",
   # Dev Server
-  "uvicorn[standard]>=0.51.0",
+  "uvicorn[standard]>=0.52.1",
   # Fixtures
-  "faker>=40.28.1",
-  "ty>=0.0.58",
+  "faker>=40.36.0",
+  "ty>=0.0.70",
 ]
 
 [tool.ruff]
@@ -101,107 +101,117 @@ exclude = [
 select = ["ALL"]
 fixable = ["ALL"]
 unfixable = [
-  "ERA001", # Do not auto-delete commented code; require human review.
+  "commented-out-code", # Do not auto-delete commented code; require human review.
 ]
 
 ignore = [
   # --- Annotations (flake8-annotations) ---
-  "PLC0415", # `import` should be at the top-level of a file
+  "import-outside-top-level", # `import` should be at the top-level of a file
 
   # --- General & Style ---
-  "COM812", # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
-  "PLR2004", # magic-value-comparison: Use of unnamed numerical constants in comparisons
-  "PLR0913", # too-many-arguments: Function has too many arguments (typically > 5)
-
+  "missing-trailing-comma", # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
+  "magic-value-comparison", # magic-value-comparison: Use of unnamed numerical constants in comparisons
+  "too-many-arguments", # too-many-arguments: Function has too many arguments (typically > 5)
+  "implicit-any-lambda",
   # --- Type Checking (flake8-type-checking) ---
-  "TC001", # move-to-type-checking: Move first-party imports into TYPE_CHECKING blocks
-  "TC002", # move-to-type-checking: Move third-party imports into TYPE_CHECKING blocks
-  "TC003", # move-to-type-checking: Move stdlib imports into TYPE_CHECKING blocks
+  "typing-only-first-party-import", # move-to-type-checking: Move first-party imports into TYPE_CHECKING blocks
+  "typing-only-third-party-import", # move-to-type-checking: Move third-party imports into TYPE_CHECKING blocks
+  "typing-only-standard-library-import", # move-to-type-checking: Move stdlib imports into TYPE_CHECKING blocks
 
   # --- Security (flake8-bandit) ---
-  "S105", # hardcoded-password-string: Possible hardcoded password string assignment
-  "S106", # hardcoded-password-func-arg: Possible hardcoded password in function call
-  "S110", # try-except-pass: Exception caught and silenced with `pass`
-  "S104", # hardcoded-bind-all-interfaces: Warns on binding to 0.0.0.0 (required for Docker)
+  "hardcoded-password-string", # hardcoded-password-string: Possible hardcoded password string assignment
+  "hardcoded-password-func-arg", # hardcoded-password-func-arg: Possible hardcoded password in function call
+  "try-except-pass", # try-except-pass: Exception caught and silenced with `pass`
+  "hardcoded-bind-all-interfaces", # hardcoded-bind-all-interfaces: Warns on binding to 0.0.0.0 (required for Docker)
 
   # --- Exceptions (tryceratops / flake8-errmsg) ---
-  "BLE001", # blind-except: Do not catch `Exception` directly; use specific exceptions
-  "TRY003", # raise-vanilla-args: Avoid long message strings in exception raises
-  "EM101", # raw-string-in-exception: Exception must not use a string literal directly
-  "TRY300", # try-consider-else: Move code to else block (noisy)
-  "TRY301", # raise-within-try: Disallow raising within try block (noisy)
-  "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
+  "blind-except", # blind-except: Do not catch `Exception` directly; use specific exceptions
+  "raise-vanilla-args", # raise-vanilla-args: Avoid long message strings in exception raises
+  "raw-string-in-exception", # raw-string-in-exception: Exception must not use a string literal directly
+  "try-consider-else", # try-consider-else: Move code to else block (noisy)
+  "raise-within-try", # raise-within-try: Disallow raising within try block (noisy)
+  "too-many-statements-in-try-clause", # too-many-statements-in-try-clause: try block with too many statements
 
   # --- Docstrings (pydocstyle) ---
   "D", # docstring-rules: Disables all docstring-related rules
-  "D100", # missing-docstring-in-public-module: Missing docstring at the top of a file
-  "DOC201", # missing-docstring-in-function: Missing docstring in function
-  "DOC202", # missing-docstring-in-method: Missing docstring in method
-  "DOC501", # missing-docstring-in-class: Missing docstring in class
-  "DOC502", # docstring-extraneous-exception: Docstring rule
-  "DOC402", # docstring-missing-yields: Docstring rule
+  "undocumented-public-module", # missing-docstring-in-public-module: Missing docstring at the top of a file
+  "docstring-missing-returns", # missing-docstring-in-function: Missing docstring in function
+  "docstring-extraneous-returns", # missing-docstring-in-method: Missing docstring in method
+  "docstring-missing-exception", # missing-docstring-in-class: Missing docstring in class
+  "docstring-extraneous-exception", # docstring-extraneous-exception: Docstring rule
+  "docstring-missing-yields", # docstring-missing-yields: Docstring rule
 
   # --- Miscellaneous ---
   "T20", # flake8-print: Disallows `print` statements (prevents debug debris)
-  "TD002", # missing-todo-author: TODO comment is missing an author name
-  "TD003", # missing-todo-link: TODO comment is missing a link to a tracker/issue
-  "FIX002", # line-contains-todo: Disallow TODOs
+  "missing-todo-author", # missing-todo-author: TODO comment is missing an author name
+  "missing-todo-link", # missing-todo-link: TODO comment is missing a link to a tracker/issue
+  "line-contains-todo", # line-contains-todo: Disallow TODOs
 
-  "PLC2701",
-  "RUF001",
-  "RUF002", # ambiguous-unicode-character-docstring: False positives on Cyrillic docstrings
-  "RUF003", # ambiguous-unicode-character-comment: False positives on Cyrillic comments
-  "E501", # line-too-long: Line is too long
+  "import-private-name",
+  "ambiguous-unicode-character-string",
+  "ambiguous-unicode-character-docstring", # ambiguous-unicode-character-docstring: False positives on Cyrillic docstrings
+  "ambiguous-unicode-character-comment", # ambiguous-unicode-character-comment: False positives on Cyrillic comments
+  "line-too-long", # line-too-long: Line is too long
 
   # --- Project Specific Ignores ---
-  "CPY001", # missing-copyright-notice: Checks for copyright notice at the top of every file
-  "INP001", # implicit-namespace-package: Checks for __init__.py in all directories (noisy for apps)
-  "ARG001", # unused-function-argument: Unused function arguments (noisy for FastAPI routes/dependencies)
-  "RUF029", # unused-async: Functions defined as async but without await (noisy for route consistency)
+  "missing-copyright-notice", # missing-copyright-notice: Checks for copyright notice at the top of every file
+  "implicit-namespace-package", # implicit-namespace-package: Checks for __init__.py in all directories (noisy for apps)
+  "unused-function-argument", # unused-function-argument: Unused function arguments (noisy for FastAPI routes/dependencies)
+  "unused-async", # unused-async: Functions defined as async but without await (noisy for route consistency)
   "FBT", # flake8-boolean-trap: Disallow boolean positional arguments (false positives on routes/options)
-  "PLC1901", # compare-to-empty-string: Simplification breaks SQLAlchemy expressions like Column == ""
-  "PLW0603", # global-statement: Discourage use of global statements (required for lazy singletons)
-  "PLR0911", # too-many-return-statements: Pylint complexity check
-  "PLR0912", # too-many-branches: Pylint complexity check
-  "PLR0914", # too-many-locals: Pylint complexity check
-  "PLR0915", # too-many-statements: Pylint complexity check
-  "PLR0916", # too-many-boolean-expressions: Pylint complexity check
-  "PLR0917", # too-many-positional-arguments: Pylint complexity check
-  "C901", # complex-structure: McCabe complexity check
-  "PLR1702", # too-many-nested-blocks: Pylint complexity check
-  "PLR6301", # no-self-use: Disallow methods that don't use self (standard for repositories/dependencies)
-  "N818", # error-suffix-on-exception-name: Exception name should end in Error (false positive on HTTPExceptions)
-  "SLF001", # private-member-access: Allow accessing private members (e.g. Row._mapping in SQLAlchemy)
-  "G004", # logging-f-string: Logging statements should not use f-strings (noisy with Logfire)
-  "RUF067", # non-empty-init-module: __init__.py should only contain docstrings and re-exports (noisy for modules with helpers)
-  "B904", # raise-without-from-inside-except: Checks for raise within except block without 'from'
-  "N806", # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
-  "ERA001", # commented-out-code: Allow code-like text in comments
-  "S101",
-  "A005", # module-shadowing: Allow 'types' module name inside packages
+  "compare-to-empty-string", # compare-to-empty-string: Simplification breaks SQLAlchemy expressions like Column == ""
+  "global-statement", # global-statement: Discourage use of global statements (required for lazy singletons)
+  "too-many-return-statements", # too-many-return-statements: Pylint complexity check
+  "too-many-branches", # too-many-branches: Pylint complexity check
+  "too-many-locals", # too-many-locals: Pylint complexity check
+  "too-many-statements", # too-many-statements: Pylint complexity check
+  "too-many-boolean-expressions", # too-many-boolean-expressions: Pylint complexity check
+  "too-many-positional-arguments", # too-many-positional-arguments: Pylint complexity check
+  "complex-structure", # complex-structure: McCabe complexity check
+  "too-many-nested-blocks", # too-many-nested-blocks: Pylint complexity check
+  "no-self-use", # no-self-use: Disallow methods that don't use self (standard for repositories/dependencies)
+  "error-suffix-on-exception-name", # error-suffix-on-exception-name: Exception name should end in Error (false positive on HTTPExceptions)
+  "private-member-access", # private-member-access: Allow accessing private members (e.g. Row._mapping in SQLAlchemy)
+  "logging-f-string", # logging-f-string: Logging statements should not use f-strings (noisy with Logfire)
+  "non-empty-init-module", # non-empty-init-module: __init__.py should only contain docstrings and re-exports (noisy for modules with helpers)
+  "raise-without-from-inside-except", # raise-without-from-inside-except: Checks for raise within except block without 'from'
+  "non-lowercase-variable-in-function", # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
+  "commented-out-code", # commented-out-code: Allow code-like text in comments
+  "assert",
+  "stdlib-module-shadowing", # module-shadowing: Allow 'types' module name inside packages
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = [
-  "F401", # Allow explicit re-export imports.
-  "F403",
+  "unused-import", # Allow explicit re-export imports.
+  "undefined-local-with-import-star",
 ]
 
 "**/tests/**/*.py" = [
-  "ARG001",
-  "ARG002",
-  "F811",
-  "PLR2004",
-  "RUF069",
-  "S101",
-  "S105",
-  "S106",
-  "SLF001",
-  "PT003",
-  "RUF076",
+  "unused-function-argument",
+  "unused-method-argument",
+  "redefined-while-unused",
+  "magic-value-comparison",
+  "float-equality-comparison",
+  "assert",
+  "hardcoded-password-string",
+  "hardcoded-password-func-arg",
+  "private-member-access",
+  "pytest-extraneous-scope-function",
+  "pytest-fixture-autouse",
 ]
 
-"**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106", "PT003", "RUF076"]
+"**/conftest.py" = [
+  "unused-function-argument",
+  "unused-method-argument",
+  "unused-import",
+  "redefined-while-unused",
+  "assert",
+  "hardcoded-password-string",
+  "hardcoded-password-func-arg",
+  "pytest-extraneous-scope-function",
+  "pytest-fixture-autouse",
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

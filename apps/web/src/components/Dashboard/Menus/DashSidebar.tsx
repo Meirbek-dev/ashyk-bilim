@@ -46,35 +46,37 @@ interface SidebarProps {
 }
 
 // Loading skeleton component
-const SidebarSkeleton = () => (
-  <Sidebar side="left" variant="sidebar" collapsible="icon" className="border-r">
-    <SidebarHeader className="border-sidebar-border border-b p-4">
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-10 w-10 rounded-lg" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-3 w-16" />
+function SidebarSkeleton() {
+  return (
+    <Sidebar side="left" variant="sidebar" collapsible="icon" className="border-r">
+      <SidebarHeader className="border-sidebar-border border-b p-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-3 w-16" />
+          </div>
         </div>
-      </div>
-    </SidebarHeader>
-    <SidebarContent className="p-4">
-      <div className="space-y-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full rounded-md" />
-        ))}
-      </div>
-    </SidebarContent>
-    <SidebarFooter className="border-sidebar-border border-t p-4">
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-8 w-8 rounded-full" />
-        <div className="flex-1 space-y-1">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-3 w-16" />
+      </SidebarHeader>
+      <SidebarContent className="p-4">
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full rounded-md" />
+          ))}
         </div>
-      </div>
-    </SidebarFooter>
-  </Sidebar>
-)
+      </SidebarContent>
+      <SidebarFooter className="border-sidebar-border border-t p-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <div className="flex-1 space-y-1">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
 
 // Custom hook for navigation items
 const useNavigationItems = () => {
@@ -138,35 +140,39 @@ const useNavigationItems = () => {
 }
 
 // Navigation item component
-const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boolean }) => (
-  <SidebarMenuItem className={isCollapsed ? 'flex w-full justify-center' : ''}>
-    <SidebarMenuButton
-      render={<AppLink href={item.href} aria-label={item.tooltip} aria-current={item.isActive ? 'page' : undefined} />}
-      {...(isCollapsed ? { tooltip: item.tooltip } : {})}
-      {...(item.isActive === undefined ? {} : { isActive: item.isActive })}
-      size="default"
-      className={`group hover:bg-sidebar-accent/50 relative transition-all duration-200 ${
-        isCollapsed ? 'flex h-10 w-10 items-center justify-center p-0' : 'w-full gap-3'
-      } flex min-w-0 items-center`}
-      {...(item.disabled === undefined ? {} : { disabled: item.disabled })}
-    >
-      <item.icon className="h-4 w-4 shrink-0" aria-hidden />
-      {!isCollapsed && (
-        <>
-          <span className="truncate font-medium">{item.title}</span>
-          {item.badge ? (
-            <Badge variant="secondary" className="ml-auto text-xs">
-              {item.badge}
-            </Badge>
-          ) : null}
-          {item.isActive ? <div className="bg-primary ml-auto h-2 w-2 animate-pulse rounded-full" /> : null}
-        </>
-      )}
-    </SidebarMenuButton>
-  </SidebarMenuItem>
-)
+function NavItem({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boolean }) {
+  return (
+    <SidebarMenuItem className={isCollapsed ? 'flex w-full justify-center' : ''}>
+      <SidebarMenuButton
+        render={
+          <AppLink href={item.href} aria-label={item.tooltip} aria-current={item.isActive ? 'page' : undefined} />
+        }
+        {...(isCollapsed ? { tooltip: item.tooltip } : {})}
+        {...(item.isActive === undefined ? {} : { isActive: item.isActive })}
+        size="default"
+        className={`group hover:bg-sidebar-accent/50 relative transition-all duration-200 ${
+          isCollapsed ? 'flex h-10 w-10 items-center justify-center p-0' : 'w-full gap-3'
+        } flex min-w-0 items-center`}
+        {...(item.disabled === undefined ? {} : { disabled: item.disabled })}
+      >
+        <item.icon className="h-4 w-4 shrink-0" aria-hidden />
+        {!isCollapsed && (
+          <>
+            <span className="truncate font-medium">{item.title}</span>
+            {item.badge ? (
+              <Badge variant="secondary" className="ml-auto text-xs">
+                {item.badge}
+              </Badge>
+            ) : null}
+            {item.isActive ? <div className="bg-primary ml-auto h-2 w-2 animate-pulse rounded-full" /> : null}
+          </>
+        )}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
 
-const DashSidebar = ({ className }: SidebarProps) => {
+function DashSidebar({ className }: SidebarProps) {
   const { user } = useSession()
   const { state, toggleSidebar } = useSidebar()
   const { isDark, toggleMode } = useTheme()

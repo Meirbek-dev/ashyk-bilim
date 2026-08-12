@@ -42,7 +42,7 @@ function TrailCourseSkeletons() {
   )
 }
 
-const Trail = () => {
+function Trail() {
   const { user: currentUser } = useSession()
   const t = useTranslations('TrailPage')
 

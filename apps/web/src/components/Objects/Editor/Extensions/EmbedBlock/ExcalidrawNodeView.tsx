@@ -37,7 +37,7 @@ const emptySubscribe = () => () => {}
  * - In read-only mode: hides the overlay toolbar and enables pointer events on
  *   the iframe so students can interact with the canvas (Requirement 5.4).
  */
-const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
+function ExcalidrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
   const { node, editor, getPos, updateAttributes } = props
   const { url, height: attrHeight } = node.attrs
 

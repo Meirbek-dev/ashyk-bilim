@@ -64,7 +64,7 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
 // EmbedBlockNodeView — root dispatcher
 // ============================================================================
 
-const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
+function EmbedBlockNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
   const { type } = props.node.attrs
   const provider = getEmbedProvider(type)
   const t = useTranslations('DashPage.Editor.EmbedObjects')

@@ -29,7 +29,7 @@ const createValidationSchema = (t: (key: string) => string) =>
 type UserGroupFormValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 type UserGroupInputValues = v.InferInput<ReturnType<typeof createValidationSchema>>
 
-const EditUserGroup = (props: EditUserGroupProps) => {
+function EditUserGroup(props: EditUserGroupProps) {
   const queryClient = useQueryClient()
   const t = useTranslations('Components.EditUserGroup')
   const validationSchema = createValidationSchema(t)
