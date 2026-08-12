@@ -406,6 +406,12 @@ async def _run_final_code_answers(
                 },
             )
 
+        if not answer.source.strip():
+            enriched_answers[item.item_uuid] = answer.model_copy(
+                update={"latest_run": CodeRunResult(passed=0, total=len(body.tests), score=0.0)}
+            )
+            continue
+
         result = await service.run(
             db_session=db_session,
             assessment_uuid=assessment_uuid,
