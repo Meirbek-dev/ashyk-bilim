@@ -122,6 +122,7 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
 
 function CourseClient(props: CourseClientProps) {
   const t = useTranslations('CoursePage')
+  const learnerT = useTranslations('LearnerCourse')
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
   const [isStartingCourse, setIsStartingCourse] = useState(false)
@@ -159,14 +160,14 @@ function CourseClient(props: CourseClientProps) {
     }
 
     setIsStartingCourse(true)
-    const loadingToast = toast.loading('Starting course')
+    const loadingToast = toast.loading(learnerT('startingCourse'))
     try {
       await startCourse(`course_${courseuuid}`)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
         queryClient.invalidateQueries({ queryKey: learnerCourseStateQueryOptions(courseuuid).queryKey }),
       ])
-      toast.success('Course started', { id: loadingToast })
+      toast.success(learnerT('courseStarted'), { id: loadingToast })
       const firstActivity = course.chapters?.[0]?.activities?.[0]
       if (firstActivity?.activity_uuid) {
         router.push(
@@ -177,7 +178,7 @@ function CourseClient(props: CourseClientProps) {
       }
     } catch (error) {
       console.error('Failed to start course:', error)
-      toast.error('Could not start course', { id: loadingToast })
+      toast.error(learnerT('startCourseError'), { id: loadingToast })
     } finally {
       setIsStartingCourse(false)
     }

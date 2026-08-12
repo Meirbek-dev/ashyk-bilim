@@ -162,7 +162,7 @@ export default function CourseReviewPublish({
 
 function ReadinessIssues({ readiness }: { readiness: CourseReadiness }) {
   const t = useTranslations('DashPage.CourseManagement.Review')
-  const issueMessage = (code: string, fallback: string): string => {
+  const issueMessage = (code: string): string => {
     const messages: Record<string, string> = {
       COURSE_NO_LEARNER_VISIBLE_ACTIVITIES: t('issues.noVisibleActivities'),
       COURSE_REQUIRED_ACTIVITY_UNPUBLISHED: t('issues.requiredActivityUnpublished'),
@@ -173,7 +173,7 @@ function ReadinessIssues({ readiness }: { readiness: CourseReadiness }) {
       COURSE_CERTIFICATE_NOT_CONFIGURED: t('issues.certificateMissing'),
       COURSE_CONTRIBUTOR_NOT_CONFIGURED: t('issues.contributorMissing'),
     }
-    return messages[code] ?? fallback
+    return messages[code] ?? t('issues.unknown')
   }
   if (readiness.issues.length === 0) {
     return (
@@ -195,7 +195,7 @@ function ReadinessIssues({ readiness }: { readiness: CourseReadiness }) {
           {issue.severity === 'blocker' ? <AlertTriangle aria-hidden /> : <CheckCircle2 aria-hidden />}
           <AlertTitle>{issue.severity === 'blocker' ? t('blockerLabel') : t('warningLabel')}</AlertTitle>
           <AlertDescription className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span>{issueMessage(issue.code, issue.message)}</span>
+            <span>{issueMessage(issue.code)}</span>
             {issue.path ? (
               <Button variant="outline" size="sm" nativeButton={false} render={<AppLink href={issue.path} />}>
                 {t('resolveIssue')}

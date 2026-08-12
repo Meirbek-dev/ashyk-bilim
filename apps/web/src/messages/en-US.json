@@ -3900,7 +3900,8 @@
           "thumbnailMissing": "Add a thumbnail to improve recognition. This does not block publishing.",
           "outcomesMissing": "Add learning outcomes. This does not block publishing.",
           "certificateMissing": "No certificate is configured. This does not block publishing.",
-          "contributorMissing": "No active contributor is configured. This does not block publishing."
+          "contributorMissing": "No active contributor is configured. This does not block publishing.",
+          "unknown": "A publication requirement still needs attention."
         },
         "sectionLabel": "Review & publish",
         "toasts": {
@@ -10579,6 +10580,46 @@
     "signIn": "Sign in"
   },
   "LearnerCourse": {
-    "privateCourse": "Private course"
+    "privateCourse": "Private course",
+    "stateUnavailable": "Course progress is temporarily unavailable. Try again before continuing.",
+    "enrolledTitle": "You are enrolled",
+    "previewTitle": "Preview before enrolling",
+    "signInTitle": "Sign in to start",
+    "continueWith": "Continue with {activity}.",
+    "nextActivityFallback": "the next activity",
+    "allActivitiesComplete": "All listed activities are complete. Review the certificate module for completion status.",
+    "previewDescription": "See the syllabus and outcomes first. Starting the course creates your learner agenda and progress trail.",
+    "continue": "Continue",
+    "startCourse": "Start course",
+    "signIn": "Sign in",
+    "previewSyllabus": "Preview syllabus",
+    "agendaTitle": "Learner agenda",
+    "agendaDescription": "Next course actions in the order learners need them.",
+    "agendaLocked": "The agenda unlocks when the course is started.",
+    "noActivitiesTitle": "No activities yet",
+    "noActivitiesDescription": "This course needs published activities before a learner agenda can be built.",
+    "untitledActivity": "Untitled activity",
+    "returned": "Returned",
+    "feedbackLockedTitle": "Feedback appears after enrollment",
+    "feedbackLockedDescription": "Returned work and teacher feedback will be collected here once you submit course tasks.",
+    "feedbackTitle": "Feedback to review",
+    "feedbackDescription": "Returned work stays visible until the learner opens the activity and revises it.",
+    "noReturnedTitle": "No returned work",
+    "noReturnedDescription": "Teacher feedback that needs revision will appear here.",
+    "returnedWork": "Returned work",
+    "reviewFeedback": "Review feedback and resubmit",
+    "certificateProgress": "Certificate progress",
+    "certificateEarned": "Certificate earned and ready to verify.",
+    "certificateDescription": "Complete every activity to unlock the certificate.",
+    "completion": "Completion",
+    "certificateDone": "Done",
+    "certificateRemaining": "Remaining",
+    "verifyCertificate": "Verify certificate",
+    "certificateCheckPending": "Certificate check pending",
+    "inProgress": "In progress",
+    "notEnrolled": "Not enrolled",
+    "startingCourse": "Starting course",
+    "courseStarted": "Course started",
+    "startCourseError": "Could not start course"
   }
 }

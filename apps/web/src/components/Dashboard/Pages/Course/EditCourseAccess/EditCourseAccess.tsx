@@ -164,8 +164,19 @@ function EditCourseAccess() {
 
 function CourseReadinessSummary({ readiness }: { readiness: Awaited<ReturnType<typeof getCourseReadiness>> }) {
   const t = useTranslations('DashPage.Courses.Access')
+  const issueT = useTranslations('DashPage.CourseManagement.Review.issues')
   const blockers = readiness.issues.filter(issue => issue.severity === 'blocker')
   const warnings = readiness.issues.filter(issue => issue.severity === 'warning')
+  const issueMessages: Record<string, string> = {
+    COURSE_NO_LEARNER_VISIBLE_ACTIVITIES: issueT('noVisibleActivities'),
+    COURSE_REQUIRED_ACTIVITY_UNPUBLISHED: issueT('requiredActivityUnpublished'),
+    COURSE_ASSESSMENT_UNREADY: issueT('assessmentUnready'),
+    COURSE_FILE_SUBMISSION_UNREADY: issueT('fileSubmissionUnready'),
+    COURSE_THUMBNAIL_MISSING: issueT('thumbnailMissing'),
+    COURSE_OUTCOMES_MISSING: issueT('outcomesMissing'),
+    COURSE_CERTIFICATE_NOT_CONFIGURED: issueT('certificateMissing'),
+    COURSE_CONTRIBUTOR_NOT_CONFIGURED: issueT('contributorMissing'),
+  }
 
   if (readiness.ready && warnings.length === 0) {
     return (
@@ -191,10 +202,10 @@ function CourseReadinessSummary({ readiness }: { readiness: Awaited<ReturnType<t
             <li key={`${issue.code}-${issue.activity_uuid ?? issue.scope}`}>
               {issue.path ? (
                 <Link href={issue.path} className="underline underline-offset-4">
-                  {issue.message}
+                  {issueMessages[issue.code] ?? issueT('unknown')}
                 </Link>
               ) : (
-                issue.message
+                (issueMessages[issue.code] ?? issueT('unknown'))
               )}
             </li>
           ))}

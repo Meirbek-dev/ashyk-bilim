@@ -59,39 +59,6 @@ interface CourseProgressSnapshot {
   total: number
 }
 
-const LEARNER_COURSE_COPY = {
-  agendaDescription: 'Next course actions in the order learners need them.',
-  agendaLocked: 'The agenda unlocks when the course is started.',
-  agendaTitle: 'Learner agenda',
-  certificateCheckPending: 'Certificate check pending',
-  certificateDescription: 'Complete every activity to unlock the certificate.',
-  certificateDone: 'Done',
-  certificateEarned: 'Certificate earned and ready to verify.',
-  certificateProgress: 'Certificate progress',
-  certificateRemaining: 'Remaining',
-  completion: 'Completion',
-  continue: 'Continue',
-  feedbackDescription: 'Returned work stays visible until the learner opens the activity and revises it.',
-  feedbackLockedDescription: 'Returned work and teacher feedback will be collected here once you submit course tasks.',
-  feedbackLockedTitle: 'Feedback appears after enrollment',
-  feedbackTitle: 'Feedback to review',
-  inProgress: 'In progress',
-  noActivitiesDescription: 'This course needs published activities before a learner agenda can be built.',
-  noActivitiesTitle: 'No activities yet',
-  noReturnedDescription: 'Teacher feedback that needs revision will appear here.',
-  noReturnedTitle: 'No returned work',
-  notEnrolled: 'Not enrolled',
-  previewSyllabus: 'Preview syllabus',
-  returned: 'Returned',
-  returnedWork: 'Returned work',
-  reviewFeedback: 'Review feedback and resubmit',
-  signIn: 'Sign in',
-  startCourse: 'Start course',
-  stateUnavailable: 'Course progress is temporarily unavailable. Try again before continuing.',
-  untitledActivity: 'Untitled activity',
-  verifyCertificate: 'Verify certificate',
-}
-
 export function LearnerCourseModules({
   course,
   courseUuid,
@@ -103,11 +70,12 @@ export function LearnerCourseModules({
   isStateLoading,
   stateError,
 }: LearnerCourseModulesProps) {
+  const t = useTranslations('LearnerCourse')
   const progress = useMemo(() => buildCourseProgressSnapshot(courseUuid, learnerState), [courseUuid, learnerState])
 
   return (
     <div className="grid gap-4">
-      {stateError ? <InlineError description={LEARNER_COURSE_COPY.stateUnavailable} error={stateError} /> : null}
+      {stateError ? <InlineError description={t('stateUnavailable')} error={stateError} /> : null}
       <CourseEnrollmentState
         course={course}
         isAuthenticated={isAuthenticated}
@@ -146,12 +114,12 @@ function CourseEnrollmentState({
 }) {
   const t = useTranslations('LearnerCourse')
   const status = isEnrolled ? LmsStatuses.IN_PROGRESS : isAuthenticated ? LmsStatuses.READY : LmsStatuses.LIMITED
-  const title = isEnrolled ? 'You are enrolled' : isAuthenticated ? 'Preview before enrolling' : 'Sign in to start'
+  const title = isEnrolled ? t('enrolledTitle') : isAuthenticated ? t('previewTitle') : t('signInTitle')
   const description = isEnrolled
     ? nextItem
-      ? `Continue with ${nextItem.title || 'the next activity'}.`
-      : 'All listed activities are complete. Review the certificate module for completion status.'
-    : 'See the syllabus and outcomes first. Starting the course creates your learner agenda and progress trail.'
+      ? t('continueWith', { activity: nextItem.title || t('nextActivityFallback') })
+      : t('allActivitiesComplete')
+    : t('previewDescription')
   const firstActivity = firstCourseActivity(course)
 
   return (
@@ -171,12 +139,12 @@ function CourseEnrollmentState({
           {isEnrolled && nextItem ? (
             <Button className="w-full" nativeButton={false} render={<AppLink href={nextItem.href} />}>
               <PlayCircle data-icon="inline-start" aria-hidden="true" />
-              {LEARNER_COURSE_COPY.continue}
+              {t('continue')}
             </Button>
           ) : (
             <Button className="w-full" disabled={starting} onClick={onStartCourse}>
               <PlayCircle data-icon="inline-start" aria-hidden="true" />
-              {isAuthenticated ? LEARNER_COURSE_COPY.startCourse : LEARNER_COURSE_COPY.signIn}
+              {isAuthenticated ? t('startCourse') : t('signIn')}
             </Button>
           )}
           {!isEnrolled && firstActivity ? (
@@ -187,7 +155,7 @@ function CourseEnrollmentState({
               render={<AppLink href={firstActivity.href} />}
             >
               <BookOpenCheck data-icon="inline-start" aria-hidden="true" />
-              {LEARNER_COURSE_COPY.previewSyllabus}
+              {t('previewSyllabus')}
             </Button>
           ) : null}
         </div>
@@ -197,6 +165,7 @@ function CourseEnrollmentState({
 }
 
 function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; progress: CourseProgressSnapshot }) {
+  const t = useTranslations('LearnerCourse')
   const agendaItems = progress.items.filter(item => !item.complete).slice(0, 5)
   const visibleItems = agendaItems.length > 0 ? agendaItems : progress.items.slice(0, 5)
 
@@ -207,10 +176,10 @@ function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; pr
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <ClipboardCheck className="size-4" />
-              {LEARNER_COURSE_COPY.agendaTitle}
+              {t('agendaTitle')}
             </CardTitle>
             <CardDescription>
-              {isEnrolled ? LEARNER_COURSE_COPY.agendaDescription : LEARNER_COURSE_COPY.agendaLocked}
+              {isEnrolled ? t('agendaDescription') : t('agendaLocked')}
             </CardDescription>
           </div>
           <Badge variant="outline" className="tabular-nums">
@@ -223,8 +192,8 @@ function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; pr
         {visibleItems.length === 0 ? (
           <EmptyModuleState
             icon={<AlertCircle className="size-5" />}
-            title={LEARNER_COURSE_COPY.noActivitiesTitle}
-            description={LEARNER_COURSE_COPY.noActivitiesDescription}
+            title={t('noActivitiesTitle')}
+            description={t('noActivitiesDescription')}
           />
         ) : (
           <div className="divide-border overflow-hidden rounded-lg border">
@@ -248,11 +217,11 @@ function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; pr
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">
-                    {item.title || LEARNER_COURSE_COPY.untitledActivity}
+                    {item.title || t('untitledActivity')}
                   </span>
                   <span className="text-muted-foreground block truncate text-xs">{item.chapterName}</span>
                 </span>
-                {item.returned ? <Badge variant="destructive">{LEARNER_COURSE_COPY.returned}</Badge> : null}
+                {item.returned ? <Badge variant="destructive">{t('returned')}</Badge> : null}
                 <ArrowRight className="text-muted-foreground size-4 shrink-0" />
               </AppLink>
             ))}
@@ -270,14 +239,15 @@ function ReturnedWorkModule({
   isEnrolled: boolean
   returnedItems: CourseActivityAgendaItem[]
 }) {
+  const t = useTranslations('LearnerCourse')
   if (!isEnrolled) {
     return (
       <Card>
         <CardContent className="p-5">
           <EmptyModuleState
             icon={<LockKeyhole className="size-5" />}
-            title={LEARNER_COURSE_COPY.feedbackLockedTitle}
-            description={LEARNER_COURSE_COPY.feedbackLockedDescription}
+            title={t('feedbackLockedTitle')}
+            description={t('feedbackLockedDescription')}
           />
         </CardContent>
       </Card>
@@ -289,16 +259,16 @@ function ReturnedWorkModule({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <RotateCcw className="size-4" />
-          {LEARNER_COURSE_COPY.feedbackTitle}
+          {t('feedbackTitle')}
         </CardTitle>
-        <CardDescription>{LEARNER_COURSE_COPY.feedbackDescription}</CardDescription>
+        <CardDescription>{t('feedbackDescription')}</CardDescription>
       </CardHeader>
       <CardContent>
         {returnedItems.length === 0 ? (
           <EmptyModuleState
             icon={<CheckCircle2 className="size-5" />}
-            title={LEARNER_COURSE_COPY.noReturnedTitle}
-            description={LEARNER_COURSE_COPY.noReturnedDescription}
+            title={t('noReturnedTitle')}
+            description={t('noReturnedDescription')}
           />
         ) : (
           <div className="grid gap-2 md:grid-cols-2">
@@ -311,9 +281,9 @@ function ReturnedWorkModule({
                 <FileWarning className="text-destructive mt-0.5 size-4 shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">
-                    {item.title || LEARNER_COURSE_COPY.returnedWork}
+                    {item.title || t('returnedWork')}
                   </span>
-                  <span className="text-muted-foreground block text-xs">{LEARNER_COURSE_COPY.reviewFeedback}</span>
+                  <span className="text-muted-foreground block text-xs">{t('reviewFeedback')}</span>
                 </span>
                 <ArrowRight className="text-muted-foreground size-4 shrink-0" />
               </AppLink>
@@ -334,6 +304,7 @@ function CertificateProgressModule({
   progress: CourseProgressSnapshot
   certificate?: LearnerCourseState['certificate'] | undefined
 }) {
+  const t = useTranslations('LearnerCourse')
   const verificationHref = certificate?.issued && certificate.href ? getAbsoluteUrl(certificate.href) : null
 
   return (
@@ -341,27 +312,27 @@ function CertificateProgressModule({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Award className="size-4" />
-          {LEARNER_COURSE_COPY.certificateProgress}
+          {t('certificateProgress')}
         </CardTitle>
         <CardDescription>
-          {certificate?.issued ? LEARNER_COURSE_COPY.certificateEarned : LEARNER_COURSE_COPY.certificateDescription}
+          {certificate?.issued ? t('certificateEarned') : t('certificateDescription')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-muted-foreground">{LEARNER_COURSE_COPY.completion}</span>
+            <span className="text-muted-foreground">{t('completion')}</span>
             <span className="font-medium tabular-nums">{progress.percent}%</span>
           </div>
           <Progress value={progress.percent} />
         </div>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="rounded-lg border p-3">
-            <div className="text-muted-foreground text-xs">{LEARNER_COURSE_COPY.certificateDone}</div>
+            <div className="text-muted-foreground text-xs">{t('certificateDone')}</div>
             <div className="text-xl font-semibold tabular-nums">{progress.completed}</div>
           </div>
           <div className="rounded-lg border p-3">
-            <div className="text-muted-foreground text-xs">{LEARNER_COURSE_COPY.certificateRemaining}</div>
+            <div className="text-muted-foreground text-xs">{t('certificateRemaining')}</div>
             <div className="text-xl font-semibold tabular-nums">{Math.max(0, progress.total - progress.completed)}</div>
           </div>
         </div>
@@ -373,7 +344,7 @@ function CertificateProgressModule({
             render={<AppLink href={verificationHref} />}
           >
             <Award data-icon="inline-start" aria-hidden="true" />
-            {LEARNER_COURSE_COPY.verifyCertificate}
+            {t('verifyCertificate')}
           </Button>
         ) : (
           <LmsStatusBadge
@@ -382,10 +353,10 @@ function CertificateProgressModule({
             }
             label={
               certificate?.eligible
-                ? LEARNER_COURSE_COPY.certificateCheckPending
+                ? t('certificateCheckPending')
                 : isEnrolled
-                  ? LEARNER_COURSE_COPY.inProgress
-                  : LEARNER_COURSE_COPY.notEnrolled
+                  ? t('inProgress')
+                  : t('notEnrolled')
             }
           />
         )}
