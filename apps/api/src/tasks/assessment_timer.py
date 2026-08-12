@@ -15,15 +15,29 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 import sqlalchemy.exc
 
 from src.infra.db.engine import get_bg_engine
 from src.infra.settings import AppSettings
 
+if TYPE_CHECKING:
+    from sqlmodel import Session
+
+    from src.db.grading.submissions import Submission
+    from src.types import JsonObject
+
 logger = logging.getLogger(__name__)
 
-POLL_INTERVAL_SECONDS: int = 30
+POLL_INTERVAL_SECONDS: int = 60
+
+# A draft that fails to auto-submit stays DRAFT, so every tick would retry it
+# forever.  Back the retries off exponentially and stop after MAX_ATTEMPTS so a
+# single poisoned draft cannot hammer downstream services (e.g. Judge0).
+MAX_AUTO_SUBMIT_ATTEMPTS: int = 5
+RETRY_BACKOFF_BASE_SECONDS: int = 120
+RETRY_BACKOFF_MAX_SECONDS: int = 3600
 
 
 async def assessment_timer_loop(settings: AppSettings) -> None:
@@ -59,7 +73,6 @@ async def auto_submit_expired_drafts() -> int:
         submit_assessment as submit_assessment_pipeline,
     )
     from src.services.grading.settings_loader import load_activity_settings
-    from src.types import JsonObject
 
     try:
         engine = get_bg_engine()
@@ -99,6 +112,9 @@ async def auto_submit_expired_drafts() -> int:
             deadline = started + timedelta(seconds=policy.time_limit_seconds)
             if now < deadline:
                 continue  # not yet expired
+
+            if _is_backing_off(submission.metadata_json, now):
+                continue
 
             # Auto-submit the draft through the canonical grading pipeline
             try:
@@ -153,7 +169,68 @@ async def auto_submit_expired_drafts() -> int:
                     submission.submission_uuid,
                 )
                 db_session.rollback()
+                _record_failed_attempt(submission, db_session, now=now)
 
     if count:
         logger.info("assessment_timer: auto-submitted %d submission(s)", count)
     return count
+
+
+def _is_backing_off(metadata: JsonObject | None, now: datetime) -> bool:
+    """Whether a previously failed draft is still inside its retry backoff window."""
+    metadata = metadata or {}
+    attempts = metadata.get("auto_submit_failed_attempts")
+    if not isinstance(attempts, int) or attempts <= 0:
+        return False
+    if attempts >= MAX_AUTO_SUBMIT_ATTEMPTS:
+        return True  # given up; needs manual intervention
+
+    retry_after = metadata.get("auto_submit_retry_after")
+    if not isinstance(retry_after, str):
+        return False
+    try:
+        parsed = datetime.fromisoformat(retry_after)
+    except ValueError:
+        return False
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return now < parsed
+
+
+def _record_failed_attempt(submission: Submission, db_session: Session, *, now: datetime) -> None:
+    """Persist the failure counter and the next retry timestamp on the draft."""
+    try:
+        metadata: JsonObject = dict(submission.metadata_json or {})
+        previous = metadata.get("auto_submit_failed_attempts")
+        attempts = (previous if isinstance(previous, int) else 0) + 1
+        backoff = min(
+            RETRY_BACKOFF_BASE_SECONDS * 2 ** (attempts - 1),
+            RETRY_BACKOFF_MAX_SECONDS,
+        )
+        metadata["auto_submit_failed_attempts"] = attempts
+        metadata["auto_submit_retry_after"] = (now + timedelta(seconds=backoff)).isoformat()
+        submission.metadata_json = metadata
+        db_session.add(submission)
+        db_session.commit()
+
+        if attempts >= MAX_AUTO_SUBMIT_ATTEMPTS:
+            logger.error(
+                "assessment_timer: giving up on submission_uuid=%s after %d failed auto-submit attempts; "
+                "manual intervention required",
+                submission.submission_uuid,
+                attempts,
+            )
+        else:
+            logger.warning(
+                "assessment_timer: submission_uuid=%s auto-submit attempt %d/%d failed; retrying in %ds",
+                submission.submission_uuid,
+                attempts,
+                MAX_AUTO_SUBMIT_ATTEMPTS,
+                backoff,
+            )
+    except Exception:
+        logger.exception(
+            "assessment_timer: could not record failed auto-submit attempt for submission_uuid=%s",
+            submission.submission_uuid,
+        )
+        db_session.rollback()

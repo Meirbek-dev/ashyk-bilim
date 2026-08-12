@@ -5,16 +5,17 @@ from __future__ import annotations
 import asyncio
 import logging
 
+from src.tasks.assessment_timer import POLL_INTERVAL_SECONDS
 from src.worker.broker import broker
 
 logger = logging.getLogger(__name__)
 
 
+# Periodic ticks are idempotent and re-run on their own schedule, so a failed run
+# is retried by the next tick instead of an immediate in-process retry.
 @broker.task(
     task_name="scheduler:assessment_publish",
-    retry_on_error=True,
-    max_retries=1,
-    schedule=[{"cron": "*/1 * * * *", "schedule_id": "assessment-auto-publish"}],
+    schedule=[{"cron": "*/2 * * * *", "schedule_id": "assessment-auto-publish"}],
 )
 async def assessment_scheduler_tick() -> int:
     """Auto-publish scheduled assessments whose scheduled time has passed."""
@@ -32,9 +33,7 @@ async def assessment_scheduler_tick() -> int:
 
 @broker.task(
     task_name="scheduler:assessment_timer",
-    retry_on_error=True,
-    max_retries=1,
-    schedule=[{"interval": 30, "schedule_id": "assessment-timer"}],
+    schedule=[{"interval": POLL_INTERVAL_SECONDS, "schedule_id": "assessment-timer"}],
 )
 async def assessment_timer_tick() -> int:
     """Auto-submit timed-out draft submissions."""
@@ -52,9 +51,7 @@ async def assessment_timer_tick() -> int:
 
 @broker.task(
     task_name="scheduler:plagiarism_sweep",
-    retry_on_error=True,
-    max_retries=1,
-    schedule=[{"cron": "*/2 * * * *", "schedule_id": "plagiarism-text-sweep"}],
+    schedule=[{"cron": "*/10 * * * *", "schedule_id": "plagiarism-text-sweep"}],
 )
 async def plagiarism_checker_tick() -> int:
     """Run one plagiarism sweep tick across unchecked text submissions."""
@@ -72,8 +69,6 @@ async def plagiarism_checker_tick() -> int:
 
 @broker.task(
     task_name="scheduler:upload_reaper",
-    retry_on_error=True,
-    max_retries=1,
     schedule=[{"cron": "0 */6 * * *", "schedule_id": "orphan-upload-reaper"}],
 )
 async def upload_reaper_tick() -> dict[str, int]:

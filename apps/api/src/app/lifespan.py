@@ -61,10 +61,15 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncContextMa
                     removed_assessment,
                 )
 
-        # Patch Judge0 compiler command flags dynamically on startup.
-        from src.app.judge0_patch import start_judge0_patcher
+        # Patch Judge0 compiler command flags dynamically on startup. The taskiq
+        # worker runs this same lifespan once per process, so keep the patcher on
+        # the API process only — the UPDATEs are global and need to run once.
+        from src.worker.broker import broker
 
-        start_judge0_patcher(session_factory)
+        if not broker.is_worker_process:
+            from src.app.judge0_patch import start_judge0_patcher
+
+            start_judge0_patcher(session_factory)
 
         configure_observability(app, settings, engine)
 
@@ -77,8 +82,6 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncContextMa
         # ── Taskiq broker startup (client side — sends tasks, does not run them) ──
         # The worker process (``taskiq worker worker:broker``) executes the tasks.
         # In test mode (InMemoryBroker) tasks run inline; no worker needed.
-        from src.worker.broker import broker
-
         if not broker.is_worker_process:
             await broker.startup()
 

@@ -624,6 +624,14 @@ class CodeExecutionService:
 
     def _validate_payload(self, *, source_code: str, custom_input: str | None) -> None:
         settings = get_settings().integrations.judge0
+        if not source_code.strip():
+            # Judge0 rejects blank source with 422; catching it here keeps callers
+            # (notably the auto-submit timer) from hammering the sandbox on retry.
+            raise AppError.from_status(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                code="SOURCE_CODE_EMPTY",
+                message="Исходный код пуст",
+            )
         if len(source_code.encode()) > settings.max_source_bytes:
             raise AppError.from_status(
                 status_code=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,

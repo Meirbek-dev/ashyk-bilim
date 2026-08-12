@@ -106,6 +106,11 @@ def build_logging_config(settings: AppSettings) -> dict[str, object]:
             "watchfiles.main": {
                 "level": "INFO",
             },
+            # One "Executing task ..." line per scheduled tick drowns the worker
+            # logs; failures are still logged at ERROR.
+            "taskiq.receiver.receiver": {
+                "level": "WARNING",
+            },
         },
     }
 

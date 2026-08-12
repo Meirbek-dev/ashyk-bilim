@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, select
 
 from judge0 import Status
 from src.types.simple_namespace import SimpleNamespace
@@ -420,6 +420,34 @@ def test_code_execution_rejects_disallowed_language() -> None:
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.code == "CODE_LANGUAGE_NOT_ALLOWED"
+
+
+@pytest.mark.asyncio
+async def test_code_execution_rejects_blank_source_without_calling_judge0(
+    monkeypatch: pytest.MonkeyPatch, db_session: Session
+) -> None:
+    def fail_run(**_kwargs: object) -> Never:
+        msg = "judge0.run must not be called for blank source"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr("src.services.code_execution.service.judge0.run", fail_run)
+    service = CodeExecutionService(client_factory=FakeFactory())
+
+    with pytest.raises(AppError) as exc_info:
+        await service.run(
+            db_session=db_session,
+            assessment_uuid="assessment_code",
+            item_uuid="item_code",
+            user_id=42,
+            purpose=CodeRunPurpose.VISIBLE,
+            language_id=71,
+            source_code="   \n\t",
+            test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True)],
+        )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.code == "SOURCE_CODE_EMPTY"
+    assert db_session.exec(select(CodeRun)).all() == []
 
 
 def test_judge0_configured_client_returns_fresh_retry_strategy() -> None:
