@@ -25,10 +25,16 @@ def _build_broker() -> AsyncBroker:
         return _with_common_middlewares(InMemoryBroker(await_inplace=True))
 
     try:
-        from taskiq_redis import ListQueueBroker, RedisAsyncResultBackend
+        from taskiq_redis import ListQueueBroker, RedisAsyncResultBackend, redis_broker as taskiq_redis_broker
     except ImportError as exc:
         msg = "taskiq-redis is not installed. Run `uv add taskiq-redis` to install it."
         raise RuntimeError(msg) from exc
+
+    # taskiq-redis 1.2.3 resolves this name to the built-in exception, so Redis
+    # disconnects escape its retry loop and kill the worker process.
+    from redis.exceptions import ConnectionError as RedisConnectionError
+
+    taskiq_redis_broker.__dict__["ConnectionError"] = RedisConnectionError
 
     from src.infra.settings import get_settings
 
