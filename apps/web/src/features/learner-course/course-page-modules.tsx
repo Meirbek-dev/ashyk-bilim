@@ -7,10 +7,7 @@ import {
   BookOpenCheck,
   CheckCircle2,
   ClipboardCheck,
-  FileWarning,
-  LockKeyhole,
   PlayCircle,
-  RotateCcw,
 } from 'lucide-react'
 import { useMemo } from 'react'
 import type React from 'react'
@@ -55,7 +52,6 @@ interface CourseProgressSnapshot {
   items: CourseActivityAgendaItem[]
   nextItem: CourseActivityAgendaItem | null
   percent: number
-  returnedItems: CourseActivityAgendaItem[]
   total: number
 }
 
@@ -92,7 +88,6 @@ export function LearnerCourseModules({
           certificate={learnerState?.certificate}
         />
       </div>
-      <ReturnedWorkModule isEnrolled={learnerState?.enrolled ?? isEnrolled} returnedItems={progress.returnedItems} />
     </div>
   )
 }
@@ -232,69 +227,6 @@ function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; pr
   )
 }
 
-function ReturnedWorkModule({
-  isEnrolled,
-  returnedItems,
-}: {
-  isEnrolled: boolean
-  returnedItems: CourseActivityAgendaItem[]
-}) {
-  const t = useTranslations('LearnerCourse')
-  if (!isEnrolled) {
-    return (
-      <Card>
-        <CardContent className="p-5">
-          <EmptyModuleState
-            icon={<LockKeyhole className="size-5" />}
-            title={t('feedbackLockedTitle')}
-            description={t('feedbackLockedDescription')}
-          />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <RotateCcw className="size-4" />
-          {t('feedbackTitle')}
-        </CardTitle>
-        <CardDescription>{t('feedbackDescription')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {returnedItems.length === 0 ? (
-          <EmptyModuleState
-            icon={<CheckCircle2 className="size-5" />}
-            title={t('noReturnedTitle')}
-            description={t('noReturnedDescription')}
-          />
-        ) : (
-          <div className="grid gap-2 md:grid-cols-2">
-            {returnedItems.slice(0, 4).map(item => (
-              <AppLink
-                key={item.activityUuid}
-                href={item.href}
-                className="border-border hover:bg-muted/40 flex items-start gap-3 rounded-lg border p-3 transition-colors"
-              >
-                <FileWarning className="text-destructive mt-0.5 size-4 shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">
-                    {item.title || t('returnedWork')}
-                  </span>
-                  <span className="text-muted-foreground block text-xs">{t('reviewFeedback')}</span>
-                </span>
-                <ArrowRight className="text-muted-foreground size-4 shrink-0" />
-              </AppLink>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
 function CertificateProgressModule({
   isEnrolled,
   progress,
@@ -401,7 +333,6 @@ function buildCourseProgressSnapshot(courseUuid: string, state?: LearnerCourseSt
     items,
     nextItem: items.find(item => item.activityUuid === nextActivityUuid) ?? items.find(item => !item.complete) ?? null,
     percent,
-    returnedItems: items.filter(item => item.returned),
     total,
   }
 }

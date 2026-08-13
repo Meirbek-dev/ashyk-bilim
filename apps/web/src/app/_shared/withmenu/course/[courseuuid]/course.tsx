@@ -39,11 +39,7 @@ import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 import { CourseAIHub } from '@/features/course-qa'
-import { LearnerCourseModules } from '@/features/learner-course/course-page-modules'
-import { queryKeys } from '@/lib/react-query/queryKeys'
-import { startCourse } from '@services/courses/activity'
-import { toast } from 'sonner'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 interface CourseClientProps {
@@ -122,16 +118,13 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
 
 function CourseClient(props: CourseClientProps) {
   const t = useTranslations('CoursePage')
-  const learnerT = useTranslations('LearnerCourse')
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
-  const [isStartingCourse, setIsStartingCourse] = useState(false)
 
   const { courseuuid, course, initialDiscussions = [], trailData } = props
   const isMobile = useIsMobile()
   const { user: currentUser } = useSession()
   const router = useRouter()
-  const queryClient = useQueryClient()
   const learnerStateQuery = useQuery(learnerCourseStateQueryOptions(courseuuid, Boolean(currentUser)))
   const learnerState = learnerStateQuery.data
 
@@ -145,44 +138,6 @@ function CourseClient(props: CourseClientProps) {
   }, [course?.learnings])
 
   const isEnrolled = learnerState?.enrolled ?? false
-
-  const handleStartCourse = async () => {
-    if (!currentUser) {
-      router.push(getAbsoluteUrl('/signup'))
-      return
-    }
-
-    if (learnerState?.enrolled) {
-      if (learnerState.next_action.href && learnerState.next_action.enabled) {
-        router.push(learnerState.next_action.href)
-      }
-      return
-    }
-
-    setIsStartingCourse(true)
-    const loadingToast = toast.loading(learnerT('startingCourse'))
-    try {
-      await startCourse(`course_${courseuuid}`)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
-        queryClient.invalidateQueries({ queryKey: learnerCourseStateQueryOptions(courseuuid).queryKey }),
-      ])
-      toast.success(learnerT('courseStarted'), { id: loadingToast })
-      const firstActivity = course.chapters?.[0]?.activities?.[0]
-      if (firstActivity?.activity_uuid) {
-        router.push(
-          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`,
-        )
-      } else {
-        router.refresh()
-      }
-    } catch (error) {
-      console.error('Failed to start course:', error)
-      toast.error(learnerT('startCourseError'), { id: loadingToast })
-    } finally {
-      setIsStartingCourse(false)
-    }
-  }
 
   const [prevCourse, setPrevCourse] = useState(course)
   if (course !== prevCourse) {
@@ -252,18 +207,6 @@ function CourseClient(props: CourseClientProps) {
                 {isMobile && (
                   <CourseActionsMobile courseuuid={courseuuid} course={course as never} trailData={trailData} />
                 )}
-
-                <LearnerCourseModules
-                  course={course}
-                  courseUuid={courseuuid}
-                  isAuthenticated={Boolean(currentUser)}
-                  isEnrolled={isEnrolled}
-                  onStartCourse={handleStartCourse}
-                  starting={isStartingCourse}
-                  learnerState={learnerState}
-                  isStateLoading={learnerStateQuery.isLoading}
-                  stateError={learnerStateQuery.error}
-                />
 
                 {/* Thumbnail */}
                 {(() => {
