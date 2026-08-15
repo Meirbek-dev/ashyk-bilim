@@ -137,20 +137,14 @@ async fn reaper_recovers_stale_running_jobs(pool: PgPool) {
     let claimed = queue::claim(&pool, "w-dead", 1).await.unwrap();
 
     // Fresh heartbeat: reaper must not touch it.
-    assert_eq!(
-        queue::reap(&pool, Duration::from_mins(1)).await.unwrap(),
-        0
-    );
+    assert_eq!(queue::reap(&pool, Duration::from_mins(1)).await.unwrap(), 0);
 
     // Simulate a dead worker (stale heartbeat).
     sqlx::query("UPDATE jobs SET heartbeat_at = now() - interval '10 minutes'")
         .execute(&pool)
         .await
         .unwrap();
-    assert_eq!(
-        queue::reap(&pool, Duration::from_mins(1)).await.unwrap(),
-        1
-    );
+    assert_eq!(queue::reap(&pool, Duration::from_mins(1)).await.unwrap(), 1);
 
     // Recovered job is claimable again by a healthy worker.
     let reclaimed = queue::claim(&pool, "w-alive", 1).await.unwrap();
