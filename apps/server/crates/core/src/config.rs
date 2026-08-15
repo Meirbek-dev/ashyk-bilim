@@ -5,8 +5,8 @@
 //! Startup is fail-fast: a config that parses but violates posture rules
 //! (see [`Config::validate`]) refuses to boot.
 
-use figment::providers::{Env, Serialized};
 use figment::Figment;
+use figment::providers::{Env, Serialized};
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 

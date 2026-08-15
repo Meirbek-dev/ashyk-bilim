@@ -7,11 +7,11 @@
 
 use std::time::Duration;
 
-use ab_core::config::DatabaseConfig;
 use ab_core::Result;
+use ab_core::config::DatabaseConfig;
 use secrecy::ExposeSecret;
-use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 
 /// All migrations, embedded at compile time from `apps/server/migrations/`.
 pub static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../../migrations");

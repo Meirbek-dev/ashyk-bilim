@@ -11,7 +11,7 @@ pub struct Health {
 
 impl Health {
     #[must_use]
-    pub fn ok() -> Self {
+    pub const fn ok() -> Self {
         Self {
             status: "ok",
             version: env!("CARGO_PKG_VERSION"),

@@ -1,0 +1,54 @@
+---
+source: crates/core/src/error/code.rs
+expression: registry
+---
+{
+  "conflict": [
+    409,
+    "Conflict"
+  ],
+  "forbidden": [
+    403,
+    "Forbidden"
+  ],
+  "internal": [
+    500,
+    "Internal server error"
+  ],
+  "invalid-credentials": [
+    401,
+    "Invalid credentials"
+  ],
+  "mfa-required": [
+    401,
+    "Multi-factor authentication required"
+  ],
+  "not-found": [
+    404,
+    "Not found"
+  ],
+  "payload-too-large": [
+    413,
+    "Payload too large"
+  ],
+  "rate-limited": [
+    429,
+    "Too many requests"
+  ],
+  "service-unavailable": [
+    503,
+    "Service temporarily unavailable"
+  ],
+  "session-expired": [
+    401,
+    "Session expired"
+  ],
+  "unauthenticated": [
+    401,
+    "Authentication required"
+  ],
+  "validation-failed": [
+    422,
+    "Validation failed"
+  ]
+}

@@ -1,0 +1,11 @@
+---
+source: crates/api/src/error.rs
+expression: problem
+---
+{
+  "type": "https://docs.ashyq-bilim.dev/errors/conflict",
+  "status": 409,
+  "code": "conflict",
+  "title": "Conflict",
+  "detail": "attempt already submitted"
+}

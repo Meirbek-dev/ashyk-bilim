@@ -91,13 +91,13 @@ impl Error {
         }
     }
 
-    pub fn validation(field_errors: Vec<FieldError>) -> Self {
+    pub const fn validation(field_errors: Vec<FieldError>) -> Self {
         Self::Validation { field_errors }
     }
 
     /// The stable wire code for this error.
     #[must_use]
-    pub fn code(&self) -> ErrorCode {
+    pub const fn code(&self) -> ErrorCode {
         match self {
             Self::App { code, .. } => *code,
             Self::Validation { .. } => ErrorCode::ValidationFailed,
@@ -107,7 +107,7 @@ impl Error {
 
     /// Whether details of this error are safe to expose to API clients.
     #[must_use]
-    pub fn is_public(&self) -> bool {
+    pub const fn is_public(&self) -> bool {
         matches!(self, Self::App { .. } | Self::Validation { .. })
     }
 }

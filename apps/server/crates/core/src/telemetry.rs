@@ -5,9 +5,9 @@
 //! slice 0.2's follow-up once the opentelemetry crate set is resolved against
 //! a live registry (see EXECUTION-PLAN.md).
 
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 
 use crate::config::TelemetryConfig;
 
@@ -18,10 +18,16 @@ pub fn init(config: &TelemetryConfig) {
     let registry = tracing_subscriber::registry().with(filter);
     if config.json_logs {
         let _ = registry
-            .with(tracing_subscriber::fmt::layer().json().with_current_span(true))
+            .with(
+                tracing_subscriber::fmt::layer()
+                    .json()
+                    .with_current_span(true),
+            )
             .try_init();
     } else {
-        let _ = registry.with(tracing_subscriber::fmt::layer().pretty()).try_init();
+        let _ = registry
+            .with(tracing_subscriber::fmt::layer().pretty())
+            .try_init();
     }
     if config.otlp_endpoint.is_some() {
         tracing::warn!("otlp_endpoint configured but OTLP export is not wired yet (slice 0.2)");

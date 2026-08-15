@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use ab_core::config::Config;
 use ab_core::{Error, Result};
-use axum::http::{header, HeaderName, HeaderValue, Method};
+use axum::http::{HeaderName, HeaderValue, Method, StatusCode, header};
 use axum::routing::get;
 use axum::{Json, Router};
 use tower::ServiceBuilder;
@@ -41,26 +41,29 @@ struct ApiDoc;
 
 /// Every documented route, mounted relative to [`API_PREFIX`].
 fn api_router() -> OpenApiRouter<AppState> {
-    OpenApiRouter::with_openapi(ApiDoc::openapi())
+    OpenApiRouter::new()
         .routes(routes!(routes::health::live))
         .routes(routes!(routes::health::ready))
+}
+
+/// Outer router carrying the document metadata — the nest target must own the
+/// `OpenApi` or utoipa-axum's default info wins.
+fn assemble() -> (Router<AppState>, utoipa::openapi::OpenApi) {
+    OpenApiRouter::with_openapi(ApiDoc::openapi())
+        .nest(API_PREFIX, api_router())
+        .split_for_parts()
 }
 
 /// The OpenAPI document alone — used by `ashyq openapi` and the contract
 /// snapshot test. Needs no state, config, or database.
 #[must_use]
 pub fn openapi_doc() -> utoipa::openapi::OpenApi {
-    let (_router, api) = OpenApiRouter::<AppState>::new()
-        .nest(API_PREFIX, api_router())
-        .split_for_parts();
-    api
+    assemble().1
 }
 
 /// Build the full application router with the middleware stack applied.
 pub fn build_router(state: AppState) -> Result<Router> {
-    let (router, api) = OpenApiRouter::<AppState>::new()
-        .nest(API_PREFIX, api_router())
-        .split_for_parts();
+    let (router, api) = assemble();
 
     let cors = cors_layer(&state.config)?;
     let serve_docs = !state.config.environment.is_production();
@@ -84,7 +87,10 @@ pub fn build_router(state: AppState) -> Result<Router> {
                 .layer(SetRequestIdLayer::new(request_id.clone(), MakeRequestUuid))
                 .layer(PropagateRequestIdLayer::new(request_id))
                 .layer(TraceLayer::new_for_http())
-                .layer(TimeoutLayer::new(REQUEST_TIMEOUT))
+                .layer(TimeoutLayer::with_status_code(
+                    StatusCode::REQUEST_TIMEOUT,
+                    REQUEST_TIMEOUT,
+                ))
                 .layer(CompressionLayer::new())
                 .layer(CatchPanicLayer::new())
                 .layer(cors),

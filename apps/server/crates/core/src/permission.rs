@@ -115,11 +115,19 @@ impl Grant {
             ));
         }
         let parse_wild = |p: &str| -> Result<Option<ResourceType>> {
-            if p == "*" { Ok(None) } else { ResourceType::parse(p).map(Some) }
+            if p == "*" {
+                Ok(None)
+            } else {
+                ResourceType::parse(p).map(Some)
+            }
         };
         Ok(Self {
             resource: parse_wild(res)?,
-            action: if act == "*" { None } else { Some(Action::parse(act)?) },
+            action: if act == "*" {
+                None
+            } else {
+                Some(Action::parse(act)?)
+            },
             scope: match scope_part {
                 None | Some("*") => None,
                 Some(sc) => Some(Scope::parse(sc)?),
@@ -174,35 +182,63 @@ mod tests {
     use super::*;
 
     fn perm(r: ResourceType, a: Action, s: Option<Scope>) -> Permission {
-        Permission { resource: r, action: a, scope: s }
+        Permission {
+            resource: r,
+            action: a,
+            scope: s,
+        }
     }
 
     #[test]
     fn admin_wildcard_grants_everything() {
         let set = PermissionSet::parse(["*:*:*"]).unwrap();
-        assert!(set.grants(&perm(ResourceType::Course, Action::Delete, Some(Scope::Platform))));
+        assert!(set.grants(&perm(
+            ResourceType::Course,
+            Action::Delete,
+            Some(Scope::Platform)
+        )));
         assert!(set.grants(&perm(ResourceType::Assessment, Action::Submit, None)));
     }
 
     #[test]
     fn exact_match() {
         let set = PermissionSet::parse(["course:create:platform"]).unwrap();
-        assert!(set.grants(&perm(ResourceType::Course, Action::Create, Some(Scope::Platform))));
-        assert!(!set.grants(&perm(ResourceType::Course, Action::Delete, Some(Scope::Platform))));
-        assert!(!set.grants(&perm(ResourceType::Chapter, Action::Create, Some(Scope::Platform))));
+        assert!(set.grants(&perm(
+            ResourceType::Course,
+            Action::Create,
+            Some(Scope::Platform)
+        )));
+        assert!(!set.grants(&perm(
+            ResourceType::Course,
+            Action::Delete,
+            Some(Scope::Platform)
+        )));
+        assert!(!set.grants(&perm(
+            ResourceType::Chapter,
+            Action::Create,
+            Some(Scope::Platform)
+        )));
     }
 
     #[test]
     fn scope_all_covers_narrower_scopes() {
         let set = PermissionSet::parse(["course:update:all"]).unwrap();
-        assert!(set.grants(&perm(ResourceType::Course, Action::Update, Some(Scope::Own))));
+        assert!(set.grants(&perm(
+            ResourceType::Course,
+            Action::Update,
+            Some(Scope::Own)
+        )));
     }
 
     #[test]
     fn scopeless_grant_is_scope_agnostic() {
         let set = PermissionSet::parse(["assessment:submit"]).unwrap();
         assert!(set.grants(&perm(ResourceType::Assessment, Action::Submit, None)));
-        assert!(set.grants(&perm(ResourceType::Assessment, Action::Submit, Some(Scope::Own))));
+        assert!(set.grants(&perm(
+            ResourceType::Assessment,
+            Action::Submit,
+            Some(Scope::Own)
+        )));
     }
 
     #[test]
