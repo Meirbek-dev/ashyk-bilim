@@ -70,6 +70,7 @@ jobs:
         run: just clippy
 
       - name: SQLx offline cache check
+        shell: bash
         run: just sqlx-check
 
       - name: Tests (nextest)
