@@ -91,12 +91,14 @@ async fn serve(config: Config) -> anyhow::Result<()> {
 }
 
 async fn worker(config: Config) -> anyhow::Result<()> {
-    let _pool = ab_db::connect(&config.database).await?;
+    let pool = ab_db::connect(&config.database).await?;
+    // Handlers are registered here as domain slices land (see ab-jobs docs).
+    let worker = ab_jobs::Worker::new(pool, ab_jobs::WorkerConfig::default());
     let cancel = CancellationToken::new();
-    let handle = tokio::spawn(ab_jobs::run(cancel.clone()));
+    let handle = tokio::spawn(worker.run(cancel.clone()));
     shutdown_signal().await;
     cancel.cancel();
-    handle.await?;
+    handle.await??;
     Ok(())
 }
 
