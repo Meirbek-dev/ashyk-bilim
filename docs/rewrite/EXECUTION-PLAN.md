@@ -37,17 +37,18 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 ### P0 — Foundation
 | # | Slice | Status |
 |---|---|---|
-| 0.1 | Workspace scaffold: crates, workspace deps/lints, justfile, rust-toolchain, deny.toml, Dockerfile | in-progress |
-| 0.2 | `ab-core`: Error/ErrorCode registry, config (figment+secrecy+garde), ids (uuidv7 newtypes), time module, permission model, telemetry init | in-progress |
-| 0.3 | `ab-db`: pool, migrate embed, tx helper, keyset pagination helper; migration 0001 (extensions, trigger fn) | in-progress |
-| 0.4 | `ab-api` skeleton: state, middleware stack, error IntoResponse, problem+json, health endpoints, OpenAPI assembly + scalar docs, `ashyq openapi` | in-progress |
-| 0.5 | `ashyq` bin: clap (serve/worker/migrate/openapi/admin), graceful shutdown, mimalloc | in-progress |
-| 0.6 | CI `server-ci.yaml` (PG18+pgvector & Redis services) + coverage floor + insta/oasdiff wiring | in-progress |
-| 0.7 | Compose overlay: zitadel + rustfs + server + worker services; `.env.example` AB__* section | in-progress |
+| 0.1 | Workspace scaffold: crates, workspace deps/lints, justfile, rust-toolchain, deny.toml, Dockerfile | done deedc51 |
+| 0.2 | `ab-core`: Error/ErrorCode registry, config (figment+secrecy), ids (uuidv7 newtypes), time module, permission model, telemetry init (OTLP split to 0.12) | done deedc51 |
+| 0.3 | `ab-db`: pool, migrate embed; migration 0001 (extensions, trigger fn). Tx helper + keyset pagination land with the first real queries (P1/P2) | done deedc51 |
+| 0.4 | `ab-api` skeleton: state, middleware stack, problem+json mapping, health endpoints, OpenAPI assembly + scalar docs, `ashyq openapi`. `request_id` in problem body populated when the session middleware lands (1.3) | done deedc51 |
+| 0.5 | `ashyq` bin: clap (serve/worker/migrate/openapi/admin), graceful shutdown, mimalloc | done deedc51 |
+| 0.6 | CI `server-ci.yaml` (PG18+pgvector & Redis services) + coverage floor + openapi diff | done deedc51 (validates on first push) |
+| 0.7 | Compose overlay: zitadel + rustfs + server + worker services; `.env.example` AB__* section | in-progress (authored; boot validation needs a Docker-capable session — pin zitadel/rustfs images then) |
 | 0.8 | `ab-db::queue`: schema, enqueue-in-tx, claim/heartbeat/reaper/backoff/dead-letter, LISTEN/NOTIFY, cron scheduler, concurrency tests + soak test | todo |
 | 0.9 | `ab-testkit`: TestApp harness, session minting, factories, wiremock stub library (Zitadel/Judge0/Resend/LLM incl. SSE) | todo |
 | 0.10 | `ashyq admin zitadel-setup`: idempotent org/project/machine-user/Google-IdP/custom-texts provisioning | todo |
 | 0.11 | RBAC sweep test harness (route-table-driven 403 assertion) | todo |
+| 0.12 | OTLP exporter wiring (opentelemetry crate set) + verify delivery into Logfire (project currently empty — FINDINGS #9) | todo |
 
 ### P1 — Identity
 | # | Slice | Status |
@@ -152,4 +153,4 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 
 | Date | Session summary |
 |---|---|
-| 2026-08-16 | Architecture ratified (30Q). Docs authored (ARCHITECTURE/MIGRATION/EXECUTION-PLAN/AGENTS/FINDINGS). P0 scaffold started. |
+| 2026-08-16 | Architecture ratified (30Q). Docs authored (ARCHITECTURE/MIGRATION/EXECUTION-PLAN/AGENTS/FINDINGS). P0 scaffold landed green (deedc51): fmt + clippy -D warnings + 19 tests + OpenAPI snapshot/export. Resolved versions: axum 0.8.9, sqlx 0.9.0, utoipa 5.5, tower-http 0.7, jiff 0.2.35, tokio 1.53. Machine fix: installed MSVC VC.Tools workload via winget (was missing; GNU link.exe shadowed). apps/api-v2 stub removed. |
