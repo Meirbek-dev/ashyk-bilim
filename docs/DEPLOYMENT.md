@@ -249,74 +249,78 @@ GPG_PASSPHRASE: ...
 
 ## Restore
 
-```bash
+````bash
 # 1. Stop the application
 docker-compose down
 
 # 2. Extract the backup
 mkdir -p temp-restore
+# Example copy from server to Windows PC:
+# scp user@192.186.12.34:~/openu-prod/backups/backup-YYYY-MM-DDTHH-00-00.tar.zst .
 tar --zstd -xf ./backups/backup-YYYY-MM-DDTHH-MM-SS.tar.zst -C temp-restore
 # Layout: temp-restore/backup/{postgres,redis,app_content,judge0_box}
-
-# 3. Restore volumes (prefix is your Compose project name, default: ashyk-bilim)
-BACKUP_PATH="$(pwd)/temp-restore/backup"
-
-docker run --rm \
-  -v ashyk-bilim_postgres_data:/data \
-  -v "${BACKUP_PATH}/postgres:/backup" \
-  alpine sh -c "cd /data && cp -a /backup/. ."
-
-docker run --rm \
-  -v ashyk-bilim_redis_data:/data \
-  -v "${BACKUP_PATH}/redis:/backup" \
-  alpine sh -c "cd /data && cp -a /backup/. ."
-
-docker run --rm \
-  -v ashyk-bilim_app_content:/data \
-  -v "${BACKUP_PATH}/app_content:/backup" \
-  alpine sh -c "cd /data && cp -a /backup/. ."
-
-
-# 3 (Powershell). Restore volumes (prefix is your Compose project name, default: ashyk-bilim)
-
-$BACKUP_PATH = ($PWD.ProviderPath -replace '\\','/')
-
-podman run --rm `
-  -v ashyk-bilim_postgres_data:/data `
-  -v "${BACKUP_PATH}/temp-restore/backup/postgres:/backup" `
-  alpine sh -c "cp -a /backup/. /data/"
-
-podman run --rm `
-  -v ashyk-bilim_redis_data:/data `
-  -v "${BACKUP_PATH}/temp-restore/backup/redis:/backup" `
-  alpine sh -c "cp -a /backup/. /data/"
-
-podman run --rm `
-  -v ashyk-bilim_app_content:/data `
-  -v "${BACKUP_PATH}/temp-restore/backup/app_content:/backup" `
-  alpine sh -c "cp -a /backup/. /data/"
-
-# 4. Start
-docker-compose up -d
-
-# 5. Verify
-docker-compose ps
-docker-compose exec db psql -U openu -d openu -c "SELECT COUNT(*) FROM alembic_version;"
-
-# 6. Clean up
-rm -rf temp-restore
-```
 
 **Windows (Git Bash or WSL):** same commands work as-is.
 **Windows (7-Zip):**
 
 ```powershell
-& "C:\Program Files\7-Zip\7z.exe" x .\backups\backup-....tar.zst -o.\
-& "C:\Program Files\7-Zip\7z.exe" x .\backup-....tar -o.\temp-restore -snl
-```
+& "C:\Program Files\7-Zip\7z.exe" x ".\backups\backup-YYYY-MM-DDT02-00-00.tar.zst" "-o.\"
+& "C:\Program Files\7-Zip\7z.exe" x ".\backup-YYYY-MM-DDT02-00-00.tar" "-o.\temp-restore" -snl
+````
 
 > The backup-latest symlink has a `.tar.gz` extension but is zstd-compressed.
 > Always use `tar --zstd`, never `tar -z`.
+
+# 3. Restore volumes (prefix is your Compose project name, default: ashyk-bilim)
+
+BACKUP_PATH="$(pwd)/temp-restore/backup"
+
+docker run --rm \
+ -v ashyk-bilim_postgres_data:/data \
+ -v "${BACKUP_PATH}/postgres:/backup" \
+ alpine sh -c "cd /data && cp -a /backup/. ."
+
+docker run --rm \
+ -v ashyk-bilim_redis_data:/data \
+ -v "${BACKUP_PATH}/redis:/backup" \
+ alpine sh -c "cd /data && cp -a /backup/. ."
+
+docker run --rm \
+ -v ashyk-bilim_app_content:/data \
+ -v "${BACKUP_PATH}/app_content:/backup" \
+ alpine sh -c "cd /data && cp -a /backup/. ."
+
+# 3 (Powershell). Restore volumes (prefix is your Compose project name, default: ashyk-bilim)
+
+$BACKUP_PATH = ($PWD.ProviderPath -replace '\\','/')
+
+podman run --rm `  -v ashyk-bilim_postgres_data:/data`
+-v "${BACKUP_PATH}/temp-restore/backup/postgres:/backup" `
+alpine sh -c "cp -a /backup/. /data/"
+
+podman run --rm `  -v ashyk-bilim_redis_data:/data`
+-v "${BACKUP_PATH}/temp-restore/backup/redis:/backup" `
+alpine sh -c "cp -a /backup/. /data/"
+
+podman run --rm `  -v ashyk-bilim_app_content:/data`
+-v "${BACKUP_PATH}/temp-restore/backup/app_content:/backup" `
+alpine sh -c "cp -a /backup/. /data/"
+
+# 4. Start
+
+docker-compose up -d
+
+# 5. Verify
+
+docker-compose ps
+docker-compose exec db psql -U openu -d openu -c "SELECT COUNT(\*) FROM alembic_version;"
+
+# 6. Clean up
+
+rm -rf temp-restore
+
+```
+
 
 ---
 
@@ -341,3 +345,4 @@ rm -rf temp-restore
 **PostgreSQL version mismatch after restore** — the image in `extra/Dockerfile.db` must match the major version in the backup. Run `pg_upgrade` or pin the image version.
 
 **Backup not running** — `docker-compose logs backup` to inspect. Check disk space with `df -h`.
+```
