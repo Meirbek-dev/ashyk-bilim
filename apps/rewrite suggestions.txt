@@ -1,0 +1,333 @@
+DISCLAIMER: THIS FILE IS NOT A SOURCE OF TRUTH. I DIDN'T EVEN READ 90% OF IT. IT'S JUST SUGGESTIONS FROM AI
+
+
+bleeding edge rust backend 2030 stack (AI agentic fully)
+
+
+Synthesized cutting-edge Rust agent stack with versioned crates and infrastructure bets
+Here's the stack I'd actually bet on, split by layer — plus an honest note on where the Rust agent ecosystem is still thin.
+
+Core (boring on purpose)
+Tokio + axum + tower-http + sqlx + tracing/OpenTelemetry is the consensus default for a fresh Rust service, and it should stay the stable half of your stack through 2030. 
+Abrarqasim Blogs
+
+toml
+tokio       = { version = "1", features = ["full"] }
+axum        = "0.8"        # 0.8.9 current line
+tower-http  = "0.6"        # trace, cors, compression, timeout
+sqlx        = "0.9"        # MSRV 1.94+
+utoipa      = "5"          # OpenAPI from types
+tracing-opentelemetry = "*"
+Two sqlx 0.9 gotchas worth knowing before they bite: query functions now require impl SqlSafeStr (runtime-built strings must be wrapped in AssertSqlSafe), and Transaction/PoolConnection no longer implement Executor directly — pass &mut *tx. Actix-web is still faster on paper; axum wins on team throughput and Tower composability. 
+Codez Up
+
+LLM layer
+rig-core is effectively the only serious option. It ships 20+ providers, 10+ vector stores, full OpenTelemetry GenAI semantic conventions, MCP support, WASM compatibility, and real production users (Neon, Nethermind, Dria) — currently on the v0.39 line. Write against its CompletionModel trait so swapping a hosted provider for a self-hosted vLLM/Ollama endpoint is a constructor change, not a refactor. 
+Mr
+Scalac
+
+Caveat: Rig has no built-in orchestrator — multi-agent patterns are composed manually, though the primitives compose cleanly. 
+Zylos
+
+Orchestration
+Tokio's JoinSet + CancellationToken is the canonical pattern for sub-agent lifecycle management, and honestly it's enough for most systems. If you want a framework: AutoAgents (Ractor actor model) is the most complete Rust multi-agent framework, with ADK-Rust and OpenFANG as alternatives. All are young — read the source before you depend on them. 
+Zylos
+Zylos
+
+Protocol layer — this is the real 2030 bet
+MCP is where I'd invest architecturally. Ship every capability as an MCP server, and your backend stops being "an API with AI features" and becomes a tool surface any agent can drive. The official rmcp SDK is on 3.x, implementing the stable 2026-07-28 spec while staying compatible with 2025-11-25 and earlier. Two things matter in that revision: servers are stateless by default (no session ID, no standalone GET/DELETE stream), and standardized Streamable HTTP headers (Mcp-Method, Mcp-Name, Mcp-Param-*) let proxies and gateways route MCP traffic without parsing the JSON body — meaning you can do auth, rate limiting, and routing at the edge. Derive schemars::JsonSchema on your param structs and the tool schemas generate themselves. 
+GitHub + 2
+
+The upgrade story is reassuringly dull: one team's move from rmcp 0.14 to 3.1 cost two lines of Rust and a config file — the protocol boundary held. 
+Medium
+
+Sandboxing
+WASM sandboxing for tool isolation is one of the validated architectural patterns in this ecosystem. Wasmtime + the component model for anything agent-generated; gVisor/Firecracker only when you need a real filesystem and process tree. 
+Zylos
+
+Durability — the actual gap
+Be clear-eyed here: checkpointing, crash recovery, and state reconstruction across failures are still on you — RIG does LLM calls, Swarms-rs and ADK handle orchestration, but durable execution is not yet a framework feature in Rust. Options: Temporal's Rust SDK is in public preview as of Replay 2026, or Restate, which ships a single-binary server, journals invocations, and supports Rust workflows as plain functions. The non-negotiable rule either way: LLM calls are non-deterministic and must be wrapped as journaled activity steps. If you want zero new infrastructure, a Postgres-backed journal (DBOS-style) is a legitimate third path. 
+Wrenlearnsrust + 3
+
+What I'd skip
+Vector databases as separate infrastructure. pgvector inside the Postgres you already run covers 90% of university-scale RAG, and you keep transactions, backups, and RBAC in one place. Add LanceDB/Qdrant only when you've measured a reason.
+
+The honest framing: the durable/agentic layer is where the ecosystem is genuinely immature, so keep it swappable behind your own traits — that's the difference between a 2030 stack and a 2027 rewrite.
+
+If you tell me the workload shape — long-running research agents vs. high-QPS tool serving vs. on-prem sovereignty constraints — I can narrow this to one concrete architecture instead of a menu.
+
+
+[project] name = "ashyk-bilim-api" version = "0.1.0" description = "Ashyk Bilim Backend" requires-python = ">=3.14.5,<3.15.0" dependencies = [ # Framework "fastapi>=0.141.1", "granian[reload,uvloop]>=2.8.1", # Database "sqlalchemy>=2.0.52", "sqlmodel>=0.0.39", "alembic>=1.19.1", "p
+
+pasted
+
+modern bleeding edge alternatives for rust for each dependency. I want to rewrite it fully in idiomatic rust + axum +sqlx + tokio + utopia + tracing-opentelemetry, what else should I add.
+
+
+Architecting deployment strategy and acknowledging Rust's ecosystem gaps
+Architecting deployment strategy and acknowledging Rust's ecosystem gaps
+Good news: your Python stack maps cleanly onto Rust — you picked libraries that already think in terms of types and async. Here's the one-to-one, then the things Python gave you for free that you now have to add explicitly.
+
+Direct replacements
+Python	Rust	Note
+fastapi	axum	Extractors ≈ Depends, but resolved at compile time
+granian / uvicorn	hyper (inside axum)	No separate server process. Dev reload: bacon or cargo watch
+sqlalchemy + sqlmodel	sqlx + #[derive(FromRow, Serialize, ToSchema)]	Your "one struct, three roles" pattern survives intact
+alembic	sqlx-cli (sqlx migrate)	Plain SQL up/down. No autogenerate — see gotchas
+psycopg	sqlx postgres feature	
+pgvector	pgvector crate (features = ["sqlx"])	Same extension, typed Vector
+redis	fred	Better than redis-rs for pooling, clustering, reconnect
+pydantic (validation)	serde + garde	serde = parsing, garde = business rules (#[garde(length(min=1))])
+pydantic-settings	figment	Layered env + TOML + defaults, deserializes into your Config struct
+pyjwt	jwt-authorizer (JWKS/OIDC) or jsonwebtoken	Use jwt-authorizer if you're behind university SSO
+fastapi-users	axum-login + tower-sessions + argon2	No drop-in equivalent — biggest lift in the whole rewrite
+openai	async-openai or rig's provider clients	
+pydantic-ai-slim	rig-core	Agents, tools, structured extraction, streaming
+tiktoken	tiktoken-rs	
+taskiq + taskiq-redis	apalis + apalis-postgres or apalis-redis	Postgres backend supports NOTIFY-driven low-latency fetching, heartbeats, and orphaned-job re-enqueue; 
+Rust
+ apalis-board gives you a monitoring UI 
+Lib.rs
+fastapi-pagination	hand-rolled Page<T> + keyset pagination	40 lines, and you'll want cursor-based anyway
+python-multipart	axum-typed-multipart	Deserializes multipart into a struct
+logfire	tracing + tracing-opentelemetry + opentelemetry-otlp	Point OTLP at Logfire and keep your existing dashboards
+cachebox	moka	Async, TinyLFU eviction, the clear winner
+httpx	reqwest + reqwest-middleware + reqwest-retry	Use rustls-tls, not native-tls
+python-ulid	uuid (v7)	UUIDv7 = same time-ordering, native Postgres uuid type, better index locality than ULID-as-text
+resend	resend-rs	Official SDK exists
+selectolax	scraper (querying) or lol_html (streaming rewrite)	
+typer	clap (derive)	
+judge0	keep Judge0 over reqwest, or wasmtime	See gotchas
+ruff + mypy + basedpyright + pyrefly	clippy (pedantic, nursery) + rustfmt	Four type checkers collapse into cargo check
+pytest + pytest-asyncio	#[sqlx::test] + cargo-nextest	#[sqlx::test] gives each test its own migrated DB in a rolled-back transaction — better than any pytest fixture you have now
+pytest-cov	cargo-llvm-cov	
+faker	fake	
+Add these — no Python analogue in your file
+thiserror — one AppError enum with impl IntoResponse. This is your HTTPException layer and it's the single most important design decision in an axum codebase.
+utoipa-axum — OpenApiRouter collects routes and schemas together so handlers and OpenAPI can't drift. Pair with utoipa-scalar for the docs UI.
+tower-http layers — TraceLayer, CorsLayer, CompressionLayer, TimeoutLayer, RequestBodyLimitLayer. FastAPI middleware, but composable and typed.
+tower_governor — rate limiting (you have none right now).
+jiff + jiff-sqlx — the modern datetime crate; don't reach for chrono out of habit.
+secrecy — wraps API keys so they can't leak into a Debug log line.
+axum::response::Sse + async-stream — token streaming for LLM responses. Non-optional for an AI product.
+tokio-util CancellationToken — graceful shutdown that actually drains in-flight agent runs.
+rmcp — expose your platform's capabilities as MCP tools alongside the REST API.
+object_store — S3/MinIO abstraction for uploads.
+wiremock + testcontainers — mock the LLM provider, run real Postgres in tests.
+cargo-deny, cargo-machete, cargo-chef — supply-chain audit, unused-dep detection, Docker layer caching.
+toml
+[dependencies]
+axum = { version = "0.8", features = ["macros", "multipart"] }
+axum-extra = { version = "0.10", features = ["typed-header", "cookie"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["trace", "cors", "compression-full", "timeout", "limit"] }
+sqlx = { version = "0.9", features = ["runtime-tokio", "postgres", "uuid", "json", "migrate"] }
+pgvector = { version = "0.4", features = ["sqlx"] }
+fred = "10"
+serde = { version = "1", features = ["derive"] }
+garde = { version = "0.22", features = ["derive"] }
+figment = { version = "0.10", features = ["toml", "env"] }
+utoipa = { version = "5", features = ["axum_extras", "uuid"] }
+utoipa-axum = "0.2"
+utoipa-scalar = { version = "0.3", features = ["axum"] }
+rig-core = "0.39"
+rmcp = { version = "3", features = ["server", "transport-streamable-http-server"] }
+apalis = "0.7"
+apalis-postgres = "0.7"
+moka = { version = "0.12", features = ["future"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-opentelemetry = "0.31"
+opentelemetry-otlp = "0.31"
+Pin nothing from memory — cargo add each one; the AI crates move weekly.
+
+Where this will actually hurt
+Alembic autogenerate is gone. sqlx migrations are hand-written SQL with no model diffing. For a schema still in flux this is a real productivity tax. If it bites, SeaORM has a migration DSL — but you lose query! compile-time verification, which is the main reason to pick sqlx at all.
+
+sqlx::query! needs a live database at compile time. Run cargo sqlx prepare and commit .sqlx/ or your CI breaks.
+
+fastapi-users is ~2 weeks of work to replace. Registration, verification, password reset, OAuth flows. Serious alternative: don't rewrite it — put Keycloak or Zitadel in front and have axum validate JWTs via jwt-authorizer. For a university with existing identity infrastructure this is probably the right call regardless.
+
+Judge0: keep it. Rewriting sandboxed multi-language code execution is not a dependency swap, it's a product. Wrap it in a typed reqwest client. Revisit wasmtime only if you narrow to WASM-compilable languages later.
+
+Your ruff ignore list tells a story. Half of it is SQLModel's dual-typing confusing the type checkers. That entire category of pain disappears — but it's replaced by lifetime and Arc<AppState> friction that no Python experience prepares a team for. Budget for that.
+
+If you paste your directory layout and one representative router module, I'll show you the idiomatic axum translation — router composition, the AppError type, and the sqlx::test pattern are the three things worth getting right before you write 50 endpoints.
+
+
+Create instruction and commands to create this app (i want all the latest versions, so that while i am rewriting it, i will test it's stability) and libraries, tools will be stable by the moment i finish testing in several months. i want bleeding edge
+
+
+Architected bleeding-edge Rust stack with pinned versions and upgrade paths
+Architected bleeding-edge Rust stack with pinned versions and upgrade paths
+Before writing this up I pulled the actual current versions off crates.io — a few of my earlier numbers were already stale, and I found one hard conflict you need to know about before you write a line of code.
+
+
+Created 2 files, read a file
+Created 2 files, read a file
+bootstrap.sh scaffolds the whole workspace — toolchain, tooling, six crates, compose stack, migrations, justfile — and builds it. SETUP.md has the version table and the decisions.
+
+Four things I got wrong last message, corrected from crates.io today: tower-http is 0.7.0 (not 0.6), reqwest is 0.13.4 (not 0.12), axum-extra is 0.12.6, and figment 0.10.19 has no toml feature — env-only config.
+
+The one that matters most: apalis-postgres still depends on sqlx ^0.8.1 while your data layer would be on sqlx 0.9. That means two incompatible PgPool types in one binary, so no transactional enqueue — the entire reason to use a Postgres queue. The script routes around it with apalis-redis (which shares redis 1.x with your own code, so no duplicate versions). SETUP.md lists the three alternatives if you'd rather keep transactional enqueue and pin sqlx 0.8.6.
+
+Also worth knowing: apalis 1.0.0-rc.9 is the real bleeding edge line (0.7.4 is max stable), and redis-rs reached 1.0 — which weakens my earlier fred recommendation, since redis-rs now has a stable API and apalis-redis already pulls it in.
+
+Your MSRV floor is 1.94, set by sqlx 0.9 and jiff-sqlx.
+
+The section I'd actually push you to read is "Staying bleeding edge without losing months." The technique that makes this affordable is architectural, not procedural: rig_core:: types appear in exactly one crate, sqlx:: in exactly one, apalis:: in exactly one. rig moved 0.39 → 0.41 in the two months since those releases, and it'll keep moving through your whole rewrite. With the firewall, that's a one-file diff; without it, it's a three-day refactor every quarter.
+
+Run it, and if cargo build fails on a feature flag I mis-transcribed, paste the error — feature names are the one thing I couldn't verify by compiling.
+
+
+Bootstrap
+SH 
+
+Setup
+Document · MD 
+create a minimal instruction (with just creating a project and install dependencies)
+
+
+Distilled setup process to essential toolchain and cargo commands
+Distilled setup process to essential toolchain and cargo commands
+Minimal version — just project creation and dependencies. Unpinned, so cargo add resolves the newest release each time.
+
+1. Toolchain
+bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup update stable
+rustup component add rustfmt clippy
+
+cargo install cargo-binstall --locked
+cargo binstall -y sqlx-cli cargo-nextest bacon just
+2. Workspace
+bash
+mkdir ashyk-bilim && cd ashyk-bilim
+
+cat > Cargo.toml <<'EOF'
+[workspace]
+resolver = "3"
+members  = ["crates/*"]
+EOF
+
+cat > rust-toolchain.toml <<'EOF'
+[toolchain]
+channel    = "stable"
+components = ["rustfmt", "clippy"]
+EOF
+
+mkdir -p crates migrations
+
+cargo new --lib crates/core --name ashyk-core --edition 2024 --vcs none
+cargo new --lib crates/db   --name ashyk-db   --edition 2024 --vcs none
+cargo new --lib crates/ai   --name ashyk-ai   --edition 2024 --vcs none
+cargo new --lib crates/jobs --name ashyk-jobs --edition 2024 --vcs none
+cargo new --lib crates/api  --name ashyk-api  --edition 2024 --vcs none
+cargo new --bin crates/cli  --name ashyk      --edition 2024 --vcs none
+3. Dependencies
+core — config, errors, telemetry
+
+bash
+cd crates/core
+cargo add serde --features derive
+cargo add serde_json thiserror anyhow dotenvy tracing
+cargo add figment --features env
+cargo add secrecy --features serde
+cargo add garde --features derive,email,url
+cargo add uuid --features v7,serde
+cargo add jiff --features serde
+cargo add tracing-subscriber --features env-filter,json
+cargo add tracing-opentelemetry opentelemetry opentelemetry-semantic-conventions
+cargo add opentelemetry_sdk --features rt-tokio
+cargo add opentelemetry-otlp --features trace,metrics,logs,http-proto,reqwest-client,reqwest-rustls
+cargo add tokio --features rt-multi-thread,macros,signal
+cd ../..
+db — sqlx, pgvector
+
+bash
+cd crates/db
+cargo add sqlx --features runtime-tokio,tls-rustls-ring,postgres,uuid,json,migrate,macros
+cargo add pgvector --features sqlx
+cargo add jiff-sqlx --features postgres
+cargo add uuid --features v7,serde
+cargo add serde --features derive
+cargo add thiserror anyhow tracing
+cargo add ashyk-core --path ../core
+cd ../..
+ai — rig, MCP
+
+bash
+cd crates/ai
+cargo add rig-core --features derive,rustls,pdf
+cargo add rmcp --features server,macros,schemars,tower,transport-streamable-http-server
+cargo add schemars tiktoken-rs async-stream futures serde_json anyhow tracing
+cargo add serde --features derive
+cargo add tokio --features rt-multi-thread,macros
+cargo add ashyk-core --path ../core
+cargo add ashyk-db --path ../db
+cd ../..
+jobs — apalis (prerelease, explicit version required)
+
+bash
+cd crates/jobs
+cargo add apalis@1.0.0-rc.9 --features tracing,retry,limit,catch-panic
+cargo add apalis-redis@1.0.0-rc.8
+cargo add apalis-cron@1.0.0-rc.8
+cargo add redis --features tokio-rustls-comp,connection-manager
+cargo add deadpool-redis anyhow tracing
+cargo add serde --features derive
+cargo add tokio --features rt-multi-thread,macros,signal
+cargo add ashyk-core --path ../core
+cargo add ashyk-db --path ../db
+cargo add ashyk-ai --path ../ai
+cd ../..
+api — axum, OpenAPI
+
+bash
+cd crates/api
+cargo add axum --features macros,multipart,ws
+cargo add axum-extra --features typed-header,cookie,query
+cargo add axum-typed-multipart tower tower_governor
+cargo add tower-http --features trace,cors,compression-full,timeout,limit,normalize-path,request-id,catch-panic
+cargo add utoipa --features axum_extras,uuid,jiff_0_2
+cargo add utoipa-axum
+cargo add utoipa-scalar --features axum
+cargo add jwt-authorizer argon2 reqwest-middleware reqwest-retry resend-rs scraper
+cargo add moka --features future
+cargo add reqwest --no-default-features --features json,rustls,stream
+cargo add object_store --features aws
+cargo add tokio --features full
+cargo add serde --features derive
+cargo add serde_json anyhow thiserror tracing async-stream futures
+cargo add ashyk-core --path ../core
+cargo add ashyk-db --path ../db
+cargo add ashyk-ai --path ../ai
+cargo add ashyk-jobs --path ../jobs
+cargo add --dev wiremock testcontainers fake rstest
+cargo add --dev insta --features json,redactions
+cd ../..
+cli — binary
+
+bash
+cd crates/cli
+cargo add clap --features derive,env
+cargo add tokio --features full
+cargo add anyhow tracing dotenvy mimalloc
+cargo add tracing-subscriber --features env-filter,json
+cargo add ashyk-core --path ../core
+cargo add ashyk-api --path ../api
+cargo add ashyk-jobs --path ../jobs
+cd ../..
+4. Services + verify
+bash
+docker run -d --name ashyk-pg -p 5432:5432 \
+  -e POSTGRES_USER=ashyk -e POSTGRES_PASSWORD=ashyk -e POSTGRES_DB=ashyk \
+  pgvector/pgvector:pg17
+
+docker run -d --name ashyk-redis -p 6379:6379 redis:8-alpine
+
+echo 'DATABASE_URL=postgres://ashyk:ashyk@localhost:5432/ashyk' > .env
+cargo build --workspace
+Two things that will stop the build if you skip them: crates/cli/src/main.rs needs ashyk_api and ashyk_jobs to actually export something (the default cargo new lib is empty), and DATABASE_URL must be exported in every shell that runs cargo build once you start using sqlx::query!.
+

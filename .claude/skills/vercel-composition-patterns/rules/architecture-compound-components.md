@@ -14,7 +14,14 @@ pieces they need.
 **Incorrect (monolithic component with render props):**
 
 ```tsx
-function Composer({ renderHeader, renderFooter, renderActions, showAttachments, showFormatting, showEmojis }: Props) {
+function Composer({
+  renderHeader,
+  renderFooter,
+  renderActions,
+  showAttachments,
+  showFormatting,
+  showEmojis,
+}: Props) {
   return (
     <form>
       {renderHeader?.()}
@@ -40,7 +47,11 @@ function Composer({ renderHeader, renderFooter, renderActions, showAttachments, 
 const ComposerContext = createContext<ComposerContextValue | null>(null)
 
 function ComposerProvider({ children, state, actions, meta }: ProviderProps) {
-  return <ComposerContext value={{ state, actions, meta }}>{children}</ComposerContext>
+  return (
+    <ComposerContext value={{ state, actions, meta }}>
+      {children}
+    </ComposerContext>
+  )
 }
 
 function ComposerFrame({ children }: { children: React.ReactNode }) {
@@ -53,7 +64,13 @@ function ComposerInput() {
     actions: { update },
     meta: { inputRef },
   } = use(ComposerContext)
-  return <TextInput ref={inputRef} value={state.input} onChangeText={text => update(s => ({ ...s, input: text }))} />
+  return (
+    <TextInput
+      ref={inputRef}
+      value={state.input}
+      onChangeText={(text) => update((s) => ({ ...s, input: text }))}
+    />
+  )
 }
 
 function ComposerSubmit() {
