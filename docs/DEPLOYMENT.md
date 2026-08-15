@@ -293,18 +293,12 @@ docker run --rm \
 # 3 (Powershell). Restore volumes (prefix is your Compose project name, default: ashyk-bilim)
 
 $BACKUP_PATH = ($PWD.ProviderPath -replace '\\','/')
+$BACKUP_PATH
+podman run --rm -v "ashyk-bilim_postgres_data:/data" -v "${BACKUP_PATH}/temp-restore/backup/postgres:/backup" alpine sh -c "cp -a /backup/. /data/"
 
-podman run --rm `  -v ashyk-bilim_postgres_data:/data`
--v "${BACKUP_PATH}/temp-restore/backup/postgres:/backup" `
-alpine sh -c "cp -a /backup/. /data/"
+podman run --rm -v "ashyk-bilim_redis_data:/data" -v "${BACKUP_PATH}/temp-restore/backup/redis:/backup" alpine sh -c "cp -a /backup/. /data/"
 
-podman run --rm `  -v ashyk-bilim_redis_data:/data`
--v "${BACKUP_PATH}/temp-restore/backup/redis:/backup" `
-alpine sh -c "cp -a /backup/. /data/"
-
-podman run --rm `  -v ashyk-bilim_app_content:/data`
--v "${BACKUP_PATH}/temp-restore/backup/app_content:/backup" `
-alpine sh -c "cp -a /backup/. /data/"
+podman run --rm -v "ashyk-bilim_app_content:/data" -v "${BACKUP_PATH}/temp-restore/backup/app_content:/backup" alpine sh -c "cp -a /backup/. /data/"
 
 # 4. Start
 
