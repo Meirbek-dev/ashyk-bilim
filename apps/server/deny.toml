@@ -4,9 +4,16 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
+ignore = [
+  # `paste` is unmaintained (proc-macro, compile-time only, no runtime surface).
+  # Pulled transitively; drop this ignore when the dependency chain sheds it.
+  "RUSTSEC-2024-0436",
+]
 
 [licenses]
 version = 2
+# Our own unpublished workspace crates carry no license field.
+private = { ignore = true }
 allow = [
   "MIT",
   "Apache-2.0",
@@ -25,6 +32,8 @@ allow = [
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# Workspace path dependencies carry no version — that's fine, they're ours.
+allow-wildcard-paths = true
 
 [sources]
 unknown-registry = "deny"

@@ -60,6 +60,7 @@ typed_id!(
 typed_id!(UserId);
 typed_id!(SessionId);
 typed_id!(CourseId);
+typed_id!(JobId);
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]

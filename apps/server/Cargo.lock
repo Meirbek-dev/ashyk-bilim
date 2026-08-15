@@ -19,7 +19,6 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "utoipa-scalar",
- "uuid",
 ]
 
 [[package]]
@@ -51,8 +50,9 @@ version = "0.1.0"
 dependencies = [
  "ab-core",
  "secrecy",
+ "serde_json",
  "sqlx",
- "tracing",
+ "uuid",
 ]
 
 [[package]]

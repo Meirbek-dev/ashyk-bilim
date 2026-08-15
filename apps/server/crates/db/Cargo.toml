@@ -10,5 +10,6 @@ workspace = true
 [dependencies]
 ab-core = { workspace = true }
 secrecy = { workspace = true }
+serde_json = { workspace = true }
 sqlx = { workspace = true }
-tracing = { workspace = true }
+uuid = { workspace = true }

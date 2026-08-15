@@ -5,6 +5,8 @@
 //! the committed `.sqlx` offline cache; `QueryBuilder` for dynamic SQL;
 //! `AssertSqlSafe` only with a `// SAFETY:` comment.
 
+pub mod queue;
+
 use std::time::Duration;
 
 use ab_core::Result;
