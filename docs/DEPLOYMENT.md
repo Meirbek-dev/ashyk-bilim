@@ -35,8 +35,8 @@ Networks
 ### 1. Clone the repository
 
 ```bash
-git clone <repo-url> ashyk-bilim
-cd ashyk-bilim
+git clone <repo-url> ashyq-bilim
+cd ashyq-bilim
 ```
 
 ### 2. Configure environment
@@ -147,7 +147,7 @@ curl -fsS https://cs-mooc.tou.edu.kz/api/v1/health
 ## Migrations
 
 Migrations are **always manual** — never applied automatically on start.
-The `migrate` service reuses the `ashyk-bilim-api` image.
+The `migrate` service reuses the `ashyq-bilim-api` image.
 
 **Apply:**
 
@@ -249,72 +249,101 @@ GPG_PASSPHRASE: ...
 
 ## Restore
 
-````bash
-# 1. Stop the application
-docker-compose down
+Volume names are prefixed with the Compose project name, which defaults to the
+directory name — `ashyq-bilim` (note the `q`), unless `COMPOSE_PROJECT_NAME` says
+otherwise. **Confirm the prefix before you copy anything:** Docker and Podman
+create an unknown volume name silently instead of failing, so a typo restores the
+backup into a fresh volume nothing mounts, and the stack comes up on an empty
+database.
 
-# 2. Extract the backup
+```bash
+docker volume ls | grep _postgres_data   # podman volume ls
+```
+
+**1. Stop the application**
+
+```bash
+docker-compose down
+```
+
+**2. Extract the backup**
+
+```bash
 mkdir -p temp-restore
 # Example copy from server to Windows PC:
 # scp user@192.186.12.34:~/openu-prod/backups/backup-YYYY-MM-DDTHH-00-00.tar.zst .
 tar --zstd -xf ./backups/backup-YYYY-MM-DDTHH-MM-SS.tar.zst -C temp-restore
 # Layout: temp-restore/backup/{postgres,redis,app_content,judge0_box}
+```
 
-**Windows (Git Bash or WSL):** same commands work as-is.
-**Windows (7-Zip):**
+Windows (Git Bash or WSL): same commands work as-is. Windows (7-Zip):
 
 ```powershell
 & "C:\Program Files\7-Zip\7z.exe" x ".\backups\backup-YYYY-MM-DDT02-00-00.tar.zst" "-o.\"
 & "C:\Program Files\7-Zip\7z.exe" x ".\backup-YYYY-MM-DDT02-00-00.tar" "-o.\temp-restore" -snl
-````
+```
 
 > The backup-latest symlink has a `.tar.gz` extension but is zstd-compressed.
 > Always use `tar --zstd`, never `tar -z`.
 
-# 3. Restore volumes (prefix is your Compose project name, default: ashyk-bilim)
+**3. Restore volumes**
 
+Each volume is emptied before the copy. A bare `cp -a` overlays instead of
+replacing, so leftovers from a previously initialized cluster (a stale
+`postmaster.pid`, orphaned WAL segments) would mix into the restored data
+directory.
+
+```bash
 BACKUP_PATH="$(pwd)/temp-restore/backup"
 
-docker run --rm \
- -v ashyk-bilim_postgres_data:/data \
- -v "${BACKUP_PATH}/postgres:/backup" \
- alpine sh -c "cd /data && cp -a /backup/. ."
-
-docker run --rm \
- -v ashyk-bilim_redis_data:/data \
- -v "${BACKUP_PATH}/redis:/backup" \
- alpine sh -c "cd /data && cp -a /backup/. ."
-
-docker run --rm \
- -v ashyk-bilim_app_content:/data \
- -v "${BACKUP_PATH}/app_content:/backup" \
- alpine sh -c "cd /data && cp -a /backup/. ."
-
-# 3 (Powershell). Restore volumes (prefix is your Compose project name, default: ashyk-bilim)
-
-$BACKUP_PATH = ($PWD.ProviderPath -replace '\\','/')
-$BACKUP_PATH
-podman run --rm -v "ashyk-bilim_postgres_data:/data" -v "${BACKUP_PATH}/temp-restore/backup/postgres:/backup" alpine sh -c "cp -a /backup/. /data/"
-
-podman run --rm -v "ashyk-bilim_redis_data:/data" -v "${BACKUP_PATH}/temp-restore/backup/redis:/backup" alpine sh -c "cp -a /backup/. /data/"
-
-podman run --rm -v "ashyk-bilim_app_content:/data" -v "${BACKUP_PATH}/temp-restore/backup/app_content:/backup" alpine sh -c "cp -a /backup/. /data/"
-
-# 4. Start
-
-docker-compose up -d
-
-# 5. Verify
-
-docker-compose ps
-docker-compose exec db psql -U openu -d openu -c "SELECT COUNT(\*) FROM alembic_version;"
-
-# 6. Clean up
-
-rm -rf temp-restore
-
+for v in postgres:postgres_data redis:redis_data app_content:app_content; do
+  docker run --rm \
+    -v "ashyq-bilim_${v#*:}:/data" \
+    -v "${BACKUP_PATH}/${v%%:*}:/backup:ro" \
+    alpine sh -c 'find /data -mindepth 1 -maxdepth 1 -exec rm -rf {} + && cp -a /backup/. /data/'
+done
 ```
 
+`judge0_box` is a scratch sandbox that Judge0 rebuilds on start — restore it the
+same way only if you need it byte-identical.
+
+PowerShell (Podman):
+
+```powershell
+$BACKUP_PATH = ($PWD.ProviderPath -replace '\','/') + "/temp-restore/backup"
+
+foreach ($v in @('postgres:postgres_data','redis:redis_data','app_content:app_content')) {
+  $src, $vol = $v -split ':'
+  podman run --rm -v "ashyq-bilim_${vol}:/data" -v "${BACKUP_PATH}/${src}:/backup:ro" alpine sh -c 'find /data -mindepth 1 -maxdepth 1 -exec rm -rf {} + && cp -a /backup/. /data/'
+}
+```
+
+**4. Start**
+
+```bash
+docker-compose up -d
+```
+
+**5. Verify**
+
+Check that real application data came back, not just that the container is
+healthy — an empty cluster passes `pg_isready` and only fails later at API
+startup.
+
+```bash
+docker-compose ps
+docker-compose exec db psql -U openu -d openu -c "SELECT version_num FROM alembic_version;"
+docker-compose exec db psql -U openu -d openu -c "SELECT COUNT(*) FROM roles;"
+```
+
+`version_num` must match `alembic heads` in `apps/api`; if the backup predates
+the current code, run the migration step from [Migrations](#migrations).
+
+**6. Clean up**
+
+```bash
+rm -rf temp-restore
+```
 
 ---
 
@@ -336,7 +365,8 @@ rm -rf temp-restore
 
 **`gzip: stdin: not in gzip format` during restore** — the archive is zstd-compressed despite the `.tar.gz` symlink. Use `tar --zstd`.
 
+**`relation "roles" does not exist` at API startup after a restore** — the backup went into a volume the stack does not mount, usually a typo in the project-name prefix (`ashyk-` instead of `ashyq-`), and the API is talking to a fresh empty cluster. `docker volume ls` will show both names. Stop the stack and redo step 3 of [Restore](#restore) against the correct volumes.
+
 **PostgreSQL version mismatch after restore** — the image in `extra/Dockerfile.db` must match the major version in the backup. Run `pg_upgrade` or pin the image version.
 
 **Backup not running** — `docker-compose logs backup` to inspect. Check disk space with `df -h`.
-```
