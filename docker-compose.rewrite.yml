@@ -1,0 +1,147 @@
+# Overlay for the Rust rewrite stack. Not started by a plain `docker compose up`
+# (everything here carries the `rewrite` profile), so legacy production is
+# untouched until cutover.
+#
+# Dev:     docker compose -f docker-compose.yml -f docker-compose.rewrite.yml --profile rewrite up -d db redis zitadel rustfs
+# Full:    … --profile rewrite up -d
+#
+# TODO(slice 0.7): pin zitadel/rustfs image digests after first validated boot.
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    command: ['serve']
+    restart: unless-stopped
+    profiles: [rewrite]
+    expose:
+      - '8000'
+    env_file: .env
+    networks:
+      - app-net
+      - data-net
+      - exec-net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '2.0'
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    command: ['worker']
+    restart: unless-stopped
+    profiles: [rewrite]
+    env_file: .env
+    networks:
+      - app-net
+      - data-net
+      - exec-net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    stop_grace_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '2.0'
+
+  server-migrate:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    command: ['migrate']
+    profiles: [rewrite]
+    env_file: .env
+    networks:
+      - data-net
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    restart: unless-stopped
+    profiles: [rewrite]
+    command:
+      ['start-from-init', '--masterkeyFromEnv', '--tlsMode', 'external']
+    environment:
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:?ZITADEL_MASTERKEY must be set (32+ chars)}
+      ZITADEL_DATABASE_POSTGRES_HOST: db
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${ZITADEL_DB_PASSWORD:?ZITADEL_DB_PASSWORD must be set}
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: ${POSTGRES_USER:-openu}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:?}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_EXTERNALDOMAIN: ${ZITADEL_EXTERNAL_DOMAIN:-localhost}
+      ZITADEL_EXTERNALPORT: ${ZITADEL_EXTERNAL_PORT:-8081}
+      ZITADEL_EXTERNALSECURE: ${ZITADEL_EXTERNAL_SECURE:-false}
+    ports:
+      - '8081:8080' # dev convenience; internal-only behind nginx at cutover
+    networks:
+      - app-net
+      - data-net
+    depends_on:
+      db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '1.0'
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    profiles: [rewrite]
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?RUSTFS_ACCESS_KEY must be set}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?RUSTFS_SECRET_KEY must be set}
+      RUSTFS_VOLUMES: /data
+    volumes:
+      - rustfs_data:/data
+    ports:
+      - '9000:9000' # dev convenience; internal-only at cutover
+    networks:
+      - app-net
+      - data-net
+    labels:
+      - docker-volume-backup.stop-during-backup=true
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '1.0'
+
+volumes:
+  rustfs_data:

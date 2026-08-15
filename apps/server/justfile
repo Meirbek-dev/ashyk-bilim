@@ -1,0 +1,70 @@
+# Ashyq server — the only entry point for builds/tests/tooling.
+# CI runs `just ci`; agents run the same recipes locally. See AGENTS.md.
+
+set dotenv-load := true
+
+default: check
+
+# Install the required cargo tooling (one-time per machine).
+setup:
+    cargo install cargo-binstall --locked
+    cargo binstall -y sqlx-cli cargo-nextest cargo-llvm-cov cargo-deny cargo-machete bacon
+
+# Fast feedback: format check + lints. Run constantly.
+check: fmt-check clippy
+
+fmt:
+    cargo fmt --all
+
+fmt-check:
+    cargo fmt --all --check
+
+clippy:
+    cargo clippy --workspace --all-targets -- -D warnings
+
+# Full test suite (integration tests in crates/*/tests need `just services`).
+test:
+    cargo nextest run --workspace
+
+# Unit tests only — no Postgres/Redis/Docker required (Windows sessions).
+test-unit:
+    cargo nextest run --workspace --lib --bins
+
+# Verify the committed .sqlx offline cache matches the schema + queries.
+sqlx-check:
+    cargo sqlx prepare --check --workspace
+
+# Refresh .sqlx after changing any SQL. Commit the result.
+prepare:
+    cargo sqlx prepare --workspace
+
+migrate:
+    sqlx migrate run --source migrations
+
+# Create a new migration: just migration add_users_table
+migration NAME:
+    sqlx migrate add --source migrations {{NAME}}
+
+# Export the OpenAPI contract artifact.
+openapi:
+    cargo run -p ashyq-server -- openapi > openapi.v2.json
+
+# Coverage with floor (ratchet up as phases land — never down).
+cov:
+    cargo llvm-cov nextest --workspace --fail-under-lines 50
+
+deny:
+    cargo deny check
+
+machete:
+    cargo machete
+
+# Everything CI runs, in CI order. Green here == green CI.
+ci: fmt-check clippy test deny machete
+
+# Dev stack (requires Docker): legacy db/redis + zitadel + rustfs.
+services:
+    docker compose -f ../../docker-compose.yml -f ../../docker-compose.rewrite.yml --profile rewrite up -d db redis zitadel rustfs
+
+dev:
+    bacon

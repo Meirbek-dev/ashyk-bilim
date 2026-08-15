@@ -1,0 +1,91 @@
+name: server-ci
+
+on:
+  push:
+    branches: [rewrite, main]
+    paths:
+      - 'apps/server/**'
+      - '.github/workflows/server-ci.yaml'
+  pull_request:
+    paths:
+      - 'apps/server/**'
+      - '.github/workflows/server-ci.yaml'
+
+defaults:
+  run:
+    working-directory: apps/server
+
+env:
+  CARGO_TERM_COLOR: always
+  DATABASE_URL: postgres://ashyq:ashyq@localhost:5432/ashyq_test
+  SQLX_OFFLINE: 'false'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: ashyq
+          POSTGRES_PASSWORD: ashyq
+          POSTGRES_DB: ashyq_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ashyq"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/server
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest,cargo-llvm-cov,cargo-deny,cargo-machete,sqlx-cli,just
+
+      - name: Format
+        run: just fmt-check
+
+      - name: Migrate test database
+        run: sqlx database create && sqlx migrate run --source migrations
+
+      - name: Clippy (deny warnings)
+        run: just clippy
+
+      - name: SQLx offline cache check
+        run: just sqlx-check
+
+      - name: Tests (nextest)
+        run: just test
+
+      - name: Supply chain (deny + machete)
+        run: just deny && just machete
+
+      - name: Coverage floor
+        run: just cov
+
+      - name: OpenAPI export is committed and current
+        run: |
+          cargo run -p ashyq-server -- openapi > /tmp/openapi.v2.json
+          diff -u openapi.v2.json /tmp/openapi.v2.json
+
+      - name: Docker build
+        working-directory: .
+        run: docker build -f apps/server/Dockerfile .

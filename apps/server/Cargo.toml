@@ -1,0 +1,107 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace.dependencies]
+# Internal crates
+ab-core = { path = "crates/core" }
+ab-db = { path = "crates/db" }
+ab-clients = { path = "crates/clients" }
+ab-domain = { path = "crates/domain" }
+ab-api = { path = "crates/api" }
+ab-jobs = { path = "crates/jobs" }
+ab-testkit = { path = "crates/testkit" }
+
+# Runtime & web
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+axum = { version = "0.8", features = ["macros"] }
+axum-extra = { version = "0.12", features = ["typed-header", "cookie"] }
+tower = "0.5"
+tower-http = { version = "0.7", features = [
+  "trace",
+  "cors",
+  "compression-full",
+  "timeout",
+  "limit",
+  "request-id",
+  "catch-panic",
+  "sensitive-headers",
+] }
+
+# Data
+sqlx = { version = "0.9", features = [
+  "runtime-tokio",
+  "tls-rustls-ring",
+  "postgres",
+  "uuid",
+  "json",
+  "migrate",
+  "macros",
+] }
+uuid = { version = "1", features = ["v7", "serde"] }
+jiff = { version = "0.2", features = ["serde"] }
+
+# Serde & validation
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+garde = { version = "0.22", features = ["derive", "email", "url"] }
+
+# Config, secrets, errors
+figment = { version = "0.10", features = ["env"] }
+secrecy = { version = "0.10", features = ["serde"] }
+thiserror = "2"
+anyhow = "1"
+
+# Telemetry
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# OpenAPI
+utoipa = { version = "5", features = ["axum_extras", "uuid"] }
+utoipa-axum = "0.2"
+utoipa-scalar = { version = "0.3", features = ["axum"] }
+
+# Bin
+clap = { version = "4", features = ["derive", "env"] }
+dotenvy = "0.15"
+mimalloc = "0.1"
+
+# Misc
+futures = "0.3"
+async-stream = "0.3"
+
+# Dev
+insta = { version = "1", features = ["json", "redactions"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# Agent guardrails: failures must flow through ab_core::Error, never panic.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+# Pedantic/nursery noise that fights more than it helps:
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+future_not_send = "allow"
+option_if_let_else = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
