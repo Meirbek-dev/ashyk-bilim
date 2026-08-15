@@ -155,9 +155,9 @@ async fn unknown_kind_is_dead_lettered_not_retried(pool: PgPool) {
     handle.await.unwrap().unwrap();
 }
 
-#[test]
-fn duplicate_handler_registration_is_rejected() {
-    // Pure wiring check — no DB. Worker::new needs a pool, so use a lazy one.
+#[tokio::test]
+async fn duplicate_handler_registration_is_rejected() {
+    // Pure wiring check — no DB, but pool construction needs a tokio runtime.
     let pool = sqlx::postgres::PgPoolOptions::new().connect_lazy("postgres://unused/unused");
     let worker = Worker::new(pool.unwrap(), WorkerConfig::default());
     let hits = Arc::new(AtomicUsize::new(0));
