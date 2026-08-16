@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE activities SET\n               content = COALESCE($2, content),\n               details = COALESCE($3, details),\n               settings = COALESCE($4, settings)\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Jsonb",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e16d480ab6250da139c6e5837a77d881c9023d509c4381cabcdc90d1f3ec6de3"
+}

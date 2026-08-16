@@ -3,7 +3,7 @@
 //! cursor is simply the last id seen (ARCHITECTURE §6).
 
 use ab_core::Result;
-use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
+use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, UserId};
 use sqlx::PgPool;
 
 pub struct CourseRow {
@@ -377,6 +377,68 @@ pub async fn set_activity_chapter(
     Ok(())
 }
 
+/// The heavy jsonb columns, fetched only for the single-activity view.
+pub struct ActivityContentRow {
+    pub content: serde_json::Value,
+    pub details: serde_json::Value,
+    pub settings: serde_json::Value,
+}
+
+pub async fn get_activity_content(
+    pool: &PgPool,
+    id: ActivityId,
+) -> Result<Option<ActivityContentRow>> {
+    let row = sqlx::query_as!(
+        ActivityContentRow,
+        "SELECT content, details, settings FROM activities WHERE id = $1",
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+pub async fn update_activity_content(
+    pool: &PgPool,
+    id: ActivityId,
+    content: Option<&serde_json::Value>,
+    details: Option<&serde_json::Value>,
+    settings: Option<&serde_json::Value>,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE activities SET
+               content = COALESCE($2, content),
+               details = COALESCE($3, details),
+               settings = COALESCE($4, settings)
+           WHERE id = $1"#,
+        id.0,
+        content,
+        details,
+        settings
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+/// Change the type pair together — the DB CHECK enforces validity.
+pub async fn set_activity_type(
+    pool: &PgPool,
+    id: ActivityId,
+    activity_type: &str,
+    activity_sub_type: &str,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        "UPDATE activities SET activity_type = $2, activity_sub_type = $3 WHERE id = $1",
+        id.0,
+        activity_type,
+        activity_sub_type
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
 pub async fn renumber_activities(pool: &PgPool, ordered_ids: &[ActivityId]) -> Result<()> {
     let mut tx = pool.begin().await?;
     for (index, id) in ordered_ids.iter().enumerate() {
@@ -391,4 +453,68 @@ pub async fn renumber_activities(pool: &PgPool, ordered_ids: &[ActivityId]) -> R
     }
     tx.commit().await?;
     Ok(())
+}
+
+// ── Blocks ──────────────────────────────────────────────────────────────────
+
+pub struct BlockRow {
+    pub id: BlockId,
+    pub activity_id: ActivityId,
+    pub block_type: String,
+    pub content: serde_json::Value,
+    pub created_at: i64,
+}
+
+pub async fn insert_block(
+    pool: &PgPool,
+    activity_id: ActivityId,
+    block_type: &str,
+    content: &serde_json::Value,
+) -> Result<BlockId> {
+    let id = sqlx::query_scalar!(
+        r#"INSERT INTO blocks (activity_id, block_type, content)
+           VALUES ($1, $2, $3)
+           RETURNING id"#,
+        activity_id.0,
+        block_type,
+        content
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(BlockId(id))
+}
+
+pub async fn get_block(pool: &PgPool, id: BlockId) -> Result<Option<BlockRow>> {
+    let row = sqlx::query_as!(
+        BlockRow,
+        r#"SELECT id AS "id: BlockId", activity_id AS "activity_id: ActivityId",
+                  block_type, content,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM blocks WHERE id = $1"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+pub async fn list_blocks(pool: &PgPool, activity_id: ActivityId) -> Result<Vec<BlockRow>> {
+    let rows = sqlx::query_as!(
+        BlockRow,
+        r#"SELECT id AS "id: BlockId", activity_id AS "activity_id: ActivityId",
+                  block_type, content,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM blocks WHERE activity_id = $1 ORDER BY id"#,
+        activity_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+pub async fn delete_block(pool: &PgPool, id: BlockId) -> Result<bool> {
+    let deleted = sqlx::query!("DELETE FROM blocks WHERE id = $1", id.0)
+        .execute(pool)
+        .await?;
+    Ok(deleted.rows_affected() == 1)
 }

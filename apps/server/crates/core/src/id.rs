@@ -62,6 +62,7 @@ typed_id!(SessionId);
 typed_id!(CourseId);
 typed_id!(ChapterId);
 typed_id!(ActivityId);
+typed_id!(BlockId);
 typed_id!(JobId);
 
 #[cfg(test)]

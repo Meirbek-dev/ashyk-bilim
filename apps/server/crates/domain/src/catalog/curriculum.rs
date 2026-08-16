@@ -2,13 +2,18 @@
 //! semantics — 1-based contiguous positions per parent, moves clamp the
 //! target position and renumber all siblings.
 
-use ab_core::id::{ActivityId, ChapterId, CourseId};
+use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId};
 use ab_core::{Error, FieldError, Result};
 use sqlx::PgPool;
+use uuid::Uuid;
 
-pub use ab_db::catalog::{ActivityRow as Activity, ChapterRow as Chapter};
+pub use ab_db::catalog::{
+    ActivityContentRow as ActivityContent, ActivityRow as Activity, BlockRow as Block,
+    ChapterRow as Chapter,
+};
 
 use crate::catalog::courses::CoursesService;
+use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::identity::Actor;
 
 /// The legacy `_VALID_SUBTYPES` map, mirrored by the DB CHECK constraint.
@@ -40,6 +45,35 @@ fn clamp_position(position: i32, len: usize) -> usize {
 pub struct CurriculumChapter {
     pub chapter: Chapter,
     pub activities: Vec<Activity>,
+}
+
+/// Partial activity update. `type_pair` changes type+subtype together —
+/// changing one alone can't be validated against the closed set.
+#[derive(Debug, Default)]
+pub struct ActivityChanges<'a> {
+    pub name: Option<&'a str>,
+    pub published: Option<bool>,
+    pub type_pair: Option<(&'a str, &'a str)>,
+    pub content: Option<&'a serde_json::Value>,
+    pub details: Option<&'a serde_json::Value>,
+    pub settings: Option<&'a serde_json::Value>,
+}
+
+/// An activity with its heavy jsonb columns (single-activity view).
+pub struct ActivityDetail {
+    pub activity: Activity,
+    pub content: ActivityContent,
+}
+
+/// Block create request: file-backed types claim a finalized upload; the
+/// legacy `custom` type only exists for ETL'd rows and cannot be created.
+fn purpose_for_block(block_type: &str) -> Option<&'static str> {
+    match block_type {
+        "image" => Some("block-image"),
+        "pdf" => Some("block-pdf"),
+        "video" => Some("block-video"),
+        _ => None,
+    }
 }
 
 #[derive(Clone)]
@@ -194,18 +228,54 @@ impl CurriculumService {
         Ok(activity)
     }
 
+    /// Full activity view including content/details/settings.
+    pub async fn activity_detail(
+        &self,
+        actor: &Actor,
+        activity_id: ActivityId,
+    ) -> Result<ActivityDetail> {
+        let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
+            .await?
+            .ok_or_else(|| Error::not_found("activity"))?;
+        // Read access via the course (404 semantics included).
+        self.courses.get(actor, activity.course_id).await?;
+        let content = ab_db::catalog::get_activity_content(&self.pool, activity_id)
+            .await?
+            .ok_or_else(|| Error::not_found("activity"))?;
+        Ok(ActivityDetail { activity, content })
+    }
+
     pub async fn update_activity(
         &self,
         actor: &Actor,
         activity_id: ActivityId,
-        name: Option<&str>,
-        published: Option<bool>,
-    ) -> Result<Activity> {
+        changes: ActivityChanges<'_>,
+    ) -> Result<ActivityDetail> {
         self.writable_activity(actor, activity_id).await?;
-        ab_db::catalog::update_activity(&self.pool, activity_id, name, published).await?;
-        ab_db::catalog::get_activity(&self.pool, activity_id)
-            .await?
-            .ok_or_else(|| Error::not_found("activity"))
+        if let Some((activity_type, sub_type)) = changes.type_pair {
+            if !valid_pair(activity_type, sub_type) {
+                return Err(Error::validation(vec![FieldError {
+                    field: "activity_sub_type".into(),
+                    code: "invalid".into(),
+                    message: format!("'{sub_type}' is not valid for '{activity_type}'"),
+                }]));
+            }
+            ab_db::catalog::set_activity_type(&self.pool, activity_id, activity_type, sub_type)
+                .await?;
+        }
+        ab_db::catalog::update_activity(&self.pool, activity_id, changes.name, changes.published)
+            .await?;
+        if changes.content.is_some() || changes.details.is_some() || changes.settings.is_some() {
+            ab_db::catalog::update_activity_content(
+                &self.pool,
+                activity_id,
+                changes.content,
+                changes.details,
+                changes.settings,
+            )
+            .await?;
+        }
+        self.activity_detail(actor, activity_id).await
     }
 
     pub async fn delete_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<()> {
@@ -254,5 +324,102 @@ impl CurriculumService {
         let target = clamp_position(position, ids.len());
         ids.insert(target, activity_id);
         ab_db::catalog::renumber_activities(&self.pool, &ids).await
+    }
+
+    /// Attach a file block: claims a finalized upload the actor owns whose
+    /// purpose matches the block type, and freezes its metadata as content.
+    pub async fn add_block(
+        &self,
+        actor: &Actor,
+        activity_id: ActivityId,
+        block_type: &str,
+        upload_id: Uuid,
+        file_name: Option<&str>,
+    ) -> Result<Block> {
+        let Some(required_purpose) = purpose_for_block(block_type) else {
+            return Err(Error::validation(vec![FieldError {
+                field: "block_type".into(),
+                code: "invalid".into(),
+                message: format!("'{block_type}' is not a creatable block type"),
+            }]));
+        };
+        self.writable_activity(actor, activity_id).await?;
+
+        let upload = ab_db::uploads::get_upload(&self.pool, upload_id)
+            .await?
+            .ok_or_else(|| Error::not_found("upload"))?;
+        if upload.created_by != actor.user_id {
+            return Err(Error::forbidden("not your upload"));
+        }
+        if upload.purpose != required_purpose {
+            return Err(Error::validation(vec![FieldError {
+                field: "upload_id".into(),
+                code: "wrong-purpose".into(),
+                message: format!(
+                    "a {block_type} block needs a '{required_purpose}' upload, \
+                     got '{}'",
+                    upload.purpose
+                ),
+            }]));
+        }
+        if !ab_db::uploads::add_reference(&self.pool, upload_id).await? {
+            return Err(Error::conflict("upload is not finalized"));
+        }
+
+        let content = serde_json::json!({
+            "upload_id": upload.id,
+            "file_key": upload.key,
+            "file_name": file_name.unwrap_or(""),
+            "file_size": upload.size_bytes,
+            "file_type": upload.mime,
+        });
+        let id =
+            ab_db::catalog::insert_block(&self.pool, activity_id, block_type, &content).await?;
+        ab_db::catalog::get_block(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("block"))
+    }
+
+    pub async fn list_blocks(&self, actor: &Actor, activity_id: ActivityId) -> Result<Vec<Block>> {
+        let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
+            .await?
+            .ok_or_else(|| Error::not_found("activity"))?;
+        self.courses.get(actor, activity.course_id).await?;
+        ab_db::catalog::list_blocks(&self.pool, activity_id).await
+    }
+
+    pub async fn get_block(&self, actor: &Actor, block_id: BlockId) -> Result<Block> {
+        let block = ab_db::catalog::get_block(&self.pool, block_id)
+            .await?
+            .ok_or_else(|| Error::not_found("block"))?;
+        let activity = ab_db::catalog::get_activity(&self.pool, block.activity_id)
+            .await?
+            .ok_or_else(|| Error::not_found("block"))?;
+        self.courses.get(actor, activity.course_id).await?;
+        Ok(block)
+    }
+
+    /// Delete a block and release its upload reference (the reaper collects
+    /// the object once nothing references it).
+    pub async fn delete_block(&self, actor: &Actor, block_id: BlockId) -> Result<()> {
+        let block = ab_db::catalog::get_block(&self.pool, block_id)
+            .await?
+            .ok_or_else(|| Error::not_found("block"))?;
+        self.writable_activity(actor, block.activity_id).await?;
+        ab_db::catalog::delete_block(&self.pool, block_id).await?;
+        if let Some(upload_id) = block
+            .content
+            .get("upload_id")
+            .and_then(|v| v.as_str())
+            .and_then(|s| s.parse::<Uuid>().ok())
+        {
+            ab_db::uploads::release_reference(
+                &self.pool,
+                upload_id,
+                UNREFERENCED_GRACE.as_secs_f64(),
+            )
+            .await?;
+        }
+        Ok(())
     }
 }

@@ -1,4 +1,4 @@
-use ab_core::id::{ActivityId, ChapterId, CourseId};
+use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -114,6 +114,37 @@ pub struct CreateActivityRequest {
     pub activity_sub_type: String,
 }
 
+/// Full activity view with the heavy jsonb columns.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ActivityDetail {
+    #[serde(flatten)]
+    pub activity: Activity,
+    /// Editor content (dynamic pages) or type-specific payload.
+    pub content: serde_json::Value,
+    pub details: serde_json::Value,
+    pub settings: serde_json::Value,
+}
+
+impl From<ab_domain::catalog::curriculum::ActivityDetail> for ActivityDetail {
+    fn from(d: ab_domain::catalog::curriculum::ActivityDetail) -> Self {
+        Self {
+            activity: d.activity.into(),
+            content: d.content.content,
+            details: d.content.details,
+            settings: d.content.settings,
+        }
+    }
+}
+
+// garde's custom-validator contract fixes this signature (&field, &context).
+#[allow(clippy::trivially_copy_pass_by_ref, clippy::ref_option)]
+fn json_object(value: &Option<serde_json::Value>, _ctx: &()) -> garde::Result {
+    match value {
+        Some(v) if !v.is_object() => Err(garde::Error::new("must be a JSON object")),
+        _ => Ok(()),
+    }
+}
+
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateActivityRequest {
@@ -121,6 +152,54 @@ pub struct UpdateActivityRequest {
     pub name: Option<String>,
     #[garde(skip)]
     pub published: Option<bool>,
+    /// Change together with `activity_sub_type` (both or neither).
+    #[garde(inner(length(min = 1, max = 64)))]
+    pub activity_type: Option<String>,
+    #[garde(inner(length(min = 1, max = 64)))]
+    pub activity_sub_type: Option<String>,
+    #[garde(custom(json_object))]
+    pub content: Option<serde_json::Value>,
+    #[garde(custom(json_object))]
+    pub details: Option<serde_json::Value>,
+    #[garde(custom(json_object))]
+    pub settings: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct Block {
+    pub id: BlockId,
+    pub activity_id: ActivityId,
+    /// `image`, `pdf`, `video` (or `custom` for migrated legacy rows).
+    pub block_type: String,
+    /// `{upload_id, file_key, file_name, file_size, file_type}`.
+    pub content: serde_json::Value,
+    pub created_at_unix: i64,
+}
+
+impl From<ab_domain::catalog::curriculum::Block> for Block {
+    fn from(b: ab_domain::catalog::curriculum::Block) -> Self {
+        Self {
+            id: b.id,
+            activity_id: b.activity_id,
+            block_type: b.block_type,
+            content: b.content,
+            created_at_unix: b.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CreateBlockRequest {
+    /// `image`, `pdf`, or `video`.
+    #[garde(length(min = 1, max = 32))]
+    pub block_type: String,
+    /// A finalized upload (purpose must match the block type).
+    #[garde(skip)]
+    pub upload_id: uuid::Uuid,
+    /// Original client-side file name, for display.
+    #[garde(inner(length(max = 500)))]
+    pub file_name: Option<String>,
 }
 
 /// Target slot for an activity move; `chapter_id` reparents within the same

@@ -45,6 +45,8 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/activities/{id}"),
     ("DELETE", "/api/v2/activities/{id}"),
     ("POST", "/api/v2/activities/{id}/move"),
+    ("POST", "/api/v2/activities/{id}/blocks"),
+    ("DELETE", "/api/v2/blocks/{id}"),
 ];
 
 const MUTATING: &[&str] = &["post", "put", "patch", "delete"];

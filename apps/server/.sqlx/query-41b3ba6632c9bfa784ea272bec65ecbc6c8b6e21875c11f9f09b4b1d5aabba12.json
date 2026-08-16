@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE activities SET activity_type = $2, activity_sub_type = $3 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "41b3ba6632c9bfa784ea272bec65ecbc6c8b6e21875c11f9f09b4b1d5aabba12"
+}

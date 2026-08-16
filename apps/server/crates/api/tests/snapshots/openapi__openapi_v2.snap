@@ -46,6 +46,29 @@ expression: json
         ],
         "type": "object"
       },
+      "ActivityDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Activity"
+          },
+          {
+            "properties": {
+              "content": {
+                "description": "Editor content (dynamic pages) or type-specific payload."
+              },
+              "details": {},
+              "settings": {}
+            },
+            "required": [
+              "content",
+              "details",
+              "settings"
+            ],
+            "type": "object"
+          }
+        ],
+        "description": "Full activity view with the heavy jsonb columns."
+      },
       "ActivityId": {
         "format": "uuid",
         "type": "string"
@@ -62,6 +85,39 @@ expression: json
           "role"
         ],
         "type": "object"
+      },
+      "Block": {
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "block_type": {
+            "description": "`image`, `pdf`, `video` (or `custom` for migrated legacy rows).",
+            "type": "string"
+          },
+          "content": {
+            "description": "`{upload_id, file_key, file_name, file_size, file_type}`."
+          },
+          "created_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "$ref": "#/components/schemas/BlockId"
+          }
+        },
+        "required": [
+          "id",
+          "activity_id",
+          "block_type",
+          "content",
+          "created_at_unix"
+        ],
+        "type": "object"
+      },
+      "BlockId": {
+        "format": "uuid",
+        "type": "string"
       },
       "Chapter": {
         "properties": {
@@ -215,6 +271,32 @@ expression: json
           "name",
           "activity_type",
           "activity_sub_type"
+        ],
+        "type": "object"
+      },
+      "CreateBlockRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "block_type": {
+            "description": "`image`, `pdf`, or `video`.",
+            "type": "string"
+          },
+          "file_name": {
+            "description": "Original client-side file name, for display.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "upload_id": {
+            "description": "A finalized upload (purpose must match the block type).",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "block_type",
+          "upload_id"
         ],
         "type": "object"
       },
@@ -673,6 +755,21 @@ expression: json
       "UpdateActivityRequest": {
         "additionalProperties": false,
         "properties": {
+          "activity_sub_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "activity_type": {
+            "description": "Change together with `activity_sub_type` (both or neither).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content": {},
+          "details": {},
           "name": {
             "type": [
               "string",
@@ -684,7 +781,8 @@ expression: json
               "boolean",
               "null"
             ]
-          }
+          },
+          "settings": {}
         },
         "type": "object"
       },
@@ -858,6 +956,46 @@ expression: json
           "courses"
         ]
       },
+      "get": {
+        "operationId": "get_activity",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityDetail"
+                }
+              }
+            },
+            "description": "Activity detail"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          }
+        },
+        "summary": "Full activity including content/details/settings.",
+        "tags": [
+          "courses"
+        ]
+      },
       "patch": {
         "operationId": "update_activity",
         "parameters": [
@@ -886,7 +1024,7 @@ expression: json
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Activity"
+                  "$ref": "#/components/schemas/ActivityDetail"
                 }
               }
             },
@@ -903,7 +1041,122 @@ expression: json
             "description": "No write access"
           }
         },
-        "summary": "Rename or publish/unpublish an activity.",
+        "summary": "Partial update: name, publish state, content/details/settings, or the\ntype pair (both `activity_type` and `activity_sub_type` together).",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v2/activities/{id}/blocks": {
+      "get": {
+        "operationId": "list_blocks",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Block"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Blocks"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          }
+        },
+        "summary": "Blocks attached to an activity.",
+        "tags": [
+          "courses"
+        ]
+      },
+      "post": {
+        "operationId": "create_block",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBlockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No write access / not your upload"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Upload not finalized"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad block type or wrong upload purpose"
+          }
+        },
+        "summary": "Attach a file block to an activity by claiming a finalized upload whose\npurpose matches the block type (`image`→`block-image`, etc.).",
         "tags": [
           "courses"
         ]
@@ -1291,6 +1544,81 @@ expression: json
         "summary": "Revoke one of the caller's own sessions by handle.",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v2/blocks/{id}": {
+      "delete": {
+        "operationId": "delete_block",
+        "parameters": [
+          {
+            "description": "Block id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BlockId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No write access"
+          }
+        },
+        "summary": "Delete a block and release its stored file for reaping.",
+        "tags": [
+          "courses"
+        ]
+      },
+      "get": {
+        "operationId": "get_block",
+        "parameters": [
+          {
+            "description": "Block id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BlockId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            },
+            "description": "Block"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          }
+        },
+        "summary": "One block (visibility follows the course).",
+        "tags": [
+          "courses"
         ]
       }
     },

@@ -79,9 +79,14 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::curriculum::delete_chapter))
         .routes(routes!(routes::curriculum::move_chapter))
         .routes(routes!(routes::curriculum::create_activity))
+        .routes(routes!(routes::curriculum::get_activity))
         .routes(routes!(routes::curriculum::update_activity))
         .routes(routes!(routes::curriculum::delete_activity))
         .routes(routes!(routes::curriculum::move_activity))
+        .routes(routes!(routes::curriculum::create_block))
+        .routes(routes!(routes::curriculum::list_blocks))
+        .routes(routes!(routes::curriculum::get_block))
+        .routes(routes!(routes::curriculum::delete_block))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

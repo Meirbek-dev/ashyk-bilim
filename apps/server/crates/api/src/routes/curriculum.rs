@@ -1,11 +1,14 @@
-use ab_core::id::{ActivityId, ChapterId, CourseId};
+use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId};
+use ab_core::{Error, FieldError};
+use ab_domain::catalog::curriculum::ActivityChanges;
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 
 use crate::dto::curriculum::{
-    Activity, Chapter, CreateActivityRequest, CreateChapterRequest, Curriculum,
-    MoveActivityRequest, MoveChapterRequest, UpdateActivityRequest, UpdateChapterRequest,
+    Activity, ActivityDetail, Block, Chapter, CreateActivityRequest, CreateBlockRequest,
+    CreateChapterRequest, Curriculum, MoveActivityRequest, MoveChapterRequest,
+    UpdateActivityRequest, UpdateChapterRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, ValidJson};
@@ -177,7 +180,30 @@ pub async fn create_activity(
     Ok((StatusCode::CREATED, Json(activity.into())))
 }
 
-/// Rename or publish/unpublish an activity.
+/// Full activity including content/details/settings.
+#[utoipa::path(
+    get,
+    path = "/activities/{id}",
+    tag = "courses",
+    params(("id" = ActivityId, Path, description = "Activity id")),
+    responses(
+        (status = 200, description = "Activity detail", body = ActivityDetail),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn get_activity(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<ActivityId>,
+) -> ApiResult<Json<ActivityDetail>> {
+    Ok(Json(
+        state.curriculum.activity_detail(&actor, id).await?.into(),
+    ))
+}
+
+/// Partial update: name, publish state, content/details/settings, or the
+/// type pair (both `activity_type` and `activity_sub_type` together).
 #[utoipa::path(
     patch,
     path = "/activities/{id}",
@@ -185,7 +211,7 @@ pub async fn create_activity(
     params(("id" = ActivityId, Path, description = "Activity id")),
     request_body = UpdateActivityRequest,
     responses(
-        (status = 200, description = "Updated", body = Activity),
+        (status = 200, description = "Updated", body = ActivityDetail),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -195,12 +221,35 @@ pub async fn update_activity(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
     ValidJson(request): ValidJson<UpdateActivityRequest>,
-) -> ApiResult<Json<Activity>> {
-    let activity = state
+) -> ApiResult<Json<ActivityDetail>> {
+    let type_pair = match (&request.activity_type, &request.activity_sub_type) {
+        (Some(t), Some(s)) => Some((t.as_str(), s.as_str())),
+        (None, None) => None,
+        _ => {
+            return Err(Error::validation(vec![FieldError {
+                field: "activity_type".into(),
+                code: "incomplete-pair".into(),
+                message: "activity_type and activity_sub_type change together".into(),
+            }])
+            .into());
+        }
+    };
+    let detail = state
         .curriculum
-        .update_activity(&actor, id, request.name.as_deref(), request.published)
+        .update_activity(
+            &actor,
+            id,
+            ActivityChanges {
+                name: request.name.as_deref(),
+                published: request.published,
+                type_pair,
+                content: request.content.as_ref(),
+                details: request.details.as_ref(),
+                settings: request.settings.as_ref(),
+            },
+        )
         .await?;
-    Ok(Json(activity.into()))
+    Ok(Json(detail.into()))
 }
 
 /// Delete an activity; chapter siblings renumber to stay contiguous.
@@ -250,5 +299,104 @@ pub async fn move_activity(
         .curriculum
         .move_activity(&actor, id, request.position, request.chapter_id)
         .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Attach a file block to an activity by claiming a finalized upload whose
+/// purpose matches the block type (`image`→`block-image`, etc.).
+#[utoipa::path(
+    post,
+    path = "/activities/{id}/blocks",
+    tag = "courses",
+    params(("id" = ActivityId, Path, description = "Activity id")),
+    request_body = CreateBlockRequest,
+    responses(
+        (status = 201, description = "Created", body = Block),
+        (status = 403, description = "No write access / not your upload", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "Upload not finalized", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Bad block type or wrong upload purpose", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn create_block(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<ActivityId>,
+    ValidJson(request): ValidJson<CreateBlockRequest>,
+) -> ApiResult<(StatusCode, Json<Block>)> {
+    let block = state
+        .curriculum
+        .add_block(
+            &actor,
+            id,
+            &request.block_type,
+            request.upload_id,
+            request.file_name.as_deref(),
+        )
+        .await?;
+    Ok((StatusCode::CREATED, Json(block.into())))
+}
+
+/// Blocks attached to an activity.
+#[utoipa::path(
+    get,
+    path = "/activities/{id}/blocks",
+    tag = "courses",
+    params(("id" = ActivityId, Path, description = "Activity id")),
+    responses(
+        (status = 200, description = "Blocks", body = [Block]),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn list_blocks(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<ActivityId>,
+) -> ApiResult<Json<Vec<Block>>> {
+    let blocks = state.curriculum.list_blocks(&actor, id).await?;
+    Ok(Json(blocks.into_iter().map(Into::into).collect()))
+}
+
+/// One block (visibility follows the course).
+#[utoipa::path(
+    get,
+    path = "/blocks/{id}",
+    tag = "courses",
+    params(("id" = BlockId, Path, description = "Block id")),
+    responses(
+        (status = 200, description = "Block", body = Block),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn get_block(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<BlockId>,
+) -> ApiResult<Json<Block>> {
+    Ok(Json(state.curriculum.get_block(&actor, id).await?.into()))
+}
+
+/// Delete a block and release its stored file for reaping.
+#[utoipa::path(
+    delete,
+    path = "/blocks/{id}",
+    tag = "courses",
+    params(("id" = BlockId, Path, description = "Block id")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 403, description = "No write access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn delete_block(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<BlockId>,
+) -> ApiResult<StatusCode> {
+    state.curriculum.delete_block(&actor, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
