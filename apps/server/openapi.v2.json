@@ -2132,6 +2132,67 @@
         }
       }
     },
+    "/api/v2/users": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Admin listing of all users with roles (requires `platform:read:platform`).",
+        "operationId": "list_users",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Substring filter (username/name/email)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "next_cursor from the previous page",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, 1..=100 (default 20)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserPage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/users/me": {
       "get": {
         "tags": [
@@ -2320,6 +2381,61 @@
           }
         }
       }
+    },
+    "/api/v2/users/{user_id}/status": {
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Disable (revokes every live session) or re-enable an account\n(requires `platform:manage:platform`; self-disable is refused).",
+        "operationId": "set_user_status",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Target user",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Status changed"
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Self-disable refused",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2391,6 +2507,72 @@
       "ActivityId": {
         "type": "string",
         "format": "uuid"
+      },
+      "AdminUser": {
+        "type": "object",
+        "description": "Admin listing row (includes email + status — platform:read gated).",
+        "required": [
+          "id",
+          "username",
+          "email",
+          "display_name",
+          "status",
+          "roles",
+          "created_at_unix"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "`active` or `disabled`."
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminUserPage": {
+        "type": "object",
+        "description": "Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUser"
+            }
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          }
+        }
       },
       "AssignRoleRequest": {
         "type": "object",
@@ -3363,6 +3545,19 @@
               "type": "string"
             },
             "description": "Full replacement grant set; every entry must parse against the\npermission registry (`resource:action[:scope]`)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "SetUserStatusRequest": {
+        "type": "object",
+        "required": [
+          "disabled"
+        ],
+        "properties": {
+          "disabled": {
+            "type": "boolean",
+            "description": "`true` disables the account and revokes every live session."
           }
         },
         "additionalProperties": false

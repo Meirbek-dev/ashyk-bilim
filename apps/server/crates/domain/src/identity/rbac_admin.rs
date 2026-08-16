@@ -18,6 +18,20 @@ const MANAGE_ROLES: Permission = Permission {
     scope: Some(Scope::Platform),
 };
 
+/// Admin-only user administration (only the wildcard grants these).
+const READ_PLATFORM: Permission = Permission {
+    resource: ResourceType::Platform,
+    action: Action::Read,
+    scope: Some(Scope::Platform),
+};
+const MANAGE_PLATFORM: Permission = Permission {
+    resource: ResourceType::Platform,
+    action: Action::Manage,
+    scope: Some(Scope::Platform),
+};
+
+pub use ab_db::identity::AdminUserRow as AdminUser;
+
 #[derive(Debug)]
 pub struct RoleWithGrants {
     pub slug: String,
@@ -83,6 +97,10 @@ impl RbacAdminService {
 
     pub async fn unassign_role(&self, actor: &Actor, user_id: UserId, slug: &str) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
+        // Last-admin guard: the platform must always keep one admin.
+        if slug == "admin" && ab_db::identity::count_role_holders(&self.pool, "admin").await? <= 1 {
+            return Err(Error::conflict("cannot remove the last admin"));
+        }
         let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
             .await?
             .ok_or_else(|| Error::not_found("role"))?;
@@ -208,6 +226,60 @@ impl RbacAdminService {
             None,
             None,
             serde_json::json!({ "role": slug, "by": actor.user_id, "count": permissions.len() }),
+        )
+        .await
+    }
+
+    /// Admin listing of all users with their roles (keyset, newest first).
+    pub async fn list_users(
+        &self,
+        actor: &Actor,
+        q: Option<&str>,
+        cursor: Option<UserId>,
+        limit: i64,
+    ) -> Result<(Vec<AdminUser>, Option<UserId>)> {
+        actor.require(READ_PLATFORM)?;
+        let limit = limit.clamp(1, 100);
+        let mut rows = ab_db::identity::list_users(&self.pool, q, cursor, limit + 1).await?;
+        let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
+            rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+            rows.last().map(|u| u.id)
+        } else {
+            None
+        };
+        Ok((rows, next))
+    }
+
+    /// Disable (revoking every live session) or re-enable an account.
+    pub async fn set_user_status(
+        &self,
+        actor: &Actor,
+        user_id: UserId,
+        disabled: bool,
+    ) -> Result<()> {
+        actor.require(MANAGE_PLATFORM)?;
+        if actor.user_id == user_id {
+            return Err(Error::conflict("cannot disable your own account"));
+        }
+        let status = if disabled { "disabled" } else { "active" };
+        if !ab_db::identity::set_user_status(&self.pool, user_id, status).await? {
+            return Err(Error::not_found("user"));
+        }
+        if disabled {
+            let revoked = self.sessions.revoke_all(user_id).await?;
+            tracing::info!(%user_id, revoked, "account disabled, sessions revoked");
+        }
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(user_id),
+            if disabled {
+                "account-disabled"
+            } else {
+                "account-enabled"
+            },
+            None,
+            None,
+            serde_json::json!({ "by": actor.user_id }),
         )
         .await
     }

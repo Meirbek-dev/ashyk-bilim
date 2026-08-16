@@ -413,3 +413,79 @@ pub async fn bump_rbac_version(pool: &PgPool, user_id: UserId) -> Result<Option<
     .await?;
     Ok(version)
 }
+
+// ── Admin user management ───────────────────────────────────────────────────
+
+pub struct AdminUserRow {
+    pub id: UserId,
+    pub username: String,
+    pub email: String,
+    pub display_name: String,
+    pub status: String,
+    pub roles: Vec<String>,
+    pub created_at: i64,
+}
+
+/// Keyset page of all users, newest first, with aggregated role slugs.
+/// `q` narrows by username/display name/email substring.
+pub async fn list_users(
+    pool: &PgPool,
+    q: Option<&str>,
+    cursor: Option<UserId>,
+    limit: i64,
+) -> Result<Vec<AdminUserRow>> {
+    let pattern = q.map(|q| format!("%{}%", q.replace('%', "\\%").replace('_', "\\_")));
+    let rows = sqlx::query_as!(
+        AdminUserRow,
+        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.status,
+                  COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
+                           FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
+                  (extract(epoch FROM u.created_at))::bigint AS "created_at!"
+           FROM users u
+           LEFT JOIN user_roles ur ON ur.user_id = u.id
+           LEFT JOIN roles r ON r.id = ur.role_id
+           WHERE ($1::text IS NULL OR u.username ILIKE $1
+                  OR u.display_name ILIKE $1 OR u.email ILIKE $1)
+             AND ($2::uuid IS NULL OR u.id < $2)
+           GROUP BY u.id
+           ORDER BY u.id DESC
+           LIMIT $3"#,
+        pattern.as_deref(),
+        cursor.map(|c| c.0),
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Flip active/disabled; bumps `rbac_version` so stale state cannot linger.
+pub async fn set_user_status(pool: &PgPool, user_id: UserId, status: &str) -> Result<bool> {
+    let updated = sqlx::query!(
+        "UPDATE users SET status = $2, rbac_version = rbac_version + 1 WHERE id = $1",
+        user_id.0,
+        status
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+pub async fn user_status(pool: &PgPool, user_id: UserId) -> Result<Option<String>> {
+    let status = sqlx::query_scalar!("SELECT status FROM users WHERE id = $1", user_id.0)
+        .fetch_optional(pool)
+        .await?;
+    Ok(status)
+}
+
+/// How many users hold the role (last-admin guard).
+pub async fn count_role_holders(pool: &PgPool, slug: &str) -> Result<i64> {
+    let count = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "count!" FROM user_roles ur
+           JOIN roles r ON r.id = ur.role_id WHERE r.slug = $1"#,
+        slug
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(count)
+}

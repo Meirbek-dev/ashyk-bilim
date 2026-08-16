@@ -64,6 +64,8 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::auth::totp_remove))
         .routes(routes!(routes::users::my_profile))
         .routes(routes!(routes::users::update_my_profile))
+        .routes(routes!(routes::users::list_users))
+        .routes(routes!(routes::users::set_user_status))
         .routes(routes!(routes::rbac::list_roles))
         .routes(routes!(routes::rbac::assign_role))
         .routes(routes!(routes::rbac::unassign_role))

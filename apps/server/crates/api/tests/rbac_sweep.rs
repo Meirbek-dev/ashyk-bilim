@@ -55,6 +55,8 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/collections/{id}"),
     ("DELETE", "/api/v2/collections/{id}"),
     ("PATCH", "/api/v2/platform"),
+    // Admin user management (platform:manage:platform).
+    ("PATCH", "/api/v2/users/{user_id}/status"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

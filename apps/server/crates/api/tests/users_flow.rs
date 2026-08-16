@@ -178,3 +178,66 @@ async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
         .await;
     assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn admin_lists_users_and_disables_accounts(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let admin_user = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(
+            admin_user,
+            &["platform:read:platform", "platform:manage:platform"],
+        )
+        .await;
+    let victim = app
+        .create_user("troublemaker", "t@example.com", &["user"])
+        .await;
+    let victim_session = app.mint_session_for(victim, &["user:read:own"]).await;
+
+    // Listing shows both, with roles; the q filter narrows.
+    let listed = app.get_as(&admin, "/api/v2/users").await;
+    assert_eq!(listed.status, StatusCode::OK);
+    assert_eq!(listed.json()["items"].as_array().unwrap().len(), 2);
+    let filtered = app.get_as(&admin, "/api/v2/users?q=trouble").await;
+    let items = filtered.json()["items"].as_array().unwrap().clone();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["username"], "troublemaker");
+    assert_eq!(items[0]["roles"], serde_json::json!(["user"]));
+
+    // A non-admin (even with the broad user:read:platform) cannot list.
+    let pleb = app.mint_session(&["user:read:platform"]).await;
+    let denied = app.get_as(&pleb, "/api/v2/users").await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+
+    // Disabling revokes the victim's live session and blocks re-login paths.
+    let disabled = app
+        .patch_as(
+            &admin,
+            &format!("/api/v2/users/{victim}/status"),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    assert_eq!(disabled.status, StatusCode::NO_CONTENT);
+    let dead = app.get_as(&victim_session, "/api/v2/users/me").await;
+    assert_eq!(dead.status, StatusCode::UNAUTHORIZED);
+
+    // Self-disable is refused; re-enable works.
+    let own = app
+        .patch_as(
+            &admin,
+            &format!("/api/v2/users/{admin_user}/status"),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    assert_eq!(own.status, StatusCode::CONFLICT);
+    let enabled = app
+        .patch_as(
+            &admin,
+            &format!("/api/v2/users/{victim}/status"),
+            &serde_json::json!({ "disabled": false }),
+        )
+        .await;
+    assert_eq!(enabled.status, StatusCode::NO_CONTENT);
+}

@@ -1,0 +1,92 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.id AS \"id: UserId\", u.username, u.email, u.display_name, u.status,\n                  COALESCE(array_agg(r.slug ORDER BY r.priority DESC)\n                           FILTER (WHERE r.slug IS NOT NULL), '{}') AS \"roles!\",\n                  (extract(epoch FROM u.created_at))::bigint AS \"created_at!\"\n           FROM users u\n           LEFT JOIN user_roles ur ON ur.user_id = u.id\n           LEFT JOIN roles r ON r.id = ur.role_id\n           WHERE ($1::text IS NULL OR u.username ILIKE $1\n                  OR u.display_name ILIKE $1 OR u.email ILIKE $1)\n             AND ($2::uuid IS NULL OR u.id < $2)\n           GROUP BY u.id\n           ORDER BY u.id DESC\n           LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "email"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "roles!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "1b643c289a64bfe093f9563b1ca31b460d8c77348c3cb017105a8a525d723229"
+}
