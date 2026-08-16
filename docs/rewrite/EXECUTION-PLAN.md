@@ -54,7 +54,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | # | Slice | Status |
 |---|---|---|
 | 1.1 | Migrations: users, roles, permissions, role_permissions, user_roles, sessions audit tables; seed roles/permissions | done (identity migration + verbatim SYSTEM_ROLES port; tests incl. seeds↔typed-parser consistency) |
-| 1.2 | `ab-clients::zitadel`: session API, user mgmt, IdP intents, import — with wiremock contract fixtures | todo |
+| 1.2 | `ab-clients::zitadel`: session API, user mgmt, IdP intents, import — with wiremock contract fixtures | in-progress (client core: password sessions w/ typed outcomes, human-user create incl. hash-import path, idempotent session delete; 5 wiremock fixtures from live-captured shapes. Remaining: IdP intents (1.5), session get/refresh (1.3), import batching (10.3)) |
 | 1.3 | Session store (Redis) + `Actor` extractor + cookie handling + CSRF guard | todo |
 | 1.4 | Auth endpoints: login, logout, mfa challenge/verify, session list/revoke | todo |
 | 1.5 | Google login via IdP intent (start/callback, find-or-create + link) | todo |

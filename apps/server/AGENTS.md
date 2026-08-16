@@ -149,6 +149,9 @@ async fn teacher_publishes_grades() {
 }
 ```
 
+- Integration test files (`crates/*/tests/*.rs`) start with
+  `#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` —
+  panics ARE failures there. Production code never gets these allows.
 - Snapshot redactions for ids/timestamps are mandatory (deterministic snapshots).
 - Wiremock stubs assert request shape (method, path, key fields), not just replies.
 - Time in tests goes through `ab_core::time::Clock` (injectable); never sleep to
