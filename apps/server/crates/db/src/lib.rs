@@ -6,6 +6,7 @@
 //! `AssertSqlSafe` only with a `// SAFETY:` comment.
 
 pub mod queue;
+pub mod schedule;
 
 use std::time::Duration;
 

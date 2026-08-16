@@ -21,6 +21,7 @@ const fn fast_config() -> WorkerConfig {
         heartbeat_interval: Duration::from_millis(500),
         reap_after: Duration::from_secs(30),
         reap_interval: Duration::from_secs(30),
+        scheduler_interval: Duration::from_hours(1),
     }
 }
 

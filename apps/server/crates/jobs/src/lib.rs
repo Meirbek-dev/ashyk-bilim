@@ -41,6 +41,8 @@ pub struct WorkerConfig {
     /// A running job whose heartbeat is older than this is considered lost.
     pub reap_after: Duration,
     pub reap_interval: Duration,
+    /// How often to check `job_schedules` for due recurring jobs.
+    pub scheduler_interval: Duration,
 }
 
 impl Default for WorkerConfig {
@@ -51,6 +53,7 @@ impl Default for WorkerConfig {
             heartbeat_interval: Duration::from_secs(15),
             reap_after: Duration::from_mins(1),
             reap_interval: Duration::from_secs(30),
+            scheduler_interval: Duration::from_secs(5),
         }
     }
 }
@@ -101,6 +104,7 @@ impl Worker {
         let mut poll = tokio::time::interval(self.config.poll_interval);
         let mut heartbeat = tokio::time::interval(self.config.heartbeat_interval);
         let mut reaper = tokio::time::interval(self.config.reap_interval);
+        let mut scheduler = tokio::time::interval(self.config.scheduler_interval);
         poll.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
         tracing::info!(worker = %self.id, kinds = ?self.registered_kinds(), "worker started");
@@ -128,6 +132,13 @@ impl Worker {
                         Ok(0) => {},
                         Ok(n) => tracing::warn!(recovered = n, "reaped jobs from lost workers"),
                         Err(err) => tracing::warn!(%err, "reaper failed"),
+                    }
+                },
+                _ = scheduler.tick() => {
+                    match ab_db::schedule::tick(&self.pool).await {
+                        Ok(0) => {},
+                        Ok(n) => tracing::debug!(enqueued = n, "scheduler enqueued due jobs"),
+                        Err(err) => tracing::warn!(%err, "scheduler tick failed"),
                     }
                 },
                 Some(joined) = tasks.join_next(), if !tasks.is_empty() => {

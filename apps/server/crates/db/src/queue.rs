@@ -96,14 +96,21 @@ pub struct ClaimedJob {
 
 /// Insert a job. Returns `None` when a live job with the same `dedupe_key`
 /// already exists. Pass `&mut *tx` to enqueue transactionally.
+///
+/// Dedupe uses `ON CONFLICT … DO NOTHING` (never a raised error): a raised
+/// unique violation would poison the caller's transaction, and transactional
+/// enqueue is the whole point of this queue.
 pub async fn enqueue<'e, E>(executor: E, job: &NewJob) -> Result<Option<JobId>>
 where
     E: sqlx::PgExecutor<'e>,
 {
-    let result = sqlx::query_scalar::<_, JobId>(
+    let id = sqlx::query_scalar::<_, JobId>(
         r"WITH ins AS (
               INSERT INTO jobs (kind, payload, priority, run_at, max_attempts, dedupe_key)
               VALUES ($1, $2, $3, now() + make_interval(secs => $4), $5, $6)
+              ON CONFLICT (dedupe_key)
+                  WHERE dedupe_key IS NOT NULL AND status IN ('queued', 'running')
+                  DO NOTHING
               RETURNING id, kind
           )
           SELECT id FROM ins, pg_notify($7, ins.kind) AS _n",
@@ -115,14 +122,9 @@ where
     .bind(job.max_attempts)
     .bind(&job.dedupe_key)
     .bind(NOTIFY_CHANNEL)
-    .fetch_one(executor)
-    .await;
-
-    match result {
-        Ok(id) => Ok(Some(id)),
-        Err(sqlx::Error::Database(db)) if db.is_unique_violation() => Ok(None),
-        Err(err) => Err(err.into()),
-    }
+    .fetch_optional(executor)
+    .await?;
+    Ok(id)
 }
 
 /// Atomically claim up to `batch` due jobs for `worker`. Increments `attempts`.
