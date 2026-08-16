@@ -61,6 +61,24 @@
       "skillPath": "skills/ponytail/SKILL.md",
       "computedHash": "9e8d05cbbaf6dc38f0cffc924c09b3cbe76d94ba4ba0d09bde803da2f8c6b5a0"
     },
+    "rust-async-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/systems-programming/skills/rust-async-patterns/SKILL.md",
+      "computedHash": "9203b9abc8238c578887994730421879778720184b027859fecda3f76d31ab05"
+    },
+    "rust-best-practices": {
+      "source": "apollographql/skills",
+      "sourceType": "github",
+      "skillPath": "skills/rust-best-practices/SKILL.md",
+      "computedHash": "5ae68ae0241d65dac8a73f06139457206dde55912aecd4c36cd462fa85570513"
+    },
+    "rust-engineer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/rust-engineer/SKILL.md",
+      "computedHash": "f0e5c7c88f0fddb98e0d54db368f3fb5c8d733001deda126ffc9cc1971ded9da"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
@@ -72,6 +90,12 @@
       "sourceType": "github",
       "skillPath": "SKILL.md",
       "computedHash": "09acd38f01d6c643bce871a739141c01a06a04f43d8b55959ef73550476e771c"
+    },
+    "system-design": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "skillPath": "system-design/SKILL.md",
+      "computedHash": "6b952b824a92dbda8eb7e47902c25e844f9dbfa52cb2a6c59a970918aa6d26b9"
     },
     "tanstack-query-best-practices": {
       "source": "deckardger/tanstack-agent-skills",
