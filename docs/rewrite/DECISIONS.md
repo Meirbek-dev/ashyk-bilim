@@ -51,3 +51,30 @@ expressed by seeding `next_run_at` at the anchor with a 24h interval; if real
 cron expressiveness is ever needed, swap the column back and parse at that point.
 Leadership: no persistent leader — every worker ticks, correctness comes from
 `pg_try_advisory_xact_lock` + `FOR UPDATE SKIP LOCKED` + enqueue dedupe keys.
+
+## Same-origin object storage routing (no new domains)
+
+Presigned S3 URLs must be reachable from browsers, and the "no new domains"
+constraint rules out a storage subdomain. SigV4 signs host + path, so nginx
+cannot rewrite either. Resolution: the server's storage endpoint is the
+public origin itself; presigned URLs come out as
+`https://<domain>/ab-public/<key>?X-Amz-...`, and nginx proxies
+`^/(ab-public|ab-private)/` VERBATIM to RustFS with `Host` preserved —
+signatures verify because nothing in the signed material changed. Public
+media additionally gets the friendly anonymous route `/content/<key>` →
+rewrite to `/ab-public/<key>` (immutable cache; requires a public-read
+bucket policy on `ab-public`, applied by the cutover runbook). Template:
+`extra/nginx.v2.conf.template`, swapped in at cutover. Consequence for
+config: production `AB_STORAGE__ENDPOINT` is the public origin, not the
+compose-internal `http://rustfs:9000`; internal presign/head/delete calls
+loop through nginx, which is acceptable at this scale.
+
+## Anonymous catalog reads via a nil actor
+
+Public browse (landing pages, course catalog, search) works without a
+session. Instead of `Option<Actor>` rippling through every service
+signature, `Actor::anonymous()` is a real actor with the nil UUID and zero
+grants: it owns nothing and passes no `require()`, so every existing
+visibility rule degrades to public-only with no special-casing. The
+`MaybeActor` extractor maps missing, expired, or garbage cookies to it —
+catalog GETs use `MaybeActor`, mutations keep `CurrentActor`.

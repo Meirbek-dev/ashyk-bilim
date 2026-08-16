@@ -11,6 +11,7 @@ pub mod identity;
 pub mod platform;
 pub mod queue;
 pub mod schedule;
+pub mod search;
 pub mod uploads;
 
 use std::time::Duration;

@@ -203,6 +203,30 @@ expression: json
         ],
         "type": "object"
       },
+      "CollectionHit": {
+        "description": "Collections in search results are light — no embedded courses.",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CollectionId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "public": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "public"
+        ],
+        "type": "object"
+      },
       "CollectionId": {
         "format": "uuid",
         "type": "string"
@@ -886,6 +910,35 @@ expression: json
         ],
         "type": "object"
       },
+      "SearchResults": {
+        "properties": {
+          "collections": {
+            "items": {
+              "$ref": "#/components/schemas/CollectionHit"
+            },
+            "type": "array"
+          },
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/Course"
+            },
+            "type": "array"
+          },
+          "users": {
+            "description": "Empty for anonymous callers.",
+            "items": {
+              "$ref": "#/components/schemas/UserHit"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "courses",
+          "collections",
+          "users"
+        ],
+        "type": "object"
+      },
       "SessionInfo": {
         "description": "The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).",
         "properties": {
@@ -1181,6 +1234,32 @@ expression: json
             ]
           }
         },
+        "type": "object"
+      },
+      "UserHit": {
+        "description": "Public-profile projection (no email — FINDINGS #16).",
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name"
+        ],
         "type": "object"
       },
       "UserId": {
@@ -3012,6 +3091,48 @@ expression: json
         ]
       }
     },
+    "/api/v2/search": {
+      "get": {
+        "operationId": "search",
+        "parameters": [
+          {
+            "description": "Search terms (websearch syntax)",
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Per-section cap, 1..=50 (default 10)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResults"
+                }
+              }
+            },
+            "description": "Grouped results"
+          }
+        },
+        "summary": "Platform search over courses, collections, and people. Anonymous callers\nsee public content only and no people section.",
+        "tags": [
+          "search"
+        ]
+      }
+    },
     "/api/v2/uploads": {
       "post": {
         "operationId": "create_upload",
@@ -3364,6 +3485,10 @@ expression: json
     {
       "description": "Platform settings singleton",
       "name": "platform"
+    },
+    {
+      "description": "Platform search",
+      "name": "search"
     }
   ]
 }

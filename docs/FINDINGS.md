@@ -127,3 +127,11 @@ code and seeded DB rows. The rewrite fixes the API side (stable error codes,
 frontend translates), but the **seeded role display names in the database** will
 carry over through ETL unless normalized — tracked in the migration plan, noted
 here so it isn't forgotten if seeding is re-run on the legacy system.
+
+### 16. Legacy search exposes user emails and profiles to any caller
+`GET /search` in the Python API matches against `User.email` (ILIKE) and
+returns user results to **anonymous** callers, letting anyone enumerate
+account holders by email fragment. The v2 search drops email matching
+entirely and returns the people section only to authenticated sessions
+(username/display-name matching only). No legacy-side fix planned — the
+endpoint dies at cutover.

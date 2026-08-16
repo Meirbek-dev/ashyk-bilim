@@ -42,6 +42,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "courses", description = "Course catalog"),
         (name = "collections", description = "Curated course collections"),
         (name = "platform", description = "Platform settings singleton"),
+        (name = "search", description = "Platform search"),
     )
 )]
 struct ApiDoc;
@@ -100,6 +101,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::collections::delete_collection))
         .routes(routes!(routes::platform::get_platform))
         .routes(routes!(routes::platform::update_platform))
+        .routes(routes!(routes::search::search))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

@@ -8,7 +8,7 @@ use crate::dto::collections::{
     UpdateCollectionRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, ValidJson};
 use crate::state::AppState;
 
 /// Create a collection (requires `collection:create:platform`); every
@@ -55,7 +55,7 @@ pub async fn create_collection(
 )]
 pub async fn list_collections(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Query(query): Query<CollectionListQuery>,
 ) -> ApiResult<Json<CollectionPage>> {
     let (collections, next_cursor) = state
@@ -82,7 +82,7 @@ pub async fn list_collections(
 )]
 pub async fn get_collection(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<CollectionId>,
 ) -> ApiResult<Json<Collection>> {
     Ok(Json(state.collections.get(&actor, id).await?.into()))

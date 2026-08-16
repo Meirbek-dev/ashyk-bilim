@@ -38,6 +38,28 @@ impl Actor {
         })
     }
 
+    /// The unauthenticated viewer: nil user id, zero grants. Catalog read
+    /// services treat it like any other actor — nothing is owned and nothing
+    /// is granted, so only public data is visible. Mutations always fail
+    /// [`Actor::require`].
+    #[must_use]
+    pub fn anonymous() -> Self {
+        Self {
+            user_id: UserId(uuid::Uuid::nil()),
+            zitadel_user_id: String::new(),
+            session_id: String::new(),
+            roles: Vec::new(),
+            permissions: ab_core::permission::PermissionSet::default(),
+            permission_strings: Vec::new(),
+            rbac_version: 0,
+        }
+    }
+
+    #[must_use]
+    pub const fn is_anonymous(&self) -> bool {
+        self.user_id.0.is_nil()
+    }
+
     /// The single enforcement point: `actor.require(perm!(Course, Update, Own))?`.
     pub fn require(&self, permission: Permission) -> Result<()> {
         if self.permissions.grants(&permission) {

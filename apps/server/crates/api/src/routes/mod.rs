@@ -8,5 +8,6 @@ pub mod curriculum;
 pub mod health;
 pub mod platform;
 pub mod rbac;
+pub mod search;
 pub mod uploads;
 pub mod users;

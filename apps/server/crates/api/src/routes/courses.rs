@@ -9,7 +9,7 @@ use crate::dto::courses::{
     CreateCourseUpdateRequest, EditCourseUpdateRequest, UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, ValidJson};
 use crate::state::AppState;
 
 /// Create a course (requires `course:create:platform`).
@@ -56,7 +56,7 @@ pub async fn create_course(
 )]
 pub async fn list_courses(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Query(query): Query<CourseListQuery>,
 ) -> ApiResult<Json<CoursePage>> {
     let (courses, next_cursor) = state
@@ -83,7 +83,7 @@ pub async fn list_courses(
 )]
 pub async fn get_course(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Course>> {
     Ok(Json(state.courses.get(&actor, id).await?.into()))
@@ -186,7 +186,7 @@ pub async fn delete_course(
 )]
 pub async fn list_course_updates(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Vec<CourseUpdate>>> {
     let updates = state.courses.list_updates(&actor, id).await?;

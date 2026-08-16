@@ -46,6 +46,32 @@ impl FromRequestParts<AppState> for CurrentActor {
     }
 }
 
+/// Like [`CurrentActor`] but never rejects: no cookie, an expired session,
+/// or a garbage cookie all yield [`Actor::anonymous`] (public-only
+/// visibility). For public catalog reads — never for mutations.
+pub struct MaybeActor(pub Actor);
+
+impl FromRequestParts<AppState> for MaybeActor {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let jar = CookieJar::from_headers(&parts.headers);
+        let Some(cookie) = jar.get(SESSION_COOKIE) else {
+            return Ok(Self(Actor::anonymous()));
+        };
+        let record = state.sessions.get_and_touch(cookie.value()).await;
+        let actor = match record {
+            Ok(Some(record)) => Actor::from_session(cookie.value().to_owned(), &record)
+                .unwrap_or_else(|_| Actor::anonymous()),
+            _ => Actor::anonymous(),
+        };
+        Ok(Self(actor))
+    }
+}
+
 /// JSON body extractor with garde validation: parse failures and rule
 /// violations both surface as 422 `validation-failed` with per-field errors
 /// (ARCHITECTURE §6).

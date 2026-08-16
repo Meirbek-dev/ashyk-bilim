@@ -1785,6 +1785,48 @@
         }
       }
     },
+    "/api/v2/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Platform search over courses, collections, and people. Anonymous callers\nsee public content only and no people section.",
+        "operationId": "search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search terms (websearch syntax)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Per-section cap, 1..=50 (default 10)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grouped results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResults"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/uploads": {
       "post": {
         "tags": [
@@ -2302,6 +2344,30 @@
           "updated_at_unix": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "CollectionHit": {
+        "type": "object",
+        "description": "Collections in search results are light — no embedded courses.",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "public"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CollectionId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "public": {
+            "type": "boolean"
           }
         }
       },
@@ -2988,6 +3054,35 @@
           }
         }
       },
+      "SearchResults": {
+        "type": "object",
+        "required": [
+          "courses",
+          "collections",
+          "users"
+        ],
+        "properties": {
+          "collections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionHit"
+            }
+          },
+          "courses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Course"
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserHit"
+            },
+            "description": "Empty for anonymous callers."
+          }
+        }
+      },
       "SessionInfo": {
         "type": "object",
         "description": "The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).",
@@ -3285,6 +3380,32 @@
         },
         "additionalProperties": false
       },
+      "UserHit": {
+        "type": "object",
+        "description": "Public-profile projection (no email — FINDINGS #16).",
+        "required": [
+          "id",
+          "username",
+          "display_name"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
       "UserId": {
         "type": "string",
         "format": "uuid"
@@ -3360,6 +3481,10 @@
     {
       "name": "platform",
       "description": "Platform settings singleton"
+    },
+    {
+      "name": "search",
+      "description": "Platform search"
     }
   ]
 }

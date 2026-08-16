@@ -11,7 +11,7 @@ use crate::dto::curriculum::{
     UpdateActivityRequest, UpdateChapterRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, ValidJson};
 use crate::state::AppState;
 
 /// Chapters with nested activities, in course order.
@@ -28,7 +28,7 @@ use crate::state::AppState;
 )]
 pub async fn get_curriculum(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Curriculum>> {
     let chapters = state.curriculum.curriculum(&actor, id).await?;
@@ -194,7 +194,7 @@ pub async fn create_activity(
 )]
 pub async fn get_activity(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<ActivityId>,
 ) -> ApiResult<Json<ActivityDetail>> {
     Ok(Json(
@@ -353,7 +353,7 @@ pub async fn create_block(
 )]
 pub async fn list_blocks(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<ActivityId>,
 ) -> ApiResult<Json<Vec<Block>>> {
     let blocks = state.curriculum.list_blocks(&actor, id).await?;
@@ -374,7 +374,7 @@ pub async fn list_blocks(
 )]
 pub async fn get_block(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<BlockId>,
 ) -> ApiResult<Json<Block>> {
     Ok(Json(state.curriculum.get_block(&actor, id).await?.into()))

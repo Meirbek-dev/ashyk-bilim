@@ -1,0 +1,274 @@
+# Nginx configuration template — REWRITE (v2) EDITION.
+# Swapped in at cutover (replaces nginx.conf.template; ARCHITECTURE §15).
+# Docker runs envsubst on this file before Nginx reads it.
+# Variables expanded at runtime:
+#   NGINX_SERVER_NAME  — the public hostname, e.g. cs-mooc.tou.edu.kz
+#
+# What changed vs the legacy template:
+#   * /api/v1 (Python) is gone; /api/v2 → the Rust server (`server` service).
+#   * Auth-path special-casing (/api/auth → Next.js) is gone — auth is BFF
+#     cookies on /api/v2/auth/*, same upstream as everything else.
+#   * /content/* is anonymous read of the RustFS PUBLIC bucket (immutable
+#     cache). Requires a public-read bucket policy on `ab-public` — the
+#     cutover runbook applies it.
+#   * /ab-public/ and /ab-private/ pass through VERBATIM to RustFS: these are
+#     presigned S3 URLs (SigV4 signs host+path, so no rewriting is allowed —
+#     the app's storage endpoint is configured as this same public origin).
+#   * client_max_body_size: 10M on /api/v2 (file bytes never transit the API);
+#     500M only on the presigned S3 paths.
+
+proxy_cache_path /var/cache/nginx/app
+levels=1:2
+keys_zone=app_cache:10m
+max_size=1g
+inactive=60m
+use_temp_path=off;
+
+# Content cache for public media (thumbnails, avatars, block images/video).
+proxy_cache_path /var/cache/nginx/content
+levels=1:2
+keys_zone=content_cache:10m
+max_size=5g
+inactive=7d
+use_temp_path=off;
+
+# ---------------------------------------------------------------------------
+# Rate-limit zones
+# ---------------------------------------------------------------------------
+limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=30r/s;
+limit_req_zone $binary_remote_addr zone=global_limit:10m rate=2000r/s;
+
+# ---------------------------------------------------------------------------
+# Real-IP — restore original client IP from upstream reverse proxy
+# ---------------------------------------------------------------------------
+real_ip_header X-Forwarded-For;
+set_real_ip_from 192.168.0.0/16;
+set_real_ip_from 10.0.0.0/8;
+set_real_ip_from 172.16.0.0/12;
+real_ip_recursive on;
+
+# ---------------------------------------------------------------------------
+# Gzip compression
+# ---------------------------------------------------------------------------
+gzip on;
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 5;
+gzip_min_length 1024;
+gzip_types
+text/plain
+text/css
+text/javascript
+application/javascript
+application/json
+application/problem+json
+application/xml
+image/svg+xml
+font/woff2;
+
+map $http_x_forwarded_proto $real_forwarded_proto {
+  "https" "https";
+  "http" "http";
+  default $scheme;
+}
+
+map $http_x_forwarded_proto $is_forwarded_https {
+  "https" 1;
+  default 0;
+}
+
+resolver 127.0.0.11 valid=10s;
+
+# ---------------------------------------------------------------------------
+# Upstream pools with keepalive
+# ---------------------------------------------------------------------------
+upstream web_backend {
+  server web:3000;
+  keepalive 32;
+  keepalive_timeout 60s;
+  keepalive_requests 1000;
+}
+
+upstream api_backend {
+  server server:8000;
+  keepalive 32;
+  keepalive_timeout 60s;
+  keepalive_requests 1000;
+}
+
+upstream rustfs_backend {
+  server rustfs:9000;
+  keepalive 16;
+  keepalive_timeout 60s;
+  keepalive_requests 1000;
+}
+
+# ---------------------------------------------------------------------------
+# Shared proxy settings
+# ---------------------------------------------------------------------------
+proxy_http_version 1.1;
+proxy_set_header Connection "";
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Port $server_port;
+proxy_set_header X-Forwarded-Proto $real_forwarded_proto;
+proxy_set_header X-Request-ID $request_id;
+
+proxy_socket_keepalive on;
+proxy_connect_timeout 10s;
+proxy_send_timeout 60s;
+proxy_read_timeout 60s;
+
+# ===========================================================================
+# HTTP — redirect to HTTPS for direct browser connections;
+#         proxy directly when behind a TLS-terminating upstream proxy.
+# ===========================================================================
+server {
+  listen 80 so_keepalive=30s:10s:3;
+  server_name ${NGINX_SERVER_NAME};
+
+  # Let's Encrypt / ACME http-01 challenge — always served, no redirect
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  location / {
+    if ($is_forwarded_https = 0) {
+      return 301 https://$host$request_uri;
+    }
+    # Behind the TLS-terminating edge everything flows as on 443; keep the
+    # config single-sourced by redirecting the rest of the tree there too.
+    return 301 https://$host$request_uri;
+  }
+}
+
+# ===========================================================================
+# HTTPS
+# ===========================================================================
+server {
+  listen 443 ssl so_keepalive=30s:10s:3;
+  http2 on;
+  server_name ${NGINX_SERVER_NAME};
+
+  ssl_certificate /etc/nginx/certs/cert.pem;
+  ssl_certificate_key /etc/nginx/certs/key.pem;
+
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;
+  ssl_prefer_server_ciphers off;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_timeout 1d;
+  ssl_session_tickets off;
+
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+  # API bodies are JSON only — bytes go straight to storage via presigned
+  # URLs, so the API tree gets a tight cap (block-video max is on /ab-*).
+  client_max_body_size 10M;
+  large_client_header_buffers 4 32k;
+  client_body_buffer_size 32k;
+  client_header_buffer_size 32k;
+
+  proxy_buffer_size 128k;
+  proxy_buffers 4 256k;
+  proxy_busy_buffers_size 256k;
+
+  access_log /var/log/nginx/access.log combined;
+
+  # =========================================================================
+  # Location blocks
+  # =========================================================================
+
+  # Session and MFA endpoints — strict rate limit.
+  location /api/v2/auth {
+    limit_req zone=auth_limit burst=20 nodelay;
+    limit_req_status 429;
+    proxy_pass http://api_backend;
+  }
+
+  # Rust API (general). SSE streams need long read timeouts.
+  location /api/v2 {
+    limit_req zone=api_limit burst=60 nodelay;
+    limit_req_status 429;
+    proxy_pass http://api_backend;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+    proxy_buffering off;
+  }
+
+  # Public media: /content/{key} → anonymous GET of the ab-public bucket.
+  # Requires the public-read bucket policy (cutover runbook). Keys are
+  # immutable (uuidv7-named), so cache aggressively and strip S3 headers.
+  location /content/ {
+    rewrite ^/content/(.*)$ /ab-public/$1 break;
+    proxy_pass http://rustfs_backend;
+    proxy_cache content_cache;
+    proxy_cache_valid 200 7d;
+    proxy_cache_lock on;
+    proxy_cache_use_stale updating;
+    proxy_ignore_headers Set-Cookie;
+    proxy_hide_header x-amz-request-id;
+    proxy_hide_header x-amz-id-2;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Cache-Control "public, max-age=604800, immutable";
+    access_log off;
+  }
+
+  # Presigned S3 operations (browser PUT/GET). SigV4 signs host and path —
+  # pass through VERBATIM, no rewrite. 500M covers the block-video cap.
+  location ~ ^/(ab-public|ab-private)/ {
+    client_max_body_size 500M;
+    proxy_request_buffering off;
+    proxy_pass http://rustfs_backend;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+    access_log off;
+  }
+
+  # Next.js static files — content-addressed, cache permanently.
+  location /_next/static {
+    access_log off;
+
+    proxy_pass http://web_backend;
+    proxy_cache app_cache;
+    proxy_cache_valid 200 365d;
+    proxy_cache_lock on;
+    proxy_cache_use_stale updating;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+  }
+
+  location /_next/image {
+    limit_req zone=global_limit burst=2500 nodelay;
+    limit_req_status 429;
+    proxy_pass http://web_backend;
+  }
+
+  location /api/revalidate {
+    proxy_pass http://web_backend;
+  }
+
+  location /api/health {
+    proxy_pass http://web_backend;
+    access_log off;
+  }
+
+  # Frontend catch-all
+  location / {
+    limit_req zone=global_limit burst=2500 nodelay;
+    limit_req_status 429;
+    proxy_pass http://web_backend;
+  }
+}
