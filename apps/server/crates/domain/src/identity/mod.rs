@@ -2,7 +2,10 @@
 //! service method takes, and (slices 1.4+) auth flows, users, RBAC admin.
 
 pub mod actor;
+pub mod auth;
+pub mod rate_limit;
 pub mod sessions;
 
 pub use actor::Actor;
+pub use auth::{IdentityService, LoginInput, LoginOk};
 pub use sessions::{NewSession, SessionRecord, SessionStore};

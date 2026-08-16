@@ -79,6 +79,12 @@ pub struct SessionStore {
 }
 
 impl SessionStore {
+    /// Shared Redis handle for sibling identity infrastructure (rate limiter).
+    #[must_use]
+    pub fn redis(&self) -> ConnectionManager {
+        self.redis.clone()
+    }
+
     pub async fn connect(url: &str) -> Result<Self> {
         let client =
             redis::Client::open(url).map_err(|e| Error::internal("invalid redis url", e))?;

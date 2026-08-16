@@ -1,14 +1,11 @@
 //! `ab-testkit` — the shared test harness (dev-dependency only).
 //!
 //! [`TestApp`] wraps the real router (full middleware stack) around a test
-//! database pool — pair it with `#[sqlx::test]` for a fresh migrated DB per
-//! test. Requests go through `tower::ServiceExt::oneshot`; no sockets.
+//! database pool, the test Redis, and a wiremock Zitadel — pair it with
+//! `#[sqlx::test]` for a fresh migrated DB per test. Requests go through
+//! `tower::ServiceExt::oneshot`; no sockets.
 //!
-//! Growing with the phases: session minting + `as_actor` helpers land with
-//! P1 identity; wiremock stub library (Zitadel/Judge0/Resend/LLM) lands with
-//! each client slice; `fake` factories land with the first entities.
-//!
-//! Tests may use `unwrap`/`expect` freely — this crate is never in a
+//! Tests may use `unwrap`/`expect`/`panic` freely — this crate is never in a
 //! production dependency graph, and panics ARE test failures here.
 #![allow(
     clippy::unwrap_used,
@@ -17,15 +14,28 @@
     clippy::missing_panics_doc
 )]
 
+use std::sync::Arc;
+
+use ab_clients::zitadel::{ZitadelClient, ZitadelConfig};
 use ab_core::config::{
     Config, DatabaseConfig, Environment, RedisConfig, ServerConfig, TelemetryConfig,
 };
+use ab_core::id::UserId;
+use ab_domain::identity::IdentityService;
 use axum::Router;
 use axum::body::Body;
 use axum::http::{HeaderMap, Request, StatusCode, header};
 use secrecy::SecretString;
 use sqlx::PgPool;
 use tower::ServiceExt;
+use wiremock::MockServer;
+
+/// Redis for tests: CI sets `TEST_REDIS_URL` (service on 6379); locally the
+/// podman container maps 6380 (see AGENTS.md).
+#[must_use]
+pub fn test_redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://localhost:6380".into())
+}
 
 /// A deterministic development config for tests. The database URL is unused —
 /// the pool is injected directly.
@@ -44,6 +54,7 @@ pub fn test_config() -> Config {
             min_connections: 0,
         },
         redis: RedisConfig { url: None },
+        zitadel: None,
         telemetry: TelemetryConfig {
             json_logs: false,
             otlp_endpoint: None,
@@ -51,47 +62,74 @@ pub fn test_config() -> Config {
     }
 }
 
-/// Redis for tests: CI sets `TEST_REDIS_URL` (service on 6379); locally the
-/// podman container maps 6380 (see AGENTS.md).
-#[must_use]
-pub fn test_redis_url() -> String {
-    std::env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://localhost:6380".into())
-}
-
 pub struct TestApp {
     router: Router,
     pub pool: PgPool,
     pub sessions: ab_domain::identity::SessionStore,
+    /// Wiremock standing in for Zitadel — mount fixtures per test.
+    pub zitadel: MockServer,
 }
 
 impl TestApp {
     /// Build the full application (real router, real middleware) over the
-    /// given pool + the test Redis. Use with `#[sqlx::test]`.
+    /// given pool + test Redis + a fresh Zitadel mock. Use with `#[sqlx::test]`.
     pub async fn spawn(pool: PgPool) -> Self {
+        let zitadel = MockServer::start().await;
         let sessions = ab_domain::identity::SessionStore::connect(&test_redis_url())
             .await
             .expect("test redis reachable (see AGENTS.md local dev stack)");
-        let state = ab_api::AppState::new(pool.clone(), test_config(), sessions.clone());
+        let zitadel_client = Arc::new(
+            ZitadelClient::new(ZitadelConfig {
+                base_url: zitadel.uri(),
+                pat: SecretString::from("test-pat"),
+            })
+            .expect("test zitadel client"),
+        );
+        let identity = IdentityService::new(pool.clone(), sessions.clone(), zitadel_client);
+        let state = ab_api::AppState::new(pool.clone(), test_config(), identity);
         let router = ab_api::build_router(state).expect("test router must build");
         Self {
             router,
             pool,
             sessions,
+            zitadel,
         }
+    }
+
+    /// Insert a user row (Zitadel-linked) with the given system roles.
+    pub async fn create_user(&self, username: &str, email: &str, roles: &[&str]) -> UserId {
+        let id: uuid::Uuid = sqlx::query_scalar(
+            "INSERT INTO users (zitadel_user_id, username, email, display_name)
+             VALUES ($1, $2, $3, $2) RETURNING id",
+        )
+        .bind(format!("z-{username}"))
+        .bind(username)
+        .bind(email)
+        .fetch_one(&self.pool)
+        .await
+        .expect("insert user");
+        for role in roles {
+            sqlx::query(
+                "INSERT INTO user_roles (user_id, role_id)
+                 SELECT $1, id FROM roles WHERE slug = $2",
+            )
+            .bind(id)
+            .bind(role)
+            .execute(&self.pool)
+            .await
+            .expect("assign role");
+        }
+        UserId(id)
     }
 
     /// Mint a live session with the given grants; returns the `Cookie` header
     /// value for authenticated requests.
     pub async fn mint_session(&self, permissions: &[&str]) -> MintedSession {
-        let user_id = ab_core::id::UserId::new();
+        let user_id = UserId::new();
         self.mint_session_for(user_id, permissions).await
     }
 
-    pub async fn mint_session_for(
-        &self,
-        user_id: ab_core::id::UserId,
-        permissions: &[&str],
-    ) -> MintedSession {
+    pub async fn mint_session_for(&self, user_id: UserId, permissions: &[&str]) -> MintedSession {
         let session_id = self
             .sessions
             .create(ab_domain::identity::NewSession {
@@ -146,6 +184,36 @@ impl TestApp {
         .await
     }
 
+    pub async fn post_as(
+        &self,
+        session: &MintedSession,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> TestResponse {
+        self.send(
+            Request::builder()
+                .method("POST")
+                .uri(path)
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &session.cookie)
+                .body(Body::from(body.to_string()))
+                .expect("request build"),
+        )
+        .await
+    }
+
+    pub async fn delete_as(&self, session: &MintedSession, path: &str) -> TestResponse {
+        self.send(
+            Request::builder()
+                .method("DELETE")
+                .uri(path)
+                .header(header::COOKIE, &session.cookie)
+                .body(Body::empty())
+                .expect("request build"),
+        )
+        .await
+    }
+
     /// Escape hatch for custom requests (headers, methods, raw bodies).
     pub async fn send(&self, request: Request<Body>) -> TestResponse {
         let response = self
@@ -167,7 +235,7 @@ impl TestApp {
 }
 
 pub struct MintedSession {
-    pub user_id: ab_core::id::UserId,
+    pub user_id: UserId,
     /// Ready-to-use `Cookie` header value.
     pub cookie: String,
 }
@@ -196,5 +264,20 @@ impl TestResponse {
             .get(header::CONTENT_TYPE)
             .and_then(|v| v.to_str().ok())
             .unwrap_or_default()
+    }
+
+    /// The `ab_session=<value>` pair from `Set-Cookie`, as a `Cookie` header
+    /// value — for continuing an authenticated flow after login.
+    #[must_use]
+    pub fn session_cookie(&self) -> Option<String> {
+        self.headers
+            .get_all(header::SET_COOKIE)
+            .iter()
+            .find_map(|v| {
+                let raw = v.to_str().ok()?;
+                let pair = raw.split(';').next()?.trim();
+                pair.starts_with(ab_api::extract::SESSION_COOKIE)
+                    .then(|| pair.to_owned())
+            })
     }
 }

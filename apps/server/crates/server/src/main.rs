@@ -79,7 +79,8 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     let pending = ab_db::MIGRATOR.iter().len();
     tracing::info!(migrations = pending, "database connected");
 
-    // Sessions are the API's credential store — refuse to serve without them.
+    // Sessions + Zitadel are the API's credential path — refuse to serve
+    // without either (fail-fast, ARCHITECTURE §16).
     let redis_url = config
         .redis
         .url
@@ -89,9 +90,20 @@ async fn serve(config: Config) -> anyhow::Result<()> {
         secrecy::ExposeSecret::expose_secret(&redis_url),
     )
     .await?;
+    let zitadel_config = config
+        .zitadel
+        .clone()
+        .ok_or_else(|| anyhow::anyhow!("AB__ZITADEL__BASE_URL / AB__ZITADEL__PAT must be set"))?;
+    let zitadel = std::sync::Arc::new(ab_clients::zitadel::ZitadelClient::new(
+        ab_clients::zitadel::ZitadelConfig {
+            base_url: zitadel_config.base_url,
+            pat: zitadel_config.pat,
+        },
+    )?);
+    let identity = ab_domain::identity::IdentityService::new(pool.clone(), sessions, zitadel);
 
     let addr = format!("{}:{}", config.server.host, config.server.port);
-    let router = ab_api::build_router(AppState::new(pool, config, sessions))?;
+    let router = ab_api::build_router(AppState::new(pool, config, identity))?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
     axum::serve(listener, router)

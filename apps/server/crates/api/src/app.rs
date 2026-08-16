@@ -45,7 +45,11 @@ fn api_router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(routes::health::live))
         .routes(routes!(routes::health::ready))
+        .routes(routes!(routes::auth::login))
+        .routes(routes!(routes::auth::logout))
         .routes(routes!(routes::auth::current_session))
+        .routes(routes!(routes::auth::list_sessions))
+        .routes(routes!(routes::auth::revoke_session))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

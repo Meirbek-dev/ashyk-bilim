@@ -9,6 +9,91 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/v2/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Password login (headless Zitadel session check behind the BFF).",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Logged in; session cookie set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account disabled",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout: revoke the current session and clear the cookie. Idempotent.",
+        "operationId": "logout",
+        "responses": {
+          "204": {
+            "description": "Session terminated, cookie cleared"
+          },
+          "401": {
+            "description": "No live session",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/auth/session": {
       "get": {
         "tags": [
@@ -29,6 +114,75 @@
           },
           "401": {
             "description": "No live session",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/auth/sessions": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "All live sessions of the caller (handles are non-bearer identifiers).",
+        "operationId": "list_sessions",
+        "responses": {
+          "200": {
+            "description": "Live sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No live session",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/auth/sessions/{handle}": {
+      "delete": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Revoke one of the caller's own sessions by handle.",
+        "operationId": "revoke_session",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "description": "Session handle from the listing",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "404": {
+            "description": "No such session",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -111,7 +265,8 @@
           "invalid-credentials",
           "mfa-required",
           "session-expired",
-          "csrf-rejected"
+          "csrf-rejected",
+          "account-disabled"
         ]
       },
       "FieldError": {
@@ -150,6 +305,24 @@
             "description": "Server crate version."
           }
         }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "description": "Password login. No `Debug` derive — the password must never format.",
+        "required": [
+          "login",
+          "password"
+        ],
+        "properties": {
+          "login": {
+            "type": "string",
+            "description": "Username or email."
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       },
       "Problem": {
         "type": "object",
@@ -221,6 +394,44 @@
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
+      "SessionSummary": {
+        "type": "object",
+        "description": "One of the caller's live sessions. `handle` is a non-bearer identifier\n(raw session ids never leave the server).",
+        "required": [
+          "handle",
+          "current",
+          "created_at_unix",
+          "last_seen_unix"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_seen_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },

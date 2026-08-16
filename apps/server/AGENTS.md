@@ -159,6 +159,12 @@ async fn teacher_publishes_grades() {
 
 ## sqlx 0.9 gotchas (will bite you)
 
+- The `query!` macros parse **every ancestor `.env`** up to the drive root and
+  hard-error if any is unparseable — including the legacy production `.env` at
+  the repo root. Unquoted values with backslashes break dotenvy; quote such
+  values with single quotes (compose semantics unchanged). Fixed once
+  2026-08-16 (`PLATFORM_ALLOWED_REGEXP`).
+
 - `Transaction` doesn't impl `Executor`: pass `&mut *tx`.
 - Runtime-built SQL needs `AssertSqlSafe` (+ `// SAFETY:`).
 - `query!` without a live `DATABASE_URL` uses the committed `.sqlx/` cache; if you

@@ -3,6 +3,10 @@ source: crates/core/src/error/code.rs
 expression: registry
 ---
 {
+  "account-disabled": [
+    403,
+    "Account is disabled"
+  ],
   "conflict": [
     409,
     "Conflict"

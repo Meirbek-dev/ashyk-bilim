@@ -20,7 +20,8 @@ expression: json
           "invalid-credentials",
           "mfa-required",
           "session-expired",
-          "csrf-rejected"
+          "csrf-rejected",
+          "account-disabled"
         ],
         "type": "string"
       },
@@ -58,6 +59,24 @@ expression: json
         "required": [
           "status",
           "version"
+        ],
+        "type": "object"
+      },
+      "LoginRequest": {
+        "additionalProperties": false,
+        "description": "Password login. No `Debug` derive — the password must never format.",
+        "properties": {
+          "login": {
+            "description": "Username or email.",
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "login",
+          "password"
         ],
         "type": "object"
       },
@@ -134,6 +153,44 @@ expression: json
         ],
         "type": "object"
       },
+      "SessionSummary": {
+        "description": "One of the caller's live sessions. `handle` is a non-bearer identifier\n(raw session ids never leave the server).",
+        "properties": {
+          "created_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_seen_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "user_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "handle",
+          "current",
+          "created_at_unix",
+          "last_seen_unix"
+        ],
+        "type": "object"
+      },
       "UserId": {
         "format": "uuid",
         "type": "string"
@@ -150,6 +207,91 @@ expression: json
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v2/auth/login": {
+      "post": {
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              }
+            },
+            "description": "Logged in; session cookie set"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid credentials"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Account disabled"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many attempts"
+          }
+        },
+        "summary": "Password login (headless Zitadel session check behind the BFF).",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "responses": {
+          "204": {
+            "description": "Session terminated, cookie cleared"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          }
+        },
+        "summary": "Logout: revoke the current session and clear the cookie. Idempotent.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v2/auth/session": {
       "get": {
         "operationId": "current_session",
@@ -176,6 +318,75 @@ expression: json
           }
         },
         "summary": "The caller's current session (also the cheapest \"am I logged in?\" probe).",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/sessions": {
+      "get": {
+        "operationId": "list_sessions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Live sessions"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          }
+        },
+        "summary": "All live sessions of the caller (handles are non-bearer identifiers).",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/sessions/{handle}": {
+      "delete": {
+        "operationId": "revoke_session",
+        "parameters": [
+          {
+            "description": "Session handle from the listing",
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No such session"
+          }
+        },
+        "summary": "Revoke one of the caller's own sessions by handle.",
         "tags": [
           "auth"
         ]

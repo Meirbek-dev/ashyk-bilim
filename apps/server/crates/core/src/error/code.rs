@@ -59,6 +59,7 @@ error_codes! {
     MfaRequired => ("mfa-required", 401, "Multi-factor authentication required"),
     SessionExpired => ("session-expired", 401, "Session expired"),
     CsrfRejected => ("csrf-rejected", 403, "Cross-site request rejected"),
+    AccountDisabled => ("account-disabled", 403, "Account is disabled"),
 }
 
 impl std::fmt::Display for ErrorCode {

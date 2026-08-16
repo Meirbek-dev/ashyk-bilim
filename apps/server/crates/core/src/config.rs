@@ -34,6 +34,8 @@ pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub redis: RedisConfig,
+    /// Required by `serve` (authentication); optional for other subcommands.
+    pub zitadel: Option<ZitadelConfig>,
     pub telemetry: TelemetryConfig,
 }
 
@@ -54,8 +56,17 @@ pub struct DatabaseConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct RedisConfig {
-    /// Optional until slice 1.3 wires the session store.
+    /// Required by `serve` (sessions); optional for other subcommands.
     pub url: Option<SecretString>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ZitadelConfig {
+    /// Origin only, no trailing slash — internal-network address
+    /// (`http://zitadel:8080` in compose; `http://localhost:8081` in dev).
+    pub base_url: String,
+    /// Provisioner machine-user PAT.
+    pub pat: SecretString,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -153,6 +164,7 @@ mod tests {
                 min_connections: 0,
             },
             redis: RedisConfig { url: None },
+            zitadel: None,
             telemetry: TelemetryConfig {
                 json_logs: false,
                 otlp_endpoint: None,
