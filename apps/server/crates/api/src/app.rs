@@ -82,6 +82,11 @@ pub fn build_router(state: AppState) -> Result<Router> {
 
     let request_id = HeaderName::from_static(REQUEST_ID_HEADER);
     let router = router
+        // Unknown routes answer in the same problem+json envelope as
+        // everything else — no bare axum 404s on the wire.
+        .fallback(async || {
+            crate::error::ApiError(Error::app(ab_core::ErrorCode::NotFound, "no such route"))
+        })
         .layer(
             ServiceBuilder::new()
                 .layer(SetRequestIdLayer::new(request_id.clone(), MakeRequestUuid))

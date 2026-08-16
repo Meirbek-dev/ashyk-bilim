@@ -8,3 +8,10 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+ab-api = { workspace = true }
+ab-core = { workspace = true }
+axum = { workspace = true }
+secrecy = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tower = { workspace = true }

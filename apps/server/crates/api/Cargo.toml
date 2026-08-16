@@ -22,4 +22,5 @@ utoipa-axum = { workspace = true }
 utoipa-scalar = { workspace = true }
 
 [dev-dependencies]
+ab-testkit = { workspace = true }
 insta = { workspace = true }

@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "ab-core",
  "ab-db",
+ "ab-testkit",
  "axum",
  "insta",
  "serde",
@@ -77,6 +78,15 @@ dependencies = [
 [[package]]
 name = "ab-testkit"
 version = "0.1.0"
+dependencies = [
+ "ab-api",
+ "ab-core",
+ "axum",
+ "secrecy",
+ "serde_json",
+ "sqlx",
+ "tower",
+]
 
 [[package]]
 name = "adler2"
