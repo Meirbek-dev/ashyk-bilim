@@ -4,8 +4,6 @@
 #
 # Dev:     docker compose -f docker-compose.yml -f docker-compose.rewrite.yml --profile rewrite up -d db redis zitadel rustfs
 # Full:    … --profile rewrite up -d
-#
-# TODO(slice 0.7): pin zitadel/rustfs image digests after first validated boot.
 
 services:
   server:
@@ -83,7 +81,8 @@ services:
       disable: true
 
   zitadel:
-    image: ghcr.io/zitadel/zitadel:latest
+# Pinned by digest 2026-08-16 after validated boot (session API + mgmt API smoke-tested).
+    image: ghcr.io/zitadel/zitadel@sha256:3ac6910685d48f32481f01f45e3e6215efe5a9df2c069591b481e9a101712db5
     restart: unless-stopped
     profiles: [rewrite]
     command:
@@ -119,7 +118,7 @@ services:
           cpus: '1.0'
 
   rustfs:
-    image: rustfs/rustfs:latest
+    image: docker.io/rustfs/rustfs:1.0.0-rc.1
     restart: unless-stopped
     profiles: [rewrite]
     environment:

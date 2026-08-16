@@ -41,9 +41,47 @@ just dev          # bacon watch loop (check + test-unit)
 just cov          # coverage report + floor check
 ```
 
-If Docker is unavailable in your session (some Windows sessions): work test-first
-with `just check` + `just test-unit`, write the DB/HTTP tests anyway, and note in
-the plan that CI validates them. Never skip writing the tests.
+## Local dev stack — podman (this machine has podman 6, not docker)
+
+DB integration tests (validated commands, 2026-08-16):
+
+```
+podman network create ashyq-dev
+podman run -d --rm --name ashyq-test-pg --network ashyq-dev -p 5433:5432 `
+  -e POSTGRES_USER=ashyq -e POSTGRES_PASSWORD=ashyq -e POSTGRES_DB=ashyq_test `
+  docker.io/pgvector/pgvector:pg18
+$env:DATABASE_URL='postgres://ashyq:ashyq@localhost:5433/ashyq_test'; cargo test --workspace
+```
+
+Zitadel (for auth-slice work; version pinned in docker-compose.rewrite.yml —
+boots healthy in ~10s, writes a provisioning PAT to the mounted dir):
+
+```
+podman run -d --rm --name ashyq-zitadel --network ashyq-dev -p 8081:8080 `
+  -v "$env:TEMP\zitadel-machinekey:/machinekey" `
+  -e ZITADEL_DATABASE_POSTGRES_HOST=ashyq-test-pg -e ZITADEL_DATABASE_POSTGRES_PORT=5432 `
+  -e ZITADEL_DATABASE_POSTGRES_DATABASE=zitadel `
+  -e ZITADEL_DATABASE_POSTGRES_USER_USERNAME=zitadel -e ZITADEL_DATABASE_POSTGRES_USER_PASSWORD=zitadelpw `
+  -e ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE=disable `
+  -e ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME=ashyq -e ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD=ashyq `
+  -e ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE=disable `
+  -e ZITADEL_EXTERNALDOMAIN=localhost -e ZITADEL_EXTERNALPORT=8081 -e ZITADEL_EXTERNALSECURE=false `
+  -e ZITADEL_FIRSTINSTANCE_PATPATH=/machinekey/pat.txt `
+  -e ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME=ashyq-provisioner `
+  -e ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME=ashyq-provisioner `
+  -e ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE=2030-01-01T00:00:00Z `
+  ghcr.io/zitadel/zitadel:latest start-from-init --masterkey "MasterkeyNeedsToHave32Characters" --tlsMode disabled
+```
+
+Validated against it (keep these working): `GET /debug/healthz`;
+`POST /v2/users/human` (password + pre-verified email — the ETL import path);
+`POST /v2/sessions` with `checks.user.loginName` + `checks.password` → returns
+`sessionId`/`sessionToken`, wrong password → typed `CredentialsCheckError` with
+`failedAttempts`. Auth: `Authorization: Bearer <PAT from pat.txt>`.
+
+If podman is somehow unavailable: work test-first with `just check` +
+`just test-unit`, write the DB/HTTP tests anyway, and note in the plan that CI
+validates them. Never skip writing the tests.
 
 ## Hard invariants (violations = defects, most are lint/CI-enforced)
 

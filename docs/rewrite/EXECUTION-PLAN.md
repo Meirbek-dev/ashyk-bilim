@@ -43,7 +43,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | 0.4 | `ab-api` skeleton: state, middleware stack, problem+json mapping, health endpoints, OpenAPI assembly + scalar docs, `ashyq openapi`. `request_id` in problem body populated when the session middleware lands (1.3) | done deedc51 |
 | 0.5 | `ashyq` bin: clap (serve/worker/migrate/openapi/admin), graceful shutdown, mimalloc | done deedc51 |
 | 0.6 | CI `server-ci.yaml` (PG18+pgvector & Redis services) + coverage floor + openapi diff | done deedc51 (validates on first push) |
-| 0.7 | Compose overlay: zitadel + rustfs + server + worker services; `.env.example` AB__* section | in-progress (authored; boot validation needs a Docker-capable session — pin zitadel/rustfs images then) |
+| 0.7 | Compose overlay: zitadel + rustfs + server + worker services; `.env.example` AB__* section | done (zitadel booted via podman, session/mgmt/user-v2 APIs smoke-tested, image pinned by digest; rustfs pinned to 1.0.0-rc.1, S3 validation with slice 2.2) |
 | 0.8 | `ab-db::queue` + worker runtime + interval scheduler (see DECISIONS.md re: cron) | done f0279dc (16 DB tests; soak deferred to first prod-shaped load test in P10) |
 | 0.9 | `ab-testkit`: TestApp harness, session minting, factories, wiremock stub library (Zitadel/Judge0/Resend/LLM incl. SSE) | in-progress (9952bcd: TestApp + HTTP suite + problem+json 404 fallback; session minting → 1.3, wiremock stubs → client slices, factories → first entities) |
 | 0.10 | `ashyq admin zitadel-setup`: idempotent org/project/machine-user/Google-IdP/custom-texts provisioning | todo |
