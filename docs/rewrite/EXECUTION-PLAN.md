@@ -47,7 +47,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | 0.8 | `ab-db::queue` + worker runtime + interval scheduler (see DECISIONS.md re: cron) | done f0279dc (16 DB tests; soak deferred to first prod-shaped load test in P10) |
 | 0.9 | `ab-testkit`: TestApp harness, session minting, factories, wiremock stub library (Zitadel/Judge0/Resend/LLM incl. SSE) | in-progress (9952bcd: TestApp + HTTP suite + problem+json 404 fallback; session minting → 1.3, wiremock stubs → client slices, factories → first entities) |
 | 0.10 | `ashyq admin zitadel-setup`: idempotent org/project/machine-user/Google-IdP/custom-texts provisioning | todo |
-| 0.11 | RBAC sweep test harness (route-table-driven 403 assertion) | todo |
+| 0.11 | RBAC sweep test harness (route-table-driven 403 assertion) | done (forced classification: every mutating OpenAPI op must be PUBLIC/AUTH_ONLY/PERMISSION_GATED; zero-grant probes) |
 | 0.12 | OTLP exporter wiring (opentelemetry crate set) + verify delivery into Logfire (project currently empty — FINDINGS #9) | in-progress (exporter wired behind AB__TELEMETRY__OTLP_ENDPOINT, headers via OTEL_EXPORTER_OTLP_HEADERS; delivery verification blocked on QUESTIONS.md #2 — Logfire token) |
 
 ### P1 — Identity
@@ -59,7 +59,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | 1.4 | Auth endpoints: login, logout, mfa challenge/verify, session list/revoke | done except MFA (login w/ layered rate limits + uniform errors + audit trail, logout w/ best-effort Zitadel delete, session list/revoke via SHA-256 handles, ValidJson garde extractor, first .sqlx cache committed; MFA challenge/verify → 1.6) |
 | 1.5 | Google login, first-party OAuth (port google_oauth.py; google_accounts table; Zitadel user w/o password) | todo |
 | 1.6 | MFA enrollment relay (TOTP only — passkeys dropped, DECISIONS.md) ∥ | todo |
-| 1.7 | Users domain: profiles, preferences/locale, avatars (small direct upload), admin user management ∥ | todo |
+| 1.7 | Users domain: profiles, preferences/locale, avatars (small direct upload), admin user management ∥ | in-progress (GET/PATCH /users/me with locale validation + permission gate; avatars → 2.2 storage, admin management → with 1.8) |
 | 1.8 | RBAC engine + role admin endpoints + usergroups (org context) ∥ | todo |
 
 ### P2 — Catalog & storage

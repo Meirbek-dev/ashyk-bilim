@@ -191,9 +191,72 @@ expression: json
         ],
         "type": "object"
       },
+      "UpdateProfileRequest": {
+        "additionalProperties": false,
+        "description": "Partial update; omitted fields are unchanged.",
+        "properties": {
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "locale": {
+            "description": "One of the platform locales.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "UserId": {
         "format": "uuid",
         "type": "string"
+      },
+      "UserProfile": {
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "email",
+          "display_name",
+          "bio",
+          "locale"
+        ],
+        "type": "object"
       }
     }
   },
@@ -443,6 +506,86 @@ expression: json
           "health"
         ]
       }
+    },
+    "/api/v2/users/me": {
+      "get": {
+        "operationId": "my_profile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            },
+            "description": "Own profile"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          }
+        },
+        "summary": "The caller's own profile.",
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "operationId": "update_my_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            },
+            "description": "Updated profile"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Validation failed"
+          }
+        },
+        "summary": "Update the caller's own profile (requires `user:update:own`).",
+        "tags": [
+          "users"
+        ]
+      }
     }
   },
   "tags": [
@@ -453,6 +596,10 @@ expression: json
     {
       "description": "Sessions and authentication (BFF cookie)",
       "name": "auth"
+    },
+    {
+      "description": "User profiles and preferences",
+      "name": "users"
     }
   ]
 }

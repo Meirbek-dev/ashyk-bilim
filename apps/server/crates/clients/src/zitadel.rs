@@ -125,6 +125,7 @@ impl ZitadelClient {
             .json()
             .await
             .map_err(|e| Error::internal("zitadel error response shape", e))?;
+        tracing::debug!(code = err.code, message = %err.message, "zitadel session check rejected");
         // Captured live: invalid password → code 3 with a CredentialsCheckError
         // detail carrying failedAttempts; unknown user → code 5 (NotFound).
         if err.code == 5 {

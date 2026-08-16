@@ -245,6 +245,86 @@
           }
         }
       }
+    },
+    "/api/v2/users/me": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "The caller's own profile.",
+        "operationId": "my_profile",
+        "responses": {
+          "200": {
+            "description": "Own profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No live session",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Update the caller's own profile (requires `user:update:own`).",
+        "operationId": "update_my_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -435,9 +515,72 @@
           }
         }
       },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "description": "Partial update; omitted fields are unchanged.",
+        "properties": {
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "locale": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One of the platform locales."
+          }
+        },
+        "additionalProperties": false
+      },
       "UserId": {
         "type": "string",
         "format": "uuid"
+      },
+      "UserProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "email",
+          "display_name",
+          "bio",
+          "locale"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -449,6 +592,10 @@
     {
       "name": "auth",
       "description": "Sessions and authentication (BFF cookie)"
+    },
+    {
+      "name": "users",
+      "description": "User profiles and preferences"
     }
   ]
 }

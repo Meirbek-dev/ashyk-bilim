@@ -5,7 +5,9 @@ pub mod actor;
 pub mod auth;
 pub mod rate_limit;
 pub mod sessions;
+pub mod users;
 
 pub use actor::Actor;
 pub use auth::{IdentityService, LoginInput, LoginOk};
 pub use sessions::{NewSession, SessionRecord, SessionStore};
+pub use users::UsersService;

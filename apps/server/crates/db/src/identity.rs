@@ -63,6 +63,55 @@ pub async fn load_user_grants(
     Ok((roles, permissions))
 }
 
+pub struct ProfileRow {
+    pub id: UserId,
+    pub username: String,
+    pub email: String,
+    pub display_name: String,
+    pub bio: String,
+    pub avatar_key: Option<String>,
+    pub locale: String,
+}
+
+pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<ProfileRow>> {
+    let row = sqlx::query_as!(
+        ProfileRow,
+        r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale
+           FROM users WHERE id = $1"#,
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// Partial profile update; `None` fields keep their value. Returns the
+/// updated row (`None` if the user vanished).
+pub async fn update_profile(
+    pool: &PgPool,
+    user_id: UserId,
+    display_name: Option<&str>,
+    bio: Option<&str>,
+    locale: Option<&str>,
+) -> Result<Option<ProfileRow>> {
+    let row = sqlx::query_as!(
+        ProfileRow,
+        r#"UPDATE users SET
+               display_name = COALESCE($2, display_name),
+               bio = COALESCE($3, bio),
+               locale = COALESCE($4, locale)
+           WHERE id = $1
+           RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale"#,
+        user_id.0,
+        display_name,
+        bio,
+        locale
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
 pub async fn insert_auth_audit(
     pool: &PgPool,
     user_id: Option<UserId>,

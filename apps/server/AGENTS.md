@@ -43,6 +43,13 @@ just cov          # coverage report + floor check
 
 ## Local dev stack — podman (this machine has podman 6, not docker)
 
+**Build location (this machine):** X: is small and the debug target dir grows
+to 30+ GB — X: ran completely out of disk once (2026-08-16; symptom: LNK1180/
+LNK1318 / "IO failure on output stream: no space on device"). Set
+`$env:CARGO_TARGET_DIR = 'C:\cargo-target\ashyq-server'` at the start of every
+session before building. If builds still fail on space, delete that dir and
+rebuild.
+
 DB integration tests (validated commands, 2026-08-16):
 
 ```
