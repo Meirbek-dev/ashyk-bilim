@@ -53,7 +53,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 ### P1 — Identity
 | # | Slice | Status |
 |---|---|---|
-| 1.1 | Migrations: users, roles, permissions, role_permissions, user_roles, sessions audit tables; seed roles/permissions | todo |
+| 1.1 | Migrations: users, roles, permissions, role_permissions, user_roles, sessions audit tables; seed roles/permissions | done (identity migration + verbatim SYSTEM_ROLES port; tests incl. seeds↔typed-parser consistency) |
 | 1.2 | `ab-clients::zitadel`: session API, user mgmt, IdP intents, import — with wiremock contract fixtures | todo |
 | 1.3 | Session store (Redis) + `Actor` extractor + cookie handling + CSRF guard | todo |
 | 1.4 | Auth endpoints: login, logout, mfa challenge/verify, session list/revoke | todo |
@@ -154,3 +154,4 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | Date | Session summary |
 |---|---|
 | 2026-08-16 | Architecture ratified (30Q). Docs authored (ARCHITECTURE/MIGRATION/EXECUTION-PLAN/AGENTS/FINDINGS). P0 scaffold landed green (deedc51): fmt + clippy -D warnings + 19 tests + OpenAPI snapshot/export. Resolved versions: axum 0.8.9, sqlx 0.9.0, utoipa 5.5, tower-http 0.7, jiff 0.2.35, tokio 1.53. Machine fix: installed MSVC VC.Tools workload via winget (was missing; GNU link.exe shadowed). apps/api-v2 stub removed. |
+| 2026-08-16 (cont.) | CI green from run #4 on. Slices 0.7 (Zitadel booted via podman, session/mgmt/user-v2 APIs smoke-tested, images pinned), 0.8 (queue+worker+scheduler, 16 DB tests; ON CONFLICT dedupe fix — raised unique violations poisoned caller tx), 0.9 core (TestApp + HTTP suite + problem+json 404), 0.12 (OTLP exporter, delivery pending Logfire token), 1.1 (identity schema + verbatim SYSTEM_ROLES seed) all landed. QUESTIONS.md created for owner-only items. Podman (not docker) is the local container runtime — commands in apps/server/AGENTS.md. Next: 1.2 zitadel client (live instance validated: user-v2 create w/ password import shape, session password checks), 1.3 sessions/Actor, 0.10 zitadel-setup. |
