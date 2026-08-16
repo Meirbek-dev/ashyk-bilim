@@ -1,9 +1,12 @@
 //! The RBAC permission model, ported from the legacy `resource:action:scope`
 //! string scheme (`apps/api/src/security/rbac.py`, `src/db/permission_enums.py`).
 //!
-//! Scaffold state: types + parsing + wildcard matching with basic tests.
-//! Slice 1.8 verifies the matching semantics against the legacy implementation
-//! case-by-case and extends the test matrix before any endpoint relies on it.
+//! Matching semantics are verified against the legacy implementation —
+//! see `legacy_has_perm_candidate_table_is_honored` for the case-by-case
+//! port and the one documented (unreachable-on-real-data) delta. Legacy's
+//! scope hierarchy (`all` > `platform` > `assigned` > `own`) lives partly
+//! here (`all` covers every scope) and partly at domain call sites, which
+//! check `platform` OR ownership+`own` explicitly per resource.
 
 use serde::{Deserialize, Serialize};
 
@@ -252,5 +255,39 @@ mod tests {
         assert!(Grant::parse("course").is_err());
         assert!(Grant::parse("course:create:platform:extra").is_err());
         assert!(Grant::parse("bogus:create").is_err());
+    }
+
+    /// Verbatim port of the legacy `PermissionChecker.has_perm` candidate
+    /// table (apps/api/src/security/rbac.py, slice 1.8 verification): every
+    /// pattern legacy accepted must be accepted here for the same request.
+    ///
+    /// Known deliberate delta: legacy did NOT match `resource:action:*`
+    /// grants (its candidate list omitted that shape) — ours does. No seeded
+    /// or user-visible grant ever used that shape, so behavior is identical
+    /// on real data; ours is simply the consistent reading. The legacy
+    /// `assigned` scope is exercised once contributor semantics land.
+    #[test]
+    fn legacy_has_perm_candidate_table_is_honored() {
+        let requested = perm(ResourceType::Course, Action::Update, Some(Scope::Platform));
+        for granted in [
+            "course:update:platform", // exact
+            "course:*:platform",      // resource:*:scope
+            "*:update:platform",      // *:action:scope
+            "*:*:platform",           // *:*:scope
+            "course:*:*",             // resource:*:*
+            "*:*:*",                  // full wildcard
+        ] {
+            let set = PermissionSet::parse([granted]).unwrap();
+            assert!(set.grants(&requested), "legacy accepted {granted}");
+        }
+        // And what legacy denied stays denied.
+        for granted in [
+            "course:update:own",    // narrower scope
+            "chapter:*:platform",   // other resource
+            "course:read:platform", // other action
+        ] {
+            let set = PermissionSet::parse([granted]).unwrap();
+            assert!(!set.grants(&requested), "legacy denied {granted}");
+        }
     }
 }
