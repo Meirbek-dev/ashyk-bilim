@@ -149,6 +149,30 @@ async fn create_user_conflict_maps_to_conflict_error() {
 }
 
 #[tokio::test]
+async fn org_info_returns_id_and_name() {
+    let server = MockServer::start().await;
+    // Captured live 2026-08-16.
+    Mock::given(method("GET"))
+        .and(path("/management/v1/orgs/me"))
+        .and(header_regex("authorization", "^Bearer test-pat$"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "org": {
+                "id": "386492094732109315",
+                "details": { "sequence": "6" },
+                "state": "ORG_STATE_ACTIVE",
+                "name": "ZITADEL",
+                "primaryDomain": "zitadel.localhost"
+            }
+        })))
+        .mount(&server)
+        .await;
+
+    let (id, name) = client(&server).org_info().await.unwrap();
+    assert_eq!(id, "386492094732109315");
+    assert_eq!(name, "ZITADEL");
+}
+
+#[tokio::test]
 async fn delete_session_is_idempotent() {
     let server = MockServer::start().await;
     Mock::given(method("DELETE"))

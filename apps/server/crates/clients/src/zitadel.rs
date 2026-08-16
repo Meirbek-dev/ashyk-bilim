@@ -196,6 +196,39 @@ impl ZitadelClient {
         ))
     }
 
+    /// `GET /management/v1/orgs/me` — deploy diagnostics: proves the base URL
+    /// and PAT are valid. Returns (org id, org name).
+    pub async fn org_info(&self) -> Result<(String, String)> {
+        #[derive(Deserialize)]
+        struct OrgEnvelope {
+            org: Org,
+        }
+        #[derive(Deserialize)]
+        struct Org {
+            id: String,
+            name: String,
+        }
+        let response = self
+            .auth(self.http.get(self.url("/management/v1/orgs/me")))
+            .send()
+            .await
+            .map_err(|e| Error::internal("zitadel org lookup", e))?;
+        if !response.status().is_success() {
+            return Err(Error::app(
+                ErrorCode::ServiceUnavailable,
+                format!(
+                    "zitadel org lookup failed: {} (check PAT)",
+                    response.status()
+                ),
+            ));
+        }
+        let envelope: OrgEnvelope = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel org shape", e))?;
+        Ok((envelope.org.id, envelope.org.name))
+    }
+
     /// `GET /v2/users/{id}/authentication_methods` — e.g.
     /// `AUTHENTICATION_METHOD_TYPE_TOTP`, `AUTHENTICATION_METHOD_TYPE_PASSWORD`.
     pub async fn list_auth_method_types(&self, user_id: &str) -> Result<Vec<String>> {

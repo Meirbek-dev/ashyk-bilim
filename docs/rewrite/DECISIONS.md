@@ -20,6 +20,18 @@ last reason for any public Zitadel surface:
   and confirm via API. No Zitadel-hosted UI is ever linked.
 - **MFA = TOTP only**, optional, enrolled/verified through the BFF.
 
+## 2026-08-16 — zitadel-setup collapses to zitadel-check
+
+The original 0.10 plan (`ashyq admin zitadel-setup` creating org/project/OIDC
+app/IdP/custom texts) assumed a public Zitadel with hosted flows. With Zitadel
+internal-only (see above), no OIDC app, no IdP config, and no custom texts
+exist to provision — the `ZITADEL_FIRSTINSTANCE_*` compose env vars already
+create the org and the provisioner PAT declaratively. What remains is
+fail-fast deploy diagnostics: `ashyq admin zitadel-check` verifies
+reachability, PAT validity, and prints the org — run it in the cutover
+runbook after boot. If provisioning needs ever grow (SMTP config, policies),
+they extend this command.
+
 ## 2026-08-16 — Observability backend decided at cutover
 
 OTLP wiring is vendor-neutral and disabled by default (0.12). Logfire remains

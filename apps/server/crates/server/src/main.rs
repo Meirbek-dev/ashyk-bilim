@@ -39,6 +39,8 @@ enum Command {
 enum AdminCommand {
     /// Print the effective configuration with secrets redacted.
     ConfigCheck,
+    /// Verify Zitadel reachability + PAT validity (cutover runbook step).
+    ZitadelCheck,
 }
 
 #[tokio::main]
@@ -68,6 +70,25 @@ async fn main() -> anyhow::Result<()> {
                 std::io::stdout(),
                 "{}",
                 serde_json::to_string_pretty(&config.redacted())?
+            )?;
+            Ok(())
+        }
+        Command::Admin {
+            command: AdminCommand::ZitadelCheck,
+        } => {
+            let zitadel_config = config
+                .zitadel
+                .ok_or_else(|| anyhow::anyhow!("AB__ZITADEL__* must be set"))?;
+            let client =
+                ab_clients::zitadel::ZitadelClient::new(ab_clients::zitadel::ZitadelConfig {
+                    base_url: zitadel_config.base_url.clone(),
+                    pat: zitadel_config.pat,
+                })?;
+            let (id, name) = client.org_info().await?;
+            writeln!(
+                std::io::stdout(),
+                "zitadel OK at {} — org {name} ({id})",
+                zitadel_config.base_url
             )?;
             Ok(())
         }

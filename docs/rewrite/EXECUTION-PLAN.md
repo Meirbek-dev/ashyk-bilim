@@ -46,7 +46,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | 0.7 | Compose overlay: zitadel + rustfs + server + worker services; `.env.example` AB__* section | done (zitadel booted via podman, session/mgmt/user-v2 APIs smoke-tested, image pinned by digest; rustfs pinned to 1.0.0-rc.1, S3 validation with slice 2.2) |
 | 0.8 | `ab-db::queue` + worker runtime + interval scheduler (see DECISIONS.md re: cron) | done f0279dc (16 DB tests; soak deferred to first prod-shaped load test in P10) |
 | 0.9 | `ab-testkit`: TestApp harness, session minting, factories, wiremock stub library (Zitadel/Judge0/Resend/LLM incl. SSE) | in-progress (9952bcd: TestApp + HTTP suite + problem+json 404 fallback; session minting → 1.3, wiremock stubs → client slices, factories → first entities) |
-| 0.10 | `ashyq admin zitadel-setup`: idempotent org/project/machine-user/Google-IdP/custom-texts provisioning | todo |
+| 0.10 | Zitadel provisioning | done, scope collapsed (DECISIONS.md: internal-only Zitadel means FIRSTINSTANCE env vars provision everything; `ashyq admin zitadel-check` verifies reachability+PAT+org — validated live) |
 | 0.11 | RBAC sweep test harness (route-table-driven 403 assertion) | done (forced classification: every mutating OpenAPI op must be PUBLIC/AUTH_ONLY/PERMISSION_GATED; zero-grant probes) |
 | 0.12 | OTLP exporter wiring (opentelemetry crate set) + verify delivery into Logfire (project currently empty — FINDINGS #9) | in-progress (exporter wired behind AB__TELEMETRY__OTLP_ENDPOINT, headers via OTEL_EXPORTER_OTLP_HEADERS; delivery verification blocked on QUESTIONS.md #2 — Logfire token) |
 
