@@ -11,6 +11,25 @@ pub struct LoginRequest {
     pub login: String,
     #[garde(length(min = 1, max = 200))]
     pub password: String,
+    /// Second factor — resubmit after a 401 `mfa-required`.
+    #[garde(inner(length(min = 6, max = 8)))]
+    pub totp_code: Option<String>,
+}
+
+/// TOTP enrollment secrets — shown to the user exactly once.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct TotpEnrollment {
+    /// `otpauth://` URI for QR rendering.
+    pub uri: String,
+    /// Base32 secret for manual entry.
+    pub secret: String,
+}
+
+#[derive(Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct TotpVerifyRequest {
+    #[garde(length(min = 6, max = 8))]
+    pub code: String,
 }
 
 /// The current session, as the frontend sees it (client-side permission

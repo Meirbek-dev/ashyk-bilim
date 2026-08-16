@@ -45,6 +45,7 @@ async fn password_session_success() {
         .create_password_session(
             "smoke-test@example.com",
             &SecretString::from("Sm0ke-test-pass!"),
+            None,
         )
         .await
         .unwrap();
@@ -76,7 +77,7 @@ async fn password_session_invalid_credentials() {
         .await;
 
     let outcome = client(&server)
-        .create_password_session("smoke-test@example.com", &SecretString::from("wrong"))
+        .create_password_session("smoke-test@example.com", &SecretString::from("wrong"), None)
         .await
         .unwrap();
     match outcome {

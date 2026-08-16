@@ -35,7 +35,8 @@ expression: json
           "session-expired",
           "csrf-rejected",
           "account-disabled",
-          "google-oauth-expired"
+          "google-oauth-expired",
+          "invalid-totp-code"
         ],
         "type": "string"
       },
@@ -86,6 +87,13 @@ expression: json
           },
           "password": {
             "type": "string"
+          },
+          "totp_code": {
+            "description": "Second factor — resubmit after a 401 `mfa-required`.",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -238,6 +246,36 @@ expression: json
           "current",
           "created_at_unix",
           "last_seen_unix"
+        ],
+        "type": "object"
+      },
+      "TotpEnrollment": {
+        "description": "TOTP enrollment secrets — shown to the user exactly once.",
+        "properties": {
+          "secret": {
+            "description": "Base32 secret for manual entry.",
+            "type": "string"
+          },
+          "uri": {
+            "description": "`otpauth://` URI for QR rendering.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri",
+          "secret"
+        ],
+        "type": "object"
+      },
+      "TotpVerifyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
         ],
         "type": "object"
       },
@@ -468,6 +506,83 @@ expression: json
           }
         },
         "summary": "Logout: revoke the current session and clear the cookie. Idempotent.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/mfa/totp": {
+      "delete": {
+        "operationId": "totp_remove",
+        "responses": {
+          "204": {
+            "description": "Removed (idempotent)"
+          }
+        },
+        "summary": "Remove the TOTP authenticator.",
+        "tags": [
+          "auth"
+        ]
+      },
+      "post": {
+        "operationId": "totp_enroll",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpEnrollment"
+                }
+              }
+            },
+            "description": "Enrollment secrets"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Already enrolled"
+          }
+        },
+        "summary": "Start TOTP enrollment (secrets are returned exactly once).",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/mfa/totp/verify": {
+      "post": {
+        "operationId": "totp_verify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "TOTP active"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid code"
+          }
+        },
+        "summary": "Activate TOTP with the first code from the authenticator app.",
         "tags": [
           "auth"
         ]

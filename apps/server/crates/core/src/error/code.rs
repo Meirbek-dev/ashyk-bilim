@@ -61,6 +61,7 @@ error_codes! {
     CsrfRejected => ("csrf-rejected", 403, "Cross-site request rejected"),
     AccountDisabled => ("account-disabled", 403, "Account is disabled"),
     GoogleOauthExpired => ("google-oauth-expired", 400, "Google sign-in expired or invalid"),
+    InvalidTotpCode => ("invalid-totp-code", 400, "Invalid one-time code"),
 }
 
 impl std::fmt::Display for ErrorCode {

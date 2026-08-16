@@ -28,8 +28,20 @@ pub struct ZitadelClient {
 #[derive(Debug)]
 pub enum PasswordSessionOutcome {
     Ok(ZitadelSession),
-    InvalidCredentials { failed_attempts: i64 },
+    InvalidCredentials {
+        failed_attempts: i64,
+    },
+    /// Password was right but the supplied TOTP code was not (captured live:
+    /// code 3 with a plain detail — no `failedAttempts`).
+    InvalidTotp,
     UserNotFound,
+}
+
+/// TOTP enrollment secrets (captured live 2026-08-16: `{details, uri, secret}`).
+#[derive(Debug)]
+pub struct TotpRegistration {
+    pub uri: String,
+    pub secret: SecretString,
 }
 
 #[derive(Debug, Clone)]
@@ -85,18 +97,22 @@ impl ZitadelClient {
         req.bearer_auth(self.config.pat.expose_secret())
     }
 
-    /// `POST /v2/sessions` with loginName + password checks.
+    /// `POST /v2/sessions` with loginName + password (+ optional TOTP) checks.
     pub async fn create_password_session(
         &self,
         login_name: &str,
         password: &SecretString,
+        totp_code: Option<&str>,
     ) -> Result<PasswordSessionOutcome> {
-        let body = serde_json::json!({
+        let mut body = serde_json::json!({
             "checks": {
                 "user": { "loginName": login_name },
                 "password": { "password": password.expose_secret() },
             }
         });
+        if let Some(code) = totp_code {
+            body["checks"]["totp"] = serde_json::json!({ "code": code });
+        }
         let response = self
             .auth(self.http.post(self.url("/v2/sessions")))
             .json(&body)
@@ -132,12 +148,18 @@ impl ZitadelClient {
             return Result::Ok(PasswordSessionOutcome::UserNotFound);
         }
         if err.code == 3 {
+            // Password failures carry a CredentialsCheckError detail with
+            // `failedAttempts`; TOTP failures are a plain detail (captured live).
             let failed_attempts = err
                 .details
                 .iter()
-                .find_map(|d| d.get("failedAttempts").and_then(serde_json::Value::as_i64))
-                .unwrap_or(0);
-            return Result::Ok(PasswordSessionOutcome::InvalidCredentials { failed_attempts });
+                .find_map(|d| d.get("failedAttempts").and_then(serde_json::Value::as_i64));
+            return Result::Ok(match failed_attempts {
+                Some(failed_attempts) => {
+                    PasswordSessionOutcome::InvalidCredentials { failed_attempts }
+                }
+                None => PasswordSessionOutcome::InvalidTotp,
+            });
         }
         Err(Error::app(
             ErrorCode::ServiceUnavailable,
@@ -171,6 +193,130 @@ impl ZitadelClient {
         Err(Error::app(
             ErrorCode::ServiceUnavailable,
             format!("zitadel session delete failed: {}", response.status()),
+        ))
+    }
+
+    /// `GET /v2/users/{id}/authentication_methods` — e.g.
+    /// `AUTHENTICATION_METHOD_TYPE_TOTP`, `AUTHENTICATION_METHOD_TYPE_PASSWORD`.
+    pub async fn list_auth_method_types(&self, user_id: &str) -> Result<Vec<String>> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Methods {
+            #[serde(default)]
+            auth_method_types: Vec<String>,
+        }
+        let response = self
+            .auth(
+                self.http
+                    .get(self.url(&format!("/v2/users/{user_id}/authentication_methods"))),
+            )
+            .send()
+            .await
+            .map_err(|e| Error::internal("zitadel list auth methods", e))?;
+        if !response.status().is_success() {
+            return Err(Error::app(
+                ErrorCode::ServiceUnavailable,
+                format!("zitadel auth methods listing failed: {}", response.status()),
+            ));
+        }
+        let methods: Methods = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel auth methods shape", e))?;
+        Ok(methods.auth_method_types)
+    }
+
+    /// `POST /v2/users/{id}/totp` — start TOTP enrollment (idempotency:
+    /// re-registering before verification returns a fresh secret; an already
+    /// verified TOTP yields code 9 `AlreadyReady` → Conflict).
+    pub async fn register_totp(&self, user_id: &str) -> Result<TotpRegistration> {
+        #[derive(Deserialize)]
+        struct Registered {
+            uri: String,
+            secret: String,
+        }
+        let response = self
+            .auth(
+                self.http
+                    .post(self.url(&format!("/v2/users/{user_id}/totp"))),
+            )
+            .json(&serde_json::json!({}))
+            .send()
+            .await
+            .map_err(|e| Error::internal("zitadel totp register", e))?;
+        if response.status().is_success() {
+            let registered: Registered = response
+                .json()
+                .await
+                .map_err(|e| Error::internal("zitadel totp register shape", e))?;
+            return Ok(TotpRegistration {
+                uri: registered.uri,
+                secret: SecretString::from(registered.secret),
+            });
+        }
+        let err: ZitadelErrorBody = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel error response shape", e))?;
+        if err.code == 9 {
+            return Err(Error::conflict("totp is already enrolled"));
+        }
+        Err(Error::app(
+            ErrorCode::ServiceUnavailable,
+            format!(
+                "zitadel totp register failed: {} ({})",
+                err.message, err.code
+            ),
+        ))
+    }
+
+    /// `POST /v2/users/{id}/totp/verify` — activate enrollment with a code.
+    pub async fn verify_totp(&self, user_id: &str, code: &str) -> Result<()> {
+        let response = self
+            .auth(
+                self.http
+                    .post(self.url(&format!("/v2/users/{user_id}/totp/verify"))),
+            )
+            .json(&serde_json::json!({ "code": code }))
+            .send()
+            .await
+            .map_err(|e| Error::internal("zitadel totp verify", e))?;
+        if response.status().is_success() {
+            return Ok(());
+        }
+        let err: ZitadelErrorBody = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel error response shape", e))?;
+        match err.code {
+            3 => Err(Error::app(
+                ErrorCode::InvalidTotpCode,
+                "invalid one-time code",
+            )),
+            9 => Err(Error::conflict("totp is already enrolled")),
+            _ => Err(Error::app(
+                ErrorCode::ServiceUnavailable,
+                format!("zitadel totp verify failed: {} ({})", err.message, err.code),
+            )),
+        }
+    }
+
+    /// `DELETE /v2/users/{id}/totp` — remove the authenticator.
+    pub async fn remove_totp(&self, user_id: &str) -> Result<()> {
+        let response = self
+            .auth(
+                self.http
+                    .delete(self.url(&format!("/v2/users/{user_id}/totp"))),
+            )
+            .send()
+            .await
+            .map_err(|e| Error::internal("zitadel totp remove", e))?;
+        if response.status().is_success() || response.status() == reqwest::StatusCode::NOT_FOUND {
+            return Ok(());
+        }
+        Err(Error::app(
+            ErrorCode::ServiceUnavailable,
+            format!("zitadel totp remove failed: {}", response.status()),
         ))
     }
 

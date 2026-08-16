@@ -18,6 +18,9 @@ const PUBLIC: &[(&str, &str)] = &[("POST", "/api/v2/auth/login")];
 const AUTH_ONLY: &[(&str, &str)] = &[
     ("POST", "/api/v2/auth/logout"),
     ("DELETE", "/api/v2/auth/sessions/{handle}"),
+    ("POST", "/api/v2/auth/mfa/totp"),
+    ("POST", "/api/v2/auth/mfa/totp/verify"),
+    ("DELETE", "/api/v2/auth/mfa/totp"),
 ];
 
 /// Requires specific grants: a zero-grant session must NOT reach a 2xx.

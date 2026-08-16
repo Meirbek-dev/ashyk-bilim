@@ -79,6 +79,7 @@ pub async fn login(
         .login(LoginInput {
             login: request.login,
             password: SecretString::from(request.password),
+            totp_code: request.totp_code,
             ip: client_ip(&headers),
             user_agent: user_agent(&headers),
         })
@@ -150,6 +151,66 @@ pub async fn list_sessions(
 ) -> ApiResult<Json<Vec<SessionSummary>>> {
     let sessions = state.identity.list_sessions(&actor).await?;
     Ok(Json(sessions.into_iter().map(Into::into).collect()))
+}
+
+// ── TOTP MFA self-service ───────────────────────────────────────────────────
+
+/// Start TOTP enrollment (secrets are returned exactly once).
+#[utoipa::path(
+    post,
+    path = "/auth/mfa/totp",
+    tag = "auth",
+    responses(
+        (status = 200, description = "Enrollment secrets", body = crate::dto::auth::TotpEnrollment),
+        (status = 409, description = "Already enrolled", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn totp_enroll(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+) -> ApiResult<Json<crate::dto::auth::TotpEnrollment>> {
+    let registration = state.identity.totp_enroll(&actor).await?;
+    Ok(Json(crate::dto::auth::TotpEnrollment {
+        uri: registration.uri,
+        secret: secrecy::ExposeSecret::expose_secret(&registration.secret).to_owned(),
+    }))
+}
+
+/// Activate TOTP with the first code from the authenticator app.
+#[utoipa::path(
+    post,
+    path = "/auth/mfa/totp/verify",
+    tag = "auth",
+    request_body = crate::dto::auth::TotpVerifyRequest,
+    responses(
+        (status = 204, description = "TOTP active"),
+        (status = 400, description = "Invalid code", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn totp_verify(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    ValidJson(request): ValidJson<crate::dto::auth::TotpVerifyRequest>,
+) -> ApiResult<StatusCode> {
+    state.identity.totp_activate(&actor, &request.code).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Remove the TOTP authenticator.
+#[utoipa::path(
+    delete,
+    path = "/auth/mfa/totp",
+    tag = "auth",
+    responses((status = 204, description = "Removed (idempotent)")),
+)]
+pub async fn totp_remove(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+) -> ApiResult<StatusCode> {
+    state.identity.totp_remove(&actor).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 // ── Google sign-in (browser navigation endpoints: errors redirect, never

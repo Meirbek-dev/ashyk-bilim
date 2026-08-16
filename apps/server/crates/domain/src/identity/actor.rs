@@ -13,6 +13,7 @@ use crate::identity::sessions::SessionRecord;
 #[derive(Debug, Clone)]
 pub struct Actor {
     pub user_id: UserId,
+    pub zitadel_user_id: String,
     pub session_id: String,
     pub roles: Vec<String>,
     pub permissions: PermissionSet,
@@ -28,6 +29,7 @@ impl Actor {
     pub fn from_session(session_id: String, record: &SessionRecord) -> Result<Self> {
         Ok(Self {
             user_id: record.user_id,
+            zitadel_user_id: record.zitadel_user_id.clone(),
             session_id,
             roles: record.roles.clone(),
             permissions: PermissionSet::parse(record.permissions.iter().map(String::as_str))?,

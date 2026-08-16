@@ -31,6 +31,10 @@ expression: registry
     401,
     "Invalid credentials"
   ],
+  "invalid-totp-code": [
+    400,
+    "Invalid one-time code"
+  ],
   "mfa-required": [
     401,
     "Multi-factor authentication required"

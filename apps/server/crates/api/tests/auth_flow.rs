@@ -38,6 +38,15 @@ async fn full_login_logout_flow(pool: PgPool) {
     app.create_user("meirbek", "m@example.com", &["instructor"])
         .await;
     mock_password_ok(&app.zitadel).await;
+    // No TOTP enrolled → the BFF's MFA check passes through.
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-meirbek/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": { "totalResult": "1" },
+            "authMethodTypes": ["AUTHENTICATION_METHOD_TYPE_PASSWORD"]
+        })))
+        .mount(&app.zitadel)
+        .await;
     // Zitadel-side logout during our logout:
     Mock::given(method("DELETE"))
         .and(path("/v2/sessions/zit-session-1"))

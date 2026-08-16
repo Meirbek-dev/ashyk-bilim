@@ -11,7 +11,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use ab_clients::zitadel::{PasswordSessionOutcome, ZitadelClient};
+use ab_clients::zitadel::{PasswordSessionOutcome, TotpRegistration, ZitadelClient};
 use ab_core::id::UserId;
 use ab_core::{Error, ErrorCode, Result};
 use secrecy::SecretString;
@@ -49,6 +49,8 @@ fn hex_prefix(bytes: &[u8], chars: usize) -> String {
 pub struct LoginInput {
     pub login: String,
     pub password: SecretString,
+    /// Present on the second step of an MFA login.
+    pub totp_code: Option<String>,
     pub ip: Option<String>,
     pub user_agent: Option<String>,
 }
@@ -143,43 +145,65 @@ impl IdentityService {
         Ok(login_key)
     }
 
-    pub async fn login(&self, input: LoginInput) -> Result<LoginOk> {
-        let login_key = self.enforce_login_limits(&input).await?;
-
-        let outcome = self
-            .zitadel
-            .create_password_session(&input.login, &input.password)
-            .await?;
-        let zsession = match outcome {
-            PasswordSessionOutcome::Ok(session) => session,
+    /// Map a Zitadel check outcome to a session or the audited uniform error.
+    async fn resolve_session_outcome(
+        &self,
+        outcome: PasswordSessionOutcome,
+        input: &LoginInput,
+    ) -> Result<ab_clients::zitadel::ZitadelSession> {
+        match outcome {
+            PasswordSessionOutcome::Ok(session) => Ok(session),
+            PasswordSessionOutcome::InvalidTotp => {
+                self.audit(
+                    None,
+                    "login-failed",
+                    input,
+                    serde_json::json!({ "login": input.login, "reason": "invalid-totp" }),
+                )
+                .await?;
+                Err(Error::app(
+                    ErrorCode::InvalidTotpCode,
+                    "invalid one-time code",
+                ))
+            }
             PasswordSessionOutcome::InvalidCredentials { failed_attempts } => {
                 self.audit(
                     None,
                     "login-failed",
-                    &input,
+                    input,
                     serde_json::json!({ "login": input.login, "failed_attempts": failed_attempts }),
                 )
                 .await?;
-                return Err(Error::app(
+                Err(Error::app(
                     ErrorCode::InvalidCredentials,
                     "invalid credentials",
-                ));
+                ))
             }
             PasswordSessionOutcome::UserNotFound => {
                 self.audit(
                     None,
                     "login-failed",
-                    &input,
+                    input,
                     serde_json::json!({ "login": input.login, "reason": "unknown-user" }),
                 )
                 .await?;
                 // Uniform response: do not reveal which accounts exist.
-                return Err(Error::app(
+                Err(Error::app(
                     ErrorCode::InvalidCredentials,
                     "invalid credentials",
-                ));
+                ))
             }
-        };
+        }
+    }
+
+    pub async fn login(&self, input: LoginInput) -> Result<LoginOk> {
+        let login_key = self.enforce_login_limits(&input).await?;
+
+        let outcome = self
+            .zitadel
+            .create_password_session(&input.login, &input.password, input.totp_code.as_deref())
+            .await?;
+        let zsession = self.resolve_session_outcome(outcome, &input).await?;
 
         let Some(user) = ab_db::identity::find_user_for_login(&self.pool, &input.login).await?
         else {
@@ -203,6 +227,37 @@ impl IdentityService {
                 ErrorCode::AccountDisabled,
                 "account is disabled",
             ));
+        }
+
+        // BFF-enforced MFA: Zitadel's session API does not force TOTP by
+        // itself — if the account has TOTP enrolled and no code came with
+        // this attempt, demand the second factor before opening our session.
+        if input.totp_code.is_none() {
+            let methods = self
+                .zitadel
+                .list_auth_method_types(&user.zitadel_user_id)
+                .await?;
+            if methods
+                .iter()
+                .any(|m| m == "AUTHENTICATION_METHOD_TYPE_TOTP")
+            {
+                let token = SecretString::from(zsession.session_token.clone());
+                if let Err(err) = self
+                    .zitadel
+                    .delete_session(&zsession.session_id, &token)
+                    .await
+                {
+                    tracing::warn!(%err, "discarding pre-mfa zitadel session failed");
+                }
+                self.audit(
+                    Some(user.id),
+                    "login-mfa-required",
+                    &input,
+                    serde_json::json!({}),
+                )
+                .await?;
+                return Err(Error::app(ErrorCode::MfaRequired, "one-time code required"));
+            }
         }
 
         let (roles, permissions) = ab_db::identity::load_user_grants(&self.pool, user.id).await?;
@@ -234,6 +289,44 @@ impl IdentityService {
             roles,
             permissions,
         })
+    }
+
+    // ── TOTP self-service (optional MFA, DECISIONS.md: TOTP only) ──────────
+
+    /// Start TOTP enrollment; returns the otpauth URI + secret for the
+    /// authenticator app. Conflict if already enrolled and verified.
+    pub async fn totp_enroll(&self, actor: &Actor) -> Result<TotpRegistration> {
+        self.zitadel.register_totp(&actor.zitadel_user_id).await
+    }
+
+    /// Activate the enrollment with a first code.
+    pub async fn totp_activate(&self, actor: &Actor, code: &str) -> Result<()> {
+        self.zitadel
+            .verify_totp(&actor.zitadel_user_id, code)
+            .await?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(actor.user_id),
+            "mfa-enrolled",
+            None,
+            None,
+            serde_json::json!({ "method": "totp" }),
+        )
+        .await
+    }
+
+    /// Remove the TOTP authenticator (idempotent).
+    pub async fn totp_remove(&self, actor: &Actor) -> Result<()> {
+        self.zitadel.remove_totp(&actor.zitadel_user_id).await?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(actor.user_id),
+            "mfa-removed",
+            None,
+            None,
+            serde_json::json!({ "method": "totp" }),
+        )
+        .await
     }
 
     /// Terminate the actor's current session (idempotent). The Zitadel-side
