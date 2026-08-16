@@ -13,6 +13,7 @@ pub mod queue;
 pub mod schedule;
 pub mod search;
 pub mod uploads;
+pub mod usergroups;
 
 use std::time::Duration;
 

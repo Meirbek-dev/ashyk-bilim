@@ -7,6 +7,7 @@ pub mod google;
 pub mod rate_limit;
 pub mod rbac_admin;
 pub mod sessions;
+pub mod usergroups;
 pub mod users;
 
 pub use actor::Actor;
@@ -14,4 +15,5 @@ pub use auth::{IdentityService, LoginInput, LoginOk};
 pub use google::GoogleAuthService;
 pub use rbac_admin::RbacAdminService;
 pub use sessions::{NewSession, SessionRecord, SessionStore};
+pub use usergroups::UsergroupsService;
 pub use users::UsersService;

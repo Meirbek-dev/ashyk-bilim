@@ -13,4 +13,5 @@ pub mod platform;
 pub mod rbac;
 pub mod search;
 pub mod uploads;
+pub mod usergroups;
 pub mod users;

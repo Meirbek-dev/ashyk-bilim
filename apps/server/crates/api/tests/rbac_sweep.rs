@@ -57,6 +57,14 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/platform"),
     // Admin user management (platform:manage:platform).
     ("PATCH", "/api/v2/users/{user_id}/status"),
+    // Usergroups (usergroup:create/manage:platform; creator-own writes).
+    ("POST", "/api/v2/usergroups"),
+    ("PATCH", "/api/v2/usergroups/{id}"),
+    ("DELETE", "/api/v2/usergroups/{id}"),
+    ("POST", "/api/v2/usergroups/{id}/members"),
+    ("DELETE", "/api/v2/usergroups/{id}/members"),
+    ("POST", "/api/v2/usergroups/{id}/courses"),
+    ("DELETE", "/api/v2/usergroups/{id}/courses"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

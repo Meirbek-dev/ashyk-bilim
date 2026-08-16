@@ -9,7 +9,8 @@ use ab_domain::catalog::{
 };
 use ab_domain::files::UploadsService;
 use ab_domain::identity::{
-    GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsersService,
+    GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsergroupsService,
+    UsersService,
 };
 use sqlx::PgPool;
 
@@ -30,6 +31,7 @@ pub struct AppState {
     pub collections: CollectionsService,
     pub platform: PlatformService,
     pub search: SearchService,
+    pub usergroups: UsergroupsService,
 }
 
 impl AppState {
@@ -51,6 +53,7 @@ impl AppState {
             collections: CollectionsService::new(pool.clone(), courses.clone()),
             platform: PlatformService::new(pool.clone()),
             search: SearchService::new(pool.clone()),
+            usergroups: UsergroupsService::new(pool.clone()),
             courses,
             pool,
             config: Arc::new(config),

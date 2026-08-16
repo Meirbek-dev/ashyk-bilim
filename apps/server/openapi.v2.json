@@ -1639,6 +1639,41 @@
         }
       }
     },
+    "/api/v2/courses/{id}/usergroups": {
+      "get": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Groups linked to a course (course-settings view).",
+        "operationId": "usergroups_for_course",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Groups",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Usergroup"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/health": {
       "get": {
         "tags": [
@@ -2128,6 +2163,414 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v2/usergroups": {
+      "get": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Newest-first listing (requires `usergroup:read:platform`).",
+        "operationId": "list_usergroups",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "next_cursor from the previous page",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, 1..=100 (default 20)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of usergroups",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsergroupPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Create a usergroup (requires `usergroup:create:platform`).",
+        "operationId": "create_usergroup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUsergroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usergroup"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/usergroups/{id}": {
+      "get": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "One usergroup.",
+        "operationId": "get_usergroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usergroup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usergroup"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Delete a usergroup (membership/course links cascade).",
+        "operationId": "delete_usergroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Rename/redescribe (creator or `usergroup:manage:platform`).",
+        "operationId": "update_usergroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUsergroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usergroup"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/usergroups/{id}/courses": {
+      "get": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Linked course ids.",
+        "operationId": "list_usergroup_courses",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Linked course ids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CourseId"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Link courses to the group.",
+        "operationId": "add_usergroup_courses",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsergroupCoursesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Linked"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Unlink courses from the group.",
+        "operationId": "remove_usergroup_courses",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsergroupCoursesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Unlinked"
+          }
+        }
+      }
+    },
+    "/api/v2/usergroups/{id}/members": {
+      "get": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Member profiles.",
+        "operationId": "list_usergroup_members",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UsergroupMember"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Batch-add members (duplicates ignored; unknown users 404 via FK).",
+        "operationId": "add_usergroup_members",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsergroupMembersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Added"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "usergroups"
+        ],
+        "summary": "Batch-remove members.",
+        "operationId": "remove_usergroup_members",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Usergroup id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsergroupMembersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Removed"
           }
         }
       }
@@ -3095,6 +3538,24 @@
         },
         "additionalProperties": false
       },
+      "CreateUsergroupRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreatedUpload": {
         "type": "object",
         "required": [
@@ -3828,6 +4289,24 @@
         },
         "additionalProperties": false
       },
+      "UpdateUsergroupRequest": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "UserHit": {
         "type": "object",
         "description": "Public-profile projection (no email — FINDINGS #16).",
@@ -3894,6 +4373,134 @@
             "type": "string"
           }
         }
+      },
+      "Usergroup": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "member_count",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creator_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UsergroupId"
+          },
+          "member_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UsergroupCoursesRequest": {
+        "type": "object",
+        "required": [
+          "course_ids"
+        ],
+        "properties": {
+          "course_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsergroupId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "UsergroupMember": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "display_name"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "UsergroupMembersRequest": {
+        "type": "object",
+        "required": [
+          "user_ids"
+        ],
+        "properties": {
+          "user_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsergroupPage": {
+        "type": "object",
+        "description": "Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Usergroup"
+            }
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UsergroupId"
+              }
+            ]
+          }
+        }
       }
     }
   },
@@ -3933,6 +4540,10 @@
     {
       "name": "search",
       "description": "Platform search"
+    },
+    {
+      "name": "usergroups",
+      "description": "Cohorts: member sets linkable to courses"
     }
   ]
 }

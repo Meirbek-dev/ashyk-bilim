@@ -65,6 +65,7 @@ typed_id!(ActivityId);
 typed_id!(BlockId);
 typed_id!(CollectionId);
 typed_id!(CourseUpdateId);
+typed_id!(UsergroupId);
 typed_id!(JobId);
 
 #[cfg(test)]

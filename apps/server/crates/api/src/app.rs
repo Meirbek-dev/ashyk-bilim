@@ -43,6 +43,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "collections", description = "Curated course collections"),
         (name = "platform", description = "Platform settings singleton"),
         (name = "search", description = "Platform search"),
+        (name = "usergroups", description = "Cohorts: member sets linkable to courses"),
     )
 )]
 struct ApiDoc;
@@ -108,6 +109,18 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::platform::get_platform))
         .routes(routes!(routes::platform::update_platform))
         .routes(routes!(routes::search::search))
+        .routes(routes!(routes::usergroups::create_usergroup))
+        .routes(routes!(routes::usergroups::list_usergroups))
+        .routes(routes!(routes::usergroups::get_usergroup))
+        .routes(routes!(routes::usergroups::update_usergroup))
+        .routes(routes!(routes::usergroups::delete_usergroup))
+        .routes(routes!(routes::usergroups::list_usergroup_members))
+        .routes(routes!(routes::usergroups::add_usergroup_members))
+        .routes(routes!(routes::usergroups::remove_usergroup_members))
+        .routes(routes!(routes::usergroups::list_usergroup_courses))
+        .routes(routes!(routes::usergroups::add_usergroup_courses))
+        .routes(routes!(routes::usergroups::remove_usergroup_courses))
+        .routes(routes!(routes::usergroups::usergroups_for_course))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the
