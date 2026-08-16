@@ -112,6 +112,98 @@ pub async fn update_profile(
     Ok(row)
 }
 
+pub struct RoleRow {
+    pub id: uuid::Uuid,
+    pub slug: String,
+    pub display_name_key: String,
+    pub description_key: String,
+    pub priority: i32,
+    pub is_system: bool,
+}
+
+pub async fn list_roles(pool: &PgPool) -> Result<Vec<RoleRow>> {
+    let rows = sqlx::query_as!(
+        RoleRow,
+        r#"SELECT id, slug, display_name_key, description_key, priority, is_system
+           FROM roles ORDER BY priority DESC"#
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+pub async fn role_grants(pool: &PgPool, role_id: uuid::Uuid) -> Result<Vec<String>> {
+    let rows = sqlx::query_scalar!(
+        "SELECT permission FROM role_permissions WHERE role_id = $1 ORDER BY permission",
+        role_id
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+pub async fn find_role_by_slug(pool: &PgPool, slug: &str) -> Result<Option<RoleRow>> {
+    let row = sqlx::query_as!(
+        RoleRow,
+        r#"SELECT id, slug, display_name_key, description_key, priority, is_system
+           FROM roles WHERE slug = $1"#,
+        slug
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// Assign a role and bump the user's rbac_version atomically. Returns the new
+/// version, or `None` if the user does not exist. Idempotent on re-assign.
+pub async fn assign_role(
+    pool: &PgPool,
+    user_id: UserId,
+    role_id: uuid::Uuid,
+) -> Result<Option<i64>> {
+    let mut tx = pool.begin().await?;
+    sqlx::query!(
+        "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        user_id.0,
+        role_id
+    )
+    .execute(&mut *tx)
+    .await?;
+    let version = sqlx::query_scalar!(
+        "UPDATE users SET rbac_version = rbac_version + 1 WHERE id = $1 RETURNING rbac_version",
+        user_id.0
+    )
+    .fetch_optional(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(version)
+}
+
+/// Remove a role and bump rbac_version. Returns the new version (`None` if
+/// the user does not exist).
+pub async fn unassign_role(
+    pool: &PgPool,
+    user_id: UserId,
+    role_id: uuid::Uuid,
+) -> Result<Option<i64>> {
+    let mut tx = pool.begin().await?;
+    sqlx::query!(
+        "DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2",
+        user_id.0,
+        role_id
+    )
+    .execute(&mut *tx)
+    .await?;
+    let version = sqlx::query_scalar!(
+        "UPDATE users SET rbac_version = rbac_version + 1 WHERE id = $1 RETURNING rbac_version",
+        user_id.0
+    )
+    .fetch_optional(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(version)
+}
+
 pub async fn insert_auth_audit(
     pool: &PgPool,
     user_id: Option<UserId>,

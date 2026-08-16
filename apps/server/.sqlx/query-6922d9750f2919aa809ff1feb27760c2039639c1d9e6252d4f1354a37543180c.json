@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, slug, display_name_key, description_key, priority, is_system\n           FROM roles WHERE slug = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "slug"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "display_name_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "display_name_key"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "description_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "description_key"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "priority",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "priority"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "is_system",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "is_system"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6922d9750f2919aa809ff1feb27760c2039639c1d9e6252d4f1354a37543180c"
+}

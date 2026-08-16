@@ -4,10 +4,12 @@
 pub mod actor;
 pub mod auth;
 pub mod rate_limit;
+pub mod rbac_admin;
 pub mod sessions;
 pub mod users;
 
 pub use actor::Actor;
 pub use auth::{IdentityService, LoginInput, LoginOk};
+pub use rbac_admin::RbacAdminService;
 pub use sessions::{NewSession, SessionRecord, SessionStore};
 pub use users::UsersService;

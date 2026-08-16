@@ -21,7 +21,11 @@ const AUTH_ONLY: &[(&str, &str)] = &[
 ];
 
 /// Requires specific grants: a zero-grant session must NOT reach a 2xx.
-const PERMISSION_GATED: &[(&str, &str)] = &[("PATCH", "/api/v2/users/me")];
+const PERMISSION_GATED: &[(&str, &str)] = &[
+    ("PATCH", "/api/v2/users/me"),
+    ("POST", "/api/v2/users/{user_id}/roles"),
+    ("DELETE", "/api/v2/users/{user_id}/roles/{slug}"),
+];
 
 const MUTATING: &[&str] = &["post", "put", "patch", "delete"];
 

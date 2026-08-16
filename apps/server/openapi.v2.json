@@ -246,6 +246,40 @@
         }
       }
     },
+    "/api/v2/rbac/roles": {
+      "get": {
+        "tags": [
+          "rbac"
+        ],
+        "summary": "All roles with their grants (requires `role:read:platform`).",
+        "operationId": "list_roles",
+        "responses": {
+          "200": {
+            "description": "Roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Role"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/users/me": {
       "get": {
         "tags": [
@@ -325,10 +359,132 @@
           }
         }
       }
+    },
+    "/api/v2/users/{user_id}/roles": {
+      "post": {
+        "tags": [
+          "rbac"
+        ],
+        "summary": "Assign a role to a user (requires `role:manage:platform`). Live sessions\nof the user pick the new grants up immediately.",
+        "operationId": "assign_role",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Target user",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Assigned"
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown user or role",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users/{user_id}/roles/{slug}": {
+      "delete": {
+        "tags": [
+          "rbac"
+        ],
+        "summary": "Remove a role from a user (requires `role:manage:platform`).",
+        "operationId": "unassign_role",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Target user",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Role slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown user or role",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AssignRoleRequest": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "Role slug, e.g. `instructor`."
+          }
+        },
+        "additionalProperties": false
+      },
       "ErrorCode": {
         "type": "string",
         "description": "Stable, closed set of machine-readable error codes.",
@@ -448,6 +604,42 @@
           "type": {
             "type": "string",
             "description": "Stable documentation URI for this error class."
+          }
+        }
+      },
+      "Role": {
+        "type": "object",
+        "required": [
+          "slug",
+          "display_name_key",
+          "description_key",
+          "priority",
+          "is_system",
+          "permissions"
+        ],
+        "properties": {
+          "description_key": {
+            "type": "string"
+          },
+          "display_name_key": {
+            "type": "string",
+            "description": "i18n key (frontend catalogs own the display strings)."
+          },
+          "is_system": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slug": {
+            "type": "string"
           }
         }
       },
@@ -596,6 +788,10 @@
     {
       "name": "users",
       "description": "User profiles and preferences"
+    },
+    {
+      "name": "rbac",
+      "description": "Roles and permission administration"
     }
   ]
 }

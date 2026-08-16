@@ -37,6 +37,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "health", description = "Liveness and readiness probes"),
         (name = "auth", description = "Sessions and authentication (BFF cookie)"),
         (name = "users", description = "User profiles and preferences"),
+        (name = "rbac", description = "Roles and permission administration"),
     )
 )]
 struct ApiDoc;
@@ -53,6 +54,9 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::auth::revoke_session))
         .routes(routes!(routes::users::my_profile))
         .routes(routes!(routes::users::update_my_profile))
+        .routes(routes!(routes::rbac::list_roles))
+        .routes(routes!(routes::rbac::assign_role))
+        .routes(routes!(routes::rbac::unassign_role))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

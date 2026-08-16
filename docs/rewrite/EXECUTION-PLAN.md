@@ -60,7 +60,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | 1.5 | Google login, first-party OAuth (port google_oauth.py; google_accounts table; Zitadel user w/o password) | todo |
 | 1.6 | MFA enrollment relay (TOTP only — passkeys dropped, DECISIONS.md) ∥ | todo |
 | 1.7 | Users domain: profiles, preferences/locale, avatars (small direct upload), admin user management ∥ | in-progress (GET/PATCH /users/me with locale validation + permission gate; avatars → 2.2 storage, admin management → with 1.8) |
-| 1.8 | RBAC engine + role admin endpoints + usergroups (org context) ∥ | todo |
+| 1.8 | RBAC engine + role admin endpoints + usergroups (org context) ∥ | in-progress (role listing + assign/unassign with rbac_version bump and live-session grant propagation, tested end-to-end; remaining: custom role CRUD, role-permission editing, usergroups, legacy matching-semantics verification vs rbac.py) |
 
 ### P2 — Catalog & storage
 | # | Slice | Status |
