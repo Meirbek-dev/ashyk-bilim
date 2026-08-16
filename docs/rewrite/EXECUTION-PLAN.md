@@ -65,7 +65,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 ### P2 — Catalog & storage
 | # | Slice | Status |
 |---|---|---|
-| 2.1 | Migrations: platform, courses, chapters, activities, blocks, collections, authors | todo |
+| 2.1 | Migrations: platform, courses, chapters, activities, blocks, collections, authors | done (full legacy inventory extracted; redesign fixes: jsonb/text[] instead of JSON-in-varchar, DB-enforced type↔subtype pairs, blocks→activity NOT NULL, dedup'd collection membership, single reactions table, unique certificate issuance, exactly-one-target authorship, 'simple' FTS for ru/kk; 7 integrity tests) |
 | 2.2 | `ab-clients::storage` + uploads pipeline (presigned multipart, finalize, reaper cron) | todo |
 | 2.3 | Courses/chapters/activities CRUD + ordering + publish states ∥ | todo |
 | 2.4 | Blocks (typed content enums: image/pdf/video) + activity content model ∥ | todo |
