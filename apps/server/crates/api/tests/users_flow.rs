@@ -83,3 +83,98 @@ async fn unsupported_locale_is_rejected(pool: PgPool) {
     assert_eq!(res.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(res.json()["field_errors"][0]["field"], "locale");
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("selfie", "selfie@example.com", &["user"])
+        .await;
+    let session = app
+        .mint_session_for(user, &["user:update:own", "file:create:own"])
+        .await;
+
+    let upload_avatar = |mime: &'static str| {
+        let app = &app;
+        let session = &session;
+        async move {
+            let payload = b"avatar bytes".to_vec();
+            let created = app
+                .post_as(
+                    session,
+                    "/api/v2/uploads",
+                    &serde_json::json!({ "purpose": "avatar", "mime": mime,
+                                          "size_bytes": payload.len() }),
+                )
+                .await;
+            assert_eq!(created.status, StatusCode::OK);
+            let id = created.json()["id"].as_str().unwrap().to_owned();
+            let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
+            let put = reqwest::Client::new()
+                .put(&put_url)
+                .body(payload)
+                .send()
+                .await
+                .unwrap();
+            assert!(put.status().is_success());
+            let finalized = app
+                .post_as(
+                    session,
+                    &format!("/api/v2/uploads/{id}/finalize"),
+                    &serde_json::json!({}),
+                )
+                .await;
+            assert_eq!(finalized.status, StatusCode::OK);
+            (id, finalized.json()["key"].as_str().unwrap().to_owned())
+        }
+    };
+
+    let (first_id, first_key) = upload_avatar("image/png").await;
+    let set = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "avatar_upload_id": first_id }),
+        )
+        .await;
+    assert_eq!(set.status, StatusCode::OK);
+    assert_eq!(set.json()["avatar_key"], first_key.as_str());
+
+    // Replacing releases the old object back to the reaper.
+    let (second_id, second_key) = upload_avatar("image/webp").await;
+    let replaced = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "avatar_upload_id": second_id }),
+        )
+        .await;
+    assert_eq!(replaced.status, StatusCode::OK);
+    assert_eq!(replaced.json()["avatar_key"], second_key.as_str());
+    let expiring: bool =
+        sqlx::query_scalar("SELECT expires_at IS NOT NULL FROM uploads WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&first_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert!(expiring, "replaced avatar must re-enter the reaper queue");
+
+    // Wrong-purpose uploads are refused.
+    let wrong = app
+        .post_as(
+            &session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "block-image", "mime": "image/png",
+                                  "size_bytes": 4 }),
+        )
+        .await;
+    let wrong_id = wrong.json()["id"].as_str().unwrap().to_owned();
+    let refused = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "avatar_upload_id": wrong_id }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+}

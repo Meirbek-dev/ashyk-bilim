@@ -38,6 +38,9 @@ pub struct UpdateProfileRequest {
     /// One of the platform locales.
     #[garde(custom(valid_locale))]
     pub locale: Option<String>,
+    /// Finalized `avatar` upload to claim as the new avatar.
+    #[garde(skip)]
+    pub avatar_upload_id: Option<uuid::Uuid>,
 }
 
 // garde's custom-validator contract fixes this signature (&field, &context).

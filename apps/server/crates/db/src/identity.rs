@@ -298,3 +298,118 @@ pub async fn insert_auth_audit(
     .await?;
     Ok(())
 }
+
+/// Point the profile at a new avatar object.
+pub async fn set_avatar_key(pool: &PgPool, user_id: UserId, key: &str) -> Result<bool> {
+    let updated = sqlx::query!(
+        "UPDATE users SET avatar_key = $2 WHERE id = $1",
+        user_id.0,
+        key
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+// ── Custom-role CRUD (system roles are seed-managed) ────────────────────────
+
+/// Returns `None` when the slug is taken.
+pub async fn insert_role(
+    pool: &PgPool,
+    slug: &str,
+    display_name_key: &str,
+    description_key: &str,
+    priority: i32,
+) -> Result<Option<uuid::Uuid>> {
+    let id = sqlx::query_scalar!(
+        r#"INSERT INTO roles (slug, display_name_key, description_key, priority, is_system)
+           VALUES ($1, $2, $3, $4, false)
+           ON CONFLICT (slug) DO NOTHING
+           RETURNING id"#,
+        slug,
+        display_name_key,
+        description_key,
+        priority
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(id)
+}
+
+/// Metadata update, custom roles only (`false` = missing or system).
+pub async fn update_role(
+    pool: &PgPool,
+    slug: &str,
+    display_name_key: Option<&str>,
+    description_key: Option<&str>,
+    priority: Option<i32>,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE roles SET
+               display_name_key = COALESCE($2, display_name_key),
+               description_key = COALESCE($3, description_key),
+               priority = COALESCE($4, priority)
+           WHERE slug = $1 AND NOT is_system"#,
+        slug,
+        display_name_key,
+        description_key,
+        priority
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+/// Everyone currently holding the role (for rbac propagation).
+pub async fn list_role_member_ids(pool: &PgPool, role_id: uuid::Uuid) -> Result<Vec<UserId>> {
+    let ids = sqlx::query_scalar!(
+        r#"SELECT user_id AS "user_id: UserId" FROM user_roles WHERE role_id = $1"#,
+        role_id
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(ids)
+}
+
+/// Custom roles only; membership rows cascade.
+pub async fn delete_role(pool: &PgPool, role_id: uuid::Uuid) -> Result<bool> {
+    let deleted = sqlx::query!("DELETE FROM roles WHERE id = $1 AND NOT is_system", role_id)
+        .execute(pool)
+        .await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
+/// Replace the role's grant set wholesale (validated by the caller).
+pub async fn replace_role_permissions(
+    pool: &PgPool,
+    role_id: uuid::Uuid,
+    permissions: &[String],
+) -> Result<()> {
+    let mut tx = pool.begin().await?;
+    sqlx::query!("DELETE FROM role_permissions WHERE role_id = $1", role_id)
+        .execute(&mut *tx)
+        .await?;
+    for permission in permissions {
+        sqlx::query!(
+            r#"INSERT INTO role_permissions (role_id, permission)
+               VALUES ($1, $2) ON CONFLICT DO NOTHING"#,
+            role_id,
+            permission
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Bump without touching membership (role definition changed).
+pub async fn bump_rbac_version(pool: &PgPool, user_id: UserId) -> Result<Option<i64>> {
+    let version = sqlx::query_scalar!(
+        "UPDATE users SET rbac_version = rbac_version + 1 WHERE id = $1 RETURNING rbac_version",
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(version)
+}

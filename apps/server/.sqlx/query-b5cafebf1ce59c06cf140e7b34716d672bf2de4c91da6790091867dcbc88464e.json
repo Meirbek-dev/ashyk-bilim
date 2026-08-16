@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE roles SET\n               display_name_key = COALESCE($2, display_name_key),\n               description_key = COALESCE($3, description_key),\n               priority = COALESCE($4, priority)\n           WHERE slug = $1 AND NOT is_system",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b5cafebf1ce59c06cf140e7b34716d672bf2de4c91da6790091867dcbc88464e"
+}

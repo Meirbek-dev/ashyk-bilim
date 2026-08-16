@@ -101,6 +101,127 @@ impl RbacAdminService {
         .await
     }
 
+    /// Create a custom role (system roles are seed-managed).
+    pub async fn create_role(
+        &self,
+        actor: &Actor,
+        slug: &str,
+        display_name: &str,
+        description: &str,
+        priority: i32,
+    ) -> Result<()> {
+        actor.require(MANAGE_ROLES)?;
+        let created =
+            ab_db::identity::insert_role(&self.pool, slug, display_name, description, priority)
+                .await?;
+        if created.is_none() {
+            return Err(Error::conflict("role slug is taken"));
+        }
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            None,
+            "role-created",
+            None,
+            None,
+            serde_json::json!({ "role": slug, "by": actor.user_id }),
+        )
+        .await
+    }
+
+    /// Metadata update — custom roles only (404 covers system + unknown).
+    pub async fn update_role(
+        &self,
+        actor: &Actor,
+        slug: &str,
+        display_name: Option<&str>,
+        description: Option<&str>,
+        priority: Option<i32>,
+    ) -> Result<()> {
+        actor.require(MANAGE_ROLES)?;
+        if !ab_db::identity::update_role(&self.pool, slug, display_name, description, priority)
+            .await?
+        {
+            return Err(Error::not_found("custom role"));
+        }
+        Ok(())
+    }
+
+    /// Delete a custom role; every holder's sessions lose it immediately.
+    pub async fn delete_role(&self, actor: &Actor, slug: &str) -> Result<()> {
+        actor.require(MANAGE_ROLES)?;
+        let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
+            .await?
+            .ok_or_else(|| Error::not_found("role"))?;
+        if role.is_system {
+            return Err(Error::forbidden("system roles cannot be deleted"));
+        }
+        let members = ab_db::identity::list_role_member_ids(&self.pool, role.id).await?;
+        if !ab_db::identity::delete_role(&self.pool, role.id).await? {
+            return Err(Error::not_found("custom role"));
+        }
+        self.propagate_all(&members).await?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            None,
+            "role-deleted",
+            None,
+            None,
+            serde_json::json!({ "role": slug, "by": actor.user_id }),
+        )
+        .await
+    }
+
+    /// Replace a custom role's grant set; holders' sessions update live.
+    pub async fn set_role_permissions(
+        &self,
+        actor: &Actor,
+        slug: &str,
+        permissions: Vec<String>,
+    ) -> Result<()> {
+        actor.require(MANAGE_ROLES)?;
+        // Every grant string must parse against the closed registry; a bad
+        // one is caller input here, not deploy drift.
+        if let Err(err) =
+            ab_core::permission::PermissionSet::parse(permissions.iter().map(String::as_str))
+        {
+            return Err(Error::validation(vec![ab_core::FieldError {
+                field: "permissions".into(),
+                code: "invalid".into(),
+                message: err.to_string(),
+            }]));
+        }
+        let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
+            .await?
+            .ok_or_else(|| Error::not_found("role"))?;
+        if role.is_system {
+            return Err(Error::forbidden(
+                "system role grants are managed by migration",
+            ));
+        }
+        ab_db::identity::replace_role_permissions(&self.pool, role.id, &permissions).await?;
+        let members = ab_db::identity::list_role_member_ids(&self.pool, role.id).await?;
+        self.propagate_all(&members).await?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            None,
+            "role-permissions-changed",
+            None,
+            None,
+            serde_json::json!({ "role": slug, "by": actor.user_id, "count": permissions.len() }),
+        )
+        .await
+    }
+
+    /// Bump + rewrite sessions for every affected user (role-level change).
+    async fn propagate_all(&self, user_ids: &[UserId]) -> Result<()> {
+        for user_id in user_ids {
+            if let Some(version) = ab_db::identity::bump_rbac_version(&self.pool, *user_id).await? {
+                self.propagate(*user_id, version).await?;
+            }
+        }
+        Ok(())
+    }
+
     /// Push the user's fresh grants into every live session.
     async fn propagate(&self, user_id: UserId, rbac_version: i64) -> Result<()> {
         let (roles, permissions) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;

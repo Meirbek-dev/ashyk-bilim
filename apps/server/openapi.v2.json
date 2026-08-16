@@ -1783,6 +1783,181 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "rbac"
+        ],
+        "summary": "Create a custom role (requires `role:manage:platform`).",
+        "operationId": "create_role",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Created"
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Slug taken",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/rbac/roles/{slug}": {
+      "delete": {
+        "tags": [
+          "rbac"
+        ],
+        "summary": "Delete a custom role; holders' live sessions lose it immediately.",
+        "operationId": "delete_role",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Role slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "System role",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "rbac"
+        ],
+        "summary": "Update a custom role's metadata (system roles are seed-managed).",
+        "operationId": "update_role",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Role slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Updated"
+          },
+          "404": {
+            "description": "Unknown or system role",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/rbac/roles/{slug}/permissions": {
+      "put": {
+        "tags": [
+          "rbac"
+        ],
+        "summary": "Replace a custom role's grant set; holders' sessions update live.",
+        "operationId": "set_role_permissions",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Role slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRolePermissionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Replaced"
+          },
+          "403": {
+            "description": "System role",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unparseable grant",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v2/search": {
@@ -2687,6 +2862,35 @@
         },
         "additionalProperties": false
       },
+      "CreateRoleRequest": {
+        "type": "object",
+        "required": [
+          "slug",
+          "display_name",
+          "priority"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordering weight (system roles: guest 0 … admin 100)."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Kebab-case slug, e.g. `teaching-assistant`."
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateUploadRequest": {
         "type": "object",
         "required": [
@@ -3147,6 +3351,22 @@
           }
         }
       },
+      "SetRolePermissionsRequest": {
+        "type": "object",
+        "required": [
+          "permissions"
+        ],
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Full replacement grant set; every entry must parse against the\npermission registry (`resource:action[:scope]`)."
+          }
+        },
+        "additionalProperties": false
+      },
       "TotpEnrollment": {
         "type": "object",
         "description": "TOTP enrollment secrets — shown to the user exactly once.",
@@ -3358,6 +3578,14 @@
         "type": "object",
         "description": "Partial update; omitted fields are unchanged.",
         "properties": {
+          "avatar_upload_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Finalized `avatar` upload to claim as the new avatar."
+          },
           "bio": {
             "type": [
               "string",
@@ -3376,6 +3604,31 @@
               "null"
             ],
             "description": "One of the platform locales."
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateRoleRequest": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "priority": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
           }
         },
         "additionalProperties": false

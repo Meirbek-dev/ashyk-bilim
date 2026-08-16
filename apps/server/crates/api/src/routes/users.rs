@@ -53,6 +53,7 @@ pub async fn update_my_profile(
                 display_name: request.display_name,
                 bio: request.bio,
                 locale: request.locale,
+                avatar_upload_id: request.avatar_upload_id,
             },
         )
         .await?;

@@ -94,3 +94,117 @@ async fn assigning_unknown_role_is_not_found(pool: PgPool) {
         .await;
     assert_eq!(res.status, StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let admin = app
+        .mint_session(&["role:manage:platform", "role:read:platform"])
+        .await;
+
+    // Create a custom role and give it a grant set.
+    let created = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({
+                "slug": "teaching-assistant",
+                "display_name": "Teaching assistant",
+                "priority": 30,
+            }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::NO_CONTENT);
+
+    // Slug collisions are conflicts; system roles refuse edits.
+    let dup = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({ "slug": "teaching-assistant",
+                                  "display_name": "Dup", "priority": 10 }),
+        )
+        .await;
+    assert_eq!(dup.status, StatusCode::CONFLICT);
+    let sys = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri("/api/v2/rbac/roles/instructor/permissions")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &admin.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "permissions": ["course:read:all"] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(sys.status, StatusCode::FORBIDDEN);
+
+    // Unparseable grants are rejected before anything is written.
+    let garbage = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri("/api/v2/rbac/roles/teaching-assistant/permissions")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &admin.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "permissions": ["not-a-grant"] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(garbage.status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    let set = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri("/api/v2/rbac/roles/teaching-assistant/permissions")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &admin.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "permissions": ["course:read:all"] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(set.status, StatusCode::NO_CONTENT);
+
+    // Assign it to a user with a live session: grants appear immediately.
+    let member = app.create_user("ta", "ta@example.com", &[]).await;
+    let member_session = app.mint_session_for(member, &[]).await;
+    let assigned = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/users/{member}/roles"),
+            &serde_json::json!({ "role": "teaching-assistant" }),
+        )
+        .await;
+    assert_eq!(assigned.status, StatusCode::NO_CONTENT);
+    let session_view = app.get_as(&member_session, "/api/v2/auth/session").await;
+    assert!(
+        session_view.json()["permissions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p == "course:read:all"),
+        "live session must pick up the custom role's grants"
+    );
+
+    // Deleting the role strips it from live sessions too.
+    let deleted = app
+        .delete_as(&admin, "/api/v2/rbac/roles/teaching-assistant")
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    let session_view = app.get_as(&member_session, "/api/v2/auth/session").await;
+    assert!(
+        !session_view.json()["permissions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p == "course:read:all"),
+        "deleting the role must revoke its grants from live sessions"
+    );
+}

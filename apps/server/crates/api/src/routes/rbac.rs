@@ -3,7 +3,9 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 
-use crate::dto::rbac::{AssignRoleRequest, Role};
+use crate::dto::rbac::{
+    AssignRoleRequest, CreateRoleRequest, Role, SetRolePermissionsRequest, UpdateRoleRequest,
+};
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, ValidJson};
 use crate::state::AppState;
@@ -79,5 +81,118 @@ pub async fn unassign_role(
     Path((user_id, slug)): Path<(UserId, String)>,
 ) -> ApiResult<StatusCode> {
     state.rbac.unassign_role(&actor, user_id, &slug).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Create a custom role (requires `role:manage:platform`).
+#[utoipa::path(
+    post,
+    path = "/rbac/roles",
+    tag = "rbac",
+    request_body = CreateRoleRequest,
+    responses(
+        (status = 204, description = "Created"),
+        (status = 403, description = "Missing permission", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "Slug taken", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn create_role(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    ValidJson(request): ValidJson<CreateRoleRequest>,
+) -> ApiResult<StatusCode> {
+    state
+        .rbac
+        .create_role(
+            &actor,
+            &request.slug,
+            &request.display_name,
+            request.description.as_deref().unwrap_or(""),
+            request.priority,
+        )
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Update a custom role's metadata (system roles are seed-managed).
+#[utoipa::path(
+    patch,
+    path = "/rbac/roles/{slug}",
+    tag = "rbac",
+    params(("slug" = String, Path, description = "Role slug")),
+    request_body = UpdateRoleRequest,
+    responses(
+        (status = 204, description = "Updated"),
+        (status = 404, description = "Unknown or system role", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn update_role(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(slug): Path<String>,
+    ValidJson(request): ValidJson<UpdateRoleRequest>,
+) -> ApiResult<StatusCode> {
+    state
+        .rbac
+        .update_role(
+            &actor,
+            &slug,
+            request.display_name.as_deref(),
+            request.description.as_deref(),
+            request.priority,
+        )
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Delete a custom role; holders' live sessions lose it immediately.
+#[utoipa::path(
+    delete,
+    path = "/rbac/roles/{slug}",
+    tag = "rbac",
+    params(("slug" = String, Path, description = "Role slug")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 403, description = "System role", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn delete_role(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(slug): Path<String>,
+) -> ApiResult<StatusCode> {
+    state.rbac.delete_role(&actor, &slug).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Replace a custom role's grant set; holders' sessions update live.
+#[utoipa::path(
+    put,
+    path = "/rbac/roles/{slug}/permissions",
+    tag = "rbac",
+    params(("slug" = String, Path, description = "Role slug")),
+    request_body = SetRolePermissionsRequest,
+    responses(
+        (status = 204, description = "Replaced"),
+        (status = 403, description = "System role", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Unparseable grant", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn set_role_permissions(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(slug): Path<String>,
+    ValidJson(request): ValidJson<SetRolePermissionsRequest>,
+) -> ApiResult<StatusCode> {
+    state
+        .rbac
+        .set_role_permissions(&actor, &slug, request.permissions)
+        .await?;
     Ok(StatusCode::NO_CONTENT)
 }
