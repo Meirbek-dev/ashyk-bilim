@@ -23,8 +23,8 @@
     "deploy": "bash ./extra/deploy.sh"
   },
   "devDependencies": {
-    "taze": "^20.0.1",
-    "turbo": "^2.10.9",
+    "taze": "^21.1.0",
+    "turbo": "^2.10.10",
     "vite-plus": "0.2.9"
   },
   "overrides": {
