@@ -3,7 +3,9 @@
 use std::sync::Arc;
 
 use ab_core::config::Config;
-use ab_domain::identity::{IdentityService, RbacAdminService, SessionStore, UsersService};
+use ab_domain::identity::{
+    GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsersService,
+};
 use sqlx::PgPool;
 
 #[derive(Clone)]
@@ -14,11 +16,18 @@ pub struct AppState {
     pub identity: IdentityService,
     pub users: UsersService,
     pub rbac: RbacAdminService,
+    /// `None` when Google login is not configured (password login only).
+    pub google: Option<GoogleAuthService>,
 }
 
 impl AppState {
     #[must_use]
-    pub fn new(pool: PgPool, config: Config, identity: IdentityService) -> Self {
+    pub fn new(
+        pool: PgPool,
+        config: Config,
+        identity: IdentityService,
+        google: Option<GoogleAuthService>,
+    ) -> Self {
         let sessions = identity.sessions().clone();
         Self {
             users: UsersService::new(pool.clone()),
@@ -27,6 +36,7 @@ impl AppState {
             config: Arc::new(config),
             sessions,
             identity,
+            google,
         }
     }
 }

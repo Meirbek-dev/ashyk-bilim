@@ -55,6 +55,7 @@ pub fn test_config() -> Config {
         },
         redis: RedisConfig { url: None },
         zitadel: None,
+        google: None,
         telemetry: TelemetryConfig {
             json_logs: false,
             otlp_endpoint: None,
@@ -68,13 +69,20 @@ pub struct TestApp {
     pub sessions: ab_domain::identity::SessionStore,
     /// Wiremock standing in for Zitadel — mount fixtures per test.
     pub zitadel: MockServer,
+    /// Wiremock standing in for Google's OAuth endpoints.
+    pub google: MockServer,
 }
+
+/// The Google OAuth client id used by the test app (id_token `aud` must match).
+pub const TEST_GOOGLE_CLIENT_ID: &str = "test-google-client";
 
 impl TestApp {
     /// Build the full application (real router, real middleware) over the
-    /// given pool + test Redis + a fresh Zitadel mock. Use with `#[sqlx::test]`.
+    /// given pool + test Redis + fresh Zitadel/Google mocks. Use with
+    /// `#[sqlx::test]`.
     pub async fn spawn(pool: PgPool) -> Self {
         let zitadel = MockServer::start().await;
+        let google = MockServer::start().await;
         let sessions = ab_domain::identity::SessionStore::connect(&test_redis_url())
             .await
             .expect("test redis reachable (see AGENTS.md local dev stack)");
@@ -85,14 +93,32 @@ impl TestApp {
             })
             .expect("test zitadel client"),
         );
-        let identity = IdentityService::new(pool.clone(), sessions.clone(), zitadel_client);
-        let state = ab_api::AppState::new(pool.clone(), test_config(), identity);
+        let google_client = Arc::new(
+            ab_clients::google::GoogleClient::new(ab_clients::google::GoogleConfig {
+                client_id: TEST_GOOGLE_CLIENT_ID.into(),
+                client_secret: SecretString::from("test-google-secret"),
+                redirect_uri: "http://localhost/api/v2/auth/google/callback".into(),
+                token_endpoint: Some(format!("{}/token", google.uri())),
+                userinfo_endpoint: Some(format!("{}/userinfo", google.uri())),
+                authorization_endpoint: Some(format!("{}/authorize", google.uri())),
+            })
+            .expect("test google client"),
+        );
+        let identity = IdentityService::new(pool.clone(), sessions.clone(), zitadel_client.clone());
+        let google_auth = ab_domain::identity::GoogleAuthService::new(
+            pool.clone(),
+            sessions.clone(),
+            zitadel_client,
+            google_client,
+        );
+        let state = ab_api::AppState::new(pool.clone(), test_config(), identity, Some(google_auth));
         let router = ab_api::build_router(state).expect("test router must build");
         Self {
             router,
             pool,
             sessions,
             zitadel,
+            google,
         }
     }
 

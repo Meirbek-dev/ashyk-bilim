@@ -36,6 +36,8 @@ pub struct Config {
     pub redis: RedisConfig,
     /// Required by `serve` (authentication); optional for other subcommands.
     pub zitadel: Option<ZitadelConfig>,
+    /// Google login is optional (password login works without it).
+    pub google: Option<GoogleOauthConfig>,
     pub telemetry: TelemetryConfig,
 }
 
@@ -67,6 +69,14 @@ pub struct ZitadelConfig {
     pub base_url: String,
     /// Provisioner machine-user PAT.
     pub pat: SecretString,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct GoogleOauthConfig {
+    pub client_id: String,
+    pub client_secret: SecretString,
+    /// Our callback URL as registered in the Google console.
+    pub redirect_uri: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -165,6 +175,7 @@ mod tests {
             },
             redis: RedisConfig { url: None },
             zitadel: None,
+            google: None,
             telemetry: TelemetryConfig {
                 json_logs: false,
                 otlp_endpoint: None,

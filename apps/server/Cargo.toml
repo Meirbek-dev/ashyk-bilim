@@ -48,6 +48,7 @@ uuid = { version = "1", features = ["v4", "v7", "serde"] }
 redis = { version = "1", features = ["tokio-comp", "connection-manager"] }
 sha2 = "0.11"
 time = "0.3"
+base64 = "0.23"
 jiff = { version = "0.2", features = ["serde"] }
 
 # Serde & validation
@@ -80,7 +81,7 @@ dotenvy = "0.15"
 mimalloc = "0.1"
 
 # HTTP client
-reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "form", "rustls"] }
 
 # Misc
 futures = "0.3"

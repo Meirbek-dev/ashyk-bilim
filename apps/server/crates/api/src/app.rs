@@ -52,6 +52,8 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::auth::current_session))
         .routes(routes!(routes::auth::list_sessions))
         .routes(routes!(routes::auth::revoke_session))
+        .routes(routes!(routes::auth::google_start))
+        .routes(routes!(routes::auth::google_callback))
         .routes(routes!(routes::users::my_profile))
         .routes(routes!(routes::users::update_my_profile))
         .routes(routes!(routes::rbac::list_roles))

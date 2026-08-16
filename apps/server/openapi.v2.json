@@ -9,6 +9,74 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/v2/auth/google": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Start Google sign-in: 303 to Google's consent screen.",
+        "operationId": "google_start",
+        "parameters": [
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "Relative return path",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect to Google"
+          }
+        }
+      }
+    },
+    "/api/v2/auth/google/callback": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Google redirects here; on success the session cookie is set and the\nbrowser continues to the original callback path.",
+        "operationId": "google_callback",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "description": "Authorization code",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Opaque state",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "description": "Google-side error",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect into the app (or to login with ?error=)"
+          }
+        }
+      }
+    },
     "/api/v2/auth/login": {
       "post": {
         "tags": [
@@ -502,7 +570,8 @@
           "mfa-required",
           "session-expired",
           "csrf-rejected",
-          "account-disabled"
+          "account-disabled",
+          "google-oauth-expired"
         ]
       },
       "FieldError": {

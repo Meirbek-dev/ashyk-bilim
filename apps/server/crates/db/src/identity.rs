@@ -204,6 +204,79 @@ pub async fn unassign_role(
     Ok(version)
 }
 
+pub async fn find_user_id_by_google_sub(pool: &PgPool, sub: &str) -> Result<Option<UserId>> {
+    let id = sqlx::query_scalar!(
+        r#"SELECT user_id AS "user_id: uuid::Uuid" FROM google_accounts WHERE google_sub = $1"#,
+        sub
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(id.map(UserId))
+}
+
+pub async fn find_user_id_by_email(pool: &PgPool, email: &str) -> Result<Option<UserId>> {
+    let id = sqlx::query_scalar!("SELECT id FROM users WHERE email = $1", email)
+        .fetch_optional(pool)
+        .await?;
+    Ok(id.map(UserId))
+}
+
+/// Link a Google `sub` to a user. Idempotent per sub.
+pub async fn link_google_account(
+    pool: &PgPool,
+    user_id: UserId,
+    sub: &str,
+    email: &str,
+) -> Result<()> {
+    sqlx::query!(
+        "INSERT INTO google_accounts (google_sub, user_id, email)
+         VALUES ($1, $2, $3) ON CONFLICT (google_sub) DO NOTHING",
+        sub,
+        user_id.0,
+        email
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Create a user with the default `user` role, atomically. Returns `None` on
+/// username/email collision (caller retries with a different username).
+pub async fn create_user_with_default_role(
+    pool: &PgPool,
+    zitadel_user_id: &str,
+    username: &str,
+    email: &str,
+    display_name: &str,
+) -> Result<Option<UserId>> {
+    let mut tx = pool.begin().await?;
+    let inserted = sqlx::query_scalar!(
+        r#"INSERT INTO users (zitadel_user_id, username, email, display_name)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT DO NOTHING
+           RETURNING id"#,
+        zitadel_user_id,
+        username,
+        email,
+        display_name
+    )
+    .fetch_optional(&mut *tx)
+    .await?;
+    let Some(id) = inserted else {
+        tx.rollback().await?;
+        return Ok(None);
+    };
+    sqlx::query!(
+        "INSERT INTO user_roles (user_id, role_id)
+         SELECT $1, id FROM roles WHERE slug = 'user'",
+        id
+    )
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(Some(UserId(id)))
+}
+
 pub async fn insert_auth_audit(
     pool: &PgPool,
     user_id: Option<UserId>,

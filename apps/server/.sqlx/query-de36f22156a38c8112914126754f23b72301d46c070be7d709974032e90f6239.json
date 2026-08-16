@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO users (zitadel_user_id, username, email, display_name)\n           VALUES ($1, $2, $3, $4)\n           ON CONFLICT DO NOTHING\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "de36f22156a38c8112914126754f23b72301d46c070be7d709974032e90f6239"
+}

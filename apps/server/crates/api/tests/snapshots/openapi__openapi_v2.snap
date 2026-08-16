@@ -34,7 +34,8 @@ expression: json
           "mfa-required",
           "session-expired",
           "csrf-rejected",
-          "account-disabled"
+          "account-disabled",
+          "google-oauth-expired"
         ],
         "type": "string"
       },
@@ -319,6 +320,74 @@ expression: json
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v2/auth/google": {
+      "get": {
+        "operationId": "google_start",
+        "parameters": [
+          {
+            "description": "Relative return path",
+            "in": "query",
+            "name": "callback",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect to Google"
+          }
+        },
+        "summary": "Start Google sign-in: 303 to Google's consent screen.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/google/callback": {
+      "get": {
+        "operationId": "google_callback",
+        "parameters": [
+          {
+            "description": "Authorization code",
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque state",
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Google-side error",
+            "in": "query",
+            "name": "error",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect into the app (or to login with ?error=)"
+          }
+        },
+        "summary": "Google redirects here; on success the session cookie is set and the\nbrowser continues to the original callback path.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v2/auth/login": {
       "post": {
         "operationId": "login",

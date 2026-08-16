@@ -19,6 +19,10 @@ expression: registry
     403,
     "Forbidden"
   ],
+  "google-oauth-expired": [
+    400,
+    "Google sign-in expired or invalid"
+  ],
   "internal": [
     500,
     "Internal server error"

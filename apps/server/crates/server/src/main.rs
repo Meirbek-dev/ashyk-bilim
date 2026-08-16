@@ -100,10 +100,31 @@ async fn serve(config: Config) -> anyhow::Result<()> {
             pat: zitadel_config.pat,
         },
     )?);
-    let identity = ab_domain::identity::IdentityService::new(pool.clone(), sessions, zitadel);
+    let identity =
+        ab_domain::identity::IdentityService::new(pool.clone(), sessions.clone(), zitadel.clone());
+    let google = if let Some(g) = config.google.clone() {
+        Some(ab_domain::identity::GoogleAuthService::new(
+            pool.clone(),
+            sessions,
+            zitadel,
+            std::sync::Arc::new(ab_clients::google::GoogleClient::new(
+                ab_clients::google::GoogleConfig {
+                    client_id: g.client_id,
+                    client_secret: g.client_secret,
+                    redirect_uri: g.redirect_uri,
+                    token_endpoint: None,
+                    userinfo_endpoint: None,
+                    authorization_endpoint: None,
+                },
+            )?),
+        ))
+    } else {
+        tracing::info!("google login not configured (AB__GOOGLE__* unset)");
+        None
+    };
 
     let addr = format!("{}:{}", config.server.host, config.server.port);
-    let router = ab_api::build_router(AppState::new(pool, config, identity))?;
+    let router = ab_api::build_router(AppState::new(pool, config, identity, google))?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
     axum::serve(listener, router)

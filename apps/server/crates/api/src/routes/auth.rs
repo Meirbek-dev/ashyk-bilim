@@ -1,11 +1,13 @@
 use ab_core::{Error, ErrorCode};
 use ab_domain::identity::LoginInput;
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
+use axum::response::Redirect;
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use secrecy::SecretString;
+use serde::Deserialize;
 
 use crate::dto::auth::{LoginRequest, SessionInfo, SessionSummary};
 use crate::error::{ApiResult, Problem};
@@ -148,6 +150,95 @@ pub async fn list_sessions(
 ) -> ApiResult<Json<Vec<SessionSummary>>> {
     let sessions = state.identity.list_sessions(&actor).await?;
     Ok(Json(sessions.into_iter().map(Into::into).collect()))
+}
+
+// ── Google sign-in (browser navigation endpoints: errors redirect, never
+//    render problem+json — the caller is a browser mid-navigation). ─────────
+
+#[derive(Debug, Deserialize)]
+pub struct GoogleStartQuery {
+    /// Relative path to land on after sign-in.
+    pub callback: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GoogleCallbackQuery {
+    pub code: Option<String>,
+    pub state: Option<String>,
+    pub error: Option<String>,
+}
+
+fn login_error_redirect(code: &str) -> Redirect {
+    Redirect::to(&format!("/auth/login?error={code}"))
+}
+
+/// Start Google sign-in: 303 to Google's consent screen.
+#[utoipa::path(
+    get,
+    path = "/auth/google",
+    tag = "auth",
+    params(("callback" = Option<String>, Query, description = "Relative return path")),
+    responses((status = 303, description = "Redirect to Google")),
+)]
+pub async fn google_start(
+    State(state): State<AppState>,
+    Query(query): Query<GoogleStartQuery>,
+) -> Redirect {
+    let Some(google) = &state.google else {
+        return login_error_redirect("service-unavailable");
+    };
+    let callback = query.callback.as_deref().unwrap_or("/");
+    match google.start(callback).await {
+        Ok(url) => Redirect::to(&url),
+        Err(err) => {
+            tracing::warn!(error = %err, "google start failed");
+            login_error_redirect(err.code().as_str())
+        }
+    }
+}
+
+/// Google redirects here; on success the session cookie is set and the
+/// browser continues to the original callback path.
+#[utoipa::path(
+    get,
+    path = "/auth/google/callback",
+    tag = "auth",
+    params(
+        ("code" = Option<String>, Query, description = "Authorization code"),
+        ("state" = Option<String>, Query, description = "Opaque state"),
+        ("error" = Option<String>, Query, description = "Google-side error"),
+    ),
+    responses((status = 303, description = "Redirect into the app (or to login with ?error=)")),
+)]
+pub async fn google_callback(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    headers: HeaderMap,
+    Query(query): Query<GoogleCallbackQuery>,
+) -> (CookieJar, Redirect) {
+    let Some(google) = &state.google else {
+        return (jar, login_error_redirect("service-unavailable"));
+    };
+    if query.error.is_some() {
+        // User cancelled at Google's screen.
+        return (jar, login_error_redirect("google-cancelled"));
+    }
+    let (Some(code), Some(oauth_state)) = (query.code.as_deref(), query.state.as_deref()) else {
+        return (jar, login_error_redirect("google-oauth-expired"));
+    };
+    match google
+        .callback(code, oauth_state, client_ip(&headers), user_agent(&headers))
+        .await
+    {
+        Ok(ok) => {
+            let jar = jar.add(session_cookie(&state, ok.session_id));
+            (jar, Redirect::to(&ok.callback))
+        }
+        Err(err) => {
+            tracing::warn!(error = %err, "google callback failed");
+            (jar, login_error_redirect(err.code().as_str()))
+        }
+    }
 }
 
 /// Revoke one of the caller's own sessions by handle.

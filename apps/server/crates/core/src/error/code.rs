@@ -60,6 +60,7 @@ error_codes! {
     SessionExpired => ("session-expired", 401, "Session expired"),
     CsrfRejected => ("csrf-rejected", 403, "Cross-site request rejected"),
     AccountDisabled => ("account-disabled", 403, "Account is disabled"),
+    GoogleOauthExpired => ("google-oauth-expired", 400, "Google sign-in expired or invalid"),
 }
 
 impl std::fmt::Display for ErrorCode {
