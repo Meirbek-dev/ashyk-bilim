@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let config = Config::load()?;
-    ab_core::telemetry::init(&config.telemetry);
+    let _telemetry = ab_core::telemetry::init(&config.telemetry);
 
     match cli.command {
         Command::Openapi => unreachable!("handled above"),

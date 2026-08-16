@@ -44,11 +44,11 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | 0.5 | `ashyq` bin: clap (serve/worker/migrate/openapi/admin), graceful shutdown, mimalloc | done deedc51 |
 | 0.6 | CI `server-ci.yaml` (PG18+pgvector & Redis services) + coverage floor + openapi diff | done deedc51 (validates on first push) |
 | 0.7 | Compose overlay: zitadel + rustfs + server + worker services; `.env.example` AB__* section | in-progress (authored; boot validation needs a Docker-capable session — pin zitadel/rustfs images then) |
-| 0.8 | `ab-db::queue`: schema, enqueue-in-tx, claim/heartbeat/reaper/backoff/dead-letter, LISTEN/NOTIFY, worker runtime, cron scheduler | in-progress (dd8d3ef queue + 8 tests; 8d9480a worker runtime + 4 tests; remaining: cron leader over job_schedules + soak test) |
-| 0.9 | `ab-testkit`: TestApp harness, session minting, factories, wiremock stub library (Zitadel/Judge0/Resend/LLM incl. SSE) | todo |
+| 0.8 | `ab-db::queue` + worker runtime + interval scheduler (see DECISIONS.md re: cron) | done f0279dc (16 DB tests; soak deferred to first prod-shaped load test in P10) |
+| 0.9 | `ab-testkit`: TestApp harness, session minting, factories, wiremock stub library (Zitadel/Judge0/Resend/LLM incl. SSE) | in-progress (9952bcd: TestApp + HTTP suite + problem+json 404 fallback; session minting → 1.3, wiremock stubs → client slices, factories → first entities) |
 | 0.10 | `ashyq admin zitadel-setup`: idempotent org/project/machine-user/Google-IdP/custom-texts provisioning | todo |
 | 0.11 | RBAC sweep test harness (route-table-driven 403 assertion) | todo |
-| 0.12 | OTLP exporter wiring (opentelemetry crate set) + verify delivery into Logfire (project currently empty — FINDINGS #9) | todo |
+| 0.12 | OTLP exporter wiring (opentelemetry crate set) + verify delivery into Logfire (project currently empty — FINDINGS #9) | in-progress (exporter wired behind AB__TELEMETRY__OTLP_ENDPOINT, headers via OTEL_EXPORTER_OTLP_HEADERS; delivery verification blocked on QUESTIONS.md #2 — Logfire token) |
 
 ### P1 — Identity
 | # | Slice | Status |

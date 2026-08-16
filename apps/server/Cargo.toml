@@ -61,6 +61,10 @@ anyhow = "1"
 # Telemetry
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+opentelemetry = "0.32"
+opentelemetry_sdk = { version = "0.32", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.32", features = ["http-proto", "reqwest-client", "trace"] }
+tracing-opentelemetry = "0.33"
 
 # OpenAPI
 utoipa = { version = "5", features = ["axum_extras", "uuid"] }
