@@ -93,3 +93,45 @@ pub struct CourseListQuery {
     /// 1..=100, default 20.
     pub limit: Option<i64>,
 }
+
+/// One announcement in the course changelog feed.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseUpdate {
+    pub id: ab_core::id::CourseUpdateId,
+    pub course_id: CourseId,
+    pub title: String,
+    pub content: String,
+    pub created_at_unix: i64,
+    pub updated_at_unix: i64,
+}
+
+impl From<ab_domain::catalog::courses::CourseUpdate> for CourseUpdate {
+    fn from(u: ab_domain::catalog::courses::CourseUpdate) -> Self {
+        Self {
+            id: u.id,
+            course_id: u.course_id,
+            title: u.title,
+            content: u.content,
+            created_at_unix: u.created_at,
+            updated_at_unix: u.updated_at,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CreateCourseUpdateRequest {
+    #[garde(length(min = 1, max = 500))]
+    pub title: String,
+    #[garde(length(min = 1, max = 50_000))]
+    pub content: String,
+}
+
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct EditCourseUpdateRequest {
+    #[garde(inner(length(min = 1, max = 500)))]
+    pub title: Option<String>,
+    #[garde(inner(length(min = 1, max = 50_000)))]
+    pub content: Option<String>,
+}

@@ -47,6 +47,14 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("POST", "/api/v2/activities/{id}/move"),
     ("POST", "/api/v2/activities/{id}/blocks"),
     ("DELETE", "/api/v2/blocks/{id}"),
+    // Course announcements follow course write access.
+    ("POST", "/api/v2/courses/{id}/updates"),
+    ("PATCH", "/api/v2/course-updates/{id}"),
+    ("DELETE", "/api/v2/course-updates/{id}"),
+    ("POST", "/api/v2/collections"),
+    ("PATCH", "/api/v2/collections/{id}"),
+    ("DELETE", "/api/v2/collections/{id}"),
+    ("PATCH", "/api/v2/platform"),
 ];
 
 const MUTATING: &[&str] = &["post", "put", "patch", "delete"];

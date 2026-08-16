@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE platforms SET\n               name = COALESCE($1, name),\n               description = COALESCE($2, description),\n               about = COALESCE($3, about),\n               email = COALESCE($4, email),\n               label = COALESCE($5, label),\n               logo_key = COALESCE($6, logo_key),\n               thumbnail_key = COALESCE($7, thumbnail_key)\n           WHERE singleton",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c367ead5ff1370720982a59b614d97d8b20611c8a65aadec6fa9c19a7e1f1a26"
+}

@@ -6,7 +6,9 @@
 //! `AssertSqlSafe` only with a `// SAFETY:` comment.
 
 pub mod catalog;
+pub mod collections;
 pub mod identity;
+pub mod platform;
 pub mod queue;
 pub mod schedule;
 pub mod uploads;

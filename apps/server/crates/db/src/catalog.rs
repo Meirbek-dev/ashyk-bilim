@@ -3,7 +3,7 @@
 //! cursor is simply the last id seen (ARCHITECTURE §6).
 
 use ab_core::Result;
-use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, UserId};
+use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, CourseUpdateId, UserId};
 use sqlx::PgPool;
 
 pub struct CourseRow {
@@ -514,6 +514,101 @@ pub async fn list_blocks(pool: &PgPool, activity_id: ActivityId) -> Result<Vec<B
 
 pub async fn delete_block(pool: &PgPool, id: BlockId) -> Result<bool> {
     let deleted = sqlx::query!("DELETE FROM blocks WHERE id = $1", id.0)
+        .execute(pool)
+        .await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
+// ── Course updates (changelog) ──────────────────────────────────────────────
+
+pub struct CourseUpdateRow {
+    pub id: CourseUpdateId,
+    pub course_id: CourseId,
+    pub title: String,
+    pub content: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+pub async fn insert_course_update(
+    pool: &PgPool,
+    course_id: CourseId,
+    title: &str,
+    content: &str,
+) -> Result<CourseUpdateId> {
+    let id = sqlx::query_scalar!(
+        r#"INSERT INTO course_updates (course_id, title, content)
+           VALUES ($1, $2, $3)
+           RETURNING id"#,
+        course_id.0,
+        title,
+        content
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(CourseUpdateId(id))
+}
+
+pub async fn get_course_update(
+    pool: &PgPool,
+    id: CourseUpdateId,
+) -> Result<Option<CourseUpdateRow>> {
+    let row = sqlx::query_as!(
+        CourseUpdateRow,
+        r#"SELECT id AS "id: CourseUpdateId", course_id AS "course_id: CourseId",
+                  title, content,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM course_updates WHERE id = $1"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// Newest-first (announcement feed order).
+pub async fn list_course_updates(
+    pool: &PgPool,
+    course_id: CourseId,
+) -> Result<Vec<CourseUpdateRow>> {
+    let rows = sqlx::query_as!(
+        CourseUpdateRow,
+        r#"SELECT id AS "id: CourseUpdateId", course_id AS "course_id: CourseId",
+                  title, content,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM course_updates WHERE course_id = $1
+           ORDER BY id DESC"#,
+        course_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+pub async fn update_course_update(
+    pool: &PgPool,
+    id: CourseUpdateId,
+    title: Option<&str>,
+    content: Option<&str>,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE course_updates SET
+               title = COALESCE($2, title),
+               content = COALESCE($3, content)
+           WHERE id = $1"#,
+        id.0,
+        title,
+        content
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+pub async fn delete_course_update(pool: &PgPool, id: CourseUpdateId) -> Result<bool> {
+    let deleted = sqlx::query!("DELETE FROM course_updates WHERE id = $1", id.0)
         .execute(pool)
         .await?;
     Ok(deleted.rows_affected() == 1)

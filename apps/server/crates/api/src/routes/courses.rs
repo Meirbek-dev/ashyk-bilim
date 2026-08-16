@@ -1,12 +1,12 @@
-use ab_core::id::CourseId;
+use ab_core::id::{CourseId, CourseUpdateId};
 use ab_domain::catalog::courses::CourseChanges;
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 
 use crate::dto::courses::{
-    Course, CourseLifecycleRequest, CourseListQuery, CoursePage, CreateCourseRequest,
-    UpdateCourseRequest,
+    Course, CourseLifecycleRequest, CourseListQuery, CoursePage, CourseUpdate, CreateCourseRequest,
+    CreateCourseUpdateRequest, EditCourseUpdateRequest, UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, ValidJson};
@@ -169,5 +169,104 @@ pub async fn delete_course(
     Path(id): Path<CourseId>,
 ) -> ApiResult<StatusCode> {
     state.courses.delete(&actor, id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Course announcements, newest first (read follows course visibility).
+#[utoipa::path(
+    get,
+    path = "/courses/{id}/updates",
+    tag = "courses",
+    params(("id" = CourseId, Path, description = "Course id")),
+    responses(
+        (status = 200, description = "Announcements", body = [CourseUpdate]),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn list_course_updates(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+) -> ApiResult<Json<Vec<CourseUpdate>>> {
+    let updates = state.courses.list_updates(&actor, id).await?;
+    Ok(Json(updates.into_iter().map(Into::into).collect()))
+}
+
+/// Post an announcement (course write access).
+#[utoipa::path(
+    post,
+    path = "/courses/{id}/updates",
+    tag = "courses",
+    params(("id" = CourseId, Path, description = "Course id")),
+    request_body = CreateCourseUpdateRequest,
+    responses(
+        (status = 201, description = "Created", body = CourseUpdate),
+        (status = 403, description = "No write access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn create_course_update(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+    ValidJson(request): ValidJson<CreateCourseUpdateRequest>,
+) -> ApiResult<(StatusCode, Json<CourseUpdate>)> {
+    let update = state
+        .courses
+        .create_update(&actor, id, &request.title, &request.content)
+        .await?;
+    Ok((StatusCode::CREATED, Json(update.into())))
+}
+
+/// Edit an announcement (course write access).
+#[utoipa::path(
+    patch,
+    path = "/course-updates/{id}",
+    tag = "courses",
+    params(("id" = CourseUpdateId, Path, description = "Course update id")),
+    request_body = EditCourseUpdateRequest,
+    responses(
+        (status = 200, description = "Updated", body = CourseUpdate),
+        (status = 403, description = "No write access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn edit_course_update(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseUpdateId>,
+    ValidJson(request): ValidJson<EditCourseUpdateRequest>,
+) -> ApiResult<Json<CourseUpdate>> {
+    let update = state
+        .courses
+        .edit_update(
+            &actor,
+            id,
+            request.title.as_deref(),
+            request.content.as_deref(),
+        )
+        .await?;
+    Ok(Json(update.into()))
+}
+
+/// Delete an announcement (course write access).
+#[utoipa::path(
+    delete,
+    path = "/course-updates/{id}",
+    tag = "courses",
+    params(("id" = CourseUpdateId, Path, description = "Course update id")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 403, description = "No write access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn delete_course_update(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseUpdateId>,
+) -> ApiResult<StatusCode> {
+    state.courses.delete_update(&actor, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }

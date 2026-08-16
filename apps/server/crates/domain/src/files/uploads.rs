@@ -28,7 +28,9 @@ const MB: i64 = 1024 * 1024;
 fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
     match purpose {
         "avatar" => Some((Bucket::Public, 5 * MB, &["image/"])),
-        "course-thumbnail" | "block-image" => Some((Bucket::Public, 10 * MB, &["image/"])),
+        "course-thumbnail" | "block-image" | "platform-logo" | "platform-thumbnail" => {
+            Some((Bucket::Public, 10 * MB, &["image/"]))
+        }
         "block-pdf" => Some((Bucket::Public, 50 * MB, &["application/pdf"])),
         "block-video" => Some((Bucket::Public, 500 * MB, &["video/"])),
         "file-submission" => Some((Bucket::Private, 100 * MB, &[])),

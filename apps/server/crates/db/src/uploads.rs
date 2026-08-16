@@ -92,6 +92,24 @@ pub async fn add_reference(pool: &PgPool, id: Uuid) -> Result<bool> {
     Ok(updated.rows_affected() == 1)
 }
 
+/// [`release_reference`] addressed by storage key (keys are UNIQUE) — used
+/// when only the key was persisted, e.g. replacing platform branding.
+pub async fn release_reference_by_key(pool: &PgPool, key: &str, grace_secs: f64) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE uploads
+           SET referenced_count = referenced_count - 1,
+               expires_at = CASE WHEN referenced_count - 1 = 0
+                                 THEN now() + make_interval(secs => $2)
+                                 ELSE expires_at END
+           WHERE key = $1 AND referenced_count > 0"#,
+        key,
+        grace_secs
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
 /// Drop a reference; when the last one goes, restart the grace clock so the
 /// reaper eventually collects the orphaned object.
 pub async fn release_reference(pool: &PgPool, id: Uuid, grace_secs: f64) -> Result<bool> {

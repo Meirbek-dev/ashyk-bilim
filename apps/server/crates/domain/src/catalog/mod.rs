@@ -1,8 +1,12 @@
-//! Catalog context: courses (this slice); chapters/activities/blocks/
-//! collections follow (2.4–2.5).
+//! Catalog context: courses (+ updates feed), curriculum (chapters/
+//! activities/blocks), collections, and the platform singleton.
 
+pub mod collections;
 pub mod courses;
 pub mod curriculum;
+pub mod platform;
 
+pub use collections::CollectionsService;
 pub use courses::CoursesService;
 pub use curriculum::CurriculumService;
+pub use platform::PlatformService;

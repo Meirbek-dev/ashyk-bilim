@@ -2,9 +2,11 @@
 //! `#[utoipa::path]` annotation and is mounted via `routes!` in `app.rs`.
 
 pub mod auth;
+pub mod collections;
 pub mod courses;
 pub mod curriculum;
 pub mod health;
+pub mod platform;
 pub mod rbac;
 pub mod uploads;
 pub mod users;

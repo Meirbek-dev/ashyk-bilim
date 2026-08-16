@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO collection_courses (collection_id, course_id, position)\n               VALUES ($1, $2, $3)\n               ON CONFLICT (collection_id, course_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c8eba7795b06410c1813abfe75d52903c29a31d21d7ddc65694f2711998c217e"
+}

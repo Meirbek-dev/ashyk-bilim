@@ -40,6 +40,8 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "rbac", description = "Roles and permission administration"),
         (name = "uploads", description = "Direct-to-storage upload pipeline"),
         (name = "courses", description = "Course catalog"),
+        (name = "collections", description = "Curated course collections"),
+        (name = "platform", description = "Platform settings singleton"),
     )
 )]
 struct ApiDoc;
@@ -87,6 +89,17 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::curriculum::list_blocks))
         .routes(routes!(routes::curriculum::get_block))
         .routes(routes!(routes::curriculum::delete_block))
+        .routes(routes!(routes::courses::list_course_updates))
+        .routes(routes!(routes::courses::create_course_update))
+        .routes(routes!(routes::courses::edit_course_update))
+        .routes(routes!(routes::courses::delete_course_update))
+        .routes(routes!(routes::collections::create_collection))
+        .routes(routes!(routes::collections::list_collections))
+        .routes(routes!(routes::collections::get_collection))
+        .routes(routes!(routes::collections::update_collection))
+        .routes(routes!(routes::collections::delete_collection))
+        .routes(routes!(routes::platform::get_platform))
+        .routes(routes!(routes::platform::update_platform))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

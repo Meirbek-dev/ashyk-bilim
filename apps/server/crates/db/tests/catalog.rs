@@ -31,10 +31,12 @@ async fn seed_course(pool: &PgPool) -> (uuid::Uuid, uuid::Uuid, uuid::Uuid) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn platform_is_a_singleton(pool: PgPool) {
-    sqlx::query("INSERT INTO platforms (name, email) VALUES ('Ashyq Bilim', 'a@b.c')")
-        .execute(&pool)
+    // Migration 0008 seeds the row; any further insert must be rejected.
+    let seeded: i64 = sqlx::query_scalar("SELECT count(*) FROM platforms")
+        .fetch_one(&pool)
         .await
         .unwrap();
+    assert_eq!(seeded, 1, "migrations must seed exactly one platform row");
     let second = sqlx::query("INSERT INTO platforms (name, email) VALUES ('Another', 'x@y.z')")
         .execute(&pool)
         .await;

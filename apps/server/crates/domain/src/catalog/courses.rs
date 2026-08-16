@@ -9,7 +9,8 @@ use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
 use sqlx::PgPool;
 
-pub use ab_db::catalog::CourseRow as Course;
+use ab_core::id::CourseUpdateId;
+pub use ab_db::catalog::{CourseRow as Course, CourseUpdateRow as CourseUpdate};
 
 use crate::identity::Actor;
 
@@ -156,6 +157,58 @@ impl CoursesService {
         ab_db::catalog::get_course(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("course"))
+    }
+
+    /// Announcements feed, newest first (read = course visibility).
+    pub async fn list_updates(&self, actor: &Actor, id: CourseId) -> Result<Vec<CourseUpdate>> {
+        self.get(actor, id).await?;
+        ab_db::catalog::list_course_updates(&self.pool, id).await
+    }
+
+    pub async fn create_update(
+        &self,
+        actor: &Actor,
+        id: CourseId,
+        title: &str,
+        content: &str,
+    ) -> Result<CourseUpdate> {
+        let course = self.get(actor, id).await?;
+        Self::require_write(actor, &course)?;
+        let update_id =
+            ab_db::catalog::insert_course_update(&self.pool, id, title, content).await?;
+        ab_db::catalog::get_course_update(&self.pool, update_id)
+            .await?
+            .ok_or_else(|| Error::not_found("course update"))
+    }
+
+    /// Write access follows the parent course.
+    async fn writable_update(&self, actor: &Actor, id: CourseUpdateId) -> Result<CourseUpdate> {
+        let update = ab_db::catalog::get_course_update(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("course update"))?;
+        let course = self.get(actor, update.course_id).await?;
+        Self::require_write(actor, &course)?;
+        Ok(update)
+    }
+
+    pub async fn edit_update(
+        &self,
+        actor: &Actor,
+        id: CourseUpdateId,
+        title: Option<&str>,
+        content: Option<&str>,
+    ) -> Result<CourseUpdate> {
+        self.writable_update(actor, id).await?;
+        ab_db::catalog::update_course_update(&self.pool, id, title, content).await?;
+        ab_db::catalog::get_course_update(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("course update"))
+    }
+
+    pub async fn delete_update(&self, actor: &Actor, id: CourseUpdateId) -> Result<()> {
+        self.writable_update(actor, id).await?;
+        ab_db::catalog::delete_course_update(&self.pool, id).await?;
+        Ok(())
     }
 
     pub async fn delete(&self, actor: &Actor, id: CourseId) -> Result<()> {

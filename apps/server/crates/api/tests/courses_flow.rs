@@ -159,6 +159,71 @@ async fn listing_paginates_and_respects_visibility(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
+async fn announcements_follow_course_access(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "announcer").await;
+    let id = create_course(&app, &teacher, "Rust 101").await;
+
+    let created = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{id}/updates"),
+            &serde_json::json!({ "title": "Week 1", "content": "Read chapter 1" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED);
+    let update_id = created.json()["id"].as_str().unwrap().to_owned();
+
+    // A rival instructor (sees the draft via read:all) can't post or edit.
+    let rival = instructor(&app, "rival-announcer").await;
+    let denied = app
+        .post_as(
+            &rival,
+            &format!("/api/v2/courses/{id}/updates"),
+            &serde_json::json!({ "title": "Spam", "content": "spam" }),
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+
+    let edited = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/course-updates/{update_id}"),
+            &serde_json::json!({ "content": "Read chapters 1-2" }),
+        )
+        .await;
+    assert_eq!(edited.status, StatusCode::OK);
+    assert_eq!(edited.json()["content"], "Read chapters 1-2");
+
+    // Learners read the feed only once the course is published.
+    let learner = app.mint_session(&[]).await;
+    let hidden = app
+        .get_as(&learner, &format!("/api/v2/courses/{id}/updates"))
+        .await;
+    assert_eq!(hidden.status, StatusCode::NOT_FOUND);
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/courses/{id}/lifecycle"),
+        &serde_json::json!({ "action": "publish" }),
+    )
+    .await;
+    let feed = app
+        .get_as(&learner, &format!("/api/v2/courses/{id}/updates"))
+        .await;
+    assert_eq!(feed.status, StatusCode::OK);
+    assert_eq!(feed.json().as_array().unwrap().len(), 1);
+
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/course-updates/{update_id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    let empty = app
+        .get_as(&learner, &format!("/api/v2/courses/{id}/updates"))
+        .await;
+    assert!(empty.json().as_array().unwrap().is_empty());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
 async fn creation_requires_the_grant(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let learner = app.mint_session(&["course:read:all"]).await;
