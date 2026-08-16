@@ -339,6 +339,264 @@
         }
       }
     },
+    "/api/v2/courses": {
+      "get": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Newest-first course listing: public courses plus the caller's own\n(readers with `course:read:all` see everything).",
+        "operationId": "list_courses",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "next_cursor from the previous page",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, 1..=100 (default 20)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of courses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoursePage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Create a course (requires `course:create:platform`).",
+        "operationId": "create_course",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCourseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/courses/{id}": {
+      "get": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "One course (404 for private courses the caller cannot see).",
+        "operationId": "get_course",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Course",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Delete a course and everything under it (cascades).",
+        "operationId": "delete_course",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "No delete access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Partial update (creator with `course:update:own` or platform updaters).",
+        "operationId": "update_course",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCourseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/courses/{id}/lifecycle": {
+      "post": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Publish/unpublish (legacy lifecycle semantics).",
+        "operationId": "course_lifecycle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseLifecycleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Visibility changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/health": {
       "get": {
         "tags": [
@@ -760,6 +1018,139 @@
         },
         "additionalProperties": false
       },
+      "Course": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "about",
+          "tags",
+          "public",
+          "open_to_contributors",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "about": {
+            "type": "string"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creator_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "open_to_contributors": {
+            "type": "boolean"
+          },
+          "public": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CourseId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "CourseLifecycleRequest": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "`publish` or `unpublish`."
+          }
+        },
+        "additionalProperties": false
+      },
+      "CoursePage": {
+        "type": "object",
+        "description": "Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Course"
+            }
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CourseId"
+              }
+            ]
+          }
+        }
+      },
+      "CreateCourseRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "about": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateUploadRequest": {
         "type": "object",
         "required": [
@@ -1085,6 +1476,45 @@
         },
         "additionalProperties": false
       },
+      "UpdateCourseRequest": {
+        "type": "object",
+        "properties": {
+          "about": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "open_to_contributors": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateProfileRequest": {
         "type": "object",
         "description": "Partial update; omitted fields are unchanged.",
@@ -1174,6 +1604,10 @@
     {
       "name": "uploads",
       "description": "Direct-to-storage upload pipeline"
+    },
+    {
+      "name": "courses",
+      "description": "Course catalog"
     }
   ]
 }

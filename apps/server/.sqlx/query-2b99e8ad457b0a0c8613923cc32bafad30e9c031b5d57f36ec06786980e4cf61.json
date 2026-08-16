@@ -1,0 +1,131 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE courses SET\n               name = COALESCE($2, name),\n               description = COALESCE($3, description),\n               about = COALESCE($4, about),\n               tags = COALESCE($5, tags),\n               open_to_contributors = COALESCE($6, open_to_contributors)\n           WHERE id = $1\n           RETURNING id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "about",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "about"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "tags",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "tags"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "public",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "public"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "open_to_contributors",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "open_to_contributors"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "creator_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "creator_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "TextArray",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "2b99e8ad457b0a0c8613923cc32bafad30e9c031b5d57f36ec06786980e4cf61"
+}

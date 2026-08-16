@@ -11,5 +11,6 @@
 //! - Services own transaction boundaries; handlers never see transactions.
 //! - Jobs are enqueued inside the transaction of the fact that caused them.
 
+pub mod catalog;
 pub mod files;
 pub mod identity;

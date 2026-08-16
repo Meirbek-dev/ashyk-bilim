@@ -39,6 +39,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "users", description = "User profiles and preferences"),
         (name = "rbac", description = "Roles and permission administration"),
         (name = "uploads", description = "Direct-to-storage upload pipeline"),
+        (name = "courses", description = "Course catalog"),
     )
 )]
 struct ApiDoc;
@@ -66,6 +67,12 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::uploads::create_upload))
         .routes(routes!(routes::uploads::finalize_upload))
         .routes(routes!(routes::uploads::download_upload))
+        .routes(routes!(routes::courses::create_course))
+        .routes(routes!(routes::courses::list_courses))
+        .routes(routes!(routes::courses::get_course))
+        .routes(routes!(routes::courses::update_course))
+        .routes(routes!(routes::courses::course_lifecycle))
+        .routes(routes!(routes::courses::delete_course))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

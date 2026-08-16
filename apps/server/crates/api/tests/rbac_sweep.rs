@@ -31,8 +31,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("POST", "/api/v2/users/{user_id}/roles"),
     ("DELETE", "/api/v2/users/{user_id}/roles/{slug}"),
     ("POST", "/api/v2/uploads"),
-    // Ownership-gated (no grant needed beyond a session):
-    // finalize checks created_by internally.
+    ("POST", "/api/v2/courses"),
+    ("PATCH", "/api/v2/courses/{id}"),
+    ("POST", "/api/v2/courses/{id}/lifecycle"),
+    ("DELETE", "/api/v2/courses/{id}"),
 ];
 
 const MUTATING: &[&str] = &["post", "put", "patch", "delete"];
