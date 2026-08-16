@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: ActivityId\"\n           FROM activities WHERE chapter_id = $1 ORDER BY position, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a4ae4e53ae2202eada6fe70677fc62eac4640d614e8f2aaf1b6cf5f2d4b57205"
+}

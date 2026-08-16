@@ -3,6 +3,7 @@
 
 pub mod auth;
 pub mod courses;
+pub mod curriculum;
 pub mod health;
 pub mod rbac;
 pub mod uploads;

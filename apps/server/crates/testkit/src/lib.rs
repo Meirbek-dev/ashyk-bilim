@@ -246,6 +246,24 @@ impl TestApp {
         .await
     }
 
+    pub async fn patch_as(
+        &self,
+        session: &MintedSession,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> TestResponse {
+        self.send(
+            Request::builder()
+                .method("PATCH")
+                .uri(path)
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &session.cookie)
+                .body(Body::from(body.to_string()))
+                .expect("request build"),
+        )
+        .await
+    }
+
     pub async fn delete_as(&self, session: &MintedSession, path: &str) -> TestResponse {
         self.send(
             Request::builder()

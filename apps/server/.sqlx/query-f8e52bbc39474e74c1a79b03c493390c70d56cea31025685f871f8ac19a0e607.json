@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: ActivityId\", chapter_id AS \"chapter_id: ChapterId\",\n                  course_id AS \"course_id: CourseId\", name,\n                  activity_type, activity_sub_type, published, position\n           FROM activities WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "chapter_id: ChapterId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "chapter_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "activity_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "activity_type"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "activity_sub_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "activity_sub_type"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "published",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "published"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "position",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "position"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f8e52bbc39474e74c1a79b03c493390c70d56cea31025685f871f8ac19a0e607"
+}

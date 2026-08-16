@@ -35,6 +35,16 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/courses/{id}"),
     ("POST", "/api/v2/courses/{id}/lifecycle"),
     ("DELETE", "/api/v2/courses/{id}"),
+    // Curriculum authoring inherits course write access (creator+own or
+    // platform update); zero-grant probes 404 on the unknown course.
+    ("POST", "/api/v2/courses/{id}/chapters"),
+    ("PATCH", "/api/v2/chapters/{id}"),
+    ("DELETE", "/api/v2/chapters/{id}"),
+    ("POST", "/api/v2/chapters/{id}/move"),
+    ("POST", "/api/v2/chapters/{id}/activities"),
+    ("PATCH", "/api/v2/activities/{id}"),
+    ("DELETE", "/api/v2/activities/{id}"),
+    ("POST", "/api/v2/activities/{id}/move"),
 ];
 
 const MUTATING: &[&str] = &["post", "put", "patch", "delete"];

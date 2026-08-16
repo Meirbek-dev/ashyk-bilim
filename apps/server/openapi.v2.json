@@ -9,6 +9,146 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/v2/activities/{id}": {
+      "delete": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Delete an activity; chapter siblings renumber to stay contiguous.",
+        "operationId": "delete_activity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Activity id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Rename or publish/unpublish an activity.",
+        "operationId": "update_activity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Activity id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActivityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Activity"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/activities/{id}/move": {
+      "post": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Move an activity within its chapter, or to another chapter of the same\ncourse via `chapter_id`.",
+        "operationId": "move_activity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Activity id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveActivityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Moved"
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Cross-course move",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/auth/google": {
       "get": {
         "tags": [
@@ -339,6 +479,198 @@
         }
       }
     },
+    "/api/v2/chapters/{id}": {
+      "delete": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Delete a chapter and its activities; siblings renumber to stay contiguous.",
+        "operationId": "delete_chapter",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Chapter id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChapterId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Rename/redescribe a chapter.",
+        "operationId": "update_chapter",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Chapter id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChapterId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChapterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/chapters/{id}/activities": {
+      "post": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Append an activity to a chapter (type/subtype pair must be valid).",
+        "operationId": "create_activity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Chapter id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChapterId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateActivityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created (appended last)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Activity"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid type/subtype pair",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/chapters/{id}/move": {
+      "post": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Move a chapter to a new position (clamped; siblings renumber).",
+        "operationId": "move_chapter",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Chapter id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChapterId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveChapterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Moved"
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/courses": {
       "get": {
         "tags": [
@@ -534,6 +866,100 @@
           },
           "403": {
             "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/courses/{id}/chapters": {
+      "post": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Append a chapter to a course (course write access).",
+        "operationId": "create_chapter",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChapterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created (appended last)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/courses/{id}/curriculum": {
+      "get": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Chapters with nested activities, in course order.",
+        "operationId": "get_curriculum",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ordered chapters + activities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Curriculum"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible course",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1005,6 +1431,51 @@
   },
   "components": {
     "schemas": {
+      "Activity": {
+        "type": "object",
+        "required": [
+          "id",
+          "chapter_id",
+          "course_id",
+          "name",
+          "activity_type",
+          "activity_sub_type",
+          "published",
+          "position"
+        ],
+        "properties": {
+          "activity_sub_type": {
+            "type": "string"
+          },
+          "activity_type": {
+            "type": "string"
+          },
+          "chapter_id": {
+            "$ref": "#/components/schemas/ChapterId"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1-based, contiguous within the chapter."
+          },
+          "published": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ActivityId": {
+        "type": "string",
+        "format": "uuid"
+      },
       "AssignRoleRequest": {
         "type": "object",
         "required": [
@@ -1017,6 +1488,39 @@
           }
         },
         "additionalProperties": false
+      },
+      "Chapter": {
+        "type": "object",
+        "required": [
+          "id",
+          "course_id",
+          "name",
+          "description",
+          "position"
+        ],
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ChapterId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1-based, contiguous within the course."
+          }
+        }
+      },
+      "ChapterId": {
+        "type": "string",
+        "format": "uuid"
       },
       "Course": {
         "type": "object",
@@ -1118,6 +1622,46 @@
           }
         }
       },
+      "CreateActivityRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "activity_type",
+          "activity_sub_type"
+        ],
+        "properties": {
+          "activity_sub_type": {
+            "type": "string",
+            "description": "Must pair with `activity_type` (e.g. `video_youtube`)."
+          },
+          "activity_type": {
+            "type": "string",
+            "description": "One of the closed activity-type set (e.g. `video`, `exam`)."
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateChapterRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateCourseRequest": {
         "type": "object",
         "required": [
@@ -1193,6 +1737,42 @@
             "description": "PUT the file bytes here (presigned; valid for ~15 minutes)."
           }
         }
+      },
+      "Curriculum": {
+        "type": "object",
+        "required": [
+          "chapters"
+        ],
+        "properties": {
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurriculumChapter"
+            }
+          }
+        }
+      },
+      "CurriculumChapter": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Chapter"
+          },
+          {
+            "type": "object",
+            "required": [
+              "activities"
+            ],
+            "properties": {
+              "activities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Activity"
+                }
+              }
+            }
+          }
+        ],
+        "description": "A chapter with its activities, in curriculum order."
       },
       "ErrorCode": {
         "type": "string",
@@ -1295,6 +1875,46 @@
               "null"
             ],
             "description": "Second factor — resubmit after a 401 `mfa-required`."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MoveActivityRequest": {
+        "type": "object",
+        "description": "Target slot for an activity move; `chapter_id` reparents within the same\ncourse, omitted keeps the current chapter.",
+        "required": [
+          "position"
+        ],
+        "properties": {
+          "chapter_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChapterId"
+              }
+            ]
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1-based target position (in the destination chapter)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MoveChapterRequest": {
+        "type": "object",
+        "description": "Target slot for a chapter move; out-of-range positions clamp.",
+        "required": [
+          "position"
+        ],
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1-based target position."
           }
         },
         "additionalProperties": false
@@ -1472,6 +2092,42 @@
         "properties": {
           "code": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateActivityRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "published": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateChapterRequest": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "additionalProperties": false

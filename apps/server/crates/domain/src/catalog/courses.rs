@@ -42,7 +42,8 @@ impl CoursesService {
     }
 
     /// Write access: platform-wide updaters, or the creator with `own` scope.
-    fn require_write(actor: &Actor, course: &Course) -> Result<()> {
+    /// Shared with the curriculum service (chapters/activities inherit it).
+    pub(crate) fn require_write(actor: &Actor, course: &Course) -> Result<()> {
         if actor.has(perm(Action::Update, Scope::Platform)) {
             return Ok(());
         }

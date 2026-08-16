@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use ab_clients::storage::StorageClient;
 use ab_core::config::Config;
-use ab_domain::catalog::CoursesService;
+use ab_domain::catalog::{CoursesService, CurriculumService};
 use ab_domain::files::UploadsService;
 use ab_domain::identity::{
     GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsersService,
@@ -24,6 +24,7 @@ pub struct AppState {
     pub storage: Arc<StorageClient>,
     pub uploads: UploadsService,
     pub courses: CoursesService,
+    pub curriculum: CurriculumService,
 }
 
 impl AppState {
@@ -36,11 +37,13 @@ impl AppState {
         storage: Arc<StorageClient>,
     ) -> Self {
         let sessions = identity.sessions().clone();
+        let courses = CoursesService::new(pool.clone());
         Self {
             users: UsersService::new(pool.clone()),
             rbac: RbacAdminService::new(pool.clone(), sessions.clone()),
             uploads: UploadsService::new(pool.clone(), Arc::clone(&storage)),
-            courses: CoursesService::new(pool.clone()),
+            curriculum: CurriculumService::new(pool.clone(), courses.clone()),
+            courses,
             pool,
             config: Arc::new(config),
             sessions,
