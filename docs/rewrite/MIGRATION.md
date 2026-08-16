@@ -53,9 +53,10 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
    and bcrypt and transparently re-hashes to its own policy on first successful
    login. **No password resets, no user-visible change.**
 3. Google-linked accounts: legacy Google `sub`/account linkage (from the
-   fastapi-users OAuth account storage — exact table verified during P1 discovery)
-   becomes a Zitadel IdP link (`idpId` = our configured Google IdP, `userId` =
-   Google sub). Users who only ever used Google keep passwordless Google login.
+   fastapi-users OAuth account storage — exact table verified during P1
+   discovery) migrates into **our** `google_accounts` table (Google OAuth is
+   first-party — DECISIONS.md 2026-08-16). Google-only users get a Zitadel user
+   with no password and keep passwordless Google login.
 4. `users.zitadel_user_id` is written back into the new DB; a verification pass
    asserts a 1:1 mapping and that a sample login works via the Session API in the
    rehearsal environment.

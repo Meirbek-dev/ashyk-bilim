@@ -272,13 +272,16 @@ pub enum Error {
 
 ## 7. Authentication & authorization
 
-### Zitadel (self-hosted, compose service)
+### Zitadel (self-hosted, compose service — **internal-only**, see DECISIONS.md 2026-08-16)
 
-- Zitadel v3, own database `zitadel` in the shared Postgres cluster (own role, no
-  grants on the app DB). Masterkey and service PAT live in `.env`.
-- **Zitadel owns**: credentials, password policy & hashing, TOTP, passkeys/WebAuthn,
-  Google IdP, email verification, lockout/brute-force protection, and (future)
-  university SAML/OIDC federation. **We own**: sessions (BFF), RBAC, user profile.
+- Zitadel, own database `zitadel` in the shared Postgres cluster (own role, no
+  grants on the app DB). Masterkey and service PAT live in `.env`. **No public
+  route** — the Rust BFF is its only client; passkeys are dropped (origin-bound,
+  owner declined a dedicated domain) and Google OAuth is first-party.
+- **Zitadel owns**: credentials, password policy & hashing, TOTP, email
+  verification codes (returned to the BFF, sent via Resend), lockout/brute-force
+  counters. **We own**: sessions (BFF), RBAC, user profile, the Google OAuth
+  dance, and the Google `sub` linkage table.
 - Provisioning is code, not clicks: `ashyq admin zitadel-setup` (idempotent) creates
   the org, project, machine user for the API, Google IdP config, custom texts
   (ru/kk/en), and writes the resulting ids into the app DB `platform` row. Runs in
@@ -297,9 +300,11 @@ POST /api/v2/auth/login {login, password}
       ├─ MFA required      ─► 401 code=mfa-required {challenge…}
       │    POST /api/v2/auth/mfa {totp|webauthn assertion} ─► verify via session API ─► cookie
       └─ bad credentials   ─► 401 code=invalid-credentials (uniform timing)
-GET  /api/v2/auth/google  ─► 302 to Zitadel IdP intent (Google)
-     …Google… ─► Zitadel ─► GET /api/v2/auth/google/callback?intent=…&token=…
-  └► retrieve intent, find-or-create user + idp link ─► cookie ─► redirect to app
+GET  /api/v2/auth/google  ─► 302 to Google (first-party authorization-code flow,
+     state-signed; port of legacy google_oauth.py)
+     …Google… ─► GET /api/v2/auth/google/callback?code=…&state=…
+  └► exchange code, verify id_token ─► find-or-create user (Zitadel user with
+     no password + google_accounts row) ─► cookie ─► redirect to app
 POST /api/v2/auth/logout  ─► kill our session + zitadel session
 ```
 

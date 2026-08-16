@@ -57,8 +57,8 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | 1.2 | `ab-clients::zitadel`: session API, user mgmt, IdP intents, import — with wiremock contract fixtures | in-progress (client core: password sessions w/ typed outcomes, human-user create incl. hash-import path, idempotent session delete; 5 wiremock fixtures from live-captured shapes. Remaining: IdP intents (1.5), session get/refresh (1.3), import batching (10.3)) |
 | 1.3 | Session store (Redis) + `Actor` extractor + cookie handling + CSRF guard | todo |
 | 1.4 | Auth endpoints: login, logout, mfa challenge/verify, session list/revoke | todo |
-| 1.5 | Google login via IdP intent (start/callback, find-or-create + link) | todo |
-| 1.6 | MFA enrollment relay (TOTP + passkeys/WebAuthn) ∥ | todo |
+| 1.5 | Google login, first-party OAuth (port google_oauth.py; google_accounts table; Zitadel user w/o password) | todo |
+| 1.6 | MFA enrollment relay (TOTP only — passkeys dropped, DECISIONS.md) ∥ | todo |
 | 1.7 | Users domain: profiles, preferences/locale, avatars (small direct upload), admin user management ∥ | todo |
 | 1.8 | RBAC engine + role admin endpoints + usergroups (org context) ∥ | todo |
 
