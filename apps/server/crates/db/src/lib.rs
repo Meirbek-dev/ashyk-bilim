@@ -8,6 +8,7 @@
 pub mod identity;
 pub mod queue;
 pub mod schedule;
+pub mod uploads;
 
 use std::time::Duration;
 

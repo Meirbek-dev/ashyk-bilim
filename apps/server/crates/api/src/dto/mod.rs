@@ -7,4 +7,5 @@
 pub mod auth;
 pub mod health;
 pub mod rbac;
+pub mod uploads;
 pub mod users;

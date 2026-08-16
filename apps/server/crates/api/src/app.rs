@@ -38,6 +38,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "auth", description = "Sessions and authentication (BFF cookie)"),
         (name = "users", description = "User profiles and preferences"),
         (name = "rbac", description = "Roles and permission administration"),
+        (name = "uploads", description = "Direct-to-storage upload pipeline"),
     )
 )]
 struct ApiDoc;
@@ -62,6 +63,9 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::rbac::list_roles))
         .routes(routes!(routes::rbac::assign_role))
         .routes(routes!(routes::rbac::unassign_role))
+        .routes(routes!(routes::uploads::create_upload))
+        .routes(routes!(routes::uploads::finalize_upload))
+        .routes(routes!(routes::uploads::download_upload))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

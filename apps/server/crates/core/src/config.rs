@@ -38,6 +38,8 @@ pub struct Config {
     pub zitadel: Option<ZitadelConfig>,
     /// Google login is optional (password login works without it).
     pub google: Option<GoogleOauthConfig>,
+    /// Required by `serve`/`worker` (uploads, media); optional elsewhere.
+    pub storage: Option<StorageSettings>,
     pub telemetry: TelemetryConfig,
 }
 
@@ -69,6 +71,16 @@ pub struct ZitadelConfig {
     pub base_url: String,
     /// Provisioner machine-user PAT.
     pub pat: SecretString,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct StorageSettings {
+    /// S3 endpoint origin (`http://rustfs:9000` in compose).
+    pub endpoint: String,
+    pub access_key: String,
+    pub secret_key: SecretString,
+    pub public_bucket: String,
+    pub private_bucket: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -176,6 +188,7 @@ mod tests {
             redis: RedisConfig { url: None },
             zitadel: None,
             google: None,
+            storage: None,
             telemetry: TelemetryConfig {
                 json_logs: false,
                 otlp_endpoint: None,

@@ -66,7 +66,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | # | Slice | Status |
 |---|---|---|
 | 2.1 | Migrations: platform, courses, chapters, activities, blocks, collections, authors | done (full legacy inventory extracted; redesign fixes: jsonb/text[] instead of JSON-in-varchar, DB-enforced type↔subtype pairs, blocks→activity NOT NULL, dedup'd collection membership, single reactions table, unique certificate issuance, exactly-one-target authorship, 'simple' FTS for ru/kk; 7 integrity tests) |
-| 2.2 | `ab-clients::storage` + uploads pipeline | in-progress (storage client done: presigned PUT/GET, head/put/delete, health — 3 tests against LIVE RustFS 1.0.0-rc.1, CI gains a rustfs service; simplification: single presigned PUT instead of multipart — media sizes don't need it, revisit if they do. Remaining: uploads table + domain service + endpoints + reaper cron) |
+| 2.2 | `ab-clients::storage` + uploads pipeline | done (storage client + upload ledger + purpose policy from file_validation.py + create/finalize/download endpoints + uploads:reap handler with 6h schedule seeded at worker boot; e2e tests do real presigned PUTs through RustFS; single presigned PUT instead of multipart — revisit only if media sizes demand it) |
 | 2.3 | Courses/chapters/activities CRUD + ordering + publish states ∥ | todo |
 | 2.4 | Blocks (typed content enums: image/pdf/video) + activity content model ∥ | todo |
 | 2.5 | Collections + platform settings + course updates (changelog) ∥ | todo |

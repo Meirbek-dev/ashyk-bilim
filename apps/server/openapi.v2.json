@@ -425,6 +425,136 @@
         }
       }
     },
+    "/api/v2/uploads": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Start an upload: validates the purpose policy and returns a presigned PUT\n(requires `file:create:own`). Bytes go directly to storage, not this API.",
+        "operationId": "create_upload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Presigned upload slot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedUpload"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Policy violation (size/mime/purpose)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/uploads/{id}/download": {
+      "get": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Redirect to a short-lived presigned download URL.",
+        "operationId": "download_upload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Upload id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect to the presigned URL"
+          },
+          "404": {
+            "description": "Unknown upload",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/uploads/{id}/finalize": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Finalize after the PUT: verifies the object exists and is within policy.",
+        "operationId": "finalize_upload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Upload id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalizedUpload"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No object received / already finalized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/users/me": {
       "get": {
         "tags": [
@@ -630,6 +760,49 @@
         },
         "additionalProperties": false
       },
+      "CreateUploadRequest": {
+        "type": "object",
+        "required": [
+          "purpose",
+          "mime",
+          "size_bytes"
+        ],
+        "properties": {
+          "mime": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "One of: avatar, course-thumbnail, block-image, block-pdf, block-video,\nfile-submission."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatedUpload": {
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "put_url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "put_url": {
+            "type": "string",
+            "description": "PUT the file bytes here (presigned; valid for ~15 minutes)."
+          }
+        }
+      },
       "ErrorCode": {
         "type": "string",
         "description": "Stable, closed set of machine-readable error codes.",
@@ -669,6 +842,27 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "FinalizedUpload": {
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "size_bytes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -976,6 +1170,10 @@
     {
       "name": "rbac",
       "description": "Roles and permission administration"
+    },
+    {
+      "name": "uploads",
+      "description": "Direct-to-storage upload pipeline"
     }
   ]
 }

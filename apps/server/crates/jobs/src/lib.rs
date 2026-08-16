@@ -10,6 +10,8 @@
 //! Remaining for slice 0.8: the cron leader (job_schedules ticker behind a
 //! Postgres advisory lock).
 
+pub mod handlers;
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;

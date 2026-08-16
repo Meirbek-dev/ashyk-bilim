@@ -144,8 +144,10 @@ async fn serve(config: Config) -> anyhow::Result<()> {
         None
     };
 
+    let storage = build_storage(&config)?;
+
     let addr = format!("{}:{}", config.server.host, config.server.port);
-    let router = ab_api::build_router(AppState::new(pool, config, identity, google))?;
+    let router = ab_api::build_router(AppState::new(pool, config, identity, google, storage))?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
     axum::serve(listener, router)
@@ -155,10 +157,41 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Storage is required by serve (uploads) and worker (reaper).
+fn build_storage(
+    config: &Config,
+) -> anyhow::Result<std::sync::Arc<ab_clients::storage::StorageClient>> {
+    let settings = config
+        .storage
+        .clone()
+        .ok_or_else(|| anyhow::anyhow!("AB__STORAGE__* must be set"))?;
+    Ok(std::sync::Arc::new(
+        ab_clients::storage::StorageClient::new(&ab_clients::storage::StorageConfig {
+            endpoint: settings.endpoint,
+            access_key: settings.access_key,
+            secret_key: settings.secret_key,
+            public_bucket: settings.public_bucket,
+            private_bucket: settings.private_bucket,
+        })?,
+    ))
+}
+
 async fn worker(config: Config) -> anyhow::Result<()> {
     let pool = ab_db::connect(&config.database).await?;
-    // Handlers are registered here as domain slices land (see ab-jobs docs).
-    let worker = ab_jobs::Worker::new(pool, ab_jobs::WorkerConfig::default());
+    let storage = build_storage(&config)?;
+
+    // Recurring schedules are seeded idempotently at boot.
+    ab_db::schedule::upsert(
+        &pool,
+        ab_jobs::handlers::uploads::KIND,
+        std::time::Duration::from_hours(6),
+        serde_json::json!({}),
+    )
+    .await?;
+
+    let worker = ab_jobs::Worker::new(pool.clone(), ab_jobs::WorkerConfig::default()).register(
+        ab_jobs::handlers::uploads::UploadsReaper::new(pool, storage),
+    )?;
     let cancel = CancellationToken::new();
     let handle = tokio::spawn(worker.run(cancel.clone()));
     shutdown_signal().await;

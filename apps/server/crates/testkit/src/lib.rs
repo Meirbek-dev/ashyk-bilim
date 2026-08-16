@@ -56,6 +56,7 @@ pub fn test_config() -> Config {
         redis: RedisConfig { url: None },
         zitadel: None,
         google: None,
+        storage: None,
         telemetry: TelemetryConfig {
             json_logs: false,
             otlp_endpoint: None,
@@ -111,7 +112,24 @@ impl TestApp {
             zitadel_client,
             google_client,
         );
-        let state = ab_api::AppState::new(pool.clone(), test_config(), identity, Some(google_auth));
+        let storage = Arc::new(
+            ab_clients::storage::StorageClient::new(&ab_clients::storage::StorageConfig {
+                endpoint: std::env::var("TEST_S3_ENDPOINT")
+                    .unwrap_or_else(|_| "http://localhost:9002".into()),
+                access_key: "ashyq-dev".into(),
+                secret_key: SecretString::from("ashyq-dev-secret"),
+                public_bucket: "ab-public".into(),
+                private_bucket: "ab-private".into(),
+            })
+            .expect("test storage client"),
+        );
+        let state = ab_api::AppState::new(
+            pool.clone(),
+            test_config(),
+            identity,
+            Some(google_auth),
+            storage,
+        );
         let router = ab_api::build_router(state).expect("test router must build");
         Self {
             router,

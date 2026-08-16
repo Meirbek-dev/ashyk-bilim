@@ -6,6 +6,7 @@ version = 4
 name = "ab-api"
 version = "0.1.0"
 dependencies = [
+ "ab-clients",
  "ab-core",
  "ab-db",
  "ab-domain",
@@ -27,6 +28,7 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "utoipa-scalar",
+ "uuid",
  "wiremock",
 ]
 
@@ -105,9 +107,12 @@ dependencies = [
 name = "ab-jobs"
 version = "0.1.0"
 dependencies = [
+ "ab-clients",
  "ab-core",
  "ab-db",
+ "ab-domain",
  "futures",
+ "secrecy",
  "serde_json",
  "sqlx",
  "tokio",

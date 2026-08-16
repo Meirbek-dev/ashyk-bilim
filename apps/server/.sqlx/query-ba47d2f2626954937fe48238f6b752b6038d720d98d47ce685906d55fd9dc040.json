@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE uploads\n           SET referenced_count = referenced_count + 1, expires_at = NULL\n           WHERE id = $1 AND status = 'finalized'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ba47d2f2626954937fe48238f6b752b6038d720d98d47ce685906d55fd9dc040"
+}
