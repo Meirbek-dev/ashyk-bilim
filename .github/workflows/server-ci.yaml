@@ -19,6 +19,7 @@ env:
   CARGO_TERM_COLOR: always
   DATABASE_URL: postgres://ashyq:ashyq@localhost:5432/ashyq_test
   TEST_REDIS_URL: redis://localhost:6379
+  TEST_S3_ENDPOINT: http://localhost:9000
   SQLX_OFFLINE: 'false'
 
 jobs:
@@ -46,6 +47,13 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      rustfs:
+        image: rustfs/rustfs:1.0.0-rc.1
+        env:
+          RUSTFS_ACCESS_KEY: ashyq-dev
+          RUSTFS_SECRET_KEY: ashyq-dev-secret
+          RUSTFS_VOLUMES: /data
+        ports: ['9000:9000']
     steps:
       - uses: actions/checkout@v4
 
@@ -66,6 +74,15 @@ jobs:
 
       - name: Migrate test database
         run: sqlx database create && sqlx migrate run --source migrations
+
+      - name: Create storage buckets
+        env:
+          AWS_ACCESS_KEY_ID: ashyq-dev
+          AWS_SECRET_ACCESS_KEY: ashyq-dev-secret
+          AWS_REGION: us-east-1
+        run: |
+          aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket ab-public
+          aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket ab-private
 
       - name: Clippy (deny warnings)
         run: just clippy

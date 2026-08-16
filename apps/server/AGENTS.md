@@ -80,6 +80,17 @@ podman run -d --rm --name ashyq-zitadel --network ashyq-dev -p 8081:8080 `
   ghcr.io/zitadel/zitadel:latest start-from-init --masterkey "MasterkeyNeedsToHave32Characters" --tlsMode disabled
 ```
 
+RustFS (storage tests; buckets created once via aws-cli):
+
+```
+podman run -d --rm --name ashyq-rustfs --network ashyq-dev -p 9002:9000 `
+  -e RUSTFS_ACCESS_KEY=ashyq-dev -e RUSTFS_SECRET_KEY=ashyq-dev-secret `
+  -e RUSTFS_VOLUMES=/data docker.io/rustfs/rustfs:1.0.0-rc.1
+podman run --rm --network ashyq-dev -e AWS_ACCESS_KEY_ID=ashyq-dev -e AWS_SECRET_ACCESS_KEY=ashyq-dev-secret `
+  docker.io/amazon/aws-cli:2.36.19 --endpoint-url http://ashyq-rustfs:9000 s3api create-bucket --bucket ab-public
+# …and --bucket ab-private. Tests read TEST_S3_ENDPOINT (default http://localhost:9002).
+```
+
 Validated against it (keep these working): `GET /debug/healthz`;
 `POST /v2/users/human` (password + pre-verified email — the ETL import path);
 `POST /v2/sessions` with `checks.user.loginName` + `checks.password` → returns

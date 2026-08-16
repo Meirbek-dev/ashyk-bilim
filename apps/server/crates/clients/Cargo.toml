@@ -16,6 +16,9 @@ secrecy = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
+object_store = { workspace = true }
+http.workspace = true
+futures.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true }
