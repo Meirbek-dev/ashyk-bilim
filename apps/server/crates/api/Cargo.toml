@@ -10,7 +10,9 @@ workspace = true
 [dependencies]
 ab-core = { workspace = true }
 ab-db = { workspace = true }
+ab-domain = { workspace = true }
 axum = { workspace = true }
+axum-extra = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sqlx = { workspace = true }

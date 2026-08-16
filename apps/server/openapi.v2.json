@@ -9,6 +9,37 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/v2/auth/session": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "The caller's current session (also the cheapest \"am I logged in?\" probe).",
+        "operationId": "current_session",
+        "responses": {
+          "200": {
+            "description": "Current session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No live session",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/health": {
       "get": {
         "tags": [
@@ -79,7 +110,8 @@
           "service-unavailable",
           "invalid-credentials",
           "mfa-required",
-          "session-expired"
+          "session-expired",
+          "csrf-rejected"
         ]
       },
       "FieldError": {
@@ -165,6 +197,36 @@
             "description": "Stable documentation URI for this error class."
           }
         }
+      },
+      "SessionInfo": {
+        "type": "object",
+        "description": "The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).",
+        "required": [
+          "user_id",
+          "roles",
+          "permissions"
+        ],
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
+      "UserId": {
+        "type": "string",
+        "format": "uuid"
       }
     }
   },
@@ -172,6 +234,10 @@
     {
       "name": "health",
       "description": "Liveness and readiness probes"
+    },
+    {
+      "name": "auth",
+      "description": "Sessions and authentication (BFF cookie)"
     }
   ]
 }

@@ -27,6 +27,8 @@ allow = [
   "Unicode-3.0",
   "OpenSSL",
   "CDLA-Permissive-2.0",
+  # Boost Software License (permissive, OSI-approved) — xxhash-rust via redis.
+  "BSL-1.0",
 ]
 
 [bans]

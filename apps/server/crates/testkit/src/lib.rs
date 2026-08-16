@@ -51,25 +51,83 @@ pub fn test_config() -> Config {
     }
 }
 
+/// Redis for tests: CI sets `TEST_REDIS_URL` (service on 6379); locally the
+/// podman container maps 6380 (see AGENTS.md).
+#[must_use]
+pub fn test_redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://localhost:6380".into())
+}
+
 pub struct TestApp {
     router: Router,
     pub pool: PgPool,
+    pub sessions: ab_domain::identity::SessionStore,
 }
 
 impl TestApp {
     /// Build the full application (real router, real middleware) over the
-    /// given pool. Use with `#[sqlx::test]`.
-    #[must_use]
-    pub fn spawn(pool: PgPool) -> Self {
-        let state = ab_api::AppState::new(pool.clone(), test_config());
+    /// given pool + the test Redis. Use with `#[sqlx::test]`.
+    pub async fn spawn(pool: PgPool) -> Self {
+        let sessions = ab_domain::identity::SessionStore::connect(&test_redis_url())
+            .await
+            .expect("test redis reachable (see AGENTS.md local dev stack)");
+        let state = ab_api::AppState::new(pool.clone(), test_config(), sessions.clone());
         let router = ab_api::build_router(state).expect("test router must build");
-        Self { router, pool }
+        Self {
+            router,
+            pool,
+            sessions,
+        }
+    }
+
+    /// Mint a live session with the given grants; returns the `Cookie` header
+    /// value for authenticated requests.
+    pub async fn mint_session(&self, permissions: &[&str]) -> MintedSession {
+        let user_id = ab_core::id::UserId::new();
+        self.mint_session_for(user_id, permissions).await
+    }
+
+    pub async fn mint_session_for(
+        &self,
+        user_id: ab_core::id::UserId,
+        permissions: &[&str],
+    ) -> MintedSession {
+        let session_id = self
+            .sessions
+            .create(ab_domain::identity::NewSession {
+                user_id,
+                zitadel_user_id: format!("z-{user_id}"),
+                zitadel_session_id: "zs-test".into(),
+                zitadel_session_token: "ztok-test".into(),
+                roles: vec!["test".into()],
+                permissions: permissions.iter().map(ToString::to_string).collect(),
+                rbac_version: 1,
+                ip: None,
+                user_agent: Some("testkit".into()),
+            })
+            .await
+            .expect("mint session");
+        MintedSession {
+            user_id,
+            cookie: format!("{}={session_id}", ab_api::extract::SESSION_COOKIE),
+        }
     }
 
     pub async fn get(&self, path: &str) -> TestResponse {
         self.send(
             Request::builder()
                 .uri(path)
+                .body(Body::empty())
+                .expect("request build"),
+        )
+        .await
+    }
+
+    pub async fn get_as(&self, session: &MintedSession, path: &str) -> TestResponse {
+        self.send(
+            Request::builder()
+                .uri(path)
+                .header(header::COOKIE, &session.cookie)
                 .body(Body::empty())
                 .expect("request build"),
         )
@@ -106,6 +164,12 @@ impl TestApp {
             body: bytes.to_vec(),
         }
     }
+}
+
+pub struct MintedSession {
+    pub user_id: ab_core::id::UserId,
+    /// Ready-to-use `Cookie` header value.
+    pub cookie: String,
 }
 
 pub struct TestResponse {

@@ -7,6 +7,10 @@ expression: registry
     409,
     "Conflict"
   ],
+  "csrf-rejected": [
+    403,
+    "Cross-site request rejected"
+  ],
   "forbidden": [
     403,
     "Forbidden"

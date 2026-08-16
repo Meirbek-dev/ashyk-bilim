@@ -35,6 +35,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
     ),
     tags(
         (name = "health", description = "Liveness and readiness probes"),
+        (name = "auth", description = "Sessions and authentication (BFF cookie)"),
     )
 )]
 struct ApiDoc;
@@ -44,6 +45,7 @@ fn api_router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(routes::health::live))
         .routes(routes!(routes::health::ready))
+        .routes(routes!(routes::auth::current_session))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the
@@ -87,6 +89,7 @@ pub fn build_router(state: AppState) -> Result<Router> {
         .fallback(async || {
             crate::error::ApiError(Error::app(ab_core::ErrorCode::NotFound, "no such route"))
         })
+        .layer(axum::middleware::from_fn(crate::middleware::csrf_guard))
         .layer(
             ServiceBuilder::new()
                 .layer(SetRequestIdLayer::new(request_id.clone(), MakeRequestUuid))

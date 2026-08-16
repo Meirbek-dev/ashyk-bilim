@@ -58,6 +58,7 @@ error_codes! {
     InvalidCredentials => ("invalid-credentials", 401, "Invalid credentials"),
     MfaRequired => ("mfa-required", 401, "Multi-factor authentication required"),
     SessionExpired => ("session-expired", 401, "Session expired"),
+    CsrfRejected => ("csrf-rejected", 403, "Cross-site request rejected"),
 }
 
 impl std::fmt::Display for ErrorCode {

@@ -18,6 +18,7 @@ defaults:
 env:
   CARGO_TERM_COLOR: always
   DATABASE_URL: postgres://ashyq:ashyq@localhost:5432/ashyq_test
+  TEST_REDIS_URL: redis://localhost:6379
   SQLX_OFFLINE: 'false'
 
 jobs:

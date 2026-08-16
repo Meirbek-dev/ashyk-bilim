@@ -19,7 +19,8 @@ expression: json
           "service-unavailable",
           "invalid-credentials",
           "mfa-required",
-          "session-expired"
+          "session-expired",
+          "csrf-rejected"
         ],
         "type": "string"
       },
@@ -106,6 +107,36 @@ expression: json
           "title"
         ],
         "type": "object"
+      },
+      "SessionInfo": {
+        "description": "The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).",
+        "properties": {
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "user_id",
+          "roles",
+          "permissions"
+        ],
+        "type": "object"
+      },
+      "UserId": {
+        "format": "uuid",
+        "type": "string"
       }
     }
   },
@@ -119,6 +150,37 @@ expression: json
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v2/auth/session": {
+      "get": {
+        "operationId": "current_session",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              }
+            },
+            "description": "Current session"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          }
+        },
+        "summary": "The caller's current session (also the cheapest \"am I logged in?\" probe).",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v2/health": {
       "get": {
         "operationId": "live",
@@ -176,6 +238,10 @@ expression: json
     {
       "description": "Liveness and readiness probes",
       "name": "health"
+    },
+    {
+      "description": "Sessions and authentication (BFF cookie)",
+      "name": "auth"
     }
   ]
 }

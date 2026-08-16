@@ -44,7 +44,8 @@ sqlx = { version = "0.9", features = [
   "migrate",
   "macros",
 ] }
-uuid = { version = "1", features = ["v7", "serde"] }
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+redis = { version = "1", features = ["tokio-comp", "connection-manager"] }
 jiff = { version = "0.2", features = ["serde"] }
 
 # Serde & validation

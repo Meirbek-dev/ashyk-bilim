@@ -79,8 +79,19 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     let pending = ab_db::MIGRATOR.iter().len();
     tracing::info!(migrations = pending, "database connected");
 
+    // Sessions are the API's credential store — refuse to serve without them.
+    let redis_url = config
+        .redis
+        .url
+        .clone()
+        .ok_or_else(|| anyhow::anyhow!("AB__REDIS__URL must be set: sessions require Redis"))?;
+    let sessions = ab_domain::identity::SessionStore::connect(
+        secrecy::ExposeSecret::expose_secret(&redis_url),
+    )
+    .await?;
+
     let addr = format!("{}:{}", config.server.host, config.server.port);
-    let router = ab_api::build_router(AppState::new(pool, config))?;
+    let router = ab_api::build_router(AppState::new(pool, config, sessions))?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
     axum::serve(listener, router)
