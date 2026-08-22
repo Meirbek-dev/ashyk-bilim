@@ -139,7 +139,7 @@ server {
   # FIX 1: proxy_pass references the upstream pool directly; no variable needed.
   # FIX 4: rate-limit auth on port 80 the same as on 443.
   location /api/auth {
-    limit_req zone=auth_limit burst=20 nodelay;
+    #limit_req zone=auth_limit burst=20 nodelay;
     limit_req_status 429;
     if ($is_forwarded_https = 0) {
       return 301 https://$host$request_uri;
@@ -351,7 +351,7 @@ server {
 
   # Frontend catch-all
   location / {
-    limit_req zone=global_limit burst=2500 nodelay;
+    #limit_req zone=global_limit burst=2500 nodelay;
     limit_req_status 429;
     proxy_pass http://web_backend;
   }
