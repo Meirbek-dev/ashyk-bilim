@@ -31,7 +31,10 @@ function Search({ items }: { items: Item[] }) {
 function Search({ items }: { items: Item[] }) {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
-  const filtered = useMemo(() => items.filter(item => fuzzyMatch(item, deferredQuery)), [items, deferredQuery])
+  const filtered = useMemo(
+    () => items.filter(item => fuzzyMatch(item, deferredQuery)),
+    [items, deferredQuery]
+  )
   const isStale = query !== deferredQuery
 
   return (
