@@ -47,6 +47,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "assessments", description = "Quizzes, exams, code challenges: authoring and lifecycle"),
         (name = "submissions", description = "Learner attempts: start, draft, submit"),
         (name = "code", description = "Code execution: runs, reference checks, languages"),
+        (name = "grading", description = "Teacher grading: review queue, grades, releases, gradebook"),
     )
 )]
 struct ApiDoc;
@@ -177,6 +178,18 @@ fn submission_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::code::get_run))
         .routes(routes!(routes::code::reference_check))
         .routes(routes!(routes::code::languages))
+        .routes(routes!(routes::grading::review_queue))
+        .routes(routes!(routes::grading::stats))
+        .routes(routes!(routes::grading::item_analytics))
+        .routes(routes!(routes::grading::export_csv))
+        .routes(routes!(routes::grading::review_submission))
+        .routes(routes!(routes::grading::save_grade))
+        .routes(routes!(routes::grading::grading_history))
+        .routes(routes!(routes::grading::my_feedback))
+        .routes(routes!(routes::grading::publish_grades))
+        .routes(routes!(routes::grading::extend_deadline))
+        .routes(routes!(routes::grading::get_bulk_action))
+        .routes(routes!(routes::grading::gradebook))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

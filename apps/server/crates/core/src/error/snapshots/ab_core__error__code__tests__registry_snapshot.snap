@@ -59,6 +59,10 @@ expression: registry
     413,
     "Payload too large"
   ],
+  "precondition-failed": [
+    412,
+    "Precondition failed"
+  ],
   "rate-limited": [
     429,
     "Too many requests"

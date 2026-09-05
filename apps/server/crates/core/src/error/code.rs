@@ -51,6 +51,7 @@ error_codes! {
     Unauthenticated => ("unauthenticated", 401, "Authentication required"),
     Conflict => ("conflict", 409, "Conflict"),
     ValidationFailed => ("validation-failed", 422, "Validation failed"),
+    PreconditionFailed => ("precondition-failed", 412, "Precondition failed"),
     RateLimited => ("rate-limited", 429, "Too many requests"),
     PayloadTooLarge => ("payload-too-large", 413, "Payload too large"),
     ServiceUnavailable => ("service-unavailable", 503, "Service temporarily unavailable"),

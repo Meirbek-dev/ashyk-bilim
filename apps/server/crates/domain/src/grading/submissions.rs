@@ -202,6 +202,24 @@ pub enum ReleaseState {
     ReturnedForRevision,
 }
 
+/// What the learner may see (legacy `_release_state_for_submission`):
+/// returned work shows the revision request, published work is visible,
+/// graded work only once a published entry exists.
+pub(crate) async fn release_state(pool: &PgPool, submission: &Submission) -> Result<ReleaseState> {
+    Ok(match submission.status {
+        SubmissionStatus::Returned => ReleaseState::ReturnedForRevision,
+        SubmissionStatus::Published => ReleaseState::Visible,
+        SubmissionStatus::Graded => {
+            if ab_db::submissions::has_published_entry(pool, submission.id).await? {
+                ReleaseState::Visible
+            } else {
+                ReleaseState::AwaitingRelease
+            }
+        }
+        SubmissionStatus::Draft | SubmissionStatus::Pending => ReleaseState::Hidden,
+    })
+}
+
 /// A submission as its owner sees it: scores and grading only once
 /// released (the legacy also leaked `late_penalty_pct`; we hide it too).
 #[derive(Debug, Clone)]
@@ -296,21 +314,6 @@ impl SubmissionsService {
         })
     }
 
-    async fn release_state(&self, submission: &Submission) -> Result<ReleaseState> {
-        Ok(match submission.status {
-            SubmissionStatus::Returned => ReleaseState::ReturnedForRevision,
-            SubmissionStatus::Published => ReleaseState::Visible,
-            SubmissionStatus::Graded => {
-                if ab_db::submissions::has_published_entry(&self.pool, submission.id).await? {
-                    ReleaseState::Visible
-                } else {
-                    ReleaseState::AwaitingRelease
-                }
-            }
-            SubmissionStatus::Draft | SubmissionStatus::Pending => ReleaseState::Hidden,
-        })
-    }
-
     /// The owner's view, redacted by release state.
     pub async fn student_view(
         &self,
@@ -318,7 +321,7 @@ impl SubmissionsService {
         time_limit_seconds: Option<i32>,
         total_items: usize,
     ) -> Result<StudentSubmission> {
-        let release_state = self.release_state(&submission).await?;
+        let release_state = release_state(&self.pool, &submission).await?;
         let visible = matches!(
             release_state,
             ReleaseState::Visible | ReleaseState::ReturnedForRevision

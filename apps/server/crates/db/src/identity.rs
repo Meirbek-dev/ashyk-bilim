@@ -489,3 +489,27 @@ pub async fn count_role_holders(pool: &PgPool, slug: &str) -> Result<i64> {
     .await?;
     Ok(count)
 }
+
+// ── Summaries (grading surfaces) ────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct UserSummaryRow {
+    pub id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub email: String,
+}
+
+/// Name/email for a set of ids (any order; unknown ids are simply absent).
+pub async fn list_user_summaries(pool: &PgPool, ids: &[UserId]) -> Result<Vec<UserSummaryRow>> {
+    let ids: Vec<uuid::Uuid> = ids.iter().map(|u| u.0).collect();
+    let rows = sqlx::query_as!(
+        UserSummaryRow,
+        r#"SELECT id AS "id: UserId", username, display_name, email
+           FROM users WHERE id = ANY($1)"#,
+        &ids
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}

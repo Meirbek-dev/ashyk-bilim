@@ -90,6 +90,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     // 404 on the unknown item); reference checks are author-only.
     ("POST", "/api/v2/assessment-items/{id}/runs"),
     ("POST", "/api/v2/assessments/{id}/reference-check"),
+    // Teacher grading (assessment:grade platform / course creator own).
+    ("PATCH", "/api/v2/submissions/{id}/grade"),
+    ("POST", "/api/v2/assessments/{id}/publish-grades"),
+    ("POST", "/api/v2/assessments/{id}/deadline-extensions"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

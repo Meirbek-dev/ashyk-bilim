@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT ON (s.user_id, s.assessment_id)\n                  s.user_id AS \"user_id: UserId\", s.assessment_id AS \"assessment_id: AssessmentId\",\n                  s.id AS \"submission_id: SubmissionId\", s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number,\n                  count(*) OVER (PARTITION BY s.user_id, s.assessment_id) AS \"attempts!\",\n                  s.final_score, s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\"\n           FROM submissions s\n           WHERE s.course_id = $1 AND s.status <> 'draft'\n             AND ($2::uuid IS NULL OR (s.user_id, s.assessment_id) > ($2::uuid, $3::uuid))\n           ORDER BY s.user_id, s.assessment_id, s.id DESC\n           LIMIT $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "assessment_id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "assessment_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "submission_id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "status: SubmissionStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "attempt_number",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "attempt_number"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "attempts!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "is_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "is_late"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "56bde2f9af590c55ef70275b33527c4f03d7c01944554cabe4d62f23c7202a3e"
+}

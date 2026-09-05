@@ -569,7 +569,8 @@ pub struct EffectivePolicy {
     pub override_applied: bool,
 }
 
-/// What the learner may do right now.
+/// What the learner may do right now (flat flags for the client).
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AttemptState {
     pub lifecycle: Lifecycle,
@@ -581,6 +582,8 @@ pub struct AttemptState {
     pub can_start: bool,
     /// An open draft exists and may still be worked on.
     pub can_continue: bool,
+    /// The latest attempt was returned for revision; the cap is lifted.
+    pub revision_requested: bool,
     pub draft_id: Option<ab_core::id::SubmissionId>,
     pub attempts_used: i64,
     /// `null` = unlimited.
@@ -591,6 +594,7 @@ impl From<ab_domain::assessments::access::AttemptState> for AttemptState {
     fn from(s: ab_domain::assessments::access::AttemptState) -> Self {
         Self {
             can_continue: s.can_continue,
+            revision_requested: s.revision_requested,
             draft_id: s.draft_id,
             attempts_used: s.attempts_used,
             attempts_remaining: s.attempts_remaining,

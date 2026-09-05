@@ -11,7 +11,7 @@ use ab_domain::catalog::{
 };
 use ab_domain::code::{CodeRunner, CodeRunsService};
 use ab_domain::files::UploadsService;
-use ab_domain::grading::SubmissionsService;
+use ab_domain::grading::{GradingService, SubmissionsService};
 use ab_domain::identity::rate_limit::RateLimiter;
 use ab_domain::identity::{
     GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsergroupsService,
@@ -40,6 +40,7 @@ pub struct AppState {
     pub assessments: AssessmentsService,
     pub submissions: SubmissionsService,
     pub code_runs: CodeRunsService,
+    pub grading: GradingService,
 }
 
 impl AppState {
@@ -70,6 +71,7 @@ impl AppState {
                 RateLimiter::new(sessions.redis()),
                 runner.clone(),
             ),
+            grading: GradingService::new(pool.clone(), assessments.clone()),
             code_runs: CodeRunsService::new(
                 runner,
                 assessments.clone(),

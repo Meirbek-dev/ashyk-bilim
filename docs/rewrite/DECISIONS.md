@@ -244,3 +244,54 @@ Python SDK underneath) and the attempt/orchestrator call sites:
 - Judge0 is optional in v2 config: without `AB__JUDGE0__BASE_URL` code runs
   answer 503 and code challenges go to manual review, so a deployment can
   boot without the execution tier.
+
+## Teacher grading surface and bulk actions (2026-09-05, P4.5–4.6)
+
+Ported from `grading/teacher.py`, `assessments/review_service.py`,
+`grading/gradebook_cursor.py` and `grading/bulk.py`:
+
+- **One grade-save endpoint** (`PATCH /submissions/{id}/grade`) replaces
+  the legacy pair (`TeacherGradeInput` with a mandatory final score, and
+  the item-level `GradingDraftSave` that recomputed it). The raw score is
+  optional: given → used as is; omitted → earned / possible × 100 over the
+  breakdown. Item scores are entered on the item's own `max_score` scale
+  and converted into the breakdown's share-of-100 points, so auto-graded
+  and hand-graded items add up (the legacy grading draft summed only the
+  items in the request, silently dropping auto-graded ones).
+- **`If-Match` is mandatory** on grade saves and carries `version`; a
+  mismatch is 412 `precondition-failed` with `{expected, actual}` (the
+  legacy made the header optional, so two graders could overwrite each
+  other by omitting it). The learner's draft lock stays 409 — different
+  actors, different codes.
+- **Transition table kept verbatim**: pending/graded → graded | published
+  | returned; returned → graded | pending | published; published →
+  published only; drafts are never gradable (409).
+- **Returned work lifts the attempt cap**: the legacy exposed
+  `can_start_revision`; v2 folds it into `attempt_state.revision_requested`
+  and `can_start`, and the revision is attempt n+1.
+- **Item feedback rows are written by the grade save itself** (one per item
+  grade with a score or comment), tied to the grading entry, so the learner
+  endpoint shows only feedback from published entries. The separate
+  `/grading/feedback` CRUD router is not ported until a UI needs it.
+- **Bulk release** inserts a published entry per held grade (copying the
+  latest entry, else the stored breakdown) and flips the submission —
+  legacy semantics, single audit event.
+- **Review queue is keyset-paged** (id desc, newest first) instead of
+  page/page_size with four sort orders; stats carry the distribution the
+  UI used the sorted list for. Search covers username and display name
+  (v2 has no first/last name columns).
+- **Gradebook is derived from submissions** (latest non-draft per learner
+  × assessment, keyset on the pair) until P6 lands the progress
+  projections the legacy read; the response also ships the users and
+  assessments the cells reference so the client needs no second call.
+- **Deadline extensions are transactional jobs**: the `bulk_actions` row
+  and the `grading:bulk-action` job commit together (ARCHITECTURE §7),
+  the API answers 202, the worker executes, and a failure is recorded on
+  the row rather than retried. The legacy's `execute_inline` test path is
+  what the e2e test does by calling the executor directly.
+- **Batch grading (`PATCH /grading/submissions/batch`) is not ported**:
+  the generated client exists but nothing in `apps/web` calls it. Cheap
+  to add on top of `save_grade` if P9 finds a use.
+- **XP on publish** (gamification) and SSE events for `grade.published`,
+  `submission.returned`, `deadline.extended` are left as marked hooks for
+  P6 and 4.7.

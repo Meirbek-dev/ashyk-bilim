@@ -87,6 +87,8 @@ pub enum DisabledReason {
     TimeLimitExpired,
 }
 
+/// A flat state mirror for the client; the flags are independent facts.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone)]
 pub struct AttemptState {
     pub lifecycle: Lifecycle,
@@ -98,6 +100,8 @@ pub struct AttemptState {
     pub can_start: bool,
     /// An open draft exists and nothing blocks.
     pub can_continue: bool,
+    /// The latest attempt was returned for revision (the cap is lifted).
+    pub revision_requested: bool,
     pub draft_id: Option<ab_core::id::SubmissionId>,
     pub attempts_used: i64,
     /// `None` = unlimited.
@@ -387,6 +391,12 @@ impl AssessmentsService {
         let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id).await?;
         let attempts_used =
             ab_db::submissions::count_completed_attempts(&self.pool, id, actor.user_id).await?;
+        // A returned attempt asks for a revision: the cap does not apply.
+        let revision_requested =
+            ab_db::submissions::list_user_submissions(&self.pool, id, actor.user_id)
+                .await?
+                .first()
+                .is_some_and(|s| s.status == ab_core::assessments::SubmissionStatus::Returned);
 
         let now = now_unix();
         let mut reasons = Vec::new();
@@ -408,6 +418,7 @@ impl AssessmentsService {
             if let Some(max) = effective.max_attempts
                 && attempts_used >= i64::from(max)
                 && draft.is_none()
+                && !revision_requested
             {
                 reasons.push(DisabledReason::MaxAttemptsReached);
             }
@@ -426,6 +437,7 @@ impl AssessmentsService {
             is_teacher_preview: teacher_preview,
             can_start: draft.is_none() && reasons.is_empty(),
             can_continue: draft.is_some() && reasons.is_empty(),
+            revision_requested,
             draft_id: draft.as_ref().map(|d| d.id),
             attempts_used,
             attempts_remaining,

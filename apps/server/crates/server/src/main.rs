@@ -252,8 +252,9 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         ))?
         .register(ab_jobs::handlers::submissions::AutoSubmitter::new(runner))?
         .register(ab_jobs::handlers::submissions::IdempotencySweeper::new(
-            pool,
-        ))?;
+            pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::grading::BulkActionRunner::new(pool))?;
     let cancel = CancellationToken::new();
     let handle = tokio::spawn(worker.run(cancel.clone()));
     shutdown_signal().await;

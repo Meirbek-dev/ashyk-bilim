@@ -345,6 +345,90 @@ pub async fn set_is_late(pool: &PgPool, id: SubmissionId, is_late: bool) -> Resu
     Ok(())
 }
 
+/// Every submitted attempt of an assessment, oldest first (CSV export).
+pub async fn list_non_draft(
+    pool: &PgPool,
+    assessment_id: AssessmentId,
+) -> Result<Vec<SubmissionRow>> {
+    let rows = sqlx::query_as!(
+        SubmissionRow,
+        r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
+                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
+                  status AS "status: SubmissionStatus", attempt_number, answers, grading,
+                  auto_score, final_score, is_late, late_penalty_pct,
+                  violation_count, violations,
+                  auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
+                  (extract(epoch FROM auto_submitted_at))::bigint AS "auto_submitted_at?",
+                  auto_submit_attempts,
+                  (extract(epoch FROM auto_submit_retry_at))::bigint AS "auto_submit_retry_at?",
+                  duration_seconds,
+                  (extract(epoch FROM started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
+                  version, draft_version, grading_version, content_version, policy_version,
+                  items_snapshot, policy_snapshot,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM submissions WHERE assessment_id = $1 AND status <> 'draft'
+           ORDER BY submitted_at, id"#,
+        assessment_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+// ── Course gradebook ────────────────────────────────────────────────────────
+
+/// The latest submitted attempt of one learner on one assessment.
+#[derive(Debug, Clone)]
+pub struct GradebookCellRow {
+    pub user_id: UserId,
+    pub assessment_id: AssessmentId,
+    pub submission_id: SubmissionId,
+    pub status: SubmissionStatus,
+    pub attempt_number: i32,
+    /// Submitted attempts on this pair.
+    pub attempts: i64,
+    pub final_score: Option<f64>,
+    pub is_late: bool,
+    pub submitted_at: Option<i64>,
+    pub graded_at: Option<i64>,
+}
+
+/// Latest non-draft submission per (learner, assessment) in a course,
+/// keyset on that pair.
+pub async fn gradebook_cells(
+    pool: &PgPool,
+    course_id: CourseId,
+    after: Option<(UserId, AssessmentId)>,
+    limit: i64,
+) -> Result<Vec<GradebookCellRow>> {
+    let rows = sqlx::query_as!(
+        GradebookCellRow,
+        r#"SELECT DISTINCT ON (s.user_id, s.assessment_id)
+                  s.user_id AS "user_id: UserId", s.assessment_id AS "assessment_id: AssessmentId",
+                  s.id AS "submission_id: SubmissionId", s.status AS "status: SubmissionStatus",
+                  s.attempt_number,
+                  count(*) OVER (PARTITION BY s.user_id, s.assessment_id) AS "attempts!",
+                  s.final_score, s.is_late,
+                  (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM s.graded_at))::bigint AS "graded_at?"
+           FROM submissions s
+           WHERE s.course_id = $1 AND s.status <> 'draft'
+             AND ($2::uuid IS NULL OR (s.user_id, s.assessment_id) > ($2::uuid, $3::uuid))
+           ORDER BY s.user_id, s.assessment_id, s.id DESC
+           LIMIT $4"#,
+        course_id.0,
+        after.map(|(u, _)| u.0),
+        after.map(|(_, a)| a.0),
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 // ── Review queue (teacher) ──────────────────────────────────────────────────
 
 /// A submission joined with who made it.
@@ -1076,8 +1160,9 @@ pub struct BulkActionRow {
     pub completed_at: Option<i64>,
 }
 
-pub async fn insert_bulk_action(
-    pool: &PgPool,
+/// Executor-generic so the queue job can be enqueued in the same transaction.
+pub async fn insert_bulk_action<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
     assessment_id: AssessmentId,
     performed_by: UserId,
     action_type: BulkActionType,
@@ -1096,7 +1181,7 @@ pub async fn insert_bulk_action(
         params,
         &targets
     )
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await?;
     Ok(id)
 }

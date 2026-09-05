@@ -540,7 +540,10 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
         .await;
     let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
     let remaining = draft.json()["time_remaining_seconds"].as_i64().unwrap();
-    assert!((50..=65).contains(&remaining), "{remaining} (clock skew between app and DB is tolerated)");
+    assert!(
+        (50..=65).contains(&remaining),
+        "{remaining} (clock skew between app and DB is tolerated)"
+    );
     let saved = app
         .send(patch_draft(
             &alice,
