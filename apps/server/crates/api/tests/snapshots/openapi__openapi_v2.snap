@@ -415,6 +415,155 @@ expression: json
         ],
         "type": "object"
       },
+      "AttachedFile": {
+        "properties": {
+          "content_type": {
+            "type": "string"
+          },
+          "created_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/FileAttemptFileId"
+          },
+          "position": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "scan_status": {
+            "$ref": "#/components/schemas/ScanStatus"
+          },
+          "size_bytes": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "upload_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "upload_id",
+          "filename",
+          "content_type",
+          "position",
+          "scan_status",
+          "created_at_unix"
+        ],
+        "type": "object"
+      },
+      "Attempt": {
+        "description": "One attempt. For its owner, `final_score`, `feedback` and\n`rubric_scores` are `null` until the grade is published or the work\nreturned.",
+        "properties": {
+          "attempt_number": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "created_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "feedback": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/AttachedFile"
+            },
+            "type": "array"
+          },
+          "final_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "graded_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/FileAttemptId"
+          },
+          "is_late": {
+            "type": "boolean"
+          },
+          "late_penalty_pct": {
+            "format": "double",
+            "type": "number"
+          },
+          "rubric_scores": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "started_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/FileAttemptStatus"
+          },
+          "submitted_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "updated_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "user": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserSummary",
+                "description": "Present on grader views."
+              }
+            ]
+          },
+          "version": {
+            "description": "Optimistic lock — send back as `If-Match`.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "attempt_number",
+          "files",
+          "is_late",
+          "late_penalty_pct",
+          "version",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "type": "object"
+      },
       "AttemptState": {
         "description": "What the learner may do right now (flat flags for the client).",
         "properties": {
@@ -1184,6 +1333,101 @@ expression: json
         ],
         "type": "string"
       },
+      "ConfigPatch": {
+        "additionalProperties": false,
+        "description": "The configuration block; every field optional on create and patch.",
+        "properties": {
+          "allow_late": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "allowed_mime_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "due_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "grade_release_mode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GradeReleaseMode"
+              }
+            ]
+          },
+          "instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "late_policy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LatePolicy"
+              }
+            ]
+          },
+          "max_attempts": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_file_size_mb": {
+            "description": "`null` clears the limit.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_files": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "rubric": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "settings": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "Course": {
         "properties": {
           "about": {
@@ -1526,6 +1770,28 @@ expression: json
         ],
         "type": "object"
       },
+      "CreateFileSubmissionRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ConfigPatch"
+          },
+          {
+            "properties": {
+              "chapter_id": {
+                "$ref": "#/components/schemas/ChapterId"
+              },
+              "title": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "chapter_id",
+              "title"
+            ],
+            "type": "object"
+          }
+        ]
+      },
       "CreateItemRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1731,6 +1997,19 @@ expression: json
         ],
         "type": "string"
       },
+      "DraftRequest": {
+        "additionalProperties": false,
+        "description": "The draft's complete file list (replaces what was attached before).",
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/FileRefRequest"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
       "DuplicateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1868,6 +2147,307 @@ expression: json
           "message"
         ],
         "type": "object"
+      },
+      "FileAttemptFileId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "FileAttemptId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "FileAttemptStatus": {
+        "description": "File-submission attempt status (legacy `FileSubmissionAttemptStatus`).",
+        "enum": [
+          "draft",
+          "submitted",
+          "graded",
+          "published",
+          "returned"
+        ],
+        "type": "string"
+      },
+      "FileGradeAction": {
+        "enum": [
+          "save",
+          "publish",
+          "return"
+        ],
+        "type": "string"
+      },
+      "FileGradeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FileGradeAction"
+          },
+          "feedback": {
+            "type": "string"
+          },
+          "final_score": {
+            "description": "Required for save/publish; 0..=100.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "rubric_scores": {
+            "description": "Omit to keep the stored rubric scores.",
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "FileRefRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "upload_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id"
+        ],
+        "type": "object"
+      },
+      "FileReviewItem": {
+        "properties": {
+          "attempt_number": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "file_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "final_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "graded_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/FileAttemptId"
+          },
+          "is_late": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FileAttemptStatus"
+          },
+          "submitted_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "version": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "user",
+          "status",
+          "attempt_number",
+          "is_late",
+          "version",
+          "file_count"
+        ],
+        "type": "object"
+      },
+      "FileReviewPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FileReviewItem"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FileAttemptId"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "FileSubmission": {
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "allow_late": {
+            "type": "boolean"
+          },
+          "allowed_mime_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "attempts": {
+            "description": "The caller's attempts, newest first (learners).",
+            "items": {
+              "$ref": "#/components/schemas/Attempt"
+            },
+            "type": "array"
+          },
+          "chapter_id": {
+            "$ref": "#/components/schemas/ChapterId"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "current_attempt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Attempt",
+                "description": "The caller's newest attempt (learners)."
+              }
+            ]
+          },
+          "due_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "grade_release_mode": {
+            "$ref": "#/components/schemas/GradeReleaseMode"
+          },
+          "id": {
+            "$ref": "#/components/schemas/FileSubmissionId"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/FileSubmissionLifecycle"
+          },
+          "max_attempts": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_file_size_mb": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_files": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "published": {
+            "description": "The backing activity is live.",
+            "type": "boolean"
+          },
+          "published_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "rubric": {
+            "type": "object"
+          },
+          "settings": {
+            "type": "object"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "activity_id",
+          "course_id",
+          "chapter_id",
+          "title",
+          "instructions",
+          "lifecycle",
+          "published",
+          "allowed_mime_types",
+          "max_files",
+          "allow_late",
+          "late_policy",
+          "grade_release_mode",
+          "rubric",
+          "settings",
+          "attempts",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "type": "object"
+      },
+      "FileSubmissionId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "FileSubmissionLifecycle": {
+        "description": "File-submission activity lifecycle (legacy `FileSubmissionLifecycle`).",
+        "enum": [
+          "draft",
+          "published",
+          "archived"
+        ],
+        "type": "string"
       },
       "FinalizedUpload": {
         "properties": {
@@ -3505,6 +4085,16 @@ expression: json
         ],
         "type": "object"
       },
+      "ScanStatus": {
+        "description": "Malware-scan status of an attached file (scanning itself is a later\nslice; everything is `pending` until then).",
+        "enum": [
+          "pending",
+          "clean",
+          "flagged",
+          "error"
+        ],
+        "type": "string"
+      },
       "ScoreBucket": {
         "properties": {
           "count": {
@@ -3676,6 +4266,34 @@ expression: json
         },
         "required": [
           "disabled"
+        ],
+        "type": "object"
+      },
+      "SignedDownload": {
+        "properties": {
+          "content_type": {
+            "type": "string"
+          },
+          "expires_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "file_id": {
+            "$ref": "#/components/schemas/FileAttemptFileId"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_id",
+          "url",
+          "expires_at_unix",
+          "filename",
+          "content_type"
         ],
         "type": "object"
       },
@@ -5021,6 +5639,38 @@ expression: json
         "summary": "Attach a file block to an activity by claiming a finalized upload whose\npurpose matches the block type (`image`→`block-image`, etc.).",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v2/activities/{id}/file-submission": {
+      "get": {
+        "operationId": "get_activity_file_submission",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmission"
+                }
+              }
+            },
+            "description": "File submission"
+          }
+        },
+        "summary": "The file submission behind an activity.",
+        "tags": [
+          "file-submissions"
         ]
       }
     },
@@ -8144,6 +8794,693 @@ expression: json
         ]
       }
     },
+    "/api/v2/file-submission-attempts/{id}": {
+      "get": {
+        "operationId": "get_attempt",
+        "parameters": [
+          {
+            "description": "Attempt id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileAttemptId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            },
+            "description": "Attempt"
+          }
+        },
+        "summary": "One attempt: its owner (grade redacted until released) or a grader.",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submission-attempts/{id}/grade": {
+      "patch": {
+        "operationId": "grade_attempt",
+        "parameters": [
+          {
+            "description": "Attempt id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileAttemptId"
+            }
+          },
+          {
+            "description": "Current version",
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileGradeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            },
+            "description": "Graded"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale version"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Score required"
+          }
+        },
+        "summary": "Save, publish or return a grade (graders). Requires `If-Match`.",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submission-files/{id}/url": {
+      "get": {
+        "operationId": "file_url",
+        "parameters": [
+          {
+            "description": "Attached file id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileAttemptFileId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedDownload"
+                }
+              }
+            },
+            "description": "Signed URL (1h)"
+          }
+        },
+        "summary": "A short-lived download URL for an attached file (owner or grader).",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions": {
+      "post": {
+        "operationId": "create_file_submission",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFileSubmissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmission"
+                }
+              }
+            },
+            "description": "Created (draft)"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No authoring access"
+          }
+        },
+        "summary": "Create a file-submission activity in a chapter (authors).",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions/{id}": {
+      "get": {
+        "operationId": "get_file_submission",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmission"
+                }
+              }
+            },
+            "description": "File submission"
+          }
+        },
+        "summary": "The activity with the caller's attempts (authors always; learners once\npublished).",
+        "tags": [
+          "file-submissions"
+        ]
+      },
+      "patch": {
+        "operationId": "update_file_submission",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmission"
+                }
+              }
+            },
+            "description": "Updated"
+          }
+        },
+        "summary": "Partial update of title and configuration (authors; archived = read-only).",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions/{id}/draft": {
+      "get": {
+        "operationId": "get_draft",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            },
+            "description": "Open attempt"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No open attempt"
+          }
+        },
+        "summary": "The caller's open attempt (draft or returned), 404 when none.",
+        "tags": [
+          "file-submissions"
+        ]
+      },
+      "patch": {
+        "description": "Uploads must be the caller's own finalized `file-submission` uploads.\n`If-Match` is optional; a stale version is 412.",
+        "operationId": "save_draft",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          },
+          {
+            "description": "Attempt version (optional)",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            },
+            "description": "Saved"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale version"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many / duplicate / not-ready / disallowed files"
+          }
+        },
+        "summary": "Replace the draft's attached files (opens a draft when there is none).",
+        "tags": [
+          "file-submissions"
+        ]
+      },
+      "post": {
+        "operationId": "start_draft",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            },
+            "description": "Existing open attempt"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            },
+            "description": "Draft opened"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not published or attempt cap reached"
+          }
+        },
+        "summary": "Open a draft attempt (201) or return the open one (200).",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions/{id}/me": {
+      "get": {
+        "operationId": "my_attempts",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Attempt"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Attempts"
+          }
+        },
+        "summary": "Every attempt the caller made, newest first.",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions/{id}/publish": {
+      "post": {
+        "operationId": "publish_file_submission",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmission"
+                }
+              }
+            },
+            "description": "Published"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing title or instructions"
+          }
+        },
+        "summary": "Publish (title and instructions required); the activity goes live.",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions/{id}/submissions": {
+      "get": {
+        "operationId": "review_queue",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/FileAttemptStatus"
+                }
+              ]
+            }
+          },
+          {
+            "description": "Substring of the learner's username, display name or email.",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/FileAttemptId"
+                }
+              ]
+            }
+          },
+          {
+            "description": "1..=100 (default 25).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileReviewPage"
+                }
+              }
+            },
+            "description": "Review page"
+          }
+        },
+        "summary": "Submitted attempts for grading, newest first (keyset).",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions/{id}/submissions/export": {
+      "get": {
+        "operationId": "export_csv",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "CSV"
+          }
+        },
+        "summary": "Every attempt as CSV (graders).",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions/{id}/submit": {
+      "post": {
+        "description": "At least one file is required; late work is refused when the activity\ndoes not allow it and penalised by the late policy otherwise.",
+        "operationId": "submit",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          },
+          {
+            "description": "Attempt version (optional)",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            },
+            "description": "Submitted"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not published, cap reached, or late work closed"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No files"
+          }
+        },
+        "summary": "Submit the open attempt (optionally replacing files first).",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
     "/api/v2/health": {
       "get": {
         "operationId": "live",
@@ -9971,6 +11308,10 @@ expression: json
     {
       "description": "Teacher grading: review queue, grades, releases, gradebook",
       "name": "grading"
+    },
+    {
+      "description": "File-submission activities: authoring, attempts, grading",
+      "name": "file-submissions"
     }
   ]
 }

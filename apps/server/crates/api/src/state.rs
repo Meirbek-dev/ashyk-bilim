@@ -11,7 +11,7 @@ use ab_domain::catalog::{
 };
 use ab_domain::code::{CodeRunner, CodeRunsService};
 use ab_domain::events::GradingEvents;
-use ab_domain::files::UploadsService;
+use ab_domain::files::{FileSubmissionsService, UploadsService};
 use ab_domain::grading::{GradingService, SubmissionsService};
 use ab_domain::identity::rate_limit::RateLimiter;
 use ab_domain::identity::{
@@ -43,6 +43,7 @@ pub struct AppState {
     pub code_runs: CodeRunsService,
     pub grading: GradingService,
     pub events: GradingEvents,
+    pub file_submissions: FileSubmissionsService,
 }
 
 impl AppState {
@@ -73,6 +74,11 @@ impl AppState {
                 assessments.clone(),
                 RateLimiter::new(sessions.redis()),
                 runner.clone(),
+            ),
+            file_submissions: FileSubmissionsService::new(
+                pool.clone(),
+                assessments.clone(),
+                Arc::clone(&storage),
             ),
             grading: GradingService::new(pool.clone(), assessments.clone(), Some(events.clone())),
             events,

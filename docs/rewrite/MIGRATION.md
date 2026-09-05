@@ -97,6 +97,9 @@ T-0    1. docker compose stop web api taskiq-worker taskiq-scheduler   (Judge0, 
        4. Verification phase green (hard gate — abort on red).
        5. Bring up: zitadel, rustfs, server, worker; run `ashyq migrate` no-op check;
           swap nginx template (v2 routes, /content → rustfs); reload nginx.
+       5a. `ashyq admin judge0-tune` (AB__JUDGE0__DATABASE_URL → Judge0's DB): applies
+          the sandbox-safe compiler/run commands the legacy API patched on every boot.
+          Idempotent; re-run after any Judge0 image upgrade.
        6. Deploy updated web image (new client, new auth pages).
        7. Smoke suite (same list as §5.3) against production. Owner does one manual
           login + password rotation on the admin account.

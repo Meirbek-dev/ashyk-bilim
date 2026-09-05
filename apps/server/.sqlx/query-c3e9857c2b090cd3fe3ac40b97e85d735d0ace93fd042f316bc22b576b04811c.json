@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO file_submission_attempts\n               (file_submission_id, course_id, user_id, attempt_number, started_at)\n           VALUES ($1, $2, $3, $4, now())\n           ON CONFLICT (file_submission_id, user_id) WHERE status IN ('draft', 'returned')\n           DO NOTHING\n           RETURNING id AS \"id: FileAttemptId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileAttemptId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c3e9857c2b090cd3fe3ac40b97e85d735d0ace93fd042f316bc22b576b04811c"
+}

@@ -1,0 +1,161 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.id AS \"id: FileAttemptId\", a.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, u.email,\n                  a.status AS \"status: FileAttemptStatus\", a.attempt_number,\n                  (extract(epoch FROM a.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM a.graded_at))::bigint AS \"graded_at?\",\n                  a.is_late, a.final_score, a.version,\n                  (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)\n                      AS \"file_count!\"\n           FROM file_submission_attempts a JOIN users u ON u.id = a.user_id\n           WHERE a.file_submission_id = $1 AND a.status <> 'draft'\n             AND ($2::text IS NULL OR a.status = $2)\n             AND ($3::text IS NULL OR u.username ILIKE $3 OR u.display_name ILIKE $3\n                  OR u.email ILIKE $3)\n             AND ($4::uuid IS NULL OR a.id < $4)\n           ORDER BY a.id DESC\n           LIMIT $5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileAttemptId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "email",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "email"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status: FileAttemptStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "attempt_number",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "attempt_number"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "is_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "is_late"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "file_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      false,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "7cbfde751875279b3b8144c67b14b62b7c4587e9f8e830b06556451523235f51"
+}

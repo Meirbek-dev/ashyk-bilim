@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM file_submission_files WHERE attempt_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7e78537d3f8b3f7d6914765d1a2a783b222f7c2013f323b553d0d64bc718a1b3"
+}

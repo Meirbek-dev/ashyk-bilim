@@ -1,0 +1,208 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND user_id = $2 AND status IN ('draft', 'returned')\n           ORDER BY attempt_number DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileAttemptId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "file_submission_id: FileSubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "file_submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status: FileAttemptStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "attempt_number",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "attempt_number"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "started_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "is_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "is_late"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "late_penalty_pct",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "late_penalty_pct"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "feedback",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "feedback"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "rubric_scores",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "rubric_scores"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "graded_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "graded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 17,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "02305fc38b12b363449d8595ed4d6845f53f07e8a43990cc3b621676b68f0ddf"
+}

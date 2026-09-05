@@ -94,6 +94,16 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/submissions/{id}/grade"),
     ("POST", "/api/v2/assessments/{id}/publish-grades"),
     ("POST", "/api/v2/assessments/{id}/deadline-extensions"),
+    // File submissions: authoring (assessment:author own/platform), learner
+    // attempts (submit access), grading (assessment:grade); zero-grant probes
+    // 404 on the unknown activity/attempt.
+    ("POST", "/api/v2/file-submissions"),
+    ("PATCH", "/api/v2/file-submissions/{id}"),
+    ("POST", "/api/v2/file-submissions/{id}/publish"),
+    ("POST", "/api/v2/file-submissions/{id}/draft"),
+    ("PATCH", "/api/v2/file-submissions/{id}/draft"),
+    ("POST", "/api/v2/file-submissions/{id}/submit"),
+    ("PATCH", "/api/v2/file-submission-attempts/{id}/grade"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

@@ -73,6 +73,9 @@ typed_id!(GradingEntryId);
 typed_id!(ItemFeedbackId);
 typed_id!(BulkActionId);
 typed_id!(CodeRunId);
+typed_id!(FileSubmissionId);
+typed_id!(FileAttemptId);
+typed_id!(FileAttemptFileId);
 typed_id!(JobId);
 
 #[cfg(test)]

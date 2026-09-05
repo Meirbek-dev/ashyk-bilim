@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE file_submissions SET\n               instructions = $2, rubric = $3, allowed_mime_types = $4, max_files = $5,\n               max_file_size_mb = $6, due_at = to_timestamp($7), allow_late = $8,\n               late_policy_kind = $9, late_penalty_percent_per_day = $10,\n               late_penalty_max_days = $11, late_cutoff_at = to_timestamp($12),\n               max_attempts = $13, grade_release_mode = $14, settings = $15\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "TextArray",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Bool",
+        "Text",
+        "Float8",
+        "Int4",
+        "Float8",
+        "Int4",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "698608542a7940ef2233e3e03b53de8d93d18376dccc075718c01f15dd62be6f"
+}

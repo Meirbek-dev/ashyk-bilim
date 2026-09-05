@@ -4,3 +4,6 @@
 pub mod uploads;
 
 pub use uploads::UploadsService;
+pub mod submissions;
+
+pub use submissions::FileSubmissionsService;

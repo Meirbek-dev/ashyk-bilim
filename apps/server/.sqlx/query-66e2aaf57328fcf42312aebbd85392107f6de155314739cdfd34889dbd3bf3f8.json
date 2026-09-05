@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE file_submission_attempts SET\n               status = $3, final_score = $4, feedback = $5,\n               rubric_scores = COALESCE($6, rubric_scores),\n               graded_by = $7, graded_at = now(), version = version + 1\n           WHERE id = $1 AND version = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Text",
+        "Float8",
+        "Text",
+        "Jsonb",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "66e2aaf57328fcf42312aebbd85392107f6de155314739cdfd34889dbd3bf3f8"
+}

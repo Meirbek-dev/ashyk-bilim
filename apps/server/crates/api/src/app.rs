@@ -48,6 +48,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "submissions", description = "Learner attempts: start, draft, submit"),
         (name = "code", description = "Code execution: runs, reference checks, languages"),
         (name = "grading", description = "Teacher grading: review queue, grades, releases, gradebook"),
+        (name = "file-submissions", description = "File-submission activities: authoring, attempts, grading"),
     )
 )]
 struct ApiDoc;
@@ -60,6 +61,28 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(catalog_routes())
         .merge(assessment_routes())
         .merge(submission_routes())
+        .merge(file_submission_routes())
+}
+
+fn file_submission_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::file_submissions::create_file_submission))
+        .routes(routes!(routes::file_submissions::get_file_submission))
+        .routes(routes!(
+            routes::file_submissions::get_activity_file_submission
+        ))
+        .routes(routes!(routes::file_submissions::update_file_submission))
+        .routes(routes!(routes::file_submissions::publish_file_submission))
+        .routes(routes!(routes::file_submissions::get_draft))
+        .routes(routes!(routes::file_submissions::start_draft))
+        .routes(routes!(routes::file_submissions::save_draft))
+        .routes(routes!(routes::file_submissions::submit))
+        .routes(routes!(routes::file_submissions::my_attempts))
+        .routes(routes!(routes::file_submissions::review_queue))
+        .routes(routes!(routes::file_submissions::export_csv))
+        .routes(routes!(routes::file_submissions::get_attempt))
+        .routes(routes!(routes::file_submissions::grade_attempt))
+        .routes(routes!(routes::file_submissions::file_url))
 }
 
 fn identity_routes() -> OpenApiRouter<AppState> {

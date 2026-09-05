@@ -325,3 +325,54 @@ Ported from `routers/grading/sse.py` + `services/grading/events.py`
   `submission.returned`, `deadline.extended`. `data` is
   `{event_id, event, submission_id, payload, sent_at}` (unix seconds; the
   legacy sent ISO strings).
+
+## File submissions (2026-09-05, P5.1)
+
+Ported from `services/file_submissions.py` + `routers/file_submissions.py`:
+
+- **Files are uploads.** The legacy accepted multipart bodies through the
+  API and streamed them to storage itself. v2 reuses the P2 upload
+  pipeline: the client creates a `file-submission` upload, PUTs to the
+  presigned URL, finalizes, then attaches the upload id to the draft. The
+  activity's own policy (mime allowlist, per-file size cap, max files) is
+  checked at attach time; the platform-wide 100 MB private-bucket cap
+  applies at upload time. Attaching moves the upload's reference count so
+  the reaper never collects a file that is part of an attempt.
+- **One open attempt per learner** (`draft` or `returned`) is a partial
+  unique index, so the double-click race collapses to the same row.
+  Submitted/graded attempts count toward `max_attempts`; drafts do not.
+- **`If-Match` on the attempt `version`** is optional for learner saves
+  and submits (412 when sent and stale), required for grader writes —
+  the same split as assessment submissions.
+- **Grade visibility follows status**, not the assessment-style release
+  mode: the owner sees `final_score`/`feedback`/`rubric_scores` once the
+  attempt is `published` or `returned`; `graded` is the teacher's private
+  draft. `grade_release_mode` is stored for parity but not yet consulted
+  (batch release lands with the gradebook follow-ups if the frontend
+  needs it).
+- **Late handling** mirrors assessments: past due with `allow_late` off
+  is a 409; otherwise `late_penalty_pct` comes from the shared
+  `LatePolicy` math and is stored on the attempt for the grader.
+- **Dropped:** the bulk zip download (`/download-all`) — no frontend
+  caller, and a streaming zip belongs in a job if it returns. `scan_status`
+  is stored (`pending`) but no scanner runs yet.
+- Routes: `/file-submissions[/{id}[/publish|/draft|/submit|/me|/submissions[/export]]]`,
+  `/activities/{id}/file-submission`, `/file-submission-attempts/{id}[/grade]`,
+  `/file-submission-files/{id}/url` (JSON `{url, expires_at_unix}` rather
+  than a redirect, since the client renders a link list).
+
+## Judge0 tuning is an operator command (2026-09-05, P5.3)
+
+The legacy API patched Judge0's `languages` table from a daemon thread on
+every boot (`app/judge0_patch.py`), polling for two minutes until Judge0
+had created the table. v2 does not connect the API server to Judge0's
+database at all: `ashyq admin judge0-tune` runs the same seven UPDATEs
+(verbatim command strings) against `AB__JUDGE0__DATABASE_URL`, refuses when
+the core rows are not seeded yet, and is idempotent so it can be re-run
+after a Judge0 image upgrade re-seeds the table. It is a cutover runbook
+step (MIGRATION §6, T-0 5a), not a runtime behaviour.
+
+5.2 ("code arena") is folded into 4.4: the frontend arena drives
+assessment-item runs and author reference checks; there is no separate
+arena surface in the legacy API to port.
+

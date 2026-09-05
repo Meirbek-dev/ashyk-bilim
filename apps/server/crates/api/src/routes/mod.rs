@@ -7,6 +7,7 @@ pub mod code;
 pub mod collections;
 pub mod courses;
 pub mod curriculum;
+pub mod file_submissions;
 pub mod grading;
 pub mod health;
 pub mod platform;

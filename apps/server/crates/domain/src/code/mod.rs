@@ -6,6 +6,7 @@ pub mod compare;
 mod runner;
 pub mod sandbox;
 mod service;
+pub mod tune;
 
 pub use runner::{CaseResult, CodeRun, CodeRunner, FinalRun, FinalTarget, RunSpec};
 pub use service::{CodeRunsService, LanguageInfo, ReferenceCheck, RunInput};

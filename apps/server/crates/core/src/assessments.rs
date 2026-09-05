@@ -249,6 +249,37 @@ text_enum!(
     }
 );
 
+text_enum!(
+    /// File-submission activity lifecycle (legacy `FileSubmissionLifecycle`).
+    FileSubmissionLifecycle {
+        Draft => "draft",
+        Published => "published",
+        Archived => "archived",
+    }
+);
+
+text_enum!(
+    /// File-submission attempt status (legacy `FileSubmissionAttemptStatus`).
+    FileAttemptStatus {
+        Draft => "draft",
+        Submitted => "submitted",
+        Graded => "graded",
+        Published => "published",
+        Returned => "returned",
+    }
+);
+
+text_enum!(
+    /// Malware-scan status of an attached file (scanning itself is a later
+    /// slice; everything is `pending` until then).
+    ScanStatus {
+        Pending => "pending",
+        Clean => "clean",
+        Flagged => "flagged",
+        Error => "error",
+    }
+);
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {

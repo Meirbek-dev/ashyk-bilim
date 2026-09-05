@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO file_submission_files\n                   (attempt_id, upload_id, display_name, content_type, size_bytes, storage_key,\n                    position)\n               VALUES ($1, $2, $3, $4, $5, $6, $7)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "142d7a6c8b23b9d632bb7ce547846d8be4f6a118ad4c39551f8cc4e967e0b5d6"
+}

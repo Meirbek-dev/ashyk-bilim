@@ -54,6 +54,9 @@ pub struct Judge0Config {
     pub base_url: String,
     /// Sent as `X-Auth-Token` when set (Judge0 `AUTHN_TOKEN`).
     pub api_key: Option<SecretString>,
+    /// Judge0's own Postgres database (the legacy `openu` DB in the shared
+    /// cluster) — only `ashyq admin judge0-tune` connects to it.
+    pub database_url: Option<SecretString>,
     /// Per-HTTP-call timeout.
     #[serde(default = "Judge0Config::default_request_timeout_secs")]
     pub request_timeout_secs: f64,
@@ -248,6 +251,7 @@ impl Config {
             "judge0": self.judge0.as_ref().map(|j| serde_json::json!({
                 "base_url": j.base_url,
                 "api_key": j.api_key.as_ref().map(|_| "[redacted]"),
+                "database_url": j.database_url.as_ref().map(|_| "[redacted]"),
                 "request_timeout_secs": j.request_timeout_secs,
                 "poll_interval_ms": j.poll_interval_ms,
                 "poll_max_wait_secs": j.poll_max_wait_secs,

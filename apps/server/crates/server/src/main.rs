@@ -41,6 +41,9 @@ enum AdminCommand {
     ConfigCheck,
     /// Verify Zitadel reachability + PAT validity (cutover runbook step).
     ZitadelCheck,
+    /// Patch Judge0's `languages` table with the sandbox-safe compiler and
+    /// run commands (Go, Java, Kotlin). Idempotent; run once per Judge0 DB.
+    Judge0Tune,
 }
 
 #[tokio::main]
@@ -70,6 +73,24 @@ async fn main() -> anyhow::Result<()> {
                 std::io::stdout(),
                 "{}",
                 serde_json::to_string_pretty(&config.redacted())?
+            )?;
+            Ok(())
+        }
+        Command::Admin {
+            command: AdminCommand::Judge0Tune,
+        } => {
+            let url = config
+                .judge0
+                .as_ref()
+                .and_then(|j| j.database_url.clone())
+                .ok_or_else(|| anyhow::anyhow!("AB__JUDGE0__DATABASE_URL must be set"))?;
+            let report =
+                ab_domain::code::tune::apply(secrecy::ExposeSecret::expose_secret(&url)).await?;
+            writeln!(
+                std::io::stdout(),
+                "judge0 languages patched: {} row(s) updated across {} statement(s)",
+                report.rows_updated,
+                report.statements
             )?;
             Ok(())
         }
