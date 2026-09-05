@@ -9,6 +9,7 @@ use ab_domain::assessments::AssessmentsService;
 use ab_domain::catalog::{
     CollectionsService, CoursesService, CurriculumService, PlatformService, SearchService,
 };
+use ab_domain::certifications::CertificationsService;
 use ab_domain::code::{CodeRunner, CodeRunsService};
 use ab_domain::community::DiscussionsService;
 use ab_domain::events::GradingEvents;
@@ -50,6 +51,7 @@ pub struct AppState {
     pub learner_state: LearnerStateService,
     pub progress: ProgressProjector,
     pub discussions: DiscussionsService,
+    pub certifications: CertificationsService,
 }
 
 impl AppState {
@@ -94,6 +96,11 @@ impl AppState {
             ),
             progress: ProgressProjector::new(pool.clone()),
             discussions: DiscussionsService::new(pool.clone(), courses.clone()),
+            certifications: CertificationsService::new(
+                pool.clone(),
+                courses.clone(),
+                assessments.clone(),
+            ),
             grading: GradingService::new(pool.clone(), assessments.clone(), Some(events.clone())),
             events,
             code_runs: CodeRunsService::new(

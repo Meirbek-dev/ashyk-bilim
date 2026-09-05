@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO certificate_users (certification_id, user_id, verify_code)\n           VALUES ($1, $2, $3)\n           ON CONFLICT (certification_id, user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "99458c4ad987a84cbfd47d924a5254900e4a716d7f8b1b5cd0076858a632d182"
+}

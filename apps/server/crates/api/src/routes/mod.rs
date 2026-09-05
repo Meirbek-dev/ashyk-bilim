@@ -3,6 +3,7 @@
 
 pub mod assessments;
 pub mod auth;
+pub mod certifications;
 pub mod code;
 pub mod collections;
 pub mod courses;

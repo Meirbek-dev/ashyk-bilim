@@ -51,6 +51,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "file-submissions", description = "File-submission activities: authoring, attempts, grading"),
         (name = "progress", description = "Personal trail and learner-facing course state"),
         (name = "discussions", description = "Course discussions: posts, replies, reactions, moderation"),
+        (name = "certifications", description = "Certification templates, issued certificates, public verification"),
     )
 )]
 struct ApiDoc;
@@ -66,6 +67,21 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(file_submission_routes())
         .merge(progress_routes())
         .merge(discussion_routes())
+        .merge(certification_routes())
+}
+
+fn certification_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::certifications::create_certification))
+        .routes(routes!(
+            routes::certifications::get_certification,
+            routes::certifications::update_certification,
+            routes::certifications::delete_certification
+        ))
+        .routes(routes!(routes::certifications::list_course_certifications))
+        .routes(routes!(routes::certifications::my_course_certificates))
+        .routes(routes!(routes::certifications::my_certificates))
+        .routes(routes!(routes::certifications::verify_certificate))
 }
 
 fn discussion_routes() -> OpenApiRouter<AppState> {

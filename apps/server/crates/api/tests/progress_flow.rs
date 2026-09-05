@@ -228,8 +228,9 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
     assert_eq!(done.json()["progress"]["progress_pct"], 100.0);
     assert_eq!(done.json()["enrollment_state"], "completed");
     assert_eq!(done.json()["next_action"]["id"], "review_completion");
-    assert_eq!(done.json()["certificate"]["eligible"], true);
+    // No certification configured → the block stays inert (legacy semantics).
     assert_eq!(done.json()["certificate"]["configured"], false);
+    assert_eq!(done.json()["certificate"]["eligible"], false);
     let eligible: bool =
         sqlx::query_scalar("SELECT certificate_eligible FROM course_progress WHERE course_id = $1")
             .bind(uuid::Uuid::parse_str(&course_id).unwrap())

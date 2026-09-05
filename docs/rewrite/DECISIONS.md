@@ -440,3 +440,34 @@ laid down (`course_discussions`, `discussion_reactions`):
   Hidden posts disappear from lists and take no reactions; only a moderator
   can un-hide (the owner's PATCH on a hidden post 404s like everyone else's).
 
+## Certifications (2026-09-06, P6.3)
+
+Ported from `services/courses/certifications.py` onto the P2 tables:
+
+- **Issuance is a projection side effect.** The legacy issued from the
+  trail step handler and again, defensively, when the learner opened their
+  certificates. v2 issues inside `ProgressProjector::recalculate_course`
+  the moment `certificate_eligible` turns true — so every write path that
+  completes a course (lesson step, auto-graded submit, a teacher publishing
+  the last grade, a deadline extension) issues without knowing about
+  certificates. The on-demand re-check on `GET /courses/{id}/certificates/me`
+  stays for parity; both are idempotent through the `(certification, user)`
+  unique key, replacing the legacy try/rollback/retry dance.
+- **Verify codes** are `XXXX-XXXX-XXXX-XXXX` over a 32-letter alphabet
+  without 0/O/1/I (80 random bits) instead of the legacy
+  `{hash}-{date}-{user-suffix}-{timestamp}` string; the code is the public
+  identifier the client already links as `/certificates/{code}/verify`.
+- **Public verification returns the holder's display name and username**,
+  never the email (the legacy verify endpoint returned no user at all; the
+  frontend rendered the name from the session — useless for a third-party
+  verifier, so the name is included).
+- **Template reads are for authors.** `GET /certifications/{id}` and the
+  course list need course-scoped `certificate:read` (platform, or `own` as
+  creator); learners get the template through their own certificate
+  payloads, as the legacy frontend already did.
+- The legacy `last_known_update_date` optimistic check on the parent
+  course is dropped (as for other P2 course sub-resources); template edits
+  are last-write-wins.
+- Course-completion XP (legacy `on_course_completed`) is P6.4 and will hang
+  off the same eligibility flip.
+

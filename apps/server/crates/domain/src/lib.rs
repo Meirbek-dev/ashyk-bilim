@@ -13,6 +13,7 @@
 
 pub mod assessments;
 pub mod catalog;
+pub mod certifications;
 pub mod code;
 pub mod community;
 pub mod events;

@@ -2310,6 +2310,184 @@
         }
       }
     },
+    "/api/v2/certificates/{code}": {
+      "get": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "Public verification by code — no session needed.",
+        "operationId": "verify_certificate",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Verification code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified certificate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifiedCertificate"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown code",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/certifications": {
+      "post": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "Add a certification template to a course (`certificate:create`).",
+        "operationId": "create_certification",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCertificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Certification"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No certificate authoring on this course",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/certifications/{id}": {
+      "get": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "One template (course-scoped `certificate:read`).",
+        "operationId": "get_certification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Certification id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CertificationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Certification"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "Remove the template and every certificate issued from it.",
+        "operationId": "delete_certification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Certification id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CertificationId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "Replace the template document.",
+        "operationId": "update_certification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Certification id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CertificationId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCertificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Certification"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/chapters/{id}": {
       "delete": {
         "tags": [
@@ -3102,6 +3280,76 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Assessment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/courses/{id}/certificates/me": {
+      "get": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "The caller's certificates for a course; a completed course issues on\nthe spot.",
+        "operationId": "my_course_certificates",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certificates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IssuedCertificate"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/courses/{id}/certifications": {
+      "get": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "The course's templates (course-scoped `certificate:read`).",
+        "operationId": "list_course_certifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Certification"
                   }
                 }
               }
@@ -4558,6 +4806,30 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/certificates": {
+      "get": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "Every certificate the caller holds.",
+        "operationId": "my_certificates",
+        "responses": {
+          "200": {
+            "description": "Certificates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IssuedCertificate"
+                  }
                 }
               }
             }
@@ -7416,6 +7688,54 @@
           }
         }
       },
+      "Certificate": {
+        "type": "object",
+        "required": [
+          "id",
+          "certification_id",
+          "user_id",
+          "verify_code",
+          "issued_at_unix"
+        ],
+        "properties": {
+          "certification_id": {
+            "$ref": "#/components/schemas/CertificationId"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CertificateId"
+          },
+          "issued_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "verify_code": {
+            "type": "string",
+            "description": "Public verification code; the client links `/certificates/{code}/verify`."
+          }
+        }
+      },
+      "CertificateHolder": {
+        "type": "object",
+        "required": [
+          "display_name",
+          "username"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "CertificateId": {
+        "type": "string",
+        "format": "uuid"
+      },
       "CertificateState": {
         "type": "object",
         "required": [
@@ -7439,14 +7759,48 @@
           "issued": {
             "type": "boolean"
           },
-          "user_certification_id": {
+          "verify_code": {
             "type": [
               "string",
               "null"
             ],
-            "format": "uuid"
+            "description": "Public verification code of the issued certificate."
           }
         }
+      },
+      "Certification": {
+        "type": "object",
+        "required": [
+          "id",
+          "course_id",
+          "config",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "config": {
+            "type": "object",
+            "description": "The client's PDF designer document (opaque to the server)."
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CertificationId"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CertificationId": {
+        "type": "string",
+        "format": "uuid"
       },
       "Chapter": {
         "type": "object",
@@ -8272,6 +8626,21 @@
             "type": "string",
             "format": "uuid",
             "description": "A finalized upload (purpose must match the block type)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateCertificationRequest": {
+        "type": "object",
+        "required": [
+          "course_id"
+        ],
+        "properties": {
+          "config": {
+            "type": "object"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
           }
         },
         "additionalProperties": false
@@ -9630,6 +9999,26 @@
           "version": {
             "type": "string",
             "description": "Server crate version."
+          }
+        }
+      },
+      "IssuedCertificate": {
+        "type": "object",
+        "description": "A certificate with its template and course.",
+        "required": [
+          "certificate",
+          "certification",
+          "course"
+        ],
+        "properties": {
+          "certificate": {
+            "$ref": "#/components/schemas/Certificate"
+          },
+          "certification": {
+            "$ref": "#/components/schemas/Certification"
+          },
+          "course": {
+            "$ref": "#/components/schemas/Course"
           }
         }
       },
@@ -11949,6 +12338,18 @@
         },
         "additionalProperties": false
       },
+      "UpdateCertificationRequest": {
+        "type": "object",
+        "required": [
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateChapterRequest": {
         "type": "object",
         "properties": {
@@ -12449,6 +12850,25 @@
           }
         }
       },
+      "VerifiedCertificate": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/IssuedCertificate"
+          },
+          {
+            "type": "object",
+            "required": [
+              "holder"
+            ],
+            "properties": {
+              "holder": {
+                "$ref": "#/components/schemas/CertificateHolder"
+              }
+            }
+          }
+        ],
+        "description": "The public verification view."
+      },
       "ViolationRequest": {
         "type": "object",
         "required": [
@@ -12576,6 +12996,10 @@
     {
       "name": "discussions",
       "description": "Course discussions: posts, replies, reactions, moderation"
+    },
+    {
+      "name": "certifications",
+      "description": "Certification templates, issued certificates, public verification"
     }
   ]
 }

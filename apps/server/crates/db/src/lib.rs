@@ -7,6 +7,7 @@
 
 pub mod assessments;
 pub mod catalog;
+pub mod certifications;
 pub mod collections;
 pub mod discussions;
 pub mod file_submissions;

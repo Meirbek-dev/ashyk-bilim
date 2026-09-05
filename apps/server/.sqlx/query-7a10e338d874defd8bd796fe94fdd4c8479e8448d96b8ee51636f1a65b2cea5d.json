@@ -1,0 +1,90 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT cu.id AS \"id: CertificateId\",\n                  cu.certification_id AS \"certification_id: CertificationId\",\n                  c.course_id AS \"course_id: CourseId\", cu.user_id AS \"user_id: UserId\",\n                  cu.verify_code,\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id\n           WHERE cu.verify_code = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CertificateId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "certificate_users",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "certification_id: CertificationId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "certificate_users",
+            "name": "certification_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "certifications",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "certificate_users",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "verify_code",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "certificate_users",
+            "name": "verify_code"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "7a10e338d874defd8bd796fe94fdd4c8479e8448d96b8ee51636f1a65b2cea5d"
+}

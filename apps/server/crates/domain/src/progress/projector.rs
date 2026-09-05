@@ -245,6 +245,9 @@ impl ProgressProjector {
         let weights = ab_db::progress::list_assessment_weights(&self.pool, course_id).await?;
         let write = aggregate_course(course_id, user_id, &rows, &weights);
         ab_db::progress::upsert_course_progress(&self.pool, &write).await?;
+        if write.certificate_eligible {
+            crate::certifications::issue_for_completion(&self.pool, course_id, user_id).await?;
+        }
         ab_db::progress::get_course_progress(&self.pool, course_id, user_id)
             .await?
             .ok_or_else(|| Error::not_found("course progress"))

@@ -115,6 +115,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/discussions/{id}"),
     ("PUT", "/api/v2/discussions/{id}/like"),
     ("PUT", "/api/v2/discussions/{id}/dislike"),
+    // Certification templates: certificate:create/update/delete (platform or course creator).
+    ("POST", "/api/v2/certifications"),
+    ("PATCH", "/api/v2/certifications/{id}"),
+    ("DELETE", "/api/v2/certifications/{id}"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

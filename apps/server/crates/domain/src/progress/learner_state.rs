@@ -149,7 +149,8 @@ pub struct CertificateState {
     pub configured: bool,
     pub eligible: bool,
     pub issued: bool,
-    pub user_certification_id: Option<uuid::Uuid>,
+    /// Public verification code of the issued certificate.
+    pub verify_code: Option<String>,
     pub href: Option<String>,
 }
 
@@ -247,13 +248,13 @@ impl LearnerStateService {
         }
         let flat: Vec<&ActivityState> = states.iter().map(|(_, s)| s).collect();
         let progress = progress_state(course_progress.as_ref(), &flat);
-        let certificate = CertificateState {
-            configured: false,
-            eligible: progress.progress_pct >= 100.0,
-            issued: false,
-            user_certification_id: None,
-            href: None,
-        };
+        let certificate = certificate_state(
+            &self.pool,
+            course.id,
+            user_id,
+            progress.progress_pct >= 100.0,
+        )
+        .await?;
         let next_action = next_action(enrolled, course.id, &flat, &certificate, &progress);
         let enrollment_state = if progress.progress_pct >= 100.0 {
             EnrollmentState::Completed
@@ -280,6 +281,38 @@ impl LearnerStateService {
             outline,
         })
     }
+}
+
+/// Whether the course certifies, and where the learner stands.
+async fn certificate_state(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+    eligible: bool,
+) -> Result<CertificateState> {
+    let configured = !ab_db::certifications::list_course_certifications(pool, course_id)
+        .await?
+        .is_empty();
+    if !configured {
+        return Ok(CertificateState {
+            configured: false,
+            eligible: false,
+            issued: false,
+            verify_code: None,
+            href: None,
+        });
+    }
+    let issued =
+        ab_db::certifications::user_certificate_for_course(pool, course_id, user_id).await?;
+    Ok(CertificateState {
+        configured: true,
+        eligible,
+        issued: issued.is_some(),
+        href: issued
+            .as_ref()
+            .map(|c| format!("/certificates/{}/verify", c.verify_code)),
+        verify_code: issued.map(|c| c.verify_code),
+    })
 }
 
 fn activity_state(
