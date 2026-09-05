@@ -50,6 +50,11 @@ LNK1318 / "IO failure on output stream: no space on device"). Set
 session before building. If builds still fail on space, delete that dir and
 rebuild.
 
+Linking the ~15 `ab-api` integration-test binaries in parallel can exhaust
+the Windows page file (`os error 1455`, surfacing as bogus `can't find crate`
+errors). Cap build parallelism for test builds:
+`cargo nextest run --workspace --build-jobs 4`.
+
 DB integration tests (validated commands, 2026-08-16):
 
 ```
