@@ -11,6 +11,7 @@ pub mod file_submissions;
 pub mod grading;
 pub mod health;
 pub mod platform;
+pub mod progress;
 pub mod rbac;
 pub mod search;
 pub mod sse;

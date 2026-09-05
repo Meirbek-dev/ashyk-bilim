@@ -34,6 +34,7 @@ use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::grading::penalties::late_penalty_pct;
 use crate::grading::teacher::UserSummary;
 use crate::identity::Actor;
+use crate::progress::ProgressProjector;
 
 /// Presigned download validity (legacy 1h).
 pub const DOWNLOAD_TTL: Duration = Duration::from_secs(3600);
@@ -160,6 +161,7 @@ pub struct FileSubmissionsService {
     pool: PgPool,
     assessments: AssessmentsService,
     storage: Arc<StorageClient>,
+    projector: ProgressProjector,
 }
 
 fn stale(expected: i64, actual: i64) -> Error {
@@ -229,12 +231,9 @@ fn validate_config(v: &FileSubmissionValues<'_>) -> Result<()> {
 
 impl FileSubmissionsService {
     #[must_use]
-    pub const fn new(
-        pool: PgPool,
-        assessments: AssessmentsService,
-        storage: Arc<StorageClient>,
-    ) -> Self {
+    pub fn new(pool: PgPool, assessments: AssessmentsService, storage: Arc<StorageClient>) -> Self {
         Self {
+            projector: ProgressProjector::new(pool.clone()),
             pool,
             assessments,
             storage,
@@ -591,6 +590,9 @@ impl FileSubmissionsService {
             return Ok((self.attempt_view(open, false, true).await?, false));
         }
         let attempt = self.open_new_attempt(&row, actor.user_id).await?;
+        self.projector
+            .after_file_attempt(row.id, actor.user_id)
+            .await;
         Ok((self.attempt_view(attempt, false, true).await?, true))
     }
 
@@ -658,6 +660,9 @@ impl FileSubmissionsService {
                 .ok_or_else(|| Error::not_found("attempt"))?;
             return Err(stale(attempt.version, latest.version));
         }
+        self.projector
+            .after_file_attempt(row.id, actor.user_id)
+            .await;
         let fresh = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
@@ -827,6 +832,9 @@ impl FileSubmissionsService {
                 .ok_or_else(|| Error::not_found("attempt"))?;
             return Err(stale(attempt.version, latest.version));
         }
+        self.projector
+            .after_file_attempt(row.id, actor.user_id)
+            .await;
         attempt = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
@@ -966,6 +974,9 @@ impl FileSubmissionsService {
                 .ok_or_else(|| Error::not_found("attempt"))?;
             return Err(stale(input.expected_version, latest.version));
         }
+        self.projector
+            .after_file_attempt(attempt.file_submission_id, attempt.user_id)
+            .await;
         let fresh = ab_db::file_submissions::get_attempt(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;

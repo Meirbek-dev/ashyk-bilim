@@ -18,6 +18,7 @@ use ab_domain::identity::{
     GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsergroupsService,
     UsersService,
 };
+use ab_domain::progress::{LearnerStateService, ProgressProjector, TrailService};
 use sqlx::PgPool;
 
 #[derive(Clone)]
@@ -44,6 +45,9 @@ pub struct AppState {
     pub grading: GradingService,
     pub events: GradingEvents,
     pub file_submissions: FileSubmissionsService,
+    pub trail: TrailService,
+    pub learner_state: LearnerStateService,
+    pub progress: ProgressProjector,
 }
 
 impl AppState {
@@ -80,6 +84,13 @@ impl AppState {
                 assessments.clone(),
                 Arc::clone(&storage),
             ),
+            trail: TrailService::new(pool.clone(), courses.clone(), assessments.clone()),
+            learner_state: LearnerStateService::new(
+                pool.clone(),
+                courses.clone(),
+                assessments.clone(),
+            ),
+            progress: ProgressProjector::new(pool.clone()),
             grading: GradingService::new(pool.clone(), assessments.clone(), Some(events.clone())),
             events,
             code_runs: CodeRunsService::new(

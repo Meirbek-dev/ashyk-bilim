@@ -3261,6 +3261,48 @@
         }
       }
     },
+    "/api/v2/courses/{id}/learner-state": {
+      "get": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "The learner-facing course state: outline with per-activity work state,\ncanonical progress, certificate block and the single next action.",
+        "operationId": "learner_course_state",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Learner course state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnerCourseState"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No course access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/courses/{id}/lifecycle": {
       "post": {
         "tags": [
@@ -5057,6 +5099,161 @@
         }
       }
     },
+    "/api/v2/trail": {
+      "get": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "The caller's trail: one run per course, one step per activity marked\ndone. Anonymous callers get an empty trail.",
+        "operationId": "get_trail",
+        "responses": {
+          "200": {
+            "description": "Trail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/trail/activities/{id}": {
+      "post": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "Mark an activity done (lesson-type activities also complete in the\ncanonical progress; assessments are projected by their own pipeline).",
+        "operationId": "add_activity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Activity id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "Un-mark an activity.",
+        "operationId": "remove_activity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Activity id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/trail/courses/{id}": {
+      "post": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "Start (or keep) a run for a course the caller can access.",
+        "operationId": "add_course",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No course access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "Drop the run for a course and every step in it.",
+        "operationId": "remove_course",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/uploads": {
       "post": {
         "tags": [
@@ -5987,6 +6184,20 @@
           }
         }
       },
+      "ActionId": {
+        "type": "string",
+        "enum": [
+          "enroll",
+          "start",
+          "continue",
+          "revise",
+          "view_feedback",
+          "wait_for_grade",
+          "view_certificate",
+          "review_completion",
+          "none"
+        ]
+      },
       "Activity": {
         "type": "object",
         "required": [
@@ -6054,6 +6265,78 @@
       "ActivityId": {
         "type": "string",
         "format": "uuid"
+      },
+      "ActivityState": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "activity_type",
+          "required",
+          "state",
+          "complete",
+          "is_late",
+          "available",
+          "allowed_actions"
+        ],
+        "properties": {
+          "activity_type": {
+            "type": "string"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "blocked_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "due_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "is_late": {
+            "type": "boolean"
+          },
+          "passed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "state": {
+            "$ref": "#/components/schemas/WorkState"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
       },
       "AdminUser": {
         "type": "object",
@@ -6792,6 +7075,38 @@
           }
         }
       },
+      "CertificateState": {
+        "type": "object",
+        "required": [
+          "configured",
+          "eligible",
+          "issued"
+        ],
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "eligible": {
+            "type": "boolean"
+          },
+          "href": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "issued": {
+            "type": "boolean"
+          },
+          "user_certification_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "Chapter": {
         "type": "object",
         "required": [
@@ -6824,6 +7139,34 @@
       "ChapterId": {
         "type": "string",
         "format": "uuid"
+      },
+      "ChapterState": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "index",
+          "activities"
+        ],
+        "properties": {
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityState"
+            }
+          },
+          "id": {
+            "$ref": "#/components/schemas/ChapterId"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based position among chapters that have published activities.",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string"
+          }
+        }
       },
       "ChoiceBody": {
         "type": "object",
@@ -7426,6 +7769,31 @@
           }
         }
       },
+      "CoursePermissions": {
+        "type": "object",
+        "required": [
+          "can_discover",
+          "can_access",
+          "can_enroll"
+        ],
+        "properties": {
+          "can_access": {
+            "type": "boolean"
+          },
+          "can_discover": {
+            "type": "boolean"
+          },
+          "can_enroll": {
+            "type": "boolean"
+          },
+          "denial_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "CourseUpdate": {
         "type": "object",
         "description": "One announcement in the course changelog feed.",
@@ -7999,6 +8367,14 @@
             "type": "boolean"
           }
         }
+      },
+      "EnrollmentState": {
+        "type": "string",
+        "enum": [
+          "not_enrolled",
+          "in_progress",
+          "completed"
+        ]
       },
       "ErrorCode": {
         "type": "string",
@@ -9195,6 +9571,56 @@
         ],
         "description": "Late-submission handling."
       },
+      "LearnerCourseState": {
+        "type": "object",
+        "required": [
+          "course_id",
+          "title",
+          "public",
+          "enrolled",
+          "enrollment_state",
+          "permissions",
+          "progress",
+          "certificate",
+          "next_action",
+          "outline"
+        ],
+        "properties": {
+          "certificate": {
+            "$ref": "#/components/schemas/CertificateState"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "enrolled": {
+            "type": "boolean"
+          },
+          "enrollment_state": {
+            "$ref": "#/components/schemas/EnrollmentState"
+          },
+          "next_action": {
+            "$ref": "#/components/schemas/NextAction"
+          },
+          "outline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChapterState"
+            }
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/CoursePermissions"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ProgressState"
+          },
+          "public": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "Lifecycle": {
         "type": "string",
         "enum": [
@@ -9354,6 +9780,45 @@
           }
         },
         "additionalProperties": false
+      },
+      "NextAction": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "reason",
+          "enabled"
+        ],
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "href": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/ActionId"
+          },
+          "label": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
       },
       "OpenTextBody": {
         "type": "object",
@@ -9623,6 +10088,52 @@
           "type": {
             "type": "string",
             "description": "Stable documentation URI for this error class."
+          }
+        }
+      },
+      "ProgressState": {
+        "type": "object",
+        "required": [
+          "completed_required_count",
+          "total_required_count",
+          "missing_required_count",
+          "needs_grading_count",
+          "progress_pct"
+        ],
+        "properties": {
+          "completed_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "completed_required_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "grade_average": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "missing_required_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "needs_grading_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "progress_pct": {
+            "type": "number",
+            "format": "double"
+          },
+          "total_required_count": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -10658,6 +11169,163 @@
         },
         "additionalProperties": false
       },
+      "Trail": {
+        "type": "object",
+        "description": "The caller's trail. `id` is `null` until something was added.",
+        "required": [
+          "user_id",
+          "runs"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TrailId"
+              }
+            ]
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrailRun"
+            }
+          },
+          "updated_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
+      "TrailId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "TrailRun": {
+        "type": "object",
+        "required": [
+          "id",
+          "course_id",
+          "status",
+          "course",
+          "course_total_steps",
+          "steps",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "course": {
+            "$ref": "#/components/schemas/Course"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_total_steps": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Published activities in the course."
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/TrailRunId"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TrailRunStatus"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrailStep"
+            }
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TrailRunId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "TrailRunStatus": {
+        "type": "string",
+        "description": "Trail run status (legacy `StatusEnum`; only `in_progress` is written today).",
+        "enum": [
+          "in_progress",
+          "completed",
+          "paused",
+          "cancelled"
+        ]
+      },
+      "TrailStep": {
+        "type": "object",
+        "required": [
+          "id",
+          "activity_id",
+          "course_id",
+          "complete",
+          "teacher_verified",
+          "grade",
+          "activity",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "activity": {
+            "$ref": "#/components/schemas/Activity"
+          },
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "grade": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "$ref": "#/components/schemas/TrailStepId"
+          },
+          "teacher_verified": {
+            "type": "boolean"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TrailStepId": {
+        "type": "string",
+        "format": "uuid"
+      },
       "UpdateActivityRequest": {
         "type": "object",
         "properties": {
@@ -11245,6 +11913,22 @@
             "format": "int32"
           }
         }
+      },
+      "WorkState": {
+        "type": "string",
+        "description": "Product-level work state shown to the learner.",
+        "enum": [
+          "not_started",
+          "in_progress",
+          "submitted",
+          "needs_grading",
+          "graded_hidden",
+          "returned",
+          "passed",
+          "failed",
+          "complete",
+          "locked"
+        ]
       }
     }
   },
@@ -11308,6 +11992,10 @@
     {
       "name": "file-submissions",
       "description": "File-submission activities: authoring, attempts, grading"
+    },
+    {
+      "name": "progress",
+      "description": "Personal trail and learner-facing course state"
     }
   ]
 }

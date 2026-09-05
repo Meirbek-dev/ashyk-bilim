@@ -16,6 +16,7 @@ use sqlx::PgPool;
 use crate::events::GradingEvents;
 use crate::grading::teacher::GradingService;
 use crate::identity::Actor;
+use crate::progress::ProgressProjector;
 
 /// Job kind carrying `{ "action_id": … }`.
 pub const BULK_ACTION_JOB: &str = "grading:bulk-action";
@@ -238,6 +239,9 @@ async fn run_deadline_extension(
                 ab_db::submissions::set_is_late(pool, submission.id, late).await?;
             }
         }
+        ProgressProjector::new(pool.clone())
+            .after_submission(row.assessment_id, user_id)
+            .await;
         if let (Some(events), Some(latest)) = (events, submitted.first()) {
             events
                 .publish_best_effort(

@@ -104,6 +104,11 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/file-submissions/{id}/draft"),
     ("POST", "/api/v2/file-submissions/{id}/submit"),
     ("PATCH", "/api/v2/file-submission-attempts/{id}/grade"),
+    // Trail writes need trail:submit:assigned / trail:update:own / trail:create:own.
+    ("POST", "/api/v2/trail/courses/{id}"),
+    ("DELETE", "/api/v2/trail/courses/{id}"),
+    ("POST", "/api/v2/trail/activities/{id}"),
+    ("DELETE", "/api/v2/trail/activities/{id}"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

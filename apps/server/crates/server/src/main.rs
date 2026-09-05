@@ -44,6 +44,12 @@ enum AdminCommand {
     /// Patch Judge0's `languages` table with the sandbox-safe compiler and
     /// run commands (Go, Java, Kotlin). Idempotent; run once per Judge0 DB.
     Judge0Tune,
+    /// Rebuild activity/course progress projections from current submission
+    /// state — every course, or one `--course <uuid>`. Idempotent.
+    ProgressBackfill {
+        #[arg(long)]
+        course: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -73,6 +79,26 @@ async fn main() -> anyhow::Result<()> {
                 std::io::stdout(),
                 "{}",
                 serde_json::to_string_pretty(&config.redacted())?
+            )?;
+            Ok(())
+        }
+        Command::Admin {
+            command: AdminCommand::ProgressBackfill { course },
+        } => {
+            let course = course
+                .map(|c| c.parse::<ab_core::id::CourseId>())
+                .transpose()
+                .map_err(|e| anyhow::anyhow!("--course must be a uuid: {e}"))?;
+            let pool = ab_db::connect(&config.database).await?;
+            let report = ab_domain::progress::ProgressProjector::new(pool)
+                .backfill(course)
+                .await?;
+            writeln!(
+                std::io::stdout(),
+                "progress backfilled: {} course(s), {} learner(s), {} activity row(s)",
+                report.courses,
+                report.learners,
+                report.activity_rows
             )?;
             Ok(())
         }

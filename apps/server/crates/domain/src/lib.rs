@@ -18,3 +18,4 @@ pub mod events;
 pub mod files;
 pub mod grading;
 pub mod identity;
+pub mod progress;

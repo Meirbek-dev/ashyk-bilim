@@ -376,3 +376,37 @@ step (MIGRATION §6, T-0 5a), not a runtime behaviour.
 assessment-item runs and author reference checks; there is no separate
 arena surface in the legacy API to port.
 
+## Progress projections and the trail (2026-09-05, P6.1)
+
+Ported from `services/progress/submissions.py`, `services/trail/trail.py`
+and `services/learner_course_state.py`:
+
+- **One projector, called after the fact.** Every submission and
+  file-attempt write path calls `ProgressProjector::after_*` once the row
+  is committed; the projector rebuilds the learner's activity row from
+  current state and then the course aggregate. Failures are logged, never
+  surfaced (the legacy did the same inside the request transaction). The
+  same code runs as `ashyq admin progress-backfill`, so a missed hook is a
+  repair, not a data loss.
+- **Every published activity is required** unless its `settings.required`
+  is `false` — exactly the legacy rule. The v2 `assessments.required`
+  column (defaults `false`) is NOT consulted by progress, as the legacy flag
+  was not either; see FINDINGS #18 for the follow-up.
+- **`graded` never completes a course.** Completion for `graded`/`passed`
+  rules requires `published`, so a saved-but-unreleased grade cannot unlock
+  a certificate — carried over verbatim.
+- **Trail steps are UX, not progress.** Adding a step records an explicit
+  completion only for lesson-type activities (dynamic/video/document/
+  custom); assessment and file-submission activities are owned by their
+  pipelines. `course_total_steps` counts published activities (the legacy
+  counted every row, drafts included).
+- **No `/trail/start`, no 404 on empty.** The trail is created lazily on
+  the first write; `GET /trail` answers an empty trail for anonymous
+  callers and learners who never added anything. Course/activity ids
+  replace the legacy uuid strings in paths.
+- **Certificate block is stubbed** (`configured: false`) until P6.3 lands
+  certifications; gamification hooks (XP on step) arrive with P6.4.
+- Cohort members without any interaction are not seeded by the backfill
+  (they have nothing to project); analytics that need "not started" counts
+  per cohort compute them from membership (P7).
+

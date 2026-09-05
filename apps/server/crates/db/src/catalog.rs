@@ -6,6 +6,7 @@ use ab_core::Result;
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, CourseUpdateId, UserId};
 use sqlx::PgPool;
 
+#[derive(Debug, Clone)]
 pub struct CourseRow {
     pub id: CourseId,
     pub name: String,
@@ -256,7 +257,7 @@ pub async fn renumber_chapters(pool: &PgPool, ordered_ids: &[ChapterId]) -> Resu
 
 // ── Activities ──────────────────────────────────────────────────────────────
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ActivityRow {
     pub id: ActivityId,
     pub chapter_id: ChapterId,

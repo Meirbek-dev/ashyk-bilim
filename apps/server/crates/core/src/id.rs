@@ -76,6 +76,11 @@ typed_id!(CodeRunId);
 typed_id!(FileSubmissionId);
 typed_id!(FileAttemptId);
 typed_id!(FileAttemptFileId);
+typed_id!(TrailId);
+typed_id!(TrailRunId);
+typed_id!(TrailStepId);
+typed_id!(ActivityProgressId);
+typed_id!(CourseProgressId);
 typed_id!(JobId);
 
 #[cfg(test)]

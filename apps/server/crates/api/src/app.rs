@@ -49,6 +49,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "code", description = "Code execution: runs, reference checks, languages"),
         (name = "grading", description = "Teacher grading: review queue, grades, releases, gradebook"),
         (name = "file-submissions", description = "File-submission activities: authoring, attempts, grading"),
+        (name = "progress", description = "Personal trail and learner-facing course state"),
     )
 )]
 struct ApiDoc;
@@ -62,6 +63,21 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(assessment_routes())
         .merge(submission_routes())
         .merge(file_submission_routes())
+        .merge(progress_routes())
+}
+
+fn progress_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::progress::get_trail))
+        .routes(routes!(
+            routes::progress::add_course,
+            routes::progress::remove_course
+        ))
+        .routes(routes!(
+            routes::progress::add_activity,
+            routes::progress::remove_activity
+        ))
+        .routes(routes!(routes::progress::learner_course_state))
 }
 
 fn file_submission_routes() -> OpenApiRouter<AppState> {

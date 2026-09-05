@@ -143,3 +143,13 @@ same gate as taking the assessment — returning per-test pass/fail, timings and
 compile output. A learner could burn Judge0 capacity at will and probe the
 reference solutions. v2 exposes the check as `POST /assessments/{id}/
 reference-check` for assessment authors only. No legacy-side fix planned.
+
+### 18. The per-assessment `required` flag never reached progress
+Legacy `AssessmentSettings.required` (default `false`) was stored but the
+progress projection hard-coded `required = True` for every submission-backed
+activity, and course completion counted every published activity. v2 keeps
+the legacy behaviour (so migrated courses complete the same way) and carries
+the flag as `assessments.required`. Owner decision pending on whether the flag
+should start driving progress (then most existing assessments would become
+optional overnight) — tracked for P9/P10 review; no legacy-side fix.
+

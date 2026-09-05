@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO trail_steps (trail_run_id, trail_id, activity_id, course_id, user_id)\n           VALUES ($1, $2, $3, $4, $5)\n           ON CONFLICT (trail_run_id, activity_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bd5e27b275c780f0263d763b69cd458a223096316ee776c64f9a0232e0afa956"
+}

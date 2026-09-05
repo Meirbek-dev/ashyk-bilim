@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT u.user_id AS \"user_id!: UserId\" FROM (\n               SELECT user_id FROM trail_runs WHERE course_id = $1\n               UNION SELECT user_id FROM submissions WHERE course_id = $1\n               UNION SELECT user_id FROM file_submission_attempts WHERE course_id = $1\n               UNION SELECT m.user_id FROM usergroup_members m\n                     JOIN usergroup_courses uc ON uc.usergroup_id = m.usergroup_id\n                     WHERE uc.course_id = $1\n               UNION SELECT user_id FROM activity_progress WHERE course_id = $1\n           ) u",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id!: UserId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "74dc1ecaa57c57cdd14e23be0e3ce2fd5362af87aed30bde2e6c7f3301bf9e36"
+}

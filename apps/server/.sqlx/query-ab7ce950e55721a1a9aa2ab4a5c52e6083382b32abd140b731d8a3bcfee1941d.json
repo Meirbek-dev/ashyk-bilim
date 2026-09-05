@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO activity_progress\n               (course_id, activity_id, user_id, state, required, score, passed,\n                best_submission_id, latest_submission_id, attempt_count, started_at,\n                last_activity_at, submitted_at, graded_at, completed_at, due_at, is_late,\n                teacher_action_required, status_reason)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, to_timestamp($11),\n                   to_timestamp($12), to_timestamp($13), to_timestamp($14), to_timestamp($15),\n                   to_timestamp($16), $17, $18, $19)\n           ON CONFLICT (activity_id, user_id) DO UPDATE SET\n               state = EXCLUDED.state, required = EXCLUDED.required, score = EXCLUDED.score,\n               passed = EXCLUDED.passed, best_submission_id = EXCLUDED.best_submission_id,\n               latest_submission_id = EXCLUDED.latest_submission_id,\n               attempt_count = EXCLUDED.attempt_count, started_at = EXCLUDED.started_at,\n               last_activity_at = EXCLUDED.last_activity_at,\n               submitted_at = EXCLUDED.submitted_at, graded_at = EXCLUDED.graded_at,\n               completed_at = EXCLUDED.completed_at, due_at = EXCLUDED.due_at,\n               is_late = EXCLUDED.is_late,\n               teacher_action_required = EXCLUDED.teacher_action_required,\n               status_reason = EXCLUDED.status_reason",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Bool",
+        "Float8",
+        "Bool",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Bool",
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ab7ce950e55721a1a9aa2ab4a5c52e6083382b32abd140b731d8a3bcfee1941d"
+}

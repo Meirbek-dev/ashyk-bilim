@@ -28,6 +28,7 @@ use crate::grading::breakdown::{GradedItem, GradingBreakdown, round2};
 use crate::grading::penalties::apply_late;
 use crate::grading::submissions::{ReleaseState, release_state};
 use crate::identity::Actor;
+use crate::progress::ProgressProjector;
 
 /// Review-queue page cap.
 pub const MAX_REVIEW_PAGE: i64 = 100;
@@ -869,6 +870,9 @@ impl GradingService {
             _ => {}
         }
         let fresh = self.load_submission(id).await?;
+        ProgressProjector::new(self.pool.clone())
+            .after_submission(fresh.assessment_id, fresh.user_id)
+            .await;
         self.view(fresh, &assessment).await
     }
 
@@ -987,6 +991,9 @@ impl GradingService {
             )
             .await?;
             ab_db::submissions::mark_published(&self.pool, row.id, final_score).await?;
+            ProgressProjector::new(self.pool.clone())
+                .after_submission(assessment_id, row.user_id)
+                .await;
             published += 1;
             self.emit(
                 row.id,

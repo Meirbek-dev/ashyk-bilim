@@ -11,6 +11,7 @@ pub mod collections;
 pub mod file_submissions;
 pub mod identity;
 pub mod platform;
+pub mod progress;
 pub mod queue;
 pub mod schedule;
 pub mod search;

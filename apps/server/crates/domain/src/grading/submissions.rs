@@ -33,6 +33,7 @@ use crate::grading::grader::{self, AutoGrade, CaseOutcome, GraderPolicy};
 use crate::grading::penalties::{self, PenaltyInput};
 use crate::identity::Actor;
 use crate::identity::rate_limit::RateLimiter;
+use crate::progress::ProgressProjector;
 
 /// Legacy `SUBMIT_GRACE_SECONDS`.
 pub const SUBMIT_GRACE_SECONDS: i64 = 30;
@@ -267,17 +268,19 @@ pub struct SubmissionsService {
     limiter: RateLimiter,
     /// Runs code-challenge tests at submit time.
     runner: CodeRunner,
+    projector: ProgressProjector,
 }
 
 impl SubmissionsService {
     #[must_use]
-    pub const fn new(
+    pub fn new(
         pool: PgPool,
         assessments: AssessmentsService,
         limiter: RateLimiter,
         runner: CodeRunner,
     ) -> Self {
         Self {
+            projector: ProgressProjector::new(pool.clone()),
             pool,
             assessments,
             limiter,
@@ -471,6 +474,9 @@ impl SubmissionsService {
         let submission = self
             .student_view(draft, state.effective.time_limit_seconds, total)
             .await?;
+        self.projector
+            .after_submission(assessment_id, actor.user_id)
+            .await;
         Ok(Started {
             submission,
             created,
@@ -574,6 +580,9 @@ impl SubmissionsService {
         let fresh = ab_db::submissions::get_submission(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
+        self.projector
+            .after_submission(fresh.assessment_id, fresh.user_id)
+            .await;
         let total = ctx.items.len();
         self.student_view(fresh, ctx.effective.time_limit_seconds, total)
             .await
@@ -654,6 +663,9 @@ impl SubmissionsService {
             },
         )
         .await?;
+        self.projector
+            .after_submission(fresh.0.assessment_id, fresh.0.user_id)
+            .await;
         let time_limit = fresh.1;
         let total = fresh.2;
         self.student_view(fresh.0, time_limit, total).await
@@ -956,6 +968,7 @@ impl SubmissionsService {
             &shapes,
         )?;
         let violation_count = submission.violation_count;
+        let (assessment_id, user_id) = (submission.assessment_id, submission.user_id);
         Self::finalize(
             runner,
             Context {
@@ -972,6 +985,9 @@ impl SubmissionsService {
             },
         )
         .await?;
+        ProgressProjector::new(pool.clone())
+            .after_submission(assessment_id, user_id)
+            .await;
         Ok(())
     }
 }

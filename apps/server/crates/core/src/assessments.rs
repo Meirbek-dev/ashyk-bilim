@@ -280,6 +280,31 @@ text_enum!(
     }
 );
 
+text_enum!(
+    /// Canonical per-learner activity state (legacy `ActivityProgressState`).
+    ActivityProgressState {
+        NotStarted => "not_started",
+        InProgress => "in_progress",
+        Submitted => "submitted",
+        NeedsGrading => "needs_grading",
+        Returned => "returned",
+        Graded => "graded",
+        Passed => "passed",
+        Failed => "failed",
+        Completed => "completed",
+    }
+);
+
+text_enum!(
+    /// Trail run status (legacy `StatusEnum`; only `in_progress` is written today).
+    TrailRunStatus {
+        InProgress => "in_progress",
+        Completed => "completed",
+        Paused => "paused",
+        Cancelled => "cancelled",
+    }
+);
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
