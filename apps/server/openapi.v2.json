@@ -1238,6 +1238,152 @@
         }
       }
     },
+    "/api/v2/assessments/{id}/submissions": {
+      "post": {
+        "tags": [
+          "submissions"
+        ],
+        "summary": "Open a draft attempt (or return the one already open).",
+        "description": "201 when this call opened it, 200 when a draft already existed. Refused\n(403) with the blocking reasons when the attempt state disallows it.",
+        "operationId": "start_submission",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentSubmission"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Draft opened",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted draft_version"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentSubmission"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Attempt not allowed now",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/submissions/draft": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "summary": "The caller's open draft for this assessment (404 when none).",
+        "operationId": "current_draft",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Open draft",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted draft_version"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentSubmission"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No open draft",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/submissions/me": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "summary": "Every attempt the caller made on this assessment, newest first.",
+        "operationId": "my_submissions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudentSubmission"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/auth/google": {
       "get": {
         "tags": [
@@ -3006,6 +3152,310 @@
         }
       }
     },
+    "/api/v2/submissions/{id}": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "summary": "One attempt the caller owns (404 for anyone else's).",
+        "operationId": "get_submission",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentSubmission"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or not yours",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/submissions/{id}/draft": {
+      "patch": {
+        "tags": [
+          "submissions"
+        ],
+        "summary": "Merge answers into the open draft.",
+        "description": "Requires `If-Match` with the draft_version you loaded; 409 carries\n`{expected, actual}` when someone (another tab) saved in between.\nThrottled to one save per 5 seconds per draft (429).",
+        "operationId": "save_draft",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Current draft_version",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "New quoted draft_version"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentSubmission"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Time limit expired",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale draft_version or not a draft",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown item / wrong answer kind",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Saving too often",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/submissions/{id}/submit": {
+      "post": {
+        "tags": [
+          "submissions"
+        ],
+        "summary": "Submit the draft for grading.",
+        "description": "Optionally applies a last answer patch. `If-Match` is honoured when\npresent. With an `Idempotency-Key`, a retry with the same body replays\nthe original response for 24h; the same key with a different body is\n422. Limited to 3 submits per 10 seconds per learner.",
+        "operationId": "submit_submission",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Draft version guard (optional)",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client retry token (optional)",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Graded or queued for review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentSubmission"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Attempt cap, time limit, or past due",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already submitted or stale draft_version",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Idempotency-Key reused with a different body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many submits",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/submissions/{id}/violations": {
+      "post": {
+        "tags": [
+          "submissions"
+        ],
+        "summary": "Report one anti-cheat event on the open draft.",
+        "description": "Returns the server-side count and whether submitting now zeroes the\nattempt (a detector is on and the threshold is reached).",
+        "operationId": "report_violation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViolationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViolationState"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a draft",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/uploads": {
       "post": {
         "tags": [
@@ -4270,17 +4720,46 @@
           "is_teacher_preview",
           "effective",
           "disabled_reasons",
-          "can_start"
+          "can_start",
+          "can_continue",
+          "attempts_used"
         ],
         "properties": {
+          "attempts_remaining": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "`null` = unlimited."
+          },
+          "attempts_used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "can_continue": {
+            "type": "boolean",
+            "description": "An open draft exists and may still be worked on."
+          },
           "can_start": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "No open draft and nothing blocks a new attempt."
           },
           "disabled_reasons": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DisabledReason"
             }
+          },
+          "draft_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionId"
+              }
+            ]
           },
           "effective": {
             "$ref": "#/components/schemas/EffectivePolicy"
@@ -5200,7 +5679,9 @@
           "NOT_PUBLISHED",
           "SCHEDULED_NOT_OPEN",
           "ARCHIVED",
-          "PAST_DUE"
+          "PAST_DUE",
+          "MAX_ATTEMPTS_REACHED",
+          "TIME_LIMIT_EXPIRED"
         ]
       },
       "DuplicateRequest": {
@@ -5408,6 +5889,66 @@
           "batch"
         ]
       },
+      "GradedItem": {
+        "type": "object",
+        "required": [
+          "item_id",
+          "score",
+          "max_score"
+        ],
+        "properties": {
+          "correct": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`None` = not auto-gradeable."
+          },
+          "correct_answer": {},
+          "feedback": {
+            "type": "string"
+          },
+          "item_id": {
+            "$ref": "#/components/schemas/AssessmentItemId"
+          },
+          "item_text": {
+            "type": "string"
+          },
+          "max_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "needs_manual_review": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "user_answer": {}
+        }
+      },
+      "GradingBreakdown": {
+        "type": "object",
+        "properties": {
+          "auto_graded": {
+            "type": "boolean"
+          },
+          "feedback": {
+            "type": "string",
+            "description": "Teacher's overall comment."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradedItem"
+            }
+          },
+          "needs_manual_review": {
+            "type": "boolean"
+          }
+        }
+      },
       "GradingMode": {
         "type": "string",
         "enum": [
@@ -5439,6 +5980,114 @@
             "description": "Server crate version."
           }
         }
+      },
+      "ItemAnswer": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "choice"
+                ]
+              },
+              "selected": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "open_text"
+                ]
+              },
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "form"
+                ]
+              },
+              "values": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "language",
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "code"
+                ]
+              },
+              "language": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Judge0 language id."
+              },
+              "source": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "matching"
+                ]
+              },
+              "matches": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MatchingAnswer"
+                }
+              }
+            }
+          }
+        ],
+        "description": "Internally tagged on `kind`, mirroring the item body kinds."
       },
       "ItemBody": {
         "oneOf": [
@@ -5732,6 +6381,21 @@
           "numeric_tolerance",
           "custom_checker"
         ]
+      },
+      "MatchingAnswer": {
+        "type": "object",
+        "required": [
+          "left",
+          "right"
+        ],
+        "properties": {
+          "left": {
+            "type": "string"
+          },
+          "right": {
+            "type": "string"
+          }
+        }
       },
       "MatchingBody": {
         "type": "object",
@@ -6045,6 +6709,13 @@
               "null"
             ]
           },
+          "details": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Machine-readable context for some codes (e.g. `{expected, actual}`\non an optimistic-lock 409)."
+          },
           "field_errors": {
             "type": "array",
             "items": {
@@ -6137,6 +6808,16 @@
           }
         }
       },
+      "ReleaseState": {
+        "type": "string",
+        "description": "What the learner may see of a grade (legacy `release_state`).",
+        "enum": [
+          "hidden",
+          "awaiting_release",
+          "visible",
+          "returned_for_revision"
+        ]
+      },
       "ReorderItemsRequest": {
         "type": "object",
         "required": [
@@ -6196,6 +6877,26 @@
             "type": "string"
           }
         }
+      },
+      "SaveDraftRequest": {
+        "type": "object",
+        "description": "Partial answers; items not mentioned keep their current answer.",
+        "required": [
+          "answers"
+        ],
+        "properties": {
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ItemAnswer"
+            },
+            "propertyNames": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "additionalProperties": false
       },
       "ScoringStrategy": {
         "type": "string",
@@ -6418,6 +7119,171 @@
             "type": "boolean"
           }
         }
+      },
+      "StudentSubmission": {
+        "type": "object",
+        "description": "One attempt as its owner sees it. Scores, grading and lateness penalty\nare `null` until the grade is released.",
+        "required": [
+          "id",
+          "assessment_id",
+          "attempt_number",
+          "status",
+          "release_state",
+          "answers",
+          "is_late",
+          "draft_version",
+          "violation_count",
+          "answered_count",
+          "total_items"
+        ],
+        "properties": {
+          "answered_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answers": {
+            "type": "object",
+            "description": "`{ \"<item_id>\": ItemAnswer }`.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ItemAnswer"
+            },
+            "propertyNames": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "assessment_id": {
+            "$ref": "#/components/schemas/AssessmentId"
+          },
+          "attempt_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "auto_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "draft_version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Send back as `If-Match` on draft saves and submits."
+          },
+          "final_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "graded_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "grading": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GradingBreakdown"
+              }
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/SubmissionId"
+          },
+          "is_late": {
+            "type": "boolean"
+          },
+          "late_penalty_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "release_state": {
+            "$ref": "#/components/schemas/ReleaseState"
+          },
+          "started_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubmissionStatus"
+          },
+          "submitted_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "time_remaining_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Seconds left on an open timed draft; `null` when untimed or closed."
+          },
+          "total_items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "violation_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SubmissionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "SubmissionStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "pending",
+          "graded",
+          "published",
+          "returned"
+        ]
+      },
+      "SubmitRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "A last patch applied before grading.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ItemAnswer"
+            },
+            "propertyNames": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "violation_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The client's anti-cheat count; the server's own count wins when higher."
+          }
+        },
+        "additionalProperties": false
       },
       "TotpEnrollment": {
         "type": "object",
@@ -6972,6 +7838,47 @@
             ]
           }
         }
+      },
+      "ViolationRequest": {
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "description": "e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ViolationState": {
+        "type": "object",
+        "required": [
+          "violation_count",
+          "threshold",
+          "exceeded"
+        ],
+        "properties": {
+          "exceeded": {
+            "type": "boolean",
+            "description": "Submitting now zeroes the attempt."
+          },
+          "threshold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "violation_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -7019,6 +7926,10 @@
     {
       "name": "assessments",
       "description": "Quizzes, exams, code challenges: authoring and lifecycle"
+    },
+    {
+      "name": "submissions",
+      "description": "Learner attempts: start, draft, submit"
     }
   ]
 }
