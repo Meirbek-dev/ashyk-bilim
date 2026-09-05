@@ -129,6 +129,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::assessments::update_assessment))
         .routes(routes!(routes::assessments::set_policy))
         .routes(routes!(routes::assessments::lifecycle))
+        .routes(routes!(routes::assessments::duplicate_assessment))
         .routes(routes!(routes::assessments::readiness))
         .routes(routes!(routes::assessments::audit_trail))
         .routes(routes!(routes::assessments::create_item))

@@ -1231,6 +1231,30 @@ expression: json
         ],
         "type": "string"
       },
+      "DuplicateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChapterId",
+                "description": "Target chapter in the same course; defaults to the source's chapter."
+              }
+            ]
+          },
+          "title": {
+            "description": "Defaults to `\"<title> (copy)\"`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "EditCourseUpdateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3412,6 +3436,58 @@ expression: json
           }
         },
         "summary": "Lifecycle transitions and override changes, newest first.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v2/assessments/{id}/duplicate": {
+      "post": {
+        "operationId": "duplicate_assessment",
+        "parameters": [
+          {
+            "description": "Source assessment id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            },
+            "description": "The copy"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Chapter outside the course"
+          }
+        },
+        "summary": "Deep-copy as a new draft (policy + items; not access lists or\nper-student overrides), appended to the same or a given chapter of the\nsame course.",
         "tags": [
           "assessments"
         ]

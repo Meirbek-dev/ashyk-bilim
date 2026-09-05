@@ -620,6 +620,58 @@
         }
       }
     },
+    "/api/v2/assessments/{id}/duplicate": {
+      "post": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Deep-copy as a new draft (policy + items; not access lists or\nper-student overrides), appended to the same or a given chapter of the\nsame course.",
+        "operationId": "duplicate_assessment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Source assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The copy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Chapter outside the course",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/assessments/{id}/items": {
       "post": {
         "tags": [
@@ -4713,6 +4765,30 @@
           "medium",
           "hard"
         ]
+      },
+      "DuplicateRequest": {
+        "type": "object",
+        "properties": {
+          "chapter_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChapterId",
+                "description": "Target chapter in the same course; defaults to the source's chapter."
+              }
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Defaults to `\"<title> (copy)\"`."
+          }
+        },
+        "additionalProperties": false
       },
       "EditCourseUpdateRequest": {
         "type": "object",

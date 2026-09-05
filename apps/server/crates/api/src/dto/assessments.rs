@@ -397,6 +397,17 @@ impl From<service::AuditEvent> for AuditEvent {
     }
 }
 
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DuplicateRequest {
+    /// Defaults to `"<title> (copy)"`.
+    #[garde(inner(length(min = 1, max = 500)))]
+    pub title: Option<String>,
+    /// Target chapter in the same course; defaults to the source's chapter.
+    #[garde(skip)]
+    pub chapter_id: Option<ChapterId>,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct AuditQuery {
     /// 1..=200, default 50.

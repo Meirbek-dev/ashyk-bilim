@@ -455,10 +455,9 @@ impl AssessmentsService {
     }
 
     /// Legacy `_ensure_authorable`: archived is read-only; a published
-    /// assessment with any submission cannot be edited.
-    // async ahead of slice 4.1, which turns the submission probe into a query.
-    #[allow(clippy::unused_async)]
-    async fn ensure_editable(&self, assessment: &Assessment) -> Result<()> {
+    /// assessment with any submission cannot be edited. (Becomes async in
+    /// slice 4.1 when the submission probe turns into a query.)
+    fn ensure_editable(&self, assessment: &Assessment) -> Result<()> {
         match assessment.lifecycle {
             Lifecycle::Archived => Err(Error::conflict("archived assessments are read-only")),
             Lifecycle::Published => {
@@ -476,8 +475,7 @@ impl AssessmentsService {
 
     /// Legacy `ASSESSMENT_LOCKED`: content (body/kind/max score) freezes once
     /// a published assessment has a non-draft submission.
-    #[allow(clippy::unused_async)]
-    async fn ensure_content_unlocked(&self, assessment: &Assessment) -> Result<()> {
+    fn ensure_content_unlocked(&self, assessment: &Assessment) -> Result<()> {
         if assessment.lifecycle == Lifecycle::Published
             && ab_db::assessments::submission_activity(&self.pool, assessment.id).non_draft
         {
@@ -628,7 +626,7 @@ impl AssessmentsService {
         changes: AssessmentChanges<'_>,
     ) -> Result<AssessmentDetail> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment).await?;
+        self.ensure_editable(&assessment)?;
         ab_db::assessments::update_assessment_details(
             &self.pool,
             id,
@@ -654,7 +652,7 @@ impl AssessmentsService {
         policy: PolicyInput,
     ) -> Result<AssessmentDetail> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment).await?;
+        self.ensure_editable(&assessment)?;
         policy.validate()?;
         ab_db::assessments::update_policy(&self.pool, id, &policy.to_values()).await?;
         self.detail(id).await
@@ -867,6 +865,90 @@ impl AssessmentsService {
         Ok(ids.len())
     }
 
+    /// Deep copy as a fresh draft: new activity appended to the (same or
+    /// given) chapter, the whole policy, every item with fresh ids in the
+    /// same order. Access lists and per-student overrides are not copied
+    /// (legacy semantics). Unlike legacy, due date / lateness / anti-cheat
+    /// travel with the copy — dropping them silently was a data-loss bug.
+    pub async fn duplicate(
+        &self,
+        actor: &Actor,
+        id: AssessmentId,
+        title: Option<&str>,
+        chapter_id: Option<ChapterId>,
+    ) -> Result<AssessmentDetail> {
+        let source = self.load_for_author(actor, id).await?;
+        let source_activity = ab_db::catalog::get_activity(&self.pool, source.activity_id)
+            .await?
+            .ok_or_else(|| Error::not_found("activity"))?;
+        let target_chapter = chapter_id.unwrap_or(source_activity.chapter_id);
+        let chapter = ab_db::catalog::get_chapter(&self.pool, target_chapter)
+            .await?
+            .ok_or_else(|| Error::not_found("chapter"))?;
+        if chapter.course_id != source.course_id {
+            return Err(Error::validation(vec![FieldError {
+                field: "chapter_id".into(),
+                code: "invalid".into(),
+                message: "copies stay within the source course".into(),
+            }]));
+        }
+        let copy_title = title.map_or_else(|| format!("{} (copy)", source.title), str::to_owned);
+
+        let (activity_type, sub_type) = source.kind.activity_type();
+        let activity_id = ab_db::catalog::insert_activity(
+            &self.pool,
+            target_chapter,
+            source.course_id,
+            &copy_title,
+            activity_type,
+            sub_type,
+            actor.user_id,
+        )
+        .await?;
+        let new_id = ab_db::assessments::insert_assessment(
+            &self.pool,
+            NewAssessment {
+                activity_id,
+                course_id: source.course_id,
+                kind: source.kind,
+                title: &copy_title,
+                description: &source.description,
+                weight: source.weight,
+                grading_type: source.grading_type,
+                creator_id: actor.user_id,
+                policy: &source.policy(),
+            },
+        )
+        .await?;
+        for item in ab_db::assessments::list_items(&self.pool, id).await? {
+            ab_db::assessments::insert_item(
+                &self.pool,
+                new_id,
+                item.kind,
+                &item.title,
+                &item.body,
+                item.max_score,
+                ItemMetadata {
+                    section_label: item.section_label.as_deref(),
+                    difficulty: item.difficulty,
+                    tags: &item.tags,
+                    outcome_ids: &item.outcome_ids,
+                    estimated_minutes: item.estimated_minutes,
+                },
+            )
+            .await?;
+        }
+        ab_db::assessments::insert_audit_event(
+            &self.pool,
+            new_id,
+            Some(actor.user_id),
+            "duplicated-from",
+            serde_json::json!({ "source": id }),
+        )
+        .await?;
+        self.detail(new_id).await
+    }
+
     pub async fn audit_trail(
         &self,
         actor: &Actor,
@@ -889,7 +971,7 @@ impl AssessmentsService {
         metadata: ItemMetadataInput,
     ) -> Result<Item> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment).await?;
+        self.ensure_editable(&assessment)?;
         Self::check_kind_allowed(assessment.kind, body.kind())?;
         if ab_db::assessments::count_items(&self.pool, id).await? >= MAX_ITEMS {
             return Err(Error::validation(vec![FieldError {
@@ -947,9 +1029,9 @@ impl AssessmentsService {
         changes: ItemChanges,
     ) -> Result<Item> {
         let (assessment, row) = self.item_for_author(actor, item_id).await?;
-        self.ensure_editable(&assessment).await?;
+        self.ensure_editable(&assessment)?;
         if changes.body.is_some() || changes.max_score.is_some() {
-            self.ensure_content_unlocked(&assessment).await?;
+            self.ensure_content_unlocked(&assessment)?;
         }
         if let Some(body) = &changes.body {
             Self::check_kind_allowed(assessment.kind, body.kind())?;
@@ -978,8 +1060,8 @@ impl AssessmentsService {
 
     pub async fn delete_item(&self, actor: &Actor, item_id: AssessmentItemId) -> Result<()> {
         let (assessment, row) = self.item_for_author(actor, item_id).await?;
-        self.ensure_editable(&assessment).await?;
-        self.ensure_content_unlocked(&assessment).await?;
+        self.ensure_editable(&assessment)?;
+        self.ensure_content_unlocked(&assessment)?;
         ab_db::assessments::delete_item(&self.pool, item_id).await?;
         let remaining = ab_db::assessments::list_item_ids(&self.pool, row.assessment_id).await?;
         ab_db::assessments::renumber_items(&self.pool, &remaining).await?;
@@ -996,7 +1078,7 @@ impl AssessmentsService {
         ordered: &[AssessmentItemId],
     ) -> Result<Vec<Item>> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment).await?;
+        self.ensure_editable(&assessment)?;
         let existing = ab_db::assessments::list_item_ids(&self.pool, id).await?;
         let unknown: Vec<_> = ordered
             .iter()

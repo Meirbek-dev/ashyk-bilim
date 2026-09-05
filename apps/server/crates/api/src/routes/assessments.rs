@@ -8,8 +8,8 @@ use axum::http::StatusCode;
 
 use crate::dto::assessments::{
     Assessment, AssessmentDetail, AssessmentItem, AuditEvent, AuditQuery, CreateAssessmentRequest,
-    CreateItemRequest, LifecycleRequest, Policy, ReorderItemsRequest, UpdateAssessmentRequest,
-    UpdateItemRequest,
+    CreateItemRequest, DuplicateRequest, LifecycleRequest, Policy, ReorderItemsRequest,
+    UpdateAssessmentRequest, UpdateItemRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, ValidJson};
@@ -203,6 +203,32 @@ pub async fn lifecycle(
         )
         .await?;
     Ok(Json(detail.into()))
+}
+
+/// Deep-copy as a new draft (policy + items; not access lists or
+/// per-student overrides), appended to the same or a given chapter of the
+/// same course.
+#[utoipa::path(
+    post, path = "/assessments/{id}/duplicate", tag = "assessments",
+    params(("id" = AssessmentId, Path, description = "Source assessment id")),
+    request_body = DuplicateRequest,
+    responses(
+        (status = 201, description = "The copy", body = AssessmentDetail),
+        (status = 422, description = "Chapter outside the course", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn duplicate_assessment(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<AssessmentId>,
+    ValidJson(request): ValidJson<DuplicateRequest>,
+) -> ApiResult<(StatusCode, Json<AssessmentDetail>)> {
+    let detail = state
+        .assessments
+        .duplicate(&actor, id, request.title.as_deref(), request.chapter_id)
+        .await?;
+    Ok((StatusCode::CREATED, Json(detail.into())))
 }
 
 /// What blocks publication right now.

@@ -70,6 +70,7 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/assessments/{id}"),
     ("PUT", "/api/v2/assessments/{id}/policy"),
     ("POST", "/api/v2/assessments/{id}/lifecycle"),
+    ("POST", "/api/v2/assessments/{id}/duplicate"),
     ("POST", "/api/v2/assessments/{id}/items"),
     ("POST", "/api/v2/assessments/{id}/items/reorder"),
     ("PATCH", "/api/v2/assessment-items/{id}"),

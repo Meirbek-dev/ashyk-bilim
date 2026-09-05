@@ -442,3 +442,98 @@ async fn code_challenge_defaults_kind_rules_and_visibility(pool: PgPool) {
         .await;
     assert_eq!(denied.status, StatusCode::FORBIDDEN);
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn duplicate_copies_policy_and_items_as_a_fresh_draft(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "exam", "title": "Midterm" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{id}/items"),
+        &choice_item("Q1"),
+    )
+    .await;
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{id}/items"),
+        &choice_item("Q2"),
+    )
+    .await;
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{id}/lifecycle"),
+        &serde_json::json!({ "to": "published" }),
+    )
+    .await;
+
+    let copy = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/duplicate"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(copy.status, StatusCode::CREATED, "{}", copy.text());
+    let body = copy.json();
+    assert_ne!(body["id"], id.as_str());
+    assert_eq!(body["title"], "Midterm (copy)");
+    assert_eq!(body["lifecycle"], "draft");
+    assert!(body["published_at_unix"].is_null());
+    // The exam preset travelled with the copy, and the items kept their order.
+    assert_eq!(body["policy"]["time_limit_seconds"], 3600);
+    assert_eq!(body["policy"]["fullscreen_required"], true);
+    let titles: Vec<_> = body["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["title"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(titles, ["Q1", "Q2"]);
+    assert_ne!(body["items"][0]["id"], created.json()["items"][0]["id"]);
+
+    // Both activities now sit in the chapter; the copy is unpublished.
+    let curriculum = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/curriculum"))
+        .await;
+    let activities = curriculum.json()["chapters"][0]["activities"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(activities.len(), 2);
+    assert_eq!(activities[1]["name"], "Midterm (copy)");
+    assert_eq!(activities[1]["published"], false);
+
+    // A chapter from another course is refused.
+    let other = app
+        .post_as(
+            &teacher,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": "Other" }),
+        )
+        .await;
+    let other_id = other.json()["id"].as_str().unwrap().to_owned();
+    let foreign = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{other_id}/chapters"),
+            &serde_json::json!({ "name": "Elsewhere" }),
+        )
+        .await;
+    let refused = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/duplicate"),
+            &serde_json::json!({ "chapter_id": foreign.json()["id"] }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+}
