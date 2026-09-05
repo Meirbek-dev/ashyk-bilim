@@ -51,9 +51,9 @@ openapi:
     cargo run -p ashyq-server -- openapi > openapi.v2.json
 
 # Coverage with floor (ratchet up as phases land — never down).
-# Scaffold floor 30; raise per EXECUTION-PLAN phase gates (target: 70 workspace).
+# Scaffold floor 30 → 80 after P3 (measured 88% lines, 2026-09-05).
 cov:
-    cargo llvm-cov nextest --workspace --fail-under-lines 30
+    cargo llvm-cov nextest --workspace --fail-under-lines 80
 
 deny:
     cargo deny check
