@@ -44,6 +44,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "platform", description = "Platform settings singleton"),
         (name = "search", description = "Platform search"),
         (name = "usergroups", description = "Cohorts: member sets linkable to courses"),
+        (name = "assessments", description = "Quizzes, exams, code challenges: authoring and lifecycle"),
     )
 )]
 struct ApiDoc;
@@ -121,6 +122,19 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::usergroups::add_usergroup_courses))
         .routes(routes!(routes::usergroups::remove_usergroup_courses))
         .routes(routes!(routes::usergroups::usergroups_for_course))
+        .routes(routes!(routes::assessments::create_assessment))
+        .routes(routes!(routes::assessments::get_assessment))
+        .routes(routes!(routes::assessments::get_activity_assessment))
+        .routes(routes!(routes::assessments::list_course_assessments))
+        .routes(routes!(routes::assessments::update_assessment))
+        .routes(routes!(routes::assessments::set_policy))
+        .routes(routes!(routes::assessments::lifecycle))
+        .routes(routes!(routes::assessments::readiness))
+        .routes(routes!(routes::assessments::audit_trail))
+        .routes(routes!(routes::assessments::create_item))
+        .routes(routes!(routes::assessments::update_item))
+        .routes(routes!(routes::assessments::delete_item))
+        .routes(routes!(routes::assessments::reorder_items))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

@@ -343,3 +343,11 @@ impl TestResponse {
             })
     }
 }
+
+impl TestResponse {
+    /// Raw body as text — for assertion messages when a status surprises.
+    #[must_use]
+    pub fn text(&self) -> String {
+        String::from_utf8_lossy(&self.body).into_owned()
+    }
+}

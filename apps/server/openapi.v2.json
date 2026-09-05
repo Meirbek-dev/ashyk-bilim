@@ -134,6 +134,48 @@
         }
       }
     },
+    "/api/v2/activities/{id}/assessment": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "The assessment behind an activity (same access rules as by id).",
+        "operationId": "get_activity_assessment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Activity id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No assessment or inaccessible",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/activities/{id}/blocks": {
       "get": {
         "tags": [
@@ -297,6 +339,534 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessment-items/{id}": {
+      "delete": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Delete an item; siblings renumber.",
+        "operationId": "delete_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Item id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentItemId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "409": {
+            "description": "Content locked",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Partial item update. Body/max-score changes are refused (409) once a\npublished assessment has graded submissions.",
+        "operationId": "update_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Item id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentItemId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentItem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Content locked",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments": {
+      "post": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Create an assessment with its backing activity (appended to the chapter).",
+        "description": "Requires `assessment:author` on the course (platform scope or course\ncreator with own scope). Code challenges start with one default code\nitem.",
+        "operationId": "create_assessment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssessmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created (draft)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No authoring access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Policy out of range",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Full assessment with items and policy. Authors always; learners only\nonce published (404 otherwise — no existence leak).",
+        "operationId": "get_assessment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Title/description/weight/grading type. Archived assessments are\nread-only; a published one with submissions must be unpublished first.",
+        "operationId": "update_assessment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssessmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Read-only in this state",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/audit": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Lifecycle transitions and override changes, newest first.",
+        "operationId": "audit_trail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1..=200 (default 50)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditEvent"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/items": {
+      "post": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Append an item (kind must suit the assessment; at most 200 items).",
+        "operationId": "create_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created (appended last)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Kind unsupported / limit / bad body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/items/reorder": {
+      "post": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Reorder items; returns the full list in the new order.",
+        "operationId": "reorder_items",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderItemsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Reordered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssessmentItem"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown item ids",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/lifecycle": {
+      "post": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Lifecycle transition.",
+        "description": "Allowed: draft→scheduled/published/archived,\nscheduled→draft/published/archived, published→draft/archived,\narchived→draft. Scheduling and publishing require readiness (422 with\nthe issues as field errors); scheduling needs a future time.",
+        "operationId": "lifecycle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Transitioned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transition not allowed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Not ready / bad schedule",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/policy": {
+      "put": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Replace the whole policy block (bumps `policy_version`).",
+        "operationId": "set_policy",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Policy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Out of range",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/readiness": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "What blocks publication right now.",
+        "operationId": "readiness",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Readiness report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
                 }
               }
             }
@@ -1391,6 +1961,41 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/courses/{id}/assessments": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Course overview: authors see every assessment, others only published.",
+        "operationId": "list_course_assessments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Assessment"
+                  }
                 }
               }
             }
@@ -2883,6 +3488,13 @@
   },
   "components": {
     "schemas": {
+      "AccessMode": {
+        "type": "string",
+        "enum": [
+          "all_course_learners",
+          "restricted"
+        ]
+      },
       "Activity": {
         "type": "object",
         "required": [
@@ -3017,6 +3629,185 @@
           }
         }
       },
+      "Assessment": {
+        "type": "object",
+        "required": [
+          "id",
+          "activity_id",
+          "course_id",
+          "kind",
+          "title",
+          "description",
+          "lifecycle",
+          "weight",
+          "grading_type",
+          "content_version",
+          "policy_version",
+          "policy",
+          "access_mode",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "access_mode": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "archived_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "content_version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creator_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "grading_type": {
+            "$ref": "#/components/schemas/GradingType"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AssessmentId"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AssessmentKind"
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/Lifecycle"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/Policy"
+          },
+          "policy_version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "published_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "scheduled_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "weight": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "AssessmentDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Assessment"
+          },
+          {
+            "type": "object",
+            "required": [
+              "items"
+            ],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AssessmentItem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AssessmentId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AssessmentItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "position",
+          "kind",
+          "title",
+          "body",
+          "max_score",
+          "metadata"
+        ],
+        "properties": {
+          "body": {
+            "$ref": "#/components/schemas/ItemBody"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AssessmentItemId"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ItemKind"
+          },
+          "max_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ItemMetadata"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1-based, contiguous."
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "AssessmentItemId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AssessmentKind": {
+        "type": "string",
+        "description": "What the assessment is; decides the backing activity type and which\nitem kinds are allowed.",
+        "enum": [
+          "quiz",
+          "exam",
+          "code_challenge"
+        ]
+      },
       "AssignRoleRequest": {
         "type": "object",
         "required": [
@@ -3029,6 +3820,39 @@
           }
         },
         "additionalProperties": false
+      },
+      "AuditEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "event",
+          "payload",
+          "created_at_unix"
+        ],
+        "properties": {
+          "actor_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "event": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payload": {}
+        }
       },
       "Block": {
         "type": "object",
@@ -3095,6 +3919,174 @@
       "ChapterId": {
         "type": "string",
         "format": "uuid"
+      },
+      "ChoiceBody": {
+        "type": "object",
+        "properties": {
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "multiple": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOption"
+            }
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "variant": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChoiceVariant"
+              }
+            ]
+          }
+        }
+      },
+      "ChoiceOption": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "is_correct": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "ChoiceVariant": {
+        "type": "string",
+        "enum": [
+          "single_choice",
+          "multiple_choice",
+          "true_false"
+        ]
+      },
+      "CodeBody": {
+        "type": "object",
+        "properties": {
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "input_spec": {
+            "type": "string"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Judge0 language ids."
+          },
+          "max_output_kb": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "memory_limit_mb": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "output_spec": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "reference_solutions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "scoring_strategy": {
+            "$ref": "#/components/schemas/ScoringStrategy"
+          },
+          "starter_code": {
+            "type": "object",
+            "description": "Keyed by language id as a string (legacy shape).",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "tests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CodeTestCase"
+            }
+          },
+          "time_limit_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CodeTestCase": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "is_visible": {
+            "type": "boolean"
+          },
+          "match_mode": {
+            "$ref": "#/components/schemas/MatchMode"
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       },
       "Collection": {
         "type": "object",
@@ -3199,6 +4191,16 @@
             ]
           }
         }
+      },
+      "CompletionRule": {
+        "type": "string",
+        "enum": [
+          "viewed",
+          "submitted",
+          "graded",
+          "passed",
+          "teacher_verified"
+        ]
       },
       "Course": {
         "type": "object",
@@ -3360,6 +4362,61 @@
         },
         "additionalProperties": false
       },
+      "CreateAssessmentRequest": {
+        "type": "object",
+        "required": [
+          "chapter_id",
+          "kind",
+          "title"
+        ],
+        "properties": {
+          "chapter_id": {
+            "$ref": "#/components/schemas/ChapterId",
+            "description": "The activity is appended to this chapter."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "grading_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GradingType"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AssessmentKind"
+          },
+          "policy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Policy",
+                "description": "Omit to start from the kind's preset."
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "weight": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateBlockRequest": {
         "type": "object",
         "required": [
@@ -3483,6 +4540,42 @@
           },
           "title": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateItemRequest": {
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "properties": {
+          "body": {
+            "$ref": "#/components/schemas/ItemBody",
+            "description": "Tagged on `kind`; must be a kind the assessment allows."
+          },
+          "max_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "metadata": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ItemMetadata"
+              }
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "additionalProperties": false
@@ -3613,6 +4706,14 @@
         ],
         "description": "A chapter with its activities, in curriculum order."
       },
+      "Difficulty": {
+        "type": "string",
+        "enum": [
+          "easy",
+          "medium",
+          "hard"
+        ]
+      },
       "EditCourseUpdateRequest": {
         "type": "object",
         "properties": {
@@ -3694,6 +4795,71 @@
           }
         }
       },
+      "FormBody": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormField"
+            }
+          },
+          "prompt": {
+            "type": "string"
+          }
+        }
+      },
+      "FormField": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "field_type": {
+            "$ref": "#/components/schemas/FormFieldType"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FormFieldType": {
+        "type": "string",
+        "enum": [
+          "text",
+          "textarea",
+          "number",
+          "date"
+        ]
+      },
+      "GradeReleaseMode": {
+        "type": "string",
+        "enum": [
+          "immediate",
+          "batch"
+        ]
+      },
+      "GradingMode": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "manual",
+          "auto_then_manual"
+        ]
+      },
+      "GradingType": {
+        "type": "string",
+        "enum": [
+          "numeric",
+          "percentage"
+        ]
+      },
       "Health": {
         "type": "object",
         "required": [
@@ -3710,6 +4876,264 @@
             "description": "Server crate version."
           }
         }
+      },
+      "ItemBody": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChoiceBody"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "choice"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OpenTextBody"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "open_text"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FormBody"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "form"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CodeBody"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "code"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MatchingBody"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "matching"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "description": "Internally tagged on `kind` — the wire and storage shape."
+      },
+      "ItemKind": {
+        "type": "string",
+        "enum": [
+          "choice",
+          "open_text",
+          "form",
+          "code",
+          "matching"
+        ]
+      },
+      "ItemMetadata": {
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Difficulty"
+              }
+            ]
+          },
+          "estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "outcome_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "section_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LatePolicy": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "none"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "percent_per_day",
+              "max_days",
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "penalty"
+                ]
+              },
+              "max_days": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "percent_per_day": {
+                "type": "number",
+                "format": "double"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "cutoff_at_unix",
+              "kind"
+            ],
+            "properties": {
+              "cutoff_at_unix": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cutoff"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Late-submission handling."
+      },
+      "Lifecycle": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "scheduled",
+          "published",
+          "archived"
+        ]
+      },
+      "LifecycleRequest": {
+        "type": "object",
+        "required": [
+          "to"
+        ],
+        "properties": {
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scheduled_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Required when `to` is `scheduled`; must be in the future."
+          },
+          "to": {
+            "$ref": "#/components/schemas/Lifecycle"
+          }
+        },
+        "additionalProperties": false
       },
       "LoginRequest": {
         "type": "object",
@@ -3735,6 +5159,51 @@
           }
         },
         "additionalProperties": false
+      },
+      "MatchMode": {
+        "type": "string",
+        "enum": [
+          "exact",
+          "trimmed",
+          "ignore_whitespace",
+          "numeric_tolerance",
+          "custom_checker"
+        ]
+      },
+      "MatchingBody": {
+        "type": "object",
+        "properties": {
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchingPair"
+            }
+          },
+          "prompt": {
+            "type": "string"
+          }
+        }
+      },
+      "MatchingPair": {
+        "type": "object",
+        "required": [
+          "left",
+          "right"
+        ],
+        "properties": {
+          "left": {
+            "type": "string"
+          },
+          "right": {
+            "type": "string"
+          }
+        }
       },
       "MoveActivityRequest": {
         "type": "object",
@@ -3775,6 +5244,27 @@
           }
         },
         "additionalProperties": false
+      },
+      "OpenTextBody": {
+        "type": "object",
+        "properties": {
+          "min_words": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "rubric": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
       },
       "Platform": {
         "type": "object",
@@ -3817,6 +5307,118 @@
             ]
           }
         }
+      },
+      "Policy": {
+        "type": "object",
+        "description": "The complete policy block. Replaced wholesale via `PUT`; the same shape\nis returned on every assessment read. Ranges are validated server-side\n(422 with field errors).",
+        "required": [
+          "grading_mode",
+          "grade_release_mode",
+          "completion_rule",
+          "passing_score",
+          "allow_late",
+          "late_policy",
+          "required",
+          "review_visibility",
+          "randomize_questions",
+          "randomize_options",
+          "partial_credit",
+          "negative_marking_percent",
+          "grace_period_minutes",
+          "copy_paste_protection",
+          "tab_switch_detection",
+          "devtools_detection",
+          "right_click_disabled",
+          "fullscreen_required",
+          "violation_threshold"
+        ],
+        "properties": {
+          "allow_late": {
+            "type": "boolean"
+          },
+          "completion_rule": {
+            "$ref": "#/components/schemas/CompletionRule"
+          },
+          "copy_paste_protection": {
+            "type": "boolean"
+          },
+          "devtools_detection": {
+            "type": "boolean"
+          },
+          "due_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "fullscreen_required": {
+            "type": "boolean"
+          },
+          "grace_period_minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "grade_release_mode": {
+            "$ref": "#/components/schemas/GradeReleaseMode"
+          },
+          "grading_mode": {
+            "$ref": "#/components/schemas/GradingMode"
+          },
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
+          },
+          "max_attempts": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`null` = unlimited."
+          },
+          "negative_marking_percent": {
+            "type": "number",
+            "format": "double"
+          },
+          "partial_credit": {
+            "type": "boolean"
+          },
+          "passing_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "randomize_options": {
+            "type": "boolean"
+          },
+          "randomize_questions": {
+            "type": "boolean"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "review_visibility": {
+            "$ref": "#/components/schemas/ReviewVisibility"
+          },
+          "right_click_disabled": {
+            "type": "boolean"
+          },
+          "tab_switch_detection": {
+            "type": "boolean"
+          },
+          "time_limit_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`null` = no limit."
+          },
+          "violation_threshold": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
       },
       "Problem": {
         "type": "object",
@@ -3865,6 +5467,95 @@
           }
         }
       },
+      "Readiness": {
+        "type": "object",
+        "required": [
+          "ok",
+          "issues",
+          "blocker_count",
+          "warning_count"
+        ],
+        "properties": {
+          "blocker_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadinessIssue"
+            }
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "warning_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ReadinessIssue": {
+        "type": "object",
+        "description": "One thing blocking (or advising against) publication.",
+        "required": [
+          "code",
+          "message",
+          "severity",
+          "area"
+        ],
+        "properties": {
+          "area": {
+            "type": "string",
+            "description": "`details` | `questions` | `policy` | `audience` | `publish`."
+          },
+          "code": {
+            "type": "string",
+            "description": "Stable machine key, e.g. `choice.options_missing`."
+          },
+          "item_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentItemId"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "description": "`blocker` | `warning` | `advice` — every current rule is a blocker."
+          }
+        }
+      },
+      "ReorderItemsRequest": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentItemId"
+            },
+            "description": "Item ids in the desired order; omitted items follow in their\ncurrent order."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReviewVisibility": {
+        "type": "string",
+        "enum": [
+          "none",
+          "score_only",
+          "full"
+        ]
+      },
       "Role": {
         "type": "object",
         "required": [
@@ -3900,6 +5591,15 @@
             "type": "string"
           }
         }
+      },
+      "ScoringStrategy": {
+        "type": "string",
+        "enum": [
+          "partial_credit",
+          "all_or_nothing",
+          "best_submission",
+          "latest_submission"
+        ]
       },
       "SearchResults": {
         "type": "object",
@@ -4087,6 +5787,41 @@
         },
         "additionalProperties": false
       },
+      "UpdateAssessmentRequest": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "grading_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GradingType"
+              }
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "weight": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateChapterRequest": {
         "type": "object",
         "properties": {
@@ -4174,6 +5909,46 @@
             "items": {
               "type": "string"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateItemRequest": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ItemBody"
+              }
+            ]
+          },
+          "max_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "metadata": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ItemMetadata",
+                "description": "Replaces the whole metadata block when present."
+              }
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "additionalProperties": false
@@ -4544,6 +6319,10 @@
     {
       "name": "usergroups",
       "description": "Cohorts: member sets linkable to courses"
+    },
+    {
+      "name": "assessments",
+      "description": "Quizzes, exams, code challenges: authoring and lifecycle"
     }
   ]
 }

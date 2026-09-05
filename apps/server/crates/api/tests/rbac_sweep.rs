@@ -65,6 +65,15 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/usergroups/{id}/members"),
     ("POST", "/api/v2/usergroups/{id}/courses"),
     ("DELETE", "/api/v2/usergroups/{id}/courses"),
+    // Assessment authoring (assessment:author / publish; platform or creator-own).
+    ("POST", "/api/v2/assessments"),
+    ("PATCH", "/api/v2/assessments/{id}"),
+    ("PUT", "/api/v2/assessments/{id}/policy"),
+    ("POST", "/api/v2/assessments/{id}/lifecycle"),
+    ("POST", "/api/v2/assessments/{id}/items"),
+    ("POST", "/api/v2/assessments/{id}/items/reorder"),
+    ("PATCH", "/api/v2/assessment-items/{id}"),
+    ("DELETE", "/api/v2/assessment-items/{id}"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

@@ -21,6 +21,7 @@ pub const TYPE_SUBTYPES: &[(&str, &[&str])] = &[
     ("dynamic", &["dynamic_page"]),
     ("video", &["video_youtube", "video_hosted"]),
     ("document", &["document_pdf", "document_doc"]),
+    ("quiz", &["quiz_standard"]),
     ("exam", &["exam_standard"]),
     ("code_challenge", &["code_general", "code_competitive"]),
     ("file_submission", &["file_submission_standard"]),

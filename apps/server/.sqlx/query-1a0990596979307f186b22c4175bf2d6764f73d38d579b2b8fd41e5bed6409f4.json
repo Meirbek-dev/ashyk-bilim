@@ -1,0 +1,160 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AssessmentItemId\",\n                  assessment_id AS \"assessment_id: AssessmentId\",\n                  position, kind AS \"kind: ItemKind\", title, body, max_score,\n                  section_label, difficulty AS \"difficulty: Difficulty\",\n                  tags, outcome_ids, estimated_minutes\n           FROM assessment_items WHERE assessment_id = $1 ORDER BY position, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AssessmentItemId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "assessment_id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "assessment_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "position",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "position"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "kind: ItemKind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "body",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "max_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "max_score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "section_label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "section_label"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "difficulty: Difficulty",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "difficulty"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "tags",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "tags"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "outcome_ids",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "outcome_ids"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "estimated_minutes",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "estimated_minutes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "1a0990596979307f186b22c4175bf2d6764f73d38d579b2b8fd41e5bed6409f4"
+}

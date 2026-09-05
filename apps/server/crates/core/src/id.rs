@@ -66,6 +66,8 @@ typed_id!(BlockId);
 typed_id!(CollectionId);
 typed_id!(CourseUpdateId);
 typed_id!(UsergroupId);
+typed_id!(AssessmentId);
+typed_id!(AssessmentItemId);
 typed_id!(JobId);
 
 #[cfg(test)]

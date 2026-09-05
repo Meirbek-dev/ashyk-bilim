@@ -4,6 +4,7 @@
 //! time abstractions, the RBAC permission model, and telemetry initialization.
 //! This crate is framework-free: no axum, no HTTP types.
 
+pub mod assessments;
 pub mod config;
 pub mod error;
 pub mod id;

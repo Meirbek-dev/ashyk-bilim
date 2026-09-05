@@ -75,8 +75,8 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 ### P3 — Assessments
 | # | Slice | Status |
 |---|---|---|
-| 3.1 | Migrations: assessments, items (tagged bodies), policies, overrides, access lists | todo |
-| 3.2 | Authoring CRUD + item type enums (choice/open-text/form/code/matching) + readiness checks | todo |
+| 3.1 | Migrations: assessments, items (tagged bodies), policies, overrides, access lists | done (migration 0010: `assessments` folds the legacy assessment+policy pair into one row with every settings/anti-cheat/late-policy scalar as a CHECKed column; `assessment_items` (1-based contiguous positions, `{schema_version,kind,…}` jsonb body, metadata scalars as columns); access allowlists keyed by assessment; `assessment_overrides`; `assessment_audit_events`. Quiz gets a real activity type (`quiz/quiz_standard`). Text-backed `sqlx::Type` enums in `ab_core::assessments`. DECISIONS 2026-09-05) |
+| 3.2 | Authoring CRUD + item type enums (choice/open-text/form/code/matching) + readiness checks | done (AssessmentsService: create with backing activity (code challenges get the default code item eagerly, not lazily on GET), detail/by-activity/course listing, PATCH details (title propagates to activity), PUT policy wholesale with range validation + policy_version bump, lifecycle transitions per the legacy table with readiness gating (422 issues as field errors), scheduled-in-future check, activity.published sync, audit events; items: add (kind allowed per assessment kind, 200 cap), update (content lock hook), delete + renumber, reorder (listed-first, rest keep order). Typed `ItemBody` internally tagged enum + per-kind readiness rules ported verbatim (legacy dotted issue codes). Lock rules depend on `submission_activity`, a stub until 4.1. 13 routes, sweep-classified, 2 e2e tests) |
 | 3.3 | Effective-policy resolution + scheduling (auto-publish cron) + duplication ∥ | todo |
 | 3.4 | Access control (user/group allowlists) + student-facing views ∥ | todo |
 

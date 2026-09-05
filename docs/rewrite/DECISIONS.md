@@ -78,3 +78,30 @@ grants: it owns nothing and passes no `require()`, so every existing
 visibility rule degrades to public-only with no special-casing. The
 `MaybeActor` extractor maps missing, expired, or garbage cookies to it —
 catalog GETs use `MaybeActor`, mutations keep `CurrentActor`.
+
+## Assessments schema fold (2026-09-05, P3.1)
+
+The legacy `assessment` row and its `assessment_policy` row (1:1 through the
+activity, back-linked by a nullable `policy_id`, created lazily *inside GET
+handlers* when missing) collapse into one `assessments` row: a policy always
+exists, read paths never write. Every scalar the legacy hid in
+`settings_json` / `anti_cheat_json` / `late_policy_json` is a real column with
+a CHECK — one canonical spelling (`right_click_disabled`, `fullscreen_required`)
+where the legacy stored one name and read two, and no duplicated
+`due_at`/`due_date_iso`/`due_date` or minutes-vs-seconds aliases; the ETL
+maps them. The access-policy indirection row is gone too (`access_mode` on the
+assessment, allowlists keyed by `assessment_id`), and the phantom
+`time_limit_override` the legacy API accepted then rejected is not carried.
+
+Quizzes get a real activity type pair (`quiz`/`quiz_standard`); the legacy
+parked them on `custom`/`custom` and had no reverse mapping. Item positions
+are 1-based contiguous and renumbered on reorder/delete (legacy wrote
+client-supplied integers verbatim). Lifecycle transitions and override
+changes are written to `assessment_audit_events` — the legacy defined those
+event types but the only code path that emitted them was an unused duplicate
+service.
+
+Consciously dropped: `weight` and `grading_type` are kept as columns for data
+fidelity but, as in legacy, nothing scores with them; the two competing
+"is this assessment locked" definitions (any submission incl. drafts vs.
+non-draft only) become one rule in P4 — non-draft submissions lock content.

@@ -1,0 +1,497 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\", kind AS \"kind: AssessmentKind\",\n                  title, description, lifecycle AS \"lifecycle: Lifecycle\",\n                  (extract(epoch FROM scheduled_at))::bigint AS \"scheduled_at?\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  weight, grading_type AS \"grading_type: GradingType\",\n                  content_version, policy_version,\n                  grading_mode AS \"grading_mode: GradingMode\",\n                  grade_release_mode AS \"grade_release_mode: GradeReleaseMode\",\n                  completion_rule AS \"completion_rule: CompletionRule\",\n                  passing_score, max_attempts, time_limit_seconds,\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\",\n                  allow_late, late_policy_kind AS \"late_policy_kind: LatePolicyKind\",\n                  late_penalty_percent_per_day, late_penalty_max_days,\n                  (extract(epoch FROM late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  required, review_visibility AS \"review_visibility: ReviewVisibility\",\n                  randomize_questions, randomize_options, partial_credit,\n                  negative_marking_percent, grace_period_minutes,\n                  copy_paste_protection, tab_switch_detection, devtools_detection,\n                  right_click_disabled, fullscreen_required, violation_threshold,\n                  access_mode AS \"access_mode: AccessMode\",\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM assessments WHERE activity_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "kind: AssessmentKind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "lifecycle: Lifecycle",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "lifecycle"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "scheduled_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "published_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "archived_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "weight",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "weight"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "grading_type: GradingType",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "grading_type"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "content_version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "content_version"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "policy_version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "policy_version"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "grading_mode: GradingMode",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "grading_mode"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "grade_release_mode: GradeReleaseMode",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "grade_release_mode"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "completion_rule: CompletionRule",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "completion_rule"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "passing_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "passing_score"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "max_attempts",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "max_attempts"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "time_limit_seconds",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "time_limit_seconds"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "due_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 21,
+        "name": "allow_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "allow_late"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "late_policy_kind: LatePolicyKind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "late_policy_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 23,
+        "name": "late_penalty_percent_per_day",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "late_penalty_percent_per_day"
+          }
+        }
+      },
+      {
+        "ordinal": 24,
+        "name": "late_penalty_max_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "late_penalty_max_days"
+          }
+        }
+      },
+      {
+        "ordinal": 25,
+        "name": "late_cutoff_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 26,
+        "name": "required",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "required"
+          }
+        }
+      },
+      {
+        "ordinal": 27,
+        "name": "review_visibility: ReviewVisibility",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "review_visibility"
+          }
+        }
+      },
+      {
+        "ordinal": 28,
+        "name": "randomize_questions",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "randomize_questions"
+          }
+        }
+      },
+      {
+        "ordinal": 29,
+        "name": "randomize_options",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "randomize_options"
+          }
+        }
+      },
+      {
+        "ordinal": 30,
+        "name": "partial_credit",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "partial_credit"
+          }
+        }
+      },
+      {
+        "ordinal": 31,
+        "name": "negative_marking_percent",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "negative_marking_percent"
+          }
+        }
+      },
+      {
+        "ordinal": 32,
+        "name": "grace_period_minutes",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "grace_period_minutes"
+          }
+        }
+      },
+      {
+        "ordinal": 33,
+        "name": "copy_paste_protection",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "copy_paste_protection"
+          }
+        }
+      },
+      {
+        "ordinal": 34,
+        "name": "tab_switch_detection",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "tab_switch_detection"
+          }
+        }
+      },
+      {
+        "ordinal": 35,
+        "name": "devtools_detection",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "devtools_detection"
+          }
+        }
+      },
+      {
+        "ordinal": 36,
+        "name": "right_click_disabled",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "right_click_disabled"
+          }
+        }
+      },
+      {
+        "ordinal": 37,
+        "name": "fullscreen_required",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "fullscreen_required"
+          }
+        }
+      },
+      {
+        "ordinal": 38,
+        "name": "violation_threshold",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "violation_threshold"
+          }
+        }
+      },
+      {
+        "ordinal": 39,
+        "name": "access_mode: AccessMode",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "access_mode"
+          }
+        }
+      },
+      {
+        "ordinal": 40,
+        "name": "creator_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "creator_id"
+          }
+        }
+      },
+      {
+        "ordinal": 41,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 42,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null,
+      false,
+      false,
+      true,
+      true,
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "bdc0a72911a14819e081a2e9e94cd488f28a297b678d179a793c51f77fb0ab7b"
+}

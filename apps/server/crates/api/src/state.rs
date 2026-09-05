@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use ab_clients::storage::StorageClient;
 use ab_core::config::Config;
+use ab_domain::assessments::AssessmentsService;
 use ab_domain::catalog::{
     CollectionsService, CoursesService, CurriculumService, PlatformService, SearchService,
 };
@@ -32,6 +33,7 @@ pub struct AppState {
     pub platform: PlatformService,
     pub search: SearchService,
     pub usergroups: UsergroupsService,
+    pub assessments: AssessmentsService,
 }
 
 impl AppState {
@@ -54,6 +56,7 @@ impl AppState {
             platform: PlatformService::new(pool.clone()),
             search: SearchService::new(pool.clone()),
             usergroups: UsergroupsService::new(pool.clone()),
+            assessments: AssessmentsService::new(pool.clone(), courses.clone()),
             courses,
             pool,
             config: Arc::new(config),
