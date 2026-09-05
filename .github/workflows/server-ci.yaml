@@ -22,12 +22,16 @@ env:
   TEST_S3_ENDPOINT: http://localhost:9000
   SQLX_OFFLINE: 'false'
 
+# A newer push to the same branch supersedes the running job.
+concurrency:
+  group: server-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest
-    # Generous: the tail Docker build is a full no-cache release compile that
-    # grows with the workspace (~14min at slice 2.3).
-    timeout-minutes: 50
+    # Code gates only; the release image builds in its own job below.
+    timeout-minutes: 40
     services:
       postgres:
         image: pgvector/pgvector:pg18
@@ -107,13 +111,30 @@ jobs:
           cargo run -p ashyq-server -- openapi > /tmp/openapi.v2.json
           diff -u openapi.v2.json /tmp/openapi.v2.json
 
+  # The release image: a full `cargo chef cook` + release compile. Runs beside
+  # the gates on its own runner (runs #45/#46 died of disk exhaustion and the
+  # 50-minute job limit when it trailed them) and keeps the dependency layer
+  # in the GitHub Actions cache, so a routine push recompiles only the
+  # workspace crates.
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Free runner disk for the release build
         working-directory: .
         run: |
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
-            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \n            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
           df -h /
 
+      - uses: docker/setup-buildx-action@v3
+
       - name: Docker build
-        working-directory: .
-        run: docker build -f apps/server/Dockerfile .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/server/Dockerfile
+          push: false
+          cache-from: type=gha,scope=server-image
+          cache-to: type=gha,scope=server-image,mode=max
