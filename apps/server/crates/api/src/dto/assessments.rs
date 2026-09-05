@@ -106,6 +106,9 @@ pub struct Policy {
     pub fullscreen_required: bool,
     #[garde(skip)]
     pub violation_threshold: i32,
+    /// Max-score cap per extra attempt (0 = off).
+    #[garde(skip)]
+    pub attempt_penalty_percent: f64,
 }
 
 impl From<PolicyInput> for Policy {
@@ -133,6 +136,7 @@ impl From<PolicyInput> for Policy {
             right_click_disabled: p.right_click_disabled,
             fullscreen_required: p.fullscreen_required,
             violation_threshold: p.violation_threshold,
+            attempt_penalty_percent: p.attempt_penalty_percent,
         }
     }
 }
@@ -162,6 +166,7 @@ impl From<Policy> for PolicyInput {
             right_click_disabled: p.right_click_disabled,
             fullscreen_required: p.fullscreen_required,
             violation_threshold: p.violation_threshold,
+            attempt_penalty_percent: p.attempt_penalty_percent,
         }
     }
 }

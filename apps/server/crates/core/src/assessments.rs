@@ -180,6 +180,75 @@ text_enum!(
     }
 );
 
+// ── Submissions & grading (migration 0011) ──────────────────────────────────
+
+text_enum!(
+    SubmissionStatus {
+        Draft => "draft",
+        Pending => "pending",
+        Graded => "graded",
+        Published => "published",
+        Returned => "returned",
+    }
+);
+
+text_enum!(
+    AutoSubmitReason {
+        TimeExpired => "time_expired",
+        IntegrityViolation => "integrity_violation",
+    }
+);
+
+text_enum!(
+    BulkActionType {
+        ExtendDeadline => "extend_deadline",
+        ReleaseGrades => "release_grades",
+        ReturnAll => "return_all",
+        OverrideScore => "override_score",
+        BatchGrade => "batch_grade",
+    }
+);
+
+text_enum!(
+    BulkActionStatus {
+        Pending => "pending",
+        Running => "running",
+        Completed => "completed",
+        Failed => "failed",
+    }
+);
+
+text_enum!(
+    CodeRunPurpose {
+        Custom => "custom",
+        Visible => "visible",
+        Final => "final",
+        ReferenceCheck => "reference_check",
+    }
+);
+
+text_enum!(
+    CodeRunStatus {
+        Queued => "queued",
+        Running => "running",
+        Accepted => "accepted",
+        WrongAnswer => "wrong_answer",
+        CompileError => "compile_error",
+        RuntimeError => "runtime_error",
+        TimeLimit => "time_limit",
+        InternalError => "internal_error",
+        Degraded => "degraded",
+    }
+);
+
+text_enum!(
+    AnnotationType {
+        Text => "text",
+        Highlight => "highlight",
+        Audio => "audio",
+    }
+);
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {

@@ -83,7 +83,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 ### P4 — Submissions & grading
 | # | Slice | Status |
 |---|---|---|
-| 4.1 | Migrations: submissions (snapshots, versions), grading entries, item feedback, bulk actions, audit events | todo |
+| 4.1 | Migrations: submissions (snapshots, versions), grading entries, item feedback, bulk actions, audit events | done (migration 0011: `submissions` keyed by assessment (+ denormalized course_id), NOT NULL user/assessment, one-open-draft partial unique index, metadata_json scalars as columns (violations stay jsonb; timer backoff counters are real columns — legacy wrote them into a schema that rejected them), write-once snapshots, dual optimistic locks (`version` teacher / `draft_version` learner). `grading_entries` append-only via DB trigger (only published_at mutable; parent cascade allowed), graded_by NULL = auto-grader. `item_feedback`, `bulk_actions`, `code_runs`/`code_run_cases` with real FKs and an idempotency UNIQUE, `idempotency_keys (user_id, key)` for the Idempotency-Key contract. `assessments.attempt_penalty_percent` (legacy cap lived in activity.settings). Compile-checked db layer for all of it incl. review-queue keyset listing, stats, timer sweep, releasable set; assessment lock rules now query real submissions. 3 schema-guarantee tests. Audit events reuse `assessment_audit_events`. Progress tables → P6. DECISIONS 2026-09-05 "Submissions schema") |
 | 4.2 | Submission lifecycle: start/draft/submit, attempt & time limits, timer sweep cron, idempotency | todo |
 | 4.3 | Grading pipeline (validate→enforce→grade→penalize→persist→emit) + quiz grader | todo |
 | 4.4 | Code grader via Judge0 client (circuit breaker, language caps) | todo |

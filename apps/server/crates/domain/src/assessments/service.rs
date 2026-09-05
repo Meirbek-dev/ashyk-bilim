@@ -156,6 +156,8 @@ pub struct PolicyInput {
     pub right_click_disabled: bool,
     pub fullscreen_required: bool,
     pub violation_threshold: i32,
+    /// Cap on the max score for attempt n: 100 - pct * (n - 1). 0 = off.
+    pub attempt_penalty_percent: f64,
 }
 
 impl PolicyInput {
@@ -185,6 +187,7 @@ impl PolicyInput {
             right_click_disabled: false,
             fullscreen_required: false,
             violation_threshold: 3,
+            attempt_penalty_percent: 0.0,
         };
         match kind {
             AssessmentKind::Exam => Self {
@@ -238,6 +241,7 @@ impl PolicyInput {
             right_click_disabled: row.right_click_disabled,
             fullscreen_required: row.fullscreen_required,
             violation_threshold: row.violation_threshold,
+            attempt_penalty_percent: row.attempt_penalty_percent,
         }
     }
 
@@ -283,6 +287,11 @@ impl PolicyInput {
             self.violation_threshold >= 1,
             "violation_threshold",
             "must be at least 1",
+        );
+        check(
+            (0.0..=100.0).contains(&self.attempt_penalty_percent),
+            "attempt_penalty_percent",
+            "must be between 0 and 100",
         );
         if let LatePolicy::Penalty {
             percent_per_day,
@@ -332,6 +341,7 @@ impl PolicyInput {
             right_click_disabled: self.right_click_disabled,
             fullscreen_required: self.fullscreen_required,
             violation_threshold: self.violation_threshold,
+            attempt_penalty_percent: self.attempt_penalty_percent,
         }
     }
 }
@@ -464,13 +474,13 @@ impl AssessmentsService {
     }
 
     /// Legacy `_ensure_authorable`: archived is read-only; a published
-    /// assessment with any submission cannot be edited. (Becomes async in
-    /// slice 4.1 when the submission probe turns into a query.)
-    fn ensure_editable(&self, assessment: &Assessment) -> Result<()> {
+    /// assessment with any submission cannot be edited.
+    async fn ensure_editable(&self, assessment: &Assessment) -> Result<()> {
         match assessment.lifecycle {
             Lifecycle::Archived => Err(Error::conflict("archived assessments are read-only")),
             Lifecycle::Published => {
-                let activity = ab_db::assessments::submission_activity(&self.pool, assessment.id);
+                let activity =
+                    ab_db::assessments::submission_activity(&self.pool, assessment.id).await?;
                 if activity.any {
                     return Err(Error::conflict(
                         "published assessment already has submissions; unpublish first",
@@ -484,9 +494,11 @@ impl AssessmentsService {
 
     /// Legacy `ASSESSMENT_LOCKED`: content (body/kind/max score) freezes once
     /// a published assessment has a non-draft submission.
-    fn ensure_content_unlocked(&self, assessment: &Assessment) -> Result<()> {
+    async fn ensure_content_unlocked(&self, assessment: &Assessment) -> Result<()> {
         if assessment.lifecycle == Lifecycle::Published
-            && ab_db::assessments::submission_activity(&self.pool, assessment.id).non_draft
+            && ab_db::assessments::submission_activity(&self.pool, assessment.id)
+                .await?
+                .non_draft
         {
             return Err(Error::conflict(
                 "assessment content is locked by graded submissions",
@@ -635,7 +647,7 @@ impl AssessmentsService {
         changes: AssessmentChanges<'_>,
     ) -> Result<AssessmentDetail> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment)?;
+        self.ensure_editable(&assessment).await?;
         ab_db::assessments::update_assessment_details(
             &self.pool,
             id,
@@ -661,7 +673,7 @@ impl AssessmentsService {
         policy: PolicyInput,
     ) -> Result<AssessmentDetail> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment)?;
+        self.ensure_editable(&assessment).await?;
         policy.validate()?;
         ab_db::assessments::update_policy(&self.pool, id, &policy.to_values()).await?;
         self.detail(id).await
@@ -980,7 +992,7 @@ impl AssessmentsService {
         metadata: ItemMetadataInput,
     ) -> Result<Item> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment)?;
+        self.ensure_editable(&assessment).await?;
         Self::check_kind_allowed(assessment.kind, body.kind())?;
         if ab_db::assessments::count_items(&self.pool, id).await? >= MAX_ITEMS {
             return Err(Error::validation(vec![FieldError {
@@ -1038,9 +1050,9 @@ impl AssessmentsService {
         changes: ItemChanges,
     ) -> Result<Item> {
         let (assessment, row) = self.item_for_author(actor, item_id).await?;
-        self.ensure_editable(&assessment)?;
+        self.ensure_editable(&assessment).await?;
         if changes.body.is_some() || changes.max_score.is_some() {
-            self.ensure_content_unlocked(&assessment)?;
+            self.ensure_content_unlocked(&assessment).await?;
         }
         if let Some(body) = &changes.body {
             Self::check_kind_allowed(assessment.kind, body.kind())?;
@@ -1069,8 +1081,8 @@ impl AssessmentsService {
 
     pub async fn delete_item(&self, actor: &Actor, item_id: AssessmentItemId) -> Result<()> {
         let (assessment, row) = self.item_for_author(actor, item_id).await?;
-        self.ensure_editable(&assessment)?;
-        self.ensure_content_unlocked(&assessment)?;
+        self.ensure_editable(&assessment).await?;
+        self.ensure_content_unlocked(&assessment).await?;
         ab_db::assessments::delete_item(&self.pool, item_id).await?;
         let remaining = ab_db::assessments::list_item_ids(&self.pool, row.assessment_id).await?;
         ab_db::assessments::renumber_items(&self.pool, &remaining).await?;
@@ -1087,7 +1099,7 @@ impl AssessmentsService {
         ordered: &[AssessmentItemId],
     ) -> Result<Vec<Item>> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment)?;
+        self.ensure_editable(&assessment).await?;
         let existing = ab_db::assessments::list_item_ids(&self.pool, id).await?;
         let unknown: Vec<_> = ordered
             .iter()

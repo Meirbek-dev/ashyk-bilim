@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE submissions SET status = 'published', final_score = $2, version = version + 1\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "796d593516c761bdeb35d861d3dcc5308964ceb0b53bf925cafb48b089ae1162"
+}

@@ -1,0 +1,155 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id AS \"id: SubmissionId\", s.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number, s.auto_score, s.final_score, s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\",\n                  s.version\n           FROM submissions s JOIN users u ON u.id = s.user_id\n           WHERE s.assessment_id = $1 AND s.status <> 'draft'\n             AND ($2::text IS NULL OR s.status = $2)\n             AND (NOT $3 OR s.is_late)\n             AND ($4::text IS NULL OR u.username ILIKE $4 OR u.display_name ILIKE $4)\n             AND ($5::uuid IS NULL OR s.id < $5)\n           ORDER BY s.id DESC\n           LIMIT $6",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status: SubmissionStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "attempt_number",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "attempt_number"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "auto_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "auto_score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "is_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "is_late"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "version"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "Text",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      null,
+      false
+    ]
+  },
+  "hash": "22b8b888706cb1d04b5f80f61ed4b8ae026164f11a5e8d500a70c84712119873"
+}

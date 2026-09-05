@@ -1,0 +1,354 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, answers, grading,\n                  auto_score, final_score, is_late, late_penalty_pct,\n                  violation_count, violations,\n                  auto_submit_reason AS \"auto_submit_reason: AutoSubmitReason\",\n                  (extract(epoch FROM auto_submitted_at))::bigint AS \"auto_submitted_at?\",\n                  auto_submit_attempts,\n                  (extract(epoch FROM auto_submit_retry_at))::bigint AS \"auto_submit_retry_at?\",\n                  duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  version, draft_version, grading_version, content_version, policy_version,\n                  items_snapshot, policy_snapshot,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM submissions WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "assessment_id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "assessment_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status: SubmissionStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "attempt_number",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "attempt_number"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "answers",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "answers"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "grading",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "grading"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "auto_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "auto_score"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "is_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "is_late"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "late_penalty_pct",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "late_penalty_pct"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "violation_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "violation_count"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "violations",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "violations"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "auto_submit_reason: AutoSubmitReason",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "auto_submit_reason"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "auto_submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 16,
+        "name": "auto_submit_attempts",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "auto_submit_attempts"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "auto_submit_retry_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 18,
+        "name": "duration_seconds",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "duration_seconds"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "started_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 20,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 21,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 22,
+        "name": "version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 23,
+        "name": "draft_version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "draft_version"
+          }
+        }
+      },
+      {
+        "ordinal": 24,
+        "name": "grading_version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "grading_version"
+          }
+        }
+      },
+      {
+        "ordinal": 25,
+        "name": "content_version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "content_version"
+          }
+        }
+      },
+      {
+        "ordinal": 26,
+        "name": "policy_version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "policy_version"
+          }
+        }
+      },
+      {
+        "ordinal": 27,
+        "name": "items_snapshot",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "items_snapshot"
+          }
+        }
+      },
+      {
+        "ordinal": 28,
+        "name": "policy_snapshot",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "policy_snapshot"
+          }
+        }
+      },
+      {
+        "ordinal": 29,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 30,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      null,
+      false,
+      null,
+      true,
+      null,
+      null,
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "5798349927e34564e222df5c104204f1e79e9971d469b7b5b0d915989dcf1c4a"
+}

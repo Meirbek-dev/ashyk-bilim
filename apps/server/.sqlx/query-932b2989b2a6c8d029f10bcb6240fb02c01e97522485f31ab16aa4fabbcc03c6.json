@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM grading_entries\n                          WHERE submission_id = $1 AND published_at IS NOT NULL) AS \"published!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "published!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "932b2989b2a6c8d029f10bcb6240fb02c01e97522485f31ab16aa4fabbcc03c6"
+}

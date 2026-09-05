@@ -5929,11 +5929,17 @@
           "devtools_detection",
           "right_click_disabled",
           "fullscreen_required",
-          "violation_threshold"
+          "violation_threshold",
+          "attempt_penalty_percent"
         ],
         "properties": {
           "allow_late": {
             "type": "boolean"
+          },
+          "attempt_penalty_percent": {
+            "type": "number",
+            "format": "double",
+            "description": "Max-score cap per extra attempt (0 = off)."
           },
           "completion_rule": {
             "$ref": "#/components/schemas/CompletionRule"

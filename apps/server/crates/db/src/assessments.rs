@@ -65,6 +65,7 @@ pub struct AssessmentRow {
     pub right_click_disabled: bool,
     pub fullscreen_required: bool,
     pub violation_threshold: i32,
+    pub attempt_penalty_percent: f64,
     pub access_mode: AccessMode,
     pub creator_id: Option<UserId>,
     pub created_at: i64,
@@ -101,6 +102,7 @@ pub struct PolicyValues {
     pub right_click_disabled: bool,
     pub fullscreen_required: bool,
     pub violation_threshold: i32,
+    pub attempt_penalty_percent: f64,
 }
 
 impl AssessmentRow {
@@ -133,6 +135,7 @@ impl AssessmentRow {
             right_click_disabled: self.right_click_disabled,
             fullscreen_required: self.fullscreen_required,
             violation_threshold: self.violation_threshold,
+            attempt_penalty_percent: self.attempt_penalty_percent,
         }
     }
 }
@@ -162,12 +165,13 @@ pub async fn insert_assessment(pool: &PgPool, new: NewAssessment<'_>) -> Result<
                required, review_visibility, randomize_questions, randomize_options,
                partial_credit, negative_marking_percent, grace_period_minutes,
                copy_paste_protection, tab_switch_detection, devtools_detection,
-               right_click_disabled, fullscreen_required, violation_threshold)
+               right_click_disabled, fullscreen_required, violation_threshold,
+               attempt_penalty_percent)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
                    $9, $10, $11, $12, $13, $14, to_timestamp($15), $16,
                    $17, $18, $19, to_timestamp($20),
                    $21, $22, $23, $24, $25, $26, $27,
-                   $28, $29, $30, $31, $32, $33)
+                   $28, $29, $30, $31, $32, $33, $34)
            RETURNING id"#,
         new.activity_id.0,
         new.course_id.0,
@@ -201,7 +205,8 @@ pub async fn insert_assessment(pool: &PgPool, new: NewAssessment<'_>) -> Result<
         p.devtools_detection,
         p.right_click_disabled,
         p.fullscreen_required,
-        p.violation_threshold
+        p.violation_threshold,
+        p.attempt_penalty_percent
     )
     .fetch_one(pool)
     .await?;
@@ -232,6 +237,7 @@ pub async fn get_assessment(pool: &PgPool, id: AssessmentId) -> Result<Option<As
                   negative_marking_percent, grace_period_minutes,
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
+                  attempt_penalty_percent,
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -271,6 +277,7 @@ pub async fn get_assessment_by_activity(
                   negative_marking_percent, grace_period_minutes,
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
+                  attempt_penalty_percent,
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -310,6 +317,7 @@ pub async fn list_assessments_for_course(
                   negative_marking_percent, grace_period_minutes,
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
+                  attempt_penalty_percent,
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -364,6 +372,7 @@ pub async fn update_policy(pool: &PgPool, id: AssessmentId, p: &PolicyValues) ->
                copy_paste_protection = $21, tab_switch_detection = $22,
                devtools_detection = $23, right_click_disabled = $24,
                fullscreen_required = $25, violation_threshold = $26,
+               attempt_penalty_percent = $27,
                policy_version = policy_version + 1
            WHERE id = $1"#,
         id.0,
@@ -391,7 +400,8 @@ pub async fn update_policy(pool: &PgPool, id: AssessmentId, p: &PolicyValues) ->
         p.devtools_detection,
         p.right_click_disabled,
         p.fullscreen_required,
-        p.violation_threshold
+        p.violation_threshold,
+        p.attempt_penalty_percent
     )
     .execute(pool)
     .await?;
@@ -698,28 +708,30 @@ pub async fn list_audit_events(
     Ok(rows)
 }
 
-// ── Submission activity (P4 fills these in) ─────────────────────────────────
+// ── Submission activity (lock rules) ────────────────────────────────────────
 
 /// Whether any submission exists for the assessment, and whether any of
-/// them has left the draft state.
-///
-/// Both legacy lock rules hang off these two facts. Until slice 4.1 creates
-/// the submissions table nothing can be locked; the real (async) queries
-/// land there.
+/// them has left the draft state. Both legacy lock rules hang off these.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SubmissionActivity {
     pub any: bool,
     pub non_draft: bool,
 }
 
-#[must_use]
-pub const fn submission_activity(_pool: &PgPool, _id: AssessmentId) -> SubmissionActivity {
-    SubmissionActivity {
-        any: false,
-        non_draft: false,
-    }
+pub async fn submission_activity(pool: &PgPool, id: AssessmentId) -> Result<SubmissionActivity> {
+    let row = sqlx::query!(
+        r#"SELECT EXISTS (SELECT 1 FROM submissions WHERE assessment_id = $1) AS "any!",
+                  EXISTS (SELECT 1 FROM submissions
+                          WHERE assessment_id = $1 AND status <> 'draft') AS "non_draft!""#,
+        id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(SubmissionActivity {
+        any: row.any,
+        non_draft: row.non_draft,
+    })
 }
-
 // ── Access lists ────────────────────────────────────────────────────────────
 
 pub struct AccessUserRow {

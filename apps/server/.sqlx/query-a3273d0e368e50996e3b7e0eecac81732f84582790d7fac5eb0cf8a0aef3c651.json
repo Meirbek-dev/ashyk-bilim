@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\", kind AS \"kind: AssessmentKind\",\n                  title, description, lifecycle AS \"lifecycle: Lifecycle\",\n                  (extract(epoch FROM scheduled_at))::bigint AS \"scheduled_at?\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  weight, grading_type AS \"grading_type: GradingType\",\n                  content_version, policy_version,\n                  grading_mode AS \"grading_mode: GradingMode\",\n                  grade_release_mode AS \"grade_release_mode: GradeReleaseMode\",\n                  completion_rule AS \"completion_rule: CompletionRule\",\n                  passing_score, max_attempts, time_limit_seconds,\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\",\n                  allow_late, late_policy_kind AS \"late_policy_kind: LatePolicyKind\",\n                  late_penalty_percent_per_day, late_penalty_max_days,\n                  (extract(epoch FROM late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  required, review_visibility AS \"review_visibility: ReviewVisibility\",\n                  randomize_questions, randomize_options, partial_credit,\n                  negative_marking_percent, grace_period_minutes,\n                  copy_paste_protection, tab_switch_detection, devtools_detection,\n                  right_click_disabled, fullscreen_required, violation_threshold,\n                  access_mode AS \"access_mode: AccessMode\",\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM assessments WHERE id = $1",
+  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\", kind AS \"kind: AssessmentKind\",\n                  title, description, lifecycle AS \"lifecycle: Lifecycle\",\n                  (extract(epoch FROM scheduled_at))::bigint AS \"scheduled_at?\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  weight, grading_type AS \"grading_type: GradingType\",\n                  content_version, policy_version,\n                  grading_mode AS \"grading_mode: GradingMode\",\n                  grade_release_mode AS \"grade_release_mode: GradeReleaseMode\",\n                  completion_rule AS \"completion_rule: CompletionRule\",\n                  passing_score, max_attempts, time_limit_seconds,\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\",\n                  allow_late, late_policy_kind AS \"late_policy_kind: LatePolicyKind\",\n                  late_penalty_percent_per_day, late_penalty_max_days,\n                  (extract(epoch FROM late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  required, review_visibility AS \"review_visibility: ReviewVisibility\",\n                  randomize_questions, randomize_options, partial_credit,\n                  negative_marking_percent, grace_period_minutes,\n                  copy_paste_protection, tab_switch_detection, devtools_detection,\n                  right_click_disabled, fullscreen_required, violation_threshold,\n                  attempt_penalty_percent,\n                  access_mode AS \"access_mode: AccessMode\",\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM assessments WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -409,6 +409,17 @@
       },
       {
         "ordinal": 39,
+        "name": "attempt_penalty_percent",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "attempt_penalty_percent"
+          }
+        }
+      },
+      {
+        "ordinal": 40,
         "name": "access_mode: AccessMode",
         "type_info": "Text",
         "origin": {
@@ -419,7 +430,7 @@
         }
       },
       {
-        "ordinal": 40,
+        "ordinal": 41,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -430,13 +441,13 @@
         }
       },
       {
-        "ordinal": 41,
+        "ordinal": 42,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 42,
+        "ordinal": 43,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -488,10 +499,11 @@
       false,
       false,
       false,
+      false,
       true,
       null,
       null
     ]
   },
-  "hash": "5e24d51581230671a29f0e65e2e184f082cde6d1d2e5fcb8ba311cc5fe79a931"
+  "hash": "a3273d0e368e50996e3b7e0eecac81732f84582790d7fac5eb0cf8a0aef3c651"
 }

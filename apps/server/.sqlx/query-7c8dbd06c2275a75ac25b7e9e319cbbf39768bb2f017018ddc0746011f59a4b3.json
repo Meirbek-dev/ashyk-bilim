@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE item_feedback SET\n               comment = COALESCE($2, comment),\n               score = CASE WHEN $3 THEN $4 ELSE score END,\n               max_score = CASE WHEN $5 THEN $6 ELSE max_score END,\n               annotation_type = COALESCE($7, annotation_type),\n               annotation_key = CASE WHEN $8 THEN $9 ELSE annotation_key END\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "Float8",
+        "Bool",
+        "Float8",
+        "Text",
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7c8dbd06c2275a75ac25b7e9e319cbbf39768bb2f017018ddc0746011f59a4b3"
+}

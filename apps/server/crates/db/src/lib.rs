@@ -13,6 +13,7 @@ pub mod platform;
 pub mod queue;
 pub mod schedule;
 pub mod search;
+pub mod submissions;
 pub mod uploads;
 pub mod usergroups;
 

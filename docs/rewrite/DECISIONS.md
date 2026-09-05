@@ -119,3 +119,36 @@ this (a restricted allowlist can only remove learners who already have
 course access; it never widens it), and the legacy fallback that treated
 every usergroup on the platform as eligible when a course had no linked
 groups is gone — a group must be linked to the course to be allowlisted.
+
+## Submissions schema (2026-09-05, P4.1)
+
+Against the legacy `submission` + `grading_entry` + `item_feedback` +
+`bulk_action` + `code_run` tables:
+
+- `submissions` reference the assessment (1:1 with its activity) and carry a
+  denormalized `course_id` for gradebook queries. `user_id` and
+  `assessment_id` are NOT NULL (the legacy DDL left both nullable by
+  accident).
+- "One open draft per learner" is a partial unique index, not a `.first()`.
+- `metadata_json` is gone. Its scalars are columns (`violation_count`,
+  `auto_submit_reason`/`auto_submitted_at`, the timer's backoff counters —
+  which the legacy wrote into a schema that rejected them —
+  `duration_seconds`); `violations` stays jsonb as an event list; code-run
+  records are rows in `code_runs` with a `submission_id` FK instead of
+  copies in metadata. Plagiarism fields are not carried (the sweep was
+  inert: impossible type filter + wrong nesting level; FINDINGS).
+- `raw_grading_json` leaves the submission: the raw auto-grade is the
+  `raw_breakdown` of the grading entry that produced it; the submission
+  keeps only the effective breakdown. Two copies, not three.
+- `grading_entries.graded_by` is NULL for the auto-grader; the legacy wrote
+  the student's id. Immutability (only `published_at` may change, no
+  deletes except the parent cascade) is a DB trigger, not ORM listeners.
+- `code_runs` / `code_run_cases` get real FKs (legacy had none). Run-level
+  stdout/stderr — which the legacy overwrote with the last case's values —
+  are dropped; `compile_output` stays at run level.
+- `idempotency_keys (user_id, key)` backs the `Idempotency-Key` contract
+  for submit (24h sweep), replacing the legacy metadata-stored key.
+- The legacy attempt-penalty cap came from `activity.settings`; it becomes
+  `assessments.attempt_penalty_percent` (policy knob).
+- Progress projections (`activity_progress`, `course_progress`) are P6; the
+  gradebook and work queue are computed from submissions until then.

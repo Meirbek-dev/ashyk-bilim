@@ -2067,6 +2067,11 @@ expression: json
           "allow_late": {
             "type": "boolean"
           },
+          "attempt_penalty_percent": {
+            "description": "Max-score cap per extra attempt (0 = off).",
+            "format": "double",
+            "type": "number"
+          },
           "completion_rule": {
             "$ref": "#/components/schemas/CompletionRule"
           },
@@ -2168,7 +2173,8 @@ expression: json
           "devtools_detection",
           "right_click_disabled",
           "fullscreen_required",
-          "violation_threshold"
+          "violation_threshold",
+          "attempt_penalty_percent"
         ],
         "type": "object"
       },
