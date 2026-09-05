@@ -9,7 +9,7 @@ use ab_core::assessments::{
     AccessMode, AssessmentKind, CompletionRule, Difficulty, GradeReleaseMode, GradingMode,
     GradingType, ItemKind, LatePolicyKind, Lifecycle, ReviewVisibility,
 };
-use ab_core::id::{ActivityId, AssessmentId, AssessmentItemId, CourseId, UserId};
+use ab_core::id::{ActivityId, AssessmentId, AssessmentItemId, CourseId, UserId, UsergroupId};
 use sqlx::PgPool;
 
 /// Epoch seconds → `to_timestamp()` argument. Exact below 2^53 (year ~285M).
@@ -718,4 +718,280 @@ pub const fn submission_activity(_pool: &PgPool, _id: AssessmentId) -> Submissio
         any: false,
         non_draft: false,
     }
+}
+
+// ── Access lists ────────────────────────────────────────────────────────────
+
+pub struct AccessUserRow {
+    pub id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_key: Option<String>,
+}
+
+pub struct AccessGroupRow {
+    pub id: UsergroupId,
+    pub name: String,
+    pub member_count: i64,
+}
+
+pub async fn list_access_users(pool: &PgPool, id: AssessmentId) -> Result<Vec<AccessUserRow>> {
+    let rows = sqlx::query_as!(
+        AccessUserRow,
+        r#"SELECT u.id AS "id: UserId", u.username, u.display_name, u.avatar_key
+           FROM assessment_access_users a JOIN users u ON u.id = a.user_id
+           WHERE a.assessment_id = $1 ORDER BY u.username"#,
+        id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+pub async fn list_access_usergroups(
+    pool: &PgPool,
+    id: AssessmentId,
+) -> Result<Vec<AccessGroupRow>> {
+    let rows = sqlx::query_as!(
+        AccessGroupRow,
+        r#"SELECT g.id AS "id: UsergroupId", g.name,
+                  (SELECT count(*) FROM usergroup_members m
+                   WHERE m.usergroup_id = g.id) AS "member_count!"
+           FROM assessment_access_usergroups a JOIN usergroups g ON g.id = a.usergroup_id
+           WHERE a.assessment_id = $1 ORDER BY g.name"#,
+        id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Replace both allowlists wholesale (legacy delete-then-insert).
+pub async fn replace_access_lists(
+    pool: &PgPool,
+    id: AssessmentId,
+    user_ids: &[UserId],
+    usergroup_ids: &[UsergroupId],
+) -> Result<()> {
+    let mut tx = pool.begin().await?;
+    sqlx::query!(
+        "DELETE FROM assessment_access_users WHERE assessment_id = $1",
+        id.0
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM assessment_access_usergroups WHERE assessment_id = $1",
+        id.0
+    )
+    .execute(&mut *tx)
+    .await?;
+    for user_id in user_ids {
+        sqlx::query!(
+            r#"INSERT INTO assessment_access_users (assessment_id, user_id)
+               VALUES ($1, $2) ON CONFLICT DO NOTHING"#,
+            id.0,
+            user_id.0
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
+    for group_id in usergroup_ids {
+        sqlx::query!(
+            r#"INSERT INTO assessment_access_usergroups (assessment_id, usergroup_id)
+               VALUES ($1, $2) ON CONFLICT DO NOTHING"#,
+            id.0,
+            group_id.0
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Distinct people reachable through the allowlists (direct + via groups).
+pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i64> {
+    let count = sqlx::query_scalar!(
+        r#"SELECT count(DISTINCT reach.user_id) AS "count!" FROM (
+               SELECT user_id FROM assessment_access_users WHERE assessment_id = $1
+               UNION
+               SELECT m.user_id FROM assessment_access_usergroups g
+               JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id
+               WHERE g.assessment_id = $1
+           ) reach"#,
+        id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(count)
+}
+
+/// Direct entry or membership of an allowlisted group.
+pub async fn access_allows(pool: &PgPool, id: AssessmentId, user_id: UserId) -> Result<bool> {
+    let allowed = sqlx::query_scalar!(
+        r#"SELECT (
+               EXISTS (SELECT 1 FROM assessment_access_users
+                       WHERE assessment_id = $1 AND user_id = $2)
+               OR EXISTS (SELECT 1 FROM assessment_access_usergroups g
+                          JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id
+                          WHERE g.assessment_id = $1 AND m.user_id = $2)
+           ) AS "allowed!""#,
+        id.0,
+        user_id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(allowed)
+}
+
+pub async fn usergroup_linked_to_course(
+    pool: &PgPool,
+    course_id: CourseId,
+    usergroup_id: UsergroupId,
+) -> Result<bool> {
+    let linked = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM usergroup_courses WHERE course_id = $1 AND usergroup_id = $2
+           ) AS "linked!""#,
+        course_id.0,
+        usergroup_id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(linked)
+}
+
+// ── Per-student overrides ───────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct OverrideRow {
+    pub id: uuid::Uuid,
+    pub assessment_id: AssessmentId,
+    pub user_id: UserId,
+    pub max_attempts_override: Option<i32>,
+    pub due_at_override: Option<i64>,
+    pub waive_late_penalty: bool,
+    pub note: String,
+    pub expires_at: Option<i64>,
+    pub granted_by: Option<UserId>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+pub struct OverrideValues<'a> {
+    pub max_attempts_override: Option<i32>,
+    pub due_at_override: Option<i64>,
+    pub waive_late_penalty: bool,
+    pub note: &'a str,
+    pub expires_at: Option<i64>,
+    pub granted_by: UserId,
+}
+
+/// `None` when the (assessment, user) pair already has an override.
+pub async fn insert_override(
+    pool: &PgPool,
+    id: AssessmentId,
+    user_id: UserId,
+    v: OverrideValues<'_>,
+) -> Result<Option<uuid::Uuid>> {
+    let row = sqlx::query_scalar!(
+        r#"INSERT INTO assessment_overrides
+               (assessment_id, user_id, max_attempts_override, due_at_override,
+                waive_late_penalty, note, expires_at, granted_by)
+           VALUES ($1, $2, $3, to_timestamp($4), $5, $6, to_timestamp($7), $8)
+           ON CONFLICT (assessment_id, user_id) DO NOTHING
+           RETURNING id"#,
+        id.0,
+        user_id.0,
+        v.max_attempts_override,
+        epoch(v.due_at_override),
+        v.waive_late_penalty,
+        v.note,
+        epoch(v.expires_at),
+        v.granted_by.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+pub async fn update_override(
+    pool: &PgPool,
+    id: AssessmentId,
+    user_id: UserId,
+    v: OverrideValues<'_>,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE assessment_overrides SET
+               max_attempts_override = $3, due_at_override = to_timestamp($4),
+               waive_late_penalty = $5, note = $6, expires_at = to_timestamp($7),
+               granted_by = $8
+           WHERE assessment_id = $1 AND user_id = $2"#,
+        id.0,
+        user_id.0,
+        v.max_attempts_override,
+        epoch(v.due_at_override),
+        v.waive_late_penalty,
+        v.note,
+        epoch(v.expires_at),
+        v.granted_by.0
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+pub async fn delete_override(pool: &PgPool, id: AssessmentId, user_id: UserId) -> Result<bool> {
+    let deleted = sqlx::query!(
+        "DELETE FROM assessment_overrides WHERE assessment_id = $1 AND user_id = $2",
+        id.0,
+        user_id.0
+    )
+    .execute(pool)
+    .await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
+pub async fn get_override(
+    pool: &PgPool,
+    id: AssessmentId,
+    user_id: UserId,
+) -> Result<Option<OverrideRow>> {
+    let row = sqlx::query_as!(
+        OverrideRow,
+        r#"SELECT id, assessment_id AS "assessment_id: AssessmentId",
+                  user_id AS "user_id: UserId", max_attempts_override,
+                  (extract(epoch FROM due_at_override))::bigint AS "due_at_override?",
+                  waive_late_penalty, note,
+                  (extract(epoch FROM expires_at))::bigint AS "expires_at?",
+                  granted_by AS "granted_by: UserId",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM assessment_overrides WHERE assessment_id = $1 AND user_id = $2"#,
+        id.0,
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+pub async fn list_overrides(pool: &PgPool, id: AssessmentId) -> Result<Vec<OverrideRow>> {
+    let rows = sqlx::query_as!(
+        OverrideRow,
+        r#"SELECT id, assessment_id AS "assessment_id: AssessmentId",
+                  user_id AS "user_id: UserId", max_attempts_override,
+                  (extract(epoch FROM due_at_override))::bigint AS "due_at_override?",
+                  waive_late_penalty, note,
+                  (extract(epoch FROM expires_at))::bigint AS "expires_at?",
+                  granted_by AS "granted_by: UserId",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM assessment_overrides WHERE assessment_id = $1 ORDER BY id"#,
+        id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
 }

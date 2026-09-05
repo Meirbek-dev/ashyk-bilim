@@ -1,0 +1,128 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, assessment_id AS \"assessment_id: AssessmentId\",\n                  user_id AS \"user_id: UserId\", max_attempts_override,\n                  (extract(epoch FROM due_at_override))::bigint AS \"due_at_override?\",\n                  waive_late_penalty, note,\n                  (extract(epoch FROM expires_at))::bigint AS \"expires_at?\",\n                  granted_by AS \"granted_by: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM assessment_overrides WHERE assessment_id = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "assessment_id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "assessment_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "max_attempts_override",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "max_attempts_override"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "due_at_override?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "waive_late_penalty",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "waive_late_penalty"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "note",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "expires_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "granted_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "granted_by"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      null,
+      false,
+      false,
+      null,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "130282c34f8dde0cb16bd63252c31c0601fa69c036ef37747e62d3fd0c6d5454"
+}

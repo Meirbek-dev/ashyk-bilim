@@ -105,3 +105,17 @@ Consciously dropped: `weight` and `grading_type` are kept as columns for data
 fidelity but, as in legacy, nothing scores with them; the two competing
 "is this assessment locked" definitions (any submission incl. drafts vs.
 non-draft only) become one rule in P4 — non-draft submissions lock content.
+
+## Cohort membership grants course visibility (2026-09-05, P3.4)
+
+The legacy `user_has_course_access` (public course, active ResourceAuthor,
+or membership of a usergroup linked to the course) gated assessment
+submission but the v2 course read path only knew public / creator /
+`course:read:all`, so a learner whose only route to a private course was
+their cohort could not see the course — or anything under it. Course
+visibility now includes "member of a usergroup linked to the course", both
+for single reads and in the listing query. Assessment access lists narrow
+this (a restricted allowlist can only remove learners who already have
+course access; it never widens it), and the legacy fallback that treated
+every usergroup on the platform as eligible when a course had no linked
+groups is gone — a group must be linked to the course to be allowlisted.

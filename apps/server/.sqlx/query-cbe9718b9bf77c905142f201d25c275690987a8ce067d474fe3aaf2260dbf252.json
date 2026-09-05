@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(DISTINCT reach.user_id) AS \"count!\" FROM (\n               SELECT user_id FROM assessment_access_users WHERE assessment_id = $1\n               UNION\n               SELECT m.user_id FROM assessment_access_usergroups g\n               JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id\n               WHERE g.assessment_id = $1\n           ) reach",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "cbe9718b9bf77c905142f201d25c275690987a8ce067d474fe3aaf2260dbf252"
+}

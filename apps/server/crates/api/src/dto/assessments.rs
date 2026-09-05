@@ -413,3 +413,186 @@ pub struct AuditQuery {
     /// 1..=200, default 50.
     pub limit: Option<i64>,
 }
+
+// ── Access lists ────────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AccessUser {
+    pub id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_key: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AccessGroup {
+    pub id: ab_core::id::UsergroupId,
+    pub name: String,
+    pub member_count: i64,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AccessView {
+    pub mode: AccessMode,
+    /// Only meaningful while `mode` is `restricted`.
+    pub users: Vec<AccessUser>,
+    pub usergroups: Vec<AccessGroup>,
+    /// Distinct people reachable through both lists.
+    pub effective_user_count: i64,
+}
+
+impl From<ab_domain::assessments::access::AccessView> for AccessView {
+    fn from(v: ab_domain::assessments::access::AccessView) -> Self {
+        Self {
+            mode: v.mode,
+            users: v
+                .users
+                .into_iter()
+                .map(|u| AccessUser {
+                    id: u.id,
+                    username: u.username,
+                    display_name: u.display_name,
+                    avatar_key: u.avatar_key,
+                })
+                .collect(),
+            usergroups: v
+                .usergroups
+                .into_iter()
+                .map(|g| AccessGroup {
+                    id: g.id,
+                    name: g.name,
+                    member_count: g.member_count,
+                })
+                .collect(),
+            effective_user_count: v.effective_user_count,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetAccessRequest {
+    #[garde(skip)]
+    pub mode: AccessMode,
+    /// Direct allowlist (restricted mode); each must already have course access.
+    #[garde(length(max = 500))]
+    #[serde(default)]
+    pub user_ids: Vec<UserId>,
+    /// Group allowlist (restricted mode); each must be linked to the course.
+    #[garde(length(max = 100))]
+    #[serde(default)]
+    pub usergroup_ids: Vec<ab_core::id::UsergroupId>,
+}
+
+// ── Per-student overrides ───────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct StudentOverride {
+    pub id: uuid::Uuid,
+    pub user_id: UserId,
+    pub max_attempts_override: Option<i32>,
+    pub due_at_override_unix: Option<i64>,
+    pub waive_late_penalty: bool,
+    pub note: String,
+    pub expires_at_unix: Option<i64>,
+    pub granted_by: Option<UserId>,
+    pub created_at_unix: i64,
+    pub updated_at_unix: i64,
+}
+
+impl From<ab_domain::assessments::access::Override> for StudentOverride {
+    fn from(o: ab_domain::assessments::access::Override) -> Self {
+        Self {
+            id: o.id,
+            user_id: o.user_id,
+            max_attempts_override: o.max_attempts_override,
+            due_at_override_unix: o.due_at_override,
+            waive_late_penalty: o.waive_late_penalty,
+            note: o.note,
+            expires_at_unix: o.expires_at,
+            granted_by: o.granted_by,
+            created_at_unix: o.created_at,
+            updated_at_unix: o.updated_at,
+        }
+    }
+}
+
+/// Full override block (create and update share it).
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct OverrideRequest {
+    /// 1..=10; `null` keeps the assessment's limit.
+    #[garde(skip)]
+    pub max_attempts_override: Option<i32>,
+    #[garde(skip)]
+    pub due_at_override_unix: Option<i64>,
+    #[garde(skip)]
+    #[serde(default)]
+    pub waive_late_penalty: bool,
+    #[garde(length(max = 1000))]
+    #[serde(default)]
+    pub note: String,
+    /// After this the override is ignored.
+    #[garde(skip)]
+    pub expires_at_unix: Option<i64>,
+}
+
+impl From<OverrideRequest> for ab_domain::assessments::access::OverrideInput {
+    fn from(r: OverrideRequest) -> Self {
+        Self {
+            max_attempts_override: r.max_attempts_override,
+            due_at_override: r.due_at_override_unix,
+            waive_late_penalty: r.waive_late_penalty,
+            note: r.note,
+            expires_at: r.expires_at_unix,
+        }
+    }
+}
+
+// ── Student-facing ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct EffectivePolicy {
+    pub max_attempts: Option<i32>,
+    pub due_at_unix: Option<i64>,
+    pub time_limit_seconds: Option<i32>,
+    pub allow_late: bool,
+    pub passing_score: f64,
+    pub late_policy: LatePolicy,
+    pub waive_late_penalty: bool,
+    /// An unexpired per-student override shaped this.
+    pub override_applied: bool,
+}
+
+/// What the learner may do right now.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AttemptState {
+    pub lifecycle: Lifecycle,
+    pub opens_at_unix: Option<i64>,
+    pub is_teacher_preview: bool,
+    pub effective: EffectivePolicy,
+    pub disabled_reasons: Vec<ab_domain::assessments::access::DisabledReason>,
+    pub can_start: bool,
+}
+
+impl From<ab_domain::assessments::access::AttemptState> for AttemptState {
+    fn from(s: ab_domain::assessments::access::AttemptState) -> Self {
+        Self {
+            lifecycle: s.lifecycle,
+            opens_at_unix: s.opens_at,
+            is_teacher_preview: s.is_teacher_preview,
+            effective: EffectivePolicy {
+                max_attempts: s.effective.max_attempts,
+                due_at_unix: s.effective.due_at,
+                time_limit_seconds: s.effective.time_limit_seconds,
+                allow_late: s.effective.allow_late,
+                passing_score: s.effective.passing_score,
+                late_policy: s.effective.late_policy.into(),
+                waive_late_penalty: s.effective.waive_late_penalty,
+                override_applied: s.effective.override_applied,
+            },
+            disabled_reasons: s.disabled_reasons,
+            can_start: s.can_start,
+        }
+    }
+}

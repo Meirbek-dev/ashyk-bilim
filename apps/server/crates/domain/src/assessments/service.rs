@@ -32,7 +32,7 @@ fn now_unix() -> i64 {
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
 }
 
-const fn perm(action: Action, scope: Scope) -> Permission {
+pub(crate) const fn perm(action: Action, scope: Scope) -> Permission {
     Permission {
         resource: ResourceType::Assessment,
         action,
@@ -410,8 +410,8 @@ pub struct Readiness {
 
 #[derive(Clone)]
 pub struct AssessmentsService {
-    pool: PgPool,
-    courses: CoursesService,
+    pub(crate) pool: PgPool,
+    pub(crate) courses: CoursesService,
 }
 
 impl AssessmentsService {
@@ -422,7 +422,12 @@ impl AssessmentsService {
 
     // ── Gates ───────────────────────────────────────────────────────────
 
-    fn require_scoped(actor: &Actor, course: &Course, action: Action, what: &str) -> Result<()> {
+    pub(crate) fn require_scoped(
+        actor: &Actor,
+        course: &Course,
+        action: Action,
+        what: &str,
+    ) -> Result<()> {
         if actor.has(perm(action, Scope::Platform)) {
             return Ok(());
         }
@@ -441,14 +446,18 @@ impl AssessmentsService {
         Ok(course)
     }
 
-    async fn load(&self, id: AssessmentId) -> Result<Assessment> {
+    pub(crate) async fn load(&self, id: AssessmentId) -> Result<Assessment> {
         ab_db::assessments::get_assessment(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("assessment"))
     }
 
     /// Load + author gate.
-    async fn load_for_author(&self, actor: &Actor, id: AssessmentId) -> Result<Assessment> {
+    pub(crate) async fn load_for_author(
+        &self,
+        actor: &Actor,
+        id: AssessmentId,
+    ) -> Result<Assessment> {
         let assessment = self.load(id).await?;
         self.authorable_course(actor, assessment.course_id).await?;
         Ok(assessment)

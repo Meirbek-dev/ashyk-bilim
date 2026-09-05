@@ -136,6 +136,13 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::assessments::update_item))
         .routes(routes!(routes::assessments::delete_item))
         .routes(routes!(routes::assessments::reorder_items))
+        .routes(routes!(routes::assessments::get_access))
+        .routes(routes!(routes::assessments::set_access))
+        .routes(routes!(routes::assessments::list_overrides))
+        .routes(routes!(routes::assessments::create_override))
+        .routes(routes!(routes::assessments::update_override))
+        .routes(routes!(routes::assessments::delete_override))
+        .routes(routes!(routes::assessments::attempt_state))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

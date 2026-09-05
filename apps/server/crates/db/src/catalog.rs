@@ -57,8 +57,9 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
     Ok(row)
 }
 
-/// Newest-first page of courses visible to `viewer`: public ones plus their
-/// own. `cursor` = id of the last row from the previous page.
+/// Newest-first page of courses visible to `viewer`: public ones, their
+/// own, and courses reached through a linked usergroup (cohort access).
+/// `cursor` = id of the last row from the previous page.
 pub async fn list_courses(
     pool: &PgPool,
     viewer: Option<UserId>,
@@ -73,7 +74,10 @@ pub async fn list_courses(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
-           WHERE (public OR $1 OR creator_id = $2)
+           WHERE (public OR $1 OR creator_id = $2
+                  OR EXISTS (SELECT 1 FROM usergroup_courses uc
+                             JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
+                             WHERE uc.course_id = courses.id AND m.user_id = $2))
              AND ($3::uuid IS NULL OR id < $3)
            ORDER BY id DESC
            LIMIT $4"#,

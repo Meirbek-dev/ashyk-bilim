@@ -575,6 +575,131 @@
         }
       }
     },
+    "/api/v2/assessments/{id}/access": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Who may take the assessment (authors only).",
+        "operationId": "get_access",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Replace the access policy. Restricted lists are validated against the\ncourse (users need course access, groups must be linked); switching to\nall-course-learners wipes both lists.",
+        "operationId": "set_access",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "User/group outside the course",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/attempt-state": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "What the caller may do with this assessment right now.",
+        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access, the allowlist when restricted, and\n`assessment:submit:assigned` (authors preview freely).",
+        "operationId": "attempt_state",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attempt state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptState"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/assessments/{id}/audit": {
       "get": {
         "tags": [
@@ -838,6 +963,193 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/overrides": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Every per-student override on the assessment.",
+        "operationId": "list_overrides",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overrides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudentOverride"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assessments/{id}/overrides/{user_id}": {
+      "put": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Replace a student's override.",
+        "operationId": "update_override",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Student",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentOverride"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Grant a student more attempts / a later due date / a late-penalty waiver.",
+        "operationId": "create_override",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Student",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentOverride"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already overridden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Attempts outside 1..=10",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Remove a student's override.",
+        "operationId": "delete_override",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Student",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
           }
         }
       }
@@ -3540,12 +3852,89 @@
   },
   "components": {
     "schemas": {
+      "AccessGroup": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "member_count"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UsergroupId"
+          },
+          "member_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "AccessMode": {
         "type": "string",
         "enum": [
           "all_course_learners",
           "restricted"
         ]
+      },
+      "AccessUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "display_name"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "AccessView": {
+        "type": "object",
+        "required": [
+          "mode",
+          "users",
+          "usergroups",
+          "effective_user_count"
+        ],
+        "properties": {
+          "effective_user_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Distinct people reachable through both lists."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "usergroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessGroup"
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessUser"
+            },
+            "description": "Only meaningful while `mode` is `restricted`."
+          }
+        }
       },
       "Activity": {
         "type": "object",
@@ -3872,6 +4261,44 @@
           }
         },
         "additionalProperties": false
+      },
+      "AttemptState": {
+        "type": "object",
+        "description": "What the learner may do right now.",
+        "required": [
+          "lifecycle",
+          "is_teacher_preview",
+          "effective",
+          "disabled_reasons",
+          "can_start"
+        ],
+        "properties": {
+          "can_start": {
+            "type": "boolean"
+          },
+          "disabled_reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DisabledReason"
+            }
+          },
+          "effective": {
+            "$ref": "#/components/schemas/EffectivePolicy"
+          },
+          "is_teacher_preview": {
+            "type": "boolean"
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/Lifecycle"
+          },
+          "opens_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
       },
       "AuditEvent": {
         "type": "object",
@@ -4766,6 +5193,16 @@
           "hard"
         ]
       },
+      "DisabledReason": {
+        "type": "string",
+        "description": "Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).",
+        "enum": [
+          "NOT_PUBLISHED",
+          "SCHEDULED_NOT_OPEN",
+          "ARCHIVED",
+          "PAST_DUE"
+        ]
+      },
       "DuplicateRequest": {
         "type": "object",
         "properties": {
@@ -4807,6 +5244,56 @@
           }
         },
         "additionalProperties": false
+      },
+      "EffectivePolicy": {
+        "type": "object",
+        "required": [
+          "allow_late",
+          "passing_score",
+          "late_policy",
+          "waive_late_penalty",
+          "override_applied"
+        ],
+        "properties": {
+          "allow_late": {
+            "type": "boolean"
+          },
+          "due_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
+          },
+          "max_attempts": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "override_applied": {
+            "type": "boolean",
+            "description": "An unexpired per-student override shaped this."
+          },
+          "passing_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "time_limit_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "waive_late_penalty": {
+            "type": "boolean"
+          }
+        }
       },
       "ErrorCode": {
         "type": "string",
@@ -5342,6 +5829,42 @@
           }
         }
       },
+      "OverrideRequest": {
+        "type": "object",
+        "description": "Full override block (create and update share it).",
+        "properties": {
+          "due_at_override_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "expires_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "After this the override is ignored."
+          },
+          "max_attempts_override": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "1..=10; `null` keeps the assessment's limit."
+          },
+          "note": {
+            "type": "string"
+          },
+          "waive_late_penalty": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Platform": {
         "type": "object",
         "required": [
@@ -5770,6 +6293,32 @@
           }
         }
       },
+      "SetAccessRequest": {
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "user_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserId"
+            },
+            "description": "Direct allowlist (restricted mode); each must already have course access."
+          },
+          "usergroup_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsergroupId"
+            },
+            "description": "Group allowlist (restricted mode); each must be linked to the course."
+          }
+        },
+        "additionalProperties": false
+      },
       "SetRolePermissionsRequest": {
         "type": "object",
         "required": [
@@ -5798,6 +6347,71 @@
           }
         },
         "additionalProperties": false
+      },
+      "StudentOverride": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "waive_late_penalty",
+          "note",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "due_at_override_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "expires_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "granted_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "max_attempts_override": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "note": {
+            "type": "string"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "waive_late_penalty": {
+            "type": "boolean"
+          }
+        }
       },
       "TotpEnrollment": {
         "type": "object",

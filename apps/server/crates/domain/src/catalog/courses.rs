@@ -54,10 +54,13 @@ impl CoursesService {
         Err(Error::forbidden("no write access to this course"))
     }
 
-    fn require_read(actor: &Actor, course: &Course) -> Result<()> {
+    /// Visibility: public, creator, `course:read:all`, or membership of a
+    /// usergroup linked to the course (cohort access). Invisible = 404.
+    async fn require_read(&self, actor: &Actor, course: &Course) -> Result<()> {
         if course.public
             || course.creator_id == Some(actor.user_id)
             || actor.has(perm(Action::Read, Scope::All))
+            || ab_db::usergroups::user_in_course_group(&self.pool, course.id, actor.user_id).await?
         {
             Ok(())
         } else {
@@ -92,7 +95,7 @@ impl CoursesService {
         let course = ab_db::catalog::get_course(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("course"))?;
-        Self::require_read(actor, &course)?;
+        self.require_read(actor, &course).await?;
         Ok(course)
     }
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE (public OR $1 OR creator_id = $2)\n             AND ($3::uuid IS NULL OR id < $3)\n           ORDER BY id DESC\n           LIMIT $4",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE (public OR $1 OR creator_id = $2\n                  OR EXISTS (SELECT 1 FROM usergroup_courses uc\n                             JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id\n                             WHERE uc.course_id = courses.id AND m.user_id = $2))\n             AND ($3::uuid IS NULL OR id < $3)\n           ORDER BY id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -125,5 +125,5 @@
       null
     ]
   },
-  "hash": "46d7e43a081a58013757c09682a622416e7dfb26a3848f62aa6c1bd27d98f405"
+  "hash": "9858ecd201c391e7d329b0db3bf5b41c406d5de68a2a812362c153863de36223"
 }

@@ -211,3 +211,23 @@ pub async fn list_for_course(pool: &PgPool, course_id: CourseId) -> Result<Vec<U
     .await?;
     Ok(rows)
 }
+
+/// Is the user in any usergroup linked to the course? (Cohort access.)
+pub async fn user_in_course_group(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
+    let member = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM usergroup_courses uc
+               JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
+               WHERE uc.course_id = $1 AND m.user_id = $2
+           ) AS "member!""#,
+        course_id.0,
+        user_id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(member)
+}

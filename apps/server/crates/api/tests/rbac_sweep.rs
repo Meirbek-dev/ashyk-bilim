@@ -75,6 +75,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("POST", "/api/v2/assessments/{id}/items/reorder"),
     ("PATCH", "/api/v2/assessment-items/{id}"),
     ("DELETE", "/api/v2/assessment-items/{id}"),
+    ("PUT", "/api/v2/assessments/{id}/access"),
+    ("POST", "/api/v2/assessments/{id}/overrides/{user_id}"),
+    ("PUT", "/api/v2/assessments/{id}/overrides/{user_id}"),
+    ("DELETE", "/api/v2/assessments/{id}/overrides/{user_id}"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

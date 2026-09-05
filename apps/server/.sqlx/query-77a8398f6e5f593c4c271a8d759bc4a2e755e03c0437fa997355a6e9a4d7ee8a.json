@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (\n               EXISTS (SELECT 1 FROM assessment_access_users\n                       WHERE assessment_id = $1 AND user_id = $2)\n               OR EXISTS (SELECT 1 FROM assessment_access_usergroups g\n                          JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id\n                          WHERE g.assessment_id = $1 AND m.user_id = $2)\n           ) AS \"allowed!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "allowed!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "77a8398f6e5f593c4c271a8d759bc4a2e755e03c0437fa997355a6e9a4d7ee8a"
+}

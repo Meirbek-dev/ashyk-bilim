@@ -374,3 +374,167 @@ pub async fn reorder_items(
         .await?;
     Ok(Json(items.into_iter().map(Into::into).collect()))
 }
+
+// ── Access lists ────────────────────────────────────────────────────────────
+
+/// Who may take the assessment (authors only).
+#[utoipa::path(
+    get, path = "/assessments/{id}/access", tag = "assessments",
+    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    responses((status = 200, description = "Access policy", body = crate::dto::assessments::AccessView)),
+)]
+pub async fn get_access(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<AssessmentId>,
+) -> ApiResult<Json<crate::dto::assessments::AccessView>> {
+    Ok(Json(state.assessments.access(&actor, id).await?.into()))
+}
+
+/// Replace the access policy. Restricted lists are validated against the
+/// course (users need course access, groups must be linked); switching to
+/// all-course-learners wipes both lists.
+#[utoipa::path(
+    put, path = "/assessments/{id}/access", tag = "assessments",
+    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    request_body = crate::dto::assessments::SetAccessRequest,
+    responses(
+        (status = 200, description = "Updated", body = crate::dto::assessments::AccessView),
+        (status = 422, description = "User/group outside the course", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn set_access(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<AssessmentId>,
+    ValidJson(request): ValidJson<crate::dto::assessments::SetAccessRequest>,
+) -> ApiResult<Json<crate::dto::assessments::AccessView>> {
+    let view = state
+        .assessments
+        .set_access(
+            &actor,
+            id,
+            request.mode,
+            &request.user_ids,
+            &request.usergroup_ids,
+        )
+        .await?;
+    Ok(Json(view.into()))
+}
+
+// ── Per-student overrides ───────────────────────────────────────────────────
+
+/// Every per-student override on the assessment.
+#[utoipa::path(
+    get, path = "/assessments/{id}/overrides", tag = "assessments",
+    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    responses((status = 200, description = "Overrides", body = [crate::dto::assessments::StudentOverride])),
+)]
+pub async fn list_overrides(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<AssessmentId>,
+) -> ApiResult<Json<Vec<crate::dto::assessments::StudentOverride>>> {
+    let rows = state.assessments.overrides(&actor, id).await?;
+    Ok(Json(rows.into_iter().map(Into::into).collect()))
+}
+
+/// Grant a student more attempts / a later due date / a late-penalty waiver.
+#[utoipa::path(
+    post, path = "/assessments/{id}/overrides/{user_id}", tag = "assessments",
+    params(
+        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("user_id" = ab_core::id::UserId, Path, description = "Student"),
+    ),
+    request_body = crate::dto::assessments::OverrideRequest,
+    responses(
+        (status = 201, description = "Created", body = crate::dto::assessments::StudentOverride),
+        (status = 409, description = "Already overridden", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Attempts outside 1..=10", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn create_override(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
+    ValidJson(request): ValidJson<crate::dto::assessments::OverrideRequest>,
+) -> ApiResult<(StatusCode, Json<crate::dto::assessments::StudentOverride>)> {
+    let row = state
+        .assessments
+        .create_override(&actor, id, user_id, request.into())
+        .await?;
+    Ok((StatusCode::CREATED, Json(row.into())))
+}
+
+/// Replace a student's override.
+#[utoipa::path(
+    put, path = "/assessments/{id}/overrides/{user_id}", tag = "assessments",
+    params(
+        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("user_id" = ab_core::id::UserId, Path, description = "Student"),
+    ),
+    request_body = crate::dto::assessments::OverrideRequest,
+    responses((status = 200, description = "Updated", body = crate::dto::assessments::StudentOverride)),
+)]
+pub async fn update_override(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
+    ValidJson(request): ValidJson<crate::dto::assessments::OverrideRequest>,
+) -> ApiResult<Json<crate::dto::assessments::StudentOverride>> {
+    let row = state
+        .assessments
+        .update_override(&actor, id, user_id, request.into())
+        .await?;
+    Ok(Json(row.into()))
+}
+
+/// Remove a student's override.
+#[utoipa::path(
+    delete, path = "/assessments/{id}/overrides/{user_id}", tag = "assessments",
+    params(
+        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("user_id" = ab_core::id::UserId, Path, description = "Student"),
+    ),
+    responses((status = 204, description = "Deleted")),
+)]
+pub async fn delete_override(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
+) -> ApiResult<StatusCode> {
+    state
+        .assessments
+        .delete_override(&actor, id, user_id)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+// ── Student-facing ──────────────────────────────────────────────────────────
+
+/// What the caller may do with this assessment right now.
+///
+/// The effective policy (overrides applied) and any reasons an attempt is
+/// blocked. Requires course access, the allowlist when restricted, and
+/// `assessment:submit:assigned` (authors preview freely).
+#[utoipa::path(
+    get, path = "/assessments/{id}/attempt-state", tag = "assessments",
+    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    responses(
+        (status = 200, description = "Attempt state", body = crate::dto::assessments::AttemptState),
+        (status = 403, description = "No access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn attempt_state(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<AssessmentId>,
+) -> ApiResult<Json<crate::dto::assessments::AttemptState>> {
+    Ok(Json(
+        state.assessments.attempt_state(&actor, id).await?.into(),
+    ))
+}

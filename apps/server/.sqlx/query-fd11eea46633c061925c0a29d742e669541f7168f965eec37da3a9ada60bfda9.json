@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n               SELECT 1 FROM usergroup_courses uc\n               JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id\n               WHERE uc.course_id = $1 AND m.user_id = $2\n           ) AS \"member!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "member!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "fd11eea46633c061925c0a29d742e669541f7168f965eec37da3a9ada60bfda9"
+}
