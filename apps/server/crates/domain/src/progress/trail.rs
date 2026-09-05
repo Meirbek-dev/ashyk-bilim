@@ -194,6 +194,8 @@ impl TrailService {
             self.projector
                 .mark_complete(&activity, actor.user_id)
                 .await?;
+            crate::gamification::hooks::activity_completed(&self.pool, actor.user_id, activity.id)
+                .await;
         }
         self.hydrate(trail).await
     }

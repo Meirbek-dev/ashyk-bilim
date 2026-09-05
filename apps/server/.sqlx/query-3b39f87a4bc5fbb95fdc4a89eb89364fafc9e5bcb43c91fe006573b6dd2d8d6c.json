@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE gamification_profiles SET total_activities_completed = total_activities_completed + 1 WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3b39f87a4bc5fbb95fdc4a89eb89364fafc9e5bcb43c91fe006573b6dd2d8d6c"
+}

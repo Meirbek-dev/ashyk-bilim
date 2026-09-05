@@ -84,6 +84,8 @@ typed_id!(CourseProgressId);
 typed_id!(DiscussionId);
 typed_id!(CertificationId);
 typed_id!(CertificateId);
+typed_id!(GamificationProfileId);
+typed_id!(XpTransactionId);
 typed_id!(JobId);
 
 #[cfg(test)]

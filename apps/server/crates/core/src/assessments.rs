@@ -322,6 +322,30 @@ text_enum!(
     }
 );
 
+text_enum!(
+    /// Why XP was granted (legacy `XPSource`).
+    XpSource {
+        ActivityCompletion => "activity_completion",
+        CourseCompletion => "course_completion",
+        LoginBonus => "login_bonus",
+        QuizCompletion => "quiz_completion",
+        ExamCompletion => "exam_completion",
+        StreakBonus => "streak_bonus",
+        AdminAward => "admin_award",
+        CodeChallengeCompletion => "code_challenge_completion",
+        CodeChallengePerfect => "code_challenge_perfect",
+        CodeChallengeFirstSolve => "code_challenge_first_solve",
+    }
+);
+
+text_enum!(
+    /// Streak kinds (legacy `StreakType`).
+    StreakKind {
+        Login => "login",
+        Learning => "learning",
+    }
+);
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {

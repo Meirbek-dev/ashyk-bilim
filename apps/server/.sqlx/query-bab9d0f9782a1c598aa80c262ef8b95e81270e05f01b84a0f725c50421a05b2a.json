@@ -1,0 +1,135 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.id AS \"progress_id: ActivityProgressId\",\n                  c.id AS \"course_id: CourseId\", c.name AS course_title,\n                  a.id AS \"activity_id: ActivityId\", a.name AS activity_title,\n                  u.display_name AS learner_display_name, u.username AS learner_username,\n                  (extract(epoch FROM p.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM p.graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM p.due_at))::bigint AS \"due_at?\",\n                  (extract(epoch FROM p.updated_at))::bigint AS \"updated_at!\",\n                  COALESCE(\n                      (SELECT s.id FROM submissions s\n                       WHERE s.id = p.latest_submission_id AND s.status = 'graded'),\n                      (SELECT fa.id FROM file_submission_attempts fa\n                       JOIN file_submissions f ON f.id = fa.file_submission_id\n                       WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id\n                         AND fa.status = 'graded'\n                       ORDER BY fa.updated_at DESC LIMIT 1)\n                  ) AS \"review_ref?\"\n           FROM activity_progress p\n           JOIN activities a ON a.id = p.activity_id\n           JOIN courses c ON c.id = p.course_id\n           JOIN users u ON u.id = p.user_id\n           WHERE p.state = 'graded'\n             AND (c.creator_id = $1 OR EXISTS (\n                     SELECT 1 FROM resource_authors ra\n                     WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "progress_id: ActivityProgressId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activity_progress",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "activity_title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "learner_display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "learner_username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "due_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "review_ref?",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "bab9d0f9782a1c598aa80c262ef8b95e81270e05f01b84a0f725c50421a05b2a"
+}

@@ -18,6 +18,7 @@ pub mod code;
 pub mod community;
 pub mod events;
 pub mod files;
+pub mod gamification;
 pub mod grading;
 pub mod identity;
 pub mod progress;

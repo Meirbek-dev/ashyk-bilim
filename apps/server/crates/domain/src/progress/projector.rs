@@ -76,6 +76,25 @@ impl ProgressProjector {
         };
         self.recalculate_activity(assessment.activity_id, user_id)
             .await?;
+        // A passing, published submission pays XP once (legacy award task).
+        let passed = ab_db::submissions::list_user_submissions(&self.pool, assessment_id, user_id)
+            .await?
+            .into_iter()
+            .find(|s| {
+                s.status == SubmissionStatus::Published
+                    && s.final_score
+                        .or(s.auto_score)
+                        .is_some_and(|score| score >= assessment.passing_score)
+            });
+        if let Some(submission) = passed {
+            crate::gamification::hooks::submission_passed(
+                &self.pool,
+                user_id,
+                submission.id,
+                assessment.kind,
+            )
+            .await;
+        }
         Ok(())
     }
 
@@ -247,6 +266,7 @@ impl ProgressProjector {
         ab_db::progress::upsert_course_progress(&self.pool, &write).await?;
         if write.certificate_eligible {
             crate::certifications::issue_for_completion(&self.pool, course_id, user_id).await?;
+            crate::gamification::hooks::course_completed(&self.pool, user_id, course_id).await;
         }
         ab_db::progress::get_course_progress(&self.pool, course_id, user_id)
             .await?

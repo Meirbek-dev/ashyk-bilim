@@ -28,3 +28,13 @@ answered items into the docs.
 
 5. **VPS access** → model: agent prepares scripts/runbooks, owner pastes them.
    Cutover runbook (MIGRATION.md) will be structured as copy-paste blocks.
+
+## Q-2026-09-06-1 - Reset gamification XP at cutover?
+Legacy learners could self-award XP (FINDINGS #19), so migrated
+gamification totals and the leaderboard may be inflated. Options:
+(a) migrate ledgers as-is; (b) recompute XP from the migrated ledger keeping
+only server-derivable sources (activity/course/quiz/exam/code/login), dropping
+rows whose source_id does not match a real activity/course/submission;
+(c) zero everyone at cutover. Default if unanswered: **(b)** - the ETL (P10)
+recomputes from verifiable sources and logs what it dropped.
+

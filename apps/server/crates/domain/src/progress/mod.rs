@@ -5,7 +5,9 @@
 pub mod learner_state;
 pub mod projector;
 pub mod trail;
+pub mod work_queue;
 
 pub use learner_state::LearnerStateService;
 pub use projector::ProgressProjector;
 pub use trail::TrailService;
+pub use work_queue::WorkQueueService;

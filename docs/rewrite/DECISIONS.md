@@ -471,3 +471,74 @@ Ported from `services/courses/certifications.py` onto the P2 tables:
 - Course-completion XP (legacy `on_course_completed`) is P6.4 and will hang
   off the same eligibility flip.
 
+
+## Work queue (2026-09-06, P6.5)
+
+Ported from `services/work_queue.py` as `GET /work` (tag `work-queue`),
+assembled from the canonical `activity_progress` projection rather than
+from submissions, so the inbox and the learner course state agree:
+
+- **Ids, not uuids.** `course_id` / `activity_id` are v2 ids and always
+  present (the legacy fields were nullable strings); item ids keep the
+  legacy shape (`learner-progress-<progress_id>`, `teacher-grade-…`,
+  `teacher-release-…`) and hrefs keep the legacy client routes with ids
+  substituted. Timestamps are `due_at_unix` / `created_at_unix`.
+- **Cursor** is base64url (no padding) of the JSON array `[rank, at, id]`
+  with `at` in epoch seconds or `null` (legacy: an ISO datetime string).
+  The sort key is unchanged (priority rank, due_at or created_at with
+  missing last, id) and `total` still counts the whole queue before
+  paging. A cursor that does not decode is a 422 `validation-failed` on
+  field `cursor` (legacy: a bespoke `INVALID_WORK_CURSOR` detail); an
+  out-of-range `limit` is the same envelope on `limit` instead of the
+  FastAPI query error.
+- **Teacher scope via `resource_authors`.** Course creator, or an `active`
+  row in `resource_authors (course_id, user_id)` — the legacy polymorphic
+  `resource_uuid` match folded onto the P2 FK. No grant is checked, as
+  before: the learner queue is the progress of the caller alone and the
+  teacher queue is empty for anyone without courses.
+- **Review target resolved in SQL.** The latest submission, else the
+  newest `submitted` (grading) / `graded` (release) file attempt — joined
+  through `file_submissions`, since v2 attempts carry no `activity_id`.
+  Release rows without a `graded` target are dropped, as in the legacy.
+- **Learner name** is `users.display_name` (trimmed), else `username`
+  (legacy: first + last name, else username).
+- Inherited, not changed here: `awaiting_release` only exists for rows in
+  state `graded`, which the projector (P6.1, legacy-faithful) assigns only
+  when a saved grade has no score — in practice file attempts. A scored
+  quiz grade that is saved but not yet released projects to `passed` /
+  `failed`, so the learner sees a `feedback_released` item before the
+  release. A projector follow-up, not a work-queue one.
+
+## Gamification (2026-09-06, P6.4)
+
+Ported from `services/gamification` + `worker/tasks/xp_award.py`:
+
+- **XP is only ever a side effect.** The legacy `POST /gamification/xp`
+  let any signed-in user award themselves any non-admin source at the
+  default amount (FINDINGS #19). v2 keeps the route for platform managers
+  only (`admin_award` to a target user); learners earn through hooks:
+  trail step (activity), course eligibility flip in the progress projector
+  (course), a passing *published* submission seen by the projector (quiz /
+  exam / code challenge, keyed `submission_{id}`), and the first login of a
+  day (login streak + `login_bonus`, keyed by day). The legacy taskiq award
+  task is gone: the projector already runs after every publish path.
+- **Hooks never fail the caller.** Every hook logs and swallows — a daily
+  cap, a policy misconfiguration or a DB hiccup must not break a lesson
+  step or a login. The ledger's two unique keys make replays no-ops.
+- **Level in SQL.** `record_award` locks the profile row, inserts the
+  ledger row (`ON CONFLICT DO NOTHING` across both unique keys), moves the
+  profile and computes the level with the legacy curve
+  (`XP = 50(l-1)^2 + 50(l-1)`, cap 100) in the same transaction, then stamps
+  `triggered_level_up` — no read-modify-write race.
+- **Daily cap** counts UTC days from `last_xp_award_at`; admin awards
+  bypass it (legacy). The cap itself and per-source rewards are the
+  singleton `gamification_config` row (`PUT /gamification/config`); zero /
+  negative values mean "default", as before.
+- **Streak touches stay client-callable** (`POST /gamification/streaks/
+  {kind}`) for the learning streak the client marks on study sessions; the
+  login streak is now also stamped server-side at login, so the client
+  call is redundant there.
+- Leaderboard keeps `limit/offset` (a top-N list, not a feed) and carries
+  username / display name / avatar key — no names split into first/last,
+  no email.
+

@@ -4761,6 +4761,248 @@
         }
       }
     },
+    "/api/v2/gamification": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Profile, recent XP, rank and the top-10 leaderboard in one call.",
+        "operationId": "dashboard",
+        "responses": {
+          "200": {
+            "description": "Dashboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/gamification/config": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "operationId": "get_config",
+        "responses": {
+          "200": {
+            "description": "Policy overrides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamificationConfig"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Replace the policy overrides (`platform:manage`).",
+        "operationId": "update_config",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGamificationConfigRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Policy overrides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamificationConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/gamification/leaderboard": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "operationId": "leaderboard",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1..=100 (default 10).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Leaderboard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/gamification/preferences": {
+      "patch": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Merge preferences (`null` removes a key).",
+        "operationId": "update_preferences",
+        "requestBody": {
+          "description": "Preference patch",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/gamification/rank": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "operationId": "rank",
+        "responses": {
+          "200": {
+            "description": "Rank",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRank"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/gamification/streaks/{kind}": {
+      "post": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Touch a streak for today (same day keeps, next day extends, a gap resets).",
+        "operationId": "record_streak",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "login or learning",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/StreakKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Streak",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreakUpdate"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/gamification/xp": {
+      "post": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Grant XP to a user (`platform:manage`). Learners never award themselves\nin v2; XP is a side effect of completing things.",
+        "operationId": "admin_award",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminAwardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Awarded (or the earlier identical award)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a platform manager",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/health": {
       "get": {
         "tags": [
@@ -6709,6 +6951,91 @@
           }
         }
       }
+    },
+    "/api/v2/work": {
+      "get": {
+        "tags": [
+          "work-queue"
+        ],
+        "summary": "Ranked work items for the caller.",
+        "description": "`role=learner` (default) lists the caller's own open activities; `role=teacher` lists submissions to grade\nor release across the courses the caller created or co-authors. Sorted\nby priority, then due/created time, then id; paged by an opaque cursor.",
+        "operationId": "work_queue",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "description": "`learner` (default) or `teacher`.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/WorkRole"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1..=100 (default 50).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` of the previous page (opaque).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Work queue page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkQueue"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid cursor or limit",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6950,6 +7277,36 @@
             "type": "string"
           }
         }
+      },
+      "AdminAwardRequest": {
+        "type": "object",
+        "description": "Platform managers grant XP to a user.",
+        "required": [
+          "user_id",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idempotency_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "additionalProperties": false
       },
       "AdminUser": {
         "type": "object",
@@ -7469,6 +7826,34 @@
           "time_expired",
           "integrity_violation"
         ]
+      },
+      "AwardResponse": {
+        "type": "object",
+        "required": [
+          "transaction",
+          "profile",
+          "level_up_occurred",
+          "previous_level",
+          "is_new_transaction"
+        ],
+        "properties": {
+          "is_new_transaction": {
+            "type": "boolean"
+          },
+          "level_up_occurred": {
+            "type": "boolean"
+          },
+          "previous_level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/Transaction"
+          }
+        }
       },
       "Block": {
         "type": "object",
@@ -8954,6 +9339,33 @@
         ],
         "description": "A chapter with its activities, in curriculum order."
       },
+      "Dashboard": {
+        "type": "object",
+        "required": [
+          "profile",
+          "recent_transactions",
+          "user_rank",
+          "leaderboard"
+        ],
+        "properties": {
+          "leaderboard": {
+            "$ref": "#/components/schemas/Leaderboard"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "recent_transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          },
+          "user_rank": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "DeadlineExtensionRequest": {
         "type": "object",
         "required": [
@@ -9684,6 +10096,31 @@
           "number",
           "date"
         ]
+      },
+      "GamificationConfig": {
+        "type": "object",
+        "required": [
+          "rewards",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "daily_xp_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`null` = platform default (500)."
+          },
+          "rewards": {
+            "type": "object",
+            "description": "Source → XP overrides; unknown sources are ignored."
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "GradeAction": {
         "type": "string",
@@ -10489,6 +10926,65 @@
         ],
         "description": "Late-submission handling."
       },
+      "Leaderboard": {
+        "type": "object",
+        "required": [
+          "entries",
+          "total_participants"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardEntry"
+            }
+          },
+          "total_participants": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LeaderboardEntry": {
+        "type": "object",
+        "required": [
+          "rank",
+          "user_id",
+          "total_xp",
+          "level",
+          "username",
+          "display_name"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_xp": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
       "LearnerCourseState": {
         "type": "object",
         "required": [
@@ -11006,6 +11502,112 @@
           "type": {
             "type": "string",
             "description": "Stable documentation URI for this error class."
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "total_xp",
+          "level",
+          "xp_in_current_level",
+          "xp_to_next_level",
+          "level_progress_percent",
+          "login_streak",
+          "longest_login_streak",
+          "learning_streak",
+          "longest_learning_streak",
+          "daily_xp_earned",
+          "total_activities_completed",
+          "total_courses_completed",
+          "preferences",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "daily_xp_earned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last_learning_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "last_login_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "last_xp_award_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "learning_streak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "level_progress_percent": {
+            "type": "number",
+            "format": "double"
+          },
+          "login_streak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "longest_learning_streak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "longest_login_streak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "preferences": {
+            "type": "object"
+          },
+          "total_activities_completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total_courses_completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total_xp": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "xp_in_current_level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "xp_to_next_level": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -11708,6 +12310,39 @@
           }
         }
       },
+      "StreakKind": {
+        "type": "string",
+        "description": "Streak kinds (legacy `StreakType`).",
+        "enum": [
+          "login",
+          "learning"
+        ]
+      },
+      "StreakUpdate": {
+        "type": "object",
+        "required": [
+          "streak_type",
+          "current_count",
+          "longest_count",
+          "is_new_record"
+        ],
+        "properties": {
+          "current_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_new_record": {
+            "type": "boolean"
+          },
+          "longest_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "streak_type": {
+            "$ref": "#/components/schemas/StreakKind"
+          }
+        }
+      },
       "StudentOverride": {
         "type": "object",
         "required": [
@@ -12269,6 +12904,56 @@
         "type": "string",
         "format": "uuid"
       },
+      "Transaction": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "amount",
+          "source",
+          "previous_level",
+          "triggered_level_up",
+          "created_at_unix"
+        ],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/XpTransactionId"
+          },
+          "previous_level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/XpSource"
+          },
+          "source_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "triggered_level_up": {
+            "type": "boolean"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
       "UpdateActivityRequest": {
         "type": "object",
         "properties": {
@@ -12459,6 +13144,22 @@
                 "$ref": "#/components/schemas/DiscussionStatus"
               }
             ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateGamificationConfigRequest": {
+        "type": "object",
+        "properties": {
+          "daily_xp_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "rewards": {
+            "type": "object"
           }
         },
         "additionalProperties": false
@@ -12699,6 +13400,22 @@
           }
         }
       },
+      "UserRank": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "rank"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
       "UserSummary": {
         "type": "object",
         "required": [
@@ -12910,6 +13627,131 @@
           }
         }
       },
+      "WorkItem": {
+        "type": "object",
+        "description": "One thing to act on.\n\n`id` is stable across calls; `kind` names the situation (`in_progress`, `overdue`, `waiting_for_grade`,\n`returned_for_revision`, `feedback_released`, `needs_grading`,\n`sla_breach`, `awaiting_release`).",
+        "required": [
+          "id",
+          "role",
+          "kind",
+          "status",
+          "priority",
+          "title",
+          "description",
+          "href",
+          "primary_action",
+          "course_id",
+          "course_title",
+          "activity_id",
+          "activity_title",
+          "allowed_actions"
+        ],
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "activity_title": {
+            "type": "string"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_title": {
+            "type": "string"
+          },
+          "created_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          },
+          "due_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "href": {
+            "type": "string",
+            "description": "Client route for the primary action."
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "primary_action": {
+            "type": "string"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/WorkPriority"
+          },
+          "role": {
+            "$ref": "#/components/schemas/WorkRole"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkPriority": {
+        "type": "string",
+        "enum": [
+          "critical",
+          "high",
+          "normal",
+          "low"
+        ]
+      },
+      "WorkQueue": {
+        "type": "object",
+        "description": "One page; `total` counts the whole queue before paging.",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkItem"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "WorkRole": {
+        "type": "string",
+        "description": "Which inbox to assemble.",
+        "enum": [
+          "learner",
+          "teacher"
+        ]
+      },
       "WorkState": {
         "type": "string",
         "description": "Product-level work state shown to the learner.",
@@ -12925,6 +13767,26 @@
           "complete",
           "locked"
         ]
+      },
+      "XpSource": {
+        "type": "string",
+        "description": "Why XP was granted (legacy `XPSource`).",
+        "enum": [
+          "activity_completion",
+          "course_completion",
+          "login_bonus",
+          "quiz_completion",
+          "exam_completion",
+          "streak_bonus",
+          "admin_award",
+          "code_challenge_completion",
+          "code_challenge_perfect",
+          "code_challenge_first_solve"
+        ]
+      },
+      "XpTransactionId": {
+        "type": "string",
+        "format": "uuid"
       }
     }
   },
@@ -13000,6 +13862,14 @@
     {
       "name": "certifications",
       "description": "Certification templates, issued certificates, public verification"
+    },
+    {
+      "name": "gamification",
+      "description": "XP, levels, streaks, leaderboard; admin awards and policy"
+    },
+    {
+      "name": "work-queue",
+      "description": "Unified inbox: ranked learner and teacher work items"
     }
   ]
 }

@@ -23,6 +23,9 @@ const AUTH_ONLY: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/auth/mfa/totp"),
     // Ownership checked internally (created_by == actor).
     ("POST", "/api/v2/uploads/{id}/finalize"),
+    // Gamification self-service: streak touch and preferences.
+    ("POST", "/api/v2/gamification/streaks/{kind}"),
+    ("PATCH", "/api/v2/gamification/preferences"),
 ];
 
 /// Requires specific grants: a zero-grant session must NOT reach a 2xx.
@@ -119,6 +122,9 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("POST", "/api/v2/certifications"),
     ("PATCH", "/api/v2/certifications/{id}"),
     ("DELETE", "/api/v2/certifications/{id}"),
+    // Gamification admin: platform:manage:platform.
+    ("POST", "/api/v2/gamification/xp"),
+    ("PUT", "/api/v2/gamification/config"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

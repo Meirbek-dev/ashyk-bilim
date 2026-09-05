@@ -52,6 +52,8 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "progress", description = "Personal trail and learner-facing course state"),
         (name = "discussions", description = "Course discussions: posts, replies, reactions, moderation"),
         (name = "certifications", description = "Certification templates, issued certificates, public verification"),
+        (name = "gamification", description = "XP, levels, streaks, leaderboard; admin awards and policy"),
+        (name = "work-queue", description = "Unified inbox: ranked learner and teacher work items"),
     )
 )]
 struct ApiDoc;
@@ -68,6 +70,26 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(progress_routes())
         .merge(discussion_routes())
         .merge(certification_routes())
+        .merge(gamification_routes())
+        .merge(work_queue_routes())
+}
+
+fn work_queue_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new().routes(routes!(routes::work_queue::work_queue))
+}
+
+fn gamification_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::gamification::dashboard))
+        .routes(routes!(routes::gamification::leaderboard))
+        .routes(routes!(routes::gamification::rank))
+        .routes(routes!(routes::gamification::record_streak))
+        .routes(routes!(routes::gamification::update_preferences))
+        .routes(routes!(routes::gamification::admin_award))
+        .routes(routes!(
+            routes::gamification::get_config,
+            routes::gamification::update_config
+        ))
 }
 
 fn certification_routes() -> OpenApiRouter<AppState> {

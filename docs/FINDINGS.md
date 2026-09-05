@@ -153,3 +153,14 @@ the flag as `assessments.required`. Owner decision pending on whether the flag
 should start driving progress (then most existing assessments would become
 optional overnight) — tracked for P9/P10 review; no legacy-side fix.
 
+### 19. Learners could award themselves XP
+Legacy `POST /gamification/xp` accepted any `source` from any signed-in user
+and paid the default reward for it (only `custom_amount` demanded
+`platform:manage`); the per-(source, source_id) uniqueness was the only brake,
+and `source_id` was caller-chosen. A learner could script their way up the
+leaderboard. v2 restricts the endpoint to platform managers and derives every
+learner award server-side (progress projector, trail, login). No legacy-side
+fix planned — the endpoint dies at cutover; leaderboards migrated from legacy
+data may carry inflated totals (owner call whether to reset XP at cutover —
+see QUESTIONS.md).
+

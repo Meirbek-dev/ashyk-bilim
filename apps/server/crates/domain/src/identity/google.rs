@@ -153,6 +153,7 @@ impl GoogleAuthService {
             serde_json::json!({}),
         )
         .await?;
+        crate::gamification::hooks::login(&self.pool, user_id).await;
         Ok(GoogleLoginOk {
             session_id,
             user_id,

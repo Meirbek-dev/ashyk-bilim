@@ -11,6 +11,7 @@ pub mod certifications;
 pub mod collections;
 pub mod discussions;
 pub mod file_submissions;
+pub mod gamification;
 pub mod identity;
 pub mod platform;
 pub mod progress;
@@ -20,6 +21,7 @@ pub mod search;
 pub mod submissions;
 pub mod uploads;
 pub mod usergroups;
+pub mod work_queue;
 
 use std::time::Duration;
 

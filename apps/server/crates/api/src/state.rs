@@ -14,13 +14,14 @@ use ab_domain::code::{CodeRunner, CodeRunsService};
 use ab_domain::community::DiscussionsService;
 use ab_domain::events::GradingEvents;
 use ab_domain::files::{FileSubmissionsService, UploadsService};
+use ab_domain::gamification::GamificationService;
 use ab_domain::grading::{GradingService, SubmissionsService};
 use ab_domain::identity::rate_limit::RateLimiter;
 use ab_domain::identity::{
     GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsergroupsService,
     UsersService,
 };
-use ab_domain::progress::{LearnerStateService, ProgressProjector, TrailService};
+use ab_domain::progress::{LearnerStateService, ProgressProjector, TrailService, WorkQueueService};
 use sqlx::PgPool;
 
 #[derive(Clone)]
@@ -52,6 +53,8 @@ pub struct AppState {
     pub progress: ProgressProjector,
     pub discussions: DiscussionsService,
     pub certifications: CertificationsService,
+    pub gamification: GamificationService,
+    pub work_queue: WorkQueueService,
 }
 
 impl AppState {
@@ -96,6 +99,8 @@ impl AppState {
             ),
             progress: ProgressProjector::new(pool.clone()),
             discussions: DiscussionsService::new(pool.clone(), courses.clone()),
+            gamification: GamificationService::new(pool.clone()),
+            work_queue: WorkQueueService::new(pool.clone()),
             certifications: CertificationsService::new(
                 pool.clone(),
                 courses.clone(),

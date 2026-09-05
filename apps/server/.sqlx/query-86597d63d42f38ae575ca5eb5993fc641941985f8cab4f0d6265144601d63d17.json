@@ -1,0 +1,45 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT daily_xp_limit, rewards,\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM gamification_config WHERE id = 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "daily_xp_limit",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_config",
+            "name": "daily_xp_limit"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "rewards",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "gamification_config",
+            "name": "rewards"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "86597d63d42f38ae575ca5eb5993fc641941985f8cab4f0d6265144601d63d17"
+}
