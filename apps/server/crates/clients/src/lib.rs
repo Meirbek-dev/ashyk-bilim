@@ -13,5 +13,6 @@
 //! shape, and takes its base URL from config so tests can point it anywhere.
 
 pub mod google;
+pub mod judge0;
 pub mod storage;
 pub mod zitadel;

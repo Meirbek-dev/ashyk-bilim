@@ -194,3 +194,53 @@ Ported from `attempt_service.py` + `pipeline/*`, with these deltas:
   grading entry → visible; `graded` without one → `awaiting_release`
   (scores, breakdown, graded_at and late % all hidden); `pending`/`draft`
   → hidden; `returned` → visible with the revision flag.
+
+## Code execution (2026-09-05, P4.4)
+
+Ported from `services/code_execution/service.py` (the official Judge0
+Python SDK underneath) and the attempt/orchestrator call sites:
+
+- **Own Judge0 client, same wire.** Batch create (`POST /submissions/batch?
+  base64_encoded=true`) then batch poll until every status id is past
+  "Processing", chunked at Judge0's default batch size of 20; Judge0's own
+  `expected_output` check is not used so the platform's match modes
+  (exact / trimmed / ignore-whitespace / numeric-tolerance; `custom_checker`
+  falls back to exact, as in legacy) stay authoritative. Poll budget is
+  25s by default (legacy 30s) because runs execute inside the request and
+  the API's request timeout is 30s.
+- **Breaker semantics kept** (5 consecutive failures → open 30s → single
+  probe), but a Judge0 *rejection* (4xx on our payload) no longer counts
+  as a failure and the run is recorded `internal_error`, not `degraded`:
+  retrying a bad payload cannot help, and it must not open the breaker for
+  everyone else.
+- **Hidden tests are stored in full and masked on read.** The legacy nulled
+  stdin/expected/stdout of hidden cases in `code_run_case` itself, so a
+  teacher could never see what a learner's program printed on the test
+  that failed. v2 masks in the service for non-authors; authors see all.
+- **Reference check is author-only.** The legacy endpoint required only
+  submit access, so any learner could execute the stored reference
+  solutions (FINDINGS #17).
+- **Submit-time behaviour by path.** Learner submit: compile error → 422
+  `compile-error` carrying `compile_output` (the legacy contract), runner
+  down → 503 `code-runner-degraded` with `is_retryable` and `Retry-After`,
+  draft untouched in both cases. Timer auto-submit cannot show anyone an
+  error: a compile error grades what it earned (0/N), a down runner hands
+  the attempt to manual review (`pending`) instead of retrying forever
+  (the legacy timer raised, backed off, and left the draft open). Blank
+  source scores zero without touching Judge0 (legacy).
+- **Runs are keyed by header, not body.** `Idempotency-Key` is a request
+  header like on submit; scope is (user, item, purpose, key). A finished
+  accepted/wrong-answer run replays (200), a different source/stdin/
+  language under the key is 409, and a failed run frees the key for a
+  retry — all legacy rules.
+- **Rate limit on runs** (new): 20 per minute per user in Redis. The legacy
+  had none; the breaker was its only protection.
+- **Language allowlist is config** (`AB__JUDGE0__LIMITS__ALLOWED_LANGUAGE_IDS`,
+  legacy default set) ∩ the item's `languages`; `GET /code/languages` is
+  the intersection with what Judge0 reports, cached 10 minutes in-process.
+- **Sandbox policy is code, not config**: JVM (26/27/28/62/78) and Go
+  (22/60) memory floors, 64 MB stack, 128 processes and the compiler flags
+  the legacy hardcoded — they pair with the `languages` table patch (5.3).
+- Judge0 is optional in v2 config: without `AB__JUDGE0__BASE_URL` code runs
+  answer 503 and code challenges go to manual review, so a deployment can
+  boot without the execution tier.

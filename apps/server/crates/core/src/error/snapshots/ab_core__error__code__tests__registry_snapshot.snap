@@ -7,6 +7,14 @@ expression: registry
     403,
     "Account is disabled"
   ],
+  "code-runner-degraded": [
+    503,
+    "Code runner temporarily unavailable"
+  ],
+  "compile-error": [
+    422,
+    "Source code does not compile"
+  ],
   "conflict": [
     409,
     "Conflict"
@@ -34,6 +42,10 @@ expression: registry
   "invalid-totp-code": [
     400,
     "Invalid one-time code"
+  ],
+  "language-not-allowed": [
+    422,
+    "Programming language not allowed"
   ],
   "mfa-required": [
     401,

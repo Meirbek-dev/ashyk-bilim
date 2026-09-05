@@ -95,6 +95,11 @@ impl IntoResponse for ApiError {
             header::CONTENT_TYPE,
             HeaderValue::from_static(PROBLEM_CONTENT_TYPE),
         );
+        if status == StatusCode::SERVICE_UNAVAILABLE {
+            response
+                .headers_mut()
+                .insert(header::RETRY_AFTER, HeaderValue::from_static("30"));
+        }
         response
     }
 }

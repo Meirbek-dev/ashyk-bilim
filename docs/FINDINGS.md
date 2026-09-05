@@ -135,3 +135,11 @@ account holders by email fragment. The v2 search drops email matching
 entirely and returns the people section only to authenticated sessions
 (username/display-name matching only). No legacy-side fix planned — the
 endpoint dies at cutover.
+
+### 17. Legacy reference-solution check was open to learners
+`POST /assessments/{uuid}/code-challenge/validate` ran every stored reference
+solution against the full test set for anyone with **submit** access — the
+same gate as taking the assessment — returning per-test pass/fail, timings and
+compile output. A learner could burn Judge0 capacity at will and probe the
+reference solutions. v2 exposes the check as `POST /assessments/{id}/
+reference-check` for assessment authors only. No legacy-side fix planned.

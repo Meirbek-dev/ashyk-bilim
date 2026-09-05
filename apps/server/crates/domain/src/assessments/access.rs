@@ -124,7 +124,7 @@ impl AssessmentsService {
 
     /// Legacy `_require_submit_access`. Returns whether the actor is a
     /// teacher previewing.
-    async fn require_submit_access(
+    pub(crate) async fn require_submit_access(
         &self,
         actor: &Actor,
         assessment: &Assessment,

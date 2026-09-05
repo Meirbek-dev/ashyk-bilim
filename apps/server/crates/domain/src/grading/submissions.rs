@@ -11,7 +11,7 @@
 use std::time::Duration;
 
 use ab_core::assessments::{
-    AssessmentKind, AutoSubmitReason, GradeReleaseMode, ItemKind, SubmissionStatus,
+    AssessmentKind, AutoSubmitReason, CodeRunStatus, GradeReleaseMode, ItemKind, SubmissionStatus,
 };
 use ab_core::id::{AssessmentId, SubmissionId};
 use ab_core::{Error, ErrorCode, Result};
@@ -22,8 +22,12 @@ use sqlx::PgPool;
 pub use ab_db::submissions::SubmissionRow as Submission;
 
 use crate::assessments::access::EffectivePolicy;
+use crate::assessments::items::ItemBody;
 use crate::assessments::service::{Assessment, AssessmentsService, Item};
-use crate::grading::answers::{self, Answers, ItemShape, answers_to_value, parse_answers};
+use crate::code::{CodeRunner, FinalRun, FinalTarget};
+use crate::grading::answers::{
+    self, Answers, ItemAnswer, ItemShape, answers_to_value, parse_answers,
+};
 use crate::grading::breakdown::GradingBreakdown;
 use crate::grading::grader::{self, AutoGrade, CaseOutcome, GraderPolicy};
 use crate::grading::penalties::{self, PenaltyInput};
@@ -117,6 +121,31 @@ impl Verdict {
             },
         }
     }
+}
+
+/// No automatic grade: a teacher must score this attempt.
+const fn manual_review() -> AutoGrade {
+    AutoGrade {
+        auto_score: 0.0,
+        breakdown: GradingBreakdown {
+            items: Vec::new(),
+            needs_manual_review: true,
+            auto_graded: false,
+            feedback: String::new(),
+        },
+    }
+}
+
+/// Every test failed — a blank answer or one no runner will accept.
+fn failed_cases(body: &crate::assessments::items::CodeBody) -> Vec<CaseOutcome> {
+    body.tests
+        .iter()
+        .map(|t| CaseOutcome {
+            test_id: t.id.clone(),
+            weight: f64::from(t.weight.max(1)),
+            passed: false,
+        })
+        .collect()
 }
 
 /// Anti-cheat blocks only when a detector is enabled and the threshold is hit.
@@ -218,15 +247,23 @@ pub struct SubmissionsService {
     pool: PgPool,
     assessments: AssessmentsService,
     limiter: RateLimiter,
+    /// Runs code-challenge tests at submit time.
+    runner: CodeRunner,
 }
 
 impl SubmissionsService {
     #[must_use]
-    pub const fn new(pool: PgPool, assessments: AssessmentsService, limiter: RateLimiter) -> Self {
+    pub const fn new(
+        pool: PgPool,
+        assessments: AssessmentsService,
+        limiter: RateLimiter,
+        runner: CodeRunner,
+    ) -> Self {
         Self {
             pool,
             assessments,
             limiter,
+            runner,
         }
     }
 
@@ -604,7 +641,7 @@ impl SubmissionsService {
             None => Self::merge(&ctx, Answers::new())?,
         };
         let fresh = Self::finalize(
-            &self.pool,
+            &self.runner,
             ctx,
             answers,
             FinalizeOptions {
@@ -621,11 +658,12 @@ impl SubmissionsService {
 
     /// The pipeline proper. Returns (row, time limit, item count).
     async fn finalize(
-        pool: &PgPool,
+        runner: &CodeRunner,
         ctx: Context,
         answers: Answers,
         opts: FinalizeOptions,
     ) -> Result<(Submission, Option<i32>, usize)> {
+        let pool = runner.pool();
         let now = now_unix();
         let Context {
             submission,
@@ -639,7 +677,15 @@ impl SubmissionsService {
         }
         let violation_exceeded = violation_exceeded(&assessment, opts.violation_count);
 
-        let grade = Self::auto_grade(pool, &submission, &assessment, &items, &answers).await?;
+        let grade = Self::auto_grade(
+            runner,
+            &submission,
+            &assessment,
+            &items,
+            &answers,
+            opts.skip_constraints,
+        )
+        .await?;
         let late_pct = penalties::late_penalty_pct(
             effective.late_policy,
             effective.due_at,
@@ -750,12 +796,18 @@ impl SubmissionsService {
 
     /// Kind-dispatched auto grade. Code challenges grade from the newest
     /// final run; without one they wait for a human.
+    /// Kind-dispatched auto grade. Code challenges run their tests on Judge0
+    /// here (a `final` run, replayed if the submit is retried). `lenient` is
+    /// the timer path: it cannot show the learner an error, so a compile
+    /// error scores what it earned (nothing) and an unavailable runner
+    /// hands the attempt to a human instead of blocking the deadline.
     async fn auto_grade(
-        pool: &PgPool,
+        runner: &CodeRunner,
         submission: &Submission,
         assessment: &Assessment,
         items: &[Item],
         answers: &Answers,
+        lenient: bool,
     ) -> Result<AutoGrade> {
         if assessment.kind != AssessmentKind::CodeChallenge {
             return Ok(grader::grade_quiz(
@@ -768,49 +820,93 @@ impl SubmissionsService {
             ));
         }
         let Some(item) = items.iter().find(|i| i.kind == ItemKind::Code) else {
-            return Ok(AutoGrade {
-                auto_score: 0.0,
-                breakdown: GradingBreakdown {
-                    items: Vec::new(),
-                    needs_manual_review: true,
-                    auto_graded: false,
-                    feedback: String::new(),
-                },
-            });
+            return Ok(manual_review());
         };
-        let Some(run) = ab_db::submissions::latest_final_run(pool, submission.id, item.id).await?
-        else {
-            return Ok(AutoGrade {
-                auto_score: 0.0,
-                breakdown: GradingBreakdown {
-                    items: Vec::new(),
-                    needs_manual_review: true,
-                    auto_graded: false,
-                    feedback: String::new(),
-                },
-            });
+        let ItemBody::Code(body) = &item.body else {
+            return Ok(manual_review());
         };
-        let cases: Vec<CaseOutcome> = ab_db::submissions::list_code_run_cases(pool, run.id)
-            .await?
-            .into_iter()
-            .map(|c| CaseOutcome {
-                test_id: c.test_id,
-                weight: c.weight,
-                passed: c.passed,
-            })
-            .collect();
-        Ok(grader::grade_code(item, &cases, answers.get(&item.id)))
+        let answer = answers.get(&item.id);
+        let (language_id, source) = match answer {
+            Some(ItemAnswer::Code { language, source }) => (*language, source.as_str()),
+            _ => (0, ""),
+        };
+        if source.trim().is_empty() {
+            // Nothing to run: every test fails (legacy scored 0 with no run).
+            return Ok(grader::grade_code(item, &failed_cases(body), answer));
+        }
+        let target = FinalTarget {
+            submission_id: submission.id,
+            assessment_id: assessment.id,
+            item_id: item.id,
+            user_id: submission.user_id,
+        };
+        let outcome = runner.final_run(target, body, language_id, source).await?;
+        let cases: Vec<CaseOutcome> = match outcome {
+            FinalRun::Ran(run) => {
+                if run.status == CodeRunStatus::InternalError {
+                    if lenient {
+                        return Ok(manual_review());
+                    }
+                    return Err(Error::app_with_details(
+                        ErrorCode::CodeRunnerDegraded,
+                        run.error_message
+                            .unwrap_or_else(|| "code runner rejected the submission".into()),
+                        serde_json::json!({ "is_retryable": false, "item_id": item.id }),
+                    ));
+                }
+                if run.status == CodeRunStatus::CompileError && !lenient {
+                    return Err(Error::app_with_details(
+                        ErrorCode::CompileError,
+                        "source code does not compile",
+                        serde_json::json!({
+                            "item_id": item.id, "run_id": run.id,
+                            "compile_output": run.compile_output,
+                        }),
+                    ));
+                }
+                run.cases
+                    .iter()
+                    .map(|c| CaseOutcome {
+                        test_id: c.test_id.clone(),
+                        weight: c.weight,
+                        passed: c.passed,
+                    })
+                    .collect()
+            }
+            FinalRun::Degraded(message) => {
+                if lenient {
+                    return Ok(manual_review());
+                }
+                return Err(Error::app_with_details(
+                    ErrorCode::CodeRunnerDegraded,
+                    message,
+                    serde_json::json!({ "is_retryable": true, "item_id": item.id }),
+                ));
+            }
+            FinalRun::LanguageNotAllowed { allowed } => {
+                if !lenient {
+                    return Err(Error::app_with_details(
+                        ErrorCode::LanguageNotAllowed,
+                        "the answer's language is not allowed for this item",
+                        serde_json::json!({ "item_id": item.id, "allowed_language_ids": allowed }),
+                    ));
+                }
+                failed_cases(body)
+            }
+        };
+        Ok(grader::grade_code(item, &cases, answer))
     }
 
     // ── Timer sweep (system actor) ──────────────────────────────────────
 
     /// Auto-submit every open timed draft past its deadline. Constraints
     /// are skipped (the deadline IS the reason); penalties still apply.
-    pub async fn sweep_expired_drafts(pool: &PgPool, limit: i64) -> Result<usize> {
+    pub async fn sweep_expired_drafts(runner: &CodeRunner, limit: i64) -> Result<usize> {
+        let pool = runner.pool();
         let ids = ab_db::submissions::list_expired_drafts(pool, limit).await?;
         let mut done = 0;
         for id in ids {
-            match Self::auto_submit_one(pool, id).await {
+            match Self::auto_submit_one(runner, id).await {
                 Ok(()) => done += 1,
                 Err(err) => {
                     let attempts = ab_db::submissions::get_submission(pool, id)
@@ -825,7 +921,8 @@ impl SubmissionsService {
         Ok(done)
     }
 
-    async fn auto_submit_one(pool: &PgPool, id: SubmissionId) -> Result<()> {
+    async fn auto_submit_one(runner: &CodeRunner, id: SubmissionId) -> Result<()> {
+        let pool = runner.pool();
         let submission = ab_db::submissions::get_submission(pool, id)
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
@@ -857,7 +954,7 @@ impl SubmissionsService {
         )?;
         let violation_count = submission.violation_count;
         Self::finalize(
-            pool,
+            runner,
             Context {
                 submission,
                 assessment,

@@ -14,13 +14,18 @@
     clippy::missing_panics_doc
 )]
 
-use std::sync::Arc;
+pub mod judge0;
 
+use std::sync::Arc;
+use std::time::Duration;
+
+use ab_clients::judge0::Judge0Client;
 use ab_clients::zitadel::{ZitadelClient, ZitadelConfig};
 use ab_core::config::{
-    Config, DatabaseConfig, Environment, RedisConfig, ServerConfig, TelemetryConfig,
+    Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ServerConfig, TelemetryConfig,
 };
 use ab_core::id::UserId;
+use ab_domain::code::CodeRunner;
 use ab_domain::identity::IdentityService;
 use axum::Router;
 use axum::body::Body;
@@ -57,6 +62,7 @@ pub fn test_config() -> Config {
         zitadel: None,
         google: None,
         storage: None,
+        judge0: None,
         telemetry: TelemetryConfig {
             json_logs: false,
             otlp_endpoint: None,
@@ -72,6 +78,9 @@ pub struct TestApp {
     pub zitadel: MockServer,
     /// Wiremock standing in for Google's OAuth endpoints.
     pub google: MockServer,
+    /// Wiremock standing in for Judge0 — see [`judge0::FakeJudge`].
+    pub judge0: MockServer,
+    judge0_client: Arc<Judge0Client>,
 }
 
 /// The Google OAuth client id used by the test app (id_token `aud` must match).
@@ -84,6 +93,17 @@ impl TestApp {
     pub async fn spawn(pool: PgPool) -> Self {
         let zitadel = MockServer::start().await;
         let google = MockServer::start().await;
+        let judge0 = MockServer::start().await;
+        let judge0_client = Arc::new(
+            Judge0Client::new(ab_clients::judge0::Judge0Config {
+                base_url: judge0.uri(),
+                api_key: None,
+                request_timeout: Duration::from_secs(5),
+                poll_interval: Duration::from_millis(10),
+                poll_max_wait: Duration::from_secs(3),
+            })
+            .expect("test judge0 client"),
+        );
         let sessions = ab_domain::identity::SessionStore::connect(&test_redis_url())
             .await
             .expect("test redis reachable (see AGENTS.md local dev stack)");
@@ -129,6 +149,7 @@ impl TestApp {
             identity,
             Some(google_auth),
             storage,
+            Some(judge0_client.clone()),
         );
         let router = ab_api::build_router(state).expect("test router must build");
         Self {
@@ -137,7 +158,19 @@ impl TestApp {
             sessions,
             zitadel,
             google,
+            judge0,
+            judge0_client,
         }
+    }
+
+    /// The same runner the app uses — for driving the auto-submit sweep.
+    #[must_use]
+    pub fn code_runner(&self) -> CodeRunner {
+        CodeRunner::new(
+            self.pool.clone(),
+            Some(self.judge0_client.clone()),
+            Judge0Limits::default(),
+        )
     }
 
     /// Insert a user row (Zitadel-linked) with the given system roles.

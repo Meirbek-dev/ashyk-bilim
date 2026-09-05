@@ -40,7 +40,93 @@ pub struct Config {
     pub google: Option<GoogleOauthConfig>,
     /// Required by `serve`/`worker` (uploads, media); optional elsewhere.
     pub storage: Option<StorageSettings>,
+    /// Code execution. Unset = code runs answer 503 `code-runner-degraded`
+    /// and code challenges fall back to manual review.
+    pub judge0: Option<Judge0Config>,
     pub telemetry: TelemetryConfig,
+}
+
+/// Judge0 connection + the platform's own execution limits. Defaults mirror
+/// the legacy `JUDGE0_*` settings; only `base_url` is required.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Judge0Config {
+    /// Origin only, no trailing slash (`http://judge0-server:2358` in compose).
+    pub base_url: String,
+    /// Sent as `X-Auth-Token` when set (Judge0 `AUTHN_TOKEN`).
+    pub api_key: Option<SecretString>,
+    /// Per-HTTP-call timeout.
+    #[serde(default = "Judge0Config::default_request_timeout_secs")]
+    pub request_timeout_secs: f64,
+    #[serde(default = "Judge0Config::default_poll_interval_ms")]
+    pub poll_interval_ms: u64,
+    /// Total wait for a batch to finish. Must stay under the API request
+    /// timeout (30s) — runs execute inside the request.
+    #[serde(default = "Judge0Config::default_poll_max_wait_secs")]
+    pub poll_max_wait_secs: f64,
+    #[serde(default)]
+    pub limits: Judge0Limits,
+}
+
+impl Judge0Config {
+    const fn default_request_timeout_secs() -> f64 {
+        10.0
+    }
+    const fn default_poll_interval_ms() -> u64 {
+        500
+    }
+    const fn default_poll_max_wait_secs() -> f64 {
+        25.0
+    }
+}
+
+/// Size caps and the language allowlist (legacy defaults).
+#[derive(Debug, Clone, Deserialize)]
+pub struct Judge0Limits {
+    #[serde(default = "Judge0Limits::default_max_source_bytes")]
+    pub max_source_bytes: usize,
+    #[serde(default = "Judge0Limits::default_max_stdin_bytes")]
+    pub max_stdin_bytes: usize,
+    /// stdout/stderr/compile output kept per case (truncated beyond).
+    #[serde(default = "Judge0Limits::default_max_output_bytes")]
+    pub max_output_bytes: usize,
+    /// Judge0 `max_file_size` (KB) for the sandbox.
+    #[serde(default = "Judge0Limits::default_max_output_file_kb")]
+    pub max_output_file_kb: i32,
+    /// Empty = every non-archived Judge0 language.
+    #[serde(default = "Judge0Limits::default_allowed_language_ids")]
+    pub allowed_language_ids: Vec<i32>,
+}
+
+impl Judge0Limits {
+    const fn default_max_source_bytes() -> usize {
+        200_000
+    }
+    const fn default_max_stdin_bytes() -> usize {
+        50_000
+    }
+    const fn default_max_output_bytes() -> usize {
+        100_000
+    }
+    const fn default_max_output_file_kb() -> i32 {
+        128
+    }
+    /// C, C++, Go, Java 13, Node 12, PHP, Python 3.8, Ruby, Rust, TypeScript,
+    /// Kotlin, Swift — the legacy allowlist.
+    fn default_allowed_language_ids() -> Vec<i32> {
+        vec![50, 54, 60, 62, 63, 68, 71, 72, 73, 74, 78, 83]
+    }
+}
+
+impl Default for Judge0Limits {
+    fn default() -> Self {
+        Self {
+            max_source_bytes: Self::default_max_source_bytes(),
+            max_stdin_bytes: Self::default_max_stdin_bytes(),
+            max_output_bytes: Self::default_max_output_bytes(),
+            max_output_file_kb: Self::default_max_output_file_kb(),
+            allowed_language_ids: Self::default_allowed_language_ids(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -159,6 +245,20 @@ impl Config {
                 "min_connections": self.database.min_connections,
             },
             "redis": { "url": self.redis.url.as_ref().map(|_| "[redacted]") },
+            "judge0": self.judge0.as_ref().map(|j| serde_json::json!({
+                "base_url": j.base_url,
+                "api_key": j.api_key.as_ref().map(|_| "[redacted]"),
+                "request_timeout_secs": j.request_timeout_secs,
+                "poll_interval_ms": j.poll_interval_ms,
+                "poll_max_wait_secs": j.poll_max_wait_secs,
+                "limits": {
+                    "max_source_bytes": j.limits.max_source_bytes,
+                    "max_stdin_bytes": j.limits.max_stdin_bytes,
+                    "max_output_bytes": j.limits.max_output_bytes,
+                    "max_output_file_kb": j.limits.max_output_file_kb,
+                    "allowed_language_ids": j.limits.allowed_language_ids,
+                },
+            })),
             "telemetry": {
                 "json_logs": self.telemetry.json_logs,
                 "otlp_endpoint": self.telemetry.otlp_endpoint,
@@ -189,6 +289,7 @@ mod tests {
             zitadel: None,
             google: None,
             storage: None,
+            judge0: None,
             telemetry: TelemetryConfig {
                 json_logs: false,
                 otlp_endpoint: None,

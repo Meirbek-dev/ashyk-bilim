@@ -62,6 +62,10 @@ error_codes! {
     AccountDisabled => ("account-disabled", 403, "Account is disabled"),
     GoogleOauthExpired => ("google-oauth-expired", 400, "Google sign-in expired or invalid"),
     InvalidTotpCode => ("invalid-totp-code", 400, "Invalid one-time code"),
+    // Code execution
+    CodeRunnerDegraded => ("code-runner-degraded", 503, "Code runner temporarily unavailable"),
+    CompileError => ("compile-error", 422, "Source code does not compile"),
+    LanguageNotAllowed => ("language-not-allowed", 422, "Programming language not allowed"),
 }
 
 impl std::fmt::Display for ErrorCode {

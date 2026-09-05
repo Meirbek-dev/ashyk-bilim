@@ -86,6 +86,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/submissions/{id}/draft"),
     ("POST", "/api/v2/submissions/{id}/violations"),
     ("POST", "/api/v2/submissions/{id}/submit"),
+    // Code runs: submit access on the item's assessment (zero-grant probes
+    // 404 on the unknown item); reference checks are author-only.
+    ("POST", "/api/v2/assessment-items/{id}/runs"),
+    ("POST", "/api/v2/assessments/{id}/reference-check"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

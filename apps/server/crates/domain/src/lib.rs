@@ -13,6 +13,7 @@
 
 pub mod assessments;
 pub mod catalog;
+pub mod code;
 pub mod files;
 pub mod grading;
 pub mod identity;

@@ -19,3 +19,4 @@ sqlx = { workspace = true }
 tower = { workspace = true }
 uuid = { workspace = true }
 wiremock = { workspace = true }
+base64.workspace = true

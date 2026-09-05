@@ -6,6 +6,7 @@
 
 pub mod assessments;
 pub mod auth;
+pub mod code;
 pub mod collections;
 pub mod courses;
 pub mod curriculum;

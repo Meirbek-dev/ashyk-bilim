@@ -46,6 +46,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "usergroups", description = "Cohorts: member sets linkable to courses"),
         (name = "assessments", description = "Quizzes, exams, code challenges: authoring and lifecycle"),
         (name = "submissions", description = "Learner attempts: start, draft, submit"),
+        (name = "code", description = "Code execution: runs, reference checks, languages"),
     )
 )]
 struct ApiDoc;
@@ -172,6 +173,10 @@ fn submission_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::submissions::save_draft))
         .routes(routes!(routes::submissions::report_violation))
         .routes(routes!(routes::submissions::submit_submission))
+        .routes(routes!(routes::code::run_item))
+        .routes(routes!(routes::code::get_run))
+        .routes(routes!(routes::code::reference_check))
+        .routes(routes!(routes::code::languages))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

@@ -3,11 +3,14 @@
 //! - `submissions:auto-submit` (every minute): timed drafts past their
 //!   deadline are submitted with `auto_submit_reason = time_expired`;
 //!   failures back off per row (120s · 2ⁿ, five tries) so one poisoned
-//!   draft never starves the rest.
+//!   draft never starves the rest. Code challenges run their final tests
+//!   through the worker's own Judge0 client; with the runner down they go
+//!   to manual review rather than waiting.
 //! - `submissions:sweep-idempotency` (hourly): `Idempotency-Key` replays
 //!   older than 24h are dropped.
 
 use ab_core::Result;
+use ab_domain::code::CodeRunner;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use sqlx::PgPool;
@@ -22,13 +25,13 @@ const AUTO_SUBMIT_BATCH: i64 = 200;
 const IDEMPOTENCY_TTL_SECS: f64 = 24.0 * 3600.0;
 
 pub struct AutoSubmitter {
-    pool: PgPool,
+    runner: CodeRunner,
 }
 
 impl AutoSubmitter {
     #[must_use]
-    pub const fn new(pool: PgPool) -> Self {
-        Self { pool }
+    pub const fn new(runner: CodeRunner) -> Self {
+        Self { runner }
     }
 }
 
@@ -38,10 +41,10 @@ impl JobHandler for AutoSubmitter {
     }
 
     fn handle(&self, _payload: serde_json::Value) -> BoxFuture<'static, Result<()>> {
-        let pool = self.pool.clone();
+        let runner = self.runner.clone();
         async move {
             let submitted = ab_domain::grading::SubmissionsService::sweep_expired_drafts(
-                &pool,
+                &runner,
                 AUTO_SUBMIT_BATCH,
             )
             .await?;

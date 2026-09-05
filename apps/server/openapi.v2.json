@@ -431,6 +431,121 @@
         }
       }
     },
+    "/api/v2/assessment-items/{id}/runs": {
+      "post": {
+        "tags": [
+          "code"
+        ],
+        "summary": "Run code against an item's visible tests (or one custom input).",
+        "description": "Does not affect any grade — hidden tests only run at submit. Needs\nsubmit access to the assessment (authors may preview and see hidden\ndata). With an `Idempotency-Key`, a retry with the same source, input\nand language replays the finished run (200); a different payload under\nthe same key is 409. Limited to 20 runs per minute per user.",
+        "operationId": "run_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Code item id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentItemId"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client retry token (optional)",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Replayed earlier run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeRun"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Executed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeRun"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency-Key reused for a different run",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Source or input too large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Blank source, wrong item kind, or language not allowed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many runs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Code runner unavailable (run recorded as degraded)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/assessments": {
       "post": {
         "tags": [
@@ -1238,6 +1353,59 @@
         }
       }
     },
+    "/api/v2/assessments/{id}/reference-check": {
+      "post": {
+        "tags": [
+          "code"
+        ],
+        "summary": "Run every reference solution against the full test set (authors only).",
+        "description": "One entry per language the item allows; `missing_solution` when no\nreference is stored for it.",
+        "operationId": "reference_check",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per-language verdicts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceCheckResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No authoring access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No code item",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/assessments/{id}/submissions": {
       "post": {
         "tags": [
@@ -1970,6 +2138,82 @@
           },
           "403": {
             "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/code-runs/{id}": {
+      "get": {
+        "tags": [
+          "code"
+        ],
+        "summary": "A run by id: its owner (hidden tests masked) or an assessment author.",
+        "operationId": "get_run",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Code run id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CodeRunId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeRun"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or not yours",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/code/languages": {
+      "get": {
+        "tags": [
+          "code"
+        ],
+        "summary": "Languages the platform allows for code items (from Judge0, cached).",
+        "operationId": "languages",
+        "responses": {
+          "200": {
+            "description": "Languages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LanguageInfo"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Code runner unavailable",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4845,6 +5089,103 @@
         "type": "string",
         "format": "uuid"
       },
+      "CaseResult": {
+        "type": "object",
+        "description": "One test's outcome. Hidden tests lose `stdin`/`expected`/`actual`/\n`stdout`/`stderr` for non-authors (see [`CodeRun::masked`]).",
+        "required": [
+          "test_id",
+          "passed",
+          "is_visible",
+          "status_description",
+          "description",
+          "weight"
+        ],
+        "properties": {
+          "actual": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`stdout` with surrounding whitespace trimmed (what was compared)."
+          },
+          "compile_output": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "expected": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_visible": {
+            "type": "boolean"
+          },
+          "memory_kb": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "status_description": {
+            "type": "string"
+          },
+          "status_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "stderr": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stdin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stdout": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_id": {
+            "type": "string"
+          },
+          "time_seconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "weight": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "Chapter": {
         "type": "object",
         "required": [
@@ -5012,6 +5353,130 @@
             "format": "int32"
           }
         }
+      },
+      "CodeRun": {
+        "type": "object",
+        "description": "A code run and its per-test results. Learners never see hidden tests'\ninput, expected output, or their program's output on them.",
+        "required": [
+          "id",
+          "assessment_id",
+          "item_id",
+          "purpose",
+          "status",
+          "language_id",
+          "passed",
+          "total",
+          "replayed",
+          "created_at_unix",
+          "cases"
+        ],
+        "properties": {
+          "assessment_id": {
+            "$ref": "#/components/schemas/AssessmentId"
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseResult"
+            }
+          },
+          "compile_output": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finished_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CodeRunId"
+          },
+          "item_id": {
+            "$ref": "#/components/schemas/AssessmentItemId"
+          },
+          "language_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "passed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/CodeRunPurpose"
+          },
+          "replayed": {
+            "type": "boolean",
+            "description": "Served from an earlier run under the same `Idempotency-Key`."
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Weighted pass share 0..100; `null` for custom-input runs."
+          },
+          "status": {
+            "$ref": "#/components/schemas/CodeRunStatus"
+          },
+          "submission_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionId"
+              }
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CodeRunId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "CodeRunPurpose": {
+        "type": "string",
+        "enum": [
+          "custom",
+          "visible",
+          "final",
+          "reference_check"
+        ]
+      },
+      "CodeRunStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "accepted",
+          "wrong_answer",
+          "compile_error",
+          "runtime_error",
+          "time_limit",
+          "internal_error",
+          "degraded"
+        ]
       },
       "CodeTestCase": {
         "type": "object",
@@ -5795,7 +6260,10 @@
           "csrf-rejected",
           "account-disabled",
           "google-oauth-expired",
-          "invalid-totp-code"
+          "invalid-totp-code",
+          "code-runner-degraded",
+          "compile-error",
+          "language-not-allowed"
         ]
       },
       "FieldError": {
@@ -6249,6 +6717,28 @@
           }
         },
         "additionalProperties": false
+      },
+      "LanguageInfo": {
+        "type": "object",
+        "description": "A Judge0 language the platform allows.",
+        "required": [
+          "id",
+          "name",
+          "monaco_language"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monaco_language": {
+            "type": "string",
+            "description": "Monaco editor language id."
+          },
+          "name": {
+            "type": "string"
+          }
+        }
       },
       "LatePolicy": {
         "oneOf": [
@@ -6808,6 +7298,79 @@
           }
         }
       },
+      "ReferenceCheck": {
+        "type": "object",
+        "description": "One language's verdict from the author's reference check.",
+        "required": [
+          "language_id",
+          "ok",
+          "status",
+          "passed",
+          "total",
+          "cases"
+        ],
+        "properties": {
+          "cases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseResult"
+            }
+          },
+          "compile_output": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "language_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ok": {
+            "type": "boolean",
+            "description": "Every test passed."
+          },
+          "passed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "status": {
+            "type": "string",
+            "description": "Run status, or `missing_solution` when no reference exists."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReferenceCheckResponse": {
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReferenceCheck"
+            }
+          }
+        }
+      },
       "ReleaseState": {
         "type": "string",
         "description": "What the learner may see of a grade (legacy `release_state`).",
@@ -6877,6 +7440,32 @@
             "type": "string"
           }
         }
+      },
+      "RunRequest": {
+        "type": "object",
+        "description": "Run source against an item's visible tests, or against one custom input.",
+        "required": [
+          "language_id",
+          "source"
+        ],
+        "properties": {
+          "custom_input": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When present the run is unscored: one case named `custom`."
+          },
+          "language_id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Judge0 language id."
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       },
       "SaveDraftRequest": {
         "type": "object",
@@ -7930,6 +8519,10 @@
     {
       "name": "submissions",
       "description": "Learner attempts: start, draft, submit"
+    },
+    {
+      "name": "code",
+      "description": "Code execution: runs, reference checks, languages"
     }
   ]
 }

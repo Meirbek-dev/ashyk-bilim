@@ -96,6 +96,26 @@ podman run --rm --network ashyq-dev -e AWS_ACCESS_KEY_ID=ashyq-dev -e AWS_SECRET
 # …and --bucket ab-private. Tests read TEST_S3_ENDPOINT (default http://localhost:9002).
 ```
 
+Redis for tests (port 6380):
+
+```
+podman run -d --rm --name ashyq-test-redis --network ashyq-dev -p 6380:6379 docker.io/library/redis:8
+```
+
+Gotchas (2026-09-05):
+- **Git Bash mangles container paths.** MSYS rewrites `/data` in
+  `-e RUSTFS_VOLUMES=/data` and `-v vol:/data` into `C:/Program Files/Git/data`
+  before podman sees it — RustFS then dies with `Volume not found`. Run
+  podman from PowerShell, or prefix Bash commands with `MSYS_NO_PATHCONV=1`.
+- RustFS wants a named volume: add `-v ashyq-rustfs-data:/data` to the
+  command above (rc.1 no longer creates the directory itself).
+- The `ashyq_dev` database (sqlx compile-time checks) lives in the same
+  Postgres container: after recreating it, `psql -c "CREATE DATABASE
+  ashyq_dev"` then `cargo sqlx migrate run` with `DATABASE_URL` pointing at it.
+- Build with `--workspace`. A `-p <crate>` subset changes feature
+  unification and pulls in `aws-lc-sys`, whose C build fails on this
+  machine; the workspace build never needs it.
+
 Validated against it (keep these working): `GET /debug/healthz`;
 `POST /v2/users/human` (password + pre-verified email — the ETL import path);
 `POST /v2/sessions` with `checks.user.loginName` + `checks.password` → returns

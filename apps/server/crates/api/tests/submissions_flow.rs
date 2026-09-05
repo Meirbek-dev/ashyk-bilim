@@ -540,7 +540,7 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
         .await;
     let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
     let remaining = draft.json()["time_remaining_seconds"].as_i64().unwrap();
-    assert!((55..=60).contains(&remaining), "{remaining}");
+    assert!((50..=65).contains(&remaining), "{remaining} (clock skew between app and DB is tolerated)");
     let saved = app
         .send(patch_draft(
             &alice,
@@ -584,9 +584,10 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
     );
 
     // The sweep submits what was saved; a second sweep finds nothing.
-    let swept = ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.pool, 10)
-        .await
-        .unwrap();
+    let swept =
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), 10)
+            .await
+            .unwrap();
     assert_eq!(swept, 1);
     let mine = app
         .get_as(&alice, &format!("/api/v2/submissions/{sub_id}"))
@@ -603,9 +604,10 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
     .unwrap();
     assert_eq!(reason.as_deref(), Some("time_expired"));
     assert!(auto_submitted);
-    let again = ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.pool, 10)
-        .await
-        .unwrap();
+    let again =
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), 10)
+            .await
+            .unwrap();
     assert_eq!(again, 0);
     let state = app
         .get_as(&alice, &format!("/api/v2/assessments/{id}/attempt-state"))

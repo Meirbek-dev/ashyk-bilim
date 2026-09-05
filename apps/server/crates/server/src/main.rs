@@ -145,9 +145,12 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     };
 
     let storage = build_storage(&config)?;
+    let judge0 = build_judge0(&config)?;
 
     let addr = format!("{}:{}", config.server.host, config.server.port);
-    let router = ab_api::build_router(AppState::new(pool, config, identity, google, storage))?;
+    let router = ab_api::build_router(AppState::new(
+        pool, config, identity, google, storage, judge0,
+    ))?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
     axum::serve(listener, router)
@@ -176,9 +179,38 @@ fn build_storage(
     ))
 }
 
+/// Judge0 is optional: without `AB__JUDGE0__BASE_URL` code runs answer 503
+/// and code challenges are graded by hand.
+fn build_judge0(
+    config: &Config,
+) -> anyhow::Result<Option<std::sync::Arc<ab_clients::judge0::Judge0Client>>> {
+    let Some(settings) = config.judge0.clone() else {
+        tracing::info!("code execution not configured (AB__JUDGE0__* unset)");
+        return Ok(None);
+    };
+    Ok(Some(std::sync::Arc::new(
+        ab_clients::judge0::Judge0Client::new(ab_clients::judge0::Judge0Config {
+            base_url: settings.base_url,
+            api_key: settings.api_key,
+            request_timeout: std::time::Duration::from_secs_f64(settings.request_timeout_secs),
+            poll_interval: std::time::Duration::from_millis(settings.poll_interval_ms),
+            poll_max_wait: std::time::Duration::from_secs_f64(settings.poll_max_wait_secs),
+        })?,
+    )))
+}
+
 async fn worker(config: Config) -> anyhow::Result<()> {
     let pool = ab_db::connect(&config.database).await?;
     let storage = build_storage(&config)?;
+    let runner = ab_domain::code::CodeRunner::new(
+        pool.clone(),
+        build_judge0(&config)?,
+        config
+            .judge0
+            .as_ref()
+            .map(|j| j.limits.clone())
+            .unwrap_or_default(),
+    );
 
     // Recurring schedules are seeded idempotently at boot.
     ab_db::schedule::upsert(
@@ -218,9 +250,7 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         .register(ab_jobs::handlers::assessments::AssessmentPublisher::new(
             pool.clone(),
         ))?
-        .register(ab_jobs::handlers::submissions::AutoSubmitter::new(
-            pool.clone(),
-        ))?
+        .register(ab_jobs::handlers::submissions::AutoSubmitter::new(runner))?
         .register(ab_jobs::handlers::submissions::IdempotencySweeper::new(
             pool,
         ))?;
