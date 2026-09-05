@@ -23,7 +23,7 @@ tokio-util = "0.7.19"
 axum = { version = "0.8.9", features = ["macros"] }
 axum-extra = { version = "0.12.6", features = ["typed-header", "cookie"] }
 tower = "0.5.3"
-tower-http = { version = "0.7.0", features = [
+tower-http = { version = "0.7.1", features = [
   "trace",
   "cors",
   "compression-full",
@@ -44,8 +44,8 @@ sqlx = { version = "0.9.0", features = [
   "migrate",
   "macros",
 ] }
-uuid = { version = "1.24.1", features = ["v4", "v7", "serde"] }
-redis = { version = "1.6.0", features = ["tokio-comp", "connection-manager"] }
+uuid = { version = "1.26.0", features = ["v4", "v7", "serde"] }
+redis = { version = "1.7.0", features = ["tokio-comp", "connection-manager"] }
 sha2 = "0.11.0"
 time = "0.3.55"
 base64 = "0.23.1"
