@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM discussion_reactions\n           WHERE discussion_id = $1 AND user_id = $2 AND reaction = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c45d4fa52d6ee219000f908c74560fe6dac5ab39edeaca5bbbf133fe2750f24d"
+}

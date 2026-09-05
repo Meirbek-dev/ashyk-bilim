@@ -109,6 +109,12 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/trail/courses/{id}"),
     ("POST", "/api/v2/trail/activities/{id}"),
     ("DELETE", "/api/v2/trail/activities/{id}"),
+    // Discussions: discussion:create / update|delete (own or moderate) / read for toggles.
+    ("POST", "/api/v2/courses/{id}/discussions"),
+    ("PATCH", "/api/v2/discussions/{id}"),
+    ("DELETE", "/api/v2/discussions/{id}"),
+    ("PUT", "/api/v2/discussions/{id}/like"),
+    ("PUT", "/api/v2/discussions/{id}/dislike"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

@@ -410,3 +410,33 @@ and `services/learner_course_state.py`:
   (they have nothing to project); analytics that need "not started" counts
   per cohort compute them from membership (P7).
 
+## Discussions (2026-09-05, P6.2)
+
+Ported from `services/courses/discussions.py` onto the tables P2 already
+laid down (`course_discussions`, `discussion_reactions`):
+
+- **Counters are trigger-maintained.** The legacy incremented
+  `likes_count` / `dislikes_count` / `replies_count` in application code
+  (and clamped at zero on the way down), so they drifted. Two `AFTER` row
+  triggers recount from the reactions table and the active children; the
+  columns stay, so exports and analytics read them as before.
+- **One reaction per user per post.** The legacy had separate like and
+  dislike tables with no uniqueness; the two `PUT .../like` and
+  `.../dislike` toggles were already exclusive, and the non-toggle
+  `POST/DELETE .../like` pair (unused by the frontend) is dropped.
+- **Keyset paging** (`cursor` = last id, newest first for posts, oldest
+  first for replies) replaces `limit/offset`; `include_replies` still embeds
+  every active reply under each post on the page.
+- **Author summary carries no email** (id, username, display name, avatar
+  key) — the legacy returned the full `UserRead`, see FINDINGS #16 for the
+  same class of leak in search. A post outlives its author (`author: null`).
+- **Content rule kept:** HTML is stored as sent; it must contain visible
+  text after tag-stripping and is capped at 20k characters. No sanitizer
+  server-side — the client renders discussions through its existing
+  sanitizing renderer (P9 confirms).
+- Moderation grants: `discussion:moderate:platform` (moderator, maintainer)
+  edits/removes anything; `discussion:moderate:own` (instructor) does so on
+  courses the actor created; owners edit/delete their own via `:own`.
+  Hidden posts disappear from lists and take no reactions; only a moderator
+  can un-hide (the owner's PATCH on a hidden post 404s like everyone else's).
+

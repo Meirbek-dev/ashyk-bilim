@@ -1,0 +1,184 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.id AS \"id: DiscussionId\", d.course_id AS \"course_id: CourseId\",\n                  d.user_id AS \"user_id: UserId\", d.parent_id AS \"parent_id: DiscussionId\",\n                  d.content, d.status AS \"status: DiscussionStatus\",\n                  u.username AS \"username?\", u.display_name AS \"display_name?\", u.avatar_key,\n                  d.likes_count, d.dislikes_count, d.replies_count,\n                  (SELECT r.reaction FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.user_id = $2) AS \"my_reaction?: ReactionKind\",\n                  (extract(epoch FROM d.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM d.updated_at))::bigint AS \"updated_at!\"\n           FROM course_discussions d LEFT JOIN users u ON u.id = d.user_id\n           WHERE d.parent_id = $1 AND d.status = 'active'\n             AND ($3::uuid IS NULL OR d.id > $3)\n           ORDER BY d.id\n           LIMIT $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: DiscussionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "parent_id: DiscussionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "parent_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "content",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status: DiscussionStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "username?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "display_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "avatar_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "avatar_key"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "likes_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "likes_count"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "dislikes_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "dislikes_count"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "replies_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "replies_count"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "my_reaction?: ReactionKind",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "bede2dfcc1ef151155a8b3c7376b6b83d1d7f09d6d5afa21ff8b1cf1fc4d9829"
+}

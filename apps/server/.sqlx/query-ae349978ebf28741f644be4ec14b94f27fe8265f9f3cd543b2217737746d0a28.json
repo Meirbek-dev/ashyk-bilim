@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO discussion_reactions (discussion_id, user_id, reaction)\n               VALUES ($1, $2, $3)\n               ON CONFLICT (discussion_id, user_id) DO UPDATE SET reaction = EXCLUDED.reaction",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ae349978ebf28741f644be4ec14b94f27fe8265f9f3cd543b2217737746d0a28"
+}

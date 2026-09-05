@@ -81,6 +81,7 @@ typed_id!(TrailRunId);
 typed_id!(TrailStepId);
 typed_id!(ActivityProgressId);
 typed_id!(CourseProgressId);
+typed_id!(DiscussionId);
 typed_id!(JobId);
 
 #[cfg(test)]

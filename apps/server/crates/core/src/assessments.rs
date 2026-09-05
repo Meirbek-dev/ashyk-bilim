@@ -305,6 +305,23 @@ text_enum!(
     }
 );
 
+text_enum!(
+    /// Course discussion visibility (legacy `DiscussionStatusEnum`).
+    DiscussionStatus {
+        Active => "active",
+        Hidden => "hidden",
+        Deleted => "deleted",
+    }
+);
+
+text_enum!(
+    /// A reaction on a discussion post; one per user per post.
+    ReactionKind {
+        Like => "like",
+        Dislike => "dislike",
+    }
+);
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {

@@ -3204,6 +3204,138 @@
         }
       }
     },
+    "/api/v2/courses/{id}/discussions": {
+      "get": {
+        "tags": [
+          "discussions"
+        ],
+        "summary": "Newest posts first (keyset), optionally with replies embedded.",
+        "operationId": "list_discussions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "include_replies",
+            "in": "query",
+            "description": "Embed every active reply under each post.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/DiscussionId"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1..=100 (default 50).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscussionPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible course",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "discussions"
+        ],
+        "summary": "Post, or reply to a post (`parent_id`).",
+        "operationId": "create_discussion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDiscussionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Discussion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Empty content or nested reply",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/courses/{id}/gradebook": {
       "get": {
         "tags": [
@@ -3478,6 +3610,215 @@
                   "items": {
                     "$ref": "#/components/schemas/Usergroup"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/discussions/{id}": {
+      "delete": {
+        "tags": [
+          "discussions"
+        ],
+        "summary": "Remove a post with its replies and reactions (owner, or a moderator).",
+        "operationId": "delete_discussion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Discussion id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DiscussionId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "Not yours and not a moderator",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "discussions"
+        ],
+        "summary": "Edit content and/or status (owner, or a moderator).",
+        "operationId": "update_discussion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Discussion id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DiscussionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDiscussionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Discussion"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not yours and not a moderator",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/discussions/{id}/dislike": {
+      "put": {
+        "tags": [
+          "discussions"
+        ],
+        "summary": "Toggle a dislike (a standing like is replaced).",
+        "operationId": "toggle_dislike",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Discussion id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DiscussionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reaction state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/discussions/{id}/like": {
+      "put": {
+        "tags": [
+          "discussions"
+        ],
+        "summary": "Toggle a like (a standing dislike is replaced).",
+        "operationId": "toggle_like",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Discussion id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DiscussionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reaction state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/discussions/{id}/replies": {
+      "get": {
+        "tags": [
+          "discussions"
+        ],
+        "summary": "Replies under a post, oldest first (keyset).",
+        "operationId": "list_replies",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Discussion id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DiscussionId"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/DiscussionId"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1..=100 (default 50).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscussionPage"
                 }
               }
             }
@@ -8036,6 +8377,30 @@
         },
         "additionalProperties": false
       },
+      "CreateDiscussionRequest": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "HTML or text; must contain visible text."
+          },
+          "parent_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DiscussionId",
+                "description": "Reply to this post (one level)."
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateFileSubmissionRequest": {
         "allOf": [
           {
@@ -8261,6 +8626,170 @@
           "PAST_DUE",
           "MAX_ATTEMPTS_REACHED",
           "TIME_LIMIT_EXPIRED"
+        ]
+      },
+      "Discussion": {
+        "type": "object",
+        "required": [
+          "id",
+          "course_id",
+          "content",
+          "status",
+          "likes_count",
+          "dislikes_count",
+          "replies_count",
+          "is_liked",
+          "is_disliked",
+          "replies",
+          "is_owner",
+          "can_update",
+          "can_delete",
+          "can_moderate",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "author": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DiscussionAuthor"
+              }
+            ]
+          },
+          "can_delete": {
+            "type": "boolean"
+          },
+          "can_moderate": {
+            "type": "boolean"
+          },
+          "can_update": {
+            "type": "boolean"
+          },
+          "content": {
+            "type": "string"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dislikes_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "$ref": "#/components/schemas/DiscussionId"
+          },
+          "is_disliked": {
+            "type": "boolean"
+          },
+          "is_liked": {
+            "type": "boolean"
+          },
+          "is_owner": {
+            "type": "boolean"
+          },
+          "likes_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parent_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DiscussionId",
+                "description": "`null` for a top-level post."
+              }
+            ]
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Discussion"
+            },
+            "description": "Embedded when the list was asked for `include_replies` (replies\ncarry an empty list — one level only)."
+          },
+          "replies_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DiscussionStatus"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DiscussionAuthor": {
+        "type": "object",
+        "description": "The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
+        "required": [
+          "id",
+          "username",
+          "display_name"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "DiscussionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "DiscussionPage": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Discussion"
+            }
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DiscussionId"
+              }
+            ]
+          }
+        }
+      },
+      "DiscussionStatus": {
+        "type": "string",
+        "description": "Course discussion visibility (legacy `DiscussionStatusEnum`).",
+        "enum": [
+          "active",
+          "hidden",
+          "deleted"
         ]
       },
       "DraftRequest": {
@@ -10154,6 +10683,31 @@
           }
         }
       },
+      "ReactionState": {
+        "type": "object",
+        "required": [
+          "is_liked",
+          "is_disliked",
+          "likes_count",
+          "dislikes_count"
+        ],
+        "properties": {
+          "dislikes_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "is_disliked": {
+            "type": "boolean"
+          },
+          "is_liked": {
+            "type": "boolean"
+          },
+          "likes_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "Readiness": {
         "type": "object",
         "required": [
@@ -11486,6 +12040,28 @@
         },
         "additionalProperties": false
       },
+      "UpdateDiscussionRequest": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DiscussionStatus"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateItemRequest": {
         "type": "object",
         "properties": {
@@ -11996,6 +12572,10 @@
     {
       "name": "progress",
       "description": "Personal trail and learner-facing course state"
+    },
+    {
+      "name": "discussions",
+      "description": "Course discussions: posts, replies, reactions, moderation"
     }
   ]
 }

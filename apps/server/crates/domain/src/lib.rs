@@ -14,6 +14,7 @@
 pub mod assessments;
 pub mod catalog;
 pub mod code;
+pub mod community;
 pub mod events;
 pub mod files;
 pub mod grading;

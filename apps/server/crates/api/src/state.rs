@@ -10,6 +10,7 @@ use ab_domain::catalog::{
     CollectionsService, CoursesService, CurriculumService, PlatformService, SearchService,
 };
 use ab_domain::code::{CodeRunner, CodeRunsService};
+use ab_domain::community::DiscussionsService;
 use ab_domain::events::GradingEvents;
 use ab_domain::files::{FileSubmissionsService, UploadsService};
 use ab_domain::grading::{GradingService, SubmissionsService};
@@ -48,6 +49,7 @@ pub struct AppState {
     pub trail: TrailService,
     pub learner_state: LearnerStateService,
     pub progress: ProgressProjector,
+    pub discussions: DiscussionsService,
 }
 
 impl AppState {
@@ -91,6 +93,7 @@ impl AppState {
                 assessments.clone(),
             ),
             progress: ProgressProjector::new(pool.clone()),
+            discussions: DiscussionsService::new(pool.clone(), courses.clone()),
             grading: GradingService::new(pool.clone(), assessments.clone(), Some(events.clone())),
             events,
             code_runs: CodeRunsService::new(
