@@ -79,6 +79,13 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("POST", "/api/v2/assessments/{id}/overrides/{user_id}"),
     ("PUT", "/api/v2/assessments/{id}/overrides/{user_id}"),
     ("DELETE", "/api/v2/assessments/{id}/overrides/{user_id}"),
+    // Learner attempts: submit access (course + allowlist +
+    // assessment:submit:assigned) on start; ownership on the rest, where a
+    // zero-grant probe 404s on the unknown submission.
+    ("POST", "/api/v2/assessments/{id}/submissions"),
+    ("PATCH", "/api/v2/submissions/{id}/draft"),
+    ("POST", "/api/v2/submissions/{id}/violations"),
+    ("POST", "/api/v2/submissions/{id}/submit"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

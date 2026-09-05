@@ -577,12 +577,23 @@ pub struct AttemptState {
     pub is_teacher_preview: bool,
     pub effective: EffectivePolicy,
     pub disabled_reasons: Vec<ab_domain::assessments::access::DisabledReason>,
+    /// No open draft and nothing blocks a new attempt.
     pub can_start: bool,
+    /// An open draft exists and may still be worked on.
+    pub can_continue: bool,
+    pub draft_id: Option<ab_core::id::SubmissionId>,
+    pub attempts_used: i64,
+    /// `null` = unlimited.
+    pub attempts_remaining: Option<i64>,
 }
 
 impl From<ab_domain::assessments::access::AttemptState> for AttemptState {
     fn from(s: ab_domain::assessments::access::AttemptState) -> Self {
         Self {
+            can_continue: s.can_continue,
+            draft_id: s.draft_id,
+            attempts_used: s.attempts_used,
+            attempts_remaining: s.attempts_remaining,
             lifecycle: s.lifecycle,
             opens_at_unix: s.opens_at,
             is_teacher_preview: s.is_teacher_preview,

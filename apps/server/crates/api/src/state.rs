@@ -9,6 +9,8 @@ use ab_domain::catalog::{
     CollectionsService, CoursesService, CurriculumService, PlatformService, SearchService,
 };
 use ab_domain::files::UploadsService;
+use ab_domain::grading::SubmissionsService;
+use ab_domain::identity::rate_limit::RateLimiter;
 use ab_domain::identity::{
     GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsergroupsService,
     UsersService,
@@ -34,6 +36,7 @@ pub struct AppState {
     pub search: SearchService,
     pub usergroups: UsergroupsService,
     pub assessments: AssessmentsService,
+    pub submissions: SubmissionsService,
 }
 
 impl AppState {
@@ -47,7 +50,13 @@ impl AppState {
     ) -> Self {
         let sessions = identity.sessions().clone();
         let courses = CoursesService::new(pool.clone());
+        let assessments = AssessmentsService::new(pool.clone(), courses.clone());
         Self {
+            submissions: SubmissionsService::new(
+                pool.clone(),
+                assessments.clone(),
+                RateLimiter::new(sessions.redis()),
+            ),
             users: UsersService::new(pool.clone()),
             rbac: RbacAdminService::new(pool.clone(), sessions.clone()),
             uploads: UploadsService::new(pool.clone(), Arc::clone(&storage)),
@@ -56,7 +65,7 @@ impl AppState {
             platform: PlatformService::new(pool.clone()),
             search: SearchService::new(pool.clone()),
             usergroups: UsergroupsService::new(pool.clone()),
-            assessments: AssessmentsService::new(pool.clone(), courses.clone()),
+            assessments,
             courses,
             pool,
             config: Arc::new(config),

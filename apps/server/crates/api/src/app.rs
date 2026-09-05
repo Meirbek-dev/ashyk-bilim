@@ -45,12 +45,22 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "search", description = "Platform search"),
         (name = "usergroups", description = "Cohorts: member sets linkable to courses"),
         (name = "assessments", description = "Quizzes, exams, code challenges: authoring and lifecycle"),
+        (name = "submissions", description = "Learner attempts: start, draft, submit"),
     )
 )]
 struct ApiDoc;
 
-/// Every documented route, mounted relative to [`API_PREFIX`].
+/// Every documented route, mounted relative to [`API_PREFIX`]. One builder
+/// per context — a single chain grows the stack frame past clippy's limit.
 fn api_router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .merge(identity_routes())
+        .merge(catalog_routes())
+        .merge(assessment_routes())
+        .merge(submission_routes())
+}
+
+fn identity_routes() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(routes::health::live))
         .routes(routes!(routes::health::ready))
@@ -78,6 +88,22 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::uploads::create_upload))
         .routes(routes!(routes::uploads::finalize_upload))
         .routes(routes!(routes::uploads::download_upload))
+        .routes(routes!(routes::usergroups::create_usergroup))
+        .routes(routes!(routes::usergroups::list_usergroups))
+        .routes(routes!(routes::usergroups::get_usergroup))
+        .routes(routes!(routes::usergroups::update_usergroup))
+        .routes(routes!(routes::usergroups::delete_usergroup))
+        .routes(routes!(routes::usergroups::list_usergroup_members))
+        .routes(routes!(routes::usergroups::add_usergroup_members))
+        .routes(routes!(routes::usergroups::remove_usergroup_members))
+        .routes(routes!(routes::usergroups::list_usergroup_courses))
+        .routes(routes!(routes::usergroups::add_usergroup_courses))
+        .routes(routes!(routes::usergroups::remove_usergroup_courses))
+        .routes(routes!(routes::usergroups::usergroups_for_course))
+}
+
+fn catalog_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
         .routes(routes!(routes::courses::create_course))
         .routes(routes!(routes::courses::list_courses))
         .routes(routes!(routes::courses::get_course))
@@ -110,18 +136,10 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::platform::get_platform))
         .routes(routes!(routes::platform::update_platform))
         .routes(routes!(routes::search::search))
-        .routes(routes!(routes::usergroups::create_usergroup))
-        .routes(routes!(routes::usergroups::list_usergroups))
-        .routes(routes!(routes::usergroups::get_usergroup))
-        .routes(routes!(routes::usergroups::update_usergroup))
-        .routes(routes!(routes::usergroups::delete_usergroup))
-        .routes(routes!(routes::usergroups::list_usergroup_members))
-        .routes(routes!(routes::usergroups::add_usergroup_members))
-        .routes(routes!(routes::usergroups::remove_usergroup_members))
-        .routes(routes!(routes::usergroups::list_usergroup_courses))
-        .routes(routes!(routes::usergroups::add_usergroup_courses))
-        .routes(routes!(routes::usergroups::remove_usergroup_courses))
-        .routes(routes!(routes::usergroups::usergroups_for_course))
+}
+
+fn assessment_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
         .routes(routes!(routes::assessments::create_assessment))
         .routes(routes!(routes::assessments::get_assessment))
         .routes(routes!(routes::assessments::get_activity_assessment))
@@ -143,6 +161,17 @@ fn api_router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::assessments::update_override))
         .routes(routes!(routes::assessments::delete_override))
         .routes(routes!(routes::assessments::attempt_state))
+}
+
+fn submission_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::submissions::start_submission))
+        .routes(routes!(routes::submissions::current_draft))
+        .routes(routes!(routes::submissions::my_submissions))
+        .routes(routes!(routes::submissions::get_submission))
+        .routes(routes!(routes::submissions::save_draft))
+        .routes(routes!(routes::submissions::report_violation))
+        .routes(routes!(routes::submissions::submit_submission))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

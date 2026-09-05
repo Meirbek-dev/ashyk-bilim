@@ -14,4 +14,5 @@
 pub mod assessments;
 pub mod catalog;
 pub mod files;
+pub mod grading;
 pub mod identity;

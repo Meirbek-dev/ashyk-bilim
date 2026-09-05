@@ -83,6 +83,8 @@ pub enum DisabledReason {
     ScheduledNotOpen,
     Archived,
     PastDue,
+    MaxAttemptsReached,
+    TimeLimitExpired,
 }
 
 #[derive(Debug, Clone)]
@@ -92,7 +94,14 @@ pub struct AttemptState {
     pub is_teacher_preview: bool,
     pub effective: EffectivePolicy,
     pub disabled_reasons: Vec<DisabledReason>,
+    /// No open draft and nothing blocks.
     pub can_start: bool,
+    /// An open draft exists and nothing blocks.
+    pub can_continue: bool,
+    pub draft_id: Option<ab_core::id::SubmissionId>,
+    pub attempts_used: i64,
+    /// `None` = unlimited.
+    pub attempts_remaining: Option<i64>,
 }
 
 impl AssessmentsService {
@@ -323,8 +332,9 @@ impl AssessmentsService {
 
     /// The policy for one learner: the active (unexpired) override wins for
     /// attempts and due date; teacher preview lifts the attempt cap.
-    async fn effective_policy(
-        &self,
+    /// Pool-level so system actors (the timer sweep) can use it too.
+    pub async fn effective_policy_for(
+        pool: &sqlx::PgPool,
         assessment: &Assessment,
         user_id: UserId,
         teacher_preview: bool,
@@ -333,7 +343,7 @@ impl AssessmentsService {
         let active = if teacher_preview {
             None
         } else {
-            ab_db::assessments::get_override(&self.pool, assessment.id, user_id)
+            ab_db::assessments::get_override(pool, assessment.id, user_id)
                 .await?
                 .filter(|o| o.expires_at.is_none_or(|exp| exp > now))
         };
@@ -364,17 +374,19 @@ impl AssessmentsService {
         })
     }
 
-    /// What the learner may do right now (legacy `_build_attempt_state`,
-    /// minus the submission-dependent parts that arrive in P4).
+    /// What the learner may do right now (legacy `_build_attempt_state`).
     pub async fn attempt_state(&self, actor: &Actor, id: AssessmentId) -> Result<AttemptState> {
         let assessment = self.load(id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
         let teacher_preview = self
             .require_submit_access(actor, &assessment, &course)
             .await?;
-        let effective = self
-            .effective_policy(&assessment, actor.user_id, teacher_preview)
-            .await?;
+        let effective =
+            Self::effective_policy_for(&self.pool, &assessment, actor.user_id, teacher_preview)
+                .await?;
+        let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id).await?;
+        let attempts_used =
+            ab_db::submissions::count_completed_attempts(&self.pool, id, actor.user_id).await?;
 
         let now = now_unix();
         let mut reasons = Vec::new();
@@ -392,12 +404,31 @@ impl AssessmentsService {
             if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
                 reasons.push(DisabledReason::PastDue);
             }
+            // An open draft may still be finished even at the cap.
+            if let Some(max) = effective.max_attempts
+                && attempts_used >= i64::from(max)
+                && draft.is_none()
+            {
+                reasons.push(DisabledReason::MaxAttemptsReached);
+            }
+            if let (Some(open), Some(limit)) = (&draft, effective.time_limit_seconds)
+                && open.started_at.is_some_and(|s| now > s + i64::from(limit))
+            {
+                reasons.push(DisabledReason::TimeLimitExpired);
+            }
         }
+        let attempts_remaining = effective
+            .max_attempts
+            .map(|max| (i64::from(max) - attempts_used).max(0));
         Ok(AttemptState {
             lifecycle: assessment.lifecycle,
             opens_at: assessment.scheduled_at,
             is_teacher_preview: teacher_preview,
-            can_start: reasons.is_empty(),
+            can_start: draft.is_none() && reasons.is_empty(),
+            can_continue: draft.is_some() && reasons.is_empty(),
+            draft_id: draft.as_ref().map(|d| d.id),
+            attempts_used,
+            attempts_remaining,
             effective,
             disabled_reasons: reasons,
         })

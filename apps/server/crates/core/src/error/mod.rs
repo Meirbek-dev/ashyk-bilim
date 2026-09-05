@@ -62,6 +62,20 @@ impl Error {
         }
     }
 
+    /// An application error carrying machine-readable `details`
+    /// (e.g. the expected/actual versions of an optimistic-lock conflict).
+    pub fn app_with_details(
+        code: ErrorCode,
+        message: impl Into<String>,
+        details: serde_json::Value,
+    ) -> Self {
+        Self::App {
+            code,
+            message: message.into(),
+            details: Some(details),
+        }
+    }
+
     pub fn not_found(what: impl std::fmt::Display) -> Self {
         Self::app(ErrorCode::NotFound, format!("{what} not found"))
     }

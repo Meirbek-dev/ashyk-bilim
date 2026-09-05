@@ -195,6 +195,20 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         serde_json::json!({}),
     )
     .await?;
+    ab_db::schedule::upsert(
+        &pool,
+        ab_jobs::handlers::submissions::AUTO_SUBMIT_KIND,
+        std::time::Duration::from_mins(1),
+        serde_json::json!({}),
+    )
+    .await?;
+    ab_db::schedule::upsert(
+        &pool,
+        ab_jobs::handlers::submissions::SWEEP_IDEMPOTENCY_KIND,
+        std::time::Duration::from_hours(1),
+        serde_json::json!({}),
+    )
+    .await?;
 
     let worker = ab_jobs::Worker::new(pool.clone(), ab_jobs::WorkerConfig::default())
         .register(ab_jobs::handlers::uploads::UploadsReaper::new(
@@ -202,6 +216,12 @@ async fn worker(config: Config) -> anyhow::Result<()> {
             storage,
         ))?
         .register(ab_jobs::handlers::assessments::AssessmentPublisher::new(
+            pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::submissions::AutoSubmitter::new(
+            pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::submissions::IdempotencySweeper::new(
             pool,
         ))?;
     let cancel = CancellationToken::new();

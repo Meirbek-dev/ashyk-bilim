@@ -152,3 +152,45 @@ Against the legacy `submission` + `grading_entry` + `item_feedback` +
   `assessments.attempt_penalty_percent` (policy knob).
 - Progress projections (`activity_progress`, `course_progress`) are P6; the
   gradebook and work queue are computed from submissions until then.
+
+## Submission lifecycle and grading pipeline (2026-09-05, P4.2–4.3)
+
+Ported from `attempt_service.py` + `pipeline/*`, with these deltas:
+
+- **One attempt-limit check, not three.** The legacy counted attempts in
+  the start path, the submit path and the constraint validator with three
+  slightly different predicates; v2 has `count_completed_attempts` (every
+  non-draft row) used everywhere, and the DB's one-open-draft index makes
+  `start` idempotent — a second start returns the open draft (200) instead
+  of racing to create another.
+- **Optimistic lock on the wire.** Draft saves require
+  `If-Match: "<draft_version>"`; responses carry the version as `ETag`.
+  A stale save is 409 with `details: {expected, actual}` (the Problem
+  envelope gained a `details` object for exactly this). The teacher's
+  grade lock (`version`, 412) is separate and lands in 4.5.
+- **Throttle only successful-shaped saves.** The legacy 5s autosave
+  throttle ran first, so an invalid or expired save locked the client out
+  for 5s. v2 validates, checks the timer and merges before the Redis
+  counter is touched.
+- **Anti-cheat count is server-side.** `POST /submissions/{id}/violations`
+  appends the event (last 200 kept) and bumps `violation_count`; the
+  client's number on submit can only raise the stored count, never lower
+  it. Zeroing still needs a detector enabled *and* the threshold reached
+  (legacy semantics), and is recorded as `auto_submit_reason =
+  integrity_violation` even when the learner pressed submit themselves.
+- **Late penalty survives manual review.** The legacy stored 0 for
+  essays and never penalised them; v2 computes and stores `late_penalty_pct`
+  regardless, and the teacher's grade path applies it.
+- **Code challenges without a final run go to manual review** instead of
+  scoring zero — 4.4 runs Judge0 at submit so this only bites when the
+  runner is down (DEGRADED path).
+- **Idempotency is per user, key and route** (`submit:{id}:{key}`), body
+  hashed with SHA-256; a reused key with a different body is 422, not a
+  silent replay. Keys are swept after 24h by a job.
+- **Timer sweep backs off per row** (120s·2ⁿ ≤ 1h, five tries) using the
+  real `auto_submit_*` columns; the legacy wrote these into a schema that
+  rejected them, so its retry counter never advanced.
+- **Release visibility** follows one rule: `published` or a published
+  grading entry → visible; `graded` without one → `awaiting_release`
+  (scores, breakdown, graded_at and late % all hidden); `pending`/`draft`
+  → hidden; `returned` → visible with the revision flag.

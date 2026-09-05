@@ -41,6 +41,11 @@ pub struct Problem {
     pub detail: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub field_errors: Vec<FieldError>,
+    /// Machine-readable context for some codes (e.g. `{expected, actual}`
+    /// on an optimistic-lock 409).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<Object>)]
+    pub details: Option<serde_json::Value>,
     /// Correlation id; also present as the `x-request-id` response header.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub request_id: Option<String>,
@@ -50,11 +55,15 @@ impl Problem {
     #[must_use]
     pub fn from_error(err: &Error) -> Self {
         let code = err.code();
-        let (detail, field_errors) = match err {
-            Error::App { message, .. } => (Some(message.clone()), Vec::new()),
-            Error::Validation { field_errors } => (None, field_errors.clone()),
+        let (detail, field_errors, details) = match err {
+            Error::App {
+                message, details, ..
+            } => (Some(message.clone()), Vec::new(), details.clone()),
+            Error::Validation { field_errors } => (None, field_errors.clone(), None),
             // Internal family: opaque on the wire, loud in the logs.
-            Error::Config { .. } | Error::Db(_) | Error::Internal { .. } => (None, Vec::new()),
+            Error::Config { .. } | Error::Db(_) | Error::Internal { .. } => {
+                (None, Vec::new(), None)
+            }
         };
         Self {
             type_uri: format!("{ERROR_DOC_BASE}/{code}"),
@@ -63,6 +72,7 @@ impl Problem {
             title: code.title().to_owned(),
             detail,
             field_errors,
+            details,
             request_id: None,
         }
     }
