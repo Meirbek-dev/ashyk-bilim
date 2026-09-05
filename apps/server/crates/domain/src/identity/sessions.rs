@@ -75,6 +75,7 @@ pub struct NewSession {
 
 #[derive(Clone)]
 pub struct SessionStore {
+    client: redis::Client,
     redis: ConnectionManager,
 }
 
@@ -85,6 +86,12 @@ impl SessionStore {
         self.redis.clone()
     }
 
+    /// The client, for code that needs its own connection (blocking reads).
+    #[must_use]
+    pub fn client(&self) -> redis::Client {
+        self.client.clone()
+    }
+
     pub async fn connect(url: &str) -> Result<Self> {
         let client =
             redis::Client::open(url).map_err(|e| Error::internal("invalid redis url", e))?;
@@ -92,7 +99,7 @@ impl SessionStore {
             .get_connection_manager()
             .await
             .map_err(|e| Error::internal("connecting to redis", e))?;
-        Ok(Self { redis })
+        Ok(Self { client, redis })
     }
 
     /// Create a session; returns the opaque id for the cookie. Evicts the

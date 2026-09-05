@@ -95,10 +95,15 @@ impl IntoResponse for ApiError {
             header::CONTENT_TYPE,
             HeaderValue::from_static(PROBLEM_CONTENT_TYPE),
         );
-        if status == StatusCode::SERVICE_UNAVAILABLE {
+        let retry_after = match status {
+            StatusCode::SERVICE_UNAVAILABLE => Some("30"),
+            StatusCode::TOO_MANY_REQUESTS => Some("60"),
+            _ => None,
+        };
+        if let Some(seconds) = retry_after {
             response
                 .headers_mut()
-                .insert(header::RETRY_AFTER, HeaderValue::from_static("30"));
+                .insert(header::RETRY_AFTER, HeaderValue::from_static(seconds));
         }
         response
     }

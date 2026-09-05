@@ -190,6 +190,7 @@ fn submission_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::grading::extend_deadline))
         .routes(routes!(routes::grading::get_bulk_action))
         .routes(routes!(routes::grading::gradebook))
+        .routes(routes!(routes::sse::submission_events))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the

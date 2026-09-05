@@ -202,6 +202,21 @@ fn build_judge0(
 async fn worker(config: Config) -> anyhow::Result<()> {
     let pool = ab_db::connect(&config.database).await?;
     let storage = build_storage(&config)?;
+    // SSE fan-out from the worker (deadline extensions) needs Redis; the
+    // worker still runs without it.
+    let events = match &config.redis.url {
+        Some(url) => {
+            let sessions = ab_domain::identity::SessionStore::connect(
+                secrecy::ExposeSecret::expose_secret(url),
+            )
+            .await?;
+            Some(ab_domain::events::GradingEvents::new(
+                sessions.client(),
+                sessions.redis(),
+            ))
+        }
+        None => None,
+    };
     let runner = ab_domain::code::CodeRunner::new(
         pool.clone(),
         build_judge0(&config)?,
@@ -254,7 +269,9 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         .register(ab_jobs::handlers::submissions::IdempotencySweeper::new(
             pool.clone(),
         ))?
-        .register(ab_jobs::handlers::grading::BulkActionRunner::new(pool))?;
+        .register(ab_jobs::handlers::grading::BulkActionRunner::new(
+            pool, events,
+        ))?;
     let cancel = CancellationToken::new();
     let handle = tokio::spawn(worker.run(cancel.clone()));
     shutdown_signal().await;

@@ -13,6 +13,7 @@ use ab_db::assessments::OverrideValues;
 use ab_db::queue::NewJob;
 use sqlx::PgPool;
 
+use crate::events::GradingEvents;
 use crate::grading::teacher::GradingService;
 use crate::identity::Actor;
 
@@ -154,7 +155,11 @@ impl GradingService {
 
     /// Run a queued action (job handler + tests). A failure is recorded on
     /// the row and not retried — the grader sees it and re-requests.
-    pub async fn execute_bulk_action(pool: &PgPool, id: BulkActionId) -> Result<()> {
+    pub async fn execute_bulk_action(
+        pool: &PgPool,
+        events: Option<&GradingEvents>,
+        id: BulkActionId,
+    ) -> Result<()> {
         let Some(row) = ab_db::submissions::get_bulk_action(pool, id).await? else {
             tracing::warn!(%id, "bulk action vanished before execution");
             return Ok(());
@@ -165,7 +170,7 @@ impl GradingService {
         ab_db::submissions::set_bulk_action_status(pool, id, BulkActionStatus::Running, 0, "")
             .await?;
         let outcome = match row.action_type {
-            BulkActionType::ExtendDeadline => run_deadline_extension(pool, &row).await,
+            BulkActionType::ExtendDeadline => run_deadline_extension(pool, events, &row).await,
             other => Err(Error::app(
                 ab_core::ErrorCode::Internal,
                 format!("bulk action type {other} is not implemented"),
@@ -199,6 +204,7 @@ impl GradingService {
 
 async fn run_deadline_extension(
     pool: &PgPool,
+    events: Option<&GradingEvents>,
     row: &ab_db::submissions::BulkActionRow,
 ) -> Result<i32> {
     let new_due_at = row.params["new_due_at"]
@@ -224,13 +230,22 @@ async fn run_deadline_extension(
         } else {
             ab_db::assessments::insert_override(pool, row.assessment_id, user_id, values).await?;
         }
-        for submission in
-            ab_db::submissions::list_submitted_for_user(pool, row.assessment_id, user_id).await?
-        {
+        let submitted =
+            ab_db::submissions::list_submitted_for_user(pool, row.assessment_id, user_id).await?;
+        for submission in &submitted {
             let late = submission.submitted_at.is_some_and(|s| s > new_due_at);
             if late != submission.is_late {
                 ab_db::submissions::set_is_late(pool, submission.id, late).await?;
             }
+        }
+        if let (Some(events), Some(latest)) = (events, submitted.first()) {
+            events
+                .publish_best_effort(
+                    latest.id,
+                    "deadline.extended",
+                    serde_json::json!({ "new_due_at": new_due_at, "reason": reason }),
+                )
+                .await;
         }
         affected += 1;
     }
@@ -244,6 +259,5 @@ async fn run_deadline_extension(
         }),
     )
     .await?;
-    // 4.7: deadline.extended events per learner.
     Ok(affected)
 }

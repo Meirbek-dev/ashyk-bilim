@@ -295,3 +295,33 @@ Ported from `grading/teacher.py`, `assessments/review_service.py`,
 - **XP on publish** (gamification) and SSE events for `grade.published`,
   `submission.returned`, `deadline.extended` are left as marked hooks for
   P6 and 4.7.
+
+## Grading SSE on Redis Streams (2026-09-05, P4.7)
+
+Ported from `routers/grading/sse.py` + `services/grading/events.py`
+(pub/sub + a sorted-set replay log with a 5-minute window):
+
+- **One primitive instead of two.** The legacy published to a pub/sub
+  channel *and* wrote a sorted set for replay, then filtered the set by
+  ULID on reconnect. v2 appends to a Redis Stream per submission; the
+  stream id is the SSE `id:`, so `Last-Event-ID` is a plain `XRANGE (id +`
+  and live delivery is `XREAD BLOCK` from the same cursor — no gap between
+  "replayed" and "live", no event-id search, and `MAXLEN ~1024` + a 7-day
+  TTL bound memory instead of a 5-minute replay window.
+- **A dedicated connection per subscriber** for the blocking read; the
+  shared multiplexed connection only publishes and counts slots.
+- **Publishing never fails the request.** Grade saves, releases and
+  deadline extensions publish best-effort after the DB write and log a
+  warning on failure; events are advisory (the client refetches on
+  reconnect). The legacy queued publishes through taskiq with retries —
+  v2 does not carry a durable outbox for advisory events.
+- **The worker publishes too** (deadline extensions) when `AB__REDIS__URL`
+  is set; without Redis the worker still runs and skips events.
+- Route is `GET /submissions/{id}/events` (legacy `feedback-stream`);
+  access = owner or a grader of the assessment, 404 otherwise; the
+  per-user cap stays 5 with the legacy `sse_conn:{user}` counter shape
+  and a 429 + `Retry-After: 60`.
+- Event names unchanged: `connected`, `grade.published`,
+  `submission.returned`, `deadline.extended`. `data` is
+  `{event_id, event, submission_id, payload, sent_at}` (unix seconds; the
+  legacy sent ISO strings).

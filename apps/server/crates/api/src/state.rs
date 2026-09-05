@@ -10,6 +10,7 @@ use ab_domain::catalog::{
     CollectionsService, CoursesService, CurriculumService, PlatformService, SearchService,
 };
 use ab_domain::code::{CodeRunner, CodeRunsService};
+use ab_domain::events::GradingEvents;
 use ab_domain::files::UploadsService;
 use ab_domain::grading::{GradingService, SubmissionsService};
 use ab_domain::identity::rate_limit::RateLimiter;
@@ -41,6 +42,7 @@ pub struct AppState {
     pub submissions: SubmissionsService,
     pub code_runs: CodeRunsService,
     pub grading: GradingService,
+    pub events: GradingEvents,
 }
 
 impl AppState {
@@ -64,6 +66,7 @@ impl AppState {
             .map(|j| j.limits.clone())
             .unwrap_or_default();
         let runner = CodeRunner::new(pool.clone(), judge0, limits);
+        let events = GradingEvents::new(sessions.client(), sessions.redis());
         Self {
             submissions: SubmissionsService::new(
                 pool.clone(),
@@ -71,7 +74,8 @@ impl AppState {
                 RateLimiter::new(sessions.redis()),
                 runner.clone(),
             ),
-            grading: GradingService::new(pool.clone(), assessments.clone()),
+            grading: GradingService::new(pool.clone(), assessments.clone(), Some(events.clone())),
+            events,
             code_runs: CodeRunsService::new(
                 runner,
                 assessments.clone(),

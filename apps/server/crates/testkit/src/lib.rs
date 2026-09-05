@@ -163,6 +163,20 @@ impl TestApp {
         }
     }
 
+    /// Serve the router on an ephemeral port for tests that need a real
+    /// socket (streaming responses). Returns the base URL.
+    pub async fn serve(&self) -> String {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind ephemeral port");
+        let addr = listener.local_addr().expect("local addr");
+        let router = self.router.clone();
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, router).await;
+        });
+        format!("http://{addr}")
+    }
+
     /// The same runner the app uses — for driving the auto-submit sweep.
     #[must_use]
     pub fn code_runner(&self) -> CodeRunner {

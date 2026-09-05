@@ -22,6 +22,7 @@ use utoipa::ToSchema;
 
 use crate::assessments::service::{Assessment, AssessmentsService, Item};
 use crate::catalog::courses::Course;
+use crate::events::GradingEvents;
 use crate::grading::answers::{Answers, parse_answers};
 use crate::grading::breakdown::{GradedItem, GradingBreakdown, round2};
 use crate::grading::penalties::apply_late;
@@ -256,6 +257,8 @@ pub struct GradebookPage {
 pub struct GradingService {
     pub(crate) pool: PgPool,
     pub(crate) assessments: AssessmentsService,
+    /// SSE fan-out; `None` in processes without Redis (the worker).
+    pub(crate) events: Option<GradingEvents>,
 }
 
 /// Teacher transitions (legacy `_ALLOWED_TEACHER_TRANSITIONS`); a re-save
@@ -324,14 +327,49 @@ fn csv_row(fields: &[String]) -> String {
     line
 }
 
+fn now_unix() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
+}
+
 fn count(n: usize) -> f64 {
     f64::from(u32::try_from(n).unwrap_or(u32::MAX))
 }
 
 impl GradingService {
     #[must_use]
-    pub const fn new(pool: PgPool, assessments: AssessmentsService) -> Self {
-        Self { pool, assessments }
+    pub const fn new(
+        pool: PgPool,
+        assessments: AssessmentsService,
+        events: Option<GradingEvents>,
+    ) -> Self {
+        Self {
+            pool,
+            assessments,
+            events,
+        }
+    }
+
+    /// Who may follow a submission's event stream: its owner, or a grader
+    /// of its assessment (404 for everyone else - no existence leak).
+    pub async fn stream_access(&self, actor: &Actor, id: SubmissionId) -> Result<()> {
+        let row = self.load_submission(id).await?;
+        if row.user_id == actor.user_id {
+            return Ok(());
+        }
+        self.grader_context(actor, row.assessment_id)
+            .await
+            .map(|_| ())
+            .map_err(|_| Error::not_found("submission"))
+    }
+
+    async fn emit(&self, submission_id: SubmissionId, event: &str, payload: serde_json::Value) {
+        if let Some(events) = &self.events {
+            events
+                .publish_best_effort(submission_id, event, payload)
+                .await;
+        }
     }
 
     /// Visible course (404 otherwise) + grading grant.
@@ -811,7 +849,25 @@ impl GradingService {
             },
         )
         .await?;
-        // 4.7: grade.published / submission.returned events.
+        match target {
+            SubmissionStatus::Published => {
+                self.emit(
+                    id,
+                    "grade.published",
+                    serde_json::json!({ "final_score": final_score, "published_at": now_unix() }),
+                )
+                .await;
+            }
+            SubmissionStatus::Returned => {
+                self.emit(
+                    id,
+                    "submission.returned",
+                    serde_json::json!({ "feedback": input.feedback, "returned_at": now_unix() }),
+                )
+                .await;
+            }
+            _ => {}
+        }
         let fresh = self.load_submission(id).await?;
         self.view(fresh, &assessment).await
     }
@@ -932,6 +988,12 @@ impl GradingService {
             .await?;
             ab_db::submissions::mark_published(&self.pool, row.id, final_score).await?;
             published += 1;
+            self.emit(
+                row.id,
+                "grade.published",
+                serde_json::json!({ "final_score": final_score, "published_at": now_unix() }),
+            )
+            .await;
         }
         if published > 0 {
             ab_db::assessments::insert_audit_event(
@@ -943,7 +1005,6 @@ impl GradingService {
             )
             .await?;
         }
-        // 4.7: grade.published events per submission.
         Ok(PublishSummary {
             published_count: published,
             already_published_count: already,

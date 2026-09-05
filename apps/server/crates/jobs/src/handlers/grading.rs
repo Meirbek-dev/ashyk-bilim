@@ -15,12 +15,14 @@ pub const KIND: &str = ab_domain::grading::bulk::BULK_ACTION_JOB;
 
 pub struct BulkActionRunner {
     pool: PgPool,
+    events: Option<ab_domain::events::GradingEvents>,
 }
 
 impl BulkActionRunner {
+    /// `events` is `None` when the worker runs without Redis.
     #[must_use]
-    pub const fn new(pool: PgPool) -> Self {
-        Self { pool }
+    pub const fn new(pool: PgPool, events: Option<ab_domain::events::GradingEvents>) -> Self {
+        Self { pool, events }
     }
 }
 
@@ -31,10 +33,12 @@ impl JobHandler for BulkActionRunner {
 
     fn handle(&self, payload: serde_json::Value) -> BoxFuture<'static, Result<()>> {
         let pool = self.pool.clone();
+        let events = self.events.clone();
         async move {
             let id: BulkActionId = serde_json::from_value(payload["action_id"].clone())
                 .map_err(|e| ab_core::Error::internal("bulk action payload", e))?;
-            ab_domain::grading::GradingService::execute_bulk_action(&pool, id).await
+            ab_domain::grading::GradingService::execute_bulk_action(&pool, events.as_ref(), id)
+                .await
         }
         .boxed()
     }

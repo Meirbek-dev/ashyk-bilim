@@ -12,6 +12,7 @@ pub mod health;
 pub mod platform;
 pub mod rbac;
 pub mod search;
+pub mod sse;
 pub mod submissions;
 pub mod uploads;
 pub mod usergroups;

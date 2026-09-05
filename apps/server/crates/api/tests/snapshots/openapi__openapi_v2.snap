@@ -8650,6 +8650,71 @@ expression: json
         ]
       }
     },
+    "/api/v2/submissions/{id}/events": {
+      "get": {
+        "description": "Event names: `connected`, `grade.published`, `submission.returned`,\n`deadline.extended`. `data` is the stored event\n(`{event_id, event, submission_id, payload, sent_at}`); `id` is the\nstream id to send back as `Last-Event-ID` on reconnect.",
+        "operationId": "submission_events",
+        "parameters": [
+          {
+            "description": "Submission id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          },
+          {
+            "description": "Resume after this event id",
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Event stream"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many open streams for this user"
+          }
+        },
+        "summary": "Grading events for one submission as `text/event-stream`.",
+        "tags": [
+          "submissions"
+        ]
+      }
+    },
     "/api/v2/submissions/{id}/feedback": {
       "get": {
         "operationId": "my_feedback",

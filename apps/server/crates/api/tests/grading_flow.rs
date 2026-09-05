@@ -603,6 +603,7 @@ async fn deadline_extension_is_a_queued_bulk_action(pool: PgPool) {
 
     ab_domain::grading::GradingService::execute_bulk_action(
         &app.pool,
+        None,
         ab_core::id::BulkActionId(uuid::Uuid::parse_str(&action_id).unwrap()),
     )
     .await
