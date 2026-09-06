@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  completed_required_count, total_required_count, progress_pct, certificate_eligible,\n                  (extract(epoch FROM last_activity_at))::bigint AS \"last_activity_at?\"\n           FROM course_progress WHERE course_id = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_progress",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_progress",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "completed_required_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "course_progress",
+            "name": "completed_required_count"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "total_required_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "course_progress",
+            "name": "total_required_count"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "progress_pct",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "course_progress",
+            "name": "progress_pct"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "certificate_eligible",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "course_progress",
+            "name": "certificate_eligible"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "last_activity_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "8ec5d155077cd0130470f80bb496ae034beb9d9cdd9d92ba1c3e6bec35d747c9"
+}

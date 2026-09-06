@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO daily_assessment_metrics\n              (metric_date, assessment_id, course_id, activity_id, assessment_kind,\n               eligible_learners, submitted_learners, submission_rate, completion_rate, pass_rate,\n               median_score, avg_score, avg_attempts, grading_latency_hours_p50,\n               grading_latency_hours_p90, difficulty_score, generated_at)\n          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,\n                  $16, to_timestamp($17))\n          ON CONFLICT (metric_date, assessment_id) DO UPDATE SET\n              course_id = EXCLUDED.course_id,\n              activity_id = EXCLUDED.activity_id,\n              assessment_kind = EXCLUDED.assessment_kind,\n              eligible_learners = EXCLUDED.eligible_learners,\n              submitted_learners = EXCLUDED.submitted_learners,\n              submission_rate = EXCLUDED.submission_rate,\n              completion_rate = EXCLUDED.completion_rate,\n              pass_rate = EXCLUDED.pass_rate,\n              median_score = EXCLUDED.median_score,\n              avg_score = EXCLUDED.avg_score,\n              avg_attempts = EXCLUDED.avg_attempts,\n              grading_latency_hours_p50 = EXCLUDED.grading_latency_hours_p50,\n              grading_latency_hours_p90 = EXCLUDED.grading_latency_hours_p90,\n              difficulty_score = EXCLUDED.difficulty_score,\n              generated_at = EXCLUDED.generated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6e66d530b0a872d2d612c328839d89ee00bcf6871788b010469e67622fb162f5"
+}

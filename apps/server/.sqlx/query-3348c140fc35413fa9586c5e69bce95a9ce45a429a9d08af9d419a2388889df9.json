@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n             (SELECT count(*) FROM daily_teacher_metrics WHERE metric_date = ($1::text)::date) AS \"teacher_rows!\",\n             (SELECT count(*) FROM daily_course_metrics WHERE metric_date = ($1::text)::date) AS \"course_rows!\",\n             (SELECT count(*) FROM daily_course_engagement WHERE metric_date = ($1::text)::date) AS \"engagement_rows!\",\n             (SELECT count(*) FROM daily_assessment_metrics WHERE metric_date = ($1::text)::date) AS \"assessment_rows!\",\n             (SELECT count(*) FROM daily_user_course_progress WHERE metric_date = ($1::text)::date) AS \"progress_rows!\",\n             (SELECT count(*) FROM learner_risk_snapshots WHERE snapshot_date = ($1::text)::date) AS \"risk_rows!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "teacher_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "course_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "engagement_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "assessment_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "progress_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "risk_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "3348c140fc35413fa9586c5e69bce95a9ce45a429a9d08af9d419a2388889df9"
+}

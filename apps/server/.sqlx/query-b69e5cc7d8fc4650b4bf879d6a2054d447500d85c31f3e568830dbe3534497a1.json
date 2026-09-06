@@ -1,0 +1,90 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT e.id AS \"id: GradingEntryId\", e.submission_id AS \"submission_id: SubmissionId\",\n                  s.user_id AS \"user_id: UserId\", e.graded_by AS \"graded_by: UserId\",\n                  e.final_score,\n                  (extract(epoch FROM e.published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM e.created_at))::bigint AS \"created_at!\"\n           FROM grading_entries e JOIN submissions s ON s.id = e.submission_id\n           WHERE s.assessment_id = $1\n           ORDER BY e.created_at DESC, e.id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: GradingEntryId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "submission_id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "graded_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "graded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "published_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "b69e5cc7d8fc4650b4bf879d6a2054d447500d85c31f3e568830dbe3534497a1"
+}

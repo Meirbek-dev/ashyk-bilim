@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO daily_course_engagement\n              (metric_date, course_id, chapter_id, activity_id, step_order, started_learners,\n               completed_learners, dropoff_from_previous_pct, generated_at)\n          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, $8, to_timestamp($9))\n          ON CONFLICT (metric_date, activity_id) DO UPDATE SET\n              chapter_id = EXCLUDED.chapter_id,\n              step_order = EXCLUDED.step_order,\n              started_learners = EXCLUDED.started_learners,\n              completed_learners = EXCLUDED.completed_learners,\n              dropoff_from_previous_pct = EXCLUDED.dropoff_from_previous_pct,\n              generated_at = EXCLUDED.generated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1bd24e7085bd88f4f9f68e932a2535c9dc2ac596f32372b3a6709fac03c48ba3"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM analytics_saved_views WHERE id = $1 AND teacher_user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "697ea2bff810fc2abab97409d4901d1d7d5d8cba1607242e4984543601d12db1"
+}
