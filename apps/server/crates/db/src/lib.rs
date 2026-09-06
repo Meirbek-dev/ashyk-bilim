@@ -5,6 +5,7 @@
 //! the committed `.sqlx` offline cache; `QueryBuilder` for dynamic SQL;
 //! `AssertSqlSafe` only with a `// SAFETY:` comment.
 
+pub mod analytics;
 pub mod assessments;
 pub mod catalog;
 pub mod certifications;

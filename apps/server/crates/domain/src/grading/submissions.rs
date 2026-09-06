@@ -672,6 +672,10 @@ impl SubmissionsService {
     }
 
     /// The pipeline proper. Returns (row, time limit, item count).
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the submit pipeline order is the contract; kept in one place"
+    )]
     async fn finalize(
         runner: &CodeRunner,
         ctx: Context,
@@ -776,6 +780,15 @@ impl SubmissionsService {
         let fresh = ab_db::submissions::get_submission(pool, submission.id)
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
+        crate::analytics::events::hooks::submission_submitted(
+            pool,
+            fresh.id,
+            fresh.assessment_id,
+            fresh.course_id,
+            fresh.user_id,
+            fresh.status,
+        )
+        .await;
         Ok((fresh, effective.time_limit_seconds, items.len()))
     }
 

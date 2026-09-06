@@ -271,6 +271,14 @@ impl DiscussionsService {
             content,
         )
         .await?;
+        crate::analytics::events::hooks::discussion_posted(
+            &self.pool,
+            course_id,
+            actor.user_id,
+            id,
+            parent_id.is_some(),
+        )
+        .await;
         let row = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("discussion"))?;

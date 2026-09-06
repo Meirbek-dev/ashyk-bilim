@@ -87,6 +87,10 @@ typed_id!(CertificateId);
 typed_id!(GamificationProfileId);
 typed_id!(XpTransactionId);
 typed_id!(JobId);
+typed_id!(AnalyticsEventId);
+typed_id!(InterventionId);
+typed_id!(SavedViewId);
+typed_id!(RiskSnapshotId);
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]

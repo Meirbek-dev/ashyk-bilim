@@ -283,6 +283,7 @@ impl IdentityService {
         self.audit(Some(user.id), "login", &input, serde_json::json!({}))
             .await?;
         crate::gamification::hooks::login(&self.pool, user.id).await;
+        crate::analytics::events::hooks::login(&self.pool, user.id, "password").await;
 
         Ok(LoginOk {
             session_id,

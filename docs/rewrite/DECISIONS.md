@@ -542,3 +542,70 @@ Ported from `services/gamification` + `worker/tasks/xp_award.py`:
   username / display name / avatar key — no names split into first/last,
   no email.
 
+## Analytics (2026-09-06, P7)
+
+Ported from `services/analytics/*`, `routers/analytics.py`, `db/analytics.py`:
+
+- **Schema deltas.** uuidv7 ids and real FKs (legacy rows were bare int
+  columns with composite PKs), `Numeric(x,2)` → `double precision` (values
+  are rounded in the domain), `reason_codes` as `text[]`, the platform-wide
+  teacher aggregate is `teacher_user_id IS NULL` (legacy used the magic id
+  0; `UNIQUE NULLS NOT DISTINCT` keeps the upsert key), and every daily
+  table is keyed `(metric_date, key)` so a rollup is a re-runnable replace.
+- **The event log is real.** The legacy declared `analytics_event` and
+  never inserted a row (FINDINGS #20), so its "events" were reconstructed
+  from submissions and progress. v2 keeps that reconstruction (the numbers
+  stay comparable) and additionally records `submission.submitted` /
+  `.graded` / `.published` / `.returned`, `activity.completed` (explicit
+  or projected, only on the flip to completed), `discussion.posted` and
+  `login` from the write paths — best-effort like the gamification hooks:
+  an insert failure is logged, never returned. Discussion posts and
+  completions from the log feed the activity series; submissions come
+  from the `submissions` table so a replayed event cannot double count.
+- **One rollup job, every six hours.** Legacy `refresh_teacher_analytics_
+  rollups` existed but no scheduler task called it (FINDINGS #21), so the
+  period-over-period cards always compared against nothing. v2 seeds
+  `analytics:rollup` on the interval scheduler every 6h; each run replaces
+  the current UTC day inside one transaction, so the last run of the day
+  is the nightly snapshot (risk trend, previous-period baselines) and an
+  intraday run only refreshes it. `ashyq admin analytics-rollup --from
+  --to` rebuilds a range. A rollup is computed **as of now** and labelled
+  with the date (as the legacy function did): a backfilled range seeds
+  baselines, it does not reconstruct history.
+- **Rounding is CPython's.** `context::round_to` rounds the exact binary
+  value with ties to even (format-then-parse), so `round(2.675, 2)` is
+  2.67 and `round(0.35, 1)` is 0.3 exactly as the legacy produced. The
+  first draft used scaled half-even arithmetic and disagreed in the third
+  decimal; its own unit test caught it.
+- **Scope and status codes.** `analytics:read:assigned` (instructor seed)
+  = courses created or actively co-authored via `resource_authors`;
+  `analytics:read:platform` (maintainer seed) / `:all` = every course,
+  with `teacher_user_id` to inspect one teacher and the platform aggregate
+  row as the comparison baseline. Explicit `course_ids` outside the scope
+  are 403 (the caller asked for something it may not see); path ids
+  outside it are 404 (no existence leak). `/admin/overview` is 403 without
+  platform scope. Exports need `analytics:export:*` separately (legacy).
+- **Filters are validated in the domain**, not by axum: `window`,
+  `compare`, `bucket`, `bucket_start`, `course_ids`, `cohort_ids`,
+  `teacher_user_id`, `timezone`, `sort_order` all report together as a 422
+  with field errors; `page` / `page_size` clamp (legacy). The query DTOs
+  deliberately do not `deny_unknown_fields`: the client forwards its whole
+  filter state and FastAPI ignored extras. Week buckets start on Monday in
+  the requested IANA zone (jiff), DST days are 23/25 hours.
+- **Labels are codes.** Every user-facing string the legacy returned in
+  Russian (alert titles, recommended actions, why-now, insight bodies, CSV
+  headers) is a stable snake_case code or English text; the client
+  localises. CSV exports are RFC 4180 with CRLF like the grading export.
+- **Risk rows vs. risk counts.** A learner is listed as at risk whenever
+  at least one reason code fires (legacy), even at `low`; the course and
+  teacher `at_risk_learners` counters count medium + high only (legacy
+  `_merge_*`). `newly_at_risk` is only said from medium up.
+- **Routes.** `/teacher/courses/by-uuid/{uuid}` is folded into
+  `/teacher/courses/{id}` (every id is a uuid now — P9 adapts the client).
+  Interventions and saved views return 201 on create (legacy 200);
+  saving a view with an existing (type, name) updates it and still
+  answers 201 with the same id. `certificates_issued_28d` honours its
+  name (legacy counted every certificate ever issued).
+- **Admin overview** compares teachers over one loaded context (the
+  legacy reloaded a context per teacher); numbers are identical, only the
+  query count changed.

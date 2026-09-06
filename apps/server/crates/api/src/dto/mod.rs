@@ -4,6 +4,7 @@
 //! DTOs derive `ToSchema` and are built from domain types — never from DB rows
 //! directly.
 
+pub mod analytics;
 pub mod assessments;
 pub mod auth;
 pub mod certifications;

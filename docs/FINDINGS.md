@@ -164,3 +164,20 @@ fix planned — the endpoint dies at cutover; leaderboards migrated from legacy
 data may carry inflated totals (owner call whether to reset XP at cutover —
 see QUESTIONS.md).
 
+### 20. The analytics event log was never written
+`db/analytics.py` declared `analytics_event` (and every analytics query
+joined on it for logins, discussion posts and completions), but no write
+path in the legacy API ever inserted a row, so "active learners" and the
+engagement series were reconstructed from submissions and progress alone
+and every login/discussion signal was silently zero. v2 records the events
+from the write paths (`domain::analytics::events::hooks`) and keeps the
+reconstruction for the numbers that never depended on the log.
+
+### 21. The analytics rollup refresh was never scheduled
+`services/analytics/rollups.py::refresh_teacher_analytics_rollups` filled
+the five `daily_*` tables and the risk snapshots, but nothing in
+`worker/tasks/scheduler_tasks.py` (or anywhere else) called it. Every
+period-over-period card, risk trend and "previous snapshot" comparison in
+the teacher dashboard therefore ran against empty tables in production. v2
+runs `analytics:rollup` every six hours and ships `admin analytics-rollup`
+for backfills.

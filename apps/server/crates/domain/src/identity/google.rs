@@ -154,6 +154,7 @@ impl GoogleAuthService {
         )
         .await?;
         crate::gamification::hooks::login(&self.pool, user_id).await;
+        crate::analytics::events::hooks::login(&self.pool, user_id, "google").await;
         Ok(GoogleLoginOk {
             session_id,
             user_id,

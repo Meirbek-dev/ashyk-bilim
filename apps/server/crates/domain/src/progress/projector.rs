@@ -146,6 +146,13 @@ impl ProgressProjector {
             status_reason: None,
         };
         ab_db::progress::upsert_activity_progress(&self.pool, &write).await?;
+        crate::analytics::events::hooks::activity_completed(
+            &self.pool,
+            activity.course_id,
+            activity.id,
+            user_id,
+        )
+        .await;
         self.recalculate_course(activity.course_id, user_id).await?;
         Ok(())
     }
@@ -212,7 +219,20 @@ impl ProgressProjector {
         };
         let write = self.projection_for(&activity, user_id).await?;
         if let Some(write) = write {
+            let was_completed =
+                ab_db::progress::get_activity_progress(&self.pool, activity_id, user_id)
+                    .await?
+                    .is_some_and(|row| row.state == ActivityProgressState::Completed);
             ab_db::progress::upsert_activity_progress(&self.pool, &write).await?;
+            if write.state == ActivityProgressState::Completed && !was_completed {
+                crate::analytics::events::hooks::activity_completed(
+                    &self.pool,
+                    activity.course_id,
+                    activity.id,
+                    user_id,
+                )
+                .await;
+            }
         }
         self.recalculate_course(activity.course_id, user_id).await?;
         ab_db::progress::get_activity_progress(&self.pool, activity_id, user_id).await
