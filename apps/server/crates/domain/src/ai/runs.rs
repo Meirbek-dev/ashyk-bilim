@@ -19,7 +19,7 @@ use ab_db::queue::NewJob;
 use tokio_util::sync::CancellationToken;
 
 use super::context::{ContextSource, validate_citations};
-use super::policy::{self, require_admin};
+use super::policy::require_admin;
 use super::redact;
 use super::AiService;
 use crate::identity::Actor;
@@ -157,6 +157,14 @@ pub struct EvalDashboard {
     pub runs: RunAggregate,
     pub evals: EvalSummary,
     pub recent: Vec<EvalResultRow>,
+}
+
+/// Outcome of `ashyq admin ai-eval`.
+#[derive(Debug, Clone)]
+pub struct EvalReport {
+    pub model_name: String,
+    pub total: usize,
+    pub passed: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -312,7 +320,8 @@ impl AiService {
             Some(sources) => {
                 let validation = validate_citations(&citations, sources);
                 let invalid = validation.invalid.len();
-                (validation.valid, validation.metadata(), invalid)
+                let metadata = validation.metadata();
+                (validation.valid, metadata, invalid)
             }
             None => (
                 citations,
@@ -686,13 +695,80 @@ impl AiService {
         Ok(())
     }
 
+    /// `ashyq admin ai-eval`: one structured round trip against the live
+    /// provider chain, recorded as an eval result. The fixture datasets
+    /// land with the first eval corpus; this keeps the command and the
+    /// table exercised end to end.
+    pub async fn run_eval_smoke(&self, dataset: &str) -> Result<EvalReport> {
+        let Some(llm) = self.provider() else {
+            self.record_eval(
+                dataset,
+                "provider_smoke",
+                None,
+                Some(false),
+                &serde_json::json!({ "reason": "provider not configured" }),
+            )
+            .await?;
+            return Ok(EvalReport {
+                model_name: "disabled".into(),
+                total: 1,
+                passed: 0,
+            });
+        };
+        #[derive(serde::Deserialize)]
+        struct Probe {
+            ok: bool,
+        }
+        let request = ab_clients::llm::CompletionRequest {
+            messages: vec![
+                ab_clients::llm::ChatMessage::system("Reply with the JSON object {\"ok\": true} and nothing else."),
+                ab_clients::llm::ChatMessage::user("ping"),
+            ],
+            output_schema: Some(ab_clients::llm::OutputSchema {
+                name: "eval_probe".into(),
+                schema: serde_json::json!({
+                    "type": "object",
+                    "properties": { "ok": { "type": "boolean" } },
+                    "required": ["ok"]
+                }),
+            }),
+            max_output_tokens: Some(32),
+            temperature: None,
+        };
+        let (model_name, passed, details) = match llm.complete_structured::<Probe>(&request).await
+        {
+            Ok(reply) => (
+                reply.completion.model_name.clone(),
+                reply.value.ok,
+                serde_json::json!({ "repaired": reply.repaired, "usage": {
+                    "input_tokens": reply.completion.usage.input_tokens,
+                    "output_tokens": reply.completion.usage.output_tokens,
+                } }),
+            ),
+            Err(err) => (
+                llm.selected_model_name(),
+                false,
+                serde_json::json!({ "error": err.to_string() }),
+            ),
+        };
+        self.record_eval(
+            dataset,
+            "provider_smoke",
+            Some(if passed { 1.0 } else { 0.0 }),
+            Some(passed),
+            &details,
+        )
+        .await?;
+        Ok(EvalReport {
+            model_name,
+            total: 1,
+            passed: usize::from(passed),
+        })
+    }
+
     /// Stream access is the same gate as reads.
     pub async fn stream_access(&self, actor: &Actor, id: AiRunId) -> Result<RunRow> {
         self.accessible_run(actor, id).await
-    }
-
-    pub(crate) fn can_read_platform(actor: &Actor) -> bool {
-        actor.has(policy::READ_PLATFORM)
     }
 }
 

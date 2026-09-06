@@ -61,7 +61,13 @@ pub fn draft_course_report(language: &str) -> CourseQualityReport {
 }
 
 fn content_hash(rendered: &str) -> String {
-    format!("{:x}", Sha256::digest(rendered.as_bytes()))
+    use std::fmt::Write;
+    let digest = Sha256::digest(rendered.as_bytes());
+    let mut out = String::with_capacity(64);
+    for byte in digest {
+        let _ = write!(out, "{byte:02x}");
+    }
+    out
 }
 
 impl AiService {

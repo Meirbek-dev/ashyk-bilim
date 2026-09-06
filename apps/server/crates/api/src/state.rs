@@ -3,8 +3,10 @@
 use std::sync::Arc;
 
 use ab_clients::judge0::Judge0Client;
+use ab_clients::llm::LlmClient;
 use ab_clients::storage::StorageClient;
 use ab_core::config::Config;
+use ab_domain::ai::AiService;
 use ab_domain::assessments::AssessmentsService;
 use ab_domain::catalog::{
     CollectionsService, CoursesService, CurriculumService, PlatformService, SearchService,
@@ -12,7 +14,7 @@ use ab_domain::catalog::{
 use ab_domain::certifications::CertificationsService;
 use ab_domain::code::{CodeRunner, CodeRunsService};
 use ab_domain::community::DiscussionsService;
-use ab_domain::events::GradingEvents;
+use ab_domain::events::{AiEvents, GradingEvents};
 use ab_domain::files::{FileSubmissionsService, UploadsService};
 use ab_domain::gamification::GamificationService;
 use ab_domain::grading::{GradingService, SubmissionsService};
@@ -55,12 +57,16 @@ pub struct AppState {
     pub certifications: CertificationsService,
     pub gamification: GamificationService,
     pub work_queue: WorkQueueService,
+    pub ai: AiService,
+    /// The run event streams (`sse:ai:{run}`) the SSE tail reads.
+    pub ai_events: AiEvents,
 }
 
 impl AppState {
     /// `judge0` is `None` when code execution is not configured: runs
-    /// answer 503 and code challenges fall back to manual review.
-    #[must_use]
+    /// answer 503 and code challenges fall back to manual review. The LLM
+    /// client is built from `config.ai`; without a provider key the AI
+    /// routes answer 503 `ai-disabled` (or draft artifacts).
     pub fn new(
         pool: PgPool,
         config: Config,
@@ -68,8 +74,17 @@ impl AppState {
         google: Option<GoogleAuthService>,
         storage: Arc<StorageClient>,
         judge0: Option<Arc<Judge0Client>>,
-    ) -> Self {
+    ) -> ab_core::Result<Self> {
         let sessions = identity.sessions().clone();
+        let llm = LlmClient::from_ai_config(&config.ai)?.map(Arc::new);
+        let ai_events = AiEvents::new(sessions.client(), sessions.redis());
+        let ai = AiService::new(
+            pool.clone(),
+            config.ai.clone(),
+            llm,
+            Some(ai_events.clone()),
+            Some(RateLimiter::new(sessions.redis())),
+        );
         let courses = CoursesService::new(pool.clone());
         let assessments = AssessmentsService::new(pool.clone(), courses.clone());
         let limits = config
@@ -79,7 +94,9 @@ impl AppState {
             .unwrap_or_default();
         let runner = CodeRunner::new(pool.clone(), judge0, limits);
         let events = GradingEvents::new(sessions.client(), sessions.redis());
-        Self {
+        Ok(Self {
+            ai,
+            ai_events,
             submissions: SubmissionsService::new(
                 pool.clone(),
                 assessments.clone(),
@@ -129,6 +146,6 @@ impl AppState {
             identity,
             google,
             storage,
-        }
+        })
     }
 }

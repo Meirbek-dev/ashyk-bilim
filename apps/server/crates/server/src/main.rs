@@ -50,6 +50,15 @@ enum AdminCommand {
         #[arg(long)]
         course: Option<String>,
     },
+    /// Run the AI eval fixture suite against the live providers and record
+    /// the outcomes in `ai_eval_results` (manual / cron, never CI). The
+    /// fixture suite lands with the first eval datasets; today this records
+    /// a provider smoke check only.
+    AiEval {
+        /// Dataset label stored with the results.
+        #[arg(long, default_value = "smoke")]
+        dataset: String,
+    },
 }
 
 #[tokio::main]
@@ -99,6 +108,28 @@ async fn main() -> anyhow::Result<()> {
                 report.courses,
                 report.learners,
                 report.activity_rows
+            )?;
+            Ok(())
+        }
+        Command::Admin {
+            command: AdminCommand::AiEval { dataset },
+        } => {
+            let pool = ab_db::connect(&config.database).await?;
+            let llm = ab_clients::llm::LlmClient::from_ai_config(&config.ai)?;
+            let ai = ab_domain::ai::AiService::new(
+                pool,
+                config.ai.clone(),
+                llm.map(std::sync::Arc::new),
+                None,
+                None,
+            );
+            let report = ai.run_eval_smoke(&dataset).await?;
+            writeln!(
+                std::io::stdout(),
+                "ai-eval [{dataset}]: provider {} - {} case(s), {} passed",
+                report.model_name,
+                report.total,
+                report.passed
             )?;
             Ok(())
         }
@@ -197,7 +228,7 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     let addr = format!("{}:{}", config.server.host, config.server.port);
     let router = ab_api::build_router(AppState::new(
         pool, config, identity, google, storage, judge0,
-    ))?;
+    )?)?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
     axum::serve(listener, router)
@@ -251,19 +282,35 @@ async fn worker(config: Config) -> anyhow::Result<()> {
     let storage = build_storage(&config)?;
     // SSE fan-out from the worker (deadline extensions) needs Redis; the
     // worker still runs without it.
-    let events = match &config.redis.url {
+    let (events, ai_events, limiter) = match &config.redis.url {
         Some(url) => {
             let sessions = ab_domain::identity::SessionStore::connect(
                 secrecy::ExposeSecret::expose_secret(url),
             )
             .await?;
-            Some(ab_domain::events::GradingEvents::new(
-                sessions.client(),
-                sessions.redis(),
-            ))
+            (
+                Some(ab_domain::events::GradingEvents::new(
+                    sessions.client(),
+                    sessions.redis(),
+                )),
+                Some(ab_domain::events::AiEvents::new(
+                    sessions.client(),
+                    sessions.redis(),
+                )),
+                Some(ab_domain::identity::rate_limit::RateLimiter::new(
+                    sessions.redis(),
+                )),
+            )
         }
-        None => None,
+        None => (None, None, None),
     };
+    let ai = ab_domain::ai::AiService::new(
+        pool.clone(),
+        config.ai.clone(),
+        ab_clients::llm::LlmClient::from_ai_config(&config.ai)?.map(std::sync::Arc::new),
+        ai_events,
+        limiter,
+    );
     let runner = ab_domain::code::CodeRunner::new(
         pool.clone(),
         build_judge0(&config)?,
@@ -318,7 +365,8 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         ))?
         .register(ab_jobs::handlers::grading::BulkActionRunner::new(
             pool, events,
-        ))?;
+        ))?
+        .register(ab_jobs::handlers::ai::ExecuteRunHandler::new(ai))?;
     let cancel = CancellationToken::new();
     let handle = tokio::spawn(worker.run(cancel.clone()));
     shutdown_signal().await;

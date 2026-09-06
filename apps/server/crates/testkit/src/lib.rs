@@ -15,6 +15,7 @@
 )]
 
 pub mod judge0;
+pub mod llm;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -22,7 +23,7 @@ use std::time::Duration;
 use ab_clients::judge0::Judge0Client;
 use ab_clients::zitadel::{ZitadelClient, ZitadelConfig};
 use ab_core::config::{
-    Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ServerConfig, TelemetryConfig,
+    AiConfig, Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ServerConfig, TelemetryConfig,
 };
 use ab_core::id::UserId;
 use ab_domain::code::CodeRunner;
@@ -67,11 +68,13 @@ pub fn test_config() -> Config {
             json_logs: false,
             otlp_endpoint: None,
         },
+        ai: AiConfig::default(),
     }
 }
 
 pub struct TestApp {
     router: Router,
+    ai: ab_domain::ai::AiService,
     pub pool: PgPool,
     pub sessions: ab_domain::identity::SessionStore,
     /// Wiremock standing in for Zitadel — mount fixtures per test.
@@ -80,6 +83,9 @@ pub struct TestApp {
     pub google: MockServer,
     /// Wiremock standing in for Judge0 — see [`judge0::FakeJudge`].
     pub judge0: MockServer,
+    /// Wiremock standing in for the OpenAI-compatible chat completions
+    /// endpoint — see [`llm`] for the reply helpers.
+    pub llm: MockServer,
     judge0_client: Arc<Judge0Client>,
 }
 
@@ -91,9 +97,19 @@ impl TestApp {
     /// given pool + test Redis + fresh Zitadel/Google mocks. Use with
     /// `#[sqlx::test]`.
     pub async fn spawn(pool: PgPool) -> Self {
+        Self::spawn_with(pool, |_| {}).await
+    }
+
+    /// [`Self::spawn`] with a hook to adjust the config first (feature
+    /// flags, budgets, disabled providers).
+    pub async fn spawn_with(pool: PgPool, adjust: impl FnOnce(&mut Config)) -> Self {
         let zitadel = MockServer::start().await;
         let google = MockServer::start().await;
         let judge0 = MockServer::start().await;
+        let llm = MockServer::start().await;
+        let mut config = test_config();
+        config.ai = llm::test_ai_config(&llm);
+        adjust(&mut config);
         let judge0_client = Arc::new(
             Judge0Client::new(ab_clients::judge0::Judge0Config {
                 base_url: judge0.uri(),
@@ -145,22 +161,33 @@ impl TestApp {
         );
         let state = ab_api::AppState::new(
             pool.clone(),
-            test_config(),
+            config,
             identity,
             Some(google_auth),
             storage,
             Some(judge0_client.clone()),
         );
+        let state = state.expect("test state must build");
+        let ai = state.ai.clone();
         let router = ab_api::build_router(state).expect("test router must build");
         Self {
             router,
+            ai,
             pool,
             sessions,
             zitadel,
             google,
             judge0,
+            llm,
             judge0_client,
         }
+    }
+
+    /// The same AI service the app uses — for driving queued runs the way
+    /// the worker handler does.
+    #[must_use]
+    pub fn ai_service(&self) -> ab_domain::ai::AiService {
+        self.ai.clone()
     }
 
     /// Serve the router on an ephemeral port for tests that need a real

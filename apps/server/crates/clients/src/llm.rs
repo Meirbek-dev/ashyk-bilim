@@ -239,7 +239,60 @@ impl From<WireUsage> for Usage {
     }
 }
 
+impl LlmConfig {
+    /// The provider chain the `AB__AI__*` section describes: OpenAI when
+    /// its key is set, then OpenRouter when its key is set. Empty when
+    /// neither is configured or the master switch is off.
+    #[must_use]
+    pub fn from_ai_config(config: &ab_core::config::AiConfig) -> Self {
+        let mut providers = Vec::with_capacity(2);
+        if !config.ai_enabled {
+            return Self {
+                providers,
+                max_output_tokens: config.max_output_tokens,
+            };
+        }
+        let key_of = |key: &Option<SecretString>| {
+            key.as_ref()
+                .filter(|k| !k.expose_secret().trim().is_empty())
+                .cloned()
+        };
+        if let Some(api_key) = key_of(&config.openai_api_key) {
+            providers.push(ProviderConfig {
+                name: "openai".into(),
+                base_url: config.openai_base_url.trim_end_matches('/').to_owned(),
+                api_key,
+                model: config.openai_model.clone(),
+                timeout: Duration::from_secs_f64(config.openai_timeout_secs.max(0.1)),
+            });
+        }
+        if let Some(api_key) = key_of(&config.openrouter_api_key) {
+            providers.push(ProviderConfig {
+                name: "openrouter".into(),
+                base_url: config.openrouter_base_url.trim_end_matches('/').to_owned(),
+                api_key,
+                model: config.openrouter_model.clone(),
+                timeout: Duration::from_secs_f64(config.openrouter_timeout_secs.max(0.1)),
+            });
+        }
+        Self {
+            providers,
+            max_output_tokens: config.max_output_tokens,
+        }
+    }
+}
+
 impl LlmClient {
+    /// The client for the configured section, `None` when no provider is
+    /// usable (AI routes then answer 503 `ai-disabled` / draft mode).
+    pub fn from_ai_config(config: &ab_core::config::AiConfig) -> ab_core::Result<Option<Self>> {
+        let llm = LlmConfig::from_ai_config(config);
+        if llm.providers.is_empty() {
+            return Ok(None);
+        }
+        Self::new(llm).map(Some)
+    }
+
     pub fn new(config: LlmConfig) -> ab_core::Result<Self> {
         let mut providers = Vec::with_capacity(config.providers.len());
         for provider in config.providers {

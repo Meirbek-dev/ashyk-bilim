@@ -34,11 +34,12 @@ pub use ab_db::ai::{
     ThreadRow, ThreadSummaryRow,
 };
 pub use agents::course_analyst::LatestCourseAnalysis;
-pub use agents::course_qa::{QaReplay, QaSession, QaTurn};
+pub use agents::course_qa::{QaReplay, QaRequest, QaSession, QaStream, QaTurn};
 pub use budget::TokenBudget;
-pub use capabilities::{ScopeCapabilities, Surface};
+pub use capabilities::{ContextSummary, FeatureCapability, ScopeCapabilities, Surface};
 pub use runs::{
-    AdminSettings, EXECUTE_RUN_JOB, EvalDashboard, RunDetail, RunListQuery, UsageSummary,
+    AdminSettings, EXECUTE_RUN_JOB, EvalDashboard, EvalReport, RunDetail, RunListQuery,
+    UsageSummary,
 };
 
 use crate::catalog::courses::CoursesService;

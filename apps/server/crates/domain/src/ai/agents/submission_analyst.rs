@@ -4,7 +4,7 @@
 
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole};
-use ab_core::id::{AiSubmissionAnalysisId, SubmissionId, UserId};
+use ab_core::id::{SubmissionId, UserId};
 use ab_core::{Error, Result};
 use ab_db::ai::{NewSubmissionAnalysis, RunRow, SubmissionAnalysisRow};
 use ab_db::submissions::SubmissionRow;
@@ -236,13 +236,6 @@ impl AiService {
     ) -> Result<Option<SubmissionAnalysisRow>> {
         self.accessible_submission(actor, submission_id).await?;
         ab_db::ai::latest_submission_analysis(&self.pool, submission_id).await
-    }
-
-    pub(crate) async fn submission_analysis_by_id(
-        &self,
-        id: AiSubmissionAnalysisId,
-    ) -> Result<Option<SubmissionAnalysisRow>> {
-        ab_db::ai::get_submission_analysis(&self.pool, id).await
     }
 }
 
