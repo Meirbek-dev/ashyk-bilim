@@ -50,6 +50,15 @@ enum AdminCommand {
         #[arg(long)]
         course: Option<String>,
     },
+    /// Rebuild the analytics daily rollups and risk snapshots for every UTC
+    /// day in `--from ..= --to` (`YYYY-MM-DD`; both default to today).
+    /// Idempotent: each day's rows are replaced.
+    AnalyticsRollup {
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -100,6 +109,32 @@ async fn main() -> anyhow::Result<()> {
                 report.learners,
                 report.activity_rows
             )?;
+            Ok(())
+        }
+        Command::Admin {
+            command: AdminCommand::AnalyticsRollup { from, to },
+        } => {
+            let today = ab_domain::analytics::context::utc_date(
+                ab_domain::analytics::context::now_unix(),
+            );
+            let from = from.unwrap_or_else(|| today.clone());
+            let to = to.unwrap_or(today);
+            let pool = ab_db::connect(&config.database).await?;
+            let report = ab_domain::analytics::AnalyticsService::new(pool)
+                .run_rollup_range(&from, &to)
+                .await?;
+            for (date, counts) in &report {
+                writeln!(
+                    std::io::stdout(),
+                    "{date}: {} course, {} engagement, {} learner-course, {} risk, {} assessment, {} teacher row(s)",
+                    counts.course_rows,
+                    counts.engagement_rows,
+                    counts.progress_rows,
+                    counts.risk_rows,
+                    counts.assessment_rows,
+                    counts.teacher_rows
+                )?;
+            }
             Ok(())
         }
         Command::Admin {
@@ -303,6 +338,13 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         serde_json::json!({}),
     )
     .await?;
+    ab_db::schedule::upsert(
+        &pool,
+        ab_jobs::handlers::analytics::KIND,
+        std::time::Duration::from_hours(6),
+        serde_json::json!({}),
+    )
+    .await?;
 
     let worker = ab_jobs::Worker::new(pool.clone(), ab_jobs::WorkerConfig::default())
         .register(ab_jobs::handlers::uploads::UploadsReaper::new(
@@ -314,6 +356,9 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         ))?
         .register(ab_jobs::handlers::submissions::AutoSubmitter::new(runner))?
         .register(ab_jobs::handlers::submissions::IdempotencySweeper::new(
+            pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::analytics::AnalyticsRollup::new(
             pool.clone(),
         ))?
         .register(ab_jobs::handlers::grading::BulkActionRunner::new(

@@ -873,6 +873,16 @@ impl GradingService {
         ProgressProjector::new(self.pool.clone())
             .after_submission(fresh.assessment_id, fresh.user_id)
             .await;
+        crate::analytics::events::hooks::submission_status(
+            &self.pool,
+            fresh.id,
+            fresh.assessment_id,
+            fresh.course_id,
+            fresh.user_id,
+            target,
+            Some(actor.user_id),
+        )
+        .await;
         self.view(fresh, &assessment).await
     }
 
@@ -994,6 +1004,16 @@ impl GradingService {
             ProgressProjector::new(self.pool.clone())
                 .after_submission(assessment_id, row.user_id)
                 .await;
+            crate::analytics::events::hooks::submission_status(
+                &self.pool,
+                row.id,
+                assessment_id,
+                row.course_id,
+                row.user_id,
+                SubmissionStatus::Published,
+                Some(actor.user_id),
+            )
+            .await;
             published += 1;
             self.emit(
                 row.id,

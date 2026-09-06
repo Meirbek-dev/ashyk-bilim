@@ -5,7 +5,7 @@
 //! logins. A failed insert is logged and never fails the caller.
 
 use ab_core::assessments::SubmissionStatus;
-use ab_core::id::{ActivityId, AssessmentId, CourseId, DiscussionId, SubmissionId, UserId};
+use ab_core::id::{ActivityId, AssessmentId, CourseId, SubmissionId, UserId};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
@@ -99,6 +99,32 @@ pub mod hooks {
     use ab_core::id::{ActivityId, AssessmentId, CourseId, DiscussionId, SubmissionId, UserId};
     use sqlx::PgPool;
 
+    /// A learner submitted (explicitly or by auto-submit). Recorded as
+    /// `submission.submitted` whatever the auto-grader made of it.
+    pub async fn submission_submitted(
+        pool: &PgPool,
+        submission_id: SubmissionId,
+        assessment_id: AssessmentId,
+        course_id: CourseId,
+        user_id: UserId,
+        status: SubmissionStatus,
+    ) {
+        record(
+            pool,
+            AnalyticsEventType::SubmissionSubmitted,
+            EventDraft {
+                course_id: Some(course_id),
+                activity_id: None,
+                assessment_id: Some(assessment_id),
+                submission_id: Some(submission_id),
+                user_id: Some(user_id),
+                actor_id: None,
+                payload: serde_json::json!({ "status": status.as_str() }),
+            },
+        )
+        .await;
+    }
+
     /// A submission reached `status` (submit, grade save, publish, return).
     /// `actor` is the teacher for grading transitions, `None` for the learner
     /// or the auto-grader.
@@ -155,7 +181,7 @@ pub mod hooks {
         pool: &PgPool,
         course_id: CourseId,
         user_id: UserId,
-        discussion_id: super::DiscussionId,
+        discussion_id: DiscussionId,
         is_reply: bool,
     ) {
         record(
@@ -184,7 +210,3 @@ pub mod hooks {
         .await;
     }
 }
-
-// Keep the id import used by the hooks' signature documentation.
-#[allow(dead_code)]
-const _: Option<DiscussionId> = None;
