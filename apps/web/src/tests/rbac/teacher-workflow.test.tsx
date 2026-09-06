@@ -36,26 +36,17 @@ vi.mock('@/lib/api-client', () => ({
 
 const createMockSession = (permissions: string[]): Session => ({
   user: {
-    id: 1,
-    user_uuid: 'user-123',
+    id: '0198c0ae-0000-7000-8000-000000000001',
     username: 'testuser',
     email: 'test@example.com',
-    first_name: 'Test',
-    last_name: 'User',
-    middle_name: null,
-    avatar_image: null,
-    bio: null,
-    details: null,
-    profile: null,
-    theme: null,
+    display_name: 'Test User',
+    bio: '',
+    locale: 'en-US',
+    avatar_key: null,
   },
+  userId: '0198c0ae-0000-7000-8000-000000000001',
   roles: [],
   permissions,
-  permissions_timestamp: Date.now(),
-  expires_at: Date.now() + 3_600_000,
-  session_version: 1,
-  expiresAt: Date.now() + 3_600_000,
-  sessionVersion: 1,
 })
 
 describe('Teacher (Instructor) Workflow', () => {

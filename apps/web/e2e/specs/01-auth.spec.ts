@@ -1,12 +1,15 @@
 /**
- * SPEC: Authentication flows
+ * SPEC: Authentication flows (v2 BFF)
  *
  * Covers:
  *  - Login with valid credentials
  *  - Login with invalid credentials shows error
- *  - Sign-up with a new account
- *  - Sign-up with a duplicate email shows error
+ *  - Client-side validation of the login form
  *  - Unauthenticated users are redirected to login
+ *
+ * v2 has no self-registration or password reset (accounts are provisioned by
+ * an administrator or created through Google sign-in), so the legacy sign-up
+ * scenarios are gone.
  */
 
 import { test, expect } from '../fixtures'
@@ -35,76 +38,28 @@ test.describe('Login', () => {
     expect(page.url()).toContain('/login')
   })
 
-  test('shows validation error when email is empty', async ({ page, loginPage }) => {
+  test('shows validation error when login is empty', async ({ page, loginPage }) => {
     await loginPage.goto()
     await loginPage.passwordInput.fill('somepassword')
     await loginPage.submitButton.click()
 
-    // A validation error for the email field should appear
-    await expect(page.getByText(/required|email/i).first()).toBeVisible()
+    // A validation error for the login field should appear
+    await expect(page.getByText(/required/i).first()).toBeVisible()
     expect(page.url()).toContain('/login')
   })
 
-  test('shows validation error when password too short', async ({ page, loginPage }) => {
+  test('shows validation error when password is empty', async ({ page, loginPage }) => {
     await loginPage.goto()
     await loginPage.emailInput.fill(USERS.admin.email)
-    await loginPage.passwordInput.fill('short')
     await loginPage.submitButton.click()
 
-    await expect(page.getByText(/password.*length|at least/i).first()).toBeVisible()
+    await expect(page.getByText(/required/i).first()).toBeVisible()
     expect(page.url()).toContain('/login')
   })
-})
 
-// ---------------------------------------------------------------------------
-// Sign-up
-// ---------------------------------------------------------------------------
-
-test.describe('Sign-up', () => {
-  // Use a unique email per run to avoid the "already exists" error
-  const uniqueEmail = () => `e2e-signup-${Date.now()}@test.local`
-
-  test('creates a new account and redirects', async ({ page, signupPage }) => {
-    await signupPage.goto()
-    await signupPage.signup({
-      firstName: 'Test',
-      lastName: 'User',
-      email: uniqueEmail(),
-      password: 'TestUser1234!',
-    })
-
-    // After successful signup the app should redirect away from /signup
-    await page.waitForURL(url => !url.pathname.includes('/signup'), {
-      timeout: 15_000,
-    })
-    expect(page.url()).not.toContain('/signup')
-  })
-
-  test('shows error when email is already registered', async ({ page, signupPage }) => {
-    await signupPage.goto()
-    // Use an email we know already exists (admin)
-    await signupPage.signup({
-      firstName: 'Dup',
-      lastName: 'User',
-      email: USERS.admin.email,
-      password: 'TestUser1234!',
-    })
-
-    await expect(signupPage.errorBanner).toBeVisible({ timeout: 10_000 })
-    expect(page.url()).toContain('/signup')
-  })
-
-  test('shows validation error when passwords do not match', async ({ page, signupPage }) => {
-    await signupPage.goto()
-    await signupPage.firstNameInput.fill('Test')
-    await signupPage.lastNameInput.fill('User')
-    await signupPage.emailInput.fill(uniqueEmail())
-    await signupPage.passwordInput.fill('Password1234!')
-    await signupPage.confirmPasswordInput.fill('DifferentPassword1234!')
-    await signupPage.submitButton.click()
-
-    await expect(page.getByText(/passwords.*(do not|don't) match/i).first()).toBeVisible()
-    expect(page.url()).toContain('/signup')
+  test('surfaces backend redirect errors from the Google flow', async ({ page, loginPage }) => {
+    await page.goto('/en/login?error=google-oauth-expired')
+    await expect(loginPage.errorBanner).toBeVisible()
   })
 })
 
@@ -118,6 +73,11 @@ test.describe('Auth guard', () => {
     await page.goto('/en/dash/courses')
     // Should be redirected to the login page
     await page.waitForURL(/\/login/, { timeout: 10_000 })
-    expect(page.url()).toContain('/login')
+    expect(page.url()).toContain('returnTo=')
+  })
+
+  test('legacy sign-up route no longer exists', async ({ page }) => {
+    const response = await page.goto('/en/signup')
+    expect(response?.status()).toBe(404)
   })
 })

@@ -19,44 +19,19 @@ vi.mock('@/lib/api-client', () => ({
   apiJson: vi.fn(),
 }))
 
-const mockUser = {
-  id: 1,
-  user_uuid: 'user_1',
-  username: 'testuser',
-  email: 'test@example.com',
-  first_name: 'Test',
-  last_name: 'User',
-  avatar_image: null,
-  bio: null,
-  middle_name: null,
-  theme: 'system',
-}
-
 const mockSession: Session = {
   user: {
-    ...mockUser,
-    details: {},
-    profile: {},
+    id: '0198c0ae-0000-7000-8000-000000000001',
+    username: 'testuser',
+    email: 'test@example.com',
+    display_name: 'Test User',
+    bio: '',
+    locale: 'en-US',
+    avatar_key: null,
   },
-  roles: [
-    {
-      role: {
-        id: 1,
-        name: 'User',
-        slug: 'user',
-        priority: 10,
-        is_system: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        permissions_count: 0,
-        users_count: 1,
-      },
-    },
-  ],
+  userId: '0198c0ae-0000-7000-8000-000000000001',
+  roles: ['user'],
   permissions: ['course:read:own', 'course:update:own'],
-  permissions_timestamp: Date.now(),
-  expiresAt: Date.now() + 86_400_000,
-  sessionVersion: 1,
 }
 
 describe('Security Audit - Frontend', () => {

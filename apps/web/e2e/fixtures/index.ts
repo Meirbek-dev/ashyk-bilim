@@ -10,7 +10,6 @@
 import { test as base, expect } from '@playwright/test'
 import { STORAGE_STATE } from '../auth-states'
 import { LoginPage } from '../page-objects/LoginPage'
-import { SignupPage } from '../page-objects/SignupPage'
 import { NavBar } from '../page-objects/NavBar'
 import { DashCoursesPage } from '../page-objects/DashCoursesPage'
 import { CourseCreatePage } from '../page-objects/CourseCreatePage'
@@ -29,7 +28,6 @@ import { FileSubmissionPage } from '../page-objects/FileSubmissionPage'
 
 interface LmsFixtures {
   loginPage: LoginPage
-  signupPage: SignupPage
   navBar: NavBar
   dashCoursesPage: DashCoursesPage
   courseCreatePage: CourseCreatePage
@@ -49,7 +47,6 @@ interface LmsFixtures {
 
 export const test = base.extend<LmsFixtures>({
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
-  signupPage: async ({ page }, use) => use(new SignupPage(page)),
   navBar: async ({ page }, use) => use(new NavBar(page)),
   dashCoursesPage: async ({ page }, use) => use(new DashCoursesPage(page)),
   courseCreatePage: async ({ page }, use) => use(new CourseCreatePage(page)),

@@ -4,14 +4,22 @@ import { APIError, isApiError } from '@/lib/api/assertSuccess'
 
 // Mock the config and auth redirect to avoid side effects
 vi.mock('@services/config/config', () => ({
-  getAPIUrl: () => 'http://localhost:8000/api/v1/',
-  getServerAPIUrl: () => 'http://api:8000/api/v1/',
+  getAPIUrl: () => 'http://localhost:8000/api/v2/',
+  getServerAPIUrl: () => 'http://api:8000/api/v2/',
 }))
 
+const buildLoginRedirect = vi.fn((returnTo?: string | null) => `/login?returnTo=${encodeURIComponent(returnTo ?? '/')}`)
 vi.mock('@/lib/auth/redirect', () => ({
-  buildLoginRedirect: (returnTo?: string | null) => `/login?returnTo=${encodeURIComponent(returnTo ?? '/')}`,
+  buildLoginRedirect: (returnTo?: string | null) => buildLoginRedirect(returnTo),
   isAuthRoute: () => false,
 }))
+
+function problem(body: Record<string, unknown>, init: ResponseInit = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: { 'Content-Type': 'application/problem+json', ...(init.headers ?? {}) },
+  })
+}
 
 describe('apiJson timeout', () => {
   beforeEach(() => {
@@ -77,6 +85,16 @@ describe('apiJson timeout', () => {
     expect(data.ok).toBe(true)
   })
 
+  it('targets the v2 base path with credentials', async () => {
+    ;(global.fetch as any).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+
+    await apiJson('courses')
+
+    const [url, init] = (global.fetch as any).mock.calls[0]
+    expect(String(url)).toBe('http://localhost:8000/api/v2/courses')
+    expect(init.credentials).toBe('include')
+  })
+
   it('adds trace context headers to outgoing API requests', async () => {
     ;(global.fetch as any).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
 
@@ -89,7 +107,7 @@ describe('apiJson timeout', () => {
 
   it('retries an idempotent transient failure once', async () => {
     ;(global.fetch as any)
-      .mockResolvedValueOnce(new Response(JSON.stringify({ message: 'try again' }), { status: 503 }))
+      .mockResolvedValueOnce(problem({ code: 'service-unavailable', status: 503, title: 'x', type: 'x' }, { status: 503 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
 
     const promise = apiJson<{ ok: boolean }>('flaky')
@@ -99,60 +117,55 @@ describe('apiJson timeout', () => {
     expect((global.fetch as any).mock.calls).toHaveLength(2)
   })
 
-  it('should refresh once and retry concurrent 401 responses', async () => {
-    const calls: string[] = []
-    let originalRequestCount = 0
-    ;(global.fetch as any).mockImplementation((url: string | Request | URL) => {
-      const urlString = String(url)
-      calls.push(urlString)
+  it('sends the browser to the login page on a 401 (no refresh dance)', async () => {
+    const assign = vi.fn()
+    vi.stubGlobal('location', { pathname: '/dash/courses', search: '', assign })
+    ;(global.fetch as any).mockResolvedValue(
+      problem({ code: 'unauthenticated', status: 401, title: 'Authentication required', type: 'x' }, { status: 401 }),
+    )
 
-      if (urlString.startsWith('/api/auth/refresh')) {
-        return Promise.resolve(new Response(JSON.stringify({ status: 'ok' }), { status: 200 }))
-      }
-
-      originalRequestCount += 1
-      if (originalRequestCount <= 2) {
-        return Promise.resolve(new Response(null, { status: 401 }))
-      }
-
-      return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+    await expect(apiJson('needs-auth', { timeoutMs: false })).rejects.toMatchObject({
+      code: 'unauthenticated',
+      status: 401,
     })
 
-    const [first, second] = await Promise.all([
-      apiResult('needs-auth', { timeoutMs: false }),
-      apiResult('needs-auth', { timeoutMs: false }),
-    ])
-
-    expect(first.status).toBe(200)
-    expect(second.status).toBe(200)
-    expect(calls.filter(call => call.startsWith('/api/auth/refresh'))).toHaveLength(1)
+    expect((global.fetch as any).mock.calls).toHaveLength(1)
+    expect(assign).toHaveBeenCalledWith('/login?returnTo=%2Fdash%2Fcourses')
+    vi.unstubAllGlobals()
   })
 
-  it('throws APIError with backend envelope metadata for non-2xx JSON responses', async () => {
+  it('throws APIError with problem+json metadata for non-2xx responses', async () => {
     ;(global.fetch as any).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          code: 'COURSE_NOT_FOUND',
-          message: 'Course was not found',
-          details: { course_uuid: 'course_123' },
+      problem(
+        {
+          type: 'https://docs.ashyq.example/errors/not-found',
+          title: 'Not found',
+          status: 404,
+          code: 'not-found',
+          detail: 'Course was not found',
+          details: { course_id: 'course_123' },
           field_errors: [],
           request_id: 'req-course',
-        }),
-        {
-          status: 404,
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Request-ID': 'req-course',
-          },
         },
+        { status: 404, headers: { 'X-Request-ID': 'req-course' } },
       ),
     )
 
     await expect(apiJson('courses/course_123')).rejects.toMatchObject({
-      code: 'COURSE_NOT_FOUND',
+      code: 'not-found',
       message: 'Course was not found',
+      details: { course_id: 'course_123' },
       requestId: 'req-course',
       status: 404,
+    })
+  })
+
+  it('falls back to the status code when the body is not a problem document', async () => {
+    ;(global.fetch as any).mockResolvedValue(new Response('<html>bad gateway</html>', { status: 502 }))
+
+    await expect(apiJson('gateway', { timeoutMs: false, method: 'POST' })).rejects.toMatchObject({
+      code: 'HTTP_502',
+      status: 502,
     })
   })
 
@@ -169,24 +182,36 @@ describe('apiJson timeout', () => {
     ).rejects.toThrow('Response validation failed')
   })
 
+  it('apiResult exposes response headers (ETag versions) for 2xx responses', async () => {
+    ;(global.fetch as any).mockResolvedValue(
+      new Response(JSON.stringify({ id: 'draft-1' }), { status: 200, headers: { ETag: '"7"' } }),
+    )
+
+    const result = await apiResult<{ id: string }>('submissions/draft-1/draft')
+    expect(result.data.id).toBe('draft-1')
+    expect(result.headers.etag).toBe('"7"')
+  })
+
   it('apiResult throws normalized API errors for non-2xx responses', async () => {
     ;(global.fetch as any).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          code: 'NOPE',
-          message: 'Nope',
-          details: null,
-          field_errors: [],
+      problem(
+        {
+          type: 'x',
+          title: 'Validation failed',
+          status: 422,
+          code: 'validation-failed',
+          field_errors: [{ field: 'name', code: 'required', message: 'name is required' }],
           request_id: 'req-nope',
-        }),
-        { status: 400 },
+        },
+        { status: 422 },
       ),
     )
 
     await expect(apiResult('nope')).rejects.toMatchObject({
-      code: 'NOPE',
+      code: 'validation-failed',
+      fieldErrors: [{ field: 'name', code: 'required', message: 'name is required' }],
       requestId: 'req-nope',
-      status: 400,
+      status: 422,
     })
   })
 
@@ -201,15 +226,9 @@ describe('apiJson timeout', () => {
 
   it('uses APIError instances for typed request failures', async () => {
     ;(global.fetch as any).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          code: 'RATE_LIMITED',
-          message: 'Too many requests',
-          details: null,
-          field_errors: [],
-          request_id: 'req-rate',
-        }),
-        { status: 429, headers: { 'X-Request-ID': 'req-rate' } },
+      problem(
+        { type: 'x', title: 'Too many requests', status: 429, code: 'rate-limited', request_id: 'req-rate' },
+        { status: 429, headers: { 'X-Request-ID': 'req-rate', 'Retry-After': '60' } },
       ),
     )
 
@@ -219,7 +238,8 @@ describe('apiJson timeout', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(APIError)
       expect(isApiError(error)).toBe(true)
-      expect(error).toMatchObject({ code: 'RATE_LIMITED', requestId: 'req-rate' })
+      expect(error).toMatchObject({ code: 'rate-limited', requestId: 'req-rate' })
+      expect((error as APIError).retryAfterSeconds).toBe(60)
     }
   })
 })

@@ -1,19 +1,23 @@
 /**
  * Global setup — runs once before the entire Playwright test suite.
  *
- * Responsibilities:
- *  1. Register the Teacher and Student accounts via the public API.
- *  2. Log in as Admin, grant the "Teacher" role to the Teacher user via API.
- *  3. Persist authenticated browser storage states (cookies + localStorage)
+ * Responsibilities (v2 contract, `/api/v2`):
+ *  1. Verify the Admin, Teacher and Student accounts can log in through the
+ *     BFF (`POST /auth/login`). v2 has no registration endpoint — the three
+ *     accounts must exist beforehand (seeded through Zitadel + the ETL /
+ *     rehearsal stack, see docs/rewrite/EXECUTION-PLAN.md 9.4).
+ *  2. Log in as Admin and grant the teacher role
+ *     (`POST /users/{id}/roles {role: slug}`) to the Teacher user, resolved
+ *     through the admin listing (`GET /users?q=`).
+ *  3. Persist authenticated browser storage states (the `ab_session` cookie)
  *     for Admin, Teacher, and Student so individual test files can reuse them
  *     without re-logging-in for every single spec.
  *
  * Design decisions:
- *  - We use direct REST API calls (via fetch) for user creation / role
- *    assignment. This is faster and more reliable than browser interactions
- *    for purely administrative tasks.
+ *  - Direct REST calls for the administrative steps — faster and more
+ *    reliable than browser interactions.
  *  - A real browser session is used only to capture the storageState, which
- *    Next.js sets via HttpOnly cookies that fetch() can't obtain.
+ *    the server action sets via an HttpOnly cookie on the app origin.
  */
 
 import { chromium } from '@playwright/test'
@@ -52,159 +56,76 @@ function loadEnvFile(filePath: string): void {
 loadEnvFile(path.join(__dirname, '.env.test'))
 loadEnvFile(path.join(__dirname, '.env.test.local')) // overrides
 
-const API_URL = getEnvOr('E2E_API_URL', 'http://localhost:1338/api/v1')
+const API_URL = getEnvOr('E2E_API_URL', 'http://localhost:8080/api/v2').replace(/\/+$/u, '')
 const BASE_URL = getEnvOr('E2E_BASE_URL', 'http://localhost:3000')
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** POST /api/v1/auth/register  (FastAPI-Users standard endpoint) */
-async function registerUser(opts: {
-  email: string
-  password: string
-  firstName: string
-  lastName: string
-}): Promise<{ id: number; email: string } | null> {
-  // Derive a username from the email local-part (e.g. e2e-teacher@example.com → e2e_teacher)
-  const usernameSource = opts.email.split('@')[0] ?? opts.email
-  const username = usernameSource.replace(/[^a-zA-Z0-9_]/g, '_')
-  const res = await fetch(`${API_URL}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: opts.email,
-      password: opts.password,
-      username,
-      first_name: opts.firstName,
-      last_name: opts.lastName,
-      is_active: true,
-    }),
-  })
-
-  if (res.status === 400) {
-    // Handle "already exists" responses — both FastAPI-Users and platform-custom formats
-    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
-    const alreadyExists =
-      body.detail === 'REGISTER_USER_ALREADY_EXISTS' ||
-      (body as { error_code?: string })?.error_code === 'email_taken' ||
-      (body as { error_code?: string })?.error_code === 'username_taken'
-    if (alreadyExists) {
-      console.log(`[setup] User ${opts.email} already exists — skipping registration.`)
-      return null
-    }
-    throw new Error(`[setup] Failed to register ${opts.email}: 400 ${JSON.stringify(body)}`)
-  }
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`[setup] Failed to register ${opts.email}: ${res.status} ${text}`)
-  }
-
-  return res.json()
+interface Problem {
+  code?: string
+  detail?: string
+  title?: string
 }
 
-/** POST /api/v1/auth/login  (form-encoded, returns Set-Cookie) */
-async function loginViaApi(email: string, password: string): Promise<string> {
-  const body = new URLSearchParams({ username: email, password })
+async function readProblem(res: Response): Promise<string> {
+  const body = (await res.json().catch(() => null)) as Problem | null
+  return body ? `${body.code ?? ''} ${body.detail ?? body.title ?? ''}`.trim() : ''
+}
+
+/** POST /auth/login (JSON) — returns the `ab_session` cookie pair. */
+async function loginViaApi(login: string, password: string): Promise<string> {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString(),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ login, password }),
     redirect: 'manual',
   })
 
-  if (!res.ok && res.status !== 302) {
-    throw new Error(`[setup] Login failed for ${email}: ${res.status}`)
+  if (!res.ok) {
+    throw new Error(`[setup] Login failed for ${login}: ${res.status} ${await readProblem(res)}`)
   }
 
   const setCookie = res.headers.getSetCookie?.() ?? []
-  if (setCookie.length === 0) {
-    throw new Error(`[setup] Login for ${email} returned no Set-Cookie header.`)
+  const session = setCookie.map(c => c.split(';')[0]).find(pair => pair?.startsWith('ab_session='))
+  if (!session) {
+    throw new Error(`[setup] Login for ${login} returned no ab_session cookie.`)
   }
-  // Return raw cookie string for use in subsequent API requests
-  return setCookie.map(c => c.split(';')[0]).join('; ')
+  return session
 }
 
-/** GET /api/v1/auth/me — returns the current session object with user nested under `user` key */
-async function getMe(cookieHeader: string): Promise<{ id: number; email: string; user_uuid: string }> {
-  const res = await fetch(`${API_URL}/auth/me`, {
-    headers: { Cookie: cookieHeader },
-  })
-  if (!res.ok) throw new Error(`[setup] /auth/me failed: ${res.status}`)
-  const data = (await res.json()) as {
-    user?: { id: number; email: string; user_uuid: string }
-    id?: number
-    email?: string
-    user_uuid?: string
-  }
-  // The endpoint wraps the user object: { user: { id, email, ... }, roles, ... }
-  return data.user ?? (data as { id: number; email: string; user_uuid: string })
+/** GET /auth/session — the caller's user id, roles and permissions. */
+async function getSessionInfo(cookieHeader: string): Promise<{ user_id: string; roles: string[] }> {
+  const res = await fetch(`${API_URL}/auth/session`, { headers: { Cookie: cookieHeader } })
+  if (!res.ok) throw new Error(`[setup] /auth/session failed: ${res.status}`)
+  return res.json() as Promise<{ user_id: string; roles: string[] }>
 }
 
-/** GET /api/v1/roles — list all roles, returns array of { id, slug, name } */
-async function listRoles(cookieHeader: string): Promise<{ id: number; slug: string; name: string }[]> {
-  const res = await fetch(`${API_URL}/roles`, {
-    headers: { Cookie: cookieHeader },
-  })
-  if (!res.ok) throw new Error(`[setup] GET /roles failed: ${res.status}`)
-  return res.json()
-}
-
-/** GET /api/v1/rbac/user-roles — find the numeric user ID for an email */
-async function findUserIdByEmail(cookieHeader: string, email: string): Promise<number | null> {
-  const res = await fetch(`${API_URL}/rbac/user-roles`, {
-    headers: { Cookie: cookieHeader },
-  })
-  if (!res.ok) throw new Error(`[setup] GET /rbac/user-roles failed: ${res.status}`)
-  const rows: { user_id: number; user?: { email: string } }[] = await res.json()
-  const match = rows.find(r => r.user?.email === email)
-  return match?.user_id ?? null
-}
-
-/**
- * Fall back to fetching the user's own session after they log in,
- * since non-admin calls to user-roles may not include the user.
- */
-async function findOrFetchUserId(adminCookie: string, userCookie: string, email: string): Promise<number> {
-  const fromRoles = await findUserIdByEmail(adminCookie, email)
-  if (fromRoles !== null) return fromRoles
-
-  // Fall back: call /auth/me as the user themselves
-  const me = await getMe(userCookie)
-  return me.id
-}
-
-/** POST /api/v1/rbac/roles/assign */
-async function assignRole(cookieHeader: string, userId: number, roleId: number): Promise<void> {
-  const res = await fetch(`${API_URL}/rbac/roles/assign`, {
+/** POST /users/{id}/roles {role} — idempotent role grant (platform admin). */
+async function assignRole(adminCookie: string, userId: string, roleSlug: string): Promise<void> {
+  const res = await fetch(`${API_URL}/users/${userId}/roles`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
-    body: JSON.stringify({ user_id: userId, role_id: roleId }),
+    headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+    body: JSON.stringify({ role: roleSlug }),
   })
-  if (!res.ok) {
-    const text = await res.text()
-    // Idempotent: if already assigned, treat as success
-    if (text.includes('already') || text.includes('duplicate') || res.status === 409) return
-    throw new Error(`[setup] Role assignment failed: ${res.status} ${text}`)
+  // 409 = already holds the role; anything else non-2xx is a real failure.
+  if (!res.ok && res.status !== 409) {
+    throw new Error(`[setup] Failed to assign role ${roleSlug} to ${userId}: ${res.status} ${await readProblem(res)}`)
   }
 }
 
-/**
- * Authenticate in a real browser and capture the storage state (cookies).
- * This is needed because Next.js server-side auth cookies are HttpOnly and
- * cannot be captured via fetch alone.
- */
-async function captureStorageState(email: string, password: string, outputPath: string): Promise<void> {
+/** Log in through the UI and persist the browser storage state. */
+async function captureStorageState(login: string, password: string, outputPath: string): Promise<void> {
   const browser = await chromium.launch()
   const context = await browser.newContext({ baseURL: BASE_URL })
   const page = await context.newPage()
 
   await page.goto('/en/login')
 
-  await page.locator('input[name="email"]').fill(email)
+  await page.locator('input[name="login"]').fill(login)
   await page.locator('input[name="password"]').fill(password)
-  await page.getByRole('button', { name: /login/i }).click()
+  await page.locator('form button[type="submit"]').click()
 
   // Wait for redirect away from /login — indicates successful auth
   await page.waitForURL(url => !url.pathname.includes('/login'), {
@@ -213,7 +134,7 @@ async function captureStorageState(email: string, password: string, outputPath: 
 
   await context.storageState({ path: outputPath })
   await browser.close()
-  console.log(`[setup] Saved storage state for ${email} → ${outputPath}`)
+  console.log(`[setup] Saved storage state for ${login} → ${outputPath}`)
 }
 
 // ---------------------------------------------------------------------------
@@ -226,53 +147,25 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
 
   const teacherEmail = requireEnv('E2E_TEACHER_EMAIL')
   const teacherPassword = requireEnv('E2E_TEACHER_PASSWORD')
-  const teacherFirstName = getEnvOr('E2E_TEACHER_FIRST_NAME', 'Eve')
-  const teacherLastName = getEnvOr('E2E_TEACHER_LAST_NAME', 'Teach')
-
   const studentEmail = requireEnv('E2E_STUDENT_EMAIL')
   const studentPassword = requireEnv('E2E_STUDENT_PASSWORD')
-  const studentFirstName = getEnvOr('E2E_STUDENT_FIRST_NAME', 'Sam')
-  const studentLastName = getEnvOr('E2E_STUDENT_LAST_NAME', 'Learn')
-
   const adminEmail = requireEnv('E2E_ADMIN_EMAIL')
   const adminPassword = requireEnv('E2E_ADMIN_PASSWORD')
 
-  // 1. Register Teacher + Student (idempotent — existing users are OK)
-  await Promise.all([
-    registerUser({
-      email: teacherEmail,
-      password: teacherPassword,
-      firstName: teacherFirstName,
-      lastName: teacherLastName,
-    }),
-    registerUser({
-      email: studentEmail,
-      password: studentPassword,
-      firstName: studentFirstName,
-      lastName: studentLastName,
-    }),
-  ])
-
-  // 2. Log in as Admin via API to get a session cookie for role assignment
+  // 1. Every account must already exist — v2 has no registration endpoint.
   const adminCookie = await loginViaApi(adminEmail, adminPassword)
   const teacherCookie = await loginViaApi(teacherEmail, teacherPassword)
+  await loginViaApi(studentEmail, studentPassword)
 
-  // 3. Resolve the teacher role id (configurable via E2E_TEACHER_ROLE_SLUG, default: 'instructor')
-  const roles = await listRoles(adminCookie)
+  // 2. Grant the teacher role (configurable via E2E_TEACHER_ROLE_SLUG, default: 'instructor')
   const teacherRoleSlug = getEnvOr('E2E_TEACHER_ROLE_SLUG', 'instructor')
-  const teacherRole = roles.find(r => r.slug === teacherRoleSlug)
-  if (!teacherRole) {
-    throw new Error(
-      `[setup] Could not find role with slug "${teacherRoleSlug}". Available roles: ${roles.map(r => `${r.slug}(${r.name})`).join(', ')}`,
-    )
+  const teacher = await getSessionInfo(teacherCookie)
+  if (!teacher.roles.includes(teacherRoleSlug)) {
+    await assignRole(adminCookie, teacher.user_id, teacherRoleSlug)
+    console.log(`[setup] Assigned role "${teacherRoleSlug}" to ${teacherEmail} (id=${teacher.user_id})`)
   }
 
-  // 4. Resolve teacher user ID and assign teacher role
-  const teacherUserId = await findOrFetchUserId(adminCookie, teacherCookie, teacherEmail)
-  await assignRole(adminCookie, teacherUserId, teacherRole.id)
-  console.log(`[setup] Assigned role "${teacherRole.name}" to ${teacherEmail} (id=${teacherUserId})`)
-
-  // 5. Capture real browser storage states (HttpOnly cookies)
+  // 3. Capture real browser storage states (HttpOnly cookies)
   await captureStorageState(adminEmail, adminPassword, STORAGE_STATE.admin)
   await captureStorageState(teacherEmail, teacherPassword, STORAGE_STATE.teacher)
   await captureStorageState(studentEmail, studentPassword, STORAGE_STATE.student)

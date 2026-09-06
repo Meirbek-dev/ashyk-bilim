@@ -832,18 +832,6 @@
     }
   },
   "Auth": {
-    "Forgot": {
-      "backToLogin": "Back to Login",
-      "checkEmail": "Check your email for the reset link",
-      "email": "Email",
-      "emailPlaceholder": "Enter your email",
-      "enterEmailMessage": "Enter your email to receive a reset link",
-      "invalidEmail": "Invalid email address",
-      "loading": "Loading...",
-      "required": "Required",
-      "sendResetLink": "Send Reset Link",
-      "title": "Forgot Password"
-    },
     "Layout": {
       "accessFromOrg": "Please access this page from an organization",
       "orgNotSpecified": "Organization not specified"
@@ -878,59 +866,18 @@
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
       "rateLimited": "Too many attempts. Please try again later.",
       "loginTitle": "Login",
-      "noAccount": "Don't have an account?"
-    },
-    "Reset": {
-      "changePassword": "Change Password",
-      "confirmPassword": "Confirm Password",
-      "confirmPasswordPlaceholder": "Confirm new password",
-      "email": "Email",
-      "emailPlaceholder": "Enter your email",
-      "enterResetDetails": "Enter your email and reset code to reset your password",
-      "loading": "Loading...",
-      "loginAgain": "Please login again with your new password",
-      "newPassword": "New Password",
-      "newPasswordPlaceholder": "Enter new password",
-      "resetCode": "Reset Code",
-      "resetCodePlaceholder": "Enter reset code",
-      "success": "Password reset successfully",
-      "title": "Reset Password"
-    },
-    "Signup": {
-      "accountCreated": "Your account was successfully created",
-      "bio": "Bio",
-      "bioPlaceholder": "Tell something about yourself",
-      "createAccount": "Create an account",
-      "createAccountAndJoin": "Create account & Join",
-      "email": "Email",
-      "emailPlaceholder": "Enter your email",
-      "errorSomethingWentWrong": "Something went wrong",
-      "goBack": "Back to Login",
-      "hi": "Hi",
-      "join": "Join",
-      "loading": "Loading...",
-      "loginToAccount": "Login to your account",
-      "password": "Password",
-      "passwordPlaceholder": "Enter your password",
-      "signInWithGoogle": "Sign in with Google",
-      "submit": "Submit",
-      "title": "Sign up",
-      "redirecting": "Redirecting...",
-      "formComponentNeeded": "Signup form component needed.",
-      "username": "Username",
-      "usernamePlaceholder": "Enter your username",
-      "continueWithGoogle": "Continue with Google",
-      "or": "OR",
-      "firstName": "First Name",
-      "firstNamePlaceholder": "Enter first name",
-      "lastName": "Last Name",
-      "lastNamePlaceholder": "Enter last name",
-      "confirmPassword": "Confirm Password",
-      "confirmPasswordPlaceholder": "Confirm your password",
-      "alreadyHaveAccount": "Already have an account?",
-      "signIn": "Sign in",
-      "emailTaken": "An account with this email already exists",
-      "usernameTaken": "This username is already taken"
+      "noAccount": "Don't have an account?",
+      "loginIdentifier": "Email or username",
+      "loginIdentifierPlaceholder": "Enter your email or username",
+      "totpCode": "Verification code",
+      "totpCodePlaceholder": "Enter the 6-digit code",
+      "totpHint": "Enter the code from your authenticator app.",
+      "verifyCode": "Verify",
+      "backToPassword": "Back to login",
+      "accountDisabled": "This account is disabled. Contact an administrator.",
+      "invalidTotpCode": "Invalid one-time code.",
+      "googleCancelled": "Google sign-in was cancelled.",
+      "noAccountHint": "Accounts are created by the platform administrator. Sign in with Google if your address is already registered."
     },
     "password": "Password",
     "passwordPlaceholder": "Enter your password"
@@ -6365,22 +6312,34 @@
           "usernameLabel": "Username",
           "usernamePlaceholder": "Enter your username"
         },
-        "EditPassword": {
-          "Notifications": {
-            "passwordUpdateError": "Failed to update password",
-            "passwordUpdateSuccess": "Password updated successfully",
-            "promptLogoutOnPasswordChange": "Please login again with your new password",
-            "updating": "Updating password..."
-          },
-          "confirmPasswordLabel": "Confirm Password",
-          "currentPasswordLabel": "Current Password",
-          "description": "Update your password to keep your account secure",
-          "logoutWarning": "You will be logged out after changing your password",
-          "newPasswordLabel": "New Password",
-          "promptLogoutOnPasswordChange": "Please log in again with your new password",
-          "title": "Change Password",
-          "updateButton": "Update Password",
-          "updatingButton": "Updating..."
+        "Security": {
+          "sessionsTitle": "Active sessions",
+          "sessionsDescription": "Devices signed in to your account. Revoke any session you do not recognise.",
+          "sessionsLoadError": "Could not load your sessions.",
+          "loading": "Loading...",
+          "retry": "Retry",
+          "unknownDevice": "Unknown device",
+          "currentSession": "Current",
+          "lastSeen": "Last active: {at}",
+          "revoke": "Revoke",
+          "sessionRevoked": "Session revoked",
+          "totpTitle": "Two-factor authentication",
+          "totpDescription": "Protect sign-in with one-time codes from an authenticator app (TOTP).",
+          "totpScanHint": "Add the secret to your authenticator app and enter the first code to activate it.",
+          "totpSecretLabel": "TOTP secret",
+          "totpOpenAuthenticator": "Open in authenticator app",
+          "codeLabel": "Code from the app",
+          "codePlaceholder": "Enter the 6-digit code",
+          "codeHint": "The code refreshes every 30 seconds.",
+          "activate": "Activate",
+          "cancel": "Cancel",
+          "enableTotp": "Enable two-factor authentication",
+          "disableTotp": "Disable",
+          "totpActive": "Two-factor authentication is on",
+          "totpAlreadyActive": "Two-factor authentication is already enabled.",
+          "totpActivated": "Two-factor authentication enabled",
+          "totpRemoved": "Two-factor authentication disabled",
+          "invalidCode": "Invalid code. Try again."
         }
       },
       "gamification": "Gamification Settings",
@@ -6462,16 +6421,6 @@
         "username": "Username",
         "usernamePlaceholder": "Enter your username"
       },
-      "password": "Password",
-      "passwordSection": {
-        "currentPasswordLabel": "Current Password",
-        "description": "Update your password to keep your account secure",
-        "logoutWarning": "You will be logged out after changing your password",
-        "newPasswordLabel": "New Password",
-        "title": "Change Password",
-        "updateButton": "Update Password",
-        "updatingButton": "Updating..."
-      },
       "profile": "Profile",
       "profileSection": {
         "addButton": "Add Section",
@@ -6541,7 +6490,17 @@
         },
         "untitledSection": "Untitled Section"
       },
-      "title": "Account Settings"
+      "title": "Account Settings",
+      "security": "Security",
+      "securitySection": {
+        "currentPasswordLabel": "Current Password",
+        "description": "Update your password to keep your account secure",
+        "logoutWarning": "You will be logged out after changing your password",
+        "newPasswordLabel": "New Password",
+        "title": "Change Password",
+        "updateButton": "Update Password",
+        "updatingButton": "Updating..."
+      }
     },
     "UserProfileBuilder": {
       "AffiliationEditor": {
@@ -6864,7 +6823,42 @@
     "coursesLoadErrorTitle": "Courses failed to load",
     "coursesLoadErrorDescription": "Courses could not be loaded. Retry the request or use the support reference if it keeps failing.",
     "activityLoadErrorTitle": "Activity failed to load",
-    "activityLoadErrorDescription": "This activity could not be loaded. Retry the request or use the support reference if it keeps failing."
+    "activityLoadErrorDescription": "This activity could not be loaded. Retry the request or use the support reference if it keeps failing.",
+    "codes": {
+      "internal": "Internal server error. Please try again later.",
+      "not-found": "The requested resource was not found.",
+      "forbidden": "You do not have permission to perform this action.",
+      "unauthenticated": "Please sign in to continue.",
+      "conflict": "The data was changed elsewhere. Reload the page and try again.",
+      "validation-failed": "Check the highlighted fields and try again.",
+      "precondition-failed": "This record was changed by someone else. Reload the page and try again.",
+      "rate-limited": "Too many requests. Please try again later.",
+      "payload-too-large": "The file or request is too large.",
+      "service-unavailable": "The service is temporarily unavailable. Please try again later.",
+      "invalid-credentials": "Wrong login or password.",
+      "mfa-required": "Enter the code from your authenticator app.",
+      "session-expired": "Your session expired. Please sign in again.",
+      "csrf-rejected": "The request was rejected for security reasons. Reload the page and try again.",
+      "account-disabled": "This account is disabled. Contact an administrator.",
+      "google-oauth-expired": "Google sign-in failed or expired. Please try again.",
+      "invalid-totp-code": "Invalid one-time code.",
+      "code-runner-degraded": "The code runner is temporarily unavailable. Please try again later.",
+      "compile-error": "The code does not compile. Fix the errors and try again.",
+      "language-not-allowed": "This programming language is not allowed for the task.",
+      "ai-disabled": "AI features are disabled.",
+      "ai-budget-exhausted": "The AI token budget is exhausted. Please try again later.",
+      "ai-rate-limited": "Hourly AI request limit reached. Please try again later.",
+      "ai-run-cancelled": "The AI run was cancelled.",
+      "ai-provider-unavailable": "The AI provider is unavailable. Please try again later."
+    },
+    "fields": {
+      "required": "This field is required.",
+      "invalid": "Invalid value.",
+      "too-long": "The value is too long.",
+      "too-short": "The value is too short.",
+      "out-of-range": "The value is out of range.",
+      "unknown-field": "Unknown field."
+    }
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -7397,12 +7391,6 @@
       "userSettings": "@{username}'s Settings",
       "users": "Users"
     }
-  },
-  "SignupPage": {
-    "hi": "Hi",
-    "join": "join",
-    "signUp": "Sign Up",
-    "submit": "Submit"
   },
   "TeacherAnalytics": {
     "tabs": {
@@ -10358,7 +10346,11 @@
       "acceptFinding": "Accept",
       "dismissFinding": "Dismiss",
       "createTask": "Create task",
-      "reviewActions": { "accepted": "Accepted", "dismissed": "Dismissed", "task_created": "Task created" },
+      "reviewActions": {
+        "accepted": "Accepted",
+        "dismissed": "Dismissed",
+        "task_created": "Task created"
+      },
       "summaryFindingTitle": "Review generated summary",
       "inspectCitationsAction": "Inspect cited course material before publishing the score.",
       "reviewGateLabel": "I opened the evidence and findings below and reviewed them before publishing.",

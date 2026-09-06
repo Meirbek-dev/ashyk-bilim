@@ -4,7 +4,7 @@ import { fetch as transportFetch } from 'ofetch'
 
 import { getAPIUrl } from '@services/config/config'
 
-import { recoverBrowserSessionFrom401 } from '@/lib/api-client'
+import { handleBrowserUnauthenticated } from '@/lib/api-client'
 
 function resolveAgentUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path
@@ -12,9 +12,9 @@ function resolveAgentUrl(path: string): string {
 }
 
 const fetchAgent: HttpAgentFetchFn = async (url, init) => {
-  let response = await transportFetch(url, { ...init, credentials: 'include' })
-  if (response.status === 401 && (await recoverBrowserSessionFrom401())) {
-    response = await transportFetch(url, { ...init, credentials: 'include' })
+  const response = await transportFetch(url, { ...init, credentials: 'include' })
+  if (response.status === 401) {
+    handleBrowserUnauthenticated()
   }
   return response
 }

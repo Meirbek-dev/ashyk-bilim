@@ -1,5 +1,5 @@
-import UserEditPassword from '@components/Dashboard/Pages/UserAccount/UserEditPassword/UserEditPassword'
+import UserSecuritySettings from '@components/Dashboard/Pages/UserAccount/UserSecuritySettings/UserSecuritySettings'
 
 export default function UserAccountSecurityPage() {
-  return <UserEditPassword />
+  return <UserSecuritySettings />
 }

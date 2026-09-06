@@ -6,12 +6,13 @@ import { toast } from 'sonner'
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form'
 import { presentApiError } from '@/lib/api/error-presenter'
 import type { ErrorRetryPolicy, ErrorSeverity } from '@/lib/api/error-presenter'
-import type { ApiFieldError } from '@/lib/api/generated/api.schemas'
+import type { ApiFieldError } from '@/lib/api/assertSuccess'
 
 export interface ProcessedError {
   actionLabel: string
   code: string | null
   description: string
+  details: Record<string, unknown> | null
   showRetry: boolean
   severity: ErrorSeverity
   retryPolicy: ErrorRetryPolicy
@@ -40,6 +41,13 @@ function normalizeOptions<TFieldValues extends FieldValues>(
   return setErrorOrOptions ?? {}
 }
 
+/**
+ * Translate any API failure for display. Contract error codes resolve through
+ * `Errors.codes.<code>` (kept in sync with the server registry by
+ * `scripts/sync-error-codes.mjs`); field errors resolve through
+ * `Errors.fields.<code>` and are bound to react-hook-form when `setError` is
+ * given.
+ */
 export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
   const t = useTranslations('Errors')
 
@@ -51,18 +59,22 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
     ): ProcessedError => {
       const options = normalizeOptions(setErrorOrOptions, fallback)
       const getTranslation = (key: string, fallbackValue: string): string => {
-        try {
-          const res = t(key)
-          if (res === `Errors.${key}` || res === key) return fallbackValue
-          return res
-        } catch {
-          return fallbackValue
-        }
+        if (!t.has(key)) return fallbackValue
+        return t(key)
+      }
+      const codeTranslation = (code: string): string | undefined => {
+        const key = `codes.${code}`
+        return t.has(key) ? t(key) : undefined
+      }
+      const fieldTranslation = (fieldError: ApiFieldError): string => {
+        const key = `fields.${fieldError.code}`
+        return t.has(key) ? t(key) : fieldError.message || getTranslation('validationFailed', 'Invalid value')
       }
 
       const processed = presentApiError(error, {
         copy: {
           get: getTranslation,
+          byCode: codeTranslation,
         },
         ...(options.fallback === undefined ? {} : { fallback: options.fallback }),
       })
@@ -73,7 +85,7 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
           if (err.field) {
             options.setError?.(err.field as Path<TFieldValues>, {
               type: 'server',
-              message: err.message,
+              message: fieldTranslation(err),
             })
           }
         })
@@ -98,7 +110,7 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
       let toastMessage = processed.description
 
       if (processed.supportReference) {
-        const refLabel = t('reference') || 'Reference'
+        const refLabel = t.has('reference') ? t('reference') : 'Reference'
         toastMessage += ` (${refLabel}: ${processed.supportReference})`
       }
 

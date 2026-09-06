@@ -1,4 +1,4 @@
-import { getPublicConfig } from '@services/config/env'
+import { getContentUrl } from './media'
 
 const GOOGLE_AVATAR_HOSTS = new Set([
   'lh3.googleusercontent.com',
@@ -7,18 +7,18 @@ const GOOGLE_AVATAR_HOSTS = new Set([
   'lh6.googleusercontent.com',
 ])
 
-const AVATAR_CONTENT_PREFIX = 'content/users/'
-
 export const DEFAULT_AVATAR_PATH = '/empty_avatar.avif'
 export const AI_AVATAR_PATH = '/app_logo_light.svg'
 
+/**
+ * The minimal user shape every avatar renderer accepts: the v2 `UserProfile`
+ * / `UserSummary` / discussion author summary all carry `avatar_key` (a
+ * public storage key) and `display_name`.
+ */
 export interface AvatarUser {
-  avatar_image?: string | null
-  user_uuid?: string | null
-  username?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  middle_name?: string | null
+  avatar_key?: string | null | undefined
+  username?: string | null | undefined
+  display_name?: string | null | undefined
 }
 
 export type PredefinedAvatar = 'ai' | 'empty'
@@ -26,30 +26,6 @@ export type PredefinedAvatar = 'ai' | 'empty'
 export const isExternalUrl = (url: string) => url.startsWith('http://') || url.startsWith('https://')
 
 const isBrowserPreviewUrl = (url: string) => url.startsWith('blob:') || url.startsWith('data:image/')
-
-const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, '')
-
-const joinUrl = (baseUrl: string, path: string) => {
-  const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
-  return `${base}${path.replace(/^\/+/, '')}`
-}
-
-const safeDecodeURIComponent = (value: string): string => {
-  try {
-    return decodeURIComponent(value)
-  } catch {
-    return value
-  }
-}
-
-export const extractExternalAvatarUrl = (url: string): string | null => {
-  const marker = '/avatars/'
-  const markerIndex = url.indexOf(marker)
-  if (markerIndex === -1) return null
-
-  const embeddedUrl = safeDecodeURIComponent(url.slice(markerIndex + marker.length))
-  return isExternalUrl(embeddedUrl) ? embeddedUrl : null
-}
 
 export const isGoogleAvatarUrl = (url: string): boolean => {
   try {
@@ -62,21 +38,33 @@ export const isGoogleAvatarUrl = (url: string): boolean => {
 
 export const getProxiedAvatarUrl = (url: string): string => `/api/avatar?url=${encodeURIComponent(url)}`
 
+/** External avatar URLs from Google are proxied through the app (referrer/CORS safe). */
 export const normalizeAvatarUrl = (url: string): string => {
-  const externalUrl = extractExternalAvatarUrl(url) ?? (isExternalUrl(url) ? url : null)
-  if (!externalUrl) return url
+  if (!isExternalUrl(url)) return url
+  return isGoogleAvatarUrl(url) ? getProxiedAvatarUrl(url) : url
+}
 
-  return isGoogleAvatarUrl(externalUrl) ? getProxiedAvatarUrl(externalUrl) : externalUrl
+/** The name to show for a user: `display_name`, else the username. */
+export function getUserDisplayName(user?: AvatarUser | null, fallback = ''): string {
+  const displayName = user?.display_name?.trim()
+  if (displayName) return displayName
+  const username = user?.username?.trim()
+  return username || fallback
 }
 
 export function getAvatarInitials(user?: AvatarUser | null, fallbackText?: string): string {
   const explicitFallback = fallbackText?.trim()
   if (explicitFallback) return explicitFallback.slice(0, 2).toUpperCase()
 
-  const firstInitial = user?.first_name?.trim().charAt(0) ?? ''
-  const lastInitial = user?.last_name?.trim().charAt(0) ?? ''
-  const fullNameInitials = `${firstInitial}${lastInitial}`.trim()
-  if (fullNameInitials) return fullNameInitials.toUpperCase()
+  const displayName = user?.display_name?.trim()
+  if (displayName) {
+    const parts = displayName.split(/\s+/u).filter(Boolean)
+    const initials = parts
+      .slice(0, 2)
+      .map(part => part.charAt(0))
+      .join('')
+    if (initials) return initials.toUpperCase()
+  }
 
   const usernameInitial = user?.username?.trim().charAt(0)
   return usernameInitial ? usernameInitial.toUpperCase() : '?'
@@ -87,6 +75,7 @@ export function resolveAvatarUrl({
   predefinedAvatar,
   user,
 }: {
+  /** An explicit URL / storage key / browser preview (`blob:`) to prefer over the user's key. */
   avatarUrl?: string | null
   predefinedAvatar?: PredefinedAvatar | null
   user?: AvatarUser | null
@@ -94,25 +83,11 @@ export function resolveAvatarUrl({
   if (predefinedAvatar === 'ai') return AI_AVATAR_PATH
   if (predefinedAvatar === 'empty') return DEFAULT_AVATAR_PATH
 
-  const rawUrl = (avatarUrl ?? user?.avatar_image ?? '').trim()
+  const rawUrl = (avatarUrl ?? user?.avatar_key ?? '').trim()
   if (!rawUrl) return DEFAULT_AVATAR_PATH
   if (isBrowserPreviewUrl(rawUrl)) return rawUrl
-
-  const normalizedUrl = normalizeAvatarUrl(rawUrl)
-  if (normalizedUrl !== rawUrl || normalizedUrl.startsWith('/api/avatar') || isExternalUrl(normalizedUrl)) {
-    return normalizedUrl
-  }
-
-  const path = trimSlashes(rawUrl)
-  if (path.startsWith(AVATAR_CONTENT_PREFIX)) {
-    return joinUrl(getPublicConfig().mediaUrl, path)
-  }
-
+  if (isExternalUrl(rawUrl)) return normalizeAvatarUrl(rawUrl)
   if (rawUrl.startsWith('/')) return rawUrl
 
-  if (user?.user_uuid && !path.includes('/')) {
-    return joinUrl(getPublicConfig().mediaUrl, `content/users/${user.user_uuid}/avatars/${path}`)
-  }
-
-  return `/${rawUrl}`
+  return getContentUrl(rawUrl) ?? DEFAULT_AVATAR_PATH
 }

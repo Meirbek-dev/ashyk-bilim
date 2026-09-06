@@ -12,8 +12,6 @@ import {
   themes,
 } from '@/lib/themes'
 import type { Theme, ThemeMode } from '@/lib/themes'
-import { useSession } from '@/hooks/useSession'
-import { useThemeSynchronizer } from '@/hooks/useThemeSync'
 import type { ReactNode } from 'react'
 
 interface ThemeContextValue {
@@ -36,8 +34,8 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME, initialMode }: ThemeProviderProps) {
-  const { user } = useSession()
-  const userTheme = user?.theme ?? null
+  // v2 keeps the theme client-side only (no server preference endpoint).
+  const userTheme: string | null = null
   const [theme, setThemeState] = useState(() =>
     getTheme(userTheme || defaultThemeName, initialMode ?? DEFAULT_THEME_MODE),
   )
@@ -96,7 +94,6 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     [mode, setMode],
   )
 
-  useThemeSynchronizer(themeName)
 
   const contextValue: ThemeContextValue = useMemo(
     () => ({

@@ -22,26 +22,17 @@ vi.mock('@tanstack/react-query', () => ({
 
 const mockSession: Session = {
   user: {
-    id: 1,
-    user_uuid: 'user-123',
+    id: '0198c0ae-0000-7000-8000-000000000001',
     username: 'testuser',
     email: 'test@example.com',
-    first_name: 'Test',
-    last_name: 'User',
-    middle_name: null,
-    avatar_image: null,
-    bio: null,
-    details: null,
-    profile: null,
-    theme: null,
+    display_name: 'Test User',
+    bio: '',
+    locale: 'en-US',
+    avatar_key: null,
   },
-  roles: [],
+  userId: '0198c0ae-0000-7000-8000-000000000001',
+  roles: ['user'],
   permissions: ['course:read:own', 'course:create:platform'],
-  permissions_timestamp: 123_456_789,
-  expires_at: 9_999_999_999,
-  session_version: 1,
-  expiresAt: 9_999_999_999_000,
-  sessionVersion: 1,
 }
 
 describe('SessionProvider & useSession', () => {
@@ -54,7 +45,7 @@ describe('SessionProvider & useSession', () => {
 
     expect(result.current.isAuthenticated).toBe(true)
     expect(result.current.status).toBe('authenticated')
-    expect(result.current.user?.id).toBe(1)
+    expect(result.current.user?.id).toBe('0198c0ae-0000-7000-8000-000000000001')
     expect(result.current.user?.email).toBe('test@example.com')
   })
 

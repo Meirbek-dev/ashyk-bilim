@@ -23,6 +23,11 @@ function appendIfPresent(targetHeaders: Headers, key: string, value: string | nu
   }
 }
 
+/**
+ * Headers the backend uses for the session audit trail (ip / user-agent) and
+ * for building absolute redirect URLs. nginx sets the `x-forwarded-*` family
+ * in production; in dev they come from the browser request.
+ */
 export function buildForwardedRequestMetadataHeaders(sourceHeaders: HeaderSource): Headers {
   const forwardedHeaders = new Headers()
 
@@ -37,8 +42,6 @@ export function buildForwardedRequestMetadataHeaders(sourceHeaders: HeaderSource
 
   return forwardedHeaders
 }
-
-export const buildTrustedForwardedHeaders = buildForwardedRequestMetadataHeaders
 
 export async function getServerAuthCookieHeader(): Promise<string> {
   const cookieStore = await cookies()
@@ -114,24 +117,13 @@ export function serverAuthFetchForRequest(
 export function postAuthJson(path: string, body: unknown, init: ServerAuthFetchInit = {}): Promise<Response> {
   const jsonHeaders = new Headers(init.headers)
   jsonHeaders.set('content-type', 'application/json')
+  jsonHeaders.set('accept', 'application/json, application/problem+json')
 
   return serverAuthFetch(path, {
     ...init,
     method: 'POST',
     headers: jsonHeaders,
     body: JSON.stringify(body),
-  })
-}
-
-export function postAuthForm(path: string, body: URLSearchParams, init: ServerAuthFetchInit = {}): Promise<Response> {
-  const formHeaders = new Headers(init.headers)
-  formHeaders.set('content-type', 'application/x-www-form-urlencoded')
-
-  return serverAuthFetch(path, {
-    ...init,
-    method: 'POST',
-    headers: formHeaders,
-    body,
   })
 }
 

@@ -47,7 +47,7 @@ export default function RootProviders({ children, initialSession, initialThemeMo
       <BrowserErrorReporter />
       <SessionProvider {...(initialSession === undefined ? {} : { initialSession })}>
         <ThemeProvider
-          defaultThemeName={initialSession?.user.theme ?? 'modern-minimal'}
+          defaultThemeName="modern-minimal"
           {...(initialThemeMode === undefined ? {} : { initialMode: initialThemeMode })}
         >
           <ValibotProvider>

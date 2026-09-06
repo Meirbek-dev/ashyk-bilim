@@ -1,6 +1,15 @@
 import type { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { ACCESS_TOKEN_COOKIE_NAME, AUTH_COOKIE_NAMES, REFRESH_TOKEN_COOKIE_NAME } from './types'
+import { AUTH_COOKIE_NAMES, SESSION_COOKIE_NAME } from './types'
+
+/**
+ * Cookie bridge between the Rust BFF and the Next.js server runtime.
+ *
+ * Login/logout run as server actions (so the backend can stay on an internal
+ * URL); the `Set-Cookie` headers the backend answers with are copied onto the
+ * Next response so the browser receives the `ab_session` cookie on the app
+ * origin. There is exactly one cookie and no refresh token (ARCHITECTURE §7).
+ */
 
 interface CookieMutationOptions {
   domain?: string
@@ -146,56 +155,7 @@ export function buildRequestCookieHeader(request: NextRequest): string {
     .join('; ')
 }
 
-export function buildCookieHeaderFromPairs(cookiePairs: Iterable<[string, string | undefined]>): string {
-  const values: string[] = []
-  for (const [cookieName, cookieValue] of cookiePairs) {
-    if (cookieValue) {
-      values.push(`${cookieName}=${cookieValue}`)
-    }
-  }
-  return values.join('; ')
-}
-
 export function clearAuthCookies(response: NextResponse): NextResponse {
-  response.cookies.delete(ACCESS_TOKEN_COOKIE_NAME)
-  response.cookies.delete({
-    name: REFRESH_TOKEN_COOKIE_NAME,
-    path: '/api/auth/refresh',
-  })
+  response.cookies.delete(SESSION_COOKIE_NAME)
   return response
-}
-
-/**
- * Decode the ``exp`` claim from an access token WITHOUT verifying the signature.
- *
- * Safe only as an untrusted refresh hint. It does not verify the JWT
- * signature, user state, session revocation, or permissions. Actual
- * authentication remains enforced by the backend and `getSession()`.
- */
-export function getAccessTokenExpiry(accessToken: string | undefined): number | null {
-  if (!accessToken) return null
-
-  const [, payloadSegment] = accessToken.split('.')
-  if (!payloadSegment) return null
-
-  try {
-    const normalized = payloadSegment.replace(/-/g, '+').replace(/_/g, '/')
-    const paddingLength = (4 - (normalized.length % 4)) % 4
-    const padded = `${normalized}${'='.repeat(paddingLength)}`
-    const payloadJson = atob(padded)
-    const payload: unknown = JSON.parse(payloadJson)
-    if (typeof payload !== 'object' || payload === null || !('exp' in payload)) {
-      return null
-    }
-    const expiry = payload.exp
-    return typeof expiry === 'number' ? expiry * 1000 : null
-  } catch {
-    return null
-  }
-}
-
-export function isAccessTokenExpired(accessToken: string | undefined, now = Date.now()): boolean {
-  const expiry = getAccessTokenExpiry(accessToken)
-  if (expiry === null) return !accessToken
-  return expiry <= now
 }

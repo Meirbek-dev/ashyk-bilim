@@ -1,109 +1,88 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { parseApiErrorEnvelope } from '@/lib/api/assertSuccess'
 import { getPostAuthRedirect, normalizeReturnTo } from '@/lib/auth/redirect'
-import { applyBackendSetCookies, postAuthForm, postAuthJson, serverAuthFetch } from '@/lib/auth/server-auth-fetch'
+import { applyBackendSetCookies, postAuthJson, serverAuthFetch } from '@/lib/auth/server-auth-fetch'
+import { SESSION_COOKIE_NAME } from '@/lib/auth/types'
+
+/**
+ * Auth server actions against the v2 BFF (ARCHITECTURE §7).
+ *
+ * The browser never talks to the identity provider: `POST /auth/login` runs
+ * the headless Zitadel password (+ TOTP) check and answers with the session
+ * cookie, which the action copies onto the app origin. Registration and
+ * password reset are not part of the v2 contract (accounts are provisioned
+ * by an admin or created through Google sign-in) — see DECISIONS.md P9.
+ */
 
 interface LoginActionInput {
-  email: string
+  /** Username or email. */
+  login: string
   password: string
+  /** Second factor — resubmitted after an `mfa-required` answer. */
+  totpCode?: string | null
   returnTo?: string | null
 }
 
-interface SignupActionInput {
-  email: string
-  firstName: string
-  lastName: string
-  password: string
-}
+export type LoginFailureReason =
+  | 'invalid_credentials'
+  | 'mfa_required'
+  | 'invalid_totp_code'
+  | 'account_disabled'
+  | 'rate_limited'
+  | 'service_unavailable'
+  | 'login_failed'
 
-interface AuthActionResult {
+export interface AuthActionResult {
   ok: boolean
-  reason?: 'login_failed' | 'login_after_signup_failed' | 'signup_failed' | 'service_unavailable' | 'rate_limited'
-  signupCode?: string
+  reason?: LoginFailureReason
+  /** Contract error code (`Errors.codes.<code>` i18n key) when the backend answered a problem. */
+  code?: string
+  /** `Retry-After` seconds on `rate_limited`. */
+  retryAfterSeconds?: number
 }
 
-function getSignupCode(payload: unknown): string | undefined {
-  if (typeof payload !== 'object' || payload === null) {
-    return undefined
+async function readProblem(response: Response) {
+  const payload = await response.json().catch(() => null)
+  return parseApiErrorEnvelope(payload)
+}
+
+function classifyLoginFailure(status: number, code: string | null): LoginFailureReason {
+  switch (code) {
+    case 'mfa-required':
+      return 'mfa_required'
+    case 'invalid-totp-code':
+      return 'invalid_totp_code'
+    case 'invalid-credentials':
+      return 'invalid_credentials'
+    case 'account-disabled':
+      return 'account_disabled'
+    case 'rate-limited':
+      return 'rate_limited'
+    case 'service-unavailable':
+      return 'service_unavailable'
+    default:
+      break
   }
-
-  if ('code' in payload && typeof payload.code === 'string') {
-    return payload.code
-  }
-
-  const detail = (payload as { detail?: unknown }).detail
-  if (typeof detail !== 'object' || detail === null || !('code' in detail)) {
-    return undefined
-  }
-
-  return typeof detail.code === 'string' ? detail.code : undefined
-}
-
-async function performLoginFetch(email: string, password: string): Promise<Response> {
-  const formData = new URLSearchParams()
-  formData.append('username', email.trim().toLowerCase())
-  formData.append('password', password)
-
-  return postAuthForm('auth/login', formData, { includeAuthCookies: false })
-}
-
-function usernameBaseFrom(value: string): string {
-  return value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036F]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '.')
-    .replace(/\.+/g, '.')
-    .replace(/^\.+|\.+$/g, '')
-}
-
-function buildSignupUsername(input: Pick<SignupActionInput, 'email' | 'firstName' | 'lastName'>): string {
-  const nameBase = usernameBaseFrom(`${input.firstName}.${input.lastName}`)
-  const emailBase = usernameBaseFrom(input.email.split('@')[0] ?? '')
-  const base = (nameBase || emailBase || 'user').slice(0, 20).replace(/^\.+|\.+$/g, '') || 'user'
-  const suffix = Math.floor(Math.random() * 10_000)
-    .toString()
-    .padStart(4, '0')
-  return `${base}.${suffix}`
+  if (status === 401) return 'invalid_credentials'
+  if (status === 403) return 'account_disabled'
+  if (status === 429) return 'rate_limited'
+  if (status === 503 || status === 502 || status === 504) return 'service_unavailable'
+  return 'login_failed'
 }
 
 export async function loginAction(input: LoginActionInput): Promise<AuthActionResult> {
   let response: Response
   try {
-    response = await performLoginFetch(input.email, input.password)
-  } catch {
-    return { ok: false, reason: 'service_unavailable' }
-  }
-
-  if (!response.ok) {
-    let reason: AuthActionResult['reason'] = 'login_failed'
-    if (response.status === 503) {
-      reason = 'service_unavailable'
-    } else if (response.status === 429) {
-      reason = 'rate_limited'
-    }
-    return { ok: false, reason }
-  }
-
-  await applyBackendSetCookies(response.headers)
-  revalidatePath('/', 'layout')
-  redirect(getPostAuthRedirect(input.returnTo))
-}
-
-export async function signupAction(input: SignupActionInput): Promise<AuthActionResult> {
-  const username = buildSignupUsername(input)
-  let signupResponse: Response
-  try {
-    signupResponse = await postAuthJson(
-      'auth/register',
+    response = await postAuthJson(
+      'auth/login',
       {
-        email: input.email,
-        first_name: input.firstName,
-        last_name: input.lastName,
+        login: input.login.trim(),
         password: input.password,
-        username,
+        ...(input.totpCode ? { totp_code: input.totpCode.trim() } : {}),
       },
       { includeAuthCookies: false },
     )
@@ -111,31 +90,33 @@ export async function signupAction(input: SignupActionInput): Promise<AuthAction
     return { ok: false, reason: 'service_unavailable' }
   }
 
-  if (!signupResponse.ok) {
-    const payload = await signupResponse.json().catch(() => null)
-    const signupCode = getSignupCode(payload)
-    return signupCode ? { ok: false, reason: 'signup_failed', signupCode } : { ok: false, reason: 'signup_failed' }
+  if (!response.ok) {
+    const problem = await readProblem(response)
+    const code = problem?.code ?? null
+    const retryAfter = Number.parseInt(response.headers.get('retry-after') ?? '', 10)
+    return {
+      ok: false,
+      reason: classifyLoginFailure(response.status, code),
+      ...(code ? { code } : {}),
+      ...(Number.isFinite(retryAfter) ? { retryAfterSeconds: retryAfter } : {}),
+    }
   }
 
-  let loginResponse: Response
-  try {
-    loginResponse = await performLoginFetch(input.email, input.password)
-  } catch {
-    return { ok: false, reason: 'login_after_signup_failed' }
-  }
-
-  if (!loginResponse.ok) {
-    return { ok: false, reason: 'login_after_signup_failed' }
-  }
-
-  await applyBackendSetCookies(loginResponse.headers)
+  await applyBackendSetCookies(response.headers)
   revalidatePath('/', 'layout')
-  redirect('/redirect_from_auth')
+  redirect(getPostAuthRedirect(input.returnTo))
 }
 
 export async function logoutAction(redirectTo?: string | null): Promise<void> {
-  const response = await serverAuthFetch('auth/logout', { method: 'POST' })
-  await applyBackendSetCookies(response.headers)
+  try {
+    const response = await serverAuthFetch('auth/logout', { method: 'POST' })
+    await applyBackendSetCookies(response.headers)
+  } catch {
+    // Logout is idempotent server-side; a transport failure must not trap the
+    // user in a signed-in shell — the cookie is dropped below regardless.
+  }
+  const cookieStore = await cookies()
+  cookieStore.delete(SESSION_COOKIE_NAME)
   revalidatePath('/', 'layout')
 
   if (redirectTo) {

@@ -1,40 +1,30 @@
-import type { components } from '@/lib/api/generated'
+import type { SessionInfo, UserProfile } from '@/lib/api/generated/zod'
 
-type UserRead = components['schemas']['UserRead']
+/**
+ * The signed-in user as the app sees it: the v2 `UserProfile`
+ * (`GET /users/me`). v2 has no first/middle/last name split, no server-side
+ * theme and no numeric ids — `id` is the UUID everywhere.
+ */
+export type SessionUser = UserProfile
 
-/** Subset of UserRead fields the web app actually consumes in session state. */
-export type SessionUser = Pick<
-  UserRead,
-  | 'id'
-  | 'user_uuid'
-  | 'username'
-  | 'email'
-  | 'first_name'
-  | 'last_name'
-  | 'middle_name'
-  | 'avatar_image'
-  | 'bio'
-  | 'details'
-  | 'profile'
-  | 'theme'
->
-
-/** Full UserSession schema from the OpenAPI-generated types. */
-export type UserSessionResponse = components['schemas']['UserSession']
-
-/** Frontend session shape used by the app after mapping backend field names. */
-export interface Session extends Omit<UserSessionResponse, 'user' | 'permissions'> {
+/**
+ * Frontend session shape: the BFF session (`GET /auth/session` — user id,
+ * role slugs, expanded permission strings) joined with the profile.
+ */
+export interface Session {
   user: SessionUser
-  expiresAt: number
+  userId: SessionInfo['user_id']
+  /** Role slugs (`admin`, `instructor`, …). */
+  roles: string[]
+  /** Expanded `resource:action:scope` strings; `*` is the admin wildcard. */
   permissions: string[]
-  sessionVersion: number | null
 }
 
-// ── Cookie / token constants ──────────────────────────────────────────────────
+// ── Cookie constants ───────────────────────────────────────────────────────────
 
-export const ACCESS_TOKEN_COOKIE_NAME = 'access_token_cookie'
-export const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token_cookie'
+/** The single BFF session cookie (httponly, host-only, SameSite=Lax). */
+export const SESSION_COOKIE_NAME = 'ab_session'
 
-export const AUTH_COOKIE_NAMES = [ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME] as const
+export const AUTH_COOKIE_NAMES = [SESSION_COOKIE_NAME] as const
 
 export const AUTH_PERMISSION_WILDCARD = '*'

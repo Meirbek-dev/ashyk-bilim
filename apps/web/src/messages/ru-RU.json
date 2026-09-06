@@ -836,18 +836,6 @@
     }
   },
   "Auth": {
-    "Forgot": {
-      "backToLogin": "Вернуться к входу",
-      "checkEmail": "Проверьте свою электронную почту на наличие ссылки для сброса пароля",
-      "email": "Электронная почта",
-      "emailPlaceholder": "Введите ваш email",
-      "enterEmailMessage": "Введите ваш email, чтобы получить ссылку для сброса пароля",
-      "invalidEmail": "Неверный адрес электронной почты",
-      "loading": "Загрузка...",
-      "required": "Обязательно",
-      "sendResetLink": "Отправить ссылку для сброса",
-      "title": "Забыли пароль"
-    },
     "Layout": {
       "accessFromOrg": "Получите доступ к этой странице",
       "orgNotSpecified": "Ошибка"
@@ -880,60 +868,18 @@
       "serviceUnavailable": "Сервис временно недоступен. Пожалуйста, попробуйте ещё раз.",
       "rateLimited": "Слишком много попыток. Пожалуйста, попробуйте позже.",
       "loginTitle": "Войти",
-      "noAccount": "Нет аккаунта?"
-    },
-    "Reset": {
-      "changePassword": "Изменить пароль",
-      "confirmPassword": "Подтвердите пароль",
-      "confirmPasswordPlaceholder": "Подтвердите новый пароль",
-      "email": "Электронная почта",
-      "emailPlaceholder": "Введите ваш email",
-      "enterResetDetails": "Введите ваш email и код сброса, чтобы сбросить пароль",
-      "loading": "Загрузка...",
-      "loginAgain": "Пожалуйста, войдите снова с вашим новым паролем",
-      "newPassword": "Новый пароль",
-      "newPasswordPlaceholder": "Введите новый пароль",
-      "resetCode": "Код сброса",
-      "resetCodePlaceholder": "Введите код сброса",
-      "success": "Пароль успешно сброшен",
-      "title": "Сброс пароля"
-    },
-    "Signup": {
-      "accountCreated": "Ваш аккаунт успешно создан",
-      "bio": "О себе",
-      "bioPlaceholder": "Расскажите что-нибудь о себе",
-      "createAccount": "Создать аккаунт",
-      "createAccountAndJoin": "Создать аккаунт и присоединиться",
-      "email": "Электронная почта",
-      "emailPlaceholder": "Введите ваш email",
-      "errorSomethingWentWrong": "Что-то пошло не так",
-      "formComponentNeeded": "Требуется компонент формы регистрации.",
-      "goBack": "Вернуться",
-      "hi": "Привет",
-      "join": "Присоединиться",
-      "joinQuestion": "хотите присоединиться к Ashyk Bilim?",
-      "loading": "Загрузка...",
-      "loginToAccount": "Войти",
-      "password": "Пароль",
-      "passwordPlaceholder": "Введите ваш пароль",
-      "redirecting": "Перенаправление...",
-      "signInWithGoogle": "Войти с помощью Google",
-      "submit": "Отправить",
-      "title": "Регистрация",
-      "username": "Имя пользователя",
-      "usernamePlaceholder": "Введите имя пользователя",
-      "continueWithGoogle": "Войти через Google",
-      "or": "ИЛИ",
-      "firstName": "Имя",
-      "firstNamePlaceholder": "Введите имя",
-      "lastName": "Фамилия",
-      "lastNamePlaceholder": "Введите фамилию",
-      "confirmPassword": "Подтвердить пароль",
-      "confirmPasswordPlaceholder": "Подтвердите пароль",
-      "alreadyHaveAccount": "Уже есть аккаунт?",
-      "signIn": "Войти",
-      "emailTaken": "Аккаунт с таким email уже существует",
-      "usernameTaken": "Это имя пользователя уже занято"
+      "noAccount": "Нет аккаунта?",
+      "loginIdentifier": "Электронная почта или имя пользователя",
+      "loginIdentifierPlaceholder": "Введите почту или имя пользователя",
+      "totpCode": "Код подтверждения",
+      "totpCodePlaceholder": "Введите 6-значный код",
+      "totpHint": "Введите код из приложения-аутентификатора.",
+      "verifyCode": "Подтвердить",
+      "backToPassword": "Назад ко входу",
+      "accountDisabled": "Учётная запись отключена. Обратитесь к администратору.",
+      "invalidTotpCode": "Неверный одноразовый код.",
+      "googleCancelled": "Вход через Google отменён.",
+      "noAccountHint": "Учётные записи создаёт администратор платформы. Войдите через Google, если ваш адрес уже зарегистрирован."
     },
     "password": "Пароль",
     "passwordPlaceholder": "Введите ваш пароль"
@@ -6368,22 +6314,34 @@
           "usernameLabel": "Имя пользователя",
           "usernamePlaceholder": "Введите имя пользователя"
         },
-        "EditPassword": {
-          "Notifications": {
-            "passwordUpdateError": "Не удалось обновить пароль",
-            "passwordUpdateSuccess": "Пароль успешно обновлен",
-            "promptLogoutOnPasswordChange": "Пожалуйста, войдите снова с вашим новым паролем",
-            "updating": "Обновление пароля..."
-          },
-          "confirmPasswordLabel": "Подтвердите пароль",
-          "currentPasswordLabel": "Текущий пароль",
-          "description": "Обновите свой пароль, чтобы обеспечить безопасность учетной записи",
-          "logoutWarning": "Вы будете выведены из системы после смены пароля",
-          "newPasswordLabel": "Новый пароль",
-          "promptLogoutOnPasswordChange": "Пожалуйста, войдите снова с вашим новым паролем",
-          "title": "Изменить пароль",
-          "updateButton": "Обновить пароль",
-          "updatingButton": "Обновление..."
+        "Security": {
+          "sessionsTitle": "Активные сессии",
+          "sessionsDescription": "Устройства, на которых выполнен вход в вашу учётную запись. Завершите сессии, которые вы не узнаёте.",
+          "sessionsLoadError": "Не удалось загрузить список сессий.",
+          "loading": "Загрузка...",
+          "retry": "Повторить",
+          "unknownDevice": "Неизвестное устройство",
+          "currentSession": "Текущая",
+          "lastSeen": "Последняя активность: {at}",
+          "revoke": "Завершить",
+          "sessionRevoked": "Сессия завершена",
+          "totpTitle": "Двухфакторная аутентификация",
+          "totpDescription": "Защитите вход одноразовыми кодами из приложения-аутентификатора (TOTP).",
+          "totpScanHint": "Добавьте секрет в приложение-аутентификатор и введите первый код для активации.",
+          "totpSecretLabel": "Секрет TOTP",
+          "totpOpenAuthenticator": "Открыть в приложении-аутентификаторе",
+          "codeLabel": "Код из приложения",
+          "codePlaceholder": "Введите 6-значный код",
+          "codeHint": "Код обновляется каждые 30 секунд.",
+          "activate": "Активировать",
+          "cancel": "Отмена",
+          "enableTotp": "Включить двухфакторную аутентификацию",
+          "disableTotp": "Отключить",
+          "totpActive": "Двухфакторная аутентификация включена",
+          "totpAlreadyActive": "Двухфакторная аутентификация уже включена.",
+          "totpActivated": "Двухфакторная аутентификация включена",
+          "totpRemoved": "Двухфакторная аутентификация отключена",
+          "invalidCode": "Неверный код. Попробуйте ещё раз."
         }
       },
       "gamification": "Настройки геймификации",
@@ -6465,16 +6423,6 @@
         "username": "Имя пользователя",
         "usernamePlaceholder": "Введите имя пользователя"
       },
-      "password": "Пароль",
-      "passwordSection": {
-        "currentPasswordLabel": "Текущий пароль",
-        "description": "Обновите свой пароль, чтобы обеспечить безопасность учетной записи",
-        "logoutWarning": "Вы будете выведены из системы после смены пароля",
-        "newPasswordLabel": "Новый пароль",
-        "title": "Изменить пароль",
-        "updateButton": "Обновить пароль",
-        "updatingButton": "Обновление..."
-      },
       "profile": "Профиль",
       "profileSection": {
         "addButton": "Добавить раздел",
@@ -6544,7 +6492,17 @@
         },
         "untitledSection": "Раздел без названия"
       },
-      "title": "Настройки аккаунта"
+      "title": "Настройки аккаунта",
+      "security": "Безопасность",
+      "securitySection": {
+        "currentPasswordLabel": "Текущий пароль",
+        "description": "Обновите свой пароль, чтобы обеспечить безопасность учетной записи",
+        "logoutWarning": "Вы будете выведены из системы после смены пароля",
+        "newPasswordLabel": "Новый пароль",
+        "title": "Изменить пароль",
+        "updateButton": "Обновить пароль",
+        "updatingButton": "Обновление..."
+      }
     },
     "UserProfileBuilder": {
       "AffiliationEditor": {
@@ -6867,7 +6825,42 @@
     "coursesLoadErrorTitle": "Не удалось загрузить курсы",
     "coursesLoadErrorDescription": "Не удалось загрузить курсы. Повторите запрос или используйте обращение в поддержку, если ошибка повторяется.",
     "activityLoadErrorTitle": "Не удалось загрузить активность",
-    "activityLoadErrorDescription": "Не удалось загрузить эту активность. Повторите запрос или используйте обращение в поддержку, если ошибка повторяется."
+    "activityLoadErrorDescription": "Не удалось загрузить эту активность. Повторите запрос или используйте обращение в поддержку, если ошибка повторяется.",
+    "codes": {
+      "internal": "Внутренняя ошибка сервера. Попробуйте позже.",
+      "not-found": "Запрашиваемый ресурс не найден.",
+      "forbidden": "У вас нет прав для выполнения этого действия.",
+      "unauthenticated": "Требуется вход в систему.",
+      "conflict": "Данные были изменены. Обновите страницу и попробуйте снова.",
+      "validation-failed": "Проверьте правильность заполнения полей.",
+      "precondition-failed": "Запись была изменена другим пользователем. Обновите страницу и повторите попытку.",
+      "rate-limited": "Слишком много запросов. Попробуйте позже.",
+      "payload-too-large": "Файл или запрос слишком большой.",
+      "service-unavailable": "Сервис временно недоступен. Попробуйте позже.",
+      "invalid-credentials": "Неверный логин или пароль.",
+      "mfa-required": "Введите код из приложения-аутентификатора.",
+      "session-expired": "Сессия истекла. Войдите снова.",
+      "csrf-rejected": "Запрос отклонён из соображений безопасности. Обновите страницу и повторите попытку.",
+      "account-disabled": "Учётная запись отключена. Обратитесь к администратору.",
+      "google-oauth-expired": "Вход через Google не удался или истёк. Попробуйте снова.",
+      "invalid-totp-code": "Неверный одноразовый код.",
+      "code-runner-degraded": "Среда выполнения кода временно недоступна. Попробуйте позже.",
+      "compile-error": "Код не компилируется. Исправьте ошибки и попробуйте снова.",
+      "language-not-allowed": "Этот язык программирования недоступен для задания.",
+      "ai-disabled": "Функции ИИ отключены.",
+      "ai-budget-exhausted": "Лимит токенов ИИ исчерпан. Попробуйте позже.",
+      "ai-rate-limited": "Достигнут часовой лимит запросов к ИИ. Попробуйте позже.",
+      "ai-run-cancelled": "Запуск ИИ был отменён.",
+      "ai-provider-unavailable": "Провайдер ИИ недоступен. Попробуйте позже."
+    },
+    "fields": {
+      "required": "Обязательное поле.",
+      "invalid": "Недопустимое значение.",
+      "too-long": "Слишком длинное значение.",
+      "too-short": "Слишком короткое значение.",
+      "out-of-range": "Значение вне допустимого диапазона.",
+      "unknown-field": "Неизвестное поле."
+    }
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -7405,12 +7398,6 @@
       "userSettings": "Настройки @{username}",
       "users": "Пользователи"
     }
-  },
-  "SignupPage": {
-    "hi": "Здравствуйте",
-    "join": "Присоединиться",
-    "signUp": "Зарегистрироваться",
-    "submit": "Отправить"
   },
   "TeacherAnalytics": {
     "tabs": {
@@ -10375,7 +10362,11 @@
       "acceptFinding": "Принять",
       "dismissFinding": "Отклонить",
       "createTask": "Создать задачу",
-      "reviewActions": { "accepted": "Принято", "dismissed": "Отклонено", "task_created": "Задача создана" },
+      "reviewActions": {
+        "accepted": "Принято",
+        "dismissed": "Отклонено",
+        "task_created": "Задача создана"
+      },
       "summaryFindingTitle": "Проверить сводку",
       "inspectCitationsAction": "Проверить материалы курса перед публикацией оценки.",
       "reviewGateLabel": "Я открыл(а) и проверил(а) нижеприведенные выводы и доказательства перед публикацией.",

@@ -3,7 +3,7 @@
 import { MutationCache, QueryCache, QueryClient, environmentManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import type { Mutation, Query } from '@tanstack/react-query'
-import { recoverBrowserSessionFrom401 } from '@/lib/api-client'
+import { handleBrowserUnauthenticated } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
 import { reportClientError, serializeClientError } from '@/services/telemetry/client'
 
@@ -16,7 +16,7 @@ function handle401(error: unknown): void {
       : undefined
   if (status !== 401 || environmentManager.isServer()) return
   const { pathname, search } = globalThis.location
-  void recoverBrowserSessionFrom401(`${pathname}${search}`).catch(() => undefined)
+  handleBrowserUnauthenticated(`${pathname}${search}`)
 }
 
 interface ErrorMeta {

@@ -44,7 +44,7 @@ describe('Auth Redirect Logic', () => {
 
     it('should prevent redirects to auth routes to avoid loops', () => {
       expect(normalizeReturnTo('/login')).toBe('/')
-      expect(normalizeReturnTo('/signup')).toBe('/')
+      expect(normalizeReturnTo('/auth/login')).toBe('/')
       expect(normalizeReturnTo('/en/login')).toBe('/')
       expect(normalizeReturnTo('/en/auth/login')).toBe('/')
     })
@@ -53,8 +53,7 @@ describe('Auth Redirect Logic', () => {
   describe('isAuthRoute', () => {
     it('should identify auth routes correctly', () => {
       expect(isAuthRoute('/login')).toBe(true)
-      expect(isAuthRoute('/signup')).toBe(true)
-      expect(isAuthRoute('/forgot/password')).toBe(true)
+      expect(isAuthRoute('/login?returnTo=%2F')).toBe(true)
       expect(isAuthRoute('/en/login')).toBe(true)
       expect(isAuthRoute('/en/auth/login')).toBe(true)
     })

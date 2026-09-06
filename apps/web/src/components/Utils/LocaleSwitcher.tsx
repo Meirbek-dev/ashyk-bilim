@@ -34,7 +34,7 @@ export function LocaleSwitcher({ className, isMobile }: LocaleSwitcherProps) {
       // Sync to database if user is logged in
       if (viewer?.id) {
         try {
-          await updateUserLocale(viewer.id, newLocale)
+          await updateUserLocale(newLocale)
         } catch (error) {
           console.error('Failed to sync locale to server:', error)
         }

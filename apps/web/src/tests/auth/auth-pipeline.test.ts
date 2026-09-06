@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
-import { loginAction, signupAction, logoutAction } from '@/app/actions/auth'
+import { loginAction, logoutAction } from '@/app/actions/auth'
 import { getSetCookieHeaders } from '@/lib/auth/cookie-bridge'
 
 vi.mock('server-only', () => ({}))
@@ -31,19 +31,27 @@ vi.mock('next/cache', () => ({
 }))
 
 vi.mock('@services/config/config', () => ({
-  getServerAPIUrl: vi.fn(() => 'http://api.test/'),
+  getServerAPIUrl: vi.fn(() => 'http://api.test/api/v2/'),
 }))
 
 // Mock global fetch
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 
-describe('Frontend Auth Actions', () => {
+function problemResponse(status: number, code: string, headers: Record<string, string> = {}) {
+  return {
+    ok: false,
+    status,
+    headers: new Headers(headers),
+    json: async () => ({ type: 'x', title: code, status, code }),
+  }
+}
+
+describe('Frontend Auth Actions (v2 BFF)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockFetch.mockReset()
     mockHeaders.get.mockReturnValue('Mozilla/5.0')
-    vi.spyOn(Math, 'random').mockReturnValue(0.1234)
   })
 
   afterEach(() => {
@@ -55,28 +63,30 @@ describe('Frontend Auth Actions', () => {
       const headers = {
         get: (key: string) =>
           key.toLowerCase() === 'set-cookie'
-            ? 'access_token_cookie=access.123; HttpOnly; Path=/, refresh_token_cookie=refresh.123; HttpOnly; Path=/api/auth/refresh; SameSite=Strict'
+            ? 'ab_session=abc.123; HttpOnly; Path=/; SameSite=Lax, other=1; Path=/'
             : null,
       } as Headers
 
       expect(getSetCookieHeaders(headers)).toEqual([
-        'access_token_cookie=access.123; HttpOnly; Path=/',
-        'refresh_token_cookie=refresh.123; HttpOnly; Path=/api/auth/refresh; SameSite=Strict',
+        'ab_session=abc.123; HttpOnly; Path=/; SameSite=Lax',
+        'other=1; Path=/',
       ])
     })
   })
 
   describe('loginAction', () => {
-    it('should successfully login and redirect', async () => {
+    it('posts JSON credentials, copies the session cookie and redirects', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
+        status: 200,
         headers: new Headers({
-          'set-cookie': 'access_token_cookie=123; HttpOnly; Path=/',
+          'set-cookie': 'ab_session=sess123; HttpOnly; Path=/; SameSite=Lax',
         }),
+        json: async () => ({ user_id: 'u1', roles: ['user'], permissions: [] }),
       })
 
       try {
-        await loginAction({ email: 'test@example.com', password: 'password123' })
+        await loginAction({ login: 'test@example.com', password: 'password123' })
         expect.fail('Should have redirected')
       } catch (e: any) {
         expect(e.message).toBe('REDIRECTED_TO:/redirect_from_auth')
@@ -84,167 +94,99 @@ describe('Frontend Auth Actions', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
       const [url, options] = mockFetch.mock.calls[0]!
-      expect(url).toBe('http://api.test/auth/login')
+      expect(url).toBe('http://api.test/api/v2/auth/login')
       expect(options.method).toBe('POST')
-      expect(options.body).toBeInstanceOf(URLSearchParams)
-      expect(options.body.get('username')).toBe('test@example.com')
-      expect(options.body.get('password')).toBe('password123')
+      expect(new Headers(options.headers).get('content-type')).toBe('application/json')
+      expect(JSON.parse(options.body)).toEqual({ login: 'test@example.com', password: 'password123' })
       expect(mockCookies.set).toHaveBeenCalledWith(
-        'access_token_cookie',
-        '123',
+        'ab_session',
+        'sess123',
         expect.objectContaining({
           httpOnly: true,
           path: '/',
+          sameSite: 'lax',
         }),
       )
     })
 
-    it('should return login_failed on 401', async () => {
+    it('honours returnTo on success', async () => {
       mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({}),
       })
 
-      const result = await loginAction({
-        email: 'test@example.com',
-        password: 'wrong',
+      await expect(
+        loginAction({ login: 'user', password: 'password123', returnTo: '/dash/courses' }),
+      ).rejects.toThrow('REDIRECTED_TO:/dash/courses')
+    })
+
+    it('resends the second factor as totp_code', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({}) })
+
+      await expect(loginAction({ login: 'user', password: 'pw', totpCode: ' 123456 ' })).rejects.toThrow(
+        'REDIRECTED_TO:/redirect_from_auth',
+      )
+
+      expect(JSON.parse(mockFetch.mock.calls[0]![1].body)).toEqual({
+        login: 'user',
+        password: 'pw',
+        totp_code: '123456',
       })
-      expect(result).toEqual({ ok: false, reason: 'login_failed' })
+    })
+
+    it('maps invalid-credentials (401) to invalid_credentials', async () => {
+      mockFetch.mockResolvedValueOnce(problemResponse(401, 'invalid-credentials'))
+
+      const result = await loginAction({ login: 'test@example.com', password: 'wrong' })
+      expect(result).toEqual({ ok: false, reason: 'invalid_credentials', code: 'invalid-credentials' })
+    })
+
+    it('maps mfa-required (401) to the TOTP step', async () => {
+      mockFetch.mockResolvedValueOnce(problemResponse(401, 'mfa-required'))
+
+      const result = await loginAction({ login: 'test@example.com', password: 'pw' })
+      expect(result).toEqual({ ok: false, reason: 'mfa_required', code: 'mfa-required' })
+    })
+
+    it('maps account-disabled (403) and rate-limited (429, Retry-After)', async () => {
+      mockFetch.mockResolvedValueOnce(problemResponse(403, 'account-disabled'))
+      expect(await loginAction({ login: 'a', password: 'b' })).toEqual({
+        ok: false,
+        reason: 'account_disabled',
+        code: 'account-disabled',
+      })
+
+      mockFetch.mockResolvedValueOnce(problemResponse(429, 'rate-limited', { 'retry-after': '30' }))
+      expect(await loginAction({ login: 'a', password: 'b' })).toEqual({
+        ok: false,
+        reason: 'rate_limited',
+        code: 'rate-limited',
+        retryAfterSeconds: 30,
+      })
     })
 
     it('should return service_unavailable on 503', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-      })
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 503, headers: new Headers(), json: async () => null })
 
-      const result = await loginAction({
-        email: 'test@example.com',
-        password: 'wrong',
-      })
+      const result = await loginAction({ login: 'test@example.com', password: 'wrong' })
       expect(result).toEqual({ ok: false, reason: 'service_unavailable' })
     })
 
     it('should handle fetch exceptions as service_unavailable', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
-      const result = await loginAction({
-        email: 'test@example.com',
-        password: 'wrong',
-      })
+      const result = await loginAction({ login: 'test@example.com', password: 'wrong' })
       expect(result).toEqual({ ok: false, reason: 'service_unavailable' })
     })
   })
 
-  describe('signupAction', () => {
-    it('should successfully signup, login, and redirect', async () => {
-      // Mock signup success
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      })
-      // Mock login success
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({
-          'set-cookie': 'access_token=123; HttpOnly; Path=/',
-        }),
-      })
-
-      try {
-        await signupAction({
-          email: 'new@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          password: 'password123',
-        })
-        expect.fail('Should have redirected')
-      } catch (e: any) {
-        expect(e.message).toBe('REDIRECTED_TO:/redirect_from_auth')
-      }
-
-      expect(mockFetch).toHaveBeenCalledTimes(2)
-      expect(mockFetch.mock.calls[0]![0]).toBe('http://api.test/auth/register')
-      expect(mockFetch.mock.calls[1]![0]).toBe('http://api.test/auth/login')
-    })
-
-    it('should fall back to email when names cannot produce a safe username', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      })
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers(),
-      })
-
-      try {
-        await signupAction({
-          email: 'student.ivanov@example.com',
-          firstName: '\u0418\u0432\u0430\u043d',
-          lastName: '\u0418\u0432\u0430\u043d\u043e\u0432',
-          password: 'password123',
-        })
-        expect.fail('Should have redirected')
-      } catch (e: any) {
-        expect(e.message).toBe('REDIRECTED_TO:/redirect_from_auth')
-      }
-
-      const signupBody = JSON.parse(mockFetch.mock.calls[0]![1].body as string)
-      expect(signupBody.username).toBe('student.ivanov.1234')
-    })
-
-    it('should handle signup failure with signupCode', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({ detail: { code: 'REGISTER_USER_ALREADY_EXISTS' } }),
-      })
-
-      const result = await signupAction({
-        email: 'exists@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        password: 'password123',
-      })
-
-      expect(result).toEqual({
-        ok: false,
-        reason: 'signup_failed',
-        signupCode: 'REGISTER_USER_ALREADY_EXISTS',
-      })
-    })
-
-    it('should handle login failure after signup', async () => {
-      // Mock signup success
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      })
-      // Mock login failure
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-      })
-
-      const result = await signupAction({
-        email: 'new@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        password: 'password123',
-      })
-
-      expect(result).toEqual({
-        ok: false,
-        reason: 'login_after_signup_failed',
-      })
-    })
-  })
-
   describe('logoutAction', () => {
-    it('should fetch logout endpoint and redirect', async () => {
+    it('should post to the logout endpoint, drop the cookie and redirect', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
+        status: 204,
         headers: new Headers(),
       })
 
@@ -256,7 +198,16 @@ describe('Frontend Auth Actions', () => {
       }
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(mockFetch.mock.calls[0]![0]).toBe('http://api.test/auth/logout')
+      expect(mockFetch.mock.calls[0]![0]).toBe('http://api.test/api/v2/auth/logout')
+      expect(mockFetch.mock.calls[0]![1].method).toBe('POST')
+      expect(mockCookies.delete).toHaveBeenCalledWith('ab_session')
+    })
+
+    it('still clears the cookie when the backend is unreachable', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('down'))
+
+      await expect(logoutAction('/')).rejects.toThrow('REDIRECTED_TO:/')
+      expect(mockCookies.delete).toHaveBeenCalledWith('ab_session')
     })
   })
 })
