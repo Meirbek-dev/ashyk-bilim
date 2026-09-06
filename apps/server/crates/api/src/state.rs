@@ -5,6 +5,7 @@ use std::sync::Arc;
 use ab_clients::judge0::Judge0Client;
 use ab_clients::storage::StorageClient;
 use ab_core::config::Config;
+use ab_domain::analytics::AnalyticsService;
 use ab_domain::assessments::AssessmentsService;
 use ab_domain::catalog::{
     CollectionsService, CoursesService, CurriculumService, PlatformService, SearchService,
@@ -55,6 +56,7 @@ pub struct AppState {
     pub certifications: CertificationsService,
     pub gamification: GamificationService,
     pub work_queue: WorkQueueService,
+    pub analytics: AnalyticsService,
 }
 
 impl AppState {
@@ -101,6 +103,7 @@ impl AppState {
             discussions: DiscussionsService::new(pool.clone(), courses.clone()),
             gamification: GamificationService::new(pool.clone()),
             work_queue: WorkQueueService::new(pool.clone()),
+            analytics: AnalyticsService::new(pool.clone()),
             certifications: CertificationsService::new(
                 pool.clone(),
                 courses.clone(),

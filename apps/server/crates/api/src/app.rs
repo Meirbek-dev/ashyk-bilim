@@ -54,6 +54,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "certifications", description = "Certification templates, issued certificates, public verification"),
         (name = "gamification", description = "XP, levels, streaks, leaderboard; admin awards and policy"),
         (name = "work-queue", description = "Unified inbox: ranked learner and teacher work items"),
+        (name = "analytics", description = "Teacher and admin dashboards, at-risk learners, interventions, saved views, CSV exports"),
     )
 )]
 struct ApiDoc;
@@ -72,6 +73,32 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(certification_routes())
         .merge(gamification_routes())
         .merge(work_queue_routes())
+        .merge(analytics_routes())
+}
+
+fn analytics_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::analytics::teacher_overview))
+        .routes(routes!(routes::analytics::admin_overview))
+        .routes(routes!(routes::analytics::course_list))
+        .routes(routes!(routes::analytics::course_detail))
+        .routes(routes!(routes::analytics::assessment_list))
+        .routes(routes!(routes::analytics::assessment_detail))
+        .routes(routes!(routes::analytics::at_risk_learners))
+        .routes(routes!(
+            routes::analytics::list_interventions,
+            routes::analytics::create_intervention
+        ))
+        .routes(routes!(
+            routes::analytics::list_saved_views,
+            routes::analytics::save_view
+        ))
+        .routes(routes!(routes::analytics::delete_view))
+        .routes(routes!(routes::analytics::drill_through))
+        .routes(routes!(routes::analytics::export_at_risk))
+        .routes(routes!(routes::analytics::export_grading_backlog))
+        .routes(routes!(routes::analytics::export_course_progress))
+        .routes(routes!(routes::analytics::export_assessment_outcomes))
 }
 
 fn work_queue_routes() -> OpenApiRouter<AppState> {

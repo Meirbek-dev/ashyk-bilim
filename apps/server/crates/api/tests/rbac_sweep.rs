@@ -125,6 +125,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     // Gamification admin: platform:manage:platform.
     ("POST", "/api/v2/gamification/xp"),
     ("PUT", "/api/v2/gamification/config"),
+    // Analytics writes: analytics:read:{assigned,platform,all} + course scope.
+    ("POST", "/api/v2/analytics/teacher/interventions"),
+    ("POST", "/api/v2/analytics/teacher/saved-views"),
+    ("DELETE", "/api/v2/analytics/teacher/saved-views/{view_id}"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),
