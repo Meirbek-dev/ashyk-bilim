@@ -10,6 +10,7 @@
     "generate:api-types": "node scripts/generate-api-types.mjs",
     "generate:contracts": "bun run generate:api-types",
     "check:contracts": "node scripts/check_contracts.mjs",
+    "check:error-codes": "node scripts/sync-error-codes.mjs",
     "i18n:consolidate": "bun run scripts/i18n-consolidate.ts",
     "test": "node scripts/run-vitest.mjs run",
     "test:ui": "node scripts/run-vitest.mjs --browser.enabled --browser.name=chromium",
@@ -26,7 +27,8 @@
     "start": "next start",
     "checktypes": "next typegen && tsc --noEmit",
     "bundle:analyze": "next experimental-analyze",
-    "knip": "knip"
+    "knip": "knip",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@ag-ui/client": "^0.0.59",

@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..', '..', '..')
 
-const TRACKED_FILES = ['apps/api/openapi.json', 'apps/web/src/lib/api/generated']
+const TRACKED_FILES = ['apps/server/openapi.v2.json', 'apps/web/src/lib/api/generated']
 const COMPAT_FILES = ['apps/web/scripts/postprocess-orval-output.mjs', 'apps/web/src/lib/api/generated/index.ts']
 const anyCompatAlias = /type\s+Compat<[^>]+>\s*=[^\n;]*\bany\b/u
 
