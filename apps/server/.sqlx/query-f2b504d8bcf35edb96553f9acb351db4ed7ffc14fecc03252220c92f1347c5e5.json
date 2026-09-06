@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO analytics_events\n              (event_type, course_id, activity_id, assessment_id, submission_id, user_id, actor_id, payload)\n          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f2b504d8bcf35edb96553f9acb351db4ed7ffc14fecc03252220c92f1347c5e5"
+}

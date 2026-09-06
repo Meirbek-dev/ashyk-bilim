@@ -1,0 +1,179 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO teacher_interventions\n              (teacher_user_id, user_id, course_id, intervention_type, status, outcome, notes,\n               risk_score_before, risk_score_after, payload, resolved_at)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,\n                   CASE WHEN $11 THEN now() ELSE NULL END)\n           RETURNING id AS \"id: InterventionId\", teacher_user_id AS \"teacher_user_id: UserId\",\n                     user_id AS \"user_id: UserId\", course_id AS \"course_id: CourseId\",\n                     intervention_type, status, outcome, notes, risk_score_before,\n                     risk_score_after, payload,\n                     (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                     (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                     (extract(epoch FROM resolved_at))::bigint AS \"resolved_at?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: InterventionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "teacher_user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "teacher_user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "intervention_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "intervention_type"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "outcome",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "outcome"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "notes",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "risk_score_before",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "risk_score_before"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "risk_score_after",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "risk_score_after"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "payload",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "payload"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 13,
+        "name": "resolved_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Jsonb",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "8acd56e5e7b839536f02b05ebb56b85399d8964d121c2917cb0cc0aadd665581"
+}

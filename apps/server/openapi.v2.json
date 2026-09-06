@@ -378,6 +378,2427 @@
         }
       }
     },
+    "/api/v2/analytics/admin/overview": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Platform-wide overview (`analytics:read:platform` / `:all`).",
+        "operationId": "admin_overview",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No platform analytics grant",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/assessments": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "operationId": "assessment_list",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessment rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherAssessmentListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/assessments/{assessment_type}/{assessment_id}": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "404 when the assessment is unknown, of another kind, or outside the scope.",
+        "operationId": "assessment_detail",
+        "parameters": [
+          {
+            "name": "assessment_type",
+            "in": "path",
+            "description": "quiz, exam or code_challenge",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentKind"
+            }
+          },
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "description": "Assessment id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessment detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherAssessmentDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not in scope",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/courses": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "operationId": "course_list",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Course rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCourseListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/courses/{id}": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "404 for a course outside the caller's scope.",
+        "operationId": "course_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Course detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCourseDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not in scope",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/drill-through/{metric}": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Rows behind a KPI card: `active_learners`, `completion_rate`,\n`pass_rate` (needs `assessment_type` + `assessment_id`) or `backlog`.",
+        "operationId": "drill_through",
+        "parameters": [
+          {
+            "name": "metric",
+            "in": "path",
+            "description": "KPI",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DrillMetric"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "assessment_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentKind"
+            }
+          },
+          {
+            "name": "assessment_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrillThroughResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "pass_rate without an assessment",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/exports/assessment-outcomes.csv": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "operationId": "export_assessment_outcomes",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/exports/at-risk.csv": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "operationId": "export_at_risk",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/exports/course-progress.csv": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "operationId": "export_course_progress",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/exports/grading-backlog.csv": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "operationId": "export_grading_backlog",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/interventions": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "The caller's interventions (newest first, up to 100).",
+        "operationId": "list_interventions",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
+            "name": "course_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Interventions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Record an intervention; the learner's latest risk score is captured as\n`risk_score_before`.",
+        "operationId": "create_intervention",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInterventionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intervention"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Course not in scope",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/learners/at-risk": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Learners at medium or high risk, worst first.",
+        "operationId": "at_risk_learners",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "At-risk learners",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtRiskLearnersResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/overview": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "KPI cards, trends, alerts, workload, insights and forecasts for the\ncaller's courses.",
+        "operationId": "teacher_overview",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teacher overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherOverviewResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No analytics grant",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/saved-views": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "operationId": "list_saved_views",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved views",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Create, or overwrite the view with the same name and type.",
+        "operationId": "save_view",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/analytics/teacher/saved-views/{view_id}": {
+      "delete": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "404 unless the view belongs to the caller.",
+        "operationId": "delete_view",
+        "parameters": [
+          {
+            "name": "view_id",
+            "in": "path",
+            "description": "Saved view id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SavedViewId"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "description": "`previous_period` (default) or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "description": "`day` (default) or `week`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bucket_start",
+            "in": "query",
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "course_ids",
+            "in": "query",
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cohort_ids",
+            "in": "query",
+            "description": "Comma-separated usergroup ids.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacher_user_id",
+            "in": "query",
+            "description": "Inspect another teacher (platform scope only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based (default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "1..=200 (default 25).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc` (default).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/assessment-items/{id}": {
       "delete": {
         "tags": [
@@ -7202,6 +9623,44 @@
         ],
         "description": "Full activity view with the heavy jsonb columns."
       },
+      "ActivityDropoffRow": {
+        "type": "object",
+        "required": [
+          "chapter_id",
+          "activity_id",
+          "activity_name",
+          "activity_type",
+          "previous_step_completions",
+          "current_step_completions",
+          "dropoff_pct"
+        ],
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "activity_name": {
+            "type": "string"
+          },
+          "activity_type": {
+            "type": "string"
+          },
+          "chapter_id": {
+            "$ref": "#/components/schemas/ChapterId"
+          },
+          "current_step_completions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dropoff_pct": {
+            "type": "number",
+            "format": "double"
+          },
+          "previous_step_completions": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ActivityId": {
         "type": "string",
         "format": "uuid"
@@ -7278,6 +9737,53 @@
           }
         }
       },
+      "AdminAnalyticsResponse": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "teacher_workload_comparison",
+          "course_health_ranking",
+          "cohort_retention",
+          "department_program_performance",
+          "content_roi"
+        ],
+        "properties": {
+          "cohort_retention": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCohortRow"
+            }
+          },
+          "content_roi": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCourseRow"
+            }
+          },
+          "course_health_ranking": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCourseRow"
+            }
+          },
+          "department_program_performance": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminProgramRow"
+            }
+          },
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "teacher_workload_comparison": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminTeacherRow"
+            }
+          }
+        }
+      },
       "AdminAwardRequest": {
         "type": "object",
         "description": "Platform managers grant XP to a user.",
@@ -7307,6 +9813,175 @@
           }
         },
         "additionalProperties": false
+      },
+      "AdminCohortRow": {
+        "type": "object",
+        "required": [
+          "cohort_id",
+          "cohort_name",
+          "learners",
+          "retained_learners"
+        ],
+        "properties": {
+          "avg_progress_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "cohort_id": {
+            "$ref": "#/components/schemas/UsergroupId"
+          },
+          "cohort_name": {
+            "type": "string"
+          },
+          "learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "retained_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "retention_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "AdminCourseRow": {
+        "type": "object",
+        "required": [
+          "course_id",
+          "course_name",
+          "health_score",
+          "completion_rate",
+          "active_learners_7d",
+          "at_risk_learners"
+        ],
+        "properties": {
+          "active_learners_7d": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at_risk_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completion_rate": {
+            "type": "number",
+            "format": "double"
+          },
+          "content_roi_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "health_score": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "AdminProgramRow": {
+        "type": "object",
+        "required": [
+          "program_name",
+          "course_count",
+          "learner_count"
+        ],
+        "properties": {
+          "completion_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "course_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "health_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "learner_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "program_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The creating teacher; `None` groups courses without a creator."
+              }
+            ]
+          },
+          "program_name": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminTeacherRow": {
+        "type": "object",
+        "required": [
+          "teacher_user_id",
+          "teacher_display_name",
+          "managed_course_count",
+          "workload_backlog",
+          "sla_breaches",
+          "at_risk_learners"
+        ],
+        "properties": {
+          "at_risk_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "managed_course_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "median_feedback_latency_hours": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "sla_breaches": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "teacher_display_name": {
+            "type": "string"
+          },
+          "teacher_user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "workload_backlog": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "AdminUser": {
         "type": "object",
@@ -7371,6 +10046,224 @@
                 "$ref": "#/components/schemas/UserId"
               }
             ]
+          }
+        }
+      },
+      "AlertItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "title",
+          "body"
+        ],
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "assessment_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentId"
+              }
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "course_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CourseId"
+              }
+            ]
+          },
+          "href": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`risk_spike` | `engagement_drop` | `grading_backlog` | `grading_slo` |\n`assessment_outlier` | `content_stale`."
+          },
+          "learner_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "AnalyticsDataQuality": {
+        "type": "object",
+        "required": [
+          "mode",
+          "freshness_seconds",
+          "confidence_level",
+          "missing_event_sources",
+          "courses_without_enough_data",
+          "excluded_preview_attempts",
+          "excluded_teacher_attempts",
+          "issues"
+        ],
+        "properties": {
+          "confidence_level": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "courses_without_enough_data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseDataGap"
+            }
+          },
+          "excluded_preview_attempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "excluded_teacher_attempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "freshness_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataQualityIssue"
+            }
+          },
+          "last_rollup_time_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "missing_event_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mode": {
+            "type": "string",
+            "description": "`live` | `rollup`."
+          }
+        }
+      },
+      "AnomalyItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "title",
+          "detail"
+        ],
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "assessment_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentId"
+              }
+            ]
+          },
+          "assessment_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentKind"
+              }
+            ]
+          },
+          "baseline_value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "course_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CourseId"
+              }
+            ]
+          },
+          "course_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`engagement_drop` | `submission_spike` | `fast_quiz_completion` |\n`score_distribution_shift`."
+          },
+          "observed_value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "title": {
+            "type": "string"
           }
         }
       },
@@ -7477,6 +10370,162 @@
           }
         }
       },
+      "AssessmentAuditEventRow": {
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "action",
+          "occurred_at_unix",
+          "summary"
+        ],
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actor_display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actor_user_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          },
+          "affected_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "bulk_action_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BulkActionId"
+              }
+            ]
+          },
+          "grading_entry_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GradingEntryId"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "occurred_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "source": {
+            "type": "string",
+            "description": "`grading_entry` | `bulk_action`."
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submission_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionId"
+              }
+            ]
+          },
+          "summary": {
+            "type": "string"
+          }
+        }
+      },
+      "AssessmentCohortRow": {
+        "type": "object",
+        "required": [
+          "cohort_id",
+          "cohort_name",
+          "eligible_learners",
+          "submitted_learners",
+          "awaiting_grading",
+          "returned_for_resubmission",
+          "released_learners"
+        ],
+        "properties": {
+          "avg_attempts": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "awaiting_grading": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cohort_id": {
+            "$ref": "#/components/schemas/UsergroupId"
+          },
+          "cohort_name": {
+            "type": "string"
+          },
+          "eligible_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "median_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "pass_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "released_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "returned_for_resubmission": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "submission_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "submitted_learners": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "AssessmentDetail": {
         "allOf": [
           {
@@ -7497,6 +10546,73 @@
             }
           }
         ]
+      },
+      "AssessmentDiagnosticsSnapshot": {
+        "type": "object",
+        "required": [
+          "manual_grading_required",
+          "total_attempt_records",
+          "draft_attempts",
+          "awaiting_grading",
+          "graded_not_released",
+          "returned_for_resubmission",
+          "released",
+          "late_submissions",
+          "stale_backlog",
+          "suspicious_attempts",
+          "missing_scores"
+        ],
+        "properties": {
+          "awaiting_grading": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "draft_attempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "graded_not_released": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "late_submissions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "manual_grading_required": {
+            "type": "boolean"
+          },
+          "missing_scores": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "released": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "returned_for_resubmission": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "stale_backlog": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "suspicious_attempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_attempt_records": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "AssessmentId": {
         "type": "string",
@@ -7540,6 +10656,51 @@
           }
         }
       },
+      "AssessmentItemAnalyticsRow": {
+        "type": "object",
+        "required": [
+          "item_key",
+          "item_label",
+          "item_type",
+          "population_count",
+          "impacted_count",
+          "signal",
+          "note"
+        ],
+        "properties": {
+          "impact_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "impacted_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "item_key": {
+            "type": "string"
+          },
+          "item_label": {
+            "type": "string"
+          },
+          "item_type": {
+            "type": "string",
+            "description": "`workflow` | `question` | `test`."
+          },
+          "note": {
+            "type": "string"
+          },
+          "population_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "signal": {
+            "$ref": "#/components/schemas/ItemSignal"
+          }
+        }
+      },
       "AssessmentItemId": {
         "type": "string",
         "format": "uuid"
@@ -7553,6 +10714,297 @@
           "code_challenge"
         ]
       },
+      "AssessmentLearnerRow": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "user_display_name",
+          "attempts"
+        ],
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "best_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "graded_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "last_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Submission status of the latest attempt (`pending`, `graded`, …)."
+          },
+          "submitted_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "user_display_name": {
+            "type": "string"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
+      "AssessmentOutlierRow": {
+        "type": "object",
+        "required": [
+          "assessment_type",
+          "assessment_id",
+          "course_id",
+          "course_name",
+          "title",
+          "outlier_reason_codes"
+        ],
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "assessment_id": {
+            "$ref": "#/components/schemas/AssessmentId"
+          },
+          "assessment_type": {
+            "$ref": "#/components/schemas/AssessmentKind"
+          },
+          "avg_attempts": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "completion_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "difficulty_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "discrimination_index": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "grading_latency_hours_p50": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "grading_latency_hours_p90": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "median_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "outlier_reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pass_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "reliability_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "score_variance": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "submission_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "suspicious_flag": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`too_easy` | `too_hard` | `low_discrimination` | `low_variance`."
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "AssessmentSloSnapshot": {
+        "type": "object",
+        "required": [
+          "status",
+          "backlog_count",
+          "overdue_backlog_count",
+          "note"
+        ],
+        "properties": {
+          "backlog_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": "string"
+          },
+          "observed_p50_hours": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "observed_p90_hours": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "overdue_backlog_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SloStatus"
+          },
+          "target_hours": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "AssessmentSupportAlertRow": {
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "summary"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "`grading_slo_breached` | `grading_slo_warning` | `suspicious_attempts` | `missing_scores`."
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "summary": {
+            "type": "string"
+          }
+        }
+      },
+      "AssessmentSupportDiagnostics": {
+        "type": "object",
+        "required": [
+          "scoped_eligible_learners",
+          "scoped_visible_learners",
+          "scoped_cohort_count",
+          "cohort_filter_applied",
+          "audit_event_count",
+          "alerts",
+          "note"
+        ],
+        "properties": {
+          "alerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentSupportAlertRow"
+            }
+          },
+          "audit_event_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cohort_filter_applied": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          },
+          "scoped_cohort_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scoped_eligible_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scoped_visible_learners": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "AssignRoleRequest": {
         "type": "object",
         "required": [
@@ -7565,6 +11017,199 @@
           }
         },
         "additionalProperties": false
+      },
+      "AtRiskLearnerRow": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "course_id",
+          "course_name",
+          "user_display_name",
+          "progress_pct",
+          "open_grading_blocks",
+          "failed_assessments",
+          "missing_required_assessments",
+          "risk_score",
+          "risk_level",
+          "risk_components",
+          "reason_codes",
+          "risk_trend",
+          "confidence_level",
+          "why_now",
+          "intervention_count",
+          "recommended_action"
+        ],
+        "properties": {
+          "cohort_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "confidence_level": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "days_since_last_activity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "failed_assessments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "intervention_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_intervention_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "last_intervention_outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_intervention_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "missing_required_assessments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "open_grading_blocks": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previous_risk_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "progress_pct": {
+            "type": "number",
+            "format": "double"
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recommended_action": {
+            "type": "string",
+            "description": "Stable code (`review_submissions_first`, …)."
+          },
+          "risk_components": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "format": "double"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "risk_level": {
+            "$ref": "#/components/schemas/RiskLevel"
+          },
+          "risk_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "risk_score_delta": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "risk_trend": {
+            "$ref": "#/components/schemas/RiskTrend"
+          },
+          "top_contributing_factor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user_display_name": {
+            "type": "string"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "why_now": {
+            "type": "string",
+            "description": "Stable code explaining the strongest signal."
+          }
+        }
+      },
+      "AtRiskLearnersResponse": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "total",
+          "page",
+          "page_size",
+          "items",
+          "course_options",
+          "cohort_options"
+        ],
+        "properties": {
+          "cohort_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "course_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AtRiskLearnerRow"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "AttachedFile": {
         "type": "object",
@@ -8644,6 +12289,33 @@
           }
         }
       },
+      "CommonFailureRow": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "Compare": {
+        "type": "string",
+        "enum": [
+          "previous_period",
+          "none"
+        ]
+      },
       "CompletionRule": {
         "type": "string",
         "enum": [
@@ -8652,6 +12324,14 @@
           "graded",
           "passed",
           "teacher_verified"
+        ]
+      },
+      "Confidence": {
+        "type": "string",
+        "enum": [
+          "low",
+          "medium",
+          "high"
         ]
       },
       "ConfigPatch": {
@@ -8749,6 +12429,118 @@
         },
         "additionalProperties": false
       },
+      "ContentBottleneckRow": {
+        "type": "object",
+        "required": [
+          "course_id",
+          "course_name",
+          "activity_id",
+          "activity_name",
+          "activity_type",
+          "signal",
+          "severity",
+          "started_learners",
+          "completed_learners",
+          "exit_count",
+          "failed_assessments",
+          "note"
+        ],
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "activity_name": {
+            "type": "string"
+          },
+          "activity_type": {
+            "type": "string"
+          },
+          "avg_time_seconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "completed_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completion_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "exit_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failed_assessments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "signal": {
+            "type": "string",
+            "description": "`high_time_low_completion` | `exit_after_open` |\n`repeated_assessment_failures` | `stale_low_performance`."
+          },
+          "stale_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "started_learners": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ContentHealthRow": {
+        "type": "object",
+        "required": [
+          "course_id",
+          "signal",
+          "severity",
+          "note"
+        ],
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "note": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "signal": {
+            "type": "string",
+            "description": "`content_freshness` | `average_progress` | `grading_backlog`."
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "Course": {
         "type": "object",
         "required": [
@@ -8804,6 +12596,30 @@
           "updated_at_unix": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "CourseDataGap": {
+        "type": "object",
+        "required": [
+          "course_id",
+          "course_name",
+          "learner_count",
+          "reason"
+        ],
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "learner_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reason": {
+            "type": "string"
           }
         }
       },
@@ -8871,6 +12687,21 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "CourseRef": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -9177,6 +13008,48 @@
           }
         ]
       },
+      "CreateInterventionRequest": {
+        "type": "object",
+        "description": "Log a teacher action for an at-risk learner. `status` defaults to\n`completed` (legacy).",
+        "required": [
+          "user_id",
+          "course_id",
+          "intervention_type"
+        ],
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "intervention_type": {
+            "type": "string",
+            "description": "`message_sent`, `submission_graded`, `extension_granted`,\n`meeting_scheduled` or `learner_recovered`."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "description": "Free-form details (an object)."
+          },
+          "status": {
+            "type": "string",
+            "description": "`planned`, `completed` or `resolved`."
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateItemRequest": {
         "type": "object",
         "required": [
@@ -9366,6 +13239,45 @@
           }
         }
       },
+      "DataQualityIssue": {
+        "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "title",
+          "detail"
+        ],
+        "properties": {
+          "course_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CourseId"
+              }
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "DeadlineExtensionRequest": {
         "type": "object",
         "required": [
@@ -9395,6 +13307,14 @@
           "easy",
           "medium",
           "hard"
+        ]
+      },
+      "Direction": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down",
+          "flat"
         ]
       },
       "DisabledReason": {
@@ -9585,6 +13505,43 @@
           }
         },
         "additionalProperties": false
+      },
+      "DrillMetric": {
+        "type": "string",
+        "enum": [
+          "active_learners",
+          "completion_rate",
+          "pass_rate",
+          "backlog"
+        ]
+      },
+      "DrillThroughResponse": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "metric",
+          "total",
+          "items"
+        ],
+        "properties": {
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "metric": {
+            "$ref": "#/components/schemas/DrillMetric"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "DuplicateRequest": {
         "type": "object",
@@ -10033,6 +13990,21 @@
           "archived"
         ]
       },
+      "FilterOption": {
+        "type": "object",
+        "required": [
+          "label",
+          "value"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
       "FinalizedUpload": {
         "type": "object",
         "required": [
@@ -10051,6 +14023,102 @@
           "size_bytes": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "ForecastItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "title",
+          "prediction",
+          "confidence_level"
+        ],
+        "properties": {
+          "assessment_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentId"
+              }
+            ]
+          },
+          "assessment_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentKind"
+              }
+            ]
+          },
+          "confidence_level": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "course_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CourseId"
+              }
+            ]
+          },
+          "course_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deadline_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "expected_value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`completion_target_miss` | `grading_backlog_7d` |\n`course_completion_deadline` | `assessment_failure_risk`."
+          },
+          "learner_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "prediction": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "target_value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "title": {
+            "type": "string"
           }
         }
       },
@@ -10096,6 +14164,51 @@
           "number",
           "date"
         ]
+      },
+      "FunnelStep": {
+        "type": "object",
+        "required": [
+          "label",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string",
+            "description": "Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name."
+          },
+          "pct_of_previous": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "Funnels": {
+        "type": "object",
+        "required": [
+          "course_completion",
+          "chapter_dropoff"
+        ],
+        "properties": {
+          "chapter_dropoff": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FunnelStep"
+            }
+          },
+          "course_completion": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FunnelStep"
+            }
+          }
+        }
       },
       "GamificationConfig": {
         "type": "object",
@@ -10329,6 +14442,57 @@
           "user_answer": {}
         }
       },
+      "GradingBacklogItem": {
+        "type": "object",
+        "required": [
+          "course_id",
+          "course_name",
+          "assessment_id",
+          "assessment_type",
+          "title",
+          "awaiting_review",
+          "sla_breaches"
+        ],
+        "properties": {
+          "age_hours": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "assessment_id": {
+            "$ref": "#/components/schemas/AssessmentId"
+          },
+          "assessment_type": {
+            "$ref": "#/components/schemas/AssessmentKind"
+          },
+          "awaiting_review": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "oldest_submitted_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "sla_breaches": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "GradingBreakdown": {
         "type": "object",
         "properties": {
@@ -10436,6 +14600,248 @@
           "version": {
             "type": "string",
             "description": "Server crate version."
+          }
+        }
+      },
+      "HistogramBucket": {
+        "type": "object",
+        "required": [
+          "label",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "InsightFeedItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "severity",
+          "priority",
+          "title",
+          "body"
+        ],
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "assessment_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentId"
+              }
+            ]
+          },
+          "assessment_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentKind"
+              }
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "description": "`risk` | `assessment` | `content` | `workload` | `completion` | `intervention`."
+          },
+          "course_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CourseId"
+              }
+            ]
+          },
+          "href": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "learner_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "Intervention": {
+        "type": "object",
+        "required": [
+          "id",
+          "teacher_user_id",
+          "user_id",
+          "course_id",
+          "intervention_type",
+          "status",
+          "payload",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/InterventionId"
+          },
+          "intervention_type": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payload": {
+            "type": "object"
+          },
+          "resolved_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "risk_score_after": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "risk_score_before": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "status": {
+            "type": "string"
+          },
+          "teacher_user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
+      "InterventionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "InterventionList": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "total",
+          "items"
+        ],
+        "properties": {
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Intervention"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "InterventionSummary": {
+        "type": "object",
+        "required": [
+          "total",
+          "open",
+          "resolved",
+          "recovered_learners"
+        ],
+        "properties": {
+          "avg_risk_delta_after_intervention": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recovered_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resolved": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -10842,6 +15248,14 @@
         },
         "additionalProperties": false
       },
+      "ItemSignal": {
+        "type": "string",
+        "enum": [
+          "healthy",
+          "watch",
+          "critical"
+        ]
+      },
       "LanguageInfo": {
         "type": "object",
         "description": "A Judge0 language the platform allows.",
@@ -11152,6 +15566,64 @@
           },
           "right": {
             "type": "string"
+          }
+        }
+      },
+      "MetricCard": {
+        "type": "object",
+        "required": [
+          "value",
+          "direction",
+          "label",
+          "is_higher_better"
+        ],
+        "properties": {
+          "benchmark": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "benchmark_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "delta_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "delta_value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "is_higher_better": {
+            "type": "boolean"
+          },
+          "label": {
+            "type": "string",
+            "description": "Stable code (`active_learners`, `completion_rate`, …)."
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -11674,6 +16146,61 @@
           }
         }
       },
+      "QuestionDifficultyRow": {
+        "type": "object",
+        "required": [
+          "question_id",
+          "question_label",
+          "distractor_issue_count"
+        ],
+        "properties": {
+          "accuracy_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "avg_time_seconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "discrimination_index": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "distractor_issue_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "question_id": {
+            "type": "string"
+          },
+          "question_label": {
+            "type": "string"
+          },
+          "strong_miss_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "weak_correct_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "ReactionState": {
         "type": "object",
         "required": [
@@ -11957,6 +16484,46 @@
           "full"
         ]
       },
+      "RiskDistributionCounts": {
+        "type": "object",
+        "required": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "properties": {
+          "high": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "low": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "medium": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RiskLevel": {
+        "type": "string",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "RiskTrend": {
+        "type": "string",
+        "enum": [
+          "newly_at_risk",
+          "worsening",
+          "improving",
+          "recovered",
+          "stable"
+        ]
+      },
       "Role": {
         "type": "object",
         "required": [
@@ -12038,6 +16605,92 @@
           }
         },
         "additionalProperties": false
+      },
+      "SaveViewRequest": {
+        "type": "object",
+        "description": "Save (or overwrite by name + type) a dashboard view.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "query": {
+            "type": "object",
+            "description": "The saved filter state (an object)."
+          },
+          "view_type": {
+            "type": "string",
+            "description": "Defaults to `overview`."
+          }
+        },
+        "additionalProperties": false
+      },
+      "SavedView": {
+        "type": "object",
+        "required": [
+          "id",
+          "teacher_user_id",
+          "name",
+          "view_type",
+          "query",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/SavedViewId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "query": {
+            "type": "object"
+          },
+          "teacher_user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "view_type": {
+            "type": "string"
+          }
+        }
+      },
+      "SavedViewId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "SavedViewList": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "total",
+          "items"
+        ],
+        "properties": {
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedView"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "ScanStatus": {
         "type": "string",
@@ -12223,6 +16876,14 @@
         },
         "additionalProperties": false
       },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "info",
+          "warning",
+          "critical"
+        ]
+      },
       "SignedDownload": {
         "type": "object",
         "required": [
@@ -12250,6 +16911,15 @@
             "type": "string"
           }
         }
+      },
+      "SloStatus": {
+        "type": "string",
+        "enum": [
+          "healthy",
+          "warning",
+          "breached",
+          "not_applicable"
+        ]
       },
       "Stats": {
         "type": "object",
@@ -12573,6 +17243,710 @@
         },
         "additionalProperties": false
       },
+      "TeacherAssessmentDetailResponse": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "assessment_type",
+          "assessment_id",
+          "activity_id",
+          "course_id",
+          "title",
+          "pass_threshold",
+          "pass_threshold_bucket_label",
+          "summary",
+          "score_distribution",
+          "attempt_distribution",
+          "question_breakdown",
+          "common_failures",
+          "learner_rows",
+          "diagnostics",
+          "audit_history",
+          "slo",
+          "support",
+          "cohort_analytics",
+          "item_analytics"
+        ],
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "assessment_id": {
+            "$ref": "#/components/schemas/AssessmentId"
+          },
+          "assessment_type": {
+            "$ref": "#/components/schemas/AssessmentKind"
+          },
+          "attempt_distribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistogramBucket"
+            }
+          },
+          "audit_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentAuditEventRow"
+            }
+          },
+          "cohort_analytics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentCohortRow"
+            }
+          },
+          "common_failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommonFailureRow"
+            }
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/AssessmentDiagnosticsSnapshot"
+          },
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "item_analytics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentItemAnalyticsRow"
+            }
+          },
+          "learner_rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentLearnerRow"
+            }
+          },
+          "pass_threshold": {
+            "type": "number",
+            "format": "double"
+          },
+          "pass_threshold_bucket_label": {
+            "type": "string"
+          },
+          "question_breakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionDifficultyRow"
+            }
+          },
+          "score_distribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistogramBucket"
+            }
+          },
+          "slo": {
+            "$ref": "#/components/schemas/AssessmentSloSnapshot"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/TeacherAssessmentDetailSummary"
+          },
+          "support": {
+            "$ref": "#/components/schemas/AssessmentSupportDiagnostics"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "TeacherAssessmentDetailSummary": {
+        "type": "object",
+        "required": [
+          "eligible_learners",
+          "submitted_learners"
+        ],
+        "properties": {
+          "avg_attempts": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "eligible_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "grading_latency_hours_p50": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "grading_latency_hours_p90": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "median_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "pass_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "submission_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "submitted_learners": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TeacherAssessmentListResponse": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "total",
+          "page",
+          "page_size",
+          "items",
+          "course_options",
+          "cohort_options"
+        ],
+        "properties": {
+          "cohort_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "course_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentOutlierRow"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TeacherCourseDetailResponse": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "course",
+          "summary",
+          "funnels",
+          "engagement_trend",
+          "activity_dropoff",
+          "at_risk_learners",
+          "assessment_outliers",
+          "content_health",
+          "content_bottlenecks"
+        ],
+        "properties": {
+          "activity_dropoff": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityDropoffRow"
+            }
+          },
+          "assessment_outliers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentOutlierRow"
+            }
+          },
+          "at_risk_learners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AtRiskLearnerRow"
+            }
+          },
+          "content_bottlenecks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentBottleneckRow"
+            }
+          },
+          "content_health": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentHealthRow"
+            }
+          },
+          "course": {
+            "$ref": "#/components/schemas/CourseRef"
+          },
+          "engagement_trend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSeriesPoint"
+            }
+          },
+          "funnels": {
+            "$ref": "#/components/schemas/Funnels"
+          },
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/TeacherCourseDetailSummary"
+          }
+        }
+      },
+      "TeacherCourseDetailSummary": {
+        "type": "object",
+        "required": [
+          "enrolled_learners",
+          "active_learners_7d",
+          "completion_rate",
+          "avg_progress_pct",
+          "at_risk_learners",
+          "ungraded_submissions",
+          "certificates_issued"
+        ],
+        "properties": {
+          "active_learners_7d": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at_risk_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "avg_progress_pct": {
+            "type": "number",
+            "format": "double"
+          },
+          "certificates_issued": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completion_rate": {
+            "type": "number",
+            "format": "double"
+          },
+          "enrolled_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ungraded_submissions": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TeacherCourseListResponse": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "total",
+          "page",
+          "page_size",
+          "items",
+          "course_options",
+          "cohort_options"
+        ],
+        "properties": {
+          "cohort_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "course_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeacherCourseRow"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TeacherCourseRow": {
+        "type": "object",
+        "required": [
+          "course_id",
+          "course_name",
+          "active_learners_7d",
+          "completion_rate",
+          "at_risk_learners",
+          "ungraded_submissions",
+          "content_health_score"
+        ],
+        "properties": {
+          "active_learners_7d": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "assessment_difficulty_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "at_risk_learners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cohort_completion_delta_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "completion_rate": {
+            "type": "number",
+            "format": "double"
+          },
+          "content_health_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "engagement_delta_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "historical_completion_delta_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "last_content_update_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "platform_completion_delta_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "teacher_completion_delta_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "top_alert": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AlertItem"
+              }
+            ]
+          },
+          "ungraded_submissions": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TeacherOverviewResponse": {
+        "type": "object",
+        "required": [
+          "generated_at_unix",
+          "freshness_seconds",
+          "window",
+          "compare",
+          "scope",
+          "summary",
+          "trends",
+          "alerts",
+          "insights",
+          "data_quality",
+          "forecasts",
+          "anomalies",
+          "risk_distribution",
+          "intervention_summary",
+          "workload",
+          "content_bottlenecks",
+          "at_risk_preview",
+          "course_preview",
+          "assessment_preview",
+          "course_total",
+          "assessment_total",
+          "at_risk_total",
+          "course_options",
+          "cohort_options"
+        ],
+        "properties": {
+          "alerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertItem"
+            }
+          },
+          "anomalies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnomalyItem"
+            }
+          },
+          "assessment_preview": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentOutlierRow"
+            }
+          },
+          "assessment_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at_risk_preview": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AtRiskLearnerRow"
+            }
+          },
+          "at_risk_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cohort_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "compare": {
+            "$ref": "#/components/schemas/Compare"
+          },
+          "content_bottlenecks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentBottleneckRow"
+            }
+          },
+          "course_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "course_preview": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeacherCourseRow"
+            }
+          },
+          "course_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "data_quality": {
+            "$ref": "#/components/schemas/AnalyticsDataQuality"
+          },
+          "forecasts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForecastItem"
+            }
+          },
+          "freshness_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "generated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "insights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InsightFeedItem"
+            }
+          },
+          "intervention_summary": {
+            "$ref": "#/components/schemas/InterventionSummary"
+          },
+          "risk_distribution": {
+            "$ref": "#/components/schemas/RiskDistributionCounts"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/TeacherOverviewScope"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/TeacherOverviewSummary"
+          },
+          "trends": {
+            "$ref": "#/components/schemas/TeacherOverviewTrends"
+          },
+          "window": {
+            "$ref": "#/components/schemas/Window"
+          },
+          "workload": {
+            "$ref": "#/components/schemas/TeacherWorkloadSummary"
+          }
+        }
+      },
+      "TeacherOverviewScope": {
+        "type": "object",
+        "required": [
+          "teacher_user_id",
+          "course_ids",
+          "cohort_ids"
+        ],
+        "properties": {
+          "cohort_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          },
+          "course_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          "teacher_user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
+      "TeacherOverviewSummary": {
+        "type": "object",
+        "required": [
+          "active_learners",
+          "returning_learners",
+          "completion_rate",
+          "at_risk_learners",
+          "ungraded_submissions",
+          "negative_engagement_courses"
+        ],
+        "properties": {
+          "active_learners": {
+            "$ref": "#/components/schemas/MetricCard"
+          },
+          "at_risk_learners": {
+            "$ref": "#/components/schemas/MetricCard"
+          },
+          "completion_rate": {
+            "$ref": "#/components/schemas/MetricCard"
+          },
+          "negative_engagement_courses": {
+            "$ref": "#/components/schemas/MetricCard"
+          },
+          "returning_learners": {
+            "$ref": "#/components/schemas/MetricCard"
+          },
+          "ungraded_submissions": {
+            "$ref": "#/components/schemas/MetricCard"
+          }
+        }
+      },
+      "TeacherOverviewTrends": {
+        "type": "object",
+        "required": [
+          "active_learners",
+          "completions",
+          "submissions",
+          "grading_completed"
+        ],
+        "properties": {
+          "active_learners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSeriesPoint"
+            }
+          },
+          "completions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSeriesPoint"
+            }
+          },
+          "grading_completed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSeriesPoint"
+            }
+          },
+          "submissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSeriesPoint"
+            }
+          }
+        }
+      },
       "TeacherSubmission": {
         "type": "object",
         "description": "A submission as the grader sees it — nothing redacted.",
@@ -12714,6 +18088,63 @@
             "items": {
               "type": "object"
             }
+          }
+        }
+      },
+      "TeacherWorkloadSummary": {
+        "type": "object",
+        "required": [
+          "backlog_total",
+          "sla_breaches",
+          "aging_buckets",
+          "forecast_backlog_7d",
+          "backlog_by_assessment"
+        ],
+        "properties": {
+          "aging_buckets": {
+            "$ref": "#/components/schemas/WorkloadAgingBuckets"
+          },
+          "backlog_by_assessment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingBacklogItem"
+            }
+          },
+          "backlog_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "forecast_backlog_7d": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "median_feedback_latency_hours": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "sla_breaches": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TimeSeriesPoint": {
+        "type": "object",
+        "required": [
+          "bucket_start_unix",
+          "value"
+        ],
+        "properties": {
+          "bucket_start_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -13627,6 +19058,14 @@
           }
         }
       },
+      "Window": {
+        "type": "string",
+        "enum": [
+          "7d",
+          "28d",
+          "90d"
+        ]
+      },
       "WorkItem": {
         "type": "object",
         "description": "One thing to act on.\n\n`id` is stable across calls; `kind` names the situation (`in_progress`, `overdue`, `waiting_for_grade`,\n`returned_for_revision`, `feedback_released`, `needs_grading`,\n`sla_breach`, `awaiting_release`).",
@@ -13768,6 +19207,33 @@
           "locked"
         ]
       },
+      "WorkloadAgingBuckets": {
+        "type": "object",
+        "required": [
+          "h0_24",
+          "d1_3",
+          "d3_7",
+          "d7_plus"
+        ],
+        "properties": {
+          "d1_3": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "d3_7": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "d7_plus": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "h0_24": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "XpSource": {
         "type": "string",
         "description": "Why XP was granted (legacy `XPSource`).",
@@ -13870,6 +19336,10 @@
     {
       "name": "work-queue",
       "description": "Unified inbox: ranked learner and teacher work items"
+    },
+    {
+      "name": "analytics",
+      "description": "Teacher and admin dashboards, at-risk learners, interventions, saved views, CSV exports"
     }
   ]
 }

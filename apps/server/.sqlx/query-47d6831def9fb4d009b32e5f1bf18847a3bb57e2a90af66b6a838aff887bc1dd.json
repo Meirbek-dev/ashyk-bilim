@@ -1,0 +1,184 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", auto_score, final_score, is_late,\n                  violation_count, duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                  grading\n           FROM submissions\n           WHERE course_id = ANY($1) AND status <> 'draft'\n             AND ($2::double precision IS NULL\n                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))\n           ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "assessment_id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "assessment_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status: SubmissionStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "auto_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "auto_score"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "is_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "is_late"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "violation_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "violation_count"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "duration_seconds",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "duration_seconds"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "started_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 15,
+        "name": "grading",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "grading"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      null,
+      null,
+      null,
+      null,
+      null,
+      false
+    ]
+  },
+  "hash": "47d6831def9fb4d009b32e5f1bf18847a3bb57e2a90af66b6a838aff887bc1dd"
+}

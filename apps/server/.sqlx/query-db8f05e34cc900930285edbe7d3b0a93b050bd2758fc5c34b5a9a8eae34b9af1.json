@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.user_id AS \"user_id: UserId\", m.usergroup_id AS \"usergroup_id: UsergroupId\",\n                  g.name AS usergroup_name\n           FROM usergroup_members m JOIN usergroups g ON g.id = m.usergroup_id\n           WHERE m.user_id = ANY($1) ORDER BY g.name, m.user_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "usergroup_members",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "usergroup_id: UsergroupId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "usergroup_members",
+            "name": "usergroup_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "usergroup_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "usergroups",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "db8f05e34cc900930285edbe7d3b0a93b050bd2758fc5c34b5a9a8eae34b9af1"
+}

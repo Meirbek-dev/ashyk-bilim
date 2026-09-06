@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.id AS \"course_id!: CourseId\", c.creator_id AS \"user_id!: UserId\"\n           FROM courses c WHERE c.id = ANY($1) AND c.creator_id IS NOT NULL\n           UNION\n           SELECT ra.course_id AS \"course_id!: CourseId\", ra.user_id AS \"user_id!: UserId\"\n           FROM resource_authors ra\n           WHERE ra.course_id = ANY($1) AND ra.status = 'active'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id!: UserId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "fb345f2847e86cc21ee7406329489d3ecb29712594edc0d849cf8a38fa1be43d"
+}
