@@ -43,7 +43,201 @@ pub struct Config {
     /// Code execution. Unset = code runs answer 503 `code-runner-degraded`
     /// and code challenges fall back to manual review.
     pub judge0: Option<Judge0Config>,
+    /// AI subsystem (`AB__AI__*`). Always present; without an OpenAI key (or
+    /// with `ai_enabled=false`) every AI route answers 503 `ai-disabled`.
+    #[serde(default)]
+    pub ai: AiConfig,
     pub telemetry: TelemetryConfig,
+}
+
+/// Provider keys, models, budgets and feature flags. Field names and
+/// defaults mirror the legacy `AIConfig` (`PLATFORM_AI_*` / `PLATFORM_OPENAI_*`).
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "each flag is an independent operator switch mirrored from the legacy config"
+)]
+#[derive(Debug, Clone, Deserialize)]
+pub struct AiConfig {
+    pub openai_api_key: Option<SecretString>,
+    #[serde(default = "AiConfig::default_openai_model")]
+    pub openai_model: String,
+    /// OpenAI-compatible origin + version prefix, no trailing slash. Tests
+    /// point it at a wiremock fake.
+    #[serde(default = "AiConfig::default_openai_base_url")]
+    pub openai_base_url: String,
+    pub openrouter_api_key: Option<SecretString>,
+    #[serde(default = "AiConfig::default_openrouter_model")]
+    pub openrouter_model: String,
+    #[serde(default = "AiConfig::default_openrouter_base_url")]
+    pub openrouter_base_url: String,
+    /// Hard per-call timeout for the primary provider (legacy: 5s, fail fast
+    /// so a rate-limited key cannot eat the 30s request budget).
+    #[serde(default = "AiConfig::default_openai_timeout_secs")]
+    pub openai_timeout_secs: f64,
+    /// Hard per-call timeout for the fallback provider (legacy: 25s).
+    #[serde(default = "AiConfig::default_openrouter_timeout_secs")]
+    pub openrouter_timeout_secs: f64,
+    #[serde(default = "AiConfig::default_max_tokens_per_request")]
+    pub max_tokens_per_request: u32,
+    #[serde(default = "AiConfig::default_max_output_tokens")]
+    pub max_output_tokens: u32,
+    #[serde(default = "AiConfig::default_monthly_token_budget")]
+    pub monthly_token_budget: i64,
+    #[serde(default = "AiConfig::default_true")]
+    pub ai_enabled: bool,
+    #[serde(default = "AiConfig::default_true")]
+    pub course_analysis_enabled: bool,
+    #[serde(default = "AiConfig::default_true")]
+    pub submission_analysis_enabled: bool,
+    #[serde(default = "AiConfig::default_true")]
+    pub remediation_enabled: bool,
+    #[serde(default = "AiConfig::default_true")]
+    pub course_qa_enabled: bool,
+    #[serde(default = "AiConfig::default_true")]
+    pub study_companion_enabled: bool,
+    #[serde(default = "AiConfig::default_true")]
+    pub lecture_authoring_enabled: bool,
+    /// Without a reachable provider, agents answer with deterministic draft
+    /// artifacts instead of failing (legacy `ai_draft_mode_enabled`).
+    #[serde(default = "AiConfig::default_true")]
+    pub ai_draft_mode_enabled: bool,
+    #[serde(default = "AiConfig::default_true")]
+    pub semantic_memory_enabled: bool,
+    #[serde(default = "AiConfig::default_analysis_requests_per_hour")]
+    pub analysis_requests_per_hour_per_user: u32,
+    #[serde(default = "AiConfig::default_remediation_requests_per_hour")]
+    pub remediation_requests_per_hour_per_user: u32,
+}
+
+impl AiConfig {
+    fn default_openai_model() -> String {
+        "gpt-5.6-luna".into()
+    }
+    fn default_openai_base_url() -> String {
+        "https://api.openai.com/v1".into()
+    }
+    fn default_openrouter_model() -> String {
+        "deepseek/deepseek-v4-flash".into()
+    }
+    fn default_openrouter_base_url() -> String {
+        "https://openrouter.ai/api/v1".into()
+    }
+    const fn default_openai_timeout_secs() -> f64 {
+        5.0
+    }
+    const fn default_openrouter_timeout_secs() -> f64 {
+        25.0
+    }
+    const fn default_max_tokens_per_request() -> u32 {
+        32_000
+    }
+    const fn default_max_output_tokens() -> u32 {
+        16_000
+    }
+    const fn default_monthly_token_budget() -> i64 {
+        1_000_000
+    }
+    const fn default_true() -> bool {
+        true
+    }
+    const fn default_analysis_requests_per_hour() -> u32 {
+        10
+    }
+    const fn default_remediation_requests_per_hour() -> u32 {
+        20
+    }
+
+    fn key_present(key: Option<&SecretString>) -> bool {
+        key.is_some_and(|k| !k.expose_secret().trim().is_empty())
+    }
+
+    /// Legacy admin `provider_ready`: any provider key present.
+    #[must_use]
+    pub fn provider_ready(&self) -> bool {
+        Self::key_present(self.openai_api_key.as_ref())
+            || Self::key_present(self.openrouter_api_key.as_ref())
+    }
+
+    /// Legacy `ModelProvider.enabled()` (master switch + a key). The legacy
+    /// insisted on the OpenAI key specifically; v2 accepts any configured
+    /// provider so an OpenRouter-only deployment is not stuck in draft mode.
+    #[must_use]
+    pub fn provider_enabled(&self) -> bool {
+        self.ai_enabled && self.provider_ready()
+    }
+
+    /// The per-feature switch (the master switch is applied separately).
+    #[must_use]
+    pub const fn feature_enabled(&self, feature: crate::ai::AiFeature) -> bool {
+        use crate::ai::AiFeature;
+        match feature {
+            AiFeature::CourseAnalysis => self.course_analysis_enabled,
+            AiFeature::SubmissionAnalysis => self.submission_analysis_enabled,
+            AiFeature::Remediation => self.remediation_enabled,
+            AiFeature::CourseQa => self.course_qa_enabled,
+            AiFeature::StudyCompanion => self.study_companion_enabled,
+            AiFeature::LectureAuthoring => self.lecture_authoring_enabled,
+            AiFeature::SemanticMemory => self.semantic_memory_enabled,
+        }
+    }
+
+    /// Effective config with secrets redacted (admin settings + config-check).
+    #[must_use]
+    pub fn redacted(&self) -> serde_json::Value {
+        serde_json::json!({
+            "openai_api_key": self.openai_api_key.as_ref().map(|_| "[redacted]"),
+            "openai_model": self.openai_model,
+            "openai_base_url": self.openai_base_url,
+            "openrouter_api_key": self.openrouter_api_key.as_ref().map(|_| "[redacted]"),
+            "openrouter_model": self.openrouter_model,
+            "openrouter_base_url": self.openrouter_base_url,
+            "openai_timeout_secs": self.openai_timeout_secs,
+            "openrouter_timeout_secs": self.openrouter_timeout_secs,
+            "max_tokens_per_request": self.max_tokens_per_request,
+            "max_output_tokens": self.max_output_tokens,
+            "monthly_token_budget": self.monthly_token_budget,
+            "ai_enabled": self.ai_enabled,
+            "course_analysis_enabled": self.course_analysis_enabled,
+            "submission_analysis_enabled": self.submission_analysis_enabled,
+            "remediation_enabled": self.remediation_enabled,
+            "course_qa_enabled": self.course_qa_enabled,
+            "study_companion_enabled": self.study_companion_enabled,
+            "lecture_authoring_enabled": self.lecture_authoring_enabled,
+            "ai_draft_mode_enabled": self.ai_draft_mode_enabled,
+            "semantic_memory_enabled": self.semantic_memory_enabled,
+            "analysis_requests_per_hour_per_user": self.analysis_requests_per_hour_per_user,
+            "remediation_requests_per_hour_per_user": self.remediation_requests_per_hour_per_user,
+        })
+    }
+}
+
+impl Default for AiConfig {
+    fn default() -> Self {
+        Self {
+            openai_api_key: None,
+            openai_model: Self::default_openai_model(),
+            openai_base_url: Self::default_openai_base_url(),
+            openrouter_api_key: None,
+            openrouter_model: Self::default_openrouter_model(),
+            openrouter_base_url: Self::default_openrouter_base_url(),
+            openai_timeout_secs: Self::default_openai_timeout_secs(),
+            openrouter_timeout_secs: Self::default_openrouter_timeout_secs(),
+            max_tokens_per_request: Self::default_max_tokens_per_request(),
+            max_output_tokens: Self::default_max_output_tokens(),
+            monthly_token_budget: Self::default_monthly_token_budget(),
+            ai_enabled: true,
+            course_analysis_enabled: true,
+            submission_analysis_enabled: true,
+            remediation_enabled: true,
+            course_qa_enabled: true,
+            study_companion_enabled: true,
+            lecture_authoring_enabled: true,
+            ai_draft_mode_enabled: true,
+            semantic_memory_enabled: true,
+            analysis_requests_per_hour_per_user: Self::default_analysis_requests_per_hour(),
+            remediation_requests_per_hour_per_user: Self::default_remediation_requests_per_hour(),
+        }
+    }
 }
 
 /// Judge0 connection + the platform's own execution limits. Defaults mirror
@@ -197,6 +391,7 @@ impl Config {
             "server": { "host": "0.0.0.0", "port": 8000, "cors_origins": [] },
             "database": { "max_connections": 10, "min_connections": 0 },
             "redis": {},
+            "ai": {},
             "telemetry": { "json_logs": false },
         });
         let config: Self = Figment::from(Serialized::defaults(defaults))
@@ -263,6 +458,7 @@ impl Config {
                     "allowed_language_ids": j.limits.allowed_language_ids,
                 },
             })),
+            "ai": self.ai.redacted(),
             "telemetry": {
                 "json_logs": self.telemetry.json_logs,
                 "otlp_endpoint": self.telemetry.otlp_endpoint,
@@ -294,11 +490,25 @@ mod tests {
             google: None,
             storage: None,
             judge0: None,
+            ai: AiConfig::default(),
             telemetry: TelemetryConfig {
                 json_logs: false,
                 otlp_endpoint: None,
             },
         }
+    }
+
+    #[test]
+    fn ai_defaults_mirror_legacy_and_redact_keys() {
+        let mut ai = AiConfig::default();
+        assert!(!ai.provider_enabled(), "no key = provider disabled");
+        assert_eq!(ai.openai_model, "gpt-5.6-luna");
+        assert_eq!(ai.monthly_token_budget, 1_000_000);
+        ai.openai_api_key = Some(SecretString::from("sk-secret-value"));
+        assert!(ai.provider_enabled());
+        let redacted = ai.redacted().to_string();
+        assert!(!redacted.contains("sk-secret-value"));
+        assert!(redacted.contains("[redacted]"));
     }
 
     #[test]

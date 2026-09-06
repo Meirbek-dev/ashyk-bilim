@@ -87,6 +87,19 @@ typed_id!(CertificateId);
 typed_id!(GamificationProfileId);
 typed_id!(XpTransactionId);
 typed_id!(JobId);
+typed_id!(AiThreadId);
+typed_id!(AiRunId);
+typed_id!(AiEventId);
+typed_id!(AiArtifactId);
+typed_id!(AiEvidenceId);
+typed_id!(AiApprovalId);
+typed_id!(AiEvalResultId);
+typed_id!(AiMessageId);
+typed_id!(AiSubmissionAnalysisId);
+typed_id!(AiCourseAnalysisId);
+typed_id!(AiLectureReviewId);
+typed_id!(AiRemediationSessionId);
+typed_id!(AiStudentMemoryId);
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]

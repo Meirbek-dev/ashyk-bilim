@@ -67,6 +67,12 @@ error_codes! {
     CodeRunnerDegraded => ("code-runner-degraded", 503, "Code runner temporarily unavailable"),
     CompileError => ("compile-error", 422, "Source code does not compile"),
     LanguageNotAllowed => ("language-not-allowed", 422, "Programming language not allowed"),
+    // AI
+    AiDisabled => ("ai-disabled", 503, "AI features are disabled"),
+    AiBudgetExhausted => ("ai-budget-exhausted", 503, "AI token budget exhausted"),
+    AiRateLimited => ("ai-rate-limited", 429, "Hourly AI request limit reached"),
+    AiRunCancelled => ("ai-run-cancelled", 409, "AI run was cancelled"),
+    AiProviderUnavailable => ("ai-provider-unavailable", 503, "AI provider unavailable"),
 }
 
 impl std::fmt::Display for ErrorCode {

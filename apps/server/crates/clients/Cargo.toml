@@ -19,6 +19,8 @@ tracing = { workspace = true }
 object_store = { workspace = true }
 http.workspace = true
 futures.workspace = true
+async-stream = { workspace = true }
+tiktoken-rs = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
