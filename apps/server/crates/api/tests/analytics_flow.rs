@@ -266,7 +266,11 @@ async fn table_count(pool: &PgPool, table: &str) -> i64 {
         .unwrap()
 }
 
-fn find_row<'a>(items: &'a serde_json::Value, key: &str, value: &str) -> Option<&'a serde_json::Value> {
+fn find_row<'a>(
+    items: &'a serde_json::Value,
+    key: &str,
+    value: &str,
+) -> Option<&'a serde_json::Value> {
     items.as_array().unwrap().iter().find(|r| r[key] == value)
 }
 
@@ -307,9 +311,17 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let forbidden = app
         .get_as(&alice, "/api/v2/analytics/teacher/overview")
         .await;
-    assert_eq!(forbidden.status, StatusCode::FORBIDDEN, "{}", forbidden.text());
+    assert_eq!(
+        forbidden.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        forbidden.text()
+    );
     let bad = app
-        .get_as(&teacher, "/api/v2/analytics/teacher/overview?window=3d&page_size=abc")
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/overview?window=3d&page_size=abc",
+        )
         .await;
     assert_eq!(bad.status, StatusCode::BAD_REQUEST, "{}", bad.text());
     let bad = app
@@ -318,7 +330,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             "/api/v2/analytics/teacher/overview?window=3d&timezone=Mars/Olympus",
         )
         .await;
-    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", bad.text());
+    assert_eq!(
+        bad.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad.text()
+    );
     let fields: Vec<_> = bad.json()["field_errors"]
         .as_array()
         .unwrap()
@@ -346,8 +363,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(body["summary"]["ungraded_submissions"]["value"], 1.0);
     assert_eq!(body["summary"]["active_learners"]["value"], 2.0);
     assert_eq!(body["at_risk_total"], 1);
-    let bob_row = find_row(&body["at_risk_preview"], "user_id", &bob.user_id.to_string())
-        .expect("bob is at risk");
+    let bob_row = find_row(
+        &body["at_risk_preview"],
+        "user_id",
+        &bob.user_id.to_string(),
+    )
+    .expect("bob is at risk");
     assert!(
         bob_row["reason_codes"]
             .as_array()
@@ -362,7 +383,14 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(bob_row["risk_level"], "low");
     assert_eq!(bob_row["risk_trend"], "stable");
     assert_eq!(bob_row["recommended_action"], "review_submissions_first");
-    assert!(find_row(&body["at_risk_preview"], "user_id", &alice.user_id.to_string()).is_none());
+    assert!(
+        find_row(
+            &body["at_risk_preview"],
+            "user_id",
+            &alice.user_id.to_string()
+        )
+        .is_none()
+    );
     assert_eq!(body["intervention_summary"]["total"], 0);
 
     // ── Courses ─────────────────────────────────────────────────────────
@@ -378,7 +406,10 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     // learner still appears in the at-risk list because he has reason codes.
     assert_eq!(row["at_risk_learners"], 0);
     assert_eq!(row["active_learners_7d"], 2);
-    assert_eq!(courses.json()["course_options"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        courses.json()["course_options"].as_array().unwrap().len(),
+        1
+    );
 
     let detail = app
         .get_as(
@@ -391,7 +422,10 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(detail.json()["summary"]["enrolled_learners"], 2);
     assert_eq!(detail.json()["summary"]["ungraded_submissions"], 1);
     assert_eq!(detail.json()["summary"]["at_risk_learners"], 0);
-    assert_eq!(detail.json()["at_risk_learners"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        detail.json()["at_risk_learners"].as_array().unwrap().len(),
+        1
+    );
     let foreign = app
         .get_as(
             &teacher,
@@ -439,7 +473,10 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .await;
     assert_eq!(at_risk.status, StatusCode::OK, "{}", at_risk.text());
     assert_eq!(at_risk.json()["total"], 1);
-    assert_eq!(at_risk.json()["items"][0]["user_id"], bob.user_id.to_string());
+    assert_eq!(
+        at_risk.json()["items"][0]["user_id"],
+        bob.user_id.to_string()
+    );
     assert_eq!(at_risk.json()["items"][0]["intervention_count"], 0);
 
     // ── Rollups (job body), idempotent ──────────────────────────────────
@@ -470,7 +507,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .unwrap();
     assert_eq!(range.len(), 3);
     assert_eq!(table_count(&pool, "daily_course_metrics").await, 8);
-    assert!(service.run_rollup_range("2026-01-03", "2026-01-01").await.is_err());
+    assert!(
+        service
+            .run_rollup_range("2026-01-03", "2026-01-01")
+            .await
+            .is_err()
+    );
     assert!(service.run_rollup(Some("yesterday")).await.is_err());
 
     // The dashboard still answers with a rollup baseline in place.
@@ -493,8 +535,15 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
     assert_eq!(created.json()["status"], "completed");
-    assert_eq!(created.json()["teacher_user_id"], teacher.user_id.to_string());
-    assert!(created.json()["risk_score_before"].is_number(), "{}", created.text());
+    assert_eq!(
+        created.json()["teacher_user_id"],
+        teacher.user_id.to_string()
+    );
+    assert!(
+        created.json()["risk_score_before"].is_number(),
+        "{}",
+        created.text()
+    );
     assert!(created.json()["risk_score_after"].is_null());
     assert!(created.json()["resolved_at_unix"].is_null());
     let invalid = app
@@ -507,7 +556,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             }),
         )
         .await;
-    assert_eq!(invalid.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", invalid.text());
+    assert_eq!(
+        invalid.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        invalid.text()
+    );
     let outside = app
         .post_as(
             &teacher,
@@ -527,7 +581,10 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let narrowed = app
         .get_as(
             &teacher,
-            &format!("/api/v2/analytics/teacher/interventions?user_id={}", alice.user_id),
+            &format!(
+                "/api/v2/analytics/teacher/interventions?user_id={}",
+                alice.user_id
+            ),
         )
         .await;
     assert_eq!(narrowed.json()["total"], 0);
@@ -603,7 +660,10 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(backlog.status, StatusCode::OK, "{}", backlog.text());
     assert_eq!(backlog.json()["total"], 1);
     let no_assessment = app
-        .get_as(&teacher, "/api/v2/analytics/teacher/drill-through/pass_rate")
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/drill-through/pass_rate",
+        )
         .await;
     assert_eq!(no_assessment.status, StatusCode::UNPROCESSABLE_ENTITY);
     let pass_rate = app
@@ -616,13 +676,15 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .await;
     assert_eq!(pass_rate.status, StatusCode::OK, "{}", pass_rate.text());
     assert_eq!(pass_rate.json()["total"], 2);
-    let passed: Vec<bool> = pass_rate.json()["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|r| r["passed"].as_bool().unwrap())
-        .collect();
-    assert!(passed.contains(&true));
+    assert!(
+        pass_rate.json()["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|r| r["passed"] == true),
+        "{}",
+        pass_rate.text()
+    );
     let unknown_metric = app
         .get_as(&teacher, "/api/v2/analytics/teacher/drill-through/churn")
         .await;
@@ -665,7 +727,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let not_admin = app
         .get_as(&teacher, "/api/v2/analytics/admin/overview")
         .await;
-    assert_eq!(not_admin.status, StatusCode::FORBIDDEN, "{}", not_admin.text());
+    assert_eq!(
+        not_admin.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        not_admin.text()
+    );
     let admin = app
         .mint_session(&["analytics:read:platform", "course:read:all"])
         .await;
@@ -686,7 +753,10 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let carols_only = app
         .get_as(
             &admin,
-            &format!("/api/v2/analytics/teacher/courses?teacher_user_id={}", carol.user_id),
+            &format!(
+                "/api/v2/analytics/teacher/courses?teacher_user_id={}",
+                carol.user_id
+            ),
         )
         .await;
     assert_eq!(carols_only.json()["total"], 1);

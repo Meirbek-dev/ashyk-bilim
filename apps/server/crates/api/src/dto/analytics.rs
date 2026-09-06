@@ -19,10 +19,11 @@ pub use ab_domain::analytics::types::{
     TeacherCourseListResponse, TeacherCourseRow, TeacherOverviewResponse,
 };
 
-/// Dashboard filters shared by every analytics read (legacy
-/// `get_analytics_filters`). Values are validated in the domain so every
-/// malformed one is a 422 field error; unknown keys are ignored (the client
-/// forwards its whole filter state).
+/// Dashboard filters shared by every analytics read.
+///
+/// Legacy `get_analytics_filters`. Values are validated in the domain so
+/// every malformed one is a 422 field error; unknown keys are ignored (the
+/// client forwards its whole filter state).
 #[derive(Debug, Default, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct AnalyticsQuery {

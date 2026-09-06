@@ -1,9 +1,10 @@
-//! `analytics:rollup` — rebuilds today's daily rollup tables and learner
-//! risk snapshots (legacy `refresh_teacher_analytics_rollups`, which no
-//! scheduler ever invoked). Schedule seeded at worker boot every six hours;
-//! the run is idempotent (the day's rows are replaced in one transaction),
-//! so the last run of the day is the nightly snapshot dashboards compare
-//! against. `ashyq admin analytics-rollup --from --to` backfills a range.
+//! `analytics:rollup` — rebuilds the daily rollup tables and risk snapshots.
+//!
+//! Legacy `refresh_teacher_analytics_rollups`, which no scheduler ever
+//! invoked. Schedule seeded at worker boot every six hours; the run is
+//! idempotent (the day's rows are replaced in one transaction), so the last
+//! run of the day is the nightly snapshot dashboards compare against.
+//! `ashyq admin analytics-rollup --from --to` backfills a range.
 
 use ab_core::Result;
 use futures::FutureExt;

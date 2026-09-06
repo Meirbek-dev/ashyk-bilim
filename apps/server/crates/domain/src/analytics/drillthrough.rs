@@ -38,7 +38,9 @@ pub fn drill_rows(
     snapshots
         .values()
         .filter(|s| course_id.is_none_or(|id| s.course_id == id))
-        .filter(|s| metric != DrillMetric::ActiveLearners || active.contains(&(s.course_id, s.user_id)))
+        .filter(|s| {
+            metric != DrillMetric::ActiveLearners || active.contains(&(s.course_id, s.user_id))
+        })
         .map(|s| {
             let mut row = serde_json::json!({
                 "user_id": s.user_id,

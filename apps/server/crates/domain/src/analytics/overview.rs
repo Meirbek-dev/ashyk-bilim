@@ -104,13 +104,17 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
             .map(|row| AlertItem {
                 id: format!("grading-slo-{}", row.assessment_id),
                 kind: "grading_slo",
-                severity: if row.sla_breaches >= 3 { Severity::Critical } else { Severity::Warning },
+                severity: if row.sla_breaches >= 3 {
+                    Severity::Critical
+                } else {
+                    Severity::Warning
+                },
                 title: format!("{} is outside the grading target", row.title),
                 body: format!(
                     "{} submissions in {} exceeded the {}-hour grading target; {} remain queued{}.",
                     row.sla_breaches,
                     row.course_name,
-                    GRADING_SLA_HOURS as i64,
+                    GRADING_SLA_HOURS,
                     row.awaiting_review,
                     row.age_hours
                         .map(|h| format!("; the oldest was submitted {h:.1}h ago"))
@@ -140,9 +144,7 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
         title: format!("{} is approaching the grading target", leading.title),
         body: format!(
             "{} submissions are waiting in {}; the oldest has been open for {age:.1}h against a {}h target.",
-            leading.awaiting_review,
-            leading.course_name,
-            GRADING_SLA_HOURS as i64
+            leading.awaiting_review, leading.course_name, GRADING_SLA_HOURS
         ),
         href: Some(format!(
             "/dash/analytics/assessments/{}/{}",
@@ -262,7 +264,14 @@ pub fn build_teacher_overview(
     let workload = build_teacher_workload(ctx, filters);
     let bottlenecks = build_content_bottlenecks(ctx, filters, None, 12);
     let data_quality = build_data_quality(ctx, scope, filters, inputs.teacher_rollup.as_ref());
-    let forecasts = build_forecasts(ctx, filters, &risk_rows, &course_rows, &assessment_rows, &workload);
+    let forecasts = build_forecasts(
+        ctx,
+        filters,
+        &risk_rows,
+        &course_rows,
+        &assessment_rows,
+        &workload,
+    );
     let anomalies = build_anomalies(ctx, filters, &course_rows, &assessment_rows);
     let negative_engagement = course_rows
         .iter()
@@ -335,19 +344,50 @@ pub fn build_teacher_overview(
         })
         .collect();
     let trends = TeacherOverviewTrends {
-        active_learners: series(build_series(&events, filters, current_start, current_end, true)),
-        completions: series(build_series(&completion_events, filters, current_start, current_end, false)),
-        submissions: series(build_series(&submission_events, filters, current_start, current_end, false)),
-        grading_completed: series(build_series(&grading_events, filters, current_start, current_end, false)),
+        active_learners: series(build_series(
+            &events,
+            filters,
+            current_start,
+            current_end,
+            true,
+        )),
+        completions: series(build_series(
+            &completion_events,
+            filters,
+            current_start,
+            current_end,
+            false,
+        )),
+        submissions: series(build_series(
+            &submission_events,
+            filters,
+            current_start,
+            current_end,
+            false,
+        )),
+        grading_completed: series(build_series(
+            &grading_events,
+            filters,
+            current_start,
+            current_end,
+            false,
+        )),
     };
 
-    let mut alerts: Vec<AlertItem> = course_rows.iter().filter_map(|r| r.top_alert.clone()).collect();
+    let mut alerts: Vec<AlertItem> = course_rows
+        .iter()
+        .filter_map(|r| r.top_alert.clone())
+        .collect();
     alerts.extend(grading_slo_alerts(&workload));
     if at_risk > 0 {
         alerts.push(AlertItem {
             id: "risk-overview".to_owned(),
             kind: "risk_spike",
-            severity: if at_risk >= 15 { Severity::Critical } else { Severity::Warning },
+            severity: if at_risk >= 15 {
+                Severity::Critical
+            } else {
+                Severity::Warning
+            },
             title: "learner_risk_needs_intervention".to_owned(),
             body: format!("{at_risk} learners in scope are at medium or high risk."),
             href: None,
@@ -357,7 +397,7 @@ pub fn build_teacher_overview(
             learner_count: Some(at_risk),
         });
     }
-    alerts.sort_by(|a, b| b.severity.cmp(&a.severity));
+    alerts.sort_by_key(|a| std::cmp::Reverse(a.severity));
     alerts.truncate(8);
 
     let level_count =
@@ -367,7 +407,14 @@ pub fn build_teacher_overview(
     let median_completion = (!completion_values.is_empty())
         .then(|| round1(completion_values[completion_values.len() / 2]));
 
-    let insights = build_insight_feed(&risk_rows, &course_rows, &assessment_rows, &bottlenecks, &workload, 10);
+    let insights = build_insight_feed(
+        &risk_rows,
+        &course_rows,
+        &assessment_rows,
+        &bottlenecks,
+        &workload,
+        10,
+    );
     TeacherOverviewResponse {
         generated_at_unix: now,
         freshness_seconds: data_quality.freshness_seconds,
@@ -415,8 +462,11 @@ pub fn build_teacher_overview(
                 None,
                 false,
                 (enrolled > 0).then(|| {
-                    safe_pct(f64::from(i32::try_from(at_risk).unwrap_or(i32::MAX)), count(enrolled))
-                        .unwrap_or(0.0)
+                    safe_pct(
+                        f64::from(i32::try_from(at_risk).unwrap_or(i32::MAX)),
+                        count(enrolled),
+                    )
+                    .unwrap_or(0.0)
                 }),
                 Some("pct_of_enrolled"),
             ),
@@ -435,8 +485,9 @@ pub fn build_teacher_overview(
                 previous_negative_engagement,
                 None,
                 false,
-                (!course_rows.is_empty())
-                    .then(|| safe_pct_counts(negative_engagement, course_rows.len()).unwrap_or(0.0)),
+                (!course_rows.is_empty()).then(|| {
+                    safe_pct_counts(negative_engagement, course_rows.len()).unwrap_or(0.0)
+                }),
                 Some("pct_of_courses"),
             ),
         },
@@ -467,13 +518,18 @@ pub fn build_teacher_overview(
 
 /// Legacy `get_admin_analytics` (platform scope only).
 #[must_use]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
 pub fn build_admin_overview(
     ctx: &AnalyticsContext,
     scope: &TeacherScope,
     filters: &AnalyticsFilters,
     risk_rows: &[AtRiskLearnerRow],
 ) -> AdminAnalyticsResponse {
-    let course_rows = build_course_rows(ctx, filters, &scope.course_ids, &CourseRowInputs::default());
+    let course_rows =
+        build_course_rows(ctx, filters, &scope.course_ids, &CourseRowInputs::default());
     let snapshots = progress_snapshots(ctx, None);
     let events = build_activity_events(ctx, None);
     let now = ctx.generated_at;
@@ -506,8 +562,11 @@ pub fn build_admin_overview(
         })
         .collect();
     workload_rows.sort_by(|a, b| {
-        (b.sla_breaches, b.workload_backlog, b.at_risk_learners)
-            .cmp(&(a.sla_breaches, a.workload_backlog, a.at_risk_learners))
+        (b.sla_breaches, b.workload_backlog, b.at_risk_learners).cmp(&(
+            a.sla_breaches,
+            a.workload_backlog,
+            a.at_risk_learners,
+        ))
     });
 
     let mut course_health: Vec<AdminCourseRow> = course_rows

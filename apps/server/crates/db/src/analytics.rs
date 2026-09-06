@@ -536,10 +536,7 @@ pub async fn list_bulk_actions_for_assessment(
 
 /// Remove every rollup row for one `YYYY-MM-DD` date so the day can be
 /// rebuilt from scratch inside the caller's transaction.
-pub async fn delete_rollups_for_date(
-    conn: &mut sqlx::PgConnection,
-    date: &str,
-) -> Result<()> {
+pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: &str) -> Result<()> {
     sqlx::query!(
         "DELETE FROM daily_teacher_metrics WHERE metric_date = ($1::text)::date",
         date

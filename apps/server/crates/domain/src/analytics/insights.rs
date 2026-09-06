@@ -10,7 +10,7 @@ use super::types::{
     Severity, TeacherCourseRow, TeacherWorkloadSummary,
 };
 
-fn as_i64(v: f64) -> i64 {
+const fn as_i64(v: f64) -> i64 {
     #[allow(clippy::cast_possible_truncation)]
     let n = v.trunc() as i64;
     n
@@ -18,6 +18,10 @@ fn as_i64(v: f64) -> i64 {
 
 /// Legacy `build_insight_feed`, top `limit` by priority then severity.
 #[must_use]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
 pub fn build_insight_feed(
     risk_rows: &[AtRiskLearnerRow],
     course_rows: &[TeacherCourseRow],
@@ -39,7 +43,11 @@ pub fn build_insight_feed(
         items.push(InsightFeedItem {
             id: format!("risk-new-{course_id}"),
             category: "risk",
-            severity: if n >= 10 { Severity::Critical } else { Severity::Warning },
+            severity: if n >= 10 {
+                Severity::Critical
+            } else {
+                Severity::Warning
+            },
             priority: 95 + count_i64(n.min(20)),
             title: format!("{n} new at-risk learners in {}.", learners[0].course_name),
             body: "risk_rose_against_each_learner_baseline_review_watchlist".to_owned(),
@@ -59,7 +67,11 @@ pub fn build_insight_feed(
         items.push(InsightFeedItem {
             id: format!("assessment-{}-{}", a.assessment_type, a.assessment_id),
             category: "assessment",
-            severity: if pass_rate < 45.0 { Severity::Critical } else { Severity::Warning },
+            severity: if pass_rate < 45.0 {
+                Severity::Critical
+            } else {
+                Severity::Warning
+            },
             priority: 80 + as_i64(65.0 - pass_rate),
             title: format!("Pass rate for {} is {pass_rate}%.", a.title),
             body: if a.discrimination_index.is_some() {
@@ -86,7 +98,11 @@ pub fn build_insight_feed(
             category: "content",
             severity: b.severity,
             priority: 70
-                + if b.severity == Severity::Critical { 20 } else { 10 }
+                + if b.severity == Severity::Critical {
+                    20
+                } else {
+                    10
+                }
                 + b.exit_count.min(10),
             title: format!("{} is a content bottleneck.", b.activity_name),
             body: b.note.to_owned(),
@@ -95,7 +111,10 @@ pub fn build_insight_feed(
             assessment_type: None,
             assessment_id: None,
             learner_count: Some(b.started_learners),
-            href: Some(format!("/dash/analytics/courses?course_ids={}", b.course_id)),
+            href: Some(format!(
+                "/dash/analytics/courses?course_ids={}",
+                b.course_id
+            )),
         });
     }
 
@@ -103,9 +122,16 @@ pub fn build_insight_feed(
         items.push(InsightFeedItem {
             id: "workload-backlog".to_owned(),
             category: "workload",
-            severity: if workload.sla_breaches > 0 { Severity::Critical } else { Severity::Warning },
+            severity: if workload.sla_breaches > 0 {
+                Severity::Critical
+            } else {
+                Severity::Warning
+            },
             priority: 85 + workload.sla_breaches.min(25),
-            title: format!("{} submissions are awaiting review.", workload.backlog_total),
+            title: format!(
+                "{} submissions are awaiting review.",
+                workload.backlog_total
+            ),
             body: format!(
                 "{} breached the 72-hour grading target; the 7-day forecast is {}.",
                 workload.sla_breaches, workload.forecast_backlog_7d
@@ -144,7 +170,11 @@ pub fn build_insight_feed(
         });
     }
 
-    items.sort_by(|a, b| b.priority.cmp(&a.priority).then_with(|| b.severity.cmp(&a.severity)));
+    items.sort_by(|a, b| {
+        b.priority
+            .cmp(&a.priority)
+            .then_with(|| b.severity.cmp(&a.severity))
+    });
     items.truncate(limit);
     items
 }

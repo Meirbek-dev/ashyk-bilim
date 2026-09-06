@@ -672,6 +672,10 @@ impl SubmissionsService {
     }
 
     /// The pipeline proper. Returns (row, time limit, item count).
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the submit pipeline order is the contract; kept in one place"
+    )]
     async fn finalize(
         runner: &CodeRunner,
         ctx: Context,

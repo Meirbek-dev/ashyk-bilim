@@ -8,9 +8,9 @@ use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
 use super::assessments::build_assessment_rows;
 use super::bottlenecks::build_content_bottlenecks;
 use super::context::{
-    AnalyticsContext, ProgressSnapshot, SnapshotKey, build_activity_events, build_series,
-    count, count_i64, days_between, is_reviewable, mean, progress_completed, progress_snapshots,
-    round1, safe_pct_counts,
+    AnalyticsContext, ProgressSnapshot, SnapshotKey, build_activity_events, build_series, count,
+    count_i64, days_between, is_reviewable, mean, progress_completed, progress_snapshots, round1,
+    safe_pct_counts,
 };
 use super::filters::{AnalyticsFilters, DAY_SECS, SortOrder, Window};
 use super::risk::build_risk_rows;
@@ -28,7 +28,10 @@ pub struct CourseRowInputs {
     pub previous_completion: HashMap<CourseId, f64>,
 }
 
-fn snapshots_for(snapshots: &std::collections::BTreeMap<SnapshotKey, ProgressSnapshot>, course_id: CourseId) -> Vec<&ProgressSnapshot> {
+fn snapshots_for(
+    snapshots: &std::collections::BTreeMap<SnapshotKey, ProgressSnapshot>,
+    course_id: CourseId,
+) -> Vec<&ProgressSnapshot> {
     snapshots
         .range((course_id, UserId(uuid::Uuid::nil()))..=(course_id, UserId(uuid::Uuid::max())))
         .map(|(_, s)| s)
@@ -36,7 +39,11 @@ fn snapshots_for(snapshots: &std::collections::BTreeMap<SnapshotKey, ProgressSna
 }
 
 fn completion_rate(snapshots: &[&ProgressSnapshot]) -> f64 {
-    safe_pct_counts(snapshots.iter().filter(|s| s.is_completed).count(), snapshots.len()).unwrap_or(0.0)
+    safe_pct_counts(
+        snapshots.iter().filter(|s| s.is_completed).count(),
+        snapshots.len(),
+    )
+    .unwrap_or(0.0)
 }
 
 fn avg_progress(snapshots: &[&ProgressSnapshot]) -> f64 {
@@ -55,7 +62,11 @@ pub fn course_top_alert(
         return Some(AlertItem {
             id: format!("grading-backlog-{course_id}"),
             kind: "grading_backlog",
-            severity: if ungraded < 25 { Severity::Warning } else { Severity::Critical },
+            severity: if ungraded < 25 {
+                Severity::Warning
+            } else {
+                Severity::Critical
+            },
             title: "grading_queue_needs_attention".to_owned(),
             body: format!("{ungraded} submissions are still awaiting review."),
             href: None,
@@ -86,7 +97,11 @@ pub fn course_top_alert(
         return Some(AlertItem {
             id: format!("stale-content-{course_id}"),
             kind: "content_stale",
-            severity: if days <= 35 { Severity::Info } else { Severity::Warning },
+            severity: if days <= 35 {
+                Severity::Info
+            } else {
+                Severity::Warning
+            },
             title: "content_may_be_stale".to_owned(),
             body: format!("This course has not been updated for {days} days."),
             href: None,
@@ -181,12 +196,15 @@ pub fn build_course_rows(
         let days_since_update = last_update.map(|ts| days_between(ts, now));
         let engagement_delta = (!previous_active.is_empty()).then(|| {
             round1(
-                (count(current_active.len()) - count(previous_active.len())) / count(previous_active.len())
+                (count(current_active.len()) - count(previous_active.len()))
+                    / count(previous_active.len())
                     * 100.0,
             )
         });
-        let course_assessments: Vec<&AssessmentOutlierRow> =
-            assessments.iter().filter(|a| a.course_id == *course_id).collect();
+        let course_assessments: Vec<&AssessmentOutlierRow> = assessments
+            .iter()
+            .filter(|a| a.course_id == *course_id)
+            .collect();
         let active_7d = if filters.window == Window::D7 {
             current_active.len()
         } else {
@@ -235,7 +253,10 @@ pub fn build_course_rows(
 
 pub fn sort_course_rows(rows: &mut [TeacherCourseRow], sort_by: Option<&str>, order: SortOrder) {
     let cmp = |a: &TeacherCourseRow, b: &TeacherCourseRow| match sort_by {
-        Some("name") => a.course_name.to_lowercase().cmp(&b.course_name.to_lowercase()),
+        Some("name") => a
+            .course_name
+            .to_lowercase()
+            .cmp(&b.course_name.to_lowercase()),
         Some("active") => a.active_learners_7d.cmp(&b.active_learners_7d),
         Some("completion") => a.completion_rate.total_cmp(&b.completion_rate),
         Some("risk") => a.at_risk_learners.cmp(&b.at_risk_learners),
@@ -276,6 +297,10 @@ pub struct CourseDetailParts {
 pub type ContentBottleneckRowVec = super::types::ContentBottleneckRow;
 
 #[must_use]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
 pub fn build_course_detail(
     ctx: &AnalyticsContext,
     filters: &AnalyticsFilters,
@@ -293,7 +318,10 @@ pub fn build_course_detail(
     let (current_start, current_end) = filters.window_bounds(now);
     let engagement_trend = build_series(&events, filters, current_start, current_end, true)
         .into_iter()
-        .map(|(bucket_start_unix, value)| TimeSeriesPoint { bucket_start_unix, value })
+        .map(|(bucket_start_unix, value)| TimeSeriesPoint {
+            bucket_start_unix,
+            value,
+        })
         .collect();
 
     let enrolled = course_snapshots.len();
@@ -306,7 +334,11 @@ pub fn build_course_detail(
         .map(|e| e.user_id)
         .collect::<HashSet<_>>()
         .len();
-    let certificates = ctx.certificates.iter().filter(|c| c.course_id == course_id).count();
+    let certificates = ctx
+        .certificates
+        .iter()
+        .filter(|c| c.course_id == course_id)
+        .count();
     let ungraded = ctx
         .submissions
         .iter()
@@ -319,21 +351,31 @@ pub fn build_course_detail(
     let mut chapter_counts: HashMap<ChapterId, HashSet<UserId>> = HashMap::new();
     for p in &ctx.activity_progress {
         if p.course_id != course_id
-            || allowed.as_ref().is_some_and(|set| !set.contains(&p.user_id))
+            || allowed
+                .as_ref()
+                .is_some_and(|set| !set.contains(&p.user_id))
             || !progress_completed(p)
         {
             continue;
         }
-        completion_by_activity.entry(p.activity_id).or_default().insert(p.user_id);
+        completion_by_activity
+            .entry(p.activity_id)
+            .or_default()
+            .insert(p.user_id);
         if let Some(activity) = ctx.activities.get(&p.activity_id) {
-            chapter_counts.entry(activity.chapter_id).or_default().insert(p.user_id);
+            chapter_counts
+                .entry(activity.chapter_id)
+                .or_default()
+                .insert(p.user_id);
         }
     }
 
     let mut activity_dropoff = Vec::new();
     let mut previous: Option<usize> = None;
     for activity in ctx.ordered_activities(course_id) {
-        let current = completion_by_activity.get(&activity.id).map_or(0, HashSet::len);
+        let current = completion_by_activity
+            .get(&activity.id)
+            .map_or(0, HashSet::len);
         let Some(prev) = previous else {
             previous = Some(current);
             continue;
@@ -369,12 +411,19 @@ pub fn build_course_detail(
         FunnelStep {
             label: "completed".to_owned(),
             count: count_i64(completed),
-            pct_of_previous: safe_pct_counts(completed, if active_7d > 0 { active_7d } else { enrolled }),
+            pct_of_previous: safe_pct_counts(
+                completed,
+                if active_7d > 0 { active_7d } else { enrolled },
+            ),
         },
     ];
     let mut chapter_dropoff = Vec::new();
     let mut previous_chapter: Option<usize> = None;
-    let mut chapters: Vec<_> = ctx.chapters.iter().filter(|c| c.course_id == course_id).collect();
+    let mut chapters: Vec<_> = ctx
+        .chapters
+        .iter()
+        .filter(|c| c.course_id == course_id)
+        .collect();
     chapters.sort_by_key(|c| (c.position, c.id));
     for chapter in chapters {
         let n = chapter_counts.get(&chapter.id).map_or(0, HashSet::len);
@@ -405,7 +454,11 @@ pub fn build_course_detail(
         ContentHealthRow {
             course_id,
             signal: "average_progress",
-            severity: if avg < 55.0 { Severity::Warning } else { Severity::Info },
+            severity: if avg < 55.0 {
+                Severity::Warning
+            } else {
+                Severity::Info
+            },
             value: Some(avg),
             note: "average_progress_of_scoped_learners",
         },
@@ -460,7 +513,11 @@ pub fn build_course_detail(
 /// Count of medium/high rows (shared by several summaries).
 #[must_use]
 pub fn at_risk_count(rows: &[AtRiskLearnerRow]) -> i64 {
-    count_i64(rows.iter().filter(|r| r.risk_level != RiskLevel::Low).count())
+    count_i64(
+        rows.iter()
+            .filter(|r| r.risk_level != RiskLevel::Low)
+            .count(),
+    )
 }
 
 #[cfg(test)]
@@ -481,11 +538,25 @@ mod tests {
     #[test]
     fn alert_ladder_prefers_backlog_then_engagement_then_staleness() {
         let id = CourseId::new();
-        assert_eq!(course_top_alert(id, 30, Some(-50.0), Some(60)).unwrap().kind, "grading_backlog");
-        assert_eq!(course_top_alert(id, 30, None, None).unwrap().severity, Severity::Critical);
-        assert_eq!(course_top_alert(id, 0, Some(-16.0), Some(60)).unwrap().kind, "engagement_drop");
+        assert_eq!(
+            course_top_alert(id, 30, Some(-50.0), Some(60))
+                .unwrap()
+                .kind,
+            "grading_backlog"
+        );
+        assert_eq!(
+            course_top_alert(id, 30, None, None).unwrap().severity,
+            Severity::Critical
+        );
+        assert_eq!(
+            course_top_alert(id, 0, Some(-16.0), Some(60)).unwrap().kind,
+            "engagement_drop"
+        );
         let stale = course_top_alert(id, 0, Some(-5.0), Some(30)).unwrap();
-        assert_eq!((stale.kind, stale.severity), ("content_stale", Severity::Info));
+        assert_eq!(
+            (stale.kind, stale.severity),
+            ("content_stale", Severity::Info)
+        );
         assert!(course_top_alert(id, 0, None, Some(21)).is_none());
     }
 }

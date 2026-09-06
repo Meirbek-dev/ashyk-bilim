@@ -769,6 +769,10 @@ impl GradingService {
     /// manual-review flag); the raw score is either given or computed from
     /// item scores; the late penalty recorded at submit applies on top.
     /// Every save appends a grading entry and its item feedback rows.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the grade-save pipeline order is the contract; kept in one place"
+    )]
     pub async fn save_grade(
         &self,
         actor: &Actor,

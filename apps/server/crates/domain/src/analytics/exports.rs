@@ -3,9 +3,7 @@
 //! headers and labels; the client localises codes).
 
 use super::assessments::build_assessment_rows;
-use super::context::{
-    AnalyticsContext, is_reviewable, progress_snapshots, submitted_at,
-};
+use super::context::{AnalyticsContext, is_reviewable, progress_snapshots, submitted_at};
 use super::filters::AnalyticsFilters;
 use super::risk::build_risk_rows;
 
@@ -20,7 +18,11 @@ fn csv_field(value: &str) -> String {
 }
 
 fn csv_row(fields: &[String]) -> String {
-    let mut line = fields.iter().map(|f| csv_field(f)).collect::<Vec<_>>().join(",");
+    let mut line = fields
+        .iter()
+        .map(|f| csv_field(f))
+        .collect::<Vec<_>>()
+        .join(",");
     line.push_str("\r\n");
     line
 }

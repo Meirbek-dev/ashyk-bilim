@@ -5,6 +5,10 @@
 //! `analytics:rollup` job supply period-over-period baselines; teacher
 //! interventions and saved dashboard views are plain CRUD scoped to the
 //! teacher. Permission model: `analytics:read|export:{assigned,platform,all}`.
+#![allow(
+    clippy::implicit_hasher,
+    reason = "the std hasher everywhere: these helpers only ever receive sets built in this module"
+)]
 
 pub mod anomalies;
 pub mod assessments;
@@ -131,7 +135,7 @@ impl AnalyticsService {
 
     /// The rollup row a teacher dashboard compares against: the platform
     /// aggregate for an unfiltered platform view, else the teacher's own.
-    fn rollup_teacher(scope: &TeacherScope, filters: &AnalyticsFilters) -> Option<UserId> {
+    const fn rollup_teacher(scope: &TeacherScope, filters: &AnalyticsFilters) -> Option<UserId> {
         if scope.has_platform_scope && filters.teacher_user_id.is_none() {
             None
         } else {
@@ -238,7 +242,9 @@ impl AnalyticsService {
         }
         let ctx = self.windowed_context(&scope.course_ids, filters).await?;
         let risk_rows = risk::build_risk_rows(&ctx, filters);
-        Ok(overview::build_admin_overview(&ctx, &scope, filters, &risk_rows))
+        Ok(overview::build_admin_overview(
+            &ctx, &scope, filters, &risk_rows,
+        ))
     }
 
     pub async fn course_list(
@@ -578,7 +584,11 @@ impl AnalyticsService {
         AnalyticsContext::load(&self.pool, &scope.course_ids, None).await
     }
 
-    pub async fn export_at_risk_csv(&self, actor: &Actor, filters: &AnalyticsFilters) -> Result<String> {
+    pub async fn export_at_risk_csv(
+        &self,
+        actor: &Actor,
+        filters: &AnalyticsFilters,
+    ) -> Result<String> {
         let ctx = self.export_context(actor, filters).await?;
         Ok(exports::at_risk_csv(&ctx, filters))
     }

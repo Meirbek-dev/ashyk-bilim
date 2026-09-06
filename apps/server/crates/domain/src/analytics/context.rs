@@ -8,9 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ab_core::Result;
-use ab_core::assessments::{
-    ActivityProgressState, AssessmentKind, Lifecycle, SubmissionStatus,
-};
+use ab_core::assessments::{ActivityProgressState, AssessmentKind, Lifecycle, SubmissionStatus};
 use ab_core::id::{ActivityId, AssessmentId, CourseId, TrailRunId, UserId, UsergroupId};
 use ab_db::analytics::{
     ActivityInfoRow, AssessmentInfoRow, CertificateInfoRow, ChapterInfoRow, CourseInfoRow,
@@ -29,11 +27,12 @@ pub fn now_unix() -> i64 {
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
 }
 
-/// Python `round(x, digits)`: correctly rounded on the exact binary value
-/// (ties to even), so `round(2.675, 2) == 2.67` and `round(0.35, 1) == 0.3`
-/// exactly as CPython answers. Rust's fixed-precision formatting is the
-/// same correctly-rounded conversion, so format-then-parse is the faithful
-/// emulation.
+/// Python `round(x, digits)`, bit for bit.
+///
+/// CPython rounds the exact binary value with ties to even, so
+/// `round(2.675, 2) == 2.67` and `round(0.35, 1) == 0.3`. Rust's
+/// fixed-precision formatting is the same correctly-rounded conversion, so
+/// format-then-parse is the faithful emulation.
 #[must_use]
 pub fn round_to(x: f64, digits: u32) -> f64 {
     if !x.is_finite() {
@@ -128,7 +127,7 @@ pub fn median_or_none(values: &[f64]) -> Option<f64> {
     let mut ordered = values.to_vec();
     ordered.sort_by(f64::total_cmp);
     let mid = ordered.len() / 2;
-    let median = if ordered.len() % 2 == 0 {
+    let median = if ordered.len().is_multiple_of(2) {
         f64::midpoint(ordered[mid - 1], ordered[mid])
     } else {
         ordered[mid]
@@ -305,7 +304,9 @@ impl AnalyticsContext {
 
     #[must_use]
     pub fn assessment_by_activity(&self, activity_id: ActivityId) -> Option<&AssessmentInfoRow> {
-        self.assessments.iter().find(|a| a.activity_id == activity_id)
+        self.assessments
+            .iter()
+            .find(|a| a.activity_id == activity_id)
     }
 
     /// Legacy `display_name`: display name, else username, else a placeholder.
@@ -333,9 +334,10 @@ impl AnalyticsContext {
 
     #[must_use]
     pub fn course_name(&self, course_id: CourseId) -> String {
-        self.courses
-            .get(&course_id)
-            .map_or_else(|| format!("(deleted course {course_id})"), |c| c.name.clone())
+        self.courses.get(&course_id).map_or_else(
+            || format!("(deleted course {course_id})"),
+            |c| c.name.clone(),
+        )
     }
 
     /// Legacy `cohort_user_ids`: `None` = no cohort filter; an empty set when
@@ -466,7 +468,7 @@ pub fn graded_at(s: &SubmissionInfoRow) -> Option<i64> {
 }
 
 #[must_use]
-pub fn progress_completed(p: &ProgressInfoRow) -> bool {
+pub const fn progress_completed(p: &ProgressInfoRow) -> bool {
     p.completed_at.is_some()
         || matches!(
             p.state,
@@ -585,7 +587,9 @@ pub fn progress_snapshots(
 
     let mut last_activity: HashMap<SnapshotKey, i64> = HashMap::new();
     for e in build_activity_events(ctx, allowed_users) {
-        let entry = last_activity.entry((e.course_id, e.user_id)).or_insert(e.ts);
+        let entry = last_activity
+            .entry((e.course_id, e.user_id))
+            .or_insert(e.ts);
         *entry = (*entry).max(e.ts);
     }
 

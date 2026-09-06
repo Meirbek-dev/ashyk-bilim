@@ -21,6 +21,10 @@ const MAX_TIME_SECS: f64 = 6.0 * 3600.0;
 
 /// Legacy `build_content_bottlenecks`.
 #[must_use]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
 pub fn build_content_bottlenecks(
     ctx: &AnalyticsContext,
     filters: &AnalyticsFilters,
@@ -37,7 +41,9 @@ pub fn build_content_bottlenecks(
     let mut times: HashMap<ActivityId, Vec<f64>> = HashMap::new();
     for p in &ctx.activity_progress {
         if !target.contains(&p.course_id)
-            || allowed.as_ref().is_some_and(|set| !set.contains(&p.user_id))
+            || allowed
+                .as_ref()
+                .is_some_and(|set| !set.contains(&p.user_id))
         {
             continue;
         }
@@ -45,16 +51,19 @@ pub fn build_content_bottlenecks(
             started.entry(p.activity_id).or_default().insert(p.user_id);
         }
         if progress_completed(p) {
-            completed.entry(p.activity_id).or_default().insert(p.user_id);
+            completed
+                .entry(p.activity_id)
+                .or_default()
+                .insert(p.user_id);
         }
-        if let (Some(s), Some(c)) = (p.started_at, p.completed_at) {
-            if c >= s {
-                #[allow(clippy::cast_precision_loss)]
-                times
-                    .entry(p.activity_id)
-                    .or_default()
-                    .push(((c - s) as f64).min(MAX_TIME_SECS));
-            }
+        if let (Some(s), Some(c)) = (p.started_at, p.completed_at)
+            && c >= s
+        {
+            #[allow(clippy::cast_precision_loss)]
+            times
+                .entry(p.activity_id)
+                .or_default()
+                .push(((c - s) as f64).min(MAX_TIME_SECS));
         }
     }
 
@@ -62,10 +71,14 @@ pub fn build_content_bottlenecks(
         .into_iter()
         .filter(|r| target.contains(&r.course_id))
         .collect();
-    let mut assessments_by_activity: HashMap<ActivityId, Vec<&AssessmentOutlierRow>> = HashMap::new();
+    let mut assessments_by_activity: HashMap<ActivityId, Vec<&AssessmentOutlierRow>> =
+        HashMap::new();
     for r in &assessment_rows {
         if let Some(activity_id) = r.activity_id {
-            assessments_by_activity.entry(activity_id).or_default().push(r);
+            assessments_by_activity
+                .entry(activity_id)
+                .or_default()
+                .push(r);
         }
     }
 
@@ -87,23 +100,24 @@ pub fn build_content_bottlenecks(
         let exit_rate = (started_n > 0)
             .then(|| safe_pct_counts(exit_count, started_n))
             .flatten();
-        let base = |signal: &'static str, severity: Severity, note: &'static str| ContentBottleneckRow {
-            course_id: course.id,
-            course_name: course.name.clone(),
-            activity_id: *activity_id,
-            activity_name: activity.name.clone(),
-            activity_type: activity.activity_type.clone(),
-            signal,
-            severity,
-            completion_rate,
-            started_learners: count_i64(started_n),
-            completed_learners: count_i64(completed_n),
-            avg_time_seconds: avg_time,
-            exit_count: count_i64(exit_count),
-            failed_assessments: 0,
-            stale_days: None,
-            note,
-        };
+        let base =
+            |signal: &'static str, severity: Severity, note: &'static str| ContentBottleneckRow {
+                course_id: course.id,
+                course_name: course.name.clone(),
+                activity_id: *activity_id,
+                activity_name: activity.name.clone(),
+                activity_type: activity.activity_type.clone(),
+                signal,
+                severity,
+                completion_rate,
+                started_learners: count_i64(started_n),
+                completed_learners: count_i64(completed_n),
+                avg_time_seconds: avg_time,
+                exit_count: count_i64(exit_count),
+                failed_assessments: 0,
+                stale_days: None,
+                note,
+            };
 
         if started_n >= 3
             && completion_rate.is_some_and(|c| c < 60.0)
@@ -132,13 +146,18 @@ pub fn build_content_bottlenecks(
         }
         let weak: Vec<&&AssessmentOutlierRow> = assessments_by_activity
             .get(activity_id)
-            .map(|v| v.iter().filter(|r| r.pass_rate.is_some_and(|p| p < 60.0)).collect())
+            .map(|v| {
+                v.iter()
+                    .filter(|r| r.pass_rate.is_some_and(|p| p < 60.0))
+                    .collect()
+            })
             .unwrap_or_default();
         if !weak.is_empty() {
             let failed: i64 = weak
                 .iter()
                 .map(|r| {
-                    let share = (100.0 - r.pass_rate.unwrap_or(0.0)) / 100.0 * count(started_n.max(1));
+                    let share =
+                        (100.0 - r.pass_rate.unwrap_or(0.0)) / 100.0 * count(started_n.max(1));
                     #[allow(clippy::cast_possible_truncation)]
                     let n = share.round() as i64;
                     n.max(1)
@@ -166,26 +185,29 @@ pub fn build_content_bottlenecks(
         let weak_any = assessments_by_activity
             .get(activity_id)
             .is_some_and(|v| v.iter().any(|r| r.pass_rate.unwrap_or(100.0) < 65.0));
-        if let Some(days) = stale_days {
-            if days >= 45 && (completion_rate.is_some_and(|c| c < 65.0) || weak_any) {
-                let mut row = base(
-                    "stale_low_performance",
-                    if days >= 90 {
-                        Severity::Critical
-                    } else {
-                        Severity::Warning
-                    },
-                    "stale_content_correlates_with_low_performance",
-                );
-                row.stale_days = Some(days);
-                rows.push(row);
-            }
+        if let Some(days) = stale_days
+            && days >= 45
+            && (completion_rate.is_some_and(|c| c < 65.0) || weak_any)
+        {
+            let mut row = base(
+                "stale_low_performance",
+                if days >= 90 {
+                    Severity::Critical
+                } else {
+                    Severity::Warning
+                },
+                "stale_content_correlates_with_low_performance",
+            );
+            row.stale_days = Some(days);
+            rows.push(row);
         }
     }
     rows.sort_by(|a, b| {
         b.severity
             .cmp(&a.severity)
-            .then_with(|| (b.exit_count + b.failed_assessments).cmp(&(a.exit_count + a.failed_assessments)))
+            .then_with(|| {
+                (b.exit_count + b.failed_assessments).cmp(&(a.exit_count + a.failed_assessments))
+            })
             .then_with(|| {
                 b.avg_time_seconds
                     .unwrap_or(0.0)

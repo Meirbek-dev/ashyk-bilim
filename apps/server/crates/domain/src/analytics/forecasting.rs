@@ -16,6 +16,10 @@ use super::types::{
 
 /// Legacy `build_forecasts`, top 12 by severity then expected value.
 #[must_use]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
 pub fn build_forecasts(
     ctx: &AnalyticsContext,
     filters: &AnalyticsFilters,
@@ -44,14 +48,23 @@ pub fn build_forecasts(
             .collect();
         let unlikely = course_snapshots
             .iter()
-            .filter(|s| !s.is_completed && s.progress_pct < 70.0 && !active_recent.contains(&s.user_id))
+            .filter(|s| {
+                !s.is_completed && s.progress_pct < 70.0 && !active_recent.contains(&s.user_id)
+            })
             .count();
         if unlikely > 0 {
             forecasts.push(ForecastItem {
                 id: format!("completion-target-miss-{}", course.course_id),
                 kind: "completion_target_miss",
-                severity: if unlikely >= 10 { Severity::Critical } else { Severity::Warning },
-                title: format!("{}: learners likely to miss the completion target", course.course_name),
+                severity: if unlikely >= 10 {
+                    Severity::Critical
+                } else {
+                    Severity::Warning
+                },
+                title: format!(
+                    "{}: learners likely to miss the completion target",
+                    course.course_name
+                ),
                 prediction: format!("{unlikely} learners are inactive or below 70% progress."),
                 confidence_level: if course_snapshots.len() >= 10 {
                     Confidence::Medium
@@ -63,7 +76,10 @@ pub fn build_forecasts(
                 assessment_type: None,
                 assessment_id: None,
                 learner_count: Some(count_i64(unlikely)),
-                expected_value: safe_pct_counts(course_snapshots.len() - unlikely, course_snapshots.len()),
+                expected_value: safe_pct_counts(
+                    course_snapshots.len() - unlikely,
+                    course_snapshots.len(),
+                ),
                 target_value: Some(70.0),
                 deadline_at_unix: None,
             });
@@ -77,16 +93,23 @@ pub fn build_forecasts(
         #[allow(clippy::cast_precision_loss)]
         let velocity = count(completed_now) / elapsed_days as f64;
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let expected_completed = (completed_now + (velocity * 14.0).round() as usize).min(course_snapshots.len());
+        let expected_completed =
+            (completed_now + (velocity * 14.0).round() as usize).min(course_snapshots.len());
         let expected = safe_pct_counts(expected_completed, course_snapshots.len());
         if let Some(expected) = expected.filter(|_| course_snapshots.len() >= 5) {
             let target = course.completion_rate.max(60.0);
             forecasts.push(ForecastItem {
                 id: format!("course-completion-deadline-{}", course.course_id),
                 kind: "course_completion_deadline",
-                severity: if expected < target { Severity::Warning } else { Severity::Info },
+                severity: if expected < target {
+                    Severity::Warning
+                } else {
+                    Severity::Info
+                },
                 title: format!("{}: 14-day completion forecast", course.course_name),
-                prediction: format!("Expected completion rate is {expected}% if the current pace holds."),
+                prediction: format!(
+                    "Expected completion rate is {expected}% if the current pace holds."
+                ),
                 confidence_level: if completion_events >= 5 {
                     Confidence::Medium
                 } else {
@@ -125,8 +148,12 @@ pub fn build_forecasts(
         assessment_type: None,
         assessment_id: None,
         learner_count: Some(workload.forecast_backlog_7d),
-        expected_value: Some(f64::from(i32::try_from(workload.forecast_backlog_7d).unwrap_or(i32::MAX))),
-        target_value: Some(f64::from(i32::try_from(workload.backlog_total).unwrap_or(i32::MAX))),
+        expected_value: Some(f64::from(
+            i32::try_from(workload.forecast_backlog_7d).unwrap_or(i32::MAX),
+        )),
+        target_value: Some(f64::from(
+            i32::try_from(workload.backlog_total).unwrap_or(i32::MAX),
+        )),
         deadline_at_unix: Some(now + 7 * DAY_SECS),
     });
 
@@ -135,9 +162,16 @@ pub fn build_forecasts(
             continue;
         };
         forecasts.push(ForecastItem {
-            id: format!("assessment-failure-risk-{}-{}", a.assessment_type, a.assessment_id),
+            id: format!(
+                "assessment-failure-risk-{}-{}",
+                a.assessment_type, a.assessment_id
+            ),
             kind: "assessment_failure_risk",
-            severity: if pass_rate < 50.0 { Severity::Critical } else { Severity::Warning },
+            severity: if pass_rate < 50.0 {
+                Severity::Critical
+            } else {
+                Severity::Warning
+            },
             title: format!("{}: elevated failure risk", a.title),
             prediction: format!(
                 "Expected failure rate is {}% before the next deadline.",
@@ -160,9 +194,11 @@ pub fn build_forecasts(
     }
 
     forecasts.sort_by(|a, b| {
-        b.severity
-            .cmp(&a.severity)
-            .then_with(|| b.expected_value.unwrap_or(0.0).total_cmp(&a.expected_value.unwrap_or(0.0)))
+        b.severity.cmp(&a.severity).then_with(|| {
+            b.expected_value
+                .unwrap_or(0.0)
+                .total_cmp(&a.expected_value.unwrap_or(0.0))
+        })
     });
     forecasts.truncate(12);
     forecasts

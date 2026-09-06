@@ -202,13 +202,22 @@ pub fn risk_trend(
 /// Legacy `build_risk_rows`: every at-risk (course, learner) pair in the
 /// context, sorted by score desc, course name, learner name.
 #[must_use]
-pub fn build_risk_rows(ctx: &AnalyticsContext, filters: &AnalyticsFilters) -> Vec<AtRiskLearnerRow> {
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
+pub fn build_risk_rows(
+    ctx: &AnalyticsContext,
+    filters: &AnalyticsFilters,
+) -> Vec<AtRiskLearnerRow> {
     let allowed = ctx.cohort_user_ids(&filters.cohort_ids);
     let snapshots = progress_snapshots(ctx, allowed.as_ref());
     let events = build_activity_events(ctx, allowed.as_ref());
     let mut last_activity: HashMap<SnapshotKey, i64> = HashMap::new();
     for e in &events {
-        let entry = last_activity.entry((e.course_id, e.user_id)).or_insert(e.ts);
+        let entry = last_activity
+            .entry((e.course_id, e.user_id))
+            .or_insert(e.ts);
         *entry = (*entry).max(e.ts);
     }
 
@@ -217,7 +226,10 @@ pub fn build_risk_rows(ctx: &AnalyticsContext, filters: &AnalyticsFilters) -> Ve
     let mut exam_seen: HashMap<SnapshotKey, HashSet<AssessmentId>> = HashMap::new();
     let mut code_passed: HashMap<SnapshotKey, HashSet<AssessmentId>> = HashMap::new();
     for s in &ctx.submissions {
-        if allowed.as_ref().is_some_and(|set| !set.contains(&s.user_id)) {
+        if allowed
+            .as_ref()
+            .is_some_and(|set| !set.contains(&s.user_id))
+        {
             continue;
         }
         let Some(assessment) = ctx.assessment(s.assessment_id) else {
@@ -285,7 +297,13 @@ pub fn build_risk_rows(ctx: &AnalyticsContext, filters: &AnalyticsFilters) -> Ve
             blocks,
         );
         let score = components.score();
-        let codes = reason_codes(days_since, snapshot.progress_pct, failed_count, missing, blocks);
+        let codes = reason_codes(
+            days_since,
+            snapshot.progress_pct,
+            failed_count,
+            missing,
+            blocks,
+        );
         if codes.is_empty() {
             continue;
         }
@@ -353,7 +371,8 @@ pub async fn enrich_risk_rows(
             .await?
             .into_iter()
             .filter_map(|s| {
-                RiskLevel::parse(&s.risk_level).map(|level| ((s.course_id, s.user_id), (level, s.risk_score)))
+                RiskLevel::parse(&s.risk_level)
+                    .map(|level| ((s.course_id, s.user_id), (level, s.risk_score)))
             })
             .collect();
     let interventions = ab_db::analytics::list_interventions(
@@ -382,7 +401,7 @@ pub async fn enrich_risk_rows(
             if let Some(latest) = list.first() {
                 row.last_intervention_type = Some(latest.intervention_type.clone());
                 row.last_intervention_at_unix = Some(latest.created_at);
-                row.last_intervention_outcome = latest.outcome.clone();
+                row.last_intervention_outcome.clone_from(&latest.outcome);
             }
         }
     }
@@ -411,7 +430,10 @@ mod tests {
         assert_eq!(idle.inactivity, 40.0);
         assert_eq!(idle.score(), 40.0);
         assert_eq!(risk_level(idle.score()), RiskLevel::Medium);
-        assert_eq!(RiskComponents::compute(None, 100.0, 0, 0, 0).top_factor(), None);
+        assert_eq!(
+            RiskComponents::compute(None, 100.0, 0, 0, 0).top_factor(),
+            None
+        );
     }
 
     #[test]
@@ -428,9 +450,18 @@ mod tests {
             ]
         );
         assert_eq!(recommended_action(&codes), "review_submissions_first");
-        assert_eq!(recommended_action(&["low_progress"]), "schedule_pace_meeting");
-        assert_eq!(why_now(&["low_progress"], Some("progress")), "progress_behind_course_baseline");
-        assert_eq!(why_now(&["low_progress"], Some("inactivity")), "multiple_risk_signals");
+        assert_eq!(
+            recommended_action(&["low_progress"]),
+            "schedule_pace_meeting"
+        );
+        assert_eq!(
+            why_now(&["low_progress"], Some("progress")),
+            "progress_behind_course_baseline"
+        );
+        assert_eq!(
+            why_now(&["low_progress"], Some("inactivity")),
+            "multiple_risk_signals"
+        );
         assert!(reason_codes(Some(6), 50.0, 0, 0, 0).is_empty());
         assert_eq!(confidence(75.0, &["a", "b"], Some(1)), Confidence::High);
         assert_eq!(confidence(20.0, &["a"], None), Confidence::Low);

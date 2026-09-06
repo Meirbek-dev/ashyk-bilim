@@ -30,10 +30,10 @@ pub fn build_data_quality(
         (AssessmentKind::Exam, "exam_attempts"),
         (AssessmentKind::CodeChallenge, "code_submissions"),
     ] {
-        let any = ctx
-            .submissions
-            .iter()
-            .any(|s| ctx.assessment(s.assessment_id).is_some_and(|a| a.kind == kind));
+        let any = ctx.submissions.iter().any(|s| {
+            ctx.assessment(s.assessment_id)
+                .is_some_and(|a| a.kind == kind)
+        });
         if !any {
             missing_sources.push(label);
         }
@@ -46,7 +46,10 @@ pub fn build_data_quality(
         .course_ids
         .iter()
         .filter_map(|course_id| {
-            let learners = snapshots.values().filter(|s| s.course_id == *course_id).count();
+            let learners = snapshots
+                .values()
+                .filter(|s| s.course_id == *course_id)
+                .count();
             (learners < 5).then(|| CourseDataGap {
                 course_id: *course_id,
                 course_name: ctx.course_name(*course_id),
@@ -82,20 +85,21 @@ pub fn build_data_quality(
             id: "stale-rollup",
             severity: Severity::Critical,
             title: "rollups_older_than_24_hours",
-            detail: "Refresh the analytics rollups before using this view for operational decisions."
-                .to_owned(),
+            detail:
+                "Refresh the analytics rollups before using this view for operational decisions."
+                    .to_owned(),
             course_id: None,
             source: Some("rollups"),
         });
     }
 
-    let mut confidence = Confidence::High;
-    if !missing_sources.is_empty() || !gaps.is_empty() {
-        confidence = Confidence::Medium;
-    }
-    if freshness_seconds > 86_400 || missing_sources.len() >= 3 {
-        confidence = Confidence::Low;
-    }
+    let confidence = if freshness_seconds > 86_400 || missing_sources.len() >= 3 {
+        Confidence::Low
+    } else if missing_sources.is_empty() && gaps.is_empty() {
+        Confidence::High
+    } else {
+        Confidence::Medium
+    };
     gaps.truncate(20);
 
     AnalyticsDataQuality {

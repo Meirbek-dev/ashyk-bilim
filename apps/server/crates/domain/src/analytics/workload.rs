@@ -12,8 +12,8 @@ use ab_core::assessments::GradingMode;
 use ab_core::id::{AssessmentId, CourseId, UserId};
 
 use super::context::{
-    AnalyticsContext, graded_at, hours_between, is_graded, is_reviewable, median_or_none,
-    round2, submitted_at,
+    AnalyticsContext, graded_at, hours_between, is_graded, is_reviewable, median_or_none, round2,
+    submitted_at,
 };
 use super::filters::AnalyticsFilters;
 use super::types::{GradingBacklogItem, TeacherWorkloadSummary, WorkloadAgingBuckets};
@@ -30,7 +30,10 @@ struct BacklogAcc {
 
 /// Legacy `build_teacher_workload`.
 #[must_use]
-pub fn build_teacher_workload(ctx: &AnalyticsContext, filters: &AnalyticsFilters) -> TeacherWorkloadSummary {
+pub fn build_teacher_workload(
+    ctx: &AnalyticsContext,
+    filters: &AnalyticsFilters,
+) -> TeacherWorkloadSummary {
     build_workload_for_courses(ctx, filters, None)
 }
 
@@ -38,6 +41,14 @@ pub fn build_teacher_workload(ctx: &AnalyticsContext, filters: &AnalyticsFilters
 /// admin overview compares teachers this way instead of reloading a context
 /// per teacher as the legacy did.
 #[must_use]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
+#[allow(
+    clippy::suboptimal_flops,
+    reason = "legacy arithmetic order kept so rounding matches"
+)]
 pub fn build_workload_for_courses(
     ctx: &AnalyticsContext,
     filters: &AnalyticsFilters,
@@ -56,7 +67,9 @@ pub fn build_workload_for_courses(
     let mut graded_in_window = 0.0;
 
     for s in &ctx.submissions {
-        if allowed.as_ref().is_some_and(|set: &HashSet<UserId>| !set.contains(&s.user_id))
+        if allowed
+            .as_ref()
+            .is_some_and(|set: &HashSet<UserId>| !set.contains(&s.user_id))
             || course_filter.is_some_and(|set| !set.contains(&s.course_id))
         {
             continue;
@@ -105,7 +118,10 @@ pub fn build_workload_for_courses(
         if breach {
             item.sla_breaches += 1;
         }
-        item.oldest_submitted_at = Some(item.oldest_submitted_at.map_or(submitted, |o| o.min(submitted)));
+        item.oldest_submitted_at = Some(
+            item.oldest_submitted_at
+                .map_or(submitted, |o| o.min(submitted)),
+        );
         if let Some(h) = age_hours {
             item.max_age_hours = Some(item.max_age_hours.map_or(h, |m| m.max(h)));
         }
@@ -141,7 +157,11 @@ pub fn build_workload_for_courses(
     rows.sort_by(|a, b| {
         b.sla_breaches
             .cmp(&a.sla_breaches)
-            .then_with(|| b.age_hours.unwrap_or(0.0).total_cmp(&a.age_hours.unwrap_or(0.0)))
+            .then_with(|| {
+                b.age_hours
+                    .unwrap_or(0.0)
+                    .total_cmp(&a.age_hours.unwrap_or(0.0))
+            })
             .then_with(|| b.awaiting_review.cmp(&a.awaiting_review))
     });
     rows.truncate(25);
@@ -159,7 +179,10 @@ pub fn build_workload_for_courses(
 /// Legacy `backlog_items_for_drillthrough`: one row per pending submission,
 /// oldest first.
 #[must_use]
-pub fn backlog_drillthrough_rows(ctx: &AnalyticsContext, filters: &AnalyticsFilters) -> Vec<serde_json::Value> {
+pub fn backlog_drillthrough_rows(
+    ctx: &AnalyticsContext,
+    filters: &AnalyticsFilters,
+) -> Vec<serde_json::Value> {
     let allowed = ctx.cohort_user_ids(&filters.cohort_ids);
     let now = ctx.generated_at;
     let mut rows: Vec<(f64, serde_json::Value)> = ctx

@@ -1,6 +1,7 @@
-//! Teacher and admin analytics (legacy `routers/analytics.py`): dashboards,
-//! at-risk learners, interventions, saved views, drill-through and CSV
-//! exports. Scope: courses the caller created or co-authors under
+//! Teacher and admin analytics (legacy `routers/analytics.py`).
+//!
+//! Dashboards, at-risk learners, interventions, saved views, drill-through
+//! and CSV exports. Scope: courses the caller created or co-authors under
 //! `analytics:read:assigned`; every course under `analytics:read:platform`
 //! / `:all` (exports use `analytics:export:*`).
 
@@ -60,7 +61,9 @@ pub async fn teacher_overview(
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<Json<TeacherOverviewResponse>> {
     let filters = filters(query)?;
-    Ok(Json(state.analytics.teacher_overview(&actor, &filters).await?))
+    Ok(Json(
+        state.analytics.teacher_overview(&actor, &filters).await?,
+    ))
 }
 
 /// Platform-wide overview (`analytics:read:platform` / `:all`).
@@ -79,7 +82,9 @@ pub async fn admin_overview(
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<Json<AdminAnalyticsResponse>> {
     let filters = filters(query)?;
-    Ok(Json(state.analytics.admin_overview(&actor, &filters).await?))
+    Ok(Json(
+        state.analytics.admin_overview(&actor, &filters).await?,
+    ))
 }
 
 #[utoipa::path(
@@ -129,7 +134,9 @@ pub async fn assessment_list(
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<Json<TeacherAssessmentListResponse>> {
     let filters = filters(query)?;
-    Ok(Json(state.analytics.assessment_list(&actor, &filters).await?))
+    Ok(Json(
+        state.analytics.assessment_list(&actor, &filters).await?,
+    ))
 }
 
 /// 404 when the assessment is unknown, of another kind, or outside the scope.
@@ -173,7 +180,9 @@ pub async fn at_risk_learners(
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<Json<AtRiskLearnersResponse>> {
     let filters = filters(query)?;
-    Ok(Json(state.analytics.at_risk_learners(&actor, &filters).await?))
+    Ok(Json(
+        state.analytics.at_risk_learners(&actor, &filters).await?,
+    ))
 }
 
 // ── Interventions ───────────────────────────────────────────────────────
@@ -252,7 +261,9 @@ pub async fn list_saved_views(
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<Json<SavedViewList>> {
     let filters = filters(query)?;
-    Ok(Json(state.analytics.list_saved_views(&actor, &filters).await?))
+    Ok(Json(
+        state.analytics.list_saved_views(&actor, &filters).await?,
+    ))
 }
 
 /// Create, or overwrite the view with the same name and type.
@@ -303,7 +314,10 @@ pub async fn delete_view(
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<StatusCode> {
     let filters = filters(query)?;
-    state.analytics.delete_view(&actor, &filters, view_id).await?;
+    state
+        .analytics
+        .delete_view(&actor, &filters, view_id)
+        .await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

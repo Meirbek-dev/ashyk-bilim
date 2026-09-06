@@ -1,10 +1,11 @@
 //! Analytics read models (legacy `services/analytics/schemas.py`).
 //!
-//! These are computed values, never database rows, so they carry `Serialize`
-//! + `ToSchema` here and are re-exported by `ab_api::dto::analytics` as the
-//! wire shapes. Ids are the v2 typed uuids; timestamps are `*_unix` epoch
-//! seconds; label-like fields are stable snake_case codes the client
-//! translates (the legacy returned Russian prose).
+//! These are computed values, never database rows, so they carry
+//! `Serialize` and `ToSchema` here and are re-exported by
+//! `ab_api::dto::analytics` as the wire shapes. Ids are the v2 typed uuids;
+//! timestamps are `*_unix` epoch seconds; label-like fields are stable
+//! snake_case codes the client translates (the legacy returned Russian
+//! prose).
 
 use std::collections::BTreeMap;
 

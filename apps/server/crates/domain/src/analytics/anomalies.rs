@@ -14,6 +14,10 @@ use super::types::{AnomalyItem, AssessmentOutlierRow, Severity, TeacherCourseRow
 
 /// Legacy `build_anomalies`, top 12 by severity then observed value.
 #[must_use]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
 pub fn build_anomalies(
     ctx: &AnalyticsContext,
     filters: &AnalyticsFilters,
@@ -29,12 +33,16 @@ pub fn build_anomalies(
     for row in course_rows {
         let current: HashSet<UserId> = events
             .iter()
-            .filter(|e| e.course_id == row.course_id && e.ts >= current_start && e.ts <= current_end)
+            .filter(|e| {
+                e.course_id == row.course_id && e.ts >= current_start && e.ts <= current_end
+            })
             .map(|e| e.user_id)
             .collect();
         let previous: HashSet<UserId> = events
             .iter()
-            .filter(|e| e.course_id == row.course_id && e.ts >= previous_start && e.ts < previous_end)
+            .filter(|e| {
+                e.course_id == row.course_id && e.ts >= previous_start && e.ts < previous_end
+            })
             .map(|e| e.user_id)
             .collect();
         if !previous.is_empty() && count(current.len()) <= (count(previous.len()) * 0.55).max(1.0) {
@@ -153,7 +161,11 @@ pub fn build_anomalies(
             continue;
         }
         let (mut before, mut after) = (Vec::new(), Vec::new());
-        for s in ctx.submissions.iter().filter(|s| s.assessment_id == row.assessment_id) {
+        for s in ctx
+            .submissions
+            .iter()
+            .filter(|s| s.assessment_id == row.assessment_id)
+        {
             let Some(score) = score_of(s) else {
                 continue;
             };
@@ -172,7 +184,10 @@ pub fn build_anomalies(
                     id: format!("score-shift-{}-{}", row.assessment_type, row.assessment_id),
                     kind: "score_distribution_shift",
                     severity: Severity::Warning,
-                    title: format!("{}: score distribution shifted after content update", row.title),
+                    title: format!(
+                        "{}: score distribution shifted after content update",
+                        row.title
+                    ),
                     detail: "average_score_changed_after_last_content_update",
                     observed_value: Some(round1(after_avg)),
                     baseline_value: Some(round1(before_avg)),
@@ -187,9 +202,11 @@ pub fn build_anomalies(
     }
 
     anomalies.sort_by(|a, b| {
-        b.severity
-            .cmp(&a.severity)
-            .then_with(|| b.observed_value.unwrap_or(0.0).total_cmp(&a.observed_value.unwrap_or(0.0)))
+        b.severity.cmp(&a.severity).then_with(|| {
+            b.observed_value
+                .unwrap_or(0.0)
+                .total_cmp(&a.observed_value.unwrap_or(0.0))
+        })
     });
     anomalies.truncate(12);
     anomalies

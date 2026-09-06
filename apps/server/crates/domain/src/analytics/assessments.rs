@@ -13,9 +13,9 @@ use ab_core::id::{AssessmentId, UserId, UsergroupId};
 use ab_db::analytics::{AssessmentInfoRow, SubmissionInfoRow};
 
 use super::context::{
-    AnalyticsContext, count, count_i64, graded_at, hours_between, is_graded, is_reviewable,
-    mean, median_or_none, percentile, progress_snapshots, round1, round2, safe_pct,
-    safe_pct_counts, score_of, submitted_at,
+    AnalyticsContext, count, count_i64, graded_at, hours_between, is_graded, is_reviewable, mean,
+    median_or_none, percentile, progress_snapshots, round1, round2, safe_pct, safe_pct_counts,
+    score_of, submitted_at,
 };
 use super::filters::{AnalyticsFilters, SortOrder};
 use super::types::{
@@ -100,6 +100,10 @@ pub fn score_variance(scores: &[f64]) -> Option<f64> {
 
 /// Legacy `_reliability_score`: distance of the variance from an ideal 350.
 #[must_use]
+#[allow(
+    clippy::suboptimal_flops,
+    reason = "legacy arithmetic order kept so rounding matches"
+)]
 pub fn reliability_score(scores: &[f64]) -> Option<f64> {
     let variance = score_variance(scores)?;
     let ideal = 350.0;
@@ -156,7 +160,7 @@ fn in_bucket_window(ts: i64, window: Option<(i64, i64)>) -> bool {
 }
 
 /// Assessments that can have data: everything past draft.
-fn is_reportable(a: &AssessmentInfoRow) -> bool {
+const fn is_reportable(a: &AssessmentInfoRow) -> bool {
     matches!(a.lifecycle, Lifecycle::Published | Lifecycle::Archived)
 }
 
@@ -194,10 +198,10 @@ impl AssessmentStats {
                 let entry = stats.scores_by_user.entry(s.user_id).or_insert(score);
                 *entry = entry.max(score);
             }
-            if is_graded(s) {
-                if let Some(latency) = hours_between(Some(submitted_at(s)), graded_at(s)) {
-                    stats.latencies.push(latency);
-                }
+            if is_graded(s)
+                && let Some(latency) = hours_between(Some(submitted_at(s)), graded_at(s))
+            {
+                stats.latencies.push(latency);
             }
         }
         let passed = stats
@@ -221,7 +225,8 @@ impl AssessmentStats {
         }
         let total: i64 = self.attempts_by_user.values().sum();
         Some(round2(
-            f64::from(i32::try_from(total).unwrap_or(i32::MAX)) / count(self.attempts_by_user.len()),
+            f64::from(i32::try_from(total).unwrap_or(i32::MAX))
+                / count(self.attempts_by_user.len()),
         ))
     }
 
@@ -258,7 +263,11 @@ impl AssessmentStats {
 /// Legacy per-kind outlier reason codes (+ the manual-assessment latency rule
 /// for every kind, since any kind can need hand grading in v2).
 #[must_use]
-pub fn outlier_reason_codes(kind: AssessmentKind, stats: &AssessmentStats, threshold: f64) -> Vec<&'static str> {
+pub fn outlier_reason_codes(
+    kind: AssessmentKind,
+    stats: &AssessmentStats,
+    threshold: f64,
+) -> Vec<&'static str> {
     let mut codes = Vec::new();
     let submission_rate = stats.submission_rate();
     match kind {
@@ -287,7 +296,10 @@ pub fn outlier_reason_codes(kind: AssessmentKind, stats: &AssessmentStats, thres
             }
         }
     }
-    if stats.latency_p90().is_some_and(|p90| p90 > GRADING_SLA_HOURS) {
+    if stats
+        .latency_p90()
+        .is_some_and(|p90| p90 > GRADING_SLA_HOURS)
+    {
         codes.push("grading_latency");
     }
     codes
@@ -328,8 +340,12 @@ pub fn assessment_stats(
 ) -> AssessmentStats {
     let allowed = ctx.cohort_user_ids(&filters.cohort_ids);
     let eligible = eligible_by_course(ctx, allowed.as_ref());
-    let submissions =
-        visible_submissions(ctx, assessment.id, allowed.as_ref(), filters.selected_bucket_window());
+    let submissions = visible_submissions(
+        ctx,
+        assessment.id,
+        allowed.as_ref(),
+        filters.selected_bucket_window(),
+    );
     AssessmentStats::compute(
         assessment,
         &submissions,
@@ -390,15 +406,23 @@ fn opt_key(v: Option<f64>) -> f64 {
     v.unwrap_or(-1.0)
 }
 
-pub fn sort_assessment_rows(rows: &mut [AssessmentOutlierRow], sort_by: Option<&str>, order: SortOrder) {
+pub fn sort_assessment_rows(
+    rows: &mut [AssessmentOutlierRow],
+    sort_by: Option<&str>,
+    order: SortOrder,
+) {
     let cmp = |a: &AssessmentOutlierRow, b: &AssessmentOutlierRow| match sort_by {
         Some("title") => a.title.to_lowercase().cmp(&b.title.to_lowercase()),
         Some("submission") => opt_key(a.submission_rate).total_cmp(&opt_key(b.submission_rate)),
         Some("pass") => opt_key(a.pass_rate).total_cmp(&opt_key(b.pass_rate)),
         Some("difficulty") => opt_key(a.difficulty_score).total_cmp(&opt_key(b.difficulty_score)),
-        Some("latency") => opt_key(a.grading_latency_hours_p90)
-            .total_cmp(&opt_key(b.grading_latency_hours_p90)),
-        Some("signals") => a.outlier_reason_codes.len().cmp(&b.outlier_reason_codes.len()),
+        Some("latency") => {
+            opt_key(a.grading_latency_hours_p90).total_cmp(&opt_key(b.grading_latency_hours_p90))
+        }
+        Some("signals") => a
+            .outlier_reason_codes
+            .len()
+            .cmp(&b.outlier_reason_codes.len()),
         _ => a
             .outlier_reason_codes
             .len()
@@ -436,7 +460,8 @@ pub fn build_diagnostics(
     now: i64,
     note: Option<&'static str>,
 ) -> AssessmentDiagnosticsSnapshot {
-    let count_status = |st: SubmissionStatus| count_i64(submissions.iter().filter(|s| s.status == st).count());
+    let count_status =
+        |st: SubmissionStatus| count_i64(submissions.iter().filter(|s| s.status == st).count());
     AssessmentDiagnosticsSnapshot {
         manual_grading_required,
         total_attempt_records: count_i64(submissions.len()),
@@ -456,7 +481,9 @@ pub fn build_diagnostics(
                 })
                 .count(),
         ),
-        suspicious_attempts: count_i64(submissions.iter().filter(|s| s.violation_count > 0).count()),
+        suspicious_attempts: count_i64(
+            submissions.iter().filter(|s| s.violation_count > 0).count(),
+        ),
         missing_scores: count_i64(submissions.iter().filter(|s| score_of(s).is_none()).count()),
         note,
     }
@@ -464,7 +491,10 @@ pub fn build_diagnostics(
 
 /// Legacy `_build_slo_snapshot`.
 #[must_use]
-pub fn build_slo(diagnostics: &AssessmentDiagnosticsSnapshot, latencies: &[f64]) -> AssessmentSloSnapshot {
+pub fn build_slo(
+    diagnostics: &AssessmentDiagnosticsSnapshot,
+    latencies: &[f64],
+) -> AssessmentSloSnapshot {
     if !diagnostics.manual_grading_required && diagnostics.awaiting_grading == 0 {
         return AssessmentSloSnapshot {
             status: SloStatus::NotApplicable,
@@ -510,7 +540,11 @@ pub fn build_workflow_items(d: &AssessmentDiagnosticsSnapshot) -> Vec<Assessment
             "awaiting_grading",
             "awaiting_teacher_grading",
             d.awaiting_grading,
-            if d.stale_backlog > 0 { ItemSignal::Critical } else { ItemSignal::Watch },
+            if d.stale_backlog > 0 {
+                ItemSignal::Critical
+            } else {
+                ItemSignal::Watch
+            },
             "manual_review_pending",
         ),
         (
@@ -545,19 +579,21 @@ pub fn build_workflow_items(d: &AssessmentDiagnosticsSnapshot) -> Vec<Assessment
     definitions
         .into_iter()
         .filter(|(_, _, impacted, _, _)| *impacted > 0)
-        .map(|(key, label, impacted, signal, note)| AssessmentItemAnalyticsRow {
-            item_key: key.to_owned(),
-            item_label: label.to_owned(),
-            item_type: "workflow",
-            population_count: total,
-            impacted_count: impacted,
-            impact_rate: safe_pct(
-                f64::from(i32::try_from(impacted).unwrap_or(i32::MAX)),
-                f64::from(i32::try_from(total).unwrap_or(i32::MAX)),
-            ),
-            signal,
-            note: note.to_owned(),
-        })
+        .map(
+            |(key, label, impacted, signal, note)| AssessmentItemAnalyticsRow {
+                item_key: key.to_owned(),
+                item_label: label.to_owned(),
+                item_type: "workflow",
+                population_count: total,
+                impacted_count: impacted,
+                impact_rate: safe_pct(
+                    f64::from(i32::try_from(impacted).unwrap_or(i32::MAX)),
+                    f64::from(i32::try_from(total).unwrap_or(i32::MAX)),
+                ),
+                signal,
+                note: note.to_owned(),
+            },
+        )
         .collect()
 }
 
@@ -576,7 +612,7 @@ struct ItemTally {
 
 fn item_correct(item: &crate::grading::breakdown::GradedItem) -> Option<bool> {
     item.correct
-        .or_else(|| (item.max_score > 0.0).then(|| item.score >= item.max_score))
+        .or_else(|| (item.max_score > 0.0).then_some(item.score >= item.max_score))
 }
 
 fn question_tallies(submissions: &[&SubmissionInfoRow]) -> BTreeMap<String, ItemTally> {
@@ -589,7 +625,10 @@ fn question_tallies(submissions: &[&SubmissionInfoRow]) -> BTreeMap<String, Item
         let group = group_size(scored.len());
         (
             scored[..group].iter().map(|(_, s)| s.id).collect(),
-            scored[scored.len() - group..].iter().map(|(_, s)| s.id).collect(),
+            scored[scored.len() - group..]
+                .iter()
+                .map(|(_, s)| s.id)
+                .collect(),
         )
     } else {
         (HashSet::new(), HashSet::new())
@@ -603,7 +642,7 @@ fn question_tallies(submissions: &[&SubmissionInfoRow]) -> BTreeMap<String, Item
             };
             let tally = tallies.entry(item.item_id.to_string()).or_default();
             if tally.label.is_empty() && !item.item_text.trim().is_empty() {
-                tally.label = item.item_text.trim().to_owned();
+                item.item_text.trim().clone_into(&mut tally.label);
             }
             tally.attempts += 1;
             if correct {
@@ -639,7 +678,11 @@ pub fn build_question_breakdown(submissions: &[&SubmissionInfoRow]) -> Vec<Quest
             let weak_acc = safe_pct(as_f64(t.weak_correct), as_f64(t.weak));
             let strong_miss_pct = safe_pct(as_f64(t.strong_miss), as_f64(t.strong));
             QuestionDifficultyRow {
-                question_label: if t.label.is_empty() { format!("Question {id}") } else { t.label },
+                question_label: if t.label.is_empty() {
+                    format!("Question {id}")
+                } else {
+                    t.label
+                },
                 question_id: id,
                 accuracy_pct: safe_pct(as_f64(t.correct), as_f64(t.attempts)),
                 avg_time_seconds: None,
@@ -674,9 +717,6 @@ pub fn build_cohort_analytics(
     cohort_filter: Option<&[UsergroupId]>,
     released: &[SubmissionStatus],
 ) -> Vec<AssessmentCohortRow> {
-    if ctx.usergroup_names.is_empty() {
-        return Vec::new();
-    }
     #[derive(Default)]
     struct Acc {
         eligible: i64,
@@ -689,6 +729,9 @@ pub fn build_cohort_analytics(
         attempt_total: i64,
         attempt_learners: i64,
         scores: Vec<f64>,
+    }
+    if ctx.usergroup_names.is_empty() {
+        return Vec::new();
     }
     let by_user: HashMap<UserId, &AssessmentLearnerRow> =
         learner_rows.iter().map(|r| (r.user_id, r)).collect();
@@ -765,7 +808,11 @@ pub fn build_cohort_analytics(
     rows.sort_by(|a, b| {
         opt_key(b.submission_rate)
             .total_cmp(&opt_key(a.submission_rate))
-            .then_with(|| b.cohort_name.to_lowercase().cmp(&a.cohort_name.to_lowercase()))
+            .then_with(|| {
+                b.cohort_name
+                    .to_lowercase()
+                    .cmp(&a.cohort_name.to_lowercase())
+            })
     });
     rows
 }
@@ -853,12 +900,28 @@ pub fn build_audit_history(
             AssessmentAuditEventRow {
                 id: format!("grading-entry-{}", e.id),
                 source: "grading_entry",
-                action: if published { "publish_grade" } else { "save_grade" }.to_owned(),
+                action: if published {
+                    "publish_grade"
+                } else {
+                    "save_grade"
+                }
+                .to_owned(),
                 actor_user_id: e.graded_by,
                 actor_display_name: e.graded_by.map(|u| ctx.display_name(u)),
                 occurred_at_unix: occurred,
-                status: Some(if published { "published" } else { "draft_saved" }.to_owned()),
-                summary: format!("{} {:.1}%", if published { "published" } else { "saved" }, e.final_score),
+                status: Some(
+                    if published {
+                        "published"
+                    } else {
+                        "draft_saved"
+                    }
+                    .to_owned(),
+                ),
+                summary: format!(
+                    "{} {:.1}%",
+                    if published { "published" } else { "saved" },
+                    e.final_score
+                ),
                 affected_count: Some(1),
                 submission_id: Some(e.submission_id),
                 grading_entry_id: Some(e.id),
@@ -897,6 +960,7 @@ pub fn build_audit_history(
 }
 
 /// Everything the detail endpoint needs beyond the context.
+#[derive(Clone, Copy)]
 pub struct DetailInputs<'a> {
     pub assessment: &'a AssessmentInfoRow,
     pub entries: &'a [ab_db::analytics::GradingEntryAuditRow],
@@ -905,6 +969,10 @@ pub struct DetailInputs<'a> {
 
 /// Legacy `get_teacher_assessment_detail`, one code path for every kind.
 #[must_use]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
 pub fn build_detail(
     ctx: &AnalyticsContext,
     filters: &AnalyticsFilters,
@@ -925,9 +993,12 @@ pub fn build_detail(
     let mut learner_rows: Vec<AssessmentLearnerRow> = by_user
         .iter()
         .map(|(user_id, attempts)| {
-            let best = attempts.iter().filter_map(|s| score_of(s)).fold(None, |acc: Option<f64>, v| {
-                Some(acc.map_or(v, |a| a.max(v)))
-            });
+            let best = attempts
+                .iter()
+                .filter_map(|s| score_of(s))
+                .fold(None, |acc: Option<f64>, v| {
+                    Some(acc.map_or(v, |a| a.max(v)))
+                });
             let last = attempts
                 .iter()
                 .max_by_key(|s| (submitted_at(s), s.id))
@@ -952,10 +1023,14 @@ pub fn build_detail(
             .iter()
             .filter(|q| q.accuracy_pct.is_some_and(|acc| acc < 80.0))
             .take(5)
-            .map(|q| CommonFailureRow {
-                key: q.question_id.clone(),
-                label: q.question_label.clone(),
-                count: (100 - q.accuracy_pct.unwrap_or(0.0).trunc().clamp(0.0, 100.0) as i64).max(0),
+            .map(|q| {
+                #[allow(clippy::cast_possible_truncation, reason = "clamped to 0..=100 first")]
+                let missed = 100 - q.accuracy_pct.unwrap_or(0.0).trunc().clamp(0.0, 100.0) as i64;
+                CommonFailureRow {
+                    key: q.question_id.clone(),
+                    label: q.question_label.clone(),
+                    count: missed.max(0),
+                }
             })
             .collect(),
         AssessmentKind::Exam | AssessmentKind::CodeChallenge => Vec::new(),
@@ -1030,14 +1105,19 @@ pub fn build_detail(
         item_analytics.push(AssessmentItemAnalyticsRow {
             item_key: q.question_id.clone(),
             item_label: q.question_label.clone(),
-            item_type: if a.kind == AssessmentKind::CodeChallenge { "test" } else { "question" },
+            item_type: if a.kind == AssessmentKind::CodeChallenge {
+                "test"
+            } else {
+                "question"
+            },
             population_count: population,
             impacted_count: impacted,
             impact_rate: safe_pct(as_f64(impacted), as_f64(population)),
             signal,
-            note: q
-                .accuracy_pct
-                .map_or_else(|| "accuracy_unavailable".to_owned(), |acc| format!("accuracy {acc:.1}%")),
+            note: q.accuracy_pct.map_or_else(
+                || "accuracy_unavailable".to_owned(),
+                |acc| format!("accuracy {acc:.1}%"),
+            ),
         });
     }
     item_analytics.sort_by(|x, y| {
@@ -1095,7 +1175,9 @@ mod tests {
         assert_eq!(dist.len(), 2);
         assert_eq!((dist[0].label, dist[0].count), ("0-19", 2));
         let attempts: HashMap<UserId, i64> =
-            [(UserId::new(), 1), (UserId::new(), 7), (UserId::new(), 1)].into_iter().collect();
+            [(UserId::new(), 1), (UserId::new(), 7), (UserId::new(), 1)]
+                .into_iter()
+                .collect();
         let a = attempt_distribution(&attempts);
         assert_eq!((a[0].label, a[0].count), ("1", 2));
         assert_eq!((a[1].label, a[1].count), ("5+", 1));
@@ -1113,7 +1195,10 @@ mod tests {
         // 27% of 10 → 3: strong mean 80, weak mean 10 → 0.7
         assert_eq!(discrimination_index(&scores), Some(0.7));
         assert_eq!(suspicious_flag(Some(96.0), None, None), Some("too_easy"));
-        assert_eq!(suspicious_flag(Some(50.0), Some(10.0), Some(0.5)), Some("low_variance"));
+        assert_eq!(
+            suspicious_flag(Some(50.0), Some(10.0), Some(0.5)),
+            Some("low_variance")
+        );
         assert_eq!(suspicious_flag(Some(50.0), Some(300.0), Some(0.5)), None);
         assert_eq!(group_size(4), 1);
         assert_eq!(group_size(10), 3);

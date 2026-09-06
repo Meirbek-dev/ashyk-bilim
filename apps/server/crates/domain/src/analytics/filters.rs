@@ -165,7 +165,7 @@ fn parse_timestamp(raw: &str) -> Option<i64> {
     if let Ok(secs) = raw.parse::<i64>() {
         return Some(secs);
     }
-    raw.parse::<Timestamp>().ok().map(|t| t.as_second())
+    raw.parse::<Timestamp>().ok().map(Timestamp::as_second)
 }
 
 impl AnalyticsFilters {
@@ -215,19 +215,18 @@ impl AnalyticsFilters {
             match TimeZone::get(tz) {
                 Ok(zone) => {
                     filters.timezone = zone;
-                    filters.timezone_name = tz.to_owned();
+                    tz.clone_into(&mut filters.timezone_name);
                 }
                 Err(_) => errors.push(invalid("timezone", format!("unknown time zone: {tz}"))),
             }
         }
         // Legacy clamps rather than rejects.
         filters.page = usize::try_from(raw.page.unwrap_or(1).max(1)).unwrap_or(1);
-        filters.page_size = usize::try_from(
-            raw.page_size
-                .unwrap_or(DEFAULT_PAGE_SIZE as i64)
-                .clamp(1, MAX_PAGE_SIZE as i64),
-        )
-        .unwrap_or(DEFAULT_PAGE_SIZE);
+        let default_size = i64::try_from(DEFAULT_PAGE_SIZE).unwrap_or(25);
+        let max_size = i64::try_from(MAX_PAGE_SIZE).unwrap_or(200);
+        filters.page_size =
+            usize::try_from(raw.page_size.unwrap_or(default_size).clamp(1, max_size))
+                .unwrap_or(DEFAULT_PAGE_SIZE);
         filters.sort_by = raw.sort_by.clone().filter(|s| !s.is_empty());
         if let Some(o) = raw.sort_order.as_deref() {
             match o {
@@ -300,7 +299,9 @@ impl AnalyticsFilters {
         let fallback = || match self.bucket {
             Bucket::Day => ts.div_euclid(DAY_SECS) * DAY_SECS,
             // 1970-01-01 was a Thursday; shift so weeks start on Monday.
-            Bucket::Week => (ts + 3 * DAY_SECS).div_euclid(7 * DAY_SECS) * 7 * DAY_SECS - 3 * DAY_SECS,
+            Bucket::Week => {
+                (ts + 3 * DAY_SECS).div_euclid(7 * DAY_SECS) * 7 * DAY_SECS - 3 * DAY_SECS
+            }
         };
         let Some(zoned) = self.zoned(ts) else {
             return fallback();
@@ -344,7 +345,7 @@ impl AnalyticsFilters {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
 

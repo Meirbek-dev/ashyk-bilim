@@ -48,6 +48,10 @@ fn i32_of(n: usize) -> i32 {
 /// Legacy `_merge_teacher_metrics` arithmetic for one teacher (or the
 /// platform when `teacher` is `None`).
 #[must_use]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "legacy _merge_teacher_metrics inputs, all precomputed once per run"
+)]
 pub fn teacher_metrics(
     teacher: Option<UserId>,
     course_ids: &HashSet<CourseId>,
@@ -61,7 +65,10 @@ pub fn teacher_metrics(
     let now = ctx.generated_at;
     let (current_start, _) = filters.window_bounds(now);
     let (previous_start, previous_end) = filters.previous_window_bounds(now);
-    let mine: Vec<&ActivityEvent> = events.iter().filter(|e| course_ids.contains(&e.course_id)).collect();
+    let mine: Vec<&ActivityEvent> = events
+        .iter()
+        .filter(|e| course_ids.contains(&e.course_id))
+        .collect();
     let within = |max_days: i64| -> usize {
         mine.iter()
             .filter(|e| days_between(e.ts, now) <= max_days)
@@ -99,15 +106,22 @@ pub fn teacher_metrics(
             my_snapshots.iter().filter(|s| s.is_completed).count(),
             my_snapshots.len(),
         ),
-        avg_progress_pct: Some(round2(progress.iter().sum::<f64>() / count(progress.len().max(1)))),
+        avg_progress_pct: Some(round2(
+            progress.iter().sum::<f64>() / count(progress.len().max(1)),
+        )),
         at_risk_learners: i32_of(
             risk_rows
                 .iter()
                 .filter(|r| course_ids.contains(&r.course_id) && r.risk_level.is_at_risk())
                 .count(),
         ),
-        ungraded_submissions: i32::try_from(my_courses.iter().map(|r| r.ungraded_submissions).sum::<i64>())
-            .unwrap_or(i32::MAX),
+        ungraded_submissions: i32::try_from(
+            my_courses
+                .iter()
+                .map(|r| r.ungraded_submissions)
+                .sum::<i64>(),
+        )
+        .unwrap_or(i32::MAX),
         courses_with_negative_engagement: i32_of(
             my_courses
                 .iter()
@@ -140,9 +154,16 @@ pub fn engagement_rows(
         }
     }
     let mut completed: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();
-    for p in ctx.activity_progress.iter().filter(|p| p.course_id == course_id) {
+    for p in ctx
+        .activity_progress
+        .iter()
+        .filter(|p| p.course_id == course_id)
+    {
         if progress_completed(p) {
-            completed.entry(p.activity_id).or_default().insert(p.user_id);
+            completed
+                .entry(p.activity_id)
+                .or_default()
+                .insert(p.user_id);
         }
     }
     let mut previous: Option<usize> = None;
@@ -170,6 +191,10 @@ pub fn engagement_rows(
 }
 
 /// Compute and store every rollup for `date` (`YYYY-MM-DD`).
+#[allow(
+    clippy::too_many_lines,
+    reason = "one legacy code path kept whole for line-by-line comparison"
+)]
 pub async fn run_rollup(pool: &PgPool, date: &str) -> Result<RollupCounts> {
     let course_ids = ab_db::analytics::all_course_ids(pool).await?;
     let filters = AnalyticsFilters::default();
@@ -257,7 +282,9 @@ pub async fn run_rollup(pool: &PgPool, date: &str) -> Result<RollupCounts> {
                 active_learners_7d: i32::try_from(row.active_learners_7d).unwrap_or(i32::MAX),
                 active_learners_28d: i32_of(active_28d),
                 completion_rate: Some(row.completion_rate),
-                avg_progress_pct: Some(round2(progress.iter().sum::<f64>() / count(progress.len().max(1)))),
+                avg_progress_pct: Some(round2(
+                    progress.iter().sum::<f64>() / count(progress.len().max(1)),
+                )),
                 at_risk_learners: i32::try_from(row.at_risk_learners).unwrap_or(i32::MAX),
                 ungraded_submissions: i32::try_from(row.ungraded_submissions).unwrap_or(i32::MAX),
                 certificates_issued: i32_of(
@@ -276,7 +303,10 @@ pub async fn run_rollup(pool: &PgPool, date: &str) -> Result<RollupCounts> {
 
     let mut courses_by_author: BTreeMap<UserId, HashSet<CourseId>> = BTreeMap::new();
     for a in authors {
-        courses_by_author.entry(a.user_id).or_default().insert(a.course_id);
+        courses_by_author
+            .entry(a.user_id)
+            .or_default()
+            .insert(a.course_id);
     }
     for (teacher, ids) in &courses_by_author {
         let write = teacher_metrics(
@@ -424,6 +454,7 @@ mod tests {
     /// everything (certificate yesterday), u2 did the first step, u3 the
     /// first two; u1/u2 active this window, u2/u3 active the previous one.
     #[test]
+    #[allow(clippy::too_many_lines, reason = "one scenario, asserted end to end")]
     fn teacher_and_engagement_arithmetic_follow_legacy() {
         let course = CourseId::new();
         let chapter = ChapterId::new();
@@ -510,7 +541,7 @@ mod tests {
             top_alert: None,
         }];
         let filters = AnalyticsFilters::default();
-        let mine: HashSet<CourseId> = [course].into_iter().collect();
+        let mine: HashSet<CourseId> = std::iter::once(course).collect();
 
         let m = teacher_metrics(
             Some(teacher),
@@ -528,7 +559,11 @@ mod tests {
         assert_eq!(m.active_learners_28d, 2);
         assert_eq!(m.active_learners_90d, 3);
         assert_eq!(m.returning_learners_28d, 1, "u2 was active in both windows");
-        assert_eq!(m.completion_rate, Some(33.3), "legacy safe_pct rounds to one decimal");
+        assert_eq!(
+            m.completion_rate,
+            Some(33.3),
+            "legacy safe_pct rounds to one decimal"
+        );
         assert_eq!(m.avg_progress_pct, Some(66.67));
         assert_eq!(m.at_risk_learners, 0);
         assert_eq!(m.ungraded_submissions, 3);
