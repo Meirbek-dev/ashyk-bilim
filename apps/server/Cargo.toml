@@ -15,6 +15,7 @@ ab-clients = { path = "crates/clients" }
 ab-domain = { path = "crates/domain" }
 ab-api = { path = "crates/api" }
 ab-jobs = { path = "crates/jobs" }
+ab-etl = { path = "crates/etl" }
 ab-testkit = { path = "crates/testkit" }
 
 # Runtime & web
