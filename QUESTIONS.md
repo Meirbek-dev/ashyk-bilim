@@ -38,3 +38,12 @@ rows whose source_id does not match a real activity/course/submission;
 (c) zero everyone at cutover. Default if unanswered: **(b)** - the ETL (P10)
 recomputes from verifiable sources and logs what it dropped.
 
+## Q-2026-09-06-2 - Retention for analytics tables?
+`analytics_events` grows with every submission, completion, post and
+login; the five `daily_*` rollup tables and `learner_risk_snapshots` add
+one row per (day, key) every day (the legacy never wrote them, so there is
+no precedent). Options: (a) keep forever; (b) prune `analytics_events`
+older than 400 days and daily rows older than 2 years in the rollup job;
+(c) partition by month at cutover. Default if unanswered: **(b)** - adds a
+delete step to `analytics:rollup` before P10; dashboards only ever read
+the last 180 days.
