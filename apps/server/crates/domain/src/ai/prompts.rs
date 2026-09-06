@@ -1,3 +1,5 @@
+//! System prompts, verbatim from the legacy.
+//!
 //! System prompts, copied verbatim from `apps/api/src/services/ai/prompts/`
 //! (root = English, `ru-RU/`, `kk-KZ/`). Resolution mirrors the legacy
 //! `load_prompt(name, locale)`: exact locale → language-code mapping → root →

@@ -103,7 +103,7 @@ pub struct QaSession {
 
 /// One item of a streamed turn, in order: deltas, then optionally the
 /// trusted citations, then exactly one of `Finished` / `Error`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum QaTurn {
     Delta(String),
     Citations(Vec<serde_json::Value>),
@@ -320,65 +320,25 @@ impl AiService {
         if existing.as_ref().is_some_and(|m| m.content != question) {
             return Err(turn_reused());
         }
-        let mut thread = match &existing {
-            Some(message) => Some(
-                ab_db::ai::get_thread(&self.pool, message.thread_id)
-                    .await?
-                    .filter(|t| t.course_id == Some(course_id) && t.user_id == Some(actor.user_id))
-                    .ok_or_else(|| Error::not_found("ai thread"))?,
-            ),
-            None => None,
-        };
-        if thread.is_none()
-            && let Some(id) = request.thread_id
-        {
-            thread = Some(
-                ab_db::ai::find_owned_course_thread(&self.pool, id, actor.user_id, course_id)
-                    .await?
-                    .ok_or_else(|| Error::not_found("ai thread"))?,
-            );
-        }
-        let thread_id = match thread {
-            Some(t) => t.id,
-            None => {
-                let title: String = question.chars().take(TITLE_CHARS).collect();
-                ab_db::ai::insert_thread(
-                    &self.pool,
-                    actor.user_id,
-                    role,
-                    Some(course_id),
-                    activity_id,
-                    Some(&title),
-                )
-                .await?
-            }
-        };
+        let thread_id = self
+            .resolve_qa_thread(
+                actor,
+                course_id,
+                &request,
+                existing.as_ref(),
+                role,
+                activity_id,
+            )
+            .await?;
         let history = self
             .qa_history(thread_id, existing.as_ref().map(|m| m.id))
             .await?;
         let retry_count = i32::from(existing.is_some());
-        let user_message = match existing {
-            Some(message) => message,
-            None => {
-                let id = ab_db::ai::insert_qa_message(
-                    &self.pool,
-                    NewQaMessage {
-                        thread_id,
-                        course_id,
-                        user_id: actor.user_id,
-                        role: QaMessageRole::User,
-                        client_turn_id: request.client_turn_id,
-                        content: question,
-                        confidence: None,
-                        citations: &serde_json::json!([]),
-                        metadata: &serde_json::json!({}),
-                    },
-                )
-                .await?;
-                ab_db::ai::get_qa_message(&self.pool, id)
-                    .await?
-                    .ok_or_else(|| Error::not_found("ai message"))?
-            }
+        let user_message = if let Some(message) = existing {
+            message
+        } else {
+            self.insert_qa_question(thread_id, course_id, actor.user_id, &request)
+                .await?
         };
         let run = self
             .create_run(
@@ -421,6 +381,70 @@ impl AiService {
             history,
             started: Instant::now(),
         })
+    }
+
+    /// The thread a turn continues: the retried message's thread, else the
+    /// requested thread (the caller's, in this course), else a new one
+    /// titled with the question.
+    async fn resolve_qa_thread(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+        request: &QaRequest<'_>,
+        existing: Option<&QaMessageRow>,
+        role: AiThreadRole,
+        activity_id: Option<ActivityId>,
+    ) -> Result<AiThreadId> {
+        if let Some(message) = existing {
+            return ab_db::ai::get_thread(&self.pool, message.thread_id)
+                .await?
+                .filter(|t| t.course_id == Some(course_id) && t.user_id == Some(actor.user_id))
+                .map(|t| t.id)
+                .ok_or_else(|| Error::not_found("ai thread"));
+        }
+        if let Some(id) = request.thread_id {
+            return ab_db::ai::find_owned_course_thread(&self.pool, id, actor.user_id, course_id)
+                .await?
+                .map(|t| t.id)
+                .ok_or_else(|| Error::not_found("ai thread"));
+        }
+        let title: String = request.question.trim().chars().take(TITLE_CHARS).collect();
+        ab_db::ai::insert_thread(
+            &self.pool,
+            actor.user_id,
+            role,
+            Some(course_id),
+            activity_id,
+            Some(&title),
+        )
+        .await
+    }
+
+    async fn insert_qa_question(
+        &self,
+        thread_id: AiThreadId,
+        course_id: CourseId,
+        user_id: UserId,
+        request: &QaRequest<'_>,
+    ) -> Result<QaMessageRow> {
+        let id = ab_db::ai::insert_qa_message(
+            &self.pool,
+            NewQaMessage {
+                thread_id,
+                course_id,
+                user_id,
+                role: QaMessageRole::User,
+                client_turn_id: request.client_turn_id,
+                content: request.question.trim(),
+                confidence: None,
+                citations: &serde_json::json!([]),
+                metadata: &serde_json::json!({}),
+            },
+        )
+        .await?;
+        ab_db::ai::get_qa_message(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("ai message"))
     }
 
     /// Legacy `_qa_message_history`: the newest messages of the thread,

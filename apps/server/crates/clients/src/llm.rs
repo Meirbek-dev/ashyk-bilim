@@ -313,7 +313,7 @@ impl LlmClient {
 
     /// Whether at least one provider is configured.
     #[must_use]
-    pub fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         !self.providers.is_empty()
     }
 
@@ -328,9 +328,10 @@ impl LlmClient {
         let Some(primary) = names.next() else {
             return "disabled".into();
         };
-        names.next().map_or(primary.clone(), |fallback| {
-            format!("{primary} with {fallback} fallback")
-        })
+        names.next().map_or_else(
+            || primary.clone(),
+            |fallback| format!("{primary} with {fallback} fallback"),
+        )
     }
 
     /// One non-streaming completion through the provider chain.
@@ -718,7 +719,7 @@ mod tests {
     #[test]
     fn token_estimates_are_stable_and_model_tolerant() {
         let n = tokens::estimate("hello world, this is a budget check", "gpt-5.6-luna");
-        assert!(n >= 5 && n <= 12, "got {n}");
+        assert!((5..=12).contains(&n), "got {n}");
         assert_eq!(
             tokens::estimate("same text", "openai:gpt-4o"),
             tokens::estimate("same text", "gpt-4o")

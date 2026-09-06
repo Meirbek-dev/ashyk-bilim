@@ -1,5 +1,6 @@
-//! The six agents: course Q&A (AG-UI chat over SSE + threads), study
-//! companion, submission analysis, course analysis, lecture authoring and
+//! The six agents.
+//!
+//! Course Q&A (AG-UI chat over SSE + threads), study companion, submission analysis, course analysis, lecture authoring and
 //! remediation. Sync variants answer with the record; `/queue` variants
 //! answer 202 with the run to follow on `/ai/runs/{id}/stream`.
 
@@ -41,8 +42,9 @@ fn new_message_id() -> String {
 
 // ── Course Q&A ──────────────────────────────────────────────────────────────
 
-/// AG-UI chat transport for course Q&A (consumed by `useChat`). Access,
-/// budget and the thread/user message are settled before the stream
+/// AG-UI chat transport for course Q&A (consumed by `useChat`).
+///
+/// Access, budget and the thread/user message are settled before the stream
 /// starts, so they fail as normal HTTP errors; the model call and the
 /// answer's persistence happen inside the stream, where a failure is a
 /// `RUN_ERROR` event. A retried `client_turn_id` replays the stored answer.

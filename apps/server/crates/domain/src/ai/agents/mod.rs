@@ -1,3 +1,5 @@
+//! The six agents.
+//!
 //! The six agents (legacy `services/ai/agents/*` + the `run_*`/`queue_*`
 //! operations). Each module owns one feature end to end: gates, context,
 //! the model call (or its draft-mode stand-in), the artifact, the feature

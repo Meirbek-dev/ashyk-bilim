@@ -1,3 +1,5 @@
+//! Capabilities of the AI surface in one course scope.
+//!
 //! What the AI surface offers a caller in one course scope (legacy
 //! `routers/ai/capabilities.py`): role, enabled modes, per-feature flags
 //! and a context summary, so the client can render the right entry points
@@ -60,7 +62,7 @@ pub struct ScopeCapabilities {
 }
 
 impl ScopeCapabilities {
-    fn unavailable(surface: Surface, reason: &'static str) -> Self {
+    const fn unavailable(surface: Surface, reason: &'static str) -> Self {
         Self {
             available: false,
             role: AiThreadRole::Student,

@@ -38,3 +38,16 @@ rows whose source_id does not match a real activity/course/submission;
 (c) zero everyone at cutover. Default if unanswered: **(b)** - the ETL (P10)
 recomputes from verifiable sources and logs what it dropped.
 
+
+## Q-2026-09-06-2 - AI provider keys and models for a live smoke run
+P8 is complete against a wiremock OpenAI fake; nothing has talked to a real
+model yet. To run `ashyq admin ai-eval` (and one manual Q&A) against the
+live providers I need, in the server `.env` (never in chat):
+`AB__AI__OPENAI_API_KEY`, `AB__AI__OPENROUTER_API_KEY`, and a confirmation
+of the model names — the defaults carried from the legacy config are
+`openai_model=gpt-5.6-luna` and `openrouter_model=deepseek/deepseek-v4-flash`.
+If those are stale, the new names go in `AB__AI__OPENAI_MODEL` /
+`AB__AI__OPENROUTER_MODEL`. Also: is the 1,000,000 tokens/month budget
+still the intended production cap? Default if unanswered: keys stay unset
+(every AI route answers 503 `ai-disabled` / draft artifacts) and the smoke
+run moves to the cutover checklist.

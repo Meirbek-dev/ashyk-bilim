@@ -542,3 +542,95 @@ Ported from `services/gamification` + `worker/tasks/xp_award.py`:
   username / display name / avatar key — no names split into first/last,
   no email.
 
+
+## AI subsystem (2026-09-06, P8)
+
+Ported from `services/ai/*`, `routers/ai/*`, `worker/tasks/ai.py`:
+
+- **No rig-core.** ARCHITECTURE §12 named rig-core as the provider layer.
+  Both configured providers (OpenAI, OpenRouter) speak the same
+  OpenAI-compatible `chat/completions` contract, and the legacy used
+  exactly two features of it — JSON-schema structured output and SSE
+  streaming. `ab_clients::llm` is a ~700-line reqwest client for that
+  contract instead: fewer transitive crates to `cargo deny`, a wire format
+  we own in the wiremock fixtures, and the module firewall the
+  architecture asked for holds by construction (the wire structs are
+  private; `ab-domain` sees `CompletionRequest` / `Completion` /
+  `StreamChunk` / `LlmError`). Swapping in rig later is a one-module diff.
+- **Fallback is at request open.** A provider that fails before answering
+  (transport, timeout, 5xx, 429, and other 4xx such as a bad key) hands
+  over to the next one. A stream that breaks mid-way is an error, not a
+  retry — a half-answered question must not restart on another model.
+- **Structured output = schema + lenient parse + one repair round.** The
+  reply is parsed after stripping code fences / surrounding prose; on
+  failure the invalid reply and the parse error go back to the model once
+  (the pydantic-ai behaviour). `InvalidOutput` after that fails the run.
+- **Draft mode is a provider outcome, not a config branch.** When no
+  provider is configured (or the chain is exhausted at open) and
+  `ai_draft_mode_enabled` is on, agents answer with the legacy
+  deterministic drafts (verbatim strings, `model_name = draft-mode`) and
+  the run still succeeds — the client sees the same shapes. With draft
+  mode off the run fails with `ai-disabled` / `ai-provider-unavailable`.
+- **Run journal in Postgres, mirror in Redis.** Every event is an
+  `ai_events` row (sequence allocated under a run-row lock, so the executor
+  and a cancel request cannot collide) and then, best-effort, an `XADD` to
+  `sse:ai:{run}`. The tail (`POST /ai/runs/{id}/stream`) reads Redis for
+  live runs and the journal for finished ones, so a run that finished
+  before the client connected (or whose stream expired) still replays in
+  full. Legacy polled the table every second.
+- **Cancellation is a status flip.** `POST /ai/runs/{id}/cancel` moves
+  `queued|running → aborted` (guarded update) and journals `cancelled`; the
+  executor polls the status once a second into a `CancellationToken` that
+  every model call selects on. `finish_run` re-checks the status before
+  the guarded `running → succeeded` update, so a cancel that lands during
+  the last step still wins.
+- **Budget = ledger, not a scan.** `ai_token_ledger (month, user)` is
+  upserted when a run finishes; the platform month sum is one query. The
+  legacy summed every `ai_run` row of the month per request, and its
+  `/ai/usage` compared *all-time* tokens with the *monthly* budget
+  (FINDINGS #20). Hourly caps are Redis fixed windows (`ai_hourly:{user}`,
+  analysis vs remediation lane), not a count over `ai_run` rows.
+- **Budget failures are 503 `ai-budget-exhausted`, not 429.** The
+  legacy raised 429 for both the request-size cap and the month cap; a
+  client cannot fix either by waiting a minute. The hourly cap stays 429
+  (`ai-rate-limited`). Disabled features answer 503 `ai-disabled` (legacy
+  403) — nothing about the caller is wrong.
+- **Access answers 404, not 403, for other people's things.** Runs,
+  threads, submissions, remediation sessions: the P4.7 rule. Course write
+  gates (analysis, critique) still 403 — the course itself is visible.
+  Capabilities never 404: an unknown or invisible course is
+  `available=false, reason=course_not_found` (legacy exposed private
+  course names here, FINDINGS #22).
+- **Course Q&A streams the JSON string, not a text mode.** The model is
+  asked for the `CourseQaAnswer` object; `answer_markdown` is its first
+  key, so `partial.rs` decodes the growing string value (escapes,
+  surrogate pairs, held-back partial escapes) and the client sees text
+  deltas while citations are still arriving — the pydantic-ai partial
+  validation trick without the dependency. A client that disconnects
+  mid-answer aborts the run and keeps the partial text as an `incomplete`
+  assistant message (the legacy `CancelledError` path).
+- **`client_turn_id` is an idempotency key**, unique per (course, user):
+  a retry replays the stored answer as a synthetic AG-UI stream without a
+  model call; the same id with a different question is 409; a retry while
+  the first attempt is still running is 409.
+- **Six agents, one pipeline.** `run_structured` (execution events →
+  structured completion → validation event → redaction → `finish_run`) is
+  shared; each agent owns its gates, context, prompt, draft and record.
+  Prompts are the legacy files verbatim (en/ru/kk, same locale
+  resolution). `lecture_writer` / `lecture_improver` prompts had no caller
+  and are not carried. Approvals (`ai_approvals`) and semantic memory
+  (`ai_student_memory`) tables exist for parity; nothing writes to them
+  yet, as in the legacy.
+- **Admin runs are keyset-paged with SQL filters.** The legacy loaded the
+  newest 200 rows and filtered in Python, so a `feature=` or `provider=`
+  filter could return an empty page while older matches existed
+  (FINDINGS #21). Run metadata in admin views goes through the same
+  allow-list as before; event payloads are ours (state, counts, error
+  codes) and are returned whole.
+- **`ashyq admin ai-eval`** records one provider smoke probe per call in
+  `ai_eval_results`; the fixture corpus the architecture describes is a
+  follow-up (no eval datasets exist in the legacy either).
+- Ids replace the legacy `*_uuid` strings everywhere under `/api/v2/ai`;
+  AG-UI request bodies stay camelCase (`threadId`, `runId`,
+  `forwardedProps`) because they are the protocol the client library
+  speaks.

@@ -1,3 +1,5 @@
+//! Context assembly for the agents.
+//!
 //! Context assembly for the agents (legacy `services/ai/context/*`): the
 //! course outline with activity content and assessment items, or one
 //! submission with its answers and grading, rendered as text plus a list of
@@ -102,7 +104,7 @@ pub async fn course_bundle(
         .collect::<Vec<_>>();
     let assessments = db::assessments_context(pool, course_id).await?;
 
-    let lines = vec![
+    let lines = [
         format!("Course: {}", course.name),
         format!("Description: {}", course.description),
         format!("About: {}", course.about),
@@ -145,55 +147,65 @@ pub async fn course_bundle(
                 "published": activity.published,
             }),
         ));
-        let Some(assessment) = assessments.iter().find(|a| a.activity_id == activity.id) else {
-            continue;
-        };
-        let settings = serde_json::json!({
-            "kind": assessment.kind,
-            "grading_mode": assessment.grading_mode,
-            "passing_score": assessment.passing_score,
-            "max_attempts": assessment.max_attempts,
-            "time_limit_seconds": assessment.time_limit_seconds,
-            "due_at": assessment.due_at,
-        });
-        let assessment_lines = [
-            format!("Assessment: {}", assessment.title),
-            format!("Assessment settings: {}", json_snippet(&settings, 1800)),
-        ];
-        sources.push(source(
-            format!("assessment:{}", assessment.id),
-            assessment.title.clone(),
-            "assessment",
-            Some(assessment.id.to_string()),
-            &assessment_lines.join("\n"),
-            serde_json::json!({ "activity_id": activity.id, "assessment_id": assessment.id }),
-        ));
-        for item in db::items_context(pool, assessment.id).await? {
-            let line = format!(
-                "Assessment item: {} {} {}",
-                item.title,
-                item.kind,
-                json_snippet(&item.body, 700)
-            );
-            let label = if item.title.is_empty() {
-                format!("Item {}", item.id)
-            } else {
-                item.title.clone()
-            };
-            sources.push(source(
-                format!("assessment_item:{}", item.id),
-                label,
-                "assessment_item",
-                Some(item.id.to_string()),
-                &line,
-                serde_json::json!({ "assessment_id": assessment.id, "activity_id": activity.id }),
-            ));
+        if let Some(assessment) = assessments.iter().find(|a| a.activity_id == activity.id) {
+            push_assessment_sources(pool, activity, assessment, &mut sources).await?;
         }
     }
     Ok(ContextBundle {
         text: lines.join("\n"),
         sources,
     })
+}
+
+/// The assessment of one activity and its items, as citable sources.
+async fn push_assessment_sources(
+    pool: &PgPool,
+    activity: &db::ActivityContextRow,
+    assessment: &db::AssessmentContextRow,
+    sources: &mut Vec<ContextSource>,
+) -> Result<()> {
+    let settings = serde_json::json!({
+        "kind": assessment.kind,
+        "grading_mode": assessment.grading_mode,
+        "passing_score": assessment.passing_score,
+        "max_attempts": assessment.max_attempts,
+        "time_limit_seconds": assessment.time_limit_seconds,
+        "due_at": assessment.due_at,
+    });
+    let assessment_lines = [
+        format!("Assessment: {}", assessment.title),
+        format!("Assessment settings: {}", json_snippet(&settings, 1800)),
+    ];
+    sources.push(source(
+        format!("assessment:{}", assessment.id),
+        assessment.title.clone(),
+        "assessment",
+        Some(assessment.id.to_string()),
+        &assessment_lines.join("\n"),
+        serde_json::json!({ "activity_id": activity.id, "assessment_id": assessment.id }),
+    ));
+    for item in db::items_context(pool, assessment.id).await? {
+        let line = format!(
+            "Assessment item: {} {} {}",
+            item.title,
+            item.kind,
+            json_snippet(&item.body, 700)
+        );
+        let label = if item.title.is_empty() {
+            format!("Item {}", item.id)
+        } else {
+            item.title.clone()
+        };
+        sources.push(source(
+            format!("assessment_item:{}", item.id),
+            label,
+            "assessment_item",
+            Some(item.id.to_string()),
+            &line,
+            serde_json::json!({ "assessment_id": assessment.id, "activity_id": activity.id }),
+        ));
+    }
+    Ok(())
 }
 
 fn learnings_text(value: &serde_json::Value) -> String {

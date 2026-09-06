@@ -1,3 +1,5 @@
+//! The run runtime.
+//!
 //! The run runtime: creation, guarded state transitions, journaled events
 //! (Postgres, mirrored to Redis), artifacts + evidence, the token ledger,
 //! cancellation, the worker entry point and the admin/usage reads.
@@ -183,32 +185,23 @@ impl AiService {
     /// Open (or re-scope) the thread, insert the run, journal the first
     /// event (legacy `_create_run`).
     pub(crate) async fn create_run(&self, user_id: UserId, spec: RunSpec<'_>) -> Result<RunRow> {
-        let thread_id = match spec.thread {
-            Some(id) => {
-                ab_db::ai::rescope_thread(
-                    &self.pool,
-                    id,
-                    spec.role,
-                    spec.course_id,
-                    spec.activity_id,
-                )
+        let thread_id = if let Some(id) = spec.thread {
+            ab_db::ai::rescope_thread(&self.pool, id, spec.role, spec.course_id, spec.activity_id)
                 .await?;
-                id
-            }
-            None => {
-                let title = spec
-                    .title
-                    .map_or_else(|| title_for(spec.kind), str::to_owned);
-                ab_db::ai::insert_thread(
-                    &self.pool,
-                    user_id,
-                    spec.role,
-                    spec.course_id,
-                    spec.activity_id,
-                    Some(&title),
-                )
-                .await?
-            }
+            id
+        } else {
+            let title = spec
+                .title
+                .map_or_else(|| title_for(spec.kind), str::to_owned);
+            ab_db::ai::insert_thread(
+                &self.pool,
+                user_id,
+                spec.role,
+                spec.course_id,
+                spec.activity_id,
+                Some(&title),
+            )
+            .await?
         };
         let status = if spec.queued {
             AiRunStatus::Queued
@@ -515,7 +508,9 @@ impl AiService {
                 self.execute_queued_submission_analysis(&run, &watch.token)
                     .await
             }
-            AiRunKind::Remediation => self.execute_queued_remediation(&run, &watch.token).await,
+            AiRunKind::Remediation => {
+                Box::pin(self.execute_queued_remediation(&run, &watch.token)).await
+            }
             AiRunKind::StudyCompanion => {
                 self.execute_queued_study_companion(&run, &watch.token)
                     .await
@@ -712,6 +707,10 @@ impl AiService {
     /// land with the first eval corpus; this keeps the command and the
     /// table exercised end to end.
     pub async fn run_eval_smoke(&self, dataset: &str) -> Result<EvalReport> {
+        #[derive(serde::Deserialize)]
+        struct Probe {
+            ok: bool,
+        }
         let Some(llm) = self.provider() else {
             self.record_eval(
                 dataset,
@@ -727,10 +726,6 @@ impl AiService {
                 passed: 0,
             });
         };
-        #[derive(serde::Deserialize)]
-        struct Probe {
-            ok: bool,
-        }
         let request = ab_clients::llm::CompletionRequest {
             messages: vec![
                 ab_clients::llm::ChatMessage::system(

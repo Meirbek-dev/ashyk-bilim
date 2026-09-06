@@ -176,10 +176,11 @@ fn stored_sse(stored: &AiStoredEvent) -> Event {
     )
 }
 
-/// Follow a run as AG-UI events (`event: run`): `RUN_STARTED`, one
-/// `CUSTOM {name: <event_type>, value: {state, message, payload}}` per run
-/// event, then `RUN_FINISHED` or `RUN_ERROR {code}`. `id:` is the Redis
-/// stream id to resume from with `Last-Event-ID`.
+/// Follow a run as AG-UI events (`event: run`).
+///
+/// `RUN_STARTED`, one `CUSTOM {name: <event_type>, value: {state, message,
+/// payload}}` per run event, then `RUN_FINISHED` or `RUN_ERROR {code}`.
+/// `id:` is the Redis stream id to resume from with `Last-Event-ID`.
 #[utoipa::path(
     post, path = "/ai/runs/{id}/stream", tag = "ai",
     params(

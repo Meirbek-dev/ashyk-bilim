@@ -1,7 +1,9 @@
-//! AI runtime + feature queries (compile-checked). Timestamps as epoch
-//! seconds; enums decoded via `ab_core::ai`. Run status changes are guarded
-//! updates (`WHERE status = $expected`) returning whether the row moved —
-//! the domain turns a `false` into the right conflict.
+//! AI runtime + feature queries (compile-checked).
+//!
+//! Timestamps as epoch seconds; enums decoded via `ab_core::ai`. Run
+//! status changes are guarded updates (`WHERE status = $expected`)
+//! returning whether the row moved — the domain turns a `false` into the
+//! right conflict.
 
 use ab_core::ai::{
     AiRunKind, AiRunStatus, AiThreadRole, CourseAnalysisStatus, LectureReviewStatus, QaMessageRole,

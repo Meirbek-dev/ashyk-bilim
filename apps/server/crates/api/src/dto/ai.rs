@@ -1,4 +1,6 @@
-//! AI DTOs: runs (status, events, artifacts, the AG-UI stream envelope),
+//! AI DTOs.
+//!
+//! Runs (status, events, artifacts, the AG-UI stream envelope),
 //! course Q&A (the AG-UI `RunAgentInput` request, threads, messages), the
 //! feature records of the other five agents, capabilities, and the admin /
 //! usage views.

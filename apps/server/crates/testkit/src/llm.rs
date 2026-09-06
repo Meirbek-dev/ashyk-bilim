@@ -45,6 +45,7 @@ pub fn completion_body(content: &str) -> serde_json::Value {
 /// delta, ending with a usage chunk and `[DONE]`.
 #[must_use]
 pub fn sse_body(text: &str, chunk: usize) -> String {
+    use std::fmt::Write;
     let mut body = String::new();
     let chars: Vec<char> = text.chars().collect();
     for piece in chars.chunks(chunk.max(1)) {
@@ -53,13 +54,13 @@ pub fn sse_body(text: &str, chunk: usize) -> String {
             "id": "chatcmpl-test", "model": TEST_MODEL,
             "choices": [{ "index": 0, "delta": { "content": delta } }]
         });
-        body.push_str(&format!("data: {event}\n\n"));
+        let _ = write!(body, "data: {event}\n\n");
     }
     let usage = serde_json::json!({
         "id": "chatcmpl-test", "model": TEST_MODEL, "choices": [],
         "usage": { "prompt_tokens": 42, "completion_tokens": 9, "total_tokens": 51 }
     });
-    body.push_str(&format!("data: {usage}\n\ndata: [DONE]\n\n"));
+    let _ = write!(body, "data: {usage}\n\ndata: [DONE]\n\n");
     body
 }
 

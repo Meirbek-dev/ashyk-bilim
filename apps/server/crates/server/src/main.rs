@@ -113,26 +113,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Command::Admin {
             command: AdminCommand::AiEval { dataset },
-        } => {
-            let pool = ab_db::connect(&config.database).await?;
-            let llm = ab_clients::llm::LlmClient::from_ai_config(&config.ai)?;
-            let ai = ab_domain::ai::AiService::new(
-                pool,
-                config.ai.clone(),
-                llm.map(std::sync::Arc::new),
-                None,
-                None,
-            );
-            let report = ai.run_eval_smoke(&dataset).await?;
-            writeln!(
-                std::io::stdout(),
-                "ai-eval [{dataset}]: provider {} - {} case(s), {} passed",
-                report.model_name,
-                report.total,
-                report.passed
-            )?;
-            Ok(())
-        }
+        } => ai_eval(config, &dataset).await,
         Command::Admin {
             command: AdminCommand::Judge0Tune,
         } => {
@@ -171,6 +152,29 @@ async fn main() -> anyhow::Result<()> {
             Ok(())
         }
     }
+}
+
+/// `ashyq admin ai-eval`: the provider smoke check, recorded in
+/// `ai_eval_results`.
+async fn ai_eval(config: Config, dataset: &str) -> anyhow::Result<()> {
+    let pool = ab_db::connect(&config.database).await?;
+    let llm = ab_clients::llm::LlmClient::from_ai_config(&config.ai)?;
+    let ai = ab_domain::ai::AiService::new(
+        pool,
+        config.ai.clone(),
+        llm.map(std::sync::Arc::new),
+        None,
+        None,
+    );
+    let report = ai.run_eval_smoke(dataset).await?;
+    writeln!(
+        std::io::stdout(),
+        "ai-eval [{dataset}]: provider {} - {} case(s), {} passed",
+        report.model_name,
+        report.total,
+        report.passed
+    )?;
+    Ok(())
 }
 
 async fn serve(config: Config) -> anyhow::Result<()> {

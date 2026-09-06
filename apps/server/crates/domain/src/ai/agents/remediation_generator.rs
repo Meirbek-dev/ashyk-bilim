@@ -169,7 +169,7 @@ impl AiService {
             )
             .await?;
         let watch = self.cancel_watch(run.id);
-        self.remediation_execute(
+        Box::pin(self.remediation_execute(
             &run,
             &watch.token,
             &submission,
@@ -179,7 +179,7 @@ impl AiService {
             actor.user_id,
             gate_mode,
             language,
-        )
+        ))
         .await
     }
 
@@ -248,7 +248,7 @@ impl AiService {
             )
             .await?;
         self.mark_running(run.id).await?;
-        self.remediation_execute(
+        Box::pin(self.remediation_execute(
             run,
             token,
             &submission,
@@ -258,7 +258,7 @@ impl AiService {
             user_id,
             gate_mode,
             &language,
-        )
+        ))
         .await?;
         Ok(())
     }
@@ -279,7 +279,7 @@ impl AiService {
         gate_mode: bool,
         language: &str,
     ) -> Result<RemediationSessionRow> {
-        self.settle(run.id, FAIL_CODE, async {
+        Box::pin(self.settle(run.id, FAIL_CODE, async {
             let analysis = self
                 .analysis_for(run, token, submission, user_id, language)
                 .await?;
@@ -342,7 +342,7 @@ impl AiService {
             ab_db::ai::get_remediation_session(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("remediation session"))
-        })
+        }))
         .await
     }
 

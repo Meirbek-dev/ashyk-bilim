@@ -1,3 +1,5 @@
+//! Course analyst.
+//!
 //! Course analyst (legacy `agents/course_analyst.py` + `run_course_analysis`
 //! / `queue_course_analysis` / `publish_course_analysis` / findings review).
 //! Teachers only (course write access). The report lands as

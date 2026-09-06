@@ -32,7 +32,7 @@ impl Level {
     }
 }
 
-fn default_citation_confidence() -> f64 {
+const fn default_citation_confidence() -> f64 {
     0.75
 }
 
@@ -40,7 +40,7 @@ fn default_language() -> String {
     "auto".into()
 }
 
-fn default_pass_threshold() -> i32 {
+const fn default_pass_threshold() -> i32 {
     70
 }
 
@@ -59,7 +59,7 @@ pub struct Citation {
 
 impl Citation {
     /// Clamp confidence into `[0, 1]` (the legacy validator rejected outside).
-    pub fn normalize(&mut self) {
+    pub const fn normalize(&mut self) {
         if !self.confidence.is_finite() {
             self.confidence = default_citation_confidence();
         }

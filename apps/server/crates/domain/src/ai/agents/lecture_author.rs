@@ -1,3 +1,5 @@
+//! Lecture author.
+//!
 //! Lecture author (legacy `agents/lecture_author.py` + `run_lecture_review`
 //! / `queue_lecture_review` / reviews listing / suggestion dismissal).
 //! Teachers only. A critique covers the whole course context (the legacy
