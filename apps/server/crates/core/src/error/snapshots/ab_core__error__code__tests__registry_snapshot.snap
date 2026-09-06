@@ -7,6 +7,26 @@ expression: registry
     403,
     "Account is disabled"
   ],
+  "ai-budget-exhausted": [
+    503,
+    "AI token budget exhausted"
+  ],
+  "ai-disabled": [
+    503,
+    "AI features are disabled"
+  ],
+  "ai-provider-unavailable": [
+    503,
+    "AI provider unavailable"
+  ],
+  "ai-rate-limited": [
+    429,
+    "Hourly AI request limit reached"
+  ],
+  "ai-run-cancelled": [
+    409,
+    "AI run was cancelled"
+  ],
   "code-runner-degraded": [
     503,
     "Code runner temporarily unavailable"

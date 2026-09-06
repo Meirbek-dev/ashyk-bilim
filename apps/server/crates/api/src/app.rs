@@ -55,6 +55,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "gamification", description = "XP, levels, streaks, leaderboard; admin awards and policy"),
         (name = "work-queue", description = "Unified inbox: ranked learner and teacher work items"),
         (name = "analytics", description = "Teacher and admin dashboards, at-risk learners, interventions, saved views, CSV exports"),
+        (name = "ai", description = "AI agents, runs and event streams; admin operations views"),
     )
 )]
 struct ApiDoc;
@@ -99,6 +100,53 @@ fn analytics_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::analytics::export_grading_backlog))
         .routes(routes!(routes::analytics::export_course_progress))
         .routes(routes!(routes::analytics::export_assessment_outcomes))
+        .merge(ai_routes())
+        .merge(ai_agent_routes())
+}
+
+fn ai_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::ai::get_run))
+        .routes(routes!(routes::ai::run_events))
+        .routes(routes!(routes::ai::run_artifacts))
+        .routes(routes!(routes::ai::cancel_run))
+        .routes(routes!(routes::ai::stream_run))
+        .routes(routes!(routes::ai::scope_capabilities))
+        .routes(routes!(routes::ai::admin_settings))
+        .routes(routes!(routes::ai::admin_runs))
+        .routes(routes!(routes::ai::admin_run_detail))
+        .routes(routes!(routes::ai::admin_evals))
+        .routes(routes!(routes::ai::usage))
+        .routes(routes!(routes::ai::usage_budget))
+}
+
+fn ai_agent_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::ai_agents::qa_chat))
+        .routes(routes!(routes::ai_agents::qa_threads))
+        .routes(routes!(
+            routes::ai_agents::qa_thread,
+            routes::ai_agents::delete_qa_thread
+        ))
+        .routes(routes!(routes::ai_agents::study_ask))
+        .routes(routes!(routes::ai_agents::study_ask_queue))
+        .routes(routes!(routes::ai_agents::analyze_submission))
+        .routes(routes!(routes::ai_agents::queue_submission_analysis))
+        .routes(routes!(routes::ai_agents::latest_submission_analysis))
+        .routes(routes!(routes::ai_agents::analyze_course))
+        .routes(routes!(routes::ai_agents::queue_course_analysis))
+        .routes(routes!(routes::ai_agents::latest_course_analysis))
+        .routes(routes!(routes::ai_agents::publish_course_analysis))
+        .routes(routes!(routes::ai_agents::review_course_finding))
+        .routes(routes!(routes::ai_agents::critique_lecture))
+        .routes(routes!(routes::ai_agents::queue_lecture_review))
+        .routes(routes!(routes::ai_agents::lecture_reviews))
+        .routes(routes!(routes::ai_agents::dismiss_lecture_suggestion))
+        .routes(routes!(routes::ai_agents::generate_remediation))
+        .routes(routes!(routes::ai_agents::queue_remediation))
+        .routes(routes!(routes::ai_agents::remediation_session))
+        .routes(routes!(routes::ai_agents::complete_remediation))
+        .routes(routes!(routes::ai_agents::student_remediation))
 }
 
 fn work_queue_routes() -> OpenApiRouter<AppState> {

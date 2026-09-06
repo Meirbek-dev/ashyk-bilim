@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS \"total!\"\n           FROM ai_token_ledger WHERE month = date_trunc('month', now())::date",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "f953dc90465b836efb8e86c97787cbc3c52b456b60dd64fda592133398979480"
+}

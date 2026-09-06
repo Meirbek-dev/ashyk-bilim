@@ -129,6 +129,52 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("POST", "/api/v2/analytics/teacher/interventions"),
     ("POST", "/api/v2/analytics/teacher/saved-views"),
     ("DELETE", "/api/v2/analytics/teacher/saved-views/{view_id}"),
+    // AI (P8): every agent entry point gates on course visibility + the
+    // feature's access rule (learner course access, course write access,
+    // submission owner/teacher); runs, threads and sessions are owner-scoped.
+    // Zero-grant probes 404 on unknown ids or 422 on the empty body.
+    ("POST", "/api/v2/ai/qa/{course_id}/chat"),
+    ("DELETE", "/api/v2/ai/qa/{course_id}/threads/{thread_id}"),
+    ("POST", "/api/v2/ai/study/{course_id}/ask"),
+    ("POST", "/api/v2/ai/study/{course_id}/ask/queue"),
+    (
+        "POST",
+        "/api/v2/ai/submission-analysis/{submission_id}/analyze",
+    ),
+    (
+        "POST",
+        "/api/v2/ai/submission-analysis/{submission_id}/analyze/queue",
+    ),
+    ("POST", "/api/v2/ai/course-analysis/{course_id}/analyze"),
+    (
+        "POST",
+        "/api/v2/ai/course-analysis/{course_id}/analyze/queue",
+    ),
+    ("POST", "/api/v2/ai/course-analysis/{analysis_id}/publish"),
+    (
+        "POST",
+        "/api/v2/ai/course-analysis/{analysis_id}/findings/review",
+    ),
+    ("POST", "/api/v2/ai/lecture-authoring/{course_id}/critique"),
+    (
+        "POST",
+        "/api/v2/ai/lecture-authoring/{course_id}/critique/queue",
+    ),
+    (
+        "POST",
+        "/api/v2/ai/lecture-authoring/reviews/{review_id}/dismiss",
+    ),
+    ("POST", "/api/v2/ai/remediation/{submission_id}/generate"),
+    (
+        "POST",
+        "/api/v2/ai/remediation/{submission_id}/generate/queue",
+    ),
+    (
+        "POST",
+        "/api/v2/ai/remediation/sessions/{session_id}/complete",
+    ),
+    ("POST", "/api/v2/ai/runs/{id}/cancel"),
+    ("POST", "/api/v2/ai/runs/{id}/stream"),
     // Custom-role administration (role:manage:platform).
     ("POST", "/api/v2/rbac/roles"),
     ("PATCH", "/api/v2/rbac/roles/{slug}"),

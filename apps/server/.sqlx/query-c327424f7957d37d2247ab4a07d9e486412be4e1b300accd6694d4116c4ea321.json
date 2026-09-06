@@ -1,0 +1,131 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AiEvidenceId\", run_id AS \"run_id: AiRunId\",\n                  artifact_id AS \"artifact_id: AiArtifactId\", citation_id, label, source_type,\n                  source_ref, excerpt, score,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM ai_evidence WHERE run_id = $1 ORDER BY created_at, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AiEvidenceId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "run_id: AiRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "run_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "artifact_id: AiArtifactId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "artifact_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "citation_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "citation_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "source_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "source_type"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "source_ref",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "source_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "excerpt",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "excerpt"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "ai_evidence",
+            "name": "score"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "c327424f7957d37d2247ab4a07d9e486412be4e1b300accd6694d4116c4ea321"
+}

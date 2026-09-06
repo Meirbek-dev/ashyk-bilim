@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_threads SET role = $2,\n               course_id = COALESCE($3, course_id),\n               activity_id = COALESCE($4, activity_id)\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4c48c7cab685b0d2a5611b8676f979eb4d732cb8f27c1dc7f9daf597a573ab79"
+}

@@ -1,0 +1,143 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AiSubmissionAnalysisId\", submission_id AS \"submission_id: SubmissionId\",\n                  run_id AS \"run_id: AiRunId\", triggered_by AS \"triggered_by: UserId\", status,\n                  language, gap_count, analysis, evidence, model_name,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM ai_submission_analyses WHERE submission_id = $1\n           ORDER BY created_at DESC, id DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AiSubmissionAnalysisId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "submission_id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "run_id: AiRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "run_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "triggered_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "triggered_by"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "language",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "language"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "gap_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "gap_count"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "analysis",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "analysis"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "evidence",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "evidence"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "model_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "model_name"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "582effed1e0abaacb84ccf975577bef840e07a8521c467fa85755a20caf1542a"
+}

@@ -7,8 +7,15 @@
 //! dedicated connection per subscriber (a blocking read must never sit on
 //! the shared multiplexed connection). Per-user concurrent connections are
 //! capped with a Redis counter (legacy limit 5).
+//!
+//! [`ai::AiEvents`] is the sibling for AI run streams (`sse:ai:{run}`) and
+//! shares the connection-slot counter.
+
+pub mod ai;
 
 use std::time::Duration;
+
+pub use ai::{AiEvents, AiStoredEvent, AiSubscriber};
 
 use ab_core::id::{SubmissionId, UserId};
 use ab_core::{Error, Result};
@@ -77,6 +84,31 @@ fn stream_key(submission_id: SubmissionId) -> String {
 
 fn slot_key(user_id: UserId) -> String {
     format!("sse_conn:{user_id}")
+}
+
+/// The per-user SSE connection counter, shared by every event stream.
+pub(crate) async fn acquire_slot_with(
+    redis: &ConnectionManager,
+    user_id: UserId,
+) -> Result<Option<ConnectionSlot>> {
+    let mut conn = redis.clone();
+    let key = slot_key(user_id);
+    let count: i64 = conn
+        .incr(&key, 1)
+        .await
+        .map_err(|e| Error::internal("sse slot incr", e))?;
+    let _: () = conn
+        .expire(&key, SLOT_TTL_SECS)
+        .await
+        .map_err(|e| Error::internal("sse slot expire", e))?;
+    if count > MAX_CONNECTIONS_PER_USER {
+        let _: redis::RedisResult<i64> = conn.decr(&key, 1).await;
+        return Ok(None);
+    }
+    Ok(Some(ConnectionSlot {
+        redis: redis.clone(),
+        key,
+    }))
 }
 
 fn decode(submission_id: SubmissionId, id: &redis::streams::StreamId) -> Option<StoredEvent> {
@@ -173,24 +205,7 @@ impl GradingEvents {
 
     /// Take a connection slot for `user_id`; `None` when the cap is reached.
     pub async fn acquire_slot(&self, user_id: UserId) -> Result<Option<ConnectionSlot>> {
-        let mut redis = self.redis.clone();
-        let key = slot_key(user_id);
-        let count: i64 = redis
-            .incr(&key, 1)
-            .await
-            .map_err(|e| Error::internal("sse slot incr", e))?;
-        let _: () = redis
-            .expire(&key, SLOT_TTL_SECS)
-            .await
-            .map_err(|e| Error::internal("sse slot expire", e))?;
-        if count > MAX_CONNECTIONS_PER_USER {
-            let _: redis::RedisResult<i64> = redis.decr(&key, 1).await;
-            return Ok(None);
-        }
-        Ok(Some(ConnectionSlot {
-            redis: self.redis.clone(),
-            key,
-        }))
+        acquire_slot_with(&self.redis, user_id).await
     }
 
     /// Current slot count (health/tests).

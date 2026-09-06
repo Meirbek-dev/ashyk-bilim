@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_runs SET status = 'running', started_at = now(),\n               completed_at = NULL, error_code = NULL\n           WHERE id = $1 AND status = 'queued'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e222a33c00facc78d17753499145928dd6e0ff35580ac460d58a1dd34c519a9f"
+}

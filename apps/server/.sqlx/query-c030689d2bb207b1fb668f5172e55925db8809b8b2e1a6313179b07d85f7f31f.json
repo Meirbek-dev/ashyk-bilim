@@ -1,0 +1,138 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AiLectureReviewId\", course_id AS \"course_id: CourseId\",\n                  activity_id AS \"activity_id: ActivityId\", run_id AS \"run_id: AiRunId\",\n                  triggered_by AS \"triggered_by: UserId\", status AS \"status: LectureReviewStatus\",\n                  language, suggestions, dismissed_suggestion_ids,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM superseded_at))::bigint AS \"superseded_at?\"\n           FROM ai_lecture_reviews WHERE course_id = $1 AND status = 'active'\n           ORDER BY created_at DESC, id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AiLectureReviewId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "run_id: AiRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "run_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "triggered_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "triggered_by"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status: LectureReviewStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "language",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "language"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "suggestions",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "suggestions"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "dismissed_suggestion_ids",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "ai_lecture_reviews",
+            "name": "dismissed_suggestion_ids"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "superseded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "c030689d2bb207b1fb668f5172e55925db8809b8b2e1a6313179b07d85f7f31f"
+}

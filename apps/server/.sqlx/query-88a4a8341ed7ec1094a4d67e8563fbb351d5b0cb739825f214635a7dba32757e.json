@@ -1,0 +1,181 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AiRemediationSessionId\", submission_id AS \"submission_id: SubmissionId\",\n                  activity_id AS \"activity_id: ActivityId\",\n                  student_user_id AS \"student_user_id: UserId\",\n                  analysis_id AS \"analysis_id: AiSubmissionAnalysisId\", run_id AS \"run_id: AiRunId\",\n                  status AS \"status: RemediationStatus\", gate_mode, language, lecture, test, score,\n                  (extract(epoch FROM passed_at))::bigint AS \"passed_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM ai_remediation_sessions WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AiRemediationSessionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "submission_id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "student_user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "student_user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "analysis_id: AiSubmissionAnalysisId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "analysis_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "run_id: AiRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "run_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "status: RemediationStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "gate_mode",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "gate_mode"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "language",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "language"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "lecture",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "lecture"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "test",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "test"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "score",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "score"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "passed_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "88a4a8341ed7ec1094a4d67e8563fbb351d5b0cb739825f214635a7dba32757e"
+}

@@ -1,0 +1,107 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AiEvalResultId\", run_id AS \"run_id: AiRunId\", dataset, evaluator,\n                  score, passed, details,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM ai_eval_results ORDER BY created_at DESC, id DESC LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AiEvalResultId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_eval_results",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "run_id: AiRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_eval_results",
+            "name": "run_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "dataset",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_eval_results",
+            "name": "dataset"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "evaluator",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_eval_results",
+            "name": "evaluator"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "ai_eval_results",
+            "name": "score"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "passed",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "ai_eval_results",
+            "name": "passed"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "details",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_eval_results",
+            "name": "details"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "f0ed73b00f759021f1db2b49965c315ac42ef2f3c01e3c16f95d4bab2021aa81"
+}

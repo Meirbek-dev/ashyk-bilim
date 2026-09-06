@@ -181,3 +181,26 @@ period-over-period card, risk trend and "previous snapshot" comparison in
 the teacher dashboard therefore ran against empty tables in production. v2
 runs `analytics:rollup` every six hours and ships `admin analytics-rollup`
 for backfills.
+
+### 22. `/ai/usage` compared all-time tokens with the monthly budget
+Legacy `routers/ai/token_usage.py` summed `input_tokens` + `output_tokens`
+over every `ai_run` row ever written and reported `remaining_budget =
+monthly_token_budget - that`, so the admin "budget" view hit zero and stayed
+there after the first million lifetime tokens while the actual enforcement
+(`TokenBudgetService`, month-scoped) kept accepting requests. v2 keeps a
+`(month, user)` ledger and reports the current month. No legacy-side fix.
+
+### 23. Admin AI run filters were applied after the row limit
+Legacy `GET /ai/admin/runs` fetched the newest 200 runs of the window and
+then filtered by `feature` / `provider` / `course_uuid` in Python, so a
+filtered view could come back empty (or short) while older matching runs
+existed — the page was a sample, not a query. v2 pushes every filter into
+SQL and pages by keyset. No legacy-side fix.
+
+### 24. AI capabilities leaked private course metadata
+Legacy `GET /ai/capabilities/scope/{course_uuid}` loaded the course without
+`require_ai_course_read` and answered with the course name, the activity
+name and the context source count for any signed-in caller, including
+courses they could not see. v2 answers `available=false,
+reason=course_not_found` for unknown and invisible courses alike. No
+legacy-side fix planned — low sensitivity, dies at cutover.

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_remediation_sessions SET score = $2, status = $3,\n               passed_at = CASE WHEN $3 = 'passed' THEN now() ELSE passed_at END\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3988ca77b6afbbdd0d37d89ee5f699ce64a6c5b610eb2b1451e3c1f714fc3340"
+}

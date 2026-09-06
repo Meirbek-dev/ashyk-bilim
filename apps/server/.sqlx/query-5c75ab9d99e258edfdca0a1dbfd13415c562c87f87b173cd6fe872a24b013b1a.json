@@ -1,0 +1,68 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.id AS \"id: AiThreadId\", t.title,\n                  m.content AS \"last_message!\",\n                  c.message_count AS \"message_count!\",\n                  (extract(epoch FROM t.updated_at))::bigint AS \"updated_at!\"\n           FROM ai_threads t\n           JOIN LATERAL (SELECT count(*) AS message_count\n                         FROM ai_qa_messages WHERE thread_id = t.id) c ON true\n           JOIN LATERAL (SELECT content FROM ai_qa_messages\n                         WHERE thread_id = t.id\n                         ORDER BY created_at DESC, id DESC LIMIT 1) m ON true\n           WHERE t.course_id = $1 AND t.user_id = $2\n           ORDER BY t.updated_at DESC, t.id DESC\n           LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AiThreadId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_threads",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_threads",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "last_message!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_qa_messages",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "message_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "5c75ab9d99e258edfdca0a1dbfd13415c562c87f87b173cd6fe872a24b013b1a"
+}

@@ -378,6 +378,1600 @@
         }
       }
     },
+    "/api/v2/ai/admin/evals": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "admin_evals",
+        "responses": {
+          "200": {
+            "description": "Run aggregate + eval summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvalDashboard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/admin/runs": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Recent runs, newest first, keyset-paged.",
+        "operationId": "admin_runs",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "description": "Look-back window, 1..=90 days (default 7).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/AiRunStatus"
+                }
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "Agent kind (legacy `feature`).",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/AiRunKind"
+                }
+              ]
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "Case-insensitive substring of `model_name` (`openai`, `openrouter`).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "course_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/CourseId"
+                }
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Keyset cursor: the last `id` of the previous page.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/AiRunId"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1..=200 (default 50).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRunPage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a platform reader",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/admin/runs/{id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "admin_run_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Run id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiRunId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run with events, artifacts and evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRunDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown run",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/admin/settings": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "admin_settings",
+        "responses": {
+          "200": {
+            "description": "Effective AI settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a platform reader",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/capabilities/scope/{course_id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "What the AI surface offers the caller in this course scope.",
+        "operationId": "scope_capabilities",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "description": "Which client screen asks (default `course-page`).",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/Surface"
+                }
+              ]
+            }
+          },
+          {
+            "name": "activity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/ActivityId"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Capabilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeCapabilities"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/course-analysis/{analysis_id}/findings/review": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Record the teacher's verdict on one finding\n(`report.finding_reviews[finding_id]`).",
+        "operationId": "review_course_finding",
+        "parameters": [
+          {
+            "name": "analysis_id",
+            "in": "path",
+            "description": "Analysis id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiCourseAnalysisId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FindingReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The updated analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseAnalysis"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/course-analysis/{analysis_id}/publish": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "publish_course_analysis",
+        "parameters": [
+          {
+            "name": "analysis_id",
+            "in": "path",
+            "description": "Analysis id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiCourseAnalysisId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The published analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseAnalysis"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/course-analysis/{course_id}/analyze": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "analyze_course",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseAnalysis"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a course teacher",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/course-analysis/{course_id}/analyze/queue": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "queue_course_analysis",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Queued run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/course-analysis/{course_id}/latest": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Teachers see the latest draft; learners only a published report.",
+        "operationId": "latest_course_analysis",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The latest analysis or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CourseAnalysis"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/lecture-authoring/reviews/{review_id}/dismiss": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "dismiss_lecture_suggestion",
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "description": "Review id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiLectureReviewId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissSuggestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The updated review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LectureReview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/lecture-authoring/{course_id}/critique": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "critique_lecture",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LectureReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LectureReview"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a course teacher",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/lecture-authoring/{course_id}/critique/queue": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "queue_lecture_review",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LectureReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Queued run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/lecture-authoring/{course_id}/reviews": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "lecture_reviews",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active reviews, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LectureReview"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/qa/{course_id}/chat": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "AG-UI chat transport for course Q&A (consumed by `useChat`).",
+        "description": "Access, budget and the thread/user message are settled before the stream\nstarts, so they fail as normal HTTP errors; the model call and the\nanswer's persistence happen inside the stream, where a failure is a\n`RUN_ERROR` event. A retried `client_turn_id` replays the stored answer.",
+        "operationId": "qa_chat",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QaChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "AG-UI event stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible course",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Turn id reused or still in progress",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI disabled or budget exhausted",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/qa/{course_id}/threads": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "qa_threads",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1..=50 (default 30).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The caller's threads, newest activity first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QaThreadSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/qa/{course_id}/threads/{thread_id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "qa_thread",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "thread_id",
+            "in": "path",
+            "description": "Thread id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiThreadId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The transcript, oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QaMessage"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not the caller's thread in this course",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "delete_qa_thread",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "thread_id",
+            "in": "path",
+            "description": "Thread id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiThreadId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Not the caller's thread in this course",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/remediation/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "remediation_session",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiRemediationSessionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemediationSession"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible session",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/remediation/sessions/{session_id}/complete": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "The learner records a score; 70 or more passes (and lifts a gate).",
+        "operationId": "complete_remediation",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiRemediationSessionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemediationCompletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemediationSession"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the learner of this session",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/remediation/student/{user_id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "A learner's sessions: their own, or anyone's with `platform:read`.",
+        "operationId": "student_remediation",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Learner id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessions, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RemediationSession"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/remediation/{submission_id}/generate": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "generate_remediation",
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemediationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The remediation session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemediationSession"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible submission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/remediation/{submission_id}/generate/queue": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "queue_remediation",
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemediationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Queued run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/runs/{id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "get_run",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Run id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiRunId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown run",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/runs/{id}/artifacts": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "run_artifacts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Run id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiRunId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifacts, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RunArtifact"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/runs/{id}/cancel": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Abort a queued or running run; a finished one is returned unchanged.",
+        "operationId": "cancel_run",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Run id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiRunId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run status after the cancel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/runs/{id}/events": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "run_events",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Run id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiRunId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Journaled events, in order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RunEvent"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/runs/{id}/stream": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Follow a run as AG-UI events (`event: run`).",
+        "description": "`RUN_STARTED`, one `CUSTOM {name: <event_type>, value: {state, message,\npayload}}` per run event, then `RUN_FINISHED` or `RUN_ERROR {code}`.\n`id:` is the Redis stream id to resume from with `Last-Event-ID`.",
+        "operationId": "stream_run",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Run id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiRunId"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "description": "Resume after this event id",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStreamRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Event stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible run",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many open streams for this user",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/study/{course_id}/ask": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Answer inline; the body is the `study_companion` artifact.",
+        "operationId": "study_ask",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The answer artifact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI disabled or budget exhausted",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/study/{course_id}/ask/queue": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "study_ask_queue",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "description": "Course id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Queued run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/submission-analysis/{submission_id}/analyze": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "analyze_submission",
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionAnalysis"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible submission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI disabled or budget exhausted",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/submission-analysis/{submission_id}/analyze/queue": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "operationId": "queue_submission_analysis",
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Queued run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/submission-analysis/{submission_id}/latest": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "The newest analysis of a submission; `null` when none exists.",
+        "operationId": "latest_submission_analysis",
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "description": "Submission id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The latest analysis or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SubmissionAnalysis"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/usage": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Platform token usage against the monthly budget.",
+        "operationId": "usage",
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageSummary"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a platform reader",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ai/usage/budget": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Alias of `/ai/usage` kept for the legacy client.",
+        "operationId": "usage_budget",
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/analytics/admin/overview": {
       "get": {
         "tags": [
@@ -9941,6 +11535,208 @@
           }
         }
       },
+      "AdminRun": {
+        "type": "object",
+        "description": "One run in the operations view (legacy `AIOperationRunRead`).",
+        "required": [
+          "id",
+          "status",
+          "feature",
+          "retry_count",
+          "started_at_unix",
+          "stuck",
+          "context"
+        ],
+        "properties": {
+          "completed_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "context": {
+            "type": "object",
+            "description": "The allow-listed part of the run metadata."
+          },
+          "cost_estimate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "feature": {
+            "$ref": "#/components/schemas/AiRunKind"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiRunId"
+          },
+          "input_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "model_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "retry_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "started_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AiRunStatus"
+          },
+          "stuck": {
+            "type": "boolean",
+            "description": "Queued or running for over ten minutes."
+          },
+          "time_to_first_text_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "AdminRunDetail": {
+        "type": "object",
+        "required": [
+          "run",
+          "events",
+          "artifacts",
+          "evidence"
+        ],
+        "properties": {
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunArtifact"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunEvent"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunEvidence"
+            }
+          },
+          "run": {
+            "$ref": "#/components/schemas/AdminRun"
+          }
+        }
+      },
+      "AdminRunPage": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminRun"
+            }
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiRunId"
+              }
+            ]
+          }
+        }
+      },
+      "AdminSettings": {
+        "type": "object",
+        "required": [
+          "ai_enabled",
+          "provider_ready",
+          "model",
+          "monthly_token_budget",
+          "max_tokens_per_request",
+          "max_output_tokens",
+          "draft_mode_enabled",
+          "features",
+          "effective"
+        ],
+        "properties": {
+          "ai_enabled": {
+            "type": "boolean"
+          },
+          "draft_mode_enabled": {
+            "type": "boolean"
+          },
+          "effective": {
+            "type": "object",
+            "description": "The whole `AB__AI__*` section with secrets redacted."
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureSetting"
+            }
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "max_tokens_per_request": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "model": {
+            "type": "string"
+          },
+          "monthly_token_budget": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "provider_ready": {
+            "type": "boolean"
+          }
+        }
+      },
       "AdminTeacherRow": {
         "type": "object",
         "required": [
@@ -10048,6 +11844,83 @@
             ]
           }
         }
+      },
+      "AiArtifactId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiCourseAnalysisId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiEvalResultId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiEventId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiEvidenceId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiLectureReviewId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiMessageId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiRemediationSessionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiRunId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiRunKind": {
+        "type": "string",
+        "description": "Which agent a run executes (legacy `run_metadata.kind`).",
+        "enum": [
+          "course_analysis",
+          "submission_analysis",
+          "remediation",
+          "study_companion",
+          "lecture_review",
+          "course_qa"
+        ]
+      },
+      "AiRunStatus": {
+        "type": "string",
+        "description": "Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "aborted"
+        ]
+      },
+      "AiSubmissionAnalysisId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiThreadId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AiThreadRole": {
+        "type": "string",
+        "description": "The caller's role in an AI thread (legacy `AIThreadRole`).",
+        "enum": [
+          "student",
+          "teacher",
+          "author",
+          "admin"
+        ]
       },
       "AlertItem": {
         "type": "object",
@@ -12541,6 +14414,38 @@
           }
         }
       },
+      "ContextSummary": {
+        "type": "object",
+        "required": [
+          "course_label",
+          "source_count"
+        ],
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "activity_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "course_label": {
+            "type": "string"
+          },
+          "source_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
       "Course": {
         "type": "object",
         "required": [
@@ -12598,6 +14503,107 @@
             "format": "int64"
           }
         }
+      },
+      "CourseAnalysis": {
+        "type": "object",
+        "required": [
+          "id",
+          "course_id",
+          "status",
+          "language",
+          "public_score",
+          "report",
+          "evidence",
+          "stale",
+          "created_at_unix"
+        ],
+        "properties": {
+          "content_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "evidence": {
+            "type": "object"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiCourseAnalysisId"
+          },
+          "language": {
+            "type": "string"
+          },
+          "model_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previous_public_score": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "public_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "published_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "report": {
+            "type": "object"
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiRunId"
+              }
+            ]
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "The course content changed since this analysis (latest view only)."
+          },
+          "status": {
+            "$ref": "#/components/schemas/CourseAnalysisStatus"
+          },
+          "triggered_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          }
+        }
+      },
+      "CourseAnalysisStatus": {
+        "type": "string",
+        "description": "Course analysis publication state.",
+        "enum": [
+          "draft",
+          "needs_human_review",
+          "published"
+        ]
       },
       "CourseDataGap": {
         "type": "object",
@@ -13493,6 +15499,18 @@
           "deleted"
         ]
       },
+      "DismissSuggestionRequest": {
+        "type": "object",
+        "required": [
+          "suggestion_id"
+        ],
+        "properties": {
+          "suggestion_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "DraftRequest": {
         "type": "object",
         "description": "The draft's complete file list (replaces what was attached before).",
@@ -13666,8 +15684,162 @@
           "invalid-totp-code",
           "code-runner-degraded",
           "compile-error",
-          "language-not-allowed"
+          "language-not-allowed",
+          "ai-disabled",
+          "ai-budget-exhausted",
+          "ai-rate-limited",
+          "ai-run-cancelled",
+          "ai-provider-unavailable"
         ]
+      },
+      "EvalDashboard": {
+        "type": "object",
+        "required": [
+          "runs",
+          "evals",
+          "recent_evals"
+        ],
+        "properties": {
+          "evals": {
+            "$ref": "#/components/schemas/EvalSummary"
+          },
+          "recent_evals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvalResult"
+            }
+          },
+          "runs": {
+            "$ref": "#/components/schemas/RunAggregate"
+          }
+        }
+      },
+      "EvalResult": {
+        "type": "object",
+        "required": [
+          "id",
+          "dataset",
+          "evaluator",
+          "details",
+          "created_at_unix"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dataset": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          },
+          "evaluator": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiEvalResultId"
+          },
+          "passed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiRunId"
+              }
+            ]
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "EvalSummary": {
+        "type": "object",
+        "required": [
+          "total",
+          "passed",
+          "failed"
+        ],
+        "properties": {
+          "average_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "passed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "FeatureCapability": {
+        "type": "object",
+        "required": [
+          "key",
+          "enabled"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "key": {
+            "type": "string",
+            "description": "The legacy flag key (`course_qa_enabled`, …)."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "FeatureSetting": {
+        "type": "object",
+        "required": [
+          "key",
+          "enabled",
+          "editable",
+          "source"
+        ],
+        "properties": {
+          "editable": {
+            "type": "boolean",
+            "description": "Flags come from the environment; there is no runtime toggle."
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "key": {
+            "type": "string",
+            "description": "The legacy flag key (`course_qa_enabled`, …)."
+          },
+          "source": {
+            "type": "string"
+          }
+        }
       },
       "FieldError": {
         "type": "object",
@@ -14025,6 +16197,37 @@
             "format": "int64"
           }
         }
+      },
+      "FindingReviewAction": {
+        "type": "string",
+        "description": "Teacher review verdict on one course-analysis finding.",
+        "enum": [
+          "accepted",
+          "dismissed",
+          "task_created"
+        ]
+      },
+      "FindingReviewRequest": {
+        "type": "object",
+        "required": [
+          "finding_id",
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FindingReviewAction"
+          },
+          "finding_id": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
       },
       "ForecastItem": {
         "type": "object",
@@ -15278,6 +17481,16 @@
           }
         }
       },
+      "LanguageRequest": {
+        "type": "object",
+        "description": "`{language}` for the analysis-style agents (default `auto`).",
+        "properties": {
+          "language": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "LatePolicy": {
         "oneOf": [
           {
@@ -15448,6 +17661,109 @@
             "type": "string"
           }
         }
+      },
+      "LectureReview": {
+        "type": "object",
+        "required": [
+          "id",
+          "course_id",
+          "status",
+          "language",
+          "suggestions",
+          "dismissed_suggestion_ids",
+          "created_at_unix"
+        ],
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dismissed_suggestion_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiLectureReviewId"
+          },
+          "language": {
+            "type": "string"
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiRunId"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LectureReviewStatus"
+          },
+          "suggestions": {
+            "type": "object"
+          },
+          "superseded_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "triggered_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          }
+        }
+      },
+      "LectureReviewRequest": {
+        "type": "object",
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "language": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LectureReviewStatus": {
+        "type": "string",
+        "description": "Lecture review lifecycle.",
+        "enum": [
+          "active",
+          "superseded"
+        ]
       },
       "Lifecycle": {
         "type": "string",
@@ -16146,6 +18462,210 @@
           }
         }
       },
+      "QaChatRequest": {
+        "type": "object",
+        "description": "AG-UI `RunAgentInput` for `POST /ai/qa/{course}/chat`.",
+        "required": [
+          "threadId",
+          "runId"
+        ],
+        "properties": {
+          "forwardedProps": {
+            "$ref": "#/components/schemas/QaForwardedProps"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QaWireMessage"
+            }
+          },
+          "runId": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "QaForwardedProps": {
+        "type": "object",
+        "description": "What this API reads from AG-UI `forwardedProps`.",
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId",
+                "description": "Narrow the context to one activity of the course."
+              }
+            ]
+          },
+          "client_turn_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Client turn id: a retry with the same id replays the stored answer."
+          },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thread_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiThreadId",
+                "description": "Continue an existing thread of the caller in this course."
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "QaMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "thread_id",
+          "course_id",
+          "role",
+          "content",
+          "citations",
+          "metadata",
+          "created_at_unix"
+        ],
+        "properties": {
+          "citations": {
+            "type": "object"
+          },
+          "client_turn_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "confidence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiMessageId"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "role": {
+            "$ref": "#/components/schemas/QaMessageRole"
+          },
+          "thread_id": {
+            "$ref": "#/components/schemas/AiThreadId"
+          },
+          "user_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          }
+        }
+      },
+      "QaMessageRole": {
+        "type": "string",
+        "description": "Q&A message author.",
+        "enum": [
+          "user",
+          "assistant"
+        ]
+      },
+      "QaThreadSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "last_message_preview",
+          "message_count",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/AiThreadId"
+          },
+          "last_message_preview": {
+            "type": "string"
+          },
+          "message_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "QaWireMessage": {
+        "type": "object",
+        "description": "One message of the AG-UI conversation the client sends back.",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "content": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parts": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            },
+            "description": "`[{type: \"text\", content: \"…\"}, …]` — an alternative to `content`."
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "QuestionDifficultyRow": {
         "type": "object",
         "required": [
@@ -16374,6 +18894,128 @@
           "returned_for_revision"
         ]
       },
+      "RemediationCompletionRequest": {
+        "type": "object",
+        "required": [
+          "score"
+        ],
+        "properties": {
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RemediationRequest": {
+        "type": "object",
+        "properties": {
+          "gate_mode": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RemediationSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "submission_id",
+          "activity_id",
+          "student_user_id",
+          "status",
+          "gate_mode",
+          "language",
+          "lecture",
+          "test",
+          "created_at_unix",
+          "updated_at_unix"
+        ],
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "analysis_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiSubmissionAnalysisId"
+              }
+            ]
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "gate_mode": {
+            "type": "boolean"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiRemediationSessionId"
+          },
+          "language": {
+            "type": "string"
+          },
+          "lecture": {
+            "type": "object"
+          },
+          "passed_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiRunId"
+              }
+            ]
+          },
+          "score": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RemediationStatus"
+          },
+          "student_user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "submission_id": {
+            "$ref": "#/components/schemas/SubmissionId"
+          },
+          "test": {
+            "type": "object"
+          },
+          "updated_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RemediationStatus": {
+        "type": "string",
+        "description": "Remediation session lifecycle (legacy string states).",
+        "enum": [
+          "assigned",
+          "in_progress",
+          "passed",
+          "failed"
+        ]
+      },
       "ReorderItemsRequest": {
         "type": "object",
         "required": [
@@ -16560,6 +19202,155 @@
           }
         }
       },
+      "RunAggregate": {
+        "type": "object",
+        "required": [
+          "total",
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "aborted"
+        ],
+        "properties": {
+          "aborted": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "queued": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "running": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "succeeded": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RunArtifact": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "content",
+          "final",
+          "created_at_unix"
+        ],
+        "properties": {
+          "content": {
+            "type": "object"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "final": {
+            "type": "boolean"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiArtifactId"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "RunEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "sequence",
+          "event_type",
+          "payload",
+          "created_at_unix"
+        ],
+        "properties": {
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiEventId"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunEvidence": {
+        "type": "object",
+        "required": [
+          "id",
+          "citation_id",
+          "label",
+          "source_type",
+          "excerpt",
+          "created_at_unix"
+        ],
+        "properties": {
+          "artifact_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiArtifactId"
+              }
+            ]
+          },
+          "citation_id": {
+            "type": "string"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "excerpt": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiEvidenceId"
+          },
+          "label": {
+            "type": "string"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "source_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_type": {
+            "type": "string"
+          }
+        }
+      },
       "RunRequest": {
         "type": "object",
         "description": "Run source against an item's visible tests, or against one custom input.",
@@ -16581,6 +19372,96 @@
             "description": "Judge0 language id."
           },
           "source": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RunStatus": {
+        "type": "object",
+        "description": "One AI run as its owner sees it (legacy `AIRunStatusRead`).",
+        "required": [
+          "id",
+          "thread_id",
+          "kind",
+          "status",
+          "metadata",
+          "started_at_unix"
+        ],
+        "properties": {
+          "completed_at_unix": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiRunId"
+          },
+          "input_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AiRunKind"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "model_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "started_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AiRunStatus"
+          },
+          "thread_id": {
+            "$ref": "#/components/schemas/AiThreadId"
+          }
+        }
+      },
+      "RunStreamRequest": {
+        "type": "object",
+        "description": "AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_*` event.",
+        "required": [
+          "threadId",
+          "runId"
+        ],
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "threadId": {
             "type": "string"
           }
         },
@@ -16701,6 +19582,64 @@
           "flagged",
           "error"
         ]
+      },
+      "ScopeCapabilities": {
+        "type": "object",
+        "required": [
+          "available",
+          "role",
+          "surface",
+          "context_visibility",
+          "restricted",
+          "modes",
+          "features"
+        ],
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "context": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ContextSummary"
+              }
+            ]
+          },
+          "context_visibility": {
+            "type": "string",
+            "description": "`student` or `teacher`."
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureCapability"
+            }
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "restricted": {
+            "type": "boolean"
+          },
+          "role": {
+            "$ref": "#/components/schemas/AiThreadRole"
+          },
+          "surface": {
+            "$ref": "#/components/schemas/Surface"
+          }
+        }
       },
       "ScoreBucket": {
         "type": "object",
@@ -17204,6 +20143,102 @@
           }
         }
       },
+      "StudyMode": {
+        "type": "string",
+        "description": "Study companion modes (legacy `StudyMode`).",
+        "enum": [
+          "explain",
+          "practice",
+          "flashcards",
+          "summarize",
+          "deepen"
+        ]
+      },
+      "StudyRequest": {
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "properties": {
+          "language": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/StudyMode"
+          },
+          "question": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubmissionAnalysis": {
+        "type": "object",
+        "required": [
+          "id",
+          "submission_id",
+          "status",
+          "language",
+          "gap_count",
+          "analysis",
+          "evidence",
+          "created_at_unix"
+        ],
+        "properties": {
+          "analysis": {
+            "type": "object"
+          },
+          "created_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "evidence": {
+            "type": "object"
+          },
+          "gap_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AiSubmissionAnalysisId"
+          },
+          "language": {
+            "type": "string"
+          },
+          "model_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiRunId"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "submission_id": {
+            "$ref": "#/components/schemas/SubmissionId"
+          },
+          "triggered_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          }
+        }
+      },
       "SubmissionId": {
         "type": "string",
         "format": "uuid"
@@ -17242,6 +20277,17 @@
           }
         },
         "additionalProperties": false
+      },
+      "Surface": {
+        "type": "string",
+        "description": "Which client screen is asking (legacy `AISurface`).",
+        "enum": [
+          "student-activity",
+          "teacher-studio",
+          "teacher-review",
+          "course-page",
+          "admin"
+        ]
       },
       "TeacherAssessmentDetailResponse": {
         "type": "object",
@@ -18764,6 +21810,46 @@
         },
         "additionalProperties": false
       },
+      "UsageSummary": {
+        "type": "object",
+        "description": "Platform usage against the monthly budget (legacy `AIUsageSummary`)\nplus the month's heaviest users.",
+        "required": [
+          "total_runs",
+          "input_tokens",
+          "output_tokens",
+          "monthly_budget",
+          "remaining_budget",
+          "users"
+        ],
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthly_budget": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remaining_budget": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_runs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserUsage"
+            }
+          }
+        }
+      },
       "UserHit": {
         "type": "object",
         "description": "Public-profile projection (no email — FINDINGS #16).",
@@ -18867,6 +21953,37 @@
           },
           "username": {
             "type": "string"
+          }
+        }
+      },
+      "UserUsage": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "month",
+          "input_tokens",
+          "output_tokens",
+          "run_count"
+        ],
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "month": {
+            "type": "string",
+            "description": "`YYYY-MM-01`."
+          },
+          "output_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "run_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
           }
         }
       },
@@ -19340,6 +22457,10 @@
     {
       "name": "analytics",
       "description": "Teacher and admin dashboards, at-risk learners, interventions, saved views, CSV exports"
+    },
+    {
+      "name": "ai",
+      "description": "AI agents, runs and event streams; admin operations views"
     }
   ]
 }

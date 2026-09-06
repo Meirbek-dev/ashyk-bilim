@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_runs SET status = 'aborted', error_code = 'CANCELLED', completed_at = now(),\n               duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer\n           WHERE id = $1 AND status IN ('queued', 'running')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4b7b8b3c32093de5abe76958e8da3af70a16e0a0dbd89c242b7f3fd2e09edf37"
+}
