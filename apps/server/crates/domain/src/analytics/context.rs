@@ -29,23 +29,18 @@ pub fn now_unix() -> i64 {
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
 }
 
-/// Python `round(x, digits)`: half-to-even.
+/// Python `round(x, digits)`: correctly rounded on the exact binary value
+/// (ties to even), so `round(2.675, 2) == 2.67` and `round(0.35, 1) == 0.3`
+/// exactly as CPython answers. Rust's fixed-precision formatting is the
+/// same correctly-rounded conversion, so format-then-parse is the faithful
+/// emulation.
 #[must_use]
 pub fn round_to(x: f64, digits: u32) -> f64 {
-    let factor = 10f64.powi(i32::try_from(digits).unwrap_or(0));
-    let scaled = x * factor;
-    let floor = scaled.floor();
-    let diff = scaled - floor;
-    let rounded = if (diff - 0.5).abs() < 1e-9 {
-        if floor.rem_euclid(2.0) == 0.0 {
-            floor
-        } else {
-            floor + 1.0
-        }
-    } else {
-        scaled.round()
-    };
-    rounded / factor
+    if !x.is_finite() {
+        return x;
+    }
+    let precision = usize::try_from(digits).unwrap_or(0);
+    format!("{x:.precision$}").parse().unwrap_or(x)
 }
 
 /// `YYYY-MM-DD` of the UTC day containing `ts`.
@@ -703,10 +698,15 @@ mod tests {
 
     #[test]
     fn rounding_is_half_even_like_python() {
+        // CPython: 0.25 is an exact tie (→ even), 0.35 and 2.675 sit just
+        // below the half in binary, 0.45 just above.
         assert_eq!(round1(0.25), 0.2);
-        assert_eq!(round1(0.35), 0.4);
+        assert_eq!(round1(0.35), 0.3);
+        assert_eq!(round1(0.45), 0.5);
         assert_eq!(round2(2.675), 2.67);
         assert_eq!(round_to(66.666_66, 1), 66.7);
+        assert_eq!(round_to(-1.005, 2), -1.0);
+        assert!(round_to(f64::NAN, 1).is_nan());
     }
 
     #[test]

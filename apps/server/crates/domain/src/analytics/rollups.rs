@@ -352,3 +352,214 @@ pub async fn run_rollup(pool: &PgPool, date: &str) -> Result<RollupCounts> {
     );
     Ok(counts)
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::float_cmp)]
+mod tests {
+    use std::collections::{BTreeMap, HashSet};
+
+    use ab_core::assessments::ActivityProgressState;
+    use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
+    use ab_db::analytics::{
+        ActivityInfoRow, CertificateInfoRow, ChapterInfoRow, CourseInfoRow, ProgressInfoRow,
+    };
+
+    use super::super::context::{ActivityEvent, AnalyticsContext, EventSource, ProgressSnapshot};
+    use super::super::filters::{AnalyticsFilters, DAY_SECS};
+    use super::super::types::TeacherCourseRow;
+    use super::{engagement_rows, teacher_metrics};
+
+    const NOW: i64 = 1_800_000_000;
+
+    fn progress(
+        course: CourseId,
+        activity: ActivityId,
+        user: UserId,
+        completed: bool,
+    ) -> ProgressInfoRow {
+        ProgressInfoRow {
+            course_id: course,
+            activity_id: activity,
+            user_id: user,
+            state: if completed {
+                ActivityProgressState::Completed
+            } else {
+                ActivityProgressState::InProgress
+            },
+            required: true,
+            started_at: Some(NOW - 50 * DAY_SECS),
+            last_activity_at: Some(NOW - DAY_SECS),
+            submitted_at: None,
+            graded_at: None,
+            completed_at: completed.then_some(NOW - DAY_SECS),
+        }
+    }
+
+    fn event(user: UserId, course: CourseId, activity: ActivityId, days_ago: i64) -> ActivityEvent {
+        ActivityEvent {
+            user_id: user,
+            course_id: course,
+            ts: NOW - days_ago * DAY_SECS,
+            source: EventSource::Completion,
+            assessment_id: None,
+            activity_id: Some(activity),
+        }
+    }
+
+    fn snapshot(course: CourseId, user: UserId, done: i64, pct: f64) -> ProgressSnapshot {
+        ProgressSnapshot {
+            course_id: course,
+            user_id: user,
+            completed_steps: done,
+            total_steps: 3,
+            progress_pct: pct,
+            is_completed: done == 3,
+            has_certificate: done == 3,
+            last_activity_at: Some(NOW - DAY_SECS),
+            trail_run_id: None,
+        }
+    }
+
+    /// One course, three ordered activities, three learners: u1 finished
+    /// everything (certificate yesterday), u2 did the first step, u3 the
+    /// first two; u1/u2 active this window, u2/u3 active the previous one.
+    #[test]
+    fn teacher_and_engagement_arithmetic_follow_legacy() {
+        let course = CourseId::new();
+        let chapter = ChapterId::new();
+        let (a1, a2, a3) = (ActivityId::new(), ActivityId::new(), ActivityId::new());
+        let (u1, u2, u3) = (UserId::new(), UserId::new(), UserId::new());
+        let teacher = UserId::new();
+        let mut ctx = AnalyticsContext {
+            generated_at: NOW,
+            ..AnalyticsContext::default()
+        };
+        ctx.courses.insert(
+            course,
+            CourseInfoRow {
+                id: course,
+                name: "C".into(),
+                creator_id: Some(teacher),
+                updated_at: NOW,
+            },
+        );
+        ctx.chapters.push(ChapterInfoRow {
+            id: chapter,
+            course_id: course,
+            name: "Ch".into(),
+            position: 1,
+        });
+        // Inserted out of order on purpose: curriculum position must win.
+        for (id, position) in [(a3, 3), (a1, 1), (a2, 2)] {
+            ctx.activities.insert(
+                id,
+                ActivityInfoRow {
+                    id,
+                    course_id: course,
+                    chapter_id: chapter,
+                    name: format!("A{position}"),
+                    activity_type: "dynamic".into(),
+                    position,
+                    published: true,
+                    updated_at: NOW,
+                },
+            );
+        }
+        ctx.activity_progress = vec![
+            progress(course, a1, u1, true),
+            progress(course, a2, u1, true),
+            progress(course, a3, u1, true),
+            progress(course, a1, u2, true),
+            progress(course, a2, u2, false),
+            progress(course, a1, u3, true),
+            progress(course, a2, u3, true),
+        ];
+        ctx.certificates.push(CertificateInfoRow {
+            course_id: course,
+            user_id: u1,
+            created_at: NOW - DAY_SECS,
+        });
+        let events = vec![
+            event(u1, course, a1, 1),
+            event(u2, course, a1, 10),
+            event(u2, course, a1, 30),
+            event(u3, course, a2, 40),
+        ];
+        let snapshots: BTreeMap<_, _> = [
+            ((course, u1), snapshot(course, u1, 3, 100.0)),
+            ((course, u2), snapshot(course, u2, 1, 33.33)),
+            ((course, u3), snapshot(course, u3, 2, 66.67)),
+        ]
+        .into_iter()
+        .collect();
+        let course_rows = vec![TeacherCourseRow {
+            course_id: course,
+            course_name: "C".into(),
+            active_learners_7d: 1,
+            completion_rate: 33.33,
+            engagement_delta_pct: Some(-5.0),
+            at_risk_learners: 0,
+            ungraded_submissions: 3,
+            content_health_score: 80.0,
+            assessment_difficulty_score: None,
+            teacher_completion_delta_pct: None,
+            platform_completion_delta_pct: None,
+            historical_completion_delta_pct: None,
+            cohort_completion_delta_pct: None,
+            last_content_update_at_unix: None,
+            top_alert: None,
+        }];
+        let filters = AnalyticsFilters::default();
+        let mine: HashSet<CourseId> = [course].into_iter().collect();
+
+        let m = teacher_metrics(
+            Some(teacher),
+            &mine,
+            &ctx,
+            &events,
+            &snapshots,
+            &[],
+            &course_rows,
+            &filters,
+        );
+        assert_eq!(m.teacher_user_id, Some(teacher));
+        assert_eq!(m.managed_course_count, 1);
+        assert_eq!(m.active_learners_7d, 1);
+        assert_eq!(m.active_learners_28d, 2);
+        assert_eq!(m.active_learners_90d, 3);
+        assert_eq!(m.returning_learners_28d, 1, "u2 was active in both windows");
+        assert_eq!(m.completion_rate, Some(33.3), "legacy safe_pct rounds to one decimal");
+        assert_eq!(m.avg_progress_pct, Some(66.67));
+        assert_eq!(m.at_risk_learners, 0);
+        assert_eq!(m.ungraded_submissions, 3);
+        assert_eq!(m.courses_with_negative_engagement, 1);
+        assert_eq!(m.certificates_issued_28d, 1);
+
+        // A course outside the teacher set contributes nothing.
+        let none = teacher_metrics(
+            Some(teacher),
+            &HashSet::new(),
+            &ctx,
+            &events,
+            &snapshots,
+            &[],
+            &course_rows,
+            &filters,
+        );
+        assert_eq!(none.active_learners_90d, 0);
+        assert_eq!(none.completion_rate, None);
+        assert_eq!(none.avg_progress_pct, Some(0.0));
+
+        let rows = engagement_rows(&ctx, course, &events);
+        let ids: Vec<ActivityId> = rows.iter().map(|r| r.activity_id).collect();
+        assert_eq!(ids, [a1, a2, a3], "curriculum order");
+        let steps: Vec<Option<i32>> = rows.iter().map(|r| r.step_order).collect();
+        assert_eq!(steps, [Some(1), Some(2), Some(3)]);
+        let started: Vec<i32> = rows.iter().map(|r| r.started_learners).collect();
+        assert_eq!(started, [2, 1, 0]);
+        let completed: Vec<i32> = rows.iter().map(|r| r.completed_learners).collect();
+        assert_eq!(completed, [3, 2, 1]);
+        let dropoff: Vec<Option<f64>> = rows.iter().map(|r| r.dropoff_from_previous_pct).collect();
+        assert_eq!(dropoff, [None, Some(33.33), Some(50.0)]);
+    }
+}
