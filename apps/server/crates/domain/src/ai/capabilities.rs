@@ -13,7 +13,9 @@ use super::policy;
 use crate::identity::Actor;
 
 /// Which client screen is asking (legacy `AISurface`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum Surface {
     StudentActivity,
@@ -148,14 +150,12 @@ impl AiService {
             if self.feature_available(AiFeature::CourseQa) {
                 modes.push("ask");
             }
-            if role == AiThreadRole::Student && self.feature_available(AiFeature::StudyCompanion)
-            {
+            if role == AiThreadRole::Student && self.feature_available(AiFeature::StudyCompanion) {
                 modes.extend(["explain", "practice"]);
             }
         }
         if ai_enabled && role != AiThreadRole::Student {
-            if surface == Surface::CoursePage && self.feature_available(AiFeature::CourseAnalysis)
-            {
+            if surface == Surface::CoursePage && self.feature_available(AiFeature::CourseAnalysis) {
                 modes.push("analyze");
             }
             if self.feature_available(AiFeature::CourseQa) && !modes.contains(&"ask") {

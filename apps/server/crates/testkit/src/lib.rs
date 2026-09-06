@@ -23,7 +23,8 @@ use std::time::Duration;
 use ab_clients::judge0::Judge0Client;
 use ab_clients::zitadel::{ZitadelClient, ZitadelConfig};
 use ab_core::config::{
-    AiConfig, Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ServerConfig, TelemetryConfig,
+    AiConfig, Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ServerConfig,
+    TelemetryConfig,
 };
 use ab_core::id::UserId;
 use ab_domain::code::CodeRunner;

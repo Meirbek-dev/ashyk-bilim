@@ -20,10 +20,10 @@ use axum::response::sse::{Event, KeepAlive};
 use futures::{Stream, StreamExt};
 
 use crate::dto::ai::{
-    CourseAnalysis, DismissSuggestionRequest, FindingReviewRequest, LanguageRequest,
-    LectureReview, LectureReviewRequest, QaChatRequest, QaMessage, QaThreadSummary,
-    RemediationCompletionRequest, RemediationRequest, RemediationSession, RunStatus,
-    StudyRequest, SubmissionAnalysis, ThreadsQuery,
+    CourseAnalysis, DismissSuggestionRequest, FindingReviewRequest, LanguageRequest, LectureReview,
+    LectureReviewRequest, QaChatRequest, QaMessage, QaThreadSummary, RemediationCompletionRequest,
+    RemediationRequest, RemediationSession, RunStatus, StudyRequest, SubmissionAnalysis,
+    ThreadsQuery,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, ValidJson};

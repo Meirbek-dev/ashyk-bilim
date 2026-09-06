@@ -4,8 +4,8 @@
 //! the domain turns a `false` into the right conflict.
 
 use ab_core::ai::{
-    AiRunKind, AiRunStatus, AiThreadRole, CourseAnalysisStatus, LectureReviewStatus,
-    QaMessageRole, RemediationStatus,
+    AiRunKind, AiRunStatus, AiThreadRole, CourseAnalysisStatus, LectureReviewStatus, QaMessageRole,
+    RemediationStatus,
 };
 use ab_core::id::{
     ActivityId, AiArtifactId, AiCourseAnalysisId, AiEvalResultId, AiEventId, AiEvidenceId,
@@ -116,9 +116,12 @@ pub async fn rescope_thread(
 }
 
 pub async fn touch_thread(pool: &PgPool, id: AiThreadId) -> Result<()> {
-    sqlx::query!("UPDATE ai_threads SET updated_at = now() WHERE id = $1", id.0)
-        .execute(pool)
-        .await?;
+    sqlx::query!(
+        "UPDATE ai_threads SET updated_at = now() WHERE id = $1",
+        id.0
+    )
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
@@ -1459,10 +1462,7 @@ pub async fn activities_with_content(
     Ok(rows)
 }
 
-pub async fn activity_context(
-    pool: &PgPool,
-    id: ActivityId,
-) -> Result<Option<ActivityContextRow>> {
+pub async fn activity_context(pool: &PgPool, id: ActivityId) -> Result<Option<ActivityContextRow>> {
     let row = sqlx::query_as!(
         ActivityContextRow,
         r#"SELECT id AS "id: ActivityId", chapter_id AS "chapter_id: ChapterId", name,
@@ -1516,7 +1516,10 @@ pub struct ItemContextRow {
     pub body: serde_json::Value,
 }
 
-pub async fn items_context(pool: &PgPool, assessment_id: AssessmentId) -> Result<Vec<ItemContextRow>> {
+pub async fn items_context(
+    pool: &PgPool,
+    assessment_id: AssessmentId,
+) -> Result<Vec<ItemContextRow>> {
     let rows = sqlx::query_as!(
         ItemContextRow,
         r#"SELECT id AS "id: ab_core::id::AssessmentItemId", assessment_id AS "assessment_id: AssessmentId",

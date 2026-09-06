@@ -39,8 +39,11 @@ impl TokenBudget {
     /// Token count of `text` for the configured primary model.
     #[must_use]
     pub fn estimate(&self, text: &str) -> i32 {
-        i32::try_from(ab_clients::llm::tokens::estimate(text, &self.config.openai_model))
-            .unwrap_or(i32::MAX)
+        i32::try_from(ab_clients::llm::tokens::estimate(
+            text,
+            &self.config.openai_model,
+        ))
+        .unwrap_or(i32::MAX)
     }
 
     /// Token count for the model that actually answered (output accounting).
@@ -54,7 +57,9 @@ impl TokenBudget {
     /// the month must have room for it. Returns the prompt estimate.
     pub async fn assert_request(&self, pool: &PgPool, prompt: &str) -> Result<i32> {
         let estimated = self.estimate(prompt);
-        if u64::try_from(estimated).unwrap_or(u64::MAX) > u64::from(self.config.max_tokens_per_request) {
+        if u64::try_from(estimated).unwrap_or(u64::MAX)
+            > u64::from(self.config.max_tokens_per_request)
+        {
             return Err(Error::app_with_details(
                 ErrorCode::AiBudgetExhausted,
                 "AI request is too large for the configured token budget",

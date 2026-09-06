@@ -170,15 +170,30 @@ impl AiService {
         let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
         let rendered = bundle.render();
         let input_tokens = self
-            .settle(run.id, FAIL_CODE, self.budget.assert_request(&self.pool, &rendered))
+            .settle(
+                run.id,
+                FAIL_CODE,
+                self.budget.assert_request(&self.pool, &rendered),
+            )
             .await?;
         self.mark_running(run.id).await?;
-        self.lecture_review_execute(run, token, &bundle, &rendered, input_tokens, user_id, &language)
-            .await?;
+        self.lecture_review_execute(
+            run,
+            token,
+            &bundle,
+            &rendered,
+            input_tokens,
+            user_id,
+            &language,
+        )
+        .await?;
         Ok(())
     }
 
-    #[allow(clippy::too_many_arguments, reason = "the shared step of the sync and queued paths")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the shared step of the sync and queued paths"
+    )]
     async fn lecture_review_execute(
         &self,
         run: &RunRow,
@@ -191,7 +206,10 @@ impl AiService {
     ) -> Result<LectureReviewRow> {
         self.settle(run.id, FAIL_CODE, async {
             let locale = self.user_locale(user_id).await?;
-            let prompt = format!("Language: {language}\n\nLecture context:\n{}", clipped(rendered));
+            let prompt = format!(
+                "Language: {language}\n\nLecture context:\n{}",
+                clipped(rendered)
+            );
             let exec = Execution {
                 run,
                 token,

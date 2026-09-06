@@ -18,10 +18,10 @@ use ab_db::ai::{
 use ab_db::queue::NewJob;
 use tokio_util::sync::CancellationToken;
 
+use super::AiService;
 use super::context::{ContextSource, validate_citations};
 use super::policy::require_admin;
 use super::redact;
-use super::AiService;
 use crate::identity::Actor;
 
 /// The worker job kind that executes a queued run (payload `{run_id}`).
@@ -185,8 +185,14 @@ impl AiService {
     pub(crate) async fn create_run(&self, user_id: UserId, spec: RunSpec<'_>) -> Result<RunRow> {
         let thread_id = match spec.thread {
             Some(id) => {
-                ab_db::ai::rescope_thread(&self.pool, id, spec.role, spec.course_id, spec.activity_id)
-                    .await?;
+                ab_db::ai::rescope_thread(
+                    &self.pool,
+                    id,
+                    spec.role,
+                    spec.course_id,
+                    spec.activity_id,
+                )
+                .await?;
                 id
             }
             None => {
@@ -267,9 +273,7 @@ impl AiService {
                 Ok(())
             }
             Some(AiRunStatus::Aborted) => Err(cancelled_error()),
-            Some(status) => Err(Error::conflict(format!(
-                "ai run is already {status}"
-            ))),
+            Some(status) => Err(Error::conflict(format!("ai run is already {status}"))),
             None => Err(Error::not_found("ai run")),
         }
     }
@@ -293,8 +297,12 @@ impl AiService {
             serde_json::json!({ "state": "running", "input_tokens": input_tokens }),
         )
         .await?;
-        self.emit(run_id, "model_started", serde_json::json!({ "state": "running" }))
-            .await?;
+        self.emit(
+            run_id,
+            "model_started",
+            serde_json::json!({ "state": "running" }),
+        )
+        .await?;
         Ok(())
     }
 
@@ -355,9 +363,14 @@ impl AiService {
             // Cancelled between the check above and the update.
             return Err(cancelled_error());
         }
-        let artifact_id =
-            ab_db::ai::insert_artifact(&self.pool, spec.run_id, spec.artifact_kind, &artifact, true)
-                .await?;
+        let artifact_id = ab_db::ai::insert_artifact(
+            &self.pool,
+            spec.run_id,
+            spec.artifact_kind,
+            &artifact,
+            true,
+        )
+        .await?;
         for (index, citation) in trusted.iter().enumerate() {
             let get = |k: &str| citation.get(k).and_then(serde_json::Value::as_str);
             let fallback_id = format!("citation-{}", index + 1);
@@ -508,8 +521,7 @@ impl AiService {
                     .await
             }
             AiRunKind::LectureReview => {
-                self.execute_queued_lecture_review(&run, &watch.token)
-                    .await
+                self.execute_queued_lecture_review(&run, &watch.token).await
             }
             AiRunKind::CourseQa => {
                 self.fail_run(run.id, "AI_RUN_KIND_UNSUPPORTED").await;
@@ -721,7 +733,9 @@ impl AiService {
         }
         let request = ab_clients::llm::CompletionRequest {
             messages: vec![
-                ab_clients::llm::ChatMessage::system("Reply with the JSON object {\"ok\": true} and nothing else."),
+                ab_clients::llm::ChatMessage::system(
+                    "Reply with the JSON object {\"ok\": true} and nothing else.",
+                ),
                 ab_clients::llm::ChatMessage::user("ping"),
             ],
             output_schema: Some(ab_clients::llm::OutputSchema {
@@ -735,8 +749,7 @@ impl AiService {
             max_output_tokens: Some(32),
             temperature: None,
         };
-        let (model_name, passed, details) = match llm.complete_structured::<Probe>(&request).await
-        {
+        let (model_name, passed, details) = match llm.complete_structured::<Probe>(&request).await {
             Ok(reply) => (
                 reply.completion.model_name.clone(),
                 reply.value.ok,

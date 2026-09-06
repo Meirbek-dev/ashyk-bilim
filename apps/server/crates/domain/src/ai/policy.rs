@@ -66,8 +66,10 @@ impl AiService {
             .ok_or_else(|| Error::not_found("course"))?;
         if submission.user_id != actor.user_id {
             // Not the owner: must be able to see and update the course.
-            let course = self.courses.get(actor, submission.course_id).await?;
-            require_course_update(actor, &course)?;
+            // Anything else is 404 (P4.7 rule: a submission id must not
+            // leak that it exists).
+            let visible = self.courses.get(actor, submission.course_id).await?;
+            require_course_update(actor, &visible).map_err(|_| Error::not_found("submission"))?;
         }
         Ok((submission, course))
     }
@@ -90,11 +92,12 @@ impl AiService {
     }
 
     /// Legacy `require_ai_run_access`: thread owner or platform reader.
+    /// Anyone else gets 404 — a run id must not leak that it exists.
     pub(crate) async fn require_run_access(&self, actor: &Actor, run: &RunRow) -> Result<()> {
         let thread = ab_db::ai::get_thread(&self.pool, run.thread_id).await?;
-        if thread.is_some_and(|t| t.user_id == Some(actor.user_id)) {
+        if thread.is_some_and(|t| t.user_id == Some(actor.user_id)) || actor.has(READ_PLATFORM) {
             return Ok(());
         }
-        actor.require(READ_PLATFORM)
+        Err(Error::not_found("ai run"))
     }
 }

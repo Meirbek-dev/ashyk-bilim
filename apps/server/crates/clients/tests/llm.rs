@@ -196,7 +196,10 @@ async fn falls_back_to_the_next_provider_on_5xx() {
     ]);
     let completion = llm.complete(&request()).await.unwrap();
     assert_eq!(completion.provider, "openrouter");
-    assert_eq!(completion.model_name, "openrouter:deepseek/deepseek-v4-flash");
+    assert_eq!(
+        completion.model_name,
+        "openrouter:deepseek/deepseek-v4-flash"
+    );
     assert_eq!(
         llm.selected_model_name(),
         "openai:gpt-5.6-luna with openrouter:deepseek/deepseek-v4-flash fallback"
@@ -262,10 +265,7 @@ async fn structured_output_repairs_once_then_gives_up() {
         "gpt-5.6-luna",
         Duration::from_secs(2),
     )]);
-    let structured = llm
-        .complete_structured::<Answer>(&request())
-        .await
-        .unwrap();
+    let structured = llm.complete_structured::<Answer>(&request()).await.unwrap();
     assert!(structured.repaired);
     assert_eq!(structured.value.answer_markdown, "repaired");
     assert_eq!(structured.raw["answer_markdown"], "repaired");
@@ -274,10 +274,10 @@ async fn structured_output_repairs_once_then_gives_up() {
     let stubborn = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/v1/chat/completions"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(completion_body(
-            "{\"wrong_field\": 1}",
-            "gpt-5.6-luna",
-        )))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(completion_body("{\"wrong_field\": 1}", "gpt-5.6-luna")),
+        )
         .expect(2)
         .mount(&stubborn)
         .await;
@@ -324,7 +324,10 @@ async fn no_providers_means_disabled() {
     let llm = client(vec![]);
     assert!(!llm.is_enabled());
     assert_eq!(llm.selected_model_name(), "disabled");
-    assert_eq!(llm.complete(&request()).await.unwrap_err(), LlmError::Disabled);
+    assert_eq!(
+        llm.complete(&request()).await.unwrap_err(),
+        LlmError::Disabled
+    );
     let mapped: ab_core::Error = LlmError::Disabled.into();
     assert_eq!(mapped.code(), ab_core::ErrorCode::AiDisabled);
 }

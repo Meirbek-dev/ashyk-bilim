@@ -241,7 +241,11 @@ impl AiService {
         ab_db::ai::merge_run_metadata(&self.pool, run.id, &metadata).await?;
         let rendered = bundle.render();
         let input_tokens = self
-            .settle(run.id, FAIL_CODE, self.budget.assert_request(&self.pool, &rendered))
+            .settle(
+                run.id,
+                FAIL_CODE,
+                self.budget.assert_request(&self.pool, &rendered),
+            )
             .await?;
         self.mark_running(run.id).await?;
         self.remediation_execute(
@@ -259,7 +263,10 @@ impl AiService {
         Ok(())
     }
 
-    #[allow(clippy::too_many_arguments, reason = "the shared step of the sync and queued paths")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the shared step of the sync and queued paths"
+    )]
     async fn remediation_execute(
         &self,
         run: &RunRow,

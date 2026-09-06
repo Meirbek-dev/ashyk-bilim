@@ -125,7 +125,10 @@ pub async fn course_bundle(
         let activity_lines = [
             format!("Chapter: {chapter_title}"),
             format!("Activity: {} ({})", activity.name, activity.activity_type),
-            format!("Published: {}", if activity.published { "True" } else { "False" }),
+            format!(
+                "Published: {}",
+                if activity.published { "True" } else { "False" }
+            ),
             format!("Content: {}", json_snippet(&activity.content, 1800)),
             format!("Details: {}", json_snippet(&activity.details, 1800)),
         ];
@@ -345,8 +348,12 @@ pub fn validate_citations(
         ..CitationValidation::default()
     };
     for citation in citations {
-        let id = citation.get("citation_id").and_then(serde_json::Value::as_str);
-        let source_ref = citation.get("source_uuid").and_then(serde_json::Value::as_str);
+        let id = citation
+            .get("citation_id")
+            .and_then(serde_json::Value::as_str);
+        let source_ref = citation
+            .get("source_uuid")
+            .and_then(serde_json::Value::as_str);
         let known = sources.iter().any(|s| {
             id.is_some_and(|i| i == s.citation_id)
                 || (source_ref.is_some() && source_ref == s.source_ref.as_deref())
@@ -356,10 +363,7 @@ pub fn validate_citations(
         } else {
             let mut flagged = citation.clone();
             if let Some(map) = flagged.as_object_mut() {
-                map.insert(
-                    "validation_error".into(),
-                    "citation_not_in_context".into(),
-                );
+                map.insert("validation_error".into(), "citation_not_in_context".into());
             }
             result.invalid.push(flagged);
         }
@@ -407,7 +411,10 @@ mod tests {
         let validation = validate_citations(&citations, &sources);
         assert_eq!(validation.valid.len(), 2);
         assert_eq!(validation.invalid.len(), 1);
-        assert_eq!(validation.invalid[0]["validation_error"], "citation_not_in_context");
+        assert_eq!(
+            validation.invalid[0]["validation_error"],
+            "citation_not_in_context"
+        );
         assert_eq!(validation.metadata()["invalid_citation_ids"][0], "ghost");
         assert_eq!(validation.metadata()["source_count"], 2);
     }

@@ -199,7 +199,10 @@ impl AiService {
         Ok(())
     }
 
-    #[allow(clippy::too_many_arguments, reason = "the shared step of the sync and queued paths")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the shared step of the sync and queued paths"
+    )]
     async fn study_companion_execute(
         &self,
         run: &RunRow,

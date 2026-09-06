@@ -8,7 +8,7 @@
 //! `@tanstack/ai-client` speaks — not this API's snake_case convention.
 
 use ab_core::ai::{
-    AiFeature, AiRunKind, AiRunStatus, AiThreadRole, CourseAnalysisStatus, FindingReviewAction,
+    AiRunKind, AiRunStatus, AiThreadRole, CourseAnalysisStatus, FindingReviewAction,
     LectureReviewStatus, QaMessageRole, RemediationStatus, StudyMode,
 };
 use ab_core::id::{
@@ -543,7 +543,8 @@ pub struct CapabilitiesQuery {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FeatureCapability {
-    pub key: AiFeature,
+    /// The legacy flag key (`course_qa_enabled`, …).
+    pub key: String,
     pub enabled: bool,
     pub reason: Option<String>,
 }
@@ -584,7 +585,7 @@ impl From<domain::ScopeCapabilities> for ScopeCapabilities {
                 .features
                 .into_iter()
                 .map(|f| FeatureCapability {
-                    key: f.feature,
+                    key: f.feature.as_str().to_owned(),
                     enabled: f.enabled,
                     reason: f.reason.map(str::to_owned),
                 })
@@ -603,7 +604,8 @@ impl From<domain::ScopeCapabilities> for ScopeCapabilities {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FeatureSetting {
-    pub key: AiFeature,
+    /// The legacy flag key (`course_qa_enabled`, …).
+    pub key: String,
     pub enabled: bool,
     /// Flags come from the environment; there is no runtime toggle.
     pub editable: bool,
@@ -639,7 +641,7 @@ impl From<domain::AdminSettings> for AdminSettings {
                 .features
                 .into_iter()
                 .map(|(key, enabled)| FeatureSetting {
-                    key,
+                    key: key.as_str().to_owned(),
                     enabled,
                     editable: false,
                     source: "environment".into(),

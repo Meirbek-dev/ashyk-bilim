@@ -30,8 +30,8 @@ use sqlx::PgPool;
 
 pub use ab_db::ai::{
     ArtifactRow, CourseAnalysisRow, EvalResultRow, EventRow, EvidenceRow, LectureReviewRow,
-    QaMessageRow, RemediationSessionRow, RunAggregate, RunRow, SubmissionAnalysisRow,
-    ThreadRow, ThreadSummaryRow,
+    QaMessageRow, RemediationSessionRow, RunAggregate, RunRow, SubmissionAnalysisRow, ThreadRow,
+    ThreadSummaryRow,
 };
 pub use agents::course_analyst::LatestCourseAnalysis;
 pub use agents::course_qa::{QaReplay, QaRequest, QaSession, QaStream, QaTurn};
@@ -98,7 +98,10 @@ impl AiService {
     /// Both answer 503 `ai-disabled` (the legacy used 403).
     pub(crate) fn require_feature(&self, feature: AiFeature) -> Result<()> {
         if !self.config.ai_enabled {
-            return Err(Error::app(ErrorCode::AiDisabled, "AI features are disabled"));
+            return Err(Error::app(
+                ErrorCode::AiDisabled,
+                "AI features are disabled",
+            ));
         }
         if !self.config.feature_enabled(feature) {
             return Err(Error::app_with_details(

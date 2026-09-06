@@ -389,7 +389,9 @@ impl LlmClient {
             Err(parse_err) => {
                 tracing::info!(%parse_err, "structured reply unparsable; repair round");
                 let mut repair = request.clone();
-                repair.messages.push(ChatMessage::assistant(first.text.clone()));
+                repair
+                    .messages
+                    .push(ChatMessage::assistant(first.text.clone()));
                 repair.messages.push(ChatMessage::user(format!(
                     "Your previous reply was not valid JSON for the requested schema ({parse_err}). \
                      Reply again with only the JSON object — no prose, no code fences."
@@ -407,7 +409,12 @@ impl LlmClient {
         }
     }
 
-    fn body(&self, provider: &Provider, request: &CompletionRequest, stream: bool) -> serde_json::Value {
+    fn body(
+        &self,
+        provider: &Provider,
+        request: &CompletionRequest,
+        stream: bool,
+    ) -> serde_json::Value {
         let mut body = serde_json::json!({
             "model": provider.config.model,
             "messages": request.messages,
@@ -652,7 +659,9 @@ pub fn extract_json(text: &str) -> Result<serde_json::Value, String> {
     if let Ok(value) = serde_json::from_str::<serde_json::Value>(unfenced) {
         return Ok(value);
     }
-    let start = unfenced.find('{').ok_or_else(|| "no JSON object in reply".to_owned())?;
+    let start = unfenced
+        .find('{')
+        .ok_or_else(|| "no JSON object in reply".to_owned())?;
     let end = unfenced
         .rfind('}')
         .ok_or_else(|| "unterminated JSON object in reply".to_owned())?;

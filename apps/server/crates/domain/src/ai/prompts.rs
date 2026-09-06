@@ -374,7 +374,9 @@ mod tests {
             Prompt::StudyCompanion,
             Prompt::SubmissionAnalysis,
         ] {
-            assert!(load_prompt(prompt, None).contains("Return only the requested structured output"));
+            assert!(
+                load_prompt(prompt, None).contains("Return only the requested structured output")
+            );
             assert!(load_prompt(prompt, Some("ru-RU")).contains("Возвращайте только требуемые"));
             assert!(load_prompt(prompt, Some("kk-KZ")).contains("Тек сұралған құрылымдық"));
         }

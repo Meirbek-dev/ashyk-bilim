@@ -12,7 +12,9 @@
 use std::pin::Pin;
 use std::time::Instant;
 
-use ab_clients::llm::{ChatMessage, CompletionRequest, OutputSchema, StreamChunk, Usage, extract_json};
+use ab_clients::llm::{
+    ChatMessage, CompletionRequest, OutputSchema, StreamChunk, Usage, extract_json,
+};
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole, QaMessageRole};
 use ab_core::id::{ActivityId, AiMessageId, AiThreadId, CourseId, UserId};
 use ab_core::{Error, ErrorCode, FieldError, Result};
@@ -265,7 +267,8 @@ impl AiService {
                 assistant,
             }));
         }
-        if let Some(run) = ab_db::ai::find_run_by_turn(&self.pool, thread.id, client_turn_id).await?
+        if let Some(run) =
+            ab_db::ai::find_run_by_turn(&self.pool, thread.id, client_turn_id).await?
             && !run.status.is_terminal()
         {
             return Err(Error::conflict("this question is still being answered"));
@@ -321,9 +324,7 @@ impl AiService {
             Some(message) => Some(
                 ab_db::ai::get_thread(&self.pool, message.thread_id)
                     .await?
-                    .filter(|t| {
-                        t.course_id == Some(course_id) && t.user_id == Some(actor.user_id)
-                    })
+                    .filter(|t| t.course_id == Some(course_id) && t.user_id == Some(actor.user_id))
                     .ok_or_else(|| Error::not_found("ai thread"))?,
             ),
             None => None,
@@ -429,9 +430,13 @@ impl AiService {
         thread_id: AiThreadId,
         exclude: Option<AiMessageId>,
     ) -> Result<Vec<ChatMessage>> {
-        let stored =
-            ab_db::ai::recent_thread_messages(&self.pool, thread_id, exclude, HISTORY_MESSAGE_LIMIT)
-                .await?;
+        let stored = ab_db::ai::recent_thread_messages(
+            &self.pool,
+            thread_id,
+            exclude,
+            HISTORY_MESSAGE_LIMIT,
+        )
+        .await?;
         let mut selected: Vec<QaMessageRow> = Vec::new();
         let mut characters = 0usize;
         for message in stored {
@@ -600,7 +605,10 @@ impl AiService {
             &self.pool,
             NewQaMessage {
                 thread_id: session.thread.id,
-                course_id: session.thread.course_id.unwrap_or(session.user_message.course_id),
+                course_id: session
+                    .thread
+                    .course_id
+                    .unwrap_or(session.user_message.course_id),
                 user_id: session.user_id,
                 role: QaMessageRole::Assistant,
                 client_turn_id: None,

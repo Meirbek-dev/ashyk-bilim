@@ -38,7 +38,9 @@ fn decode_partial(raw: &str) -> String {
                     'b' => out.push('\u{8}'),
                     'f' => out.push('\u{c}'),
                     'u' => {
-                        let Some(code) = take_hex4(&mut chars) else { break };
+                        let Some(code) = take_hex4(&mut chars) else {
+                            break;
+                        };
                         if (0xD800..0xDC00).contains(&code) {
                             // High surrogate: needs `\uDCxx` to follow.
                             let mut lookahead = chars.clone();
@@ -97,7 +99,10 @@ mod tests {
     #[test]
     fn grows_with_the_buffer() {
         assert_eq!(partial_string_field("{\"answer", "answer_markdown"), None);
-        assert_eq!(partial_string_field("{\"answer_markdown\": ", "answer_markdown"), None);
+        assert_eq!(
+            partial_string_field("{\"answer_markdown\": ", "answer_markdown"),
+            None
+        );
         assert_eq!(
             partial_string_field("{\"answer_markdown\": \"Hel", "answer_markdown"),
             Some("Hel".into())
@@ -119,16 +124,28 @@ mod tests {
             Some("line\nquote \" tab\t é".into())
         );
         let cut = "{\"answer_markdown\": \"abc\\u00";
-        assert_eq!(partial_string_field(cut, "answer_markdown"), Some("abc".into()));
+        assert_eq!(
+            partial_string_field(cut, "answer_markdown"),
+            Some("abc".into())
+        );
         let cut_slash = "{\"answer_markdown\": \"abc\\";
-        assert_eq!(partial_string_field(cut_slash, "answer_markdown"), Some("abc".into()));
+        assert_eq!(
+            partial_string_field(cut_slash, "answer_markdown"),
+            Some("abc".into())
+        );
     }
 
     #[test]
     fn surrogate_pairs_decode_once_complete() {
         let high_only = "{\"answer_markdown\": \"smile \\ud83d";
-        assert_eq!(partial_string_field(high_only, "answer_markdown"), Some("smile ".into()));
+        assert_eq!(
+            partial_string_field(high_only, "answer_markdown"),
+            Some("smile ".into())
+        );
         let pair = "{\"answer_markdown\": \"smile \\ud83d\\ude00!";
-        assert_eq!(partial_string_field(pair, "answer_markdown"), Some("smile 😀!".into()));
+        assert_eq!(
+            partial_string_field(pair, "answer_markdown"),
+            Some("smile 😀!".into())
+        );
     }
 }

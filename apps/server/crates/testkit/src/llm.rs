@@ -66,7 +66,10 @@ pub fn sse_body(text: &str, chunk: usize) -> String {
 fn completions(stream: bool) -> wiremock::MockBuilder {
     Mock::given(method("POST"))
         .and(path(COMPLETIONS_PATH))
-        .and(header("authorization", &format!("Bearer {TEST_OPENAI_KEY}")))
+        .and(header(
+            "authorization",
+            &format!("Bearer {TEST_OPENAI_KEY}"),
+        ))
         .and(body_partial_json(serde_json::json!({ "stream": stream })))
 }
 
