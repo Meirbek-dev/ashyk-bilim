@@ -13,7 +13,7 @@ const ELLIPSIS_TEXT = '···'
 
 interface LeaderboardProps {
   entries: LeaderboardEntry[]
-  currentUserId?: number
+  currentUserId?: string
   userRank?: number | null
   className?: string
 }
@@ -180,9 +180,7 @@ function LeaderboardRow({
       {/* User info */}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-sm font-medium', isCurrentUser && 'text-primary')}>
-          {entry.first_name && entry.last_name
-            ? [entry.first_name, entry.middle_name, entry.last_name].filter(Boolean).join(' ')
-            : entry.username || t('leaderboard.anonymous')}
+          {entry.display_name || entry.username || t('leaderboard.anonymous')}
           {isCurrentUser && (
             <span className="text-muted-foreground ml-1.5 text-xs font-normal">({t('leaderboard.you')})</span>
           )}

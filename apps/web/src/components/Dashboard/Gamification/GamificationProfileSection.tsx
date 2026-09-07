@@ -13,7 +13,7 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 interface GamificationProfileSectionProps {
-  userId?: number
+  userId?: string
   className?: string
   variant?: 'full' | 'compact'
   data?: UserGamificationProfile | null

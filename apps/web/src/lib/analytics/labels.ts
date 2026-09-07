@@ -83,11 +83,10 @@ function resolveLabel(t: Translator, keyMap: Record<string, string>, value: stri
 
 export function getAnalyticsAssessmentTypeLabel(
   t: Translator,
-  normalizedAssessmentType: AssessmentType | null | undefined = 'manual_assessment',
+  normalizedAssessmentType: AssessmentType | null | undefined,
 ): string {
-  const lookup = normalizedAssessmentType ?? 'manual_assessment'
-  const key = (assessmentTypeKeys[lookup] ?? assessmentTypeKeys.manual_assessment)!
-  return t(key)
+  if (!normalizedAssessmentType) return t('atRisk.na')
+  return resolveLabel(t, assessmentTypeKeys, normalizedAssessmentType, normalizedAssessmentType)
 }
 
 export function getAnalyticsBucketLabel(t: Translator, normalizedBucket: Bucket | null | undefined = 'day'): string {
@@ -129,5 +128,5 @@ export function getAnalyticsStatusLabel(t: Translator, status: string | null | u
   if (!status) {
     return t('atRisk.na')
   }
-  return resolveLabel(t, statusKeys, status, status.replaceAll('_', ' '))
+  return resolveLabel(t, statusKeys, status.toUpperCase(), status.replaceAll('_', ' '))
 }

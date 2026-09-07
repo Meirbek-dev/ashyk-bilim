@@ -31,8 +31,8 @@ function userGroupUsersHookOptions(userGroupId: number | null | undefined) {
   })
 }
 
-function userByIdHookOptions(userId: number | null | undefined, enabled = true) {
-  const normalizedUserId = userId ?? 0
+function userByIdHookOptions(userId: string | null | undefined, enabled = true) {
+  const normalizedUserId = userId ?? '__disabled__'
 
   return queryOptions({
     ...userByIdQueryOptions(normalizedUserId),
@@ -49,8 +49,8 @@ function userByUsernameHookOptions(username: string | null | undefined, enabled 
   })
 }
 
-function userCoursesHookOptions(userId: number | null | undefined, enabled = true) {
-  const normalizedUserId = userId ?? 0
+function userCoursesHookOptions(userId: string | null | undefined, enabled = true) {
+  const normalizedUserId = userId ?? '__disabled__'
 
   return queryOptions({
     ...userCoursesQueryOptions(normalizedUserId),
@@ -111,11 +111,11 @@ export function useBasicUsers(limit = 100, options?: { enabled?: boolean }) {
   return useQuery(basicUsersHookOptions(limit, options?.enabled ?? true))
 }
 
-export function useUserCourses(userId: number | null | undefined, options?: { enabled?: boolean }) {
+export function useUserCourses(userId: string | null | undefined, options?: { enabled?: boolean }) {
   return useQuery(userCoursesHookOptions(userId, options?.enabled ?? true))
 }
 
-export function useUserByIdQuery(userId: number | null | undefined, options?: { enabled?: boolean }) {
+export function useUserByIdQuery(userId: string | null | undefined, options?: { enabled?: boolean }) {
   return useQuery(userByIdHookOptions(userId, options?.enabled ?? true))
 }
 

@@ -4,6 +4,10 @@ export const queryKeys = {
     linkPreview: (url: string) => ['activities', 'link-preview', url] as const,
   },
   assessments: {
+    attemptState: (assessmentUuid: string | null | undefined) =>
+      ['assessments', 'attempt-state', assessmentUuid || 'missing'] as const,
+    mySubmissions: (assessmentUuid: string | null | undefined) =>
+      ['assessments', 'submissions', 'me', assessmentUuid || 'missing'] as const,
     activity: (activityUuid: string) => ['assessments', 'activity', activityUuid] as const,
     activityDetail: (activityUuid: string, assessmentUuid: string | null | undefined) =>
       ['assessments', 'activity', activityUuid, assessmentUuid || 'missing'] as const,

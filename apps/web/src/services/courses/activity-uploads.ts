@@ -1,9 +1,7 @@
 import { apiJson } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
-import type { components } from '@/lib/api/generated'
+import type { Activity as ActivityRead } from '@/lib/api/generated/zod'
 import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload'
-
-type ActivityRead = components['schemas']['ActivityRead']
 
 const FILE_ACTIVITY_UPLOAD_TIMEOUT_MS = 5 * 60_000
 

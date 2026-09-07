@@ -94,8 +94,8 @@ declare global {
   }
 
   interface AppUserSummary {
-    id?: number
-    user_id?: number
+    id?: string
+    user_id?: string
     user_uuid?: string
     username?: string
     email?: string
@@ -118,7 +118,7 @@ declare global {
 
   interface AppCourseAuthor {
     id?: number | string | null
-    user_id?: number
+    user_id?: string
     authorship?: string
     authorship_status?: string
     user?: AppUserSummary
@@ -156,7 +156,7 @@ declare global {
   }
 
   interface AppCourse {
-    id?: number
+    id?: string
     course_uuid: string
     courseStructure?: AppCourse
     name?: string

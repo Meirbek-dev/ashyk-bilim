@@ -17,7 +17,7 @@ import { queryOptions, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { apiJson } from '@/lib/api-client'
+import { startAssessmentSubmission } from '@/features/assessments/submission-client'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -43,7 +43,6 @@ import { Progress } from '@components/ui/progress'
 import type { KindAttemptProps } from '../index'
 import ExamQuestionCard from './ExamQuestionCard'
 import ExamSubmitDialog from './ExamSubmitDialog'
-import { getSubmissionPlagiarismState } from '@/features/grading/domain/types'
 
 interface QuestionData {
   id: string
@@ -85,9 +84,12 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       queryClient.invalidateQueries({
         queryKey: queryKeys.assessments.draft(assessmentUuid),
       }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.assessments.attemptState(assessmentUuid),
+      }),
       queryClient.invalidateQueries(
         queryOptions({
-          queryKey: ['assessments', 'submissions', 'me', assessmentUuid],
+          queryKey: queryKeys.assessments.mySubmissions(assessmentUuid),
         }),
       ),
       queryClient.invalidateQueries({
@@ -108,21 +110,6 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     submission: (typeof submissionState.submissions)[number],
     index: number,
   ): AttemptHistoryItem => {
-    const plagiarism = getSubmissionPlagiarismState(submission)
-    let plagiarismText: string
-
-    if (plagiarism.status === 'failed') {
-      plagiarismText = 'Plagiarism: Failed'
-    } else if (plagiarism.status === 'checking') {
-      plagiarismText = 'Plagiarism: Checking'
-    } else if (plagiarism.status === 'pending') {
-      plagiarismText = 'Plagiarism: Pending'
-    } else if (plagiarism.flagged) {
-      plagiarismText = `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`
-    } else {
-      plagiarismText = 'Plagiarism: Checked Clear'
-    }
-
     const label =
       index === 0
         ? t('latestSubmission')
@@ -137,7 +124,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       submittedAt,
       status: submission.status ?? 'PENDING',
       scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
-      metaLabel: plagiarismText || null,
+      metaLabel: null,
     }
   }
 
@@ -151,17 +138,13 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     if (!assessmentUuid || !vm.canEdit) return
     setIsStarting(true)
     try {
-      await apiJson(`assessments/${assessmentUuid}/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
+      await startAssessmentSubmission(assessmentUuid)
       toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('examStarted'))
       await handleComplete()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('errorStartingExam'))
-    } finally {
-      setIsStarting(false)
     }
+    setIsStarting(false)
   }
 
   if (!submissionState.draft) {
@@ -403,7 +386,8 @@ function ExamTakingContent({
   useEffect(() => {
     if (viewMode !== 'SCROLL') return
     const observers: IntersectionObserver[] = []
-    questionRefs.current.forEach((ref, index) => {
+    orderedQuestions.forEach((_, index) => {
+      const ref = questionRefs.current[index]
       if (!ref) return
       const obs = new IntersectionObserver(
         ([entry]) => {
@@ -415,7 +399,7 @@ function ExamTakingContent({
       observers.push(obs)
     })
     return () => observers.forEach(obs => obs.disconnect())
-  }, [viewMode, orderedQuestions.length])
+  }, [viewMode, orderedQuestions])
   const currentQuestion = orderedQuestions[currentIndex]
   const questionById = useMemo(
     () => new Map(orderedQuestions.map(question => [question.id, question])),

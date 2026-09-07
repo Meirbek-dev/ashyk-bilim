@@ -1,5 +1,7 @@
 'use client'
 
+import { fromUnix } from '@/lib/api/contract'
+
 import { Suspense, lazy } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsSeverityLabel } from '@/lib/analytics/labels'
@@ -49,19 +51,19 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
   // Align trend series by the union of bucket timestamps so sparse series are not dropped.
   const allBuckets = [
     ...new Set([
-      ...data.trends.active_learners.map(point => point.bucket_start),
-      ...data.trends.completions.map(point => point.bucket_start),
-      ...data.trends.submissions.map(point => point.bucket_start),
-      ...data.trends.grading_completed.map(point => point.bucket_start),
+      ...data.trends.active_learners.map(point => point.bucket_start_unix),
+      ...data.trends.completions.map(point => point.bucket_start_unix),
+      ...data.trends.submissions.map(point => point.bucket_start_unix),
+      ...data.trends.grading_completed.map(point => point.bucket_start_unix),
     ]),
-  ].toSorted((a, b) => a.localeCompare(b))
-  const completionsMap = new Map(data.trends.completions.map(p => [p.bucket_start, p.value]))
-  const submissionsMap = new Map(data.trends.submissions.map(p => [p.bucket_start, p.value]))
-  const gradingMap = new Map(data.trends.grading_completed.map(p => [p.bucket_start, p.value]))
-  const activeMap = new Map(data.trends.active_learners.map(p => [p.bucket_start, p.value]))
+  ].toSorted((a, b) => a - b)
+  const completionsMap = new Map(data.trends.completions.map(p => [p.bucket_start_unix, p.value]))
+  const submissionsMap = new Map(data.trends.submissions.map(p => [p.bucket_start_unix, p.value]))
+  const gradingMap = new Map(data.trends.grading_completed.map(p => [p.bucket_start_unix, p.value]))
+  const activeMap = new Map(data.trends.active_learners.map(p => [p.bucket_start_unix, p.value]))
   const trendData = allBuckets.map(bucketStart => ({
-    bucket_start: bucketStart,
-    bucket: new Date(bucketStart).toLocaleDateString(locale, {
+    bucket_start: fromUnix(bucketStart).toISOString(),
+    bucket: fromUnix(bucketStart).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
     }),
@@ -231,7 +233,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                 {t('overview.labelGenerated')}
               </div>
               <div className="text-foreground mt-2 truncate text-sm font-semibold">
-                {new Date(data.generated_at).toLocaleString(locale)}
+                {fromUnix(data.generated_at_unix).toLocaleString(locale)}
               </div>
             </div>
             <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between rounded-md border px-4 py-3 transition-colors">

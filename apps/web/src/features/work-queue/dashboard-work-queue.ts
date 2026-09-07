@@ -25,7 +25,7 @@ interface TeacherDashboardSignal {
   forecastBacklog7d: number
   medianFeedbackLatencyHours: number | null
   backlogItems: {
-    assessmentId: number
+    assessmentId: string
     awaitingReview: number
     courseName: string
     title: string

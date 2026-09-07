@@ -1,5 +1,7 @@
 'use client'
 
+import { fromUnix } from '@/lib/api/contract'
+
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AnalyticsDataQuality } from '@/types/analytics'
@@ -44,8 +46,8 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
               {t('dataQualityPanel.lastRollup')}
             </div>
             <div className="mt-2 text-sm font-medium">
-              {quality.last_rollup_time
-                ? new Date(quality.last_rollup_time).toLocaleString(locale)
+              {quality.last_rollup_time_unix != null
+                ? fromUnix(quality.last_rollup_time_unix).toLocaleString(locale)
                 : t('dataQualityPanel.liveQuery')}
             </div>
           </div>

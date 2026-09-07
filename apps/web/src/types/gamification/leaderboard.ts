@@ -5,11 +5,9 @@
 
 // Leaderboard entry for a single user
 export interface LeaderboardEntry {
-  user_id: number
+  user_id: string
   username: string | null
-  first_name?: string | null
-  middle_name?: string | null
-  last_name?: string | null
+  display_name: string
   avatar_url?: string | null
   total_xp: number
   level: number

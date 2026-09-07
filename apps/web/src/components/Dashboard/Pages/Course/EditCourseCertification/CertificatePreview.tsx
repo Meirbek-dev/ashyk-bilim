@@ -194,9 +194,9 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
               <div className="space-y-2 text-center">
                 <div className="flex items-center justify-center">
-                  {platform?.logo_image ? (
+                  {platform?.logo_key ? (
                     <Image
-                      src={getLogoMediaDirectory(platform.logo_image)}
+                      src={getLogoMediaDirectory(platform.logo_key)}
                       alt={t('organizationLogoAlt')}
                       className="h-10 w-10 object-contain"
                       width={40}

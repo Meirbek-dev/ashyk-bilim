@@ -1,32 +1,29 @@
 'use client'
 
 import type { APIError } from '@/lib/api/assertSuccess'
-import type { SearchResult } from '@/lib/api/generated/api.schemas'
-import { useApiSearchPlatformContentApiV1SearchGet } from '@/lib/api/generated/search/search'
-import { queryKeys } from '@/lib/react-query/queryKeys'
+import type { SearchResults } from '@/lib/api/generated/zod'
+import { useSearch } from '@/lib/api/generated/search/search'
 
 interface SearchQueryResult {
-  data: SearchResult
+  data: SearchResults
 }
 
-function toSearchQueryResult(data: unknown): SearchQueryResult {
-  return { data: data as SearchResult }
+function toSearchQueryResult(data: SearchResults): SearchQueryResult {
+  return { data }
 }
 
-export function useSearchContent(query: string, options?: { page?: number; limit?: number; enabled?: boolean }) {
+export function useSearchContent(query: string, options?: { limit?: number; enabled?: boolean }) {
   const normalizedQuery = query.trim()
-  const page = options?.page ?? 1
   const limit = options?.limit ?? 20
 
-  return useApiSearchPlatformContentApiV1SearchGet<SearchQueryResult, APIError>(
+  return useSearch<SearchQueryResult, APIError>(
     {
-      query: normalizedQuery || '__disabled__',
-      page,
+      q: normalizedQuery || '__disabled__',
       limit,
     },
     {
       query: {
-        queryKey: queryKeys.search.content(normalizedQuery || '__disabled__', page, limit),
+        queryKey: ['search', 'content', normalizedQuery, limit],
         enabled: (options?.enabled ?? true) && normalizedQuery.length > 0,
         select: toSearchQueryResult,
       },

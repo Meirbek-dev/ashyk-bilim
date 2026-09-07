@@ -1,5 +1,7 @@
 'use client'
 
+import { fromUnix } from '@/lib/api/contract'
+
 import { getAnalyticsReasonCodeLabel, getAnalyticsRiskLevelLabel } from '@/lib/analytics/labels'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AnalyticsQuery, AtRiskLearnerRow } from '@/types/analytics'
@@ -38,18 +40,7 @@ interface AtRiskLearnersTableProps {
   query?: AnalyticsQuery
 }
 
-type EnhancedAtRiskLearnerRow = AtRiskLearnerRow & {
-  risk_trend?: 'newly_at_risk' | 'worsening' | 'improving' | 'recovered' | 'stable'
-  previous_risk_score?: number | null
-  risk_score_delta?: number | null
-  top_contributing_factor?: string | null
-  confidence_level?: 'low' | 'medium' | 'high'
-  why_now?: string | null
-  intervention_count?: number
-  last_intervention_type?: string | null
-  last_intervention_at?: string | null
-  last_intervention_outcome?: string | null
-}
+type EnhancedAtRiskLearnerRow = AtRiskLearnerRow
 
 const riskVariant = (level: AtRiskLearnerRow['risk_level']) => {
   if (level === 'high') return 'destructive'
@@ -101,7 +92,7 @@ export default function AtRiskLearnersTable({
       accessorKey: 'user_display_name',
       header: t('atRisk.colLearner'),
       cell: ({ row }) => {
-        const courseHref = row.original.course_uuid ? `/dash/analytics/courses/${row.original.course_uuid}` : undefined
+        const courseHref = row.original.course_id ? `/dash/analytics/courses/${row.original.course_id}` : undefined
         return (
           <div>
             <div className="text-foreground font-medium">{row.original.user_display_name}</div>
@@ -127,7 +118,7 @@ export default function AtRiskLearnersTable({
       accessorKey: 'days_since_last_activity',
       header: t('atRisk.colInactivity'),
       cell: ({ row }) =>
-        row.original.days_since_last_activity === null ? t('atRisk.na') : `${row.original.days_since_last_activity}d`,
+        row.original.days_since_last_activity == null ? t('atRisk.na') : `${row.original.days_since_last_activity}d`,
     },
     {
       accessorKey: 'risk_score',
@@ -187,7 +178,7 @@ export default function AtRiskLearnersTable({
       cell: ({ row }) => {
         const riskRow = row.original
         const hasGradingBlock = riskRow.open_grading_blocks > 0
-        const gradingHref = riskRow.course_uuid ? `/dash/analytics/courses/${riskRow.course_uuid}` : '/dash/courses'
+        const gradingHref = riskRow.course_id ? `/dash/analytics/courses/${riskRow.course_id}` : '/dash/courses'
         return (
           <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
             <span>{riskRow.recommended_action}</span>
@@ -425,7 +416,7 @@ function InterventionAuditLog({
           <div key={row.id} className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <Badge variant={row.status === 'resolved' ? 'secondary' : 'outline'}>{row.status}</Badge>
-              <span className="text-muted-foreground text-xs">{formatAuditDate(row.created_at)}</span>
+              <span className="text-muted-foreground text-xs">{formatAuditDate(row.created_at_unix)}</span>
             </div>
             <div className="text-sm font-medium">{row.intervention_type.replaceAll('_', ' ')}</div>
             {row.outcome ? <p className="text-muted-foreground text-xs">{row.outcome}</p> : null}
@@ -448,9 +439,8 @@ function buildRemediationDraft(row: EnhancedAtRiskLearnerRow) {
   ].join('\n')
 }
 
-function formatAuditDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.valueOf())) return value
+function formatAuditDate(value: number) {
+  const date = fromUnix(value)
   return new Intl.DateTimeFormat(undefined, {
     month: 'short',
     day: 'numeric',

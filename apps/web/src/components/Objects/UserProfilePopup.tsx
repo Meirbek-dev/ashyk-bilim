@@ -27,7 +27,7 @@ import type { ReactNode } from 'react'
 
 interface UserProfilePopupProps {
   children: ReactNode
-  userId: number
+  userId: string
 }
 
 interface UserData {

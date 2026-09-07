@@ -128,10 +128,10 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 ### P9 — Frontend adaptation
 | # | Slice | Status |
 |---|---|---|
-| 9.1 | Orval → openapi.v2.json, regen, mutator/path updates, delete refresh bridge | todo |
-| 9.2 | Auth pages vs new BFF (login/mfa/google/logout/sessions) | todo |
-| 9.3 | Error-code i18n sync script + catalogs (ru/kk/en) | todo |
-| 9.4 | Feature-by-feature drift fixes until typecheck+tests+Playwright green | todo |
+| 9.1 | Orval → openapi.v2.json, regen, mutator/path updates, delete refresh bridge | in-progress (17ccfa3 client foundation; final regeneration and contract audit pending) |
+| 9.2 | Auth pages vs new BFF (login/mfa/google/logout/sessions) | in-progress (17ccfa3 implementation; integrated browser verification pending) |
+| 9.3 | Error-code i18n sync script + catalogs (ru/kk/en) | in-progress (17ccfa3 implementation; final registry/i18n gate pending) |
+| 9.4 | Feature-by-feature drift fixes until typecheck+tests+Playwright green | in-progress (analytics, search, gamification, learner projection adapted; assessments/catalog/users and full endpoint audit ongoing; not release-ready) |
 
 ### P10 — Migration
 | # | Slice | Status |
@@ -153,6 +153,7 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 
 | Date | Session summary |
 |---|---|
+| 2026-09-07 (P9 continuation) | Uncommitted frontend adaptation: analytics/search/gamification and learner assessment wire parsing, UUIDs, effective policy/timers, draft saves/submits with If-Match and idempotency, conflict recovery, and attempt-state cache refresh. Frontend suite: 63 files / 430 tests pass; focused assessment lint/type checks pass without warnings. Full TypeScript gate still reports 77 errors, including the removed legacy grading schema import and catalog/user contract drift; tests alone do not establish v2 integration readiness. Remaining audit includes assessment authoring/grading/code routes, submission timestamp aliases, and in-flight navigation isolation. No release push or production cutover performed. |
 | 2026-08-16 | Architecture ratified (30Q). Docs authored (ARCHITECTURE/MIGRATION/EXECUTION-PLAN/AGENTS/FINDINGS). P0 scaffold landed green (deedc51): fmt + clippy -D warnings + 19 tests + OpenAPI snapshot/export. Resolved versions: axum 0.8.9, sqlx 0.9.0, utoipa 5.5, tower-http 0.7, jiff 0.2.35, tokio 1.53. Machine fix: installed MSVC VC.Tools workload via winget (was missing; GNU link.exe shadowed). apps/api-v2 stub removed. |
 | 2026-08-16 (cont. 2) | Owner ratified: internal-only Zitadel, no passkeys, first-party Google, agent-prepares/owner-pastes ops model. Slices landed green (CI #15–#17): 1.4 password auth (rate limits, uniform errors, audit, session handles), 0.11 RBAC sweep, 1.7 core (profiles), 1.8 core (role admin w/ live-session grant propagation), 1.5 Google OAuth (PKCE, opaque state, open-redirect guard, email linking). 79 tests. Machine: builds moved to C:\cargo-target (X: filled), root .env made dotenvy-safe, TEST_REDIS_URL wired in CI. Next: 1.6 TOTP relay, 0.10 zitadel-setup, 1.8 remainder, P2 catalog. |
 | 2026-08-16 (cont.) | CI green from run #4 on. Slices 0.7 (Zitadel booted via podman, session/mgmt/user-v2 APIs smoke-tested, images pinned), 0.8 (queue+worker+scheduler, 16 DB tests; ON CONFLICT dedupe fix — raised unique violations poisoned caller tx), 0.9 core (TestApp + HTTP suite + problem+json 404), 0.12 (OTLP exporter, delivery pending Logfire token), 1.1 (identity schema + verbatim SYSTEM_ROLES seed) all landed. QUESTIONS.md created for owner-only items. Podman (not docker) is the local container runtime — commands in apps/server/AGENTS.md. Next: 1.2 zitadel client (live instance validated: user-v2 create w/ password import shape, session password checks), 1.3 sessions/Actor, 0.10 zitadel-setup. |

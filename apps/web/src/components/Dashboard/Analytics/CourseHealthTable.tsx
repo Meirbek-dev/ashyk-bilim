@@ -22,7 +22,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
       header: t('courseHealth.colCourse'),
       cell: ({ row }) => (
         <Link
-          href={`/dash/analytics/courses/${row.original.course_uuid}`}
+          href={`/dash/analytics/courses/${row.original.course_id}`}
           className="text-foreground font-medium hover:text-emerald-700"
         >
           {row.original.course_name}

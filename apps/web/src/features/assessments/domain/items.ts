@@ -92,7 +92,7 @@ export type ItemAnswer =
   | { kind: 'MATCHING'; matches: MatchPair[] }
 
 export interface AssessmentItem {
-  id: number
+  id: string
   item_uuid: string
   order: number
   kind: UnifiedItemKind
@@ -100,8 +100,8 @@ export interface AssessmentItem {
   body: ItemBody
   metadata?: AssessmentItemMetadata
   max_score: number
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export function isAnswered(answer: ItemAnswer | null | undefined): boolean {

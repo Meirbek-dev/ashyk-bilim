@@ -55,9 +55,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
   const levelInfo = getLevelInfo(profile.level, t)
 
   // Get display name from session
-  const displayName = viewer?.first_name
-    ? [viewer.first_name, viewer.middle_name, viewer.last_name].filter(Boolean).join(' ')
-    : viewer?.username
+  const displayName = viewer?.display_name || viewer?.username
 
   return (
     <Card className={cn('py-2', className)}>

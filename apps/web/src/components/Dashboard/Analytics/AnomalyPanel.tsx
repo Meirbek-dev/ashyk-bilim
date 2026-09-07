@@ -34,7 +34,7 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
                 {t(`severity.${item.severity}`)}
               </Badge>
               <span className="text-muted-foreground text-xs tracking-wider uppercase">
-                {item.type.replaceAll('_', ' ')}
+                {item.kind.replaceAll('_', ' ')}
               </span>
             </div>
             <div className="text-foreground text-sm font-medium">{item.title}</div>

@@ -18,7 +18,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useUserByIdQuery, useUserByUsernameQuery } from '@/features/users/hooks/useUsers'
-import type { components } from '@/lib/api/generated'
+import type { UserProfile } from '@/lib/api/generated/zod'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import UserAvatar from '@components/Objects/UserAvatar'
@@ -32,7 +32,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
-type UserData = components['schemas']['UserRead']
+type UserData = UserProfile
 interface UserDetail {
   id: string
   label: string
@@ -89,7 +89,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   const [error, setError] = useState<string | null>(null)
 
   const { updateAttributes, node } = props
-  const userId = typeof node.attrs.user_id === 'number' ? node.attrs.user_id : null
+  const userId = typeof node.attrs.user_id === 'string' ? node.attrs.user_id : null
   const userByIdQuery = useUserByIdQuery(userId, { enabled: userId !== null })
   const userByUsernameQuery = useUserByUsernameQuery(submittedUsername, {
     enabled: Boolean(submittedUsername && submittedUsername.trim().length > 0),

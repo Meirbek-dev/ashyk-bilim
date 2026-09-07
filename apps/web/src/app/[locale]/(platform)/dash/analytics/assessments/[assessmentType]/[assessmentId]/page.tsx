@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsAssessmentTypeLabel } from '@/lib/analytics/labels'
 import { getLocale, getTranslations } from 'next-intl/server'
 import type { AssessmentType } from '@/types/analytics'
+import { fromUnix } from '@/lib/api/contract'
 import { Badge } from '@/components/ui/badge'
 
 export default function PlatformAnalyticsAssessmentDetailPage(props: {
@@ -33,7 +34,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
   try {
     detail = await getTeacherAssessmentDetail({
       assessmentType,
-      assessmentId: Number(assessmentId),
+      assessmentId,
       query,
     })
   } catch (error) {
@@ -63,7 +64,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
                 {detail.summary.submission_rate ?? t('atRisk.na')}
-                {detail.summary.submission_rate !== null ? '%' : ''}
+                {detail.summary.submission_rate != null ? '%' : ''}
               </div>
             </div>
             <div className="px-4 py-3">
@@ -72,7 +73,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
                 {detail.summary.pass_rate ?? t('atRisk.na')}
-                {detail.summary.pass_rate !== null ? '%' : ''}
+                {detail.summary.pass_rate != null ? '%' : ''}
               </div>
             </div>
             <div className="px-4 py-3">
@@ -81,7 +82,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
                 {detail.summary.median_score ?? t('atRisk.na')}
-                {detail.summary.median_score !== null ? '%' : ''}
+                {detail.summary.median_score != null ? '%' : ''}
               </div>
             </div>
             <div className="px-4 py-3">
@@ -89,7 +90,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatGenerated')}
               </div>
               <div className="text-foreground mt-1 text-sm font-semibold">
-                {new Date(detail.generated_at).toLocaleString(locale)}
+                {fromUnix(detail.generated_at_unix).toLocaleString(locale)}
               </div>
             </div>
           </div>
@@ -101,7 +102,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           title={t('pages.assessmentScoreDistTitle')}
           description={t('pages.assessmentScoreDistDesc')}
           data={detail.score_distribution}
-          {...(detail.pass_threshold !== null
+          {...(detail.pass_threshold != null
             ? {
                 thresholdLabel: `${t('pages.assessmentPassThresholdDefault')} ${detail.pass_threshold}%`,
               }

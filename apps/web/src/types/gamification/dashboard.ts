@@ -16,11 +16,4 @@ export interface DashboardData {
 }
 
 // Streak update response
-export interface StreakUpdate {
-  type: 'login' | 'learning'
-  current_streak: number
-  longest_streak: number
-  streak_maintained: boolean
-  streak_broken: boolean
-  bonus_xp_awarded: number
-}
+export type { StreakUpdate } from '@/lib/api/generated/zod'

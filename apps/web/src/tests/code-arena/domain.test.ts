@@ -13,7 +13,7 @@ import {
 describe('code arena domain', () => {
   it('maps canonical code items into a problem model', () => {
     const item: AssessmentItem = {
-      id: 1,
+      id: '00000000-0000-4000-8000-000000000001',
       item_uuid: 'item_1',
       order: 1,
       kind: 'CODE',

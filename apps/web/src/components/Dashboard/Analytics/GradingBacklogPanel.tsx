@@ -13,7 +13,7 @@ interface GradingBacklogPanelProps {
 
 export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBacklogPanelProps) {
   const t = useTranslations('TeacherAnalytics')
-  const gradingAlerts = alerts.filter(alert => alert.type === 'grading_backlog' || alert.type === 'grading_slo')
+  const gradingAlerts = alerts.filter(alert => alert.kind === 'grading_backlog' || alert.kind === 'grading_slo')
   return (
     <Card>
       <CardHeader>

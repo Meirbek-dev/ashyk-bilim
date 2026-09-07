@@ -6,7 +6,7 @@ import { queryOptions } from '@tanstack/react-query'
 import { getCoursesByUser, getUserById, getUserByUsername, userKeys } from '@/lib/users/client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 
-export function userByIdQueryOptions(userId: number) {
+export function userByIdQueryOptions(userId: string) {
   return queryOptions({
     queryKey: userKeys.byId(userId),
     queryFn: () => getUserById(userId),
@@ -20,7 +20,7 @@ export function userByUsernameQueryOptions(username: string) {
   })
 }
 
-export function userCoursesQueryOptions(userId: number) {
+export function userCoursesQueryOptions(userId: string) {
   return queryOptions({
     queryKey: userKeys.coursesByUser(userId),
     queryFn: () => getCoursesByUser(userId),
@@ -43,16 +43,20 @@ export function userGroupUsersQueryOptions(userGroupId: number) {
 
 export function allMembersQueryOptions() {
   return queryOptions({
-    queryKey: queryKeys.users.allMembers(),
-    queryFn: () => apiJson(`members`),
+    queryKey: queryKeys.users.admin({}),
+    queryFn: () => apiJson(`users?limit=100`),
   })
 }
 
 export function membersQueryOptions(page: number, perPage: number) {
   return queryOptions({
-    queryKey: queryKeys.users.members(page, perPage),
+    queryKey: queryKeys.users.admin({ cursor: String(page) }),
     queryFn: () =>
-      apiJson<{ total: number; total_pages: number; users: unknown[] }>(`members?page=${page}&per_page=${perPage}`),
+      apiJson<{ items: unknown[]; next_cursor?: string | null }>(`users?limit=${perPage}`).then(data => ({
+        total: data.items.length,
+        total_pages: data.next_cursor ? page + 1 : page,
+        users: data.items,
+      })),
   })
 }
 
@@ -65,7 +69,7 @@ export function rolesQueryOptions() {
 
 export function roleAuditLogQueryOptions(page: number, pageSize = 20) {
   return queryOptions({
-    queryKey: queryKeys.users.roleAuditLog(page, pageSize),
+    queryKey: ['users', 'role-audit-log', page, pageSize] as const,
     queryFn: () => listRoleAuditLog(page, pageSize),
   })
 }

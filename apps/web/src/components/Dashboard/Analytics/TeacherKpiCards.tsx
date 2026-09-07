@@ -69,22 +69,22 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
           metric.unit === '%' ? `${numberFormatter.format(metric.value)}%` : numberFormatter.format(metric.value)
 
         let deltaLabel: string
-        if (metric.delta_pct === null && metric.delta_value === null) {
+        if (metric.delta_pct == null && metric.delta_value == null) {
           deltaLabel = t('kpi.noComparison')
-        } else if (metric.delta_pct === null && metric.delta_value !== null) {
+        } else if (metric.delta_pct == null && metric.delta_value != null) {
           deltaLabel = `${metric.delta_value > 0 ? '+' : ''}${numberFormatter.format(metric.delta_value)}`
-        } else if (metric.delta_pct !== null) {
+        } else if (metric.delta_pct != null) {
           deltaLabel = `${metric.delta_pct > 0 ? '+' : ''}${numberFormatter.format(metric.delta_pct)}%`
         } else {
           deltaLabel = t('kpi.stable')
         }
 
         const badgeLabel =
-          metric.delta_value === null
+          metric.delta_value == null
             ? t('kpi.noComparison')
-            : metric.delta_pct === null && metric.delta_value === 0
+            : metric.delta_pct == null && metric.delta_value === 0
               ? t('kpi.stable')
-              : metric.delta_pct === null
+              : metric.delta_pct == null
                 ? t('kpi.noData')
                 : deltaLabel
 
@@ -96,7 +96,7 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                   {metric.label}
                 </div>
                 <CardTitle className="text-foreground mt-3 text-3xl font-semibold">{displayValue}</CardTitle>
-                {metric.benchmark !== null && metric.benchmark !== undefined && (
+                {metric.benchmark != null && metric.benchmark !== undefined && (
                   <div className="text-muted-foreground mt-1 text-xs">
                     {metric.benchmark_label}:{' '}
                     {metric.unit === '%'
@@ -106,7 +106,7 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                 )}
                 <Sparkline values={sparkline} positive={metric.is_higher_better ?? true} />
               </div>
-              {metric.delta_value !== null && (
+              {metric.delta_value != null && (
                 <Badge variant={badgeVariant(metric.direction, metric.is_higher_better ?? true)}>
                   {iconForDirection(metric.direction)}
                   {badgeLabel}
@@ -115,7 +115,7 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
             </CardHeader>
             <CardContent className="space-y-1">
               <div className="text-muted-foreground text-sm">
-                {metric.delta_value === null
+                {metric.delta_value == null
                   ? t('kpi.noComparison')
                   : t('kpi.changePeriod', {
                       delta: `${metric.delta_value > 0 ? '+' : ''}${numberFormatter.format(metric.delta_value)}${metric.unit ?? ''}`,

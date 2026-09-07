@@ -16,10 +16,8 @@
  *       → these become internal Judge0 detail; outer Submission stays at PENDING/GRADED
  */
 
-import type { components } from '@/lib/api/generated'
-
-export type SubmissionStatus = components['schemas']['SubmissionStatus']
 export type KnownSubmissionStatus = 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
+export type SubmissionStatus = KnownSubmissionStatus
 
 export const SUBMISSION_STATUS_LABELS: Record<KnownSubmissionStatus, string> = {
   DRAFT: 'statusDraft',

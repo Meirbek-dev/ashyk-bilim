@@ -5,11 +5,8 @@ import type {
   GamificationError,
   PlatformLeaderboard,
   UserGamificationProfile,
-  XPAwardRequest,
-  XPAwardResponse,
 } from '@/types/gamification'
 import {
-  awardXPAction,
   getDashboardDataAction,
   getLeaderboardAction,
   updatePreferencesAction,
@@ -50,7 +47,6 @@ interface GamificationActions {
   /** Fetch data only when not already loaded and circuit breaker allows it. */
   fetchIfNeeded: () => Promise<void>
   refetch: () => Promise<void>
-  awardXP: (payload: XPAwardRequest, options?: { silent?: boolean }) => Promise<XPAwardResponse>
   updateStreak: (type: 'login' | 'learning') => Promise<void>
   updatePreferences: (preferences: Record<string, unknown>) => Promise<void>
   /** Push an XP toast to the queue for the UI bridge to drain. */
@@ -142,48 +138,6 @@ export const useGamificationStore = create<GamificationState & GamificationActio
           }
         },
 
-        awardXP: async (payload, options = {}) => {
-          set({ error: null })
-          try {
-            const result = await awardXPAction(payload)
-            if (result.profile) {
-              set(s => {
-                const newPendingXPToasts = [...s.pendingXPToasts]
-                const newLevelUpQueue = [...s.levelUpQueue]
-
-                if (!options.silent && result.transaction.amount > 0) {
-                  newPendingXPToasts.push({
-                    amount: result.transaction.amount,
-                    source: payload.source,
-                  })
-                  if (result.triggered_level_up) {
-                    newLevelUpQueue.push({ newLevel: result.profile.level })
-                  }
-                }
-
-                return {
-                  profile: result.profile,
-                  dashboard: s.dashboard ? { ...s.dashboard, profile: result.profile } : s.dashboard,
-                  pendingXPToasts: newPendingXPToasts,
-                  levelUpQueue: newLevelUpQueue,
-                }
-              })
-            }
-            return result
-          } catch (error) {
-            const message = getErrorMessage(error, 'Failed to award XP')
-            const statusCode = getErrorStatus(error)
-            const gamificationError: GamificationError = {
-              type: 'SERVER_ERROR',
-              message,
-              timestamp: new Date().toISOString(),
-              statusCode,
-            }
-            set({ error: gamificationError })
-            throw gamificationError
-          }
-        },
-
         updateStreak: async type => {
           set({ error: null })
           try {
@@ -193,11 +147,11 @@ export const useGamificationStore = create<GamificationState & GamificationActio
                 if (!s.profile) return s
                 const newProfile = { ...s.profile }
                 if (type === 'login') {
-                  newProfile.login_streak = result.current_streak
-                  newProfile.longest_login_streak = result.longest_streak
+                  newProfile.login_streak = result.current_count
+                  newProfile.longest_login_streak = result.longest_count
                 } else {
-                  newProfile.learning_streak = result.current_streak
-                  newProfile.longest_learning_streak = result.longest_streak
+                  newProfile.learning_streak = result.current_count
+                  newProfile.longest_learning_streak = result.longest_count
                 }
                 return { profile: newProfile }
               })

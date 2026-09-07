@@ -35,6 +35,36 @@ export function getCourseThumbnailMediaDirectory(_courseId?: string | null, thum
   return getCourseThumbnailUrl(thumbnailKey)
 }
 
+/** @deprecated v2 avatar values are complete storage keys; the user id is ignored. */
+export function getUserAvatarMediaDirectory(_userId: string, avatarKey: string): string {
+  return getContentUrl(avatarKey) ?? ''
+}
+
+export interface ActivityBlockMediaDirectoryParams {
+  courseId: string
+  activityId: string
+  blockId: string
+  fileId: string
+  type: string
+}
+
+/** @deprecated v2 block file values are complete storage keys. */
+export function getActivityBlockMediaDirectory({ fileId }: ActivityBlockMediaDirectoryParams): string {
+  return getContentUrl(fileId) ?? ''
+}
+
+export interface ActivityMediaDirectoryParams {
+  courseUUID: string
+  activityUUID: string
+  fileId: string
+  activityType: string
+}
+
+/** @deprecated v2 activity file values are complete storage keys. */
+export function getActivityMediaDirectory({ fileId }: ActivityMediaDirectoryParams): string | undefined {
+  return getContentUrl(fileId) ?? undefined
+}
+
 export function getPlatformLogoUrl(logoKey?: string | null): string | null {
   return getContentUrl(logoKey)
 }

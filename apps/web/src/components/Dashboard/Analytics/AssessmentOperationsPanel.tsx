@@ -1,5 +1,7 @@
 'use client'
 
+import { fromUnix } from '@/lib/api/contract'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,19 +48,6 @@ function getSloBadgeVariant(status: TeacherAssessmentDetailResponse['slo']['stat
     }
     default: {
       return 'outline'
-    }
-  }
-}
-
-function getMigrationBadgeVariant(
-  mode: TeacherAssessmentDetailResponse['migration']['compatibility_mode'],
-): 'success' | 'warning' | 'destructive' | 'outline' {
-  switch (mode) {
-    case 'canonical': {
-      return 'success'
-    }
-    default: {
-      return 'success'
     }
   }
 }
@@ -152,10 +141,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
     not_applicable: t('pages.assessmentOpsSloStatusNotApplicable'),
   }
 
-  const migrationLabels: Record<TeacherAssessmentDetailResponse['migration']['compatibility_mode'], string> = {
-    canonical: t('pages.assessmentOpsMigrationModeCanonical'),
-  }
-
   const signalLabels: Record<TeacherAssessmentDetailResponse['item_analytics'][number]['signal'], string> = {
     healthy: t('pages.assessmentSignalHealthy'),
     watch: t('pages.assessmentSignalWatch'),
@@ -199,7 +184,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       t('pages.assessmentOpsAuditColumnSummary'),
     ]
     const rows = filteredAuditHistory.map(event => [
-      new Date(event.occurred_at).toLocaleString(locale),
+      fromUnix(event.occurred_at_unix).toLocaleString(locale),
       event.source,
       event.status ?? '',
       event.action,
@@ -237,9 +222,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                 : t('pages.assessmentOpsDiagnosticsAuto')}
             </Badge>
             <Badge variant={getSloBadgeVariant(detail.slo.status)}>{sloLabels[detail.slo.status]}</Badge>
-            <Badge variant={getMigrationBadgeVariant(detail.migration.compatibility_mode)}>
-              {migrationLabels[detail.migration.compatibility_mode]}
-            </Badge>
           </div>
           <CardTitle>{t('pages.assessmentOpsTitle')}</CardTitle>
           <p className="text-muted-foreground text-sm">{t('pages.assessmentOpsDescription')}</p>
@@ -326,23 +308,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                 <div className="text-muted-foreground mt-2 text-sm">{t('pages.assessmentSupportAlertsEmpty')}</div>
               )}
             </div>
-
-            <div>
-              <div className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
-                {t('pages.assessmentSupportBlockers')}
-              </div>
-              {detail.support.cutover_blockers.length ? (
-                <div className="mt-2 space-y-2">
-                  {detail.support.cutover_blockers.map(blocker => (
-                    <div key={blocker} className="rounded-lg border p-3 text-sm">
-                      {blocker}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground mt-2 text-sm">{t('pages.assessmentSupportBlockersEmpty')}</div>
-              )}
-            </div>
           </CardContent>
         </Card>
 
@@ -382,33 +347,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                     {t('pages.assessmentOpsSloOverdue')}: {detail.slo.overdue_backlog_count}
                   </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={getMigrationBadgeVariant(detail.migration.compatibility_mode)}>
-                {migrationLabels[detail.migration.compatibility_mode]}
-              </Badge>
-              <Badge variant={detail.migration.cutover_ready ? 'success' : 'warning'}>
-                {detail.migration.cutover_ready
-                  ? t('pages.assessmentOpsMigrationCutoverReady')
-                  : t('pages.assessmentOpsMigrationCutoverBlocked')}
-              </Badge>
-            </div>
-            <CardTitle>{t('pages.assessmentOpsMigrationTitle')}</CardTitle>
-            <p className="text-muted-foreground text-sm">{detail.migration.note}</p>
-          </CardHeader>
-          <div className="divide-border divide-y">
-            <div className="px-4 py-2.5">
-              <div className="text-muted-foreground text-[10px] uppercase">
-                {t('pages.assessmentOpsMigrationCanonicalRows')}
-              </div>
-              <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
-                {detail.migration.canonical_row_count}
               </div>
             </div>
           </div>
@@ -575,7 +513,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       <div className="text-foreground mt-2 text-sm font-medium">{event.summary}</div>
                       <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
                         <span>{event.actor_display_name || t('pages.assessmentOpsAuditSystem')}</span>
-                        <span>{new Date(event.occurred_at).toLocaleString(locale)}</span>
+                        <span>{fromUnix(event.occurred_at_unix).toLocaleString(locale)}</span>
                         {event.affected_count !== null && event.affected_count !== undefined ? (
                           <span>
                             {t('pages.assessmentOpsAuditAffected')}: {event.affected_count}

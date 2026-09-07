@@ -2,13 +2,10 @@
 
 import { apiJson } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
-import type { components } from '@/lib/api/generated'
+import type { Activity as ActivityRead, ActivityDetail as ActivityDetailResponse } from '@/lib/api/generated/zod'
 import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
 import type { Activity } from '@/components/Contexts/CourseContext'
-
-type ActivityRead = components['schemas']['ActivityRead']
-type ActivityDetailResponse = components['schemas']['ActivityDetailResponse']
 
 export interface UrlPreviewResponse {
   title?: string | null

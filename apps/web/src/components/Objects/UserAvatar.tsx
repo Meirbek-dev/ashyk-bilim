@@ -23,7 +23,7 @@ export interface UserAvatarProps {
   use_with_session?: boolean
   predefined_avatar?: PredefinedAvatar
   showProfilePopup?: boolean
-  userId?: number | null | undefined
+  userId?: string | null | undefined
   username?: string | null | undefined
   user?: AvatarUser | null | undefined
   className?: string

@@ -86,7 +86,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
             </TableRow>
           </TableHeader>
           <TableBody>
-            {workload.backlog_by_manual_assessment.slice(0, 5).map(item => (
+            {workload.backlog_by_assessment.slice(0, 5).map(item => (
               <TableRow key={`${item.assessment_id}-${item.course_id}`}>
                 <TableCell className="max-w-[260px] font-medium whitespace-normal">{item.title}</TableCell>
                 <TableCell className="max-w-[220px] whitespace-normal">{item.course_name}</TableCell>
@@ -94,7 +94,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
                 <TableCell>{hours(item.age_hours)}</TableCell>
               </TableRow>
             ))}
-            {!workload.backlog_by_manual_assessment.length ? (
+            {!workload.backlog_by_assessment.length ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-muted-foreground">
                   {t('teacherWorkloadPanel.noSubmissions')}

@@ -10,74 +10,18 @@ import {
   TextSearch,
   Users,
 } from 'lucide-react'
-import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
+import { getContentUrl } from '@services/media/media'
+import type { SearchResults } from '@/lib/api/generated/zod'
 import { useSearchContent } from '@/features/search/hooks/useSearch'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
-import { removeCoursePrefix } from '../Thumbnails/CourseThumbnail'
 import type { ChangeEvent, FC, KeyboardEvent } from 'react'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useDebouncedValue } from '@/hooks/useDebounce'
-import NextImage from '@components/ui/NextImage'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import UserAvatar from '../UserAvatar'
 import { extractMarkdownSummary } from '@/features/content-markdown'
-
-interface User {
-  username: string
-  first_name: string
-  middle_name?: string
-  last_name: string
-  email: string
-  avatar_image: string
-  bio: string
-  details: Record<string, unknown>
-  profile: Record<string, unknown>
-  id: number
-  user_uuid: string
-}
-
-interface Author {
-  user: User
-  authorship: string
-  authorship_status: string
-  creation_date: string
-  update_date: string
-}
-
-interface Course {
-  name: string
-  description: string
-  about: string
-  learnings: string
-  tags: string
-  thumbnail_image: string
-  public: boolean
-  open_to_contributors: boolean
-  id: number
-  authors: Author[]
-  course_uuid: string
-  creation_date: string
-  update_date: string
-}
-
-interface Collection {
-  name: string
-  public: boolean
-  description: string
-  id: number
-  courses: string[]
-  collection_uuid: string
-  creation_date: string
-  update_date: string
-}
-
-interface SearchResults {
-  courses: Course[]
-  collections: Collection[]
-  users: User[]
-}
 
 interface SearchBarProps {
   className?: string
@@ -114,10 +58,9 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
   // Debounce the search query value
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
   const searchQueryResult = useSearchContent(debouncedSearch, {
-    page: 1,
     limit: 3,
   })
-  const rawSearchResults = searchQueryResult.data?.data as unknown as Partial<SearchResults> | undefined
+  const rawSearchResults = searchQueryResult.data?.data
   const searchResults: SearchResults = {
     courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses : [],
     collections: Array.isArray(rawSearchResults?.collections) ? rawSearchResults.collections : [],
@@ -215,24 +158,14 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
             </div>
             {searchResults.courses.map(course => (
               <Link
-                key={course.course_uuid}
-                href={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
+                key={course.id}
+                href={getAbsoluteUrl(`/course/${course.id}`)}
                 className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
               >
                 <div className="relative h-10 w-10">
-                  {course.thumbnail_image ? (
-                    <NextImage
-                      src={getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}
-                      alt={course.name}
-                      fill
-                      className="rounded-lg object-cover"
-                      sizes="100vw"
-                    />
-                  ) : (
-                    <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
-                      <Book size={20} className="text-muted-foreground" />
-                    </div>
-                  )}
+                  <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
+                    <Book size={20} className="text-muted-foreground" />
+                  </div>
                   <div className="bg-background ring-border absolute -right-1 -bottom-1 rounded-full p-1 shadow-sm ring-1">
                     <GraduationCap size={11} className="text-muted-foreground" />
                   </div>
@@ -261,8 +194,8 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
             </div>
             {searchResults.collections.map(collection => (
               <Link
-                key={collection.collection_uuid}
-                href={getAbsoluteUrl(`/collection/${collection.collection_uuid}`)}
+                key={collection.id}
+                href={getAbsoluteUrl(`/collection/${collection.id}`)}
                 className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
               >
                 <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
@@ -290,21 +223,22 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
             </div>
             {searchResults.users.map(user => (
               <Link
-                key={user.user_uuid}
+                key={user.id}
                 href={getAbsoluteUrl(`/user/${user.username}`)}
                 className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
               >
                 <UserAvatar
                   size="md"
-                  avatar_url={user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : ''}
-                  userId={user.id}
-                  showProfilePopup
-                  {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
+                  avatar_url={user.avatar_key ? getContentUrl(user.avatar_key) : ''}
+                  user={user}
+                          use_with_session={false}
+                  showProfilePopup={false}
+                  {...(!user.avatar_key ? { predefined_avatar: 'empty' } : {})}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="text-foreground truncate text-sm font-medium">
-                      {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
+                      {user.display_name}
                     </h3>
                     <span className="text-muted-foreground text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
                       {t('userType')}

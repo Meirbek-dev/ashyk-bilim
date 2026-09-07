@@ -1,6 +1,5 @@
-import type {
-  AnalyticsQuery,
-  AssessmentType,
+import type { AnalyticsQuery, AssessmentType, SavedAnalyticsViewCreate } from '@/types/analytics'
+import {
   TeacherOverviewResponse,
   AdminAnalyticsResponse,
   TeacherCourseListResponse,
@@ -9,43 +8,22 @@ import type {
   TeacherAssessmentDetailResponse,
   AtRiskLearnersResponse,
   DrillThroughResponse,
-  SavedAnalyticsViewCreate,
-  SavedAnalyticsViewListResponse,
-  SavedAnalyticsViewRow,
-} from '@/types/analytics'
+  SavedViewList,
+  SavedView,
+  SaveViewRequest,
+  CreateInterventionRequest,
+  Intervention,
+  InterventionList,
+  CourseId,
+  AssessmentId,
+  AssessmentKind,
+} from '@/lib/api/generated/zod'
 import { apiBody, apiJson } from '@/lib/api-client'
 import { getAPIUrl } from '@services/config/config'
 
-export interface TeacherInterventionCreate {
-  user_id: number
-  course_id: number
-  intervention_type:
-    | 'message_sent'
-    | 'submission_graded'
-    | 'extension_granted'
-    | 'meeting_scheduled'
-    | 'learner_recovered'
-  status?: 'planned' | 'completed' | 'resolved'
-  outcome?: string | null
-  notes?: string | null
-  payload?: Record<string, unknown>
-}
-
-export interface TeacherInterventionRow {
-  id: number
-  teacher_user_id: number
-  user_id: number
-  course_id: number
-  intervention_type: TeacherInterventionCreate['intervention_type']
-  status: 'planned' | 'completed' | 'resolved'
-  outcome: string | null
-  notes: string | null
-  risk_score_before: number | null
-  risk_score_after: number | null
-  created_at: string
-  updated_at: string
-  resolved_at: string | null
-}
+export type TeacherInterventionCreate = CreateInterventionRequest
+export type TeacherInterventionRow = Intervention
+export type TeacherInterventionListResponse = InterventionList
 
 const buildQueryString = (query: AnalyticsQuery = {}) => {
   const params = new URLSearchParams()
@@ -67,14 +45,13 @@ const getPositiveInteger = (value: string | undefined, fallback: number): number
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
 }
 
-const getOptionalInteger = (value: string | undefined): number | undefined => {
-  if (!value) return undefined
-  const parsed = Number(value)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined
-}
-
-async function analyticsRequest<T>(path: string, query?: AnalyticsQuery, init?: RequestInit): Promise<T> {
-  return apiJson<T>(`analytics/${path}${buildQueryString(query)}`, init)
+async function analyticsRequest<T>(
+  path: string,
+  parse: (value: unknown) => T,
+  query?: AnalyticsQuery,
+  init?: RequestInit,
+): Promise<T> {
+  return apiJson(`analytics/${path}${buildQueryString(query)}`, init, parse)
 }
 
 export function normalizeAnalyticsQuery(searchParams: Record<string, string | string[] | undefined>): AnalyticsQuery {
@@ -83,82 +60,80 @@ export function normalizeAnalyticsQuery(searchParams: Record<string, string | st
   const pageSize = getFirstQueryValue(searchParams.page_size)
   const courseIds = getFirstQueryValue(searchParams.course_ids)
   const cohortIds = getFirstQueryValue(searchParams.cohort_ids)
-  const teacherUserIdValue = getOptionalInteger(teacherUserId)
   const timezone = getFirstQueryValue(searchParams.timezone)
   const sortBy = getFirstQueryValue(searchParams.sort_by)
   const bucketStart = getFirstQueryValue(searchParams.bucket_start)
 
   return {
-    window: (getFirstQueryValue(searchParams.window) as AnalyticsQuery['window']) || '28d',
-    compare: (getFirstQueryValue(searchParams.compare) as AnalyticsQuery['compare']) || 'previous_period',
-    bucket: (getFirstQueryValue(searchParams.bucket) as AnalyticsQuery['bucket']) || 'day',
+    window: getFirstQueryValue(searchParams.window) || '28d',
+    compare: getFirstQueryValue(searchParams.compare) || 'previous_period',
+    bucket: getFirstQueryValue(searchParams.bucket) || 'day',
     page: getPositiveInteger(page, 1),
     page_size: getPositiveInteger(pageSize, 25),
-    sort_order: (getFirstQueryValue(searchParams.sort_order) as AnalyticsQuery['sort_order']) || 'desc',
-    course_ids: courseIds ?? null,
-    cohort_ids: cohortIds ?? null,
-    ...(teacherUserIdValue !== undefined ? { teacher_user_id: teacherUserIdValue } : {}),
+    sort_order: getFirstQueryValue(searchParams.sort_order) || 'desc',
+    course_ids: courseIds,
+    cohort_ids: cohortIds,
+    ...(teacherUserId ? { teacher_user_id: teacherUserId } : {}),
     timezone: timezone || 'UTC',
-    sort_by: (sortBy as AnalyticsQuery['sort_by']) ?? null,
-    bucket_start: bucketStart ?? null,
+    sort_by: sortBy,
+    bucket_start: bucketStart,
   }
 }
 
 export function getTeacherOverview(query?: AnalyticsQuery) {
-  return analyticsRequest<TeacherOverviewResponse>('teacher/overview', query)
+  return analyticsRequest('teacher/overview', value => TeacherOverviewResponse.parse(value), query)
 }
 
 export function getAdminAnalyticsOverview(query?: AnalyticsQuery) {
-  return analyticsRequest<AdminAnalyticsResponse>('admin/overview', query)
+  return analyticsRequest('admin/overview', value => AdminAnalyticsResponse.parse(value), query)
 }
 
 export function getTeacherCourseList(query?: AnalyticsQuery) {
-  return analyticsRequest<TeacherCourseListResponse>('teacher/courses', query)
+  return analyticsRequest('teacher/courses', value => TeacherCourseListResponse.parse(value), query)
 }
 
 export function getTeacherCourseDetailByUuid(courseUuid: string, query?: AnalyticsQuery) {
-  return analyticsRequest<TeacherCourseDetailResponse>(`teacher/courses/by-uuid/${courseUuid}`, query)
+  return analyticsRequest(
+    `teacher/courses/${CourseId.parse(courseUuid)}`,
+    value => TeacherCourseDetailResponse.parse(value),
+    query,
+  )
 }
 
 export function getTeacherAssessmentList(query?: AnalyticsQuery) {
-  return analyticsRequest<TeacherAssessmentListResponse>('teacher/assessments', query)
+  return analyticsRequest('teacher/assessments', value => TeacherAssessmentListResponse.parse(value), query)
 }
 
 export interface GetTeacherAssessmentDetailParams {
   assessmentType: AssessmentType
-  assessmentId: number
+  assessmentId: string
   query?: AnalyticsQuery
 }
 
 export function getTeacherAssessmentDetail({ assessmentType, assessmentId, query }: GetTeacherAssessmentDetailParams) {
-  return analyticsRequest<TeacherAssessmentDetailResponse>(
-    `teacher/assessments/${assessmentType}/${assessmentId}`,
+  return analyticsRequest(
+    `teacher/assessments/${AssessmentKind.parse(assessmentType)}/${AssessmentId.parse(assessmentId)}`,
+    value => TeacherAssessmentDetailResponse.parse(value),
     query,
   )
 }
 
 export function getAtRiskLearners(query?: AnalyticsQuery) {
-  return analyticsRequest<AtRiskLearnersResponse>('teacher/learners/at-risk', query)
+  return analyticsRequest('teacher/learners/at-risk', value => AtRiskLearnersResponse.parse(value), query)
 }
 
 export function createTeacherIntervention(payload: TeacherInterventionCreate, query?: AnalyticsQuery) {
-  return analyticsRequest<TeacherInterventionRow>(`teacher/interventions`, query, {
+  return analyticsRequest(`teacher/interventions`, value => Intervention.parse(value), query, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(CreateInterventionRequest.parse(payload)),
   })
-}
-
-export interface TeacherInterventionListResponse {
-  generated_at: string
-  total: number
-  items: TeacherInterventionRow[]
 }
 
 export function getTeacherInterventions(
   params: {
-    course_id?: number
-    user_id?: number
+    course_id?: string
+    user_id?: string
   } = {},
   query?: AnalyticsQuery,
 ) {
@@ -167,30 +142,30 @@ export function getTeacherInterventions(
     ...(params.course_id !== undefined ? { course_id: params.course_id } : {}),
     ...(params.user_id !== undefined ? { user_id: params.user_id } : {}),
   }
-  return analyticsRequest<TeacherInterventionListResponse>('teacher/interventions', scopedQuery)
+  return analyticsRequest('teacher/interventions', value => InterventionList.parse(value), scopedQuery)
 }
 
 export function getSavedAnalyticsViews(query?: AnalyticsQuery) {
-  return analyticsRequest<SavedAnalyticsViewListResponse>('teacher/saved-views', query)
+  return analyticsRequest('teacher/saved-views', value => SavedViewList.parse(value), query)
 }
 
 export function saveAnalyticsView(payload: SavedAnalyticsViewCreate, query?: AnalyticsQuery) {
-  return analyticsRequest<SavedAnalyticsViewRow>('teacher/saved-views', query, {
+  return analyticsRequest('teacher/saved-views', value => SavedView.parse(value), query, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(SaveViewRequest.parse(payload)),
   })
 }
 
 export function getTeacherDrillThrough(
   metric: DrillThroughResponse['metric'],
   query?: AnalyticsQuery & {
-    course_id?: number
+    course_id?: string
     assessment_type?: AssessmentType
-    assessment_id?: number
+    assessment_id?: string
   },
 ) {
-  return analyticsRequest<DrillThroughResponse>(`teacher/drill-through/${metric}`, query)
+  return analyticsRequest(`teacher/drill-through/${metric}`, value => DrillThroughResponse.parse(value), query)
 }
 
 export function getAnalyticsExportUrl(

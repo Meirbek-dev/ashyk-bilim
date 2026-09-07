@@ -1,7 +1,6 @@
 'use server'
 
 import { apiJson, apiResult } from '@/lib/api-client'
-import type { components } from '@/lib/api/generated'
 import { isApiError } from '@/lib/api/assertSuccess'
 import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
@@ -10,10 +9,20 @@ import { courseTag, tags } from '@/lib/cacheTags'
  This file includes POST, PUT, DELETE requests and cached GET requests
 */
 
-type CourseRead = components['schemas']['CourseRead']
-type CourseReadWithPermissions = components['schemas']['CourseReadWithPermissions']
-type FullCourseRead = components['schemas']['FullCourseRead']
-type AuthorWithRole = components['schemas']['AuthorWithRole']
+type AuthorWithRole = AppCourseAuthor & { user: AppUserSummary }
+type CourseRead = AppCourse & {
+  about?: string | null
+  authors?: AuthorWithRole[]
+  description?: string | null
+  learnings?: string | null
+  name?: string | null
+  tags?: string | null
+  thumbnail_image?: string | null
+  thumbnail_type?: string | null
+  thumbnail_video?: string | null
+}
+type CourseReadWithPermissions = CourseRead
+type FullCourseRead = CourseRead & { chapters: (AppChapter & { activities: AppActivity[] })[] }
 type NormalizedCourseAuthor = Omit<AuthorWithRole, 'user'> & {
   user: {
     id: number

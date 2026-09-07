@@ -1,7 +1,7 @@
 'use client'
 
-import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
-import { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'
+import { getContentUrl } from '@services/media/media'
+import type { SearchResults } from '@/lib/api/generated/zod'
 import { Book, GraduationCap, Search, Users } from 'lucide-react'
 import { useSearchContent } from '@/features/search/hooks/useSearch'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -15,65 +15,6 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Link from '@components/ui/AppLink'
 import { extractMarkdownSummary } from '@/features/content-markdown'
-
-// Types from SearchBar component
-interface User {
-  username: string
-  first_name: string
-  middle_name?: string
-  last_name: string
-  email: string
-  avatar_image: string
-  bio: string
-  details: Record<string, { text?: string }>
-  profile: Record<string, unknown>
-  id: number
-  user_uuid: string
-}
-
-interface Author {
-  user: User
-  authorship: string
-  authorship_status: string
-  creation_date: string
-  update_date: string
-}
-
-interface Course {
-  name: string
-  description: string
-  about: string
-  learnings: string
-  tags: string
-  thumbnail_image: string
-  public: boolean
-  open_to_contributors: boolean
-  id: number
-  authors: Author[]
-  course_uuid: string
-  creation_date: string
-  update_date: string
-}
-
-interface Collection {
-  name: string
-  public: boolean
-  description: string
-  id: number
-  courses: string[]
-  collection_uuid: string
-  creation_date: string
-  update_date: string
-}
-
-interface SearchResults {
-  courses: Course[]
-  collections: Collection[]
-  users: User[]
-  total_courses: number
-  total_collections: number
-  total_users: number
-}
 
 type ContentType = 'all' | 'courses' | 'collections' | 'users'
 
@@ -106,36 +47,6 @@ function FilterButton({
       <span>{t(`filter${type.charAt(0).toUpperCase() + type.slice(1)}`)}</span>
       <span className={selectedType === type ? 'text-primary/70' : 'text-muted-foreground/60'}>({count})</span>
     </Button>
-  )
-}
-
-function Pagination({
-  totalPages,
-  currentPage,
-  onPageChange,
-}: {
-  totalPages: number
-  currentPage: number
-  onPageChange: (page: number) => void
-}) {
-  if (totalPages <= 1) return null
-
-  return (
-    <div className="mt-8 flex justify-center gap-2">
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-        <Button
-          type="button"
-          variant={currentPage === pageNum ? 'default' : 'ghost'}
-          size="icon-sm"
-          key={pageNum}
-          onClick={() => {
-            onPageChange(pageNum)
-          }}
-        >
-          {pageNum}
-        </Button>
-      ))}
-    </div>
   )
 }
 
@@ -176,29 +87,10 @@ function SearchPage() {
 
   // URL parameters
   const query = searchParams.get('q') || ''
-  const page = Number.parseInt(searchParams.get('page') || '1', 10)
   const type = (searchParams.get('type') as ContentType) || 'all'
-  const perPage = 9
   const selectedType = type
-  const searchResultsQuery = useSearchContent(query, { page, limit: perPage })
-  const rawSearchResults = searchResultsQuery.data?.data as unknown as SearchResults | undefined
-  const searchResults: SearchResults = query.trim()
-    ? {
-        courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses : [],
-        collections: Array.isArray(rawSearchResults?.collections) ? rawSearchResults.collections : [],
-        users: Array.isArray(rawSearchResults?.users) ? rawSearchResults.users : [],
-        total_courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses.length : 0,
-        total_collections: Array.isArray(rawSearchResults?.collections) ? rawSearchResults.collections.length : 0,
-        total_users: Array.isArray(rawSearchResults?.users) ? rawSearchResults.users.length : 0,
-      }
-    : {
-        courses: [],
-        collections: [],
-        users: [],
-        total_courses: 0,
-        total_collections: 0,
-        total_users: 0,
-      }
+  const searchResultsQuery = useSearchContent(query, { limit: 30 })
+  const searchResults: SearchResults = searchResultsQuery.data?.data ?? { courses: [], collections: [], users: [] }
   const isLoading = query.trim().length > 0 && searchResultsQuery.isPending
 
   const updateSearchParams = (updates: Record<string, string>) => {
@@ -228,8 +120,7 @@ function SearchPage() {
     setSearchQuery(query)
   }
 
-  const totalResults = searchResults.total_courses + searchResults.total_collections + searchResults.total_users
-  const totalPages = Math.ceil(totalResults / perPage)
+  const totalResults = searchResults.courses.length + searchResults.collections.length + searchResults.users.length
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -279,7 +170,7 @@ function SearchPage() {
               />
               <FilterButton
                 type="courses"
-                count={searchResults.total_courses}
+                count={searchResults.courses.length}
                 icon={GraduationCap}
                 selectedType={selectedType}
                 onTypeChange={selectedTypeKey => {
@@ -292,7 +183,7 @@ function SearchPage() {
               />
               <FilterButton
                 type="collections"
-                count={searchResults.total_collections}
+                count={searchResults.collections.length}
                 icon={Book}
                 selectedType={selectedType}
                 onTypeChange={selectedTypeKey => {
@@ -305,7 +196,7 @@ function SearchPage() {
               />
               <FilterButton
                 type="users"
-                count={searchResults.total_users}
+                count={searchResults.users.length}
                 icon={Users}
                 selectedType={selectedType}
                 onTypeChange={selectedTypeKey => {
@@ -346,17 +237,13 @@ function SearchPage() {
                   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
                     {searchResults.courses.map(course => (
                       <Link
-                        key={course.course_uuid}
-                        href={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
+                        key={course.id}
+                        href={getAbsoluteUrl(`/course/${course.id}`)}
                         className="group bg-card text-card-foreground overflow-hidden rounded-lg border shadow-sm transition-shadow hover:shadow-md"
                       >
                         <div className="relative aspect-video w-full overflow-hidden">
                           <NextImage
-                            src={
-                              course.thumbnail_image
-                                ? getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)
-                                : '/empty_thumbnail.avif'
-                            }
+                            src="/empty_thumbnail.avif"
                             alt={course.name}
                             fill
                             className="object-cover"
@@ -368,33 +255,6 @@ function SearchPage() {
                           <p className="text-muted-foreground line-clamp-2 text-xs">
                             {extractMarkdownSummary(course.description, 140)}
                           </p>
-                          {course.authors && course.authors.length > 0 && course.authors[0]?.user ? (
-                            <div className="mt-3 flex items-center gap-2">
-                              <UserAvatar
-                                size="xs"
-                                avatar_url={
-                                  course.authors[0].user.avatar_image
-                                    ? getUserAvatarMediaDirectory(
-                                        course.authors[0].user.user_uuid,
-                                        course.authors[0].user.avatar_image,
-                                      )
-                                    : ''
-                                }
-                                {...(!course.authors[0].user.avatar_image ? { predefined_avatar: 'empty' } : {})}
-                                userId={course.authors[0].user.id}
-                                showProfilePopup={false}
-                              />
-                              <span className="text-muted-foreground text-xs">
-                                {[
-                                  course.authors[0].user.first_name,
-                                  course.authors[0].user.middle_name,
-                                  course.authors[0].user.last_name,
-                                ]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                              </span>
-                            </div>
-                          ) : null}
                         </div>
                       </Link>
                     ))}
@@ -412,8 +272,8 @@ function SearchPage() {
                   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
                     {searchResults.collections.map(collection => (
                       <Link
-                        key={collection.collection_uuid}
-                        href={getAbsoluteUrl(`/collection/${collection.collection_uuid.replace('collection_', '')}`)}
+                        key={collection.id}
+                        href={getAbsoluteUrl(`/collection/${collection.id}`)}
                         className="bg-card text-card-foreground flex items-start gap-4 rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md"
                       >
                         <div className="bg-muted flex size-12 shrink-0 items-center justify-center rounded-lg">
@@ -423,11 +283,6 @@ function SearchPage() {
                           <h3 className="text-foreground mb-1 text-sm font-medium">{collection.name}</h3>
                           <p className="text-muted-foreground line-clamp-2 text-xs">
                             {extractMarkdownSummary(collection.description, 140)}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {t('coursesCount', {
-                              count: collection.courses.length,
-                            })}
                           </p>
                         </div>
                       </Link>
@@ -446,27 +301,25 @@ function SearchPage() {
                   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
                     {searchResults.users.map(user => (
                       <Link
-                        key={user.user_uuid}
+                        key={user.id}
                         href={getAbsoluteUrl(`/user/${user.username}`)}
                         className="bg-card text-card-foreground flex items-center gap-4 rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md"
                       >
                         <UserAvatar
                           size="lg"
                           avatar_url={
-                            user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : ''
+                            user.avatar_key ? getContentUrl(user.avatar_key) : ''
                           }
-                          {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
-                          userId={user.id}
-                          showProfilePopup
+                          {...(!user.avatar_key ? { predefined_avatar: 'empty' } : {})}
+                          user={user}
+                          use_with_session={false}
+                          showProfilePopup={false}
                         />
                         <div>
                           <h3 className="text-foreground text-sm font-medium">
-                            {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
+                            {user.display_name}
                           </h3>
                           <p className="text-muted-foreground text-xs">@{user.username}</p>
-                          {user.details?.title?.text ? (
-                            <p className="text-muted-foreground mt-1 text-xs">{user.details.title.text}</p>
-                          ) : null}
                         </div>
                       </Link>
                     ))}
@@ -475,14 +328,6 @@ function SearchPage() {
               )}
             </div>
           )}
-
-          <Pagination
-            totalPages={totalPages}
-            currentPage={page}
-            onPageChange={pageNum => {
-              updateSearchParams({ page: pageNum.toString() })
-            }}
-          />
         </div>
       </div>
     </div>

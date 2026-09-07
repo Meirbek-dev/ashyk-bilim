@@ -154,12 +154,15 @@ export interface ValidationIssue {
  */
 export function assessmentTypeToKind(assessmentType: string): AssessmentKind | null {
   switch (assessmentType) {
+    case 'exam':
     case 'EXAM': {
       return 'TYPE_EXAM'
     }
+    case 'code_challenge':
     case 'CODE_CHALLENGE': {
       return 'TYPE_CODE_CHALLENGE'
     }
+    case 'quiz':
     case 'QUIZ': {
       return 'TYPE_CUSTOM'
     }

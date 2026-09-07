@@ -6,7 +6,7 @@
  * for any assessment kind.
  */
 
-export type ScoreSource = 'auto' | 'teacher' | 'none'
+export type ScoreSource = 'auto' | 'teacher' | 'final' | 'none'
 
 export interface NormalizedScore {
   /** 0–100 percentage, or null if not yet graded. */

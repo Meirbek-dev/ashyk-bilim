@@ -150,7 +150,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     },
     items: [
       {
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         item_uuid: 'item_manual_assessment',
         order: 1,
         kind: 'OPEN_TEXT',

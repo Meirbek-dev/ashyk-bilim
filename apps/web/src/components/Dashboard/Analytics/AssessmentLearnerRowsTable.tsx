@@ -1,5 +1,7 @@
 'use client'
 
+import { fromUnix } from '@/lib/api/contract'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsStatusLabel } from '@/lib/analytics/labels'
 import type { AssessmentLearnerRow } from '@/types/analytics'
@@ -39,7 +41,9 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
       accessorKey: 'submitted_at',
       header: t('pages.assessmentColSubmitted'),
       cell: ({ row }) =>
-        row.original.submitted_at ? new Date(row.original.submitted_at).toLocaleString(locale) : t('atRisk.na'),
+        row.original.submitted_at_unix
+          ? fromUnix(row.original.submitted_at_unix).toLocaleString(locale)
+          : t('atRisk.na'),
     },
     {
       accessorFn: row => row.status || '',

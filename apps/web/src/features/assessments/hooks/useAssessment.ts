@@ -21,21 +21,17 @@ import { reportClientError } from '@/services/telemetry/client'
 import { assessmentByActivityQueryOptions } from '../queries'
 import { canArchive, canPublish, canSchedule, isAssessmentEditable } from '../domain/lifecycle'
 import { classifyValidationIssue } from '../domain/readiness'
-import { policyFromAssessmentPolicy } from '../domain/policy'
-import type { AssessmentPolicyDTO } from '../domain/policy'
+import { itemFromWire, lifecycleFromWire, policyFromWire } from '../domain/assessment-wire'
+import { AttemptState, Readiness } from '@/lib/api/generated/zod'
+import { unixToIso } from '@/lib/api/contract'
+import { getMyAssessmentSubmissions } from '../submission-client'
 import { assessmentTypeToKind } from '../domain/view-models'
 import type { AssessmentKind, AssessmentSurface, AttemptViewModel, StudioViewModel } from '../domain/view-models'
-import type { AssessmentItem } from '../domain/items'
-
-interface ReadinessPayload {
-  ok: boolean
-  issues: { code: string; message: string; item_uuid?: string | null }[]
-}
 
 function readinessQueryOptions(assessmentUuid: string, enabled: boolean) {
   return queryOptions({
     queryKey: queryKeys.assessments.readiness(assessmentUuid),
-    queryFn: () => apiJson<ReadinessPayload>(`assessments/${assessmentUuid}/readiness`),
+    queryFn: () => apiJson(`assessments/${assessmentUuid}/readiness`, undefined, value => Readiness.parse(value)),
     enabled,
     retry: false,
   })
@@ -53,22 +49,6 @@ export type AssessmentViewModel =
   | { surface: 'ATTEMPT'; vm: AttemptViewModel; kind: AssessmentKind }
   | null
 
-const RECOMMENDED_ACTION_MAP: Record<string, AttemptViewModel['recommendedAction']> = {
-  START: 'start',
-  CONTINUE_DRAFT: 'continueDraft',
-  SUBMIT: 'submit',
-  WAIT_FOR_RELEASE: 'waitForRelease',
-  VIEW_RESULT: 'viewResult',
-  START_REVISION: 'startRevision',
-  NO_ACTION: 'noAction',
-}
-
-const SUBMISSION_STATUSES = new Set(['DRAFT', 'PENDING', 'GRADED', 'PUBLISHED', 'RETURNED'])
-
-function normalizeSubmissionStatus(status: string | null | undefined): AttemptViewModel['submissionStatus'] {
-  return status && SUBMISSION_STATUSES.has(status) ? (status as AttemptViewModel['submissionStatus']) : null
-}
-
 /**
  * Fetches activity metadata and returns a typed view model for the requested
  * surface. Returns null while loading or if the activity is not assessable.
@@ -84,7 +64,7 @@ function useAssessment(
   isLoading: boolean
   error: Error | null
 } {
-  const normalizedUuid = activityUuid?.replace(/^activity_/, '') ?? ''
+  const normalizedUuid = activityUuid ?? ''
 
   const {
     data: assessment,
@@ -112,7 +92,19 @@ function useAssessment(
   }, [error, normalizedUuid, options.surface])
 
   const readiness = useQuery({
-    ...readinessQueryOptions(assessment?.assessment_uuid ?? '', options.surface === 'STUDIO' && Boolean(assessment)),
+    ...readinessQueryOptions(assessment?.id ?? '', options.surface === 'STUDIO' && Boolean(assessment)),
+  })
+
+  const attempt = useQuery({
+    queryKey: queryKeys.assessments.attemptState(assessment?.id),
+    queryFn: () =>
+      apiJson(`assessments/${assessment!.id}/attempt-state`, undefined, value => AttemptState.parse(value)),
+    enabled: options.surface === 'ATTEMPT' && Boolean(assessment),
+  })
+  const submissions = useQuery({
+    queryKey: queryKeys.assessments.mySubmissions(assessment?.id),
+    queryFn: () => getMyAssessmentSubmissions(assessment!.id),
+    enabled: options.surface === 'ATTEMPT' && Boolean(assessment),
   })
 
   if (isLoading || !assessment) {
@@ -127,28 +119,31 @@ function useAssessment(
   const { surface } = options
 
   if (surface === 'STUDIO') {
-    const { lifecycle } = assessment
+    if (readiness.isLoading || readiness.error) {
+      return { vm: null, isLoading: readiness.isLoading, error: readiness.error }
+    }
+    const lifecycle = lifecycleFromWire[assessment.lifecycle]
 
     const vm: StudioViewModel = {
       surface: 'STUDIO',
       kind,
-      assessmentUuid: assessment.assessment_uuid,
-      activityUuid: assessment.activity_uuid,
+      assessmentUuid: assessment.id,
+      activityUuid: assessment.activity_id,
       title: assessment.title,
       lifecycle,
       isEditable: isAssessmentEditable(lifecycle),
       canPublish: canPublish(lifecycle),
       canSchedule: canSchedule(lifecycle),
       canArchive: canArchive(lifecycle),
-      scheduledAt: assessment.scheduled_at ?? null,
-      policy: policyFromAssessmentPolicy(assessment.assessment_policy),
-      items: (assessment.items ?? []) as AssessmentItem[],
+      scheduledAt: unixToIso(assessment.scheduled_at_unix),
+      policy: policyFromWire(assessment.policy),
+      items: assessment.items.map(itemFromWire),
       validationIssues:
         readiness.data?.issues.map(issue =>
           classifyValidationIssue({
             code: issue.code,
             message: issue.message,
-            ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
+            ...(issue.item_id ? { itemUuid: issue.item_id } : {}),
           }),
         ) ?? [],
     }
@@ -156,7 +151,7 @@ function useAssessment(
   }
 
   if (surface === 'REVIEW') {
-    const reviewKind = assessmentTypeToKind(assessment.review_projection?.kind ?? assessment.kind)
+    const reviewKind = assessmentTypeToKind(assessment.kind)
     if (!reviewKind) {
       return { vm: null, isLoading: false, error: null }
     }
@@ -167,54 +162,83 @@ function useAssessment(
     }
   }
 
-  // ATTEMPT surface
-  const attemptProjection = assessment.attempt_projection
-  const effectivePolicy = attemptProjection?.effective_policy as AssessmentPolicyDTO | null | undefined
-  const disabledReasons = attemptProjection?.disabled_action_reasons ?? []
+  if (attempt.isLoading || submissions.isLoading || !attempt.data) {
+    return {
+      vm: null,
+      isLoading: attempt.isLoading || submissions.isLoading,
+      error: attempt.error ?? submissions.error,
+    }
+  }
+  if (submissions.error) return { vm: null, isLoading: false, error: submissions.error }
+
+  const state = attempt.data
+  const latest = submissions.data?.find(row => row.id === state.draft_id) ?? submissions.data?.[0]
+  const policy = policyFromWire(assessment.policy, state.effective)
+  const visible = latest?.release_state === 'visible' && policy.resultReviewAllowed
+  const releaseStates = {
+    hidden: 'HIDDEN',
+    awaiting_release: 'AWAITING_RELEASE',
+    visible: 'VISIBLE',
+    returned_for_revision: 'RETURNED_FOR_REVISION',
+  } as const
+  const recommendedAction: AttemptViewModel['recommendedAction'] = state.can_continue
+    ? 'continueDraft'
+    : state.can_start
+      ? state.revision_requested
+        ? 'startRevision'
+        : 'start'
+      : visible
+        ? 'viewResult'
+        : latest?.release_state === 'awaiting_release'
+          ? 'waitForRelease'
+          : state.disabled_reasons.length
+            ? 'blocked'
+            : 'noAction'
+  const startedAt = latest?.status === 'DRAFT' ? latest.started_at_unix : null
+  const timeLimit = state.effective.time_limit_seconds
   const vm: AttemptViewModel = {
     surface: 'ATTEMPT',
     kind,
-    assessmentUuid: assessment.assessment_uuid,
-    activityUuid: assessment.activity_uuid,
+    assessmentUuid: assessment.id,
+    activityUuid: assessment.activity_id,
     title: assessment.title,
     description: assessment.description || null,
-    dueAt: attemptProjection?.due_at ?? assessment.assessment_policy?.due_at ?? null,
-    submissionStatus: normalizeSubmissionStatus(attemptProjection?.submission_status),
-    releaseState: attemptProjection?.release_state ?? 'HIDDEN',
+    dueAt: policy.dueAt,
+    submissionStatus: latest?.status ?? null,
+    releaseState: latest ? releaseStates[latest.release_state] : 'HIDDEN',
     score: {
-      percent: attemptProjection?.score?.percent ?? null,
-      source: attemptProjection?.score?.source ?? 'none',
+      percent: latest?.final_score ?? latest?.auto_score ?? null,
+      source:
+        typeof latest?.final_score === 'number' ? 'final' : typeof latest?.auto_score === 'number' ? 'auto' : 'none',
     },
-    policy: policyFromAssessmentPolicy(effectivePolicy ?? assessment.assessment_policy),
-    items: (assessment.items ?? []) as AssessmentItem[],
-    canEdit: attemptProjection?.can_edit ?? false,
-    canSaveDraft: attemptProjection?.can_save_draft ?? false,
-    canSubmit: attemptProjection?.can_submit ?? false,
-    isReturnedForRevision: attemptProjection?.is_returned_for_revision ?? false,
-    isResultVisible: attemptProjection?.is_result_visible ?? false,
-    disabledActionReasons: disabledReasons,
-    serverNow: attemptProjection?.server_now ?? null,
-    availableAt: attemptProjection?.available_at ?? null,
-    closesAt: attemptProjection?.closes_at ?? null,
-    timeRemainingSeconds: attemptProjection?.time_remaining_seconds ?? null,
-    contentVersion: attemptProjection?.content_version ?? assessment.content_version ?? 1,
-    policyVersion: attemptProjection?.policy_version ?? assessment.policy_version ?? 1,
-    // Phase 1 — server-driven action state
-    canStart: attemptProjection?.can_start ?? false,
-    canContinue: attemptProjection?.can_continue ?? false,
-    canViewResult: attemptProjection?.can_view_result ?? false,
-    canStartRevision: attemptProjection?.can_start_revision ?? false,
-    recommendedAction: (() => {
-      if (disabledReasons.length > 0) {
-        return 'blocked'
-      }
-      const rawAction = attemptProjection?.recommended_action
-      return rawAction ? (RECOMMENDED_ACTION_MAP[rawAction] ?? 'noAction') : 'noAction'
-    })(),
-    primaryButtonLabelKey: attemptProjection?.primary_button_label_key ?? 'noAction',
-    startedAt: attemptProjection?.started_at ?? null,
-    timerStartedAt: attemptProjection?.timer_started_at ?? null,
-    timerExpiresAt: attemptProjection?.timer_expires_at ?? null,
+    policy,
+    items: assessment.items.map(itemFromWire),
+    canEdit: state.can_continue || state.can_start,
+    canSaveDraft: state.can_continue,
+    canSubmit: state.can_continue || state.can_start,
+    isReturnedForRevision: state.revision_requested,
+    isResultVisible: visible,
+    disabledActionReasons: state.disabled_reasons,
+    serverNow: null,
+    availableAt: unixToIso(state.opens_at_unix),
+    closesAt: !state.effective.allow_late
+      ? policy.dueAt
+      : state.effective.late_policy.kind === 'cutoff'
+        ? unixToIso(state.effective.late_policy.cutoff_at_unix)
+        : null,
+    timeRemainingSeconds: latest?.status === 'DRAFT' ? (latest.time_remaining_seconds ?? null) : null,
+    contentVersion: assessment.content_version,
+    policyVersion: assessment.policy_version,
+    canStart: state.can_start,
+    canContinue: state.can_continue,
+    canViewResult: visible,
+    canStartRevision: state.revision_requested && state.can_start,
+    recommendedAction,
+    primaryButtonLabelKey: recommendedAction,
+    startedAt: unixToIso(startedAt),
+    timerStartedAt: unixToIso(startedAt),
+    timerExpiresAt:
+      typeof startedAt === 'number' && typeof timeLimit === 'number' ? unixToIso(startedAt + timeLimit) : null,
   }
   return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null }
 }
