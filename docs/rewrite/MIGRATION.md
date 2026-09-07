@@ -18,9 +18,12 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
 
 ## 2. ETL design (`ashyq admin etl`)
 
-- One Rust subcommand, connects `AB__ETL__LEGACY_DATABASE_URL` (read-only role) and
-  the new DB. **Idempotent and re-runnable**: every run truncates-and-reloads the
-  new DB (it is not live until cutover), so rehearsals are cheap and deterministic.
+- `ashyq admin etl` connects `AB_ETL_SOURCE_URL` (read-only in production) and
+  `AB__DATABASE__URL`. It accepts `--domain`, `--limit`, `--dry-run`,
+  `--files-root`, and `--quarantine-orphans`. **Idempotent and re-runnable**:
+  persistent ID mappings plus primary-key upserts make a repeated run converge
+  without minting new IDs. `--dry-run` executes the complete target transaction
+  and rolls it back.
 - **ID mapping**: `legacy_id_map (table_name, legacy_key text, new_id uuid)` in the
   new DB. UUIDv7 ids are minted in legacy `created_at` order so id sort ≈ time sort
   (preserves the index-locality property). Legacy public identifiers that appear in
@@ -28,8 +31,9 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
   columns, not keys.
 - **Ordering** follows the FK dependency graph (roles/users → org → catalog →
   assessment → submissions/grading → analytics → AI → gamification/trail → files).
-- **JSONB transforms**: each of the 52 legacy JSON columns has an explicit fate in
-  `etl/spec.rs`: `Normalize` (into columns), `Retype` (parse into the new tagged
+- **JSONB transforms**: the production restore contains 63 JSON/JSONB columns
+  (the planning estimate of 52 was stale). Every column has an explicit fate in
+  `crates/etl/src/spec.rs`: `Normalize` (into columns), `Retype` (parse into the new tagged
   serde enum, with strict-parse failure report), or `Drop` (dead data, listed).
   A failed parse is a hard ETL error with row identification — never a silent skip.
 - **Plagiarism internals** (Q4): tables/columns dropped; disabled-state stubs keep
@@ -40,8 +44,9 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
   reasons), duration. The final **verification phase** re-checks: per-table counts,
   FK integrity (`NOT EXISTS` orphan scans), spot checksums (e.g. sum of grade
   points per course, submission counts per assessment, XP totals per user), and a
-  sample of 100 random entities deep-compared through both stacks' serializers.
-  ETL exits non-zero if any check fails.
+  domain accounting and FK-orphan scans. ETL exits non-zero if any check fails.
+  Serializer-level HTTP comparisons belong to the post-load smoke suite because
+  the ETL crate deliberately does not embed the legacy application.
 
 ## 3. Users → Zitadel
 
@@ -57,9 +62,13 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
    discovery) migrates into **our** `google_accounts` table (Google OAuth is
    first-party — DECISIONS.md 2026-08-16). Google-only users get a Zitadel user
    with no password and keep passwordless Google login.
-4. `users.zitadel_user_id` is written back into the new DB; a verification pass
-   asserts a 1:1 mapping and that a sample login works via the Session API in the
-   rehearsal environment.
+4. Before import, self-hosted Zitadel must set
+   `ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS=argon2,bcrypt` (bcrypt alone
+   is the upstream default). The command looks up exact login names first, so a
+   retry reuses existing Zitadel users, writes `users.zitadel_user_id`, asserts no
+   `legacy:*` placeholders remain, and optionally proves a known imported hash
+   through the Session API with `AB_ETL_PROBE_LOGIN` and
+   `AB_ETL_PROBE_PASSWORD`.
 5. The bootstrap admin account is imported like everyone else; the owner rotates
    its password at cutover (FINDINGS #4) and optionally enrolls MFA.
 
@@ -70,7 +79,8 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
   submissions, exports → `private`); upload via `object_store` multipart; write
   `(legacy_path → bucket, key)` into the file key map used by the DB transform
   (thumbnail/avatar/block references become object keys).
-- Integrity: size + sha256 compared post-upload; report as in §2.
+- Integrity: size plus a read-back SHA-256 are compared after every upload;
+  mismatch is a hard failure.
 - Orphan files (on disk, referenced nowhere) are copied to a `quarantine/` prefix,
   listed in the report, deleted 30 days post-cutover.
 
@@ -86,6 +96,31 @@ compose stack (fresh PG + Zitadel + RustFS), repeatedly, until:
    upload/download, AI QA stream, analytics dashboard, certificate verify;
 4. the Playwright E2E suite passes against the rehearsal stack.
 
+### 2026-09-07 rehearsal evidence
+
+- Restored source: 117 users, 43 courses, 447 assessment items, 12 v2
+  submissions, 41,162 code runs, 1,576 XP transactions, and 321 files.
+- Two independently created target databases completed the relational load and
+  89 verification checks with zero failures. Relational wall time was 25–31 s;
+  the second complete database + object run was 96.976 s.
+- The committed file run uploaded all 321 objects and verified their size and
+  read-back SHA-256. No database path column referenced an object in this
+  restore, so `--quarantine-orphans` correctly placed all 321 beneath
+  `private/quarantine/` rather than presenting them as live files.
+- Zitadel imported 117 users (78 Argon2id credentials, 39 passwordless), then a
+  second run reused all 117. A cloned-source synthetic Argon2id fixture completed
+  a real Session API login probe after the verifier setting above was enabled.
+- Explained production-data exceptions: two duplicate email addresses receive
+  deterministic `+legacy-{id}` aliases; 63 orphan resource-author rows and one
+  orphan usergroup-resource row are dropped; 40 XP rows reference retired or
+  absent entities; 77 unknown assessment-setting keys and two unresolved answer
+  item references are retained in the detailed ETL drop log.
+
+The data/identity/object migration exit gate is green. The browser smoke list and
+Playwright remain part of P9/P11 deployment verification because the frontend
+adaptation is not yet complete; they are not evidence for the ETL transaction
+itself.
+
 ## 6. Cutover runbook (window ≤ 2 days; expected actual: ~2–4 hours)
 
 ```
@@ -93,7 +128,8 @@ T-7d   Announce maintenance window to users (all sessions will be logged out).
 T-1d   Final rehearsal on fresh backup. Freeze legacy deploys entirely.
 T-0    1. docker compose stop web api taskiq-worker taskiq-scheduler   (Judge0, db, redis stay up)
        2. Final backup (offen manual run) — verified restorable.
-       3. Run ETL + zitadel-import against live legacy DB (read-only) → new ashyq DB.
+       3. Run `ashyq admin etl --files-root <content> --quarantine-orphans`, then
+          `ashyq admin zitadel-import` against the read-only legacy DB.
        4. Verification phase green (hard gate — abort on red).
        5. Bring up: zitadel, rustfs, server, worker; run `ashyq migrate` no-op check;
           swap nginx template (v2 routes, /content → rustfs); reload nginx.

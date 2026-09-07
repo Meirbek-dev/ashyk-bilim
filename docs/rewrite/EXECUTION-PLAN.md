@@ -136,11 +136,11 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 ### P10 — Migration
 | # | Slice | Status |
 |---|---|---|
-| 10.1 | ETL framework + id map + verification engine | todo |
-| 10.2 | Per-domain transform specs (incl. all 52 JSONB fates) | todo |
-| 10.3 | Zitadel user import + IdP links + login verification | todo |
-| 10.4 | File migration to RustFS + reference rewrite | todo |
-| 10.5 | Rehearsal loop until twice-green (gate for P11) | todo |
+| 10.1 | ETL framework + id map + verification engine | done 5feb755 (single target transaction, dry-run, persistent deterministic map, per-table accounting + 89 checks) |
+| 10.2 | Per-domain transform specs (incl. all production JSONB fates) | done 5feb755 (restore has 63 JSON columns, not planning estimate 52; audited static inventory + test) |
+| 10.3 | Zitadel user import + IdP links + login verification | done 5feb755 (117 users; exact-login idempotency; Argon2 verifier; cloned-source hash login probe green) |
+| 10.4 | File migration to RustFS + reference rewrite | done 5feb755 (321 objects; size + read-back SHA-256; orphan quarantine) |
+| 10.5 | Rehearsal loop until twice-green (gate for P11) | in-progress (two fresh DB loads + identity + objects green; full browser smoke/Playwright waits on 9.4) |
 
 ### P11 — Cutover
 | # | Slice | Status |
@@ -159,3 +159,4 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 | 2026-09-06 (P7) | P7 analytics landed on the worktree branch (7.1 events + rollups + job + admin command, 7.2 risk snapshots + interventions, 7.3 dashboards / saved views / drill-through / CSV routes): 17 routes under `/analytics`, `analytics_flow` e2e, rollup + risk unit tests, clippy-clean; `context::round_to` now emulates CPython `round()` exactly. Legacy defects #20 (event log never written) and #21 (rollup refresh never scheduled) recorded. Owner item: retention for the daily/event tables (QUESTIONS.md). |
 | 2026-09-05 | P3 (assessments) closed; P4 landed green (4.1 submissions schema, 4.2–4.3 lifecycle + auto-grading, 4.4 Judge0 code runs, 4.5–4.6 teacher grading + bulk actions, 4.7 SSE on Redis Streams; CI #42–#44). P5: 5.1 file submissions (real-upload e2e), 5.2 folded into 4.4, 5.3 `admin judge0-tune`. P6.1 progress projections + trail + learner-state; P6.2 discussions; P6.3 certifications; P6.4 gamification; P6.5 work queue; 6.6 folded into 2.6. P6 done (191 tests). Gates now run once per phase (owner directive). CI: runs #45/#46 died in the trailing Docker build (runner disk exhausted / 50-min limit) with every code gate green — the release image now builds in its own `image` job with GHA layer cache; `concurrency` cancels superseded runs. Dev-stack gotchas (podman/MSYS path conversion, RustFS volume) recorded in AGENTS.md. |
 | 2026-09-06 (P8) | P8 AI subsystem landed in the `agent-af8f1e4f3cb45e348` worktree: 8.1 LLM client (reqwest, not rig — DECISIONS), 8.2 run runtime + Redis mirror + SSE tail + `ai:execute_run`, 8.3–8.5 the six agents with verbatim prompts, 8.6 admin/usage/capabilities + `admin ai-eval`. Migrations 0030/0031. Legacy defects #22–#24. Owner: API keys + model names for a live smoke run (QUESTIONS). Coordinator merges with the P7 worktree. |
+| 2026-09-07 (P10) | P10 ETL landed as 5feb755: 45,886 stable ID mappings; full restored relational load twice on fresh databases; 89 verification checks; 321 files verified by size + read-back SHA-256 and quarantined because the restore has no live file references; 117 Zitadel users imported and rerun idempotently; real Argon2 hash login proven with a cloned-source fixture after enabling the verifier. Full CI: 279 tests, clippy, deny, machete; SQLx offline check green. P10.5 app/browser smoke waits on P9.4. |

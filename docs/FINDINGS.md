@@ -204,3 +204,26 @@ name and the context source count for any signed-in caller, including
 courses they could not see. v2 answers `available=false,
 reason=course_not_found` for unknown and invisible courses alike. No
 legacy-side fix planned — low sensitivity, dies at cutover.
+
+### 25. The production restore contains duplicate and orphaned domain data
+P10 found two additional users sharing `Nurgul287@mail.ru`, 63
+`resourceauthor` rows whose resource no longer exists, and one
+`usergroupresource` row pointing at an absent/non-course resource. The v2
+schema correctly rejects these shapes. ETL gives duplicate addresses stable
+`+legacy-{id}` aliases and records every orphan in `etl_drop_log`; the owner
+should tell the two affected account holders which address to retain after
+cutover.
+
+### 26. The pre-assessment exam tables still contain inaccessible history
+The restore has 19 `exam` and 45 `examattempt` rows from the model superseded by
+the current assessment/submission schema. The current legacy application cannot
+render these records, and their question references cannot be reconciled with
+the active assessment items. P10 treats them as deliberate, counted drops and
+keeps the read-only legacy backup for the T+30-day support window.
+
+### 27. The restored database reports a collation-version mismatch
+Postgres reports that `openu` was created with libc collation 2.41 while the
+rehearsal container provides 2.36. Reads and ETL completed, but index ordering
+may differ. The production cutover restore must use the same OS/Postgres image
+as the backup source, or rebuild affected indexes and run `ALTER DATABASE openu
+REFRESH COLLATION VERSION` before treating ordered comparisons as evidence.
