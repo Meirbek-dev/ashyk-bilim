@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.id AS \"id: DiscussionId\", d.course_id AS \"course_id: CourseId\",\n                  d.user_id AS \"user_id: UserId\", d.parent_id AS \"parent_id: DiscussionId\",\n                  d.content, d.status AS \"status: DiscussionStatus\",\n                  u.username AS \"username?\", u.display_name AS \"display_name?\", u.avatar_key,\n                  d.likes_count, d.dislikes_count, d.replies_count,\n                  (SELECT r.reaction FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.user_id = $2) AS \"my_reaction?: ReactionKind\",\n                  (extract(epoch FROM d.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM d.updated_at))::bigint AS \"updated_at!\"\n           FROM course_discussions d LEFT JOIN users u ON u.id = d.user_id\n           WHERE d.parent_id = $1 AND d.status = 'active'\n             AND ($3::uuid IS NULL OR d.id > $3)\n           ORDER BY d.id\n           LIMIT $4",
+  "query": "SELECT d.id AS \"id!: DiscussionId\", d.course_id AS \"course_id!: CourseId\",\n                  d.user_id AS \"user_id?: UserId\", d.parent_id AS \"parent_id?: DiscussionId\",\n                  d.content AS \"content!\", d.status AS \"status!: DiscussionStatus\",\n                  u.username AS \"username?\", u.display_name AS \"display_name?\", u.avatar_key AS \"avatar_key?\",\n                  d.likes_count AS \"likes_count!\", d.dislikes_count AS \"dislikes_count!\", d.replies_count AS \"replies_count!\",\n                  (SELECT r.reaction FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.user_id = $2) AS \"my_reaction?: ReactionKind\",\n                  (extract(epoch FROM d.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM d.updated_at))::bigint AS \"updated_at!\"\n           FROM course_discussions d LEFT JOIN users u ON u.id = d.user_id\n           WHERE d.parent_id = ANY($1) AND d.status = 'active'\n           ORDER BY d.id",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id: DiscussionId",
+        "name": "id!: DiscussionId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "course_id: CourseId",
+        "name": "course_id!: CourseId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
@@ -27,7 +27,7 @@
       },
       {
         "ordinal": 2,
-        "name": "user_id: UserId",
+        "name": "user_id?: UserId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
@@ -38,7 +38,7 @@
       },
       {
         "ordinal": 3,
-        "name": "parent_id: DiscussionId",
+        "name": "parent_id?: DiscussionId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
@@ -49,7 +49,7 @@
       },
       {
         "ordinal": 4,
-        "name": "content",
+        "name": "content!",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -60,7 +60,7 @@
       },
       {
         "ordinal": 5,
-        "name": "status: DiscussionStatus",
+        "name": "status!: DiscussionStatus",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -93,7 +93,7 @@
       },
       {
         "ordinal": 8,
-        "name": "avatar_key",
+        "name": "avatar_key?",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -104,7 +104,7 @@
       },
       {
         "ordinal": 9,
-        "name": "likes_count",
+        "name": "likes_count!",
         "type_info": "Int4",
         "origin": {
           "Table": {
@@ -115,7 +115,7 @@
       },
       {
         "ordinal": 10,
-        "name": "dislikes_count",
+        "name": "dislikes_count!",
         "type_info": "Int4",
         "origin": {
           "Table": {
@@ -126,7 +126,7 @@
       },
       {
         "ordinal": 11,
-        "name": "replies_count",
+        "name": "replies_count!",
         "type_info": "Int4",
         "origin": {
           "Table": {
@@ -156,10 +156,8 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Uuid",
-        "Uuid",
-        "Int8"
+        "UuidArray",
+        "Uuid"
       ]
     },
     "nullable": [
@@ -180,5 +178,5 @@
       null
     ]
   },
-  "hash": "bede2dfcc1ef151155a8b3c7376b6b83d1d7f09d6d5afa21ff8b1cf1fc4d9829"
+  "hash": "b02a56ae4d539c46b2276d778743daed9bd1fc9f047f9d62766e37423f2f6ba1"
 }

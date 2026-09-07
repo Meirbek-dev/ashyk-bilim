@@ -101,6 +101,10 @@ services:
       ZITADEL_EXTERNALDOMAIN: ${ZITADEL_EXTERNAL_DOMAIN:-localhost}
       ZITADEL_EXTERNALPORT: ${ZITADEL_EXTERNAL_PORT:-8081}
       ZITADEL_EXTERNALSECURE: ${ZITADEL_EXTERNAL_SECURE:-false}
+      # Legacy fastapi-users credentials are Argon2id. Zitadel enables only
+      # bcrypt by default; this verifier lets imported hashes authenticate and
+      # be rehashed under the current policy on first successful login.
+      ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS: argon2,bcrypt
     # Internal-only by design (DECISIONS.md 2026-08-16): no public route ever.
     # The localhost mapping exists for dev/debugging only; remove at cutover.
     ports:

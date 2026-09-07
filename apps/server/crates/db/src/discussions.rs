@@ -38,11 +38,11 @@ pub async fn get_discussion(
 ) -> Result<Option<DiscussionRow>> {
     let row = sqlx::query_as!(
         DiscussionRow,
-        r#"SELECT d.id AS "id: DiscussionId", d.course_id AS "course_id: CourseId",
-                  d.user_id AS "user_id: UserId", d.parent_id AS "parent_id: DiscussionId",
-                  d.content, d.status AS "status: DiscussionStatus",
-                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key,
-                  d.likes_count, d.dislikes_count, d.replies_count,
+        r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
+                  d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
+                  d.content AS "content!", d.status AS "status!: DiscussionStatus",
+                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key AS "avatar_key?",
+                  d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
@@ -67,11 +67,11 @@ pub async fn list_posts(
 ) -> Result<Vec<DiscussionRow>> {
     let rows = sqlx::query_as!(
         DiscussionRow,
-        r#"SELECT d.id AS "id: DiscussionId", d.course_id AS "course_id: CourseId",
-                  d.user_id AS "user_id: UserId", d.parent_id AS "parent_id: DiscussionId",
-                  d.content, d.status AS "status: DiscussionStatus",
-                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key,
-                  d.likes_count, d.dislikes_count, d.replies_count,
+        r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
+                  d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
+                  d.content AS "content!", d.status AS "status!: DiscussionStatus",
+                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key AS "avatar_key?",
+                  d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
@@ -101,11 +101,11 @@ pub async fn list_replies(
 ) -> Result<Vec<DiscussionRow>> {
     let rows = sqlx::query_as!(
         DiscussionRow,
-        r#"SELECT d.id AS "id: DiscussionId", d.course_id AS "course_id: CourseId",
-                  d.user_id AS "user_id: UserId", d.parent_id AS "parent_id: DiscussionId",
-                  d.content, d.status AS "status: DiscussionStatus",
-                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key,
-                  d.likes_count, d.dislikes_count, d.replies_count,
+        r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
+                  d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
+                  d.content AS "content!", d.status AS "status!: DiscussionStatus",
+                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key AS "avatar_key?",
+                  d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
@@ -134,11 +134,11 @@ pub async fn list_replies_for(
     let ids: Vec<uuid::Uuid> = parent_ids.iter().map(|p| p.0).collect();
     let rows = sqlx::query_as!(
         DiscussionRow,
-        r#"SELECT d.id AS "id: DiscussionId", d.course_id AS "course_id: CourseId",
-                  d.user_id AS "user_id: UserId", d.parent_id AS "parent_id: DiscussionId",
-                  d.content, d.status AS "status: DiscussionStatus",
-                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key,
-                  d.likes_count, d.dislikes_count, d.replies_count,
+        r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
+                  d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
+                  d.content AS "content!", d.status AS "status!: DiscussionStatus",
+                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key AS "avatar_key?",
+                  d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",

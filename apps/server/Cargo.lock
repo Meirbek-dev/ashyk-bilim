@@ -116,6 +116,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ab-etl"
+version = "0.1.0"
+dependencies = [
+ "ab-clients",
+ "ab-core",
+ "ab-db",
+ "ab-domain",
+ "jiff",
+ "reqwest",
+ "secrecy",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "sqlx",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "ab-jobs"
 version = "0.1.0"
 dependencies = [
@@ -277,6 +297,7 @@ dependencies = [
  "ab-core",
  "ab-db",
  "ab-domain",
+ "ab-etl",
  "ab-jobs",
  "anyhow",
  "axum",

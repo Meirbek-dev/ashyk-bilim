@@ -36,8 +36,7 @@ impl IdMap {
         let mut map = Self::default();
         for r in rows {
             if let Some(u) = &r.legacy_uuid {
-                map.by_uuid
-                    .insert((r.entity.clone(), u.clone()), r.new_id);
+                map.by_uuid.insert((r.entity.clone(), u.clone()), r.new_id);
             }
             map.by_id.insert((r.entity, r.legacy_id), r.new_id);
         }
@@ -56,6 +55,7 @@ impl IdMap {
 
     /// Resolve by legacy primary key (int or string).
     #[must_use]
+    #[allow(clippy::needless_pass_by_value)]
     pub fn get(&self, entity: &str, legacy_id: impl ToString) -> Option<Uuid> {
         self.by_id
             .get(&(entity.to_owned(), legacy_id.to_string()))
@@ -72,6 +72,7 @@ impl IdMap {
 
     /// Return the existing id for `(entity, legacy_id)` or mint a new UUIDv7
     /// at `created_unix_micros` (now when unknown).
+    #[allow(clippy::needless_pass_by_value)]
     pub fn mint(
         &mut self,
         entity: &str,
@@ -86,7 +87,8 @@ impl IdMap {
         let new_id = uuid_v7_at(created_unix_micros);
         self.by_id.insert(key.clone(), new_id);
         if let Some(u) = legacy_uuid {
-            self.by_uuid.insert((entity.to_owned(), u.to_owned()), new_id);
+            self.by_uuid
+                .insert((entity.to_owned(), u.to_owned()), new_id);
         }
         self.pending.push(Pending {
             entity: key.0,

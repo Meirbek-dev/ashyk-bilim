@@ -68,9 +68,46 @@ enum AdminCommand {
         #[arg(long, default_value = "smoke")]
         dataset: String,
     },
+    /// Import the legacy PostgreSQL backup into the v2 database.
+    Etl {
+        /// Legacy PostgreSQL URL. Prefer AB_ETL_SOURCE_URL in shell history.
+        #[arg(long, env = "AB_ETL_SOURCE_URL", hide_env_values = true)]
+        source_url: secrecy::SecretString,
+        /// Run one dependency-ready domain only.
+        #[arg(long)]
+        domain: Option<ab_etl::Domain>,
+        /// Cap each source query (smoke rehearsals).
+        #[arg(long)]
+        limit: Option<i64>,
+        /// Exercise the full transaction and roll it back.
+        #[arg(long)]
+        dry_run: bool,
+        /// Restored legacy content directory to copy into object storage.
+        #[arg(long)]
+        files_root: Option<std::path::PathBuf>,
+        /// Preserve unreferenced files under quarantine during file migration.
+        #[arg(long)]
+        quarantine_orphans: bool,
+    },
+    /// Import ETL-loaded users and password hashes into Zitadel.
+    ZitadelImport {
+        /// Legacy PostgreSQL URL. Prefer AB_ETL_SOURCE_URL in shell history.
+        #[arg(long, env = "AB_ETL_SOURCE_URL", hide_env_values = true)]
+        source_url: secrecy::SecretString,
+        /// Known rehearsal login used to verify an imported password hash.
+        #[arg(long, env = "AB_ETL_PROBE_LOGIN")]
+        probe_login: Option<String>,
+        /// Password for --probe-login. Prefer AB_ETL_PROBE_PASSWORD.
+        #[arg(long, env = "AB_ETL_PROBE_PASSWORD", hide_env_values = true)]
+        probe_password: Option<secrecy::SecretString>,
+    },
 }
 
 #[tokio::main]
+#[allow(
+    clippy::too_many_lines,
+    reason = "flat command dispatch keeps the CLI inventory visible"
+)]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let cli = Cli::parse();
@@ -127,6 +164,36 @@ async fn main() -> anyhow::Result<()> {
             command: AdminCommand::AiEval { dataset },
         } => ai_eval(config, &dataset).await,
         Command::Admin {
+            command:
+                AdminCommand::Etl {
+                    source_url,
+                    domain,
+                    limit,
+                    dry_run,
+                    files_root,
+                    quarantine_orphans,
+                },
+        } => {
+            run_etl(
+                config,
+                source_url,
+                domain,
+                limit,
+                dry_run,
+                files_root,
+                quarantine_orphans,
+            )
+            .await
+        }
+        Command::Admin {
+            command:
+                AdminCommand::ZitadelImport {
+                    source_url,
+                    probe_login,
+                    probe_password,
+                },
+        } => run_zitadel_import(config, source_url, probe_login, probe_password).await,
+        Command::Admin {
             command: AdminCommand::Judge0Tune,
         } => {
             let url = config
@@ -164,6 +231,66 @@ async fn main() -> anyhow::Result<()> {
             Ok(())
         }
     }
+}
+
+async fn run_zitadel_import(
+    config: Config,
+    source_url: secrecy::SecretString,
+    probe_login: Option<String>,
+    probe_password: Option<secrecy::SecretString>,
+) -> anyhow::Result<()> {
+    let probe = match (probe_login, probe_password) {
+        (Some(login_name), Some(password)) => Some(ab_etl::zitadel::LoginProbe {
+            login_name,
+            password,
+        }),
+        (None, None) => None,
+        _ => anyhow::bail!("--probe-login and --probe-password must be supplied together"),
+    };
+    let target = ab_db::connect(&config.database).await?;
+    let zitadel = config
+        .zitadel
+        .ok_or_else(|| anyhow::anyhow!("AB__ZITADEL__* must be set"))?;
+    let client = ab_clients::zitadel::ZitadelClient::new(ab_clients::zitadel::ZitadelConfig {
+        base_url: zitadel.base_url,
+        pat: zitadel.pat,
+    })?;
+    let report = ab_etl::zitadel::run_import(&source_url, &target, &client, probe).await?;
+    writeln!(std::io::stdout(), "{}", report.render())?;
+    Ok(())
+}
+
+async fn run_etl(
+    config: Config,
+    source_url: secrecy::SecretString,
+    domain: Option<ab_etl::Domain>,
+    limit: Option<i64>,
+    dry_run: bool,
+    files_root: Option<std::path::PathBuf>,
+    quarantine_orphans: bool,
+) -> anyhow::Result<()> {
+    let target = ab_db::connect(&config.database).await?;
+    let storage = if files_root.is_some() {
+        Some(build_storage(&config)?)
+    } else {
+        None
+    };
+    let report = ab_etl::run(ab_etl::EtlOptions {
+        source_url,
+        target,
+        domain,
+        limit,
+        dry_run,
+        files_root,
+        storage,
+        quarantine_orphans,
+    })
+    .await?;
+    writeln!(std::io::stdout(), "{}", report.render())?;
+    if !report.ok() {
+        anyhow::bail!("ETL verification failed");
+    }
+    Ok(())
 }
 
 /// `ashyq admin ai-eval`: the provider smoke check, recorded in

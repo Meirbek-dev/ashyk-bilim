@@ -1,3 +1,19 @@
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::struct_excessive_bools,
+    clippy::too_long_first_doc_paragraph,
+    clippy::too_many_lines
+)]
+#![cfg_attr(
+    test,
+    allow(
+        clippy::float_cmp,
+        clippy::manual_string_new,
+        clippy::suboptimal_flops,
+        clippy::unwrap_used
+    )
+)]
+
 //! `ab-etl` — the one-shot legacy → v2 migration behind `ashyq admin etl`.
 //!
 //! Pipeline shape (docs/rewrite/MIGRATION.md §2): ordered domain runners,
@@ -17,9 +33,16 @@ pub mod domains;
 pub mod files;
 pub mod idmap;
 pub mod legacy;
+mod loaders;
+mod loaders_assessments;
+mod loaders_auxiliary;
+mod loaders_catalog;
+mod loaders_submissions;
+mod loaders_users;
 pub mod pipeline;
 pub mod report;
 pub mod smoke;
+pub mod spec;
 pub mod transform;
 pub mod verify;
 pub mod zitadel;

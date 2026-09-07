@@ -61,7 +61,10 @@ pub fn user(u: &legacy::User) -> (UserRow, DroppedUserData) {
         password_hash: non_empty(u.hashed_password.as_deref()),
     };
     let dropped = DroppedUserData {
-        theme: u.theme.as_deref().is_some_and(|t| !t.is_empty() && t != "default"),
+        theme: u
+            .theme
+            .as_deref()
+            .is_some_and(|t| !t.is_empty() && t != "default"),
         details: u.has_details,
         profile: u.has_profile,
         google_avatar_url: u

@@ -55,7 +55,10 @@ impl LatePolicy {
 #[must_use]
 pub fn late_policy(value: Option<&Value>) -> (LatePolicy, Option<String>) {
     let m = object(value);
-    match str_setting(&m, "kind").map(str::to_ascii_uppercase).as_deref() {
+    match str_setting(&m, "kind")
+        .map(str::to_ascii_uppercase)
+        .as_deref()
+    {
         None | Some("NONE") => (LatePolicy::NONE, None),
         Some("PENALTY") => {
             let pct = float_setting(&m, "percent_per_day");
@@ -72,7 +75,9 @@ pub fn late_policy(value: Option<&Value>) -> (LatePolicy, Option<String>) {
                 ),
                 _ => (
                     LatePolicy::NONE,
-                    Some("late policy PENALTY without valid percent_per_day/max_days → none".into()),
+                    Some(
+                        "late policy PENALTY without valid percent_per_day/max_days → none".into(),
+                    ),
                 ),
             }
         }
@@ -107,10 +112,16 @@ pub fn review_visibility(settings: &Map<String, Value>) -> &'static str {
         Some("FULL") => return "full",
         _ => {}
     }
-    if matches!(settings.get("allow_result_review"), Some(Value::Bool(false))) {
+    if matches!(
+        settings.get("allow_result_review"),
+        Some(Value::Bool(false))
+    ) {
         return "none";
     }
-    if matches!(settings.get("show_correct_answers"), Some(Value::Bool(false))) {
+    if matches!(
+        settings.get("show_correct_answers"),
+        Some(Value::Bool(false))
+    ) {
         return "score_only";
     }
     "full"
@@ -182,11 +193,22 @@ const KNOWN_SETTING_KEYS: &[&str] = &[
 
 const VALID_GRADING_MODES: [&str; 3] = ["auto", "manual", "auto_then_manual"];
 const VALID_RELEASE_MODES: [&str; 2] = ["immediate", "batch"];
-const VALID_COMPLETION_RULES: [&str; 5] =
-    ["viewed", "submitted", "graded", "passed", "teacher_verified"];
+const VALID_COMPLETION_RULES: [&str; 5] = [
+    "viewed",
+    "submitted",
+    "graded",
+    "passed",
+    "teacher_verified",
+];
 const VALID_LIFECYCLES: [&str; 4] = ["draft", "scheduled", "published", "archived"];
 
-fn checked<'a>(value: &str, allowed: &[&'a str], fallback: &'a str, what: &str, notes: &mut Vec<String>) -> String {
+fn checked<'a>(
+    value: &str,
+    allowed: &[&'a str],
+    fallback: &'a str,
+    what: &str,
+    notes: &mut Vec<String>,
+) -> String {
     let v = snake(value, None);
     if allowed.contains(&v.as_str()) {
         v
@@ -206,8 +228,12 @@ pub fn fold(
     activity_settings: &Map<String, Value>,
 ) -> AssessmentFold {
     let mut notes = Vec::new();
-    let settings = p.map(|p| object(p.settings_json.as_ref())).unwrap_or_default();
-    let anti = p.map(|p| object(p.anti_cheat_json.as_ref())).unwrap_or_default();
+    let settings = p
+        .map(|p| object(p.settings_json.as_ref()))
+        .unwrap_or_default();
+    let anti = p
+        .map(|p| object(p.anti_cheat_json.as_ref()))
+        .unwrap_or_default();
     let (late, late_note) = late_policy(p.and_then(|p| p.late_policy_json.as_ref()));
     notes.extend(late_note);
     if p.is_none() {
@@ -224,7 +250,13 @@ pub fn fold(
         }
     }
     .to_owned();
-    let lifecycle = checked(&a.lifecycle, &VALID_LIFECYCLES, "draft", "lifecycle", &mut notes);
+    let lifecycle = checked(
+        &a.lifecycle,
+        &VALID_LIFECYCLES,
+        "draft",
+        "lifecycle",
+        &mut notes,
+    );
     let grading_type = if snake(&a.grading_type, None) == "numeric" {
         "numeric"
     } else {
@@ -250,15 +282,39 @@ pub fn fold(
         grading_type,
         grading_mode: p.map_or_else(
             || "auto".to_owned(),
-            |p| checked(&p.grading_mode, &VALID_GRADING_MODES, "auto", "grading_mode", &mut notes),
+            |p| {
+                checked(
+                    &p.grading_mode,
+                    &VALID_GRADING_MODES,
+                    "auto",
+                    "grading_mode",
+                    &mut notes,
+                )
+            },
         ),
         grade_release_mode: p.map_or_else(
             || "immediate".to_owned(),
-            |p| checked(&p.grade_release_mode, &VALID_RELEASE_MODES, "immediate", "grade_release_mode", &mut notes),
+            |p| {
+                checked(
+                    &p.grade_release_mode,
+                    &VALID_RELEASE_MODES,
+                    "immediate",
+                    "grade_release_mode",
+                    &mut notes,
+                )
+            },
         ),
         completion_rule: p.map_or_else(
             || "graded".to_owned(),
-            |p| checked(&p.completion_rule, &VALID_COMPLETION_RULES, "graded", "completion_rule", &mut notes),
+            |p| {
+                checked(
+                    &p.completion_rule,
+                    &VALID_COMPLETION_RULES,
+                    "graded",
+                    "completion_rule",
+                    &mut notes,
+                )
+            },
         ),
         passing_score: p.map_or(60.0, |p| p.passing_score.clamp(0.0, 100.0)),
         max_attempts: p.and_then(|p| p.max_attempts).filter(|n| *n >= 1),
@@ -285,7 +341,10 @@ pub fn fold(
         tab_switch_detection: bool_setting(&anti, &["tab_switch_detection"]),
         devtools_detection: bool_setting(&anti, &["devtools_detection"]),
         right_click_disabled: bool_setting(&anti, &["right_click_disabled", "right_click_disable"]),
-        fullscreen_required: bool_setting(&anti, &["fullscreen_required", "fullscreen_enforcement"]),
+        fullscreen_required: bool_setting(
+            &anti,
+            &["fullscreen_required", "fullscreen_enforcement"],
+        ),
         violation_threshold: int_setting(&anti, "violation_threshold")
             .and_then(|v| i32::try_from(v).ok())
             .filter(|v| *v >= 1)
@@ -367,7 +426,8 @@ pub fn item_body(kind: &str, body_json: Option<&Value>) -> Result<Value, String>
             }
         }
     }
-    let parsed = ItemBody::from_stored(&Value::Object(body)).map_err(|e| format!("item body: {e}"))?;
+    let parsed =
+        ItemBody::from_stored(&Value::Object(body)).map_err(|e| format!("item body: {e}"))?;
     if parsed.kind().as_str() != kind {
         return Err(format!(
             "item body kind '{}' disagrees with column kind '{kind}'",
@@ -472,7 +532,11 @@ mod tests {
         assert_eq!(f.completion_rule, "passed");
         assert_eq!(f.grade_release_mode, "immediate");
         assert_eq!(f.max_attempts, Some(2));
-        assert_eq!(f.time_limit_seconds, Some(900), "the column wins over settings.time_limit minutes");
+        assert_eq!(
+            f.time_limit_seconds,
+            Some(900),
+            "the column wins over settings.time_limit minutes"
+        );
         assert_eq!(f.late, LatePolicy::NONE);
         assert!(f.randomize_questions);
         assert!(!f.randomize_options);
@@ -483,7 +547,10 @@ mod tests {
         assert_eq!(f.violation_threshold, 5);
         assert_eq!(f.policy_version, 3);
         assert_eq!(f.attempt_penalty_percent, 0.0);
-        assert_eq!(f.dropped_setting_keys, vec!["access_mode", "question_limit", "whitelist_user_ids"]);
+        assert_eq!(
+            f.dropped_setting_keys,
+            vec!["access_mode", "question_limit", "whitelist_user_ids"]
+        );
         assert!(f.notes.is_empty());
     }
 
@@ -491,7 +558,8 @@ mod tests {
     fn fold_without_policy_uses_legacy_defaults() {
         let mut a = assessment();
         a.lifecycle = "WEIRD".into();
-        let s: Map<String, Value> = serde_json::from_str(r#"{"max_score_penalty_per_attempt": 10}"#).unwrap();
+        let s: Map<String, Value> =
+            serde_json::from_str(r#"{"max_score_penalty_per_attempt": 10}"#).unwrap();
         let f = fold(&a, None, &s);
         assert_eq!(f.lifecycle, "draft");
         assert_eq!(f.grading_mode, "auto");
@@ -506,19 +574,26 @@ mod tests {
 
     #[test]
     fn late_policies() {
-        let (p, note) = late_policy(Some(&serde_json::json!({"kind":"PENALTY","percent_per_day":10,"max_days":3})));
+        let (p, note) = late_policy(Some(
+            &serde_json::json!({"kind":"PENALTY","percent_per_day":10,"max_days":3}),
+        ));
         assert_eq!(p.kind, "penalty");
         assert_eq!(p.percent_per_day, Some(10.0));
         assert_eq!(p.max_days, Some(3));
         assert!(note.is_none());
-        let (c, _) = late_policy(Some(&serde_json::json!({"kind":"CUTOFF","cutoff_at":"2026-01-02T00:00:00Z"})));
+        let (c, _) = late_policy(Some(
+            &serde_json::json!({"kind":"CUTOFF","cutoff_at":"2026-01-02T00:00:00Z"}),
+        ));
         assert_eq!(c.kind, "cutoff");
         assert_eq!(c.cutoff_at, Some(1_767_312_000.0));
         let (bad, note) = late_policy(Some(&serde_json::json!({"kind":"PENALTY"})));
         assert_eq!(bad, LatePolicy::NONE);
         assert!(note.is_some());
         assert_eq!(late_policy(None).0, LatePolicy::NONE);
-        assert_eq!(iso_epoch(Some(&Value::String("2026-06-29 11:28:23".into()))), Some(1_782_732_503.0));
+        assert_eq!(
+            iso_epoch(Some(&Value::String("2026-06-29 11:28:23".into()))),
+            Some(1_782_732_503.0)
+        );
     }
 
     #[test]
@@ -542,8 +617,21 @@ mod tests {
         assert_eq!(stored["tests"][0]["match_mode"], "trimmed");
         assert_eq!(stored["scoring_strategy"], "partial_credit");
 
-        assert!(item_body("choice", Some(&serde_json::json!({"kind":"MATCHING","pairs":[]}))).is_err());
-        assert!(item_body("code", Some(&serde_json::json!({"kind":"CODE","tests":[{"input":"x"}]}))).is_err(), "test without id");
+        assert!(
+            item_body(
+                "choice",
+                Some(&serde_json::json!({"kind":"MATCHING","pairs":[]}))
+            )
+            .is_err()
+        );
+        assert!(
+            item_body(
+                "code",
+                Some(&serde_json::json!({"kind":"CODE","tests":[{"input":"x"}]}))
+            )
+            .is_err(),
+            "test without id"
+        );
         assert_eq!(item_kind("OPEN_TEXT"), Some("open_text"));
         assert_eq!(item_kind("ESSAY"), None);
         assert_eq!(access_mode(Some("RESTRICTED")), "restricted");
@@ -552,7 +640,9 @@ mod tests {
 
     #[test]
     fn item_metadata_scalars() {
-        let m = item_metadata(Some(&serde_json::json!({"section_label":"S","difficulty":"HARD","tags":["a",1],"estimated_minutes":4.0})));
+        let m = item_metadata(Some(
+            &serde_json::json!({"section_label":"S","difficulty":"HARD","tags":["a",1],"estimated_minutes":4.0}),
+        ));
         assert_eq!(m.section_label.as_deref(), Some("S"));
         assert_eq!(m.difficulty.as_deref(), Some("hard"));
         assert_eq!(m.tags, vec!["a"]);

@@ -115,6 +115,20 @@ impl StorageClient {
         Ok(())
     }
 
+    /// Read an object for operational verification jobs.
+    pub async fn get(&self, bucket: Bucket, key: &str) -> Result<Option<Vec<u8>>> {
+        let result = match self.store(bucket).get(&ObjectPath::from(key)).await {
+            Ok(result) => result,
+            Err(object_store::Error::NotFound { .. }) => return Ok(None),
+            Err(error) => return Err(Error::internal("object get", error)),
+        };
+        let bytes = result
+            .bytes()
+            .await
+            .map_err(|error| Error::internal("reading object body", error))?;
+        Ok(Some(bytes.to_vec()))
+    }
+
     pub async fn delete(&self, bucket: Bucket, key: &str) -> Result<()> {
         match self.store(bucket).delete(&ObjectPath::from(key)).await {
             Ok(()) | Err(object_store::Error::NotFound { .. }) => Ok(()),

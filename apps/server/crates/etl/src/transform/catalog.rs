@@ -15,7 +15,8 @@ pub fn learnings(raw: Option<&str>) -> Vec<Value> {
     let Some(raw) = raw.map(str::trim).filter(|s| !s.is_empty()) else {
         return Vec::new();
     };
-    let parsed = serde_json::from_str::<Value>(raw).unwrap_or_else(|_| Value::String(raw.to_owned()));
+    let parsed =
+        serde_json::from_str::<Value>(raw).unwrap_or_else(|_| Value::String(raw.to_owned()));
     let items = match parsed {
         Value::Array(a) => a,
         other => vec![other],
@@ -233,6 +234,7 @@ pub fn linked_activity_uuids(raw: Option<&str>) -> Vec<String> {
 
 /// Legacy discussion `type` → v2 `kind`.
 #[must_use]
+#[allow(clippy::missing_const_for_fn)]
 pub fn discussion_kind(raw: &str) -> &'static str {
     if raw.eq_ignore_ascii_case("REPLY") {
         "reply"
@@ -253,7 +255,9 @@ mod tests {
         assert_eq!(plain.len(), 1);
         assert_eq!(plain[0]["text"], "Learn A, and B");
         assert_eq!(plain[0]["emoji"], "📝");
-        let list = learnings(Some(r#"[{"id":"x","text":" T ","emoji":"","link":" http://l "},{"text":""},"raw"]"#));
+        let list = learnings(Some(
+            r#"[{"id":"x","text":" T ","emoji":"","link":" http://l "},{"text":""},"raw"]"#,
+        ));
         assert_eq!(list.len(), 2);
         assert_eq!(list[0]["id"], "x");
         assert_eq!(list[0]["text"], "T");
@@ -281,21 +285,34 @@ mod tests {
             Some(("video", "video_youtube"))
         );
         assert_eq!(
-            activity_types("TYPE_FILE_SUBMISSION", "SUBTYPE_FILE_SUBMISSION_STANDARD", &empty),
+            activity_types(
+                "TYPE_FILE_SUBMISSION",
+                "SUBTYPE_FILE_SUBMISSION_STANDARD",
+                &empty
+            ),
             Some(("file_submission", "file_submission_standard"))
         );
-        assert_eq!(activity_types("TYPE_ASSIGNMENT", "SUBTYPE_ASSIGNMENT_ANY", &empty), None);
+        assert_eq!(
+            activity_types("TYPE_ASSIGNMENT", "SUBTYPE_ASSIGNMENT_ANY", &empty),
+            None
+        );
         let quiz: Map<String, Value> = serde_json::from_str(r#"{"kind":"QUIZ"}"#).unwrap();
         assert_eq!(
             activity_types("TYPE_CUSTOM", "SUBTYPE_CUSTOM", &quiz),
             Some(("quiz", "quiz_standard"))
         );
-        assert_eq!(activity_types("TYPE_CUSTOM", "SUBTYPE_CUSTOM", &empty), Some(("custom", "custom")));
+        assert_eq!(
+            activity_types("TYPE_CUSTOM", "SUBTYPE_CUSTOM", &empty),
+            Some(("custom", "custom"))
+        );
         assert_eq!(block_type("BLOCK_DOCUMENT_PDF"), Some("pdf"));
         assert_eq!(block_type("BLOCK_QUIZ"), None);
         assert_eq!(block_dir("pdf"), Some("pdfBlock"));
         assert_eq!(resource_target("course_01K"), Some(ResourceKind::Course));
-        assert_eq!(resource_target("collection_01K"), Some(ResourceKind::Collection));
+        assert_eq!(
+            resource_target("collection_01K"),
+            Some(ResourceKind::Collection)
+        );
         assert_eq!(resource_target("user_01K"), None);
         assert_eq!(discussion_kind("REPLY"), "reply");
         assert_eq!(discussion_kind("POST"), "post");

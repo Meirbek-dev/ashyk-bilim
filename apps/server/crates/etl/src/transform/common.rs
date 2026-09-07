@@ -42,6 +42,7 @@ pub fn bool_setting(map: &Map<String, Value>, keys: &[&str]) -> bool {
 
 /// Legacy `_int_setting`: integer-valued numbers only (bools excluded).
 #[must_use]
+#[allow(clippy::cast_possible_truncation)]
 pub fn int_setting(map: &Map<String, Value>, key: &str) -> Option<i64> {
     match map.get(key) {
         Some(Value::Number(n)) => n
@@ -134,7 +135,13 @@ mod tests {
     #[test]
     fn renumber_is_contiguous_per_parent_and_stable() {
         // chapter 19 has two activities at order 1 and two at order 3
-        let out = renumber(vec![(19, 3, 50), (19, 1, 41), (19, 1, 40), (19, 3, 49), (20, 7, 60)]);
+        let out = renumber(vec![
+            (19, 3, 50),
+            (19, 1, 41),
+            (19, 1, 40),
+            (19, 3, 49),
+            (20, 7, 60),
+        ]);
         assert_eq!(out, vec![(40, 1), (41, 2), (49, 3), (50, 4), (60, 1)]);
     }
 

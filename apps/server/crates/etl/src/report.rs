@@ -131,7 +131,11 @@ impl Report {
             out,
             "etl run {}{} — {} ms",
             self.run_id,
-            if self.dry_run { " (dry-run, rolled back)" } else { "" },
+            if self.dry_run {
+                " (dry-run, rolled back)"
+            } else {
+                ""
+            },
             self.duration_ms
         );
         for d in &self.domains {
@@ -175,11 +179,7 @@ impl Report {
                 );
             }
         }
-        let _ = writeln!(
-            out,
-            "\nresult: {}",
-            if self.ok() { "GREEN" } else { "RED" }
-        );
+        let _ = writeln!(out, "\nresult: {}", if self.ok() { "GREEN" } else { "RED" });
         out
     }
 }

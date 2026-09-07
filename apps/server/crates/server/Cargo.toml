@@ -17,6 +17,7 @@ ab-clients = { workspace = true }
 ab-core = { workspace = true }
 ab-db = { workspace = true }
 ab-domain = { workspace = true }
+ab-etl = { workspace = true }
 ab-jobs = { workspace = true }
 anyhow = { workspace = true }
 axum = { workspace = true }

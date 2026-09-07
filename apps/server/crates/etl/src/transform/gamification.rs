@@ -50,7 +50,7 @@ pub fn login_day(created_at_epoch: f64) -> String {
     secs.div_euclid(86_400).to_string()
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LedgerInput {
     pub legacy_id: i32,
     pub user_id: uuid::Uuid,
@@ -62,7 +62,7 @@ pub struct LedgerInput {
     pub created_at: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LedgerRow {
     pub legacy_id: i32,
     pub user_id: uuid::Uuid,
@@ -111,14 +111,16 @@ pub fn recompute(mut input: Vec<LedgerInput>) -> Recomputed {
     let mut seen_idem: std::collections::HashSet<String> = std::collections::HashSet::new();
     for row in input {
         if row.amount <= 0 {
-            out.dropped.push((row.legacy_id, "non-positive amount".into()));
+            out.dropped
+                .push((row.legacy_id, "non-positive amount".into()));
             continue;
         }
         let source_id = match row.check {
             SourceCheck::Verified(id) => Some(id),
             SourceCheck::Unkeyed => None,
             SourceCheck::Unverifiable(why) => {
-                out.dropped.push((row.legacy_id, format!("unverifiable source: {why}")));
+                out.dropped
+                    .push((row.legacy_id, format!("unverifiable source: {why}")));
                 continue;
             }
         };
@@ -132,7 +134,8 @@ pub fn recompute(mut input: Vec<LedgerInput>) -> Recomputed {
         if let Some(k) = &row.idempotency_key
             && !seen_idem.insert(k.clone())
         {
-            out.dropped.push((row.legacy_id, "duplicate idempotency_key".into()));
+            out.dropped
+                .push((row.legacy_id, "duplicate idempotency_key".into()));
             continue;
         }
         let totals = out.totals.entry(row.user_id).or_default();
@@ -179,7 +182,14 @@ pub fn trail_run_status(raw: &str) -> &'static str {
 mod tests {
     use super::*;
 
-    fn row(id: i32, user: uuid::Uuid, amount: i32, source: &'static str, check: SourceCheck, at: f64) -> LedgerInput {
+    fn row(
+        id: i32,
+        user: uuid::Uuid,
+        amount: i32,
+        source: &'static str,
+        check: SourceCheck,
+        at: f64,
+    ) -> LedgerInput {
         LedgerInput {
             legacy_id: id,
             user_id: user,
@@ -196,18 +206,64 @@ mod tests {
     fn recompute_keeps_verified_rows_and_rebuilds_levels() {
         let u = uuid::Uuid::now_v7();
         let rows = vec![
-            row(3, u, 25, "activity_completion", SourceCheck::Verified("a1".into()), 30.0),
-            row(1, u, 50, "exam_completion", SourceCheck::Unverifiable("old exam attempt".into()), 10.0),
-            row(2, u, 200, "course_completion", SourceCheck::Verified("c1".into()), 20.0),
-            row(4, u, 25, "activity_completion", SourceCheck::Verified("a1".into()), 40.0),
-            row(5, u, 0, "login_bonus", SourceCheck::Verified("20000".into()), 50.0),
+            row(
+                3,
+                u,
+                25,
+                "activity_completion",
+                SourceCheck::Verified("a1".into()),
+                30.0,
+            ),
+            row(
+                1,
+                u,
+                50,
+                "exam_completion",
+                SourceCheck::Unverifiable("old exam attempt".into()),
+                10.0,
+            ),
+            row(
+                2,
+                u,
+                200,
+                "course_completion",
+                SourceCheck::Verified("c1".into()),
+                20.0,
+            ),
+            row(
+                4,
+                u,
+                25,
+                "activity_completion",
+                SourceCheck::Verified("a1".into()),
+                40.0,
+            ),
+            row(
+                5,
+                u,
+                0,
+                "login_bonus",
+                SourceCheck::Verified("20000".into()),
+                50.0,
+            ),
             row(6, u, 10, "admin_award", SourceCheck::Unkeyed, 60.0),
         ];
         let r = recompute(rows);
-        assert_eq!(r.rows.iter().map(|r| r.legacy_id).collect::<Vec<_>>(), vec![2, 3, 6]);
+        assert_eq!(
+            r.rows.iter().map(|r| r.legacy_id).collect::<Vec<_>>(),
+            vec![2, 3, 6]
+        );
         assert_eq!(r.dropped.len(), 3);
-        assert!(r.dropped.iter().any(|(id, why)| *id == 1 && why.contains("unverifiable")));
-        assert!(r.dropped.iter().any(|(id, why)| *id == 4 && why.contains("duplicate (user")));
+        assert!(
+            r.dropped
+                .iter()
+                .any(|(id, why)| *id == 1 && why.contains("unverifiable"))
+        );
+        assert!(
+            r.dropped
+                .iter()
+                .any(|(id, why)| *id == 4 && why.contains("duplicate (user"))
+        );
         assert!(r.dropped.iter().any(|(id, _)| *id == 5));
         let t = &r.totals[&u];
         assert_eq!(t.total_xp, 235);

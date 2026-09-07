@@ -24,7 +24,7 @@ pub fn status(raw: &str) -> Option<&'static str> {
 }
 
 /// Outcome of re-keying an answers/breakdown blob.
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Rekeyed {
     pub value: Value,
     /// Legacy item ids that no v2 item resolves (entries dropped).
@@ -97,7 +97,9 @@ pub fn breakdown(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) ->
     let mut unresolved = Vec::new();
     let mut items = Vec::new();
     for item in array(src.get("items")) {
-        let Some(mut m) = item.as_object().cloned() else { continue };
+        let Some(mut m) = item.as_object().cloned() else {
+            continue;
+        };
         let legacy_id = str_setting(&m, "item_id").unwrap_or("").to_owned();
         let Some(id) = resolve(&legacy_id) else {
             unresolved.push(legacy_id);
@@ -145,7 +147,10 @@ pub fn metadata(raw: Option<&Value>) -> Metadata {
         .and_then(|v| i32::try_from(v).ok())
         .filter(|v| *v >= 0)
         .unwrap_or(0);
-    let auto_submit_reason = match str_setting(&m, "auto_submit_reason").map(str::to_ascii_lowercase).as_deref() {
+    let auto_submit_reason = match str_setting(&m, "auto_submit_reason")
+        .map(str::to_ascii_lowercase)
+        .as_deref()
+    {
         Some("time_expired") => Some("time_expired"),
         Some("integrity_violation") => Some("integrity_violation"),
         _ => None,
@@ -155,7 +160,11 @@ pub fn metadata(raw: Option<&Value>) -> Metadata {
         .filter(|k| {
             !matches!(
                 k.as_str(),
-                "violations" | "violation_count" | "auto_submit_reason" | "auto_submitted_at" | "duration_seconds"
+                "violations"
+                    | "violation_count"
+                    | "auto_submit_reason"
+                    | "auto_submitted_at"
+                    | "duration_seconds"
             )
         })
         .cloned()
@@ -178,7 +187,10 @@ pub fn metadata(raw: Option<&Value>) -> Metadata {
 /// bodies re-type through the assessment item transform. Items that no
 /// longer resolve are kept with their legacy id (a snapshot is history).
 #[must_use]
-pub fn items_snapshot(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) -> Option<Value> {
+pub fn items_snapshot(
+    raw: Option<&Value>,
+    resolve: impl Fn(&str) -> Option<Uuid>,
+) -> Option<Value> {
     let src = object(raw);
     let items = array(src.get("items"));
     if items.is_empty() {
@@ -188,12 +200,21 @@ pub fn items_snapshot(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid
     for (i, item) in items.iter().enumerate() {
         let Some(m) = item.as_object() else { continue };
         let legacy_id = str_setting(m, "item_uuid").unwrap_or("");
-        let kind = str_setting(m, "kind").map(str::to_ascii_lowercase).unwrap_or_default();
-        let body = crate::transform::assessments::item_body(&kind, m.get("body_json").or_else(|| m.get("body")))
-            .unwrap_or_else(|_| m.get("body_json").cloned().unwrap_or(Value::Object(Map::new())));
+        let kind = str_setting(m, "kind")
+            .map(str::to_ascii_lowercase)
+            .unwrap_or_default();
+        let body = crate::transform::assessments::item_body(
+            &kind,
+            m.get("body_json").or_else(|| m.get("body")),
+        )
+        .unwrap_or_else(|_| {
+            m.get("body_json")
+                .cloned()
+                .unwrap_or_else(|| Value::Object(Map::new()))
+        });
         let position = int_setting(m, "order")
             .or_else(|| int_setting(m, "position"))
-            .map_or(i as i64 + 1, |o| o + 1);
+            .map_or_else(|| i64::try_from(i).unwrap_or(i64::MAX) + 1, |o| o + 1);
         out.push(serde_json::json!({
             "id": resolve(legacy_id).map_or_else(|| legacy_id.to_owned(), |u| u.to_string()),
             "kind": kind,
@@ -213,7 +234,7 @@ pub fn policy_snapshot(raw: Option<&Value>) -> Option<Value> {
     if src.is_empty() {
         return None;
     }
-    let lower = |key: &str| str_setting(&src, key).map(|s| s.to_ascii_lowercase());
+    let lower = |key: &str| str_setting(&src, key).map(str::to_ascii_lowercase);
     Some(serde_json::json!({
         "max_attempts": src.get("max_attempts").cloned().unwrap_or(Value::Null),
         "time_limit_seconds": src.get("time_limit_seconds").cloned().unwrap_or(Value::Null),
@@ -293,14 +314,18 @@ pub fn int_list(raw: Option<&Value>) -> Vec<i64> {
 #[must_use]
 pub fn lower_in(raw: &str, allowed: &[&'static str], fallback: &'static str) -> &'static str {
     let v = snake(raw, None);
-    allowed.iter().copied().find(|a| *a == v).unwrap_or(fallback)
+    allowed
+        .iter()
+        .copied()
+        .find(|a| *a == v)
+        .unwrap_or(fallback)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn resolver(known: &[(&str, Uuid)]) -> impl Fn(&str) -> Option<Uuid> + '_ {
+    fn resolver<'a>(known: &'a [(&'a str, Uuid)]) -> impl Fn(&str) -> Option<Uuid> + 'a {
         move |k| known.iter().find(|(l, _)| *l == k).map(|(_, u)| *u)
     }
 
@@ -316,11 +341,18 @@ mod tests {
 
         let code = serde_json::json!({"answers": [{"item_uuid": "question_1", "answer": {"kind": "CODE", "language": 71, "source": "cHJp", "latest_run": {"passed": 0}}}]});
         let r = answers(Some(&code), resolver(&known));
-        assert_eq!(r.value[a.to_string()], serde_json::json!({"kind":"code","language":71,"source":"cHJp"}));
+        assert_eq!(
+            r.value[a.to_string()],
+            serde_json::json!({"kind":"code","language":71,"source":"cHJp"})
+        );
         assert!(r.unresolved.is_empty());
 
         let bad = serde_json::json!({"answers": {"question_1": {"kind": "CODE"}}});
-        assert_eq!(answers(Some(&bad), resolver(&known)).unresolved.len(), 1, "code without language is unparsable");
+        assert_eq!(
+            answers(Some(&bad), resolver(&known)).unresolved.len(),
+            1,
+            "code without language is unparsable"
+        );
         assert_eq!(answers(None, resolver(&known)).value, serde_json::json!({}));
     }
 
@@ -352,8 +384,17 @@ mod tests {
         assert_eq!(m.violations.as_array().unwrap().len(), 1);
         assert_eq!(m.auto_submit_reason, Some("time_expired"));
         assert!(m.auto_submitted_at.is_some_and(|t| t > 1.7e9));
-        assert_eq!(m.dropped_keys, vec!["latest_run", "plagiarism_status", "runs"]);
-        assert_eq!(metadata(None), Metadata { violations: Value::Array(vec![]), ..Metadata::default() });
+        assert_eq!(
+            m.dropped_keys,
+            vec!["latest_run", "plagiarism_status", "runs"]
+        );
+        assert_eq!(
+            metadata(None),
+            Metadata {
+                violations: Value::Array(vec![]),
+                ..Metadata::default()
+            }
+        );
     }
 
     #[test]
@@ -385,10 +426,28 @@ mod tests {
         assert_eq!(run_purpose("FINAL"), Some("final"));
         assert_eq!(run_status("DEGRADED"), Some("degraded"));
         assert_eq!(run_status("nope"), None);
-        assert_eq!(attempt_feedback(Some(&serde_json::json!({"feedback":"ok","rubric_scores":{"a":1}}))), ("ok".into(), serde_json::json!({"a":1})));
-        assert_eq!(mime_list(Some(&serde_json::json!(["Application/PDF", " image/png", "application/pdf"]))), vec!["application/pdf", "image/png"]);
+        assert_eq!(
+            attempt_feedback(Some(
+                &serde_json::json!({"feedback":"ok","rubric_scores":{"a":1}})
+            )),
+            ("ok".into(), serde_json::json!({"a":1}))
+        );
+        assert_eq!(
+            mime_list(Some(&serde_json::json!([
+                "Application/PDF",
+                " image/png",
+                "application/pdf"
+            ]))),
+            vec!["application/pdf", "image/png"]
+        );
         assert_eq!(int_list(Some(&serde_json::json!([1, "x", 2]))), vec![1, 2]);
-        assert_eq!(lower_in("TEXT", &["text", "highlight", "audio"], "text"), "text");
-        assert_eq!(lower_in("VIDEO", &["text", "highlight", "audio"], "text"), "text");
+        assert_eq!(
+            lower_in("TEXT", &["text", "highlight", "audio"], "text"),
+            "text"
+        );
+        assert_eq!(
+            lower_in("VIDEO", &["text", "highlight", "audio"], "text"),
+            "text"
+        );
     }
 }

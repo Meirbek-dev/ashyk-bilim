@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT entity, legacy_id, legacy_uuid, new_id FROM etl_id_map",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entity",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "etl_id_map",
+            "name": "entity"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "legacy_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "etl_id_map",
+            "name": "legacy_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "legacy_uuid",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "etl_id_map",
+            "name": "legacy_uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "new_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "etl_id_map",
+            "name": "new_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "1c0d8b31bdf9d3127cee158424732d695c6ae06bcad015212349c955ff046dca"
+}

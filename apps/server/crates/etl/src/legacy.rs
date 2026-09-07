@@ -83,6 +83,7 @@ where
 
 // ── Identity ────────────────────────────────────────────────────────────────
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, FromRow)]
 pub struct User {
     pub id: i32,
@@ -162,8 +163,17 @@ pub struct UserRole {
 }
 
 pub async fn user_roles(pool: &PgPool, limit: Option<i64>) -> Result<Vec<UserRole>> {
-    fetch(pool, "user_roles", concat!(
-        "SELECT id, user_id, role_id, ", ts!("assigned_at"), " FROM user_roles ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "user_roles",
+        concat!(
+            "SELECT id, user_id, role_id, ",
+            ts!("assigned_at"),
+            " FROM user_roles ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -180,9 +190,18 @@ pub struct AuthAudit {
 }
 
 pub async fn auth_audit(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AuthAudit>> {
-    fetch(pool, "auth_audit_log", concat!(
-        "SELECT id, ", ts!("created_at"), ", user_id, event_type, session_id, ip_address, user_agent, metadata, severity ",
-        "FROM auth_audit_log ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "auth_audit_log",
+        concat!(
+            "SELECT id, ",
+            ts!("created_at"),
+            ", user_id, event_type, session_id, ip_address, user_agent, metadata, severity ",
+            "FROM auth_audit_log ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 // ── Catalog ─────────────────────────────────────────────────────────────────
@@ -199,8 +218,13 @@ pub struct Platform {
 }
 
 pub async fn platform(pool: &PgPool) -> Result<Option<Platform>> {
-    let rows: Vec<Platform> = fetch(pool, "platform", concat!(
-        "SELECT name, description, about, logo_image, thumbnail_image, label, email FROM platform ORDER BY id"), Some(1)).await?;
+    let rows: Vec<Platform> = fetch(
+        pool,
+        "platform",
+        "SELECT name, description, about, logo_image, thumbnail_image, label, email FROM platform ORDER BY id",
+        Some(1),
+    )
+    .await?;
     Ok(rows.into_iter().next())
 }
 
@@ -288,9 +312,19 @@ pub struct Block {
 }
 
 pub async fn blocks(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Block>> {
-    fetch(pool, "block", concat!(
-        "SELECT id, block_uuid, block_type::text AS block_type, content, activity_id, ",
-        ts!("creation_date"), ", ", ts!("update_date"), " FROM block ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "block",
+        concat!(
+            "SELECT id, block_uuid, block_type::text AS block_type, content, activity_id, ",
+            ts!("creation_date"),
+            ", ",
+            ts!("update_date"),
+            " FROM block ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -306,9 +340,19 @@ pub struct Collection {
 }
 
 pub async fn collections(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Collection>> {
-    fetch(pool, "collection", concat!(
-        "SELECT id, collection_uuid, name, description, public, creator_id, ",
-        ts!("creation_date"), ", ", ts!("update_date"), " FROM collection ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "collection",
+        concat!(
+            "SELECT id, collection_uuid, name, description, public, creator_id, ",
+            ts!("creation_date"),
+            ", ",
+            ts!("update_date"),
+            " FROM collection ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -319,9 +363,21 @@ pub struct CollectionCourse {
     pub creation_date: Option<f64>,
 }
 
-pub async fn collection_courses(pool: &PgPool, limit: Option<i64>) -> Result<Vec<CollectionCourse>> {
-    fetch(pool, "collectioncourse", concat!(
-        "SELECT id, collection_id, course_id, ", ts!("creation_date"), " FROM collectioncourse ORDER BY id"), limit).await
+pub async fn collection_courses(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<CollectionCourse>> {
+    fetch(
+        pool,
+        "collectioncourse",
+        concat!(
+            "SELECT id, collection_id, course_id, ",
+            ts!("creation_date"),
+            " FROM collectioncourse ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -337,9 +393,19 @@ pub struct CourseUpdate {
 }
 
 pub async fn course_updates(pool: &PgPool, limit: Option<i64>) -> Result<Vec<CourseUpdate>> {
-    fetch(pool, "courseupdate", concat!(
-        "SELECT id, courseupdate_uuid, title, content, course_id, linked_activity_uuids, ",
-        ts!("creation_date"), ", ", ts!("update_date"), " FROM courseupdate ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "courseupdate",
+        concat!(
+            "SELECT id, courseupdate_uuid, title, content, course_id, linked_activity_uuids, ",
+            ts!("creation_date"),
+            ", ",
+            ts!("update_date"),
+            " FROM courseupdate ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -353,9 +419,19 @@ pub struct Certification {
 }
 
 pub async fn certifications(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Certification>> {
-    fetch(pool, "certifications", concat!(
-        "SELECT id, certification_uuid, course_id, config, ",
-        ts!("creation_date"), ", ", ts!("update_date"), " FROM certifications ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "certifications",
+        concat!(
+            "SELECT id, certification_uuid, course_id, config, ",
+            ts!("creation_date"),
+            ", ",
+            ts!("update_date"),
+            " FROM certifications ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -369,9 +445,19 @@ pub struct CertificateUser {
 }
 
 pub async fn certificate_users(pool: &PgPool, limit: Option<i64>) -> Result<Vec<CertificateUser>> {
-    fetch(pool, "certificateuser", concat!(
-        "SELECT id, user_certification_uuid, user_id, certification_id, ",
-        ts!("created_at"), ", ", ts!("updated_at"), " FROM certificateuser ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "certificateuser",
+        concat!(
+            "SELECT id, user_certification_uuid, user_id, certification_id, ",
+            ts!("created_at"),
+            ", ",
+            ts!("updated_at"),
+            " FROM certificateuser ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -403,9 +489,19 @@ pub struct Usergroup {
 }
 
 pub async fn usergroups(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Usergroup>> {
-    fetch(pool, "usergroup", concat!(
-        "SELECT id, usergroup_uuid, name, description, creator_id, ",
-        ts!("creation_date"), ", ", ts!("update_date"), " FROM usergroup ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "usergroup",
+        concat!(
+            "SELECT id, usergroup_uuid, name, description, creator_id, ",
+            ts!("creation_date"),
+            ", ",
+            ts!("update_date"),
+            " FROM usergroup ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -417,8 +513,17 @@ pub struct UsergroupUser {
 }
 
 pub async fn usergroup_users(pool: &PgPool, limit: Option<i64>) -> Result<Vec<UsergroupUser>> {
-    fetch(pool, "usergroupuser", concat!(
-        "SELECT id, usergroup_id, user_id, ", ts!("creation_date"), " FROM usergroupuser ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "usergroupuser",
+        concat!(
+            "SELECT id, usergroup_id, user_id, ",
+            ts!("creation_date"),
+            " FROM usergroupuser ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -429,9 +534,21 @@ pub struct UsergroupResource {
     pub creation_date: Option<f64>,
 }
 
-pub async fn usergroup_resources(pool: &PgPool, limit: Option<i64>) -> Result<Vec<UsergroupResource>> {
-    fetch(pool, "usergroupresource", concat!(
-        "SELECT id, usergroup_id, resource_uuid, ", ts!("creation_date"), " FROM usergroupresource ORDER BY id"), limit).await
+pub async fn usergroup_resources(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<UsergroupResource>> {
+    fetch(
+        pool,
+        "usergroupresource",
+        concat!(
+            "SELECT id, usergroup_id, resource_uuid, ",
+            ts!("creation_date"),
+            " FROM usergroupresource ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -467,13 +584,31 @@ pub struct Reaction {
 }
 
 pub async fn discussion_likes(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Reaction>> {
-    fetch(pool, "discussionlike", concat!(
-        "SELECT id, discussion_id, user_id, ", ts!("creation_date"), " FROM discussionlike ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "discussionlike",
+        concat!(
+            "SELECT id, discussion_id, user_id, ",
+            ts!("creation_date"),
+            " FROM discussionlike ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 pub async fn discussion_dislikes(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Reaction>> {
-    fetch(pool, "discussiondislike", concat!(
-        "SELECT id, discussion_id, user_id, ", ts!("creation_date"), " FROM discussiondislike ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "discussiondislike",
+        concat!(
+            "SELECT id, discussion_id, user_id, ",
+            ts!("creation_date"),
+            " FROM discussiondislike ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 // ── Assessments ─────────────────────────────────────────────────────────────
@@ -499,11 +634,25 @@ pub struct Assessment {
 }
 
 pub async fn assessments(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Assessment>> {
-    fetch(pool, "assessment", concat!(
-        "SELECT id, assessment_uuid, activity_id, kind, title, description, lifecycle, ",
-        ts!("scheduled_at"), ", ", ts!("published_at"), ", ", ts!("archived_at"),
-        ", weight, grading_type, policy_id, content_version, ",
-        ts!("created_at"), ", ", ts!("updated_at"), " FROM assessment ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "assessment",
+        concat!(
+            "SELECT id, assessment_uuid, activity_id, kind, title, description, lifecycle, ",
+            ts!("scheduled_at"),
+            ", ",
+            ts!("published_at"),
+            ", ",
+            ts!("archived_at"),
+            ", weight, grading_type, policy_id, content_version, ",
+            ts!("created_at"),
+            ", ",
+            ts!("updated_at"),
+            " FROM assessment ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -526,7 +675,10 @@ pub struct AssessmentPolicy {
     pub policy_version: i32,
 }
 
-pub async fn assessment_policies(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AssessmentPolicy>> {
+pub async fn assessment_policies(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<AssessmentPolicy>> {
     fetch(pool, "assessment_policy", concat!(
         "SELECT id, policy_uuid, activity_id, assessment_type, grading_mode, completion_rule, passing_score, ",
         "max_attempts, time_limit_seconds, ", ts!("due_at"), ", allow_late, late_policy_json, settings_json, ",
@@ -562,8 +714,13 @@ pub struct AccessPolicy {
 }
 
 pub async fn access_policies(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AccessPolicy>> {
-    fetch(pool, "assessment_access_policy",
-        "SELECT id, assessment_id, mode FROM assessment_access_policy ORDER BY id", limit).await
+    fetch(
+        pool,
+        "assessment_access_policy",
+        "SELECT id, assessment_id, mode FROM assessment_access_policy ORDER BY id",
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -575,8 +732,17 @@ pub struct AccessUser {
 }
 
 pub async fn access_users(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AccessUser>> {
-    fetch(pool, "assessment_access_user", concat!(
-        "SELECT id, policy_id, user_id, ", ts!("created_at"), " FROM assessment_access_user ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "assessment_access_user",
+        concat!(
+            "SELECT id, policy_id, user_id, ",
+            ts!("created_at"),
+            " FROM assessment_access_user ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -588,8 +754,17 @@ pub struct AccessUsergroup {
 }
 
 pub async fn access_usergroups(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AccessUsergroup>> {
-    fetch(pool, "assessment_access_usergroup", concat!(
-        "SELECT id, policy_id, usergroup_id, ", ts!("created_at"), " FROM assessment_access_usergroup ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "assessment_access_usergroup",
+        concat!(
+            "SELECT id, policy_id, usergroup_id, ",
+            ts!("created_at"),
+            " FROM assessment_access_usergroup ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -608,10 +783,23 @@ pub struct PolicyOverride {
 }
 
 pub async fn policy_overrides(pool: &PgPool, limit: Option<i64>) -> Result<Vec<PolicyOverride>> {
-    fetch(pool, "student_policy_override", concat!(
-        "SELECT id, policy_id, user_id, max_attempts_override, ", ts!("due_at_override"),
-        ", waive_late_penalty, note, ", ts!("expires_at"), ", granted_by, ",
-        ts!("created_at"), ", ", ts!("updated_at"), " FROM student_policy_override ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "student_policy_override",
+        concat!(
+            "SELECT id, policy_id, user_id, max_attempts_override, ",
+            ts!("due_at_override"),
+            ", waive_late_penalty, note, ",
+            ts!("expires_at"),
+            ", granted_by, ",
+            ts!("created_at"),
+            ", ",
+            ts!("updated_at"),
+            " FROM student_policy_override ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 // ── Submissions & grading ───────────────────────────────────────────────────
@@ -802,7 +990,10 @@ pub struct FileSubmissionActivity {
     pub updated_at: Option<f64>,
 }
 
-pub async fn file_submission_activities(pool: &PgPool, limit: Option<i64>) -> Result<Vec<FileSubmissionActivity>> {
+pub async fn file_submission_activities(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<FileSubmissionActivity>> {
     fetch(pool, "file_submission_activity", concat!(
         "SELECT id, file_submission_uuid, activity_id, instructions, rubric_json, allowed_mime_types, max_files, max_file_size_mb, ",
         ts!("due_at"), ", allow_late, late_policy_json, max_attempts, grade_release_mode, lifecycle, ",
@@ -830,12 +1021,29 @@ pub struct FileSubmissionAttempt {
     pub updated_at: Option<f64>,
 }
 
-pub async fn file_submission_attempts(pool: &PgPool, limit: Option<i64>) -> Result<Vec<FileSubmissionAttempt>> {
-    fetch(pool, "file_submission_attempt", concat!(
-        "SELECT id, attempt_uuid, file_submission_id, user_id, status, attempt_number, ",
-        ts!("started_at"), ", ", ts!("submitted_at"), ", ", ts!("graded_at"),
-        ", is_late, late_penalty_pct, final_score, feedback_json, version, ",
-        ts!("created_at"), ", ", ts!("updated_at"), " FROM file_submission_attempt ORDER BY id"), limit).await
+pub async fn file_submission_attempts(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<FileSubmissionAttempt>> {
+    fetch(
+        pool,
+        "file_submission_attempt",
+        concat!(
+            "SELECT id, attempt_uuid, file_submission_id, user_id, status, attempt_number, ",
+            ts!("started_at"),
+            ", ",
+            ts!("submitted_at"),
+            ", ",
+            ts!("graded_at"),
+            ", is_late, late_penalty_pct, final_score, feedback_json, version, ",
+            ts!("created_at"),
+            ", ",
+            ts!("updated_at"),
+            " FROM file_submission_attempt ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -853,7 +1061,10 @@ pub struct FileSubmissionFile {
     pub created_at: Option<f64>,
 }
 
-pub async fn file_submission_files(pool: &PgPool, limit: Option<i64>) -> Result<Vec<FileSubmissionFile>> {
+pub async fn file_submission_files(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<FileSubmissionFile>> {
     fetch(pool, "file_submission_attempt_file", concat!(
         "SELECT id, attempt_file_uuid, attempt_id, upload_id, display_name, content_type, size_bytes, storage_key, ",
         "\"position\" AS \"position\", scan_status, ", ts!("created_at"), " FROM file_submission_attempt_file ORDER BY id"), limit).await
@@ -894,9 +1105,19 @@ pub struct SavedView {
 }
 
 pub async fn saved_views(pool: &PgPool, limit: Option<i64>) -> Result<Vec<SavedView>> {
-    fetch(pool, "analytics_saved_view", concat!(
-        "SELECT id, teacher_user_id, name, view_type, query, ",
-        ts!("created_at"), ", ", ts!("updated_at"), " FROM analytics_saved_view ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "analytics_saved_view",
+        concat!(
+            "SELECT id, teacher_user_id, name, view_type, query, ",
+            ts!("created_at"),
+            ", ",
+            ts!("updated_at"),
+            " FROM analytics_saved_view ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -982,8 +1203,17 @@ pub struct AiEvent {
 }
 
 pub async fn ai_events(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AiEvent>> {
-    fetch(pool, "ai_event", concat!(
-        "SELECT id, run_id, event_type, sequence, payload_json, ", ts!("created_at"), " FROM ai_event ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "ai_event",
+        concat!(
+            "SELECT id, run_id, event_type, sequence, payload_json, ",
+            ts!("created_at"),
+            " FROM ai_event ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -998,9 +1228,17 @@ pub struct AiArtifact {
 }
 
 pub async fn ai_artifacts(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AiArtifact>> {
-    fetch(pool, "ai_artifact", concat!(
-        "SELECT id, artifact_uuid, run_id, kind, content_json, final AS is_final, ", ts!("created_at"),
-        " FROM ai_artifact ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "ai_artifact",
+        concat!(
+            "SELECT id, artifact_uuid, run_id, kind, content_json, final AS is_final, ",
+            ts!("created_at"),
+            " FROM ai_artifact ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -1101,7 +1339,10 @@ pub struct AiSubmissionAnalysis {
     pub created_at: Option<f64>,
 }
 
-pub async fn ai_submission_analyses(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AiSubmissionAnalysis>> {
+pub async fn ai_submission_analyses(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<AiSubmissionAnalysis>> {
     fetch(pool, "ai_submission_analysis", concat!(
         "SELECT id, analysis_uuid, submission_id, run_id, triggered_by_user_id, status, language, gap_count, analysis_json, ",
         "evidence_json, model_name, ", ts!("created_at"), " FROM ai_submission_analysis ORDER BY id"), limit).await
@@ -1125,7 +1366,10 @@ pub struct AiCourseAnalysis {
     pub published_at: Option<f64>,
 }
 
-pub async fn ai_course_analyses(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AiCourseAnalysis>> {
+pub async fn ai_course_analyses(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<AiCourseAnalysis>> {
     fetch(pool, "ai_course_analysis", concat!(
         "SELECT id, analysis_uuid, course_id, run_id, triggered_by_user_id, status, language, public_score, report_json, ",
         "evidence_json, model_name, content_hash, ", ts!("created_at"), ", ", ts!("published_at"),
@@ -1224,7 +1468,10 @@ pub struct GamificationProfile {
     pub updated_at: Option<f64>,
 }
 
-pub async fn gamification_profiles(pool: &PgPool, limit: Option<i64>) -> Result<Vec<GamificationProfile>> {
+pub async fn gamification_profiles(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<GamificationProfile>> {
     fetch(pool, "gamification_profiles", concat!(
         "SELECT id, user_id, total_xp, level, daily_xp_earned, login_streak, learning_streak, longest_login_streak, ",
         "longest_learning_streak, total_activities_completed, total_courses_completed, ",
@@ -1257,8 +1504,13 @@ pub struct GamificationConfig {
 }
 
 pub async fn gamification_config(pool: &PgPool) -> Result<Option<GamificationConfig>> {
-    let rows: Vec<GamificationConfig> = fetch(pool, "org_gamification_config",
-        "SELECT daily_xp_limit, rewards FROM org_gamification_config ORDER BY id", Some(1)).await?;
+    let rows: Vec<GamificationConfig> = fetch(
+        pool,
+        "org_gamification_config",
+        "SELECT daily_xp_limit, rewards FROM org_gamification_config ORDER BY id",
+        Some(1),
+    )
+    .await?;
     Ok(rows.into_iter().next())
 }
 
@@ -1272,8 +1524,19 @@ pub struct Trail {
 }
 
 pub async fn trails(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Trail>> {
-    fetch(pool, "trail", concat!(
-        "SELECT id, trail_uuid, user_id, ", ts!("creation_date"), ", ", ts!("update_date"), " FROM trail ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "trail",
+        concat!(
+            "SELECT id, trail_uuid, user_id, ",
+            ts!("creation_date"),
+            ", ",
+            ts!("update_date"),
+            " FROM trail ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -1289,9 +1552,19 @@ pub struct TrailRun {
 }
 
 pub async fn trail_runs(pool: &PgPool, limit: Option<i64>) -> Result<Vec<TrailRun>> {
-    fetch(pool, "trailrun", concat!(
-        "SELECT id, data, status::text AS status, trail_id, course_id, user_id, ",
-        ts!("creation_date"), ", ", ts!("update_date"), " FROM trailrun ORDER BY id"), limit).await
+    fetch(
+        pool,
+        "trailrun",
+        concat!(
+            "SELECT id, data, status::text AS status, trail_id, course_id, user_id, ",
+            ts!("creation_date"),
+            ", ",
+            ts!("update_date"),
+            " FROM trailrun ORDER BY id"
+        ),
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -1320,23 +1593,74 @@ pub async fn trail_steps(pool: &PgPool, limit: Option<i64>) -> Result<Vec<TrailS
 /// "dropped tables"); their row counts go into the report so a non-empty one
 /// is visible, never silent.
 pub const DROPPED_TABLES: &[(&str, &str)] = &[
-    ("exam", "superseded by assessment (legacy migrated exams in place; FINDINGS #26)"),
-    ("examattempt", "pre-assessment exam attempts, unreadable by the legacy app (FINDINGS #26)"),
-    ("auth_sessions", "sessions live in Redis; all users re-login at cutover (MIGRATION §1)"),
-    ("activity_progress", "projection — rebuilt by ProgressProjector::backfill"),
-    ("course_progress", "projection — rebuilt by ProgressProjector::backfill"),
-    ("analytics_event", "never written by the legacy (FINDINGS #20); v2 records fresh events"),
-    ("daily_teacher_metrics", "rollup — rebuilt by admin analytics-rollup"),
-    ("daily_course_metrics", "rollup — rebuilt by admin analytics-rollup"),
-    ("daily_course_engagement", "rollup — rebuilt by admin analytics-rollup"),
-    ("daily_assessment_metrics", "rollup — rebuilt by admin analytics-rollup"),
-    ("daily_user_course_progress", "rollup — rebuilt by admin analytics-rollup"),
-    ("learner_risk_snapshot", "rollup — rebuilt by admin analytics-rollup"),
-    ("audit_event", "legacy generic audit — no v2 table; assessment audit is emitted by v2 itself"),
-    ("role", "pre-RBAC role table (rights json), dead since the roles/permissions tables"),
-    ("permissions", "permission catalog encoded in code (ab_core::permission)"),
-    ("role_permissions", "system-role grants are seeded by migration 0003 (verbatim SYSTEM_ROLES)"),
-    ("document_chunks", "pgvector chunks: no legacy writer, semantic memory not built"),
+    (
+        "exam",
+        "superseded by assessment (legacy migrated exams in place; FINDINGS #26)",
+    ),
+    (
+        "examattempt",
+        "pre-assessment exam attempts, unreadable by the legacy app (FINDINGS #26)",
+    ),
+    (
+        "auth_sessions",
+        "sessions live in Redis; all users re-login at cutover (MIGRATION §1)",
+    ),
+    (
+        "activity_progress",
+        "projection — rebuilt by ProgressProjector::backfill",
+    ),
+    (
+        "course_progress",
+        "projection — rebuilt by ProgressProjector::backfill",
+    ),
+    (
+        "analytics_event",
+        "never written by the legacy (FINDINGS #20); v2 records fresh events",
+    ),
+    (
+        "daily_teacher_metrics",
+        "rollup — rebuilt by admin analytics-rollup",
+    ),
+    (
+        "daily_course_metrics",
+        "rollup — rebuilt by admin analytics-rollup",
+    ),
+    (
+        "daily_course_engagement",
+        "rollup — rebuilt by admin analytics-rollup",
+    ),
+    (
+        "daily_assessment_metrics",
+        "rollup — rebuilt by admin analytics-rollup",
+    ),
+    (
+        "daily_user_course_progress",
+        "rollup — rebuilt by admin analytics-rollup",
+    ),
+    (
+        "learner_risk_snapshot",
+        "rollup — rebuilt by admin analytics-rollup",
+    ),
+    (
+        "audit_event",
+        "legacy generic audit — no v2 table; assessment audit is emitted by v2 itself",
+    ),
+    (
+        "role",
+        "pre-RBAC role table (rights json), dead since the roles/permissions tables",
+    ),
+    (
+        "permissions",
+        "permission catalog encoded in code (ab_core::permission)",
+    ),
+    (
+        "role_permissions",
+        "system-role grants are seeded by migration 0003 (verbatim SYSTEM_ROLES)",
+    ),
+    (
+        "document_chunks",
+        "pgvector chunks: no legacy writer, semantic memory not built",
+    ),
     ("hint_usage", "dead feature (no model in apps/api/src/db)"),
     ("install", "installer wizard state"),
     ("paymentsconfig", "payments never enabled"),
@@ -1344,15 +1668,25 @@ pub const DROPPED_TABLES: &[(&str, &str)] = &[
     ("paymentscourse", "payments never enabled"),
     ("paymentsuser", "payments never enabled"),
     ("alembic_version", "legacy migration history (MIGRATION §1)"),
-    ("submissions", "Judge0's own table (shares the legacy DB) — Judge0 stays as-is"),
+    (
+        "submissions",
+        "Judge0's own table (shares the legacy DB) — Judge0 stays as-is",
+    ),
     ("languages", "Judge0's own table — Judge0 stays as-is"),
     ("clients", "Judge0's own table — Judge0 stays as-is"),
-    ("schema_migrations", "Judge0's own table — Judge0 stays as-is"),
-    ("ar_internal_metadata", "Judge0's own table — Judge0 stays as-is"),
+    (
+        "schema_migrations",
+        "Judge0's own table — Judge0 stays as-is",
+    ),
+    (
+        "ar_internal_metadata",
+        "Judge0's own table — Judge0 stays as-is",
+    ),
 ];
 
 /// Epoch seconds → epoch micros for UUIDv7 minting.
 #[must_use]
+#[allow(clippy::single_option_map)]
 pub fn micros(ts: Option<f64>) -> Option<i64> {
     // Legacy timestamps are far below the f64 integer limit; truncation is
     // the intended rounding.

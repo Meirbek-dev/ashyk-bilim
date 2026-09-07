@@ -98,6 +98,7 @@ pub struct Ctx {
 }
 
 impl Ctx {
+    #[allow(clippy::needless_pass_by_value)]
     pub fn drop_row(&mut self, entity: &str, legacy_key: impl ToString, reason: impl Into<String>) {
         let reason = reason.into();
         tracing::debug!(entity, key = %legacy_key.to_string(), %reason, "etl drop");
