@@ -107,7 +107,8 @@ Regenerate this survey with `scratchpad/drift.py`.
 
 | pass | date | features probed | bugs found/fixed | gate | commit |
 |---|---|---|---|---|---|
-| 0 | 2026-09-10 | setup only: stack, accounts, ledger | — | — | — |
+| 0 | 2026-09-10 | setup only: stack, accounts, ledger | — | — | e654349 |
+| 1 | 2026-09-10 | auth (F01–F06), home (F07), collections (F09), trail (F11), search (F30), analytics (F31/F34), admin users (F38), course create + workspace (F19), plus the whole v1→v2 client drift survey | 15 bugs found, 10 fixed; 6 UX rows; 7 contract gaps to QUESTIONS.md | `just check` green (server); web typecheck 80 → ~15; vitest 458 tests, 2 files repaired | in progress |
 
 ## Features
 
