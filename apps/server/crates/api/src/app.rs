@@ -465,8 +465,5 @@ fn cors_layer(config: &Config) -> Result<CorsLayer> {
         // Cross-origin reads see no response header unless it is exposed:
         // `ETag` carries the new version after a locked write, and
         // `x-request-id` is what the client reports in error toasts.
-        .expose_headers([
-            header::ETAG,
-            HeaderName::from_static(REQUEST_ID_HEADER),
-        ]))
+        .expose_headers([header::ETAG, HeaderName::from_static(REQUEST_ID_HEADER)]))
 }
