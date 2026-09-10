@@ -452,8 +452,21 @@ fn cors_layer(config: &Config) -> Result<CorsLayer> {
         .allow_headers([
             header::CONTENT_TYPE,
             header::ACCEPT,
+            // Optimistic locking (ARCHITECTURE §6): teacher grade saves and
+            // file-attempt grading send `If-Match: "<version>"`.
+            header::IF_MATCH,
+            // The web client stamps W3C trace context on every request
+            // (apps/web/src/lib/api-client.ts).
+            HeaderName::from_static("traceparent"),
             HeaderName::from_static(REQUEST_ID_HEADER),
             HeaderName::from_static("last-event-id"),
             HeaderName::from_static("idempotency-key"),
+        ])
+        // Cross-origin reads see no response header unless it is exposed:
+        // `ETag` carries the new version after a locked write, and
+        // `x-request-id` is what the client reports in error toasts.
+        .expose_headers([
+            header::ETAG,
+            HeaderName::from_static(REQUEST_ID_HEADER),
         ]))
 }

@@ -144,3 +144,79 @@ async fn same_origin_and_navigation_requests_pass_csrf(pool: PgPool) {
         .await;
     assert_eq!(res.status, StatusCode::OK);
 }
+
+// ── CORS ────────────────────────────────────────────────────────────────────
+
+/// The web client is served from a different origin than the API in split
+/// deployments (and always in local dev). It stamps `traceparent` on every
+/// request and `If-Match` on locked writes, and reads `ETag` back — a preflight
+/// that omits any of those silently breaks every browser-side call.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cors_preflight_allows_the_headers_the_web_client_sends(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.server.cors_origins = vec!["http://localhost:3000".to_owned()];
+    })
+    .await;
+
+    let request = Request::builder()
+        .method("OPTIONS")
+        .uri("/api/v2/auth/sessions")
+        .header(header::ORIGIN, "http://localhost:3000")
+        .header(header::ACCESS_CONTROL_REQUEST_METHOD, "GET")
+        .header(
+            header::ACCESS_CONTROL_REQUEST_HEADERS,
+            "content-type,traceparent,if-match,idempotency-key",
+        )
+        .body(Body::empty())
+        .unwrap();
+    let res = app.send(request).await;
+
+    assert_eq!(res.status, StatusCode::OK);
+    let allowed = res
+        .headers
+        .get(header::ACCESS_CONTROL_ALLOW_HEADERS)
+        .expect("preflight answers with an allow-headers list")
+        .to_str()
+        .unwrap()
+        .to_ascii_lowercase();
+    for header_name in ["content-type", "traceparent", "if-match", "idempotency-key"] {
+        assert!(
+            allowed.contains(header_name),
+            "`{header_name}` must be allowed; got `{allowed}`"
+        );
+    }
+}
+
+/// `Access-Control-Expose-Headers` rides the actual response, not the
+/// preflight. Without it a cross-origin caller cannot read `ETag` (the new
+/// version after a locked write) or `x-request-id` (shown in error toasts).
+#[sqlx::test(migrations = "../../migrations")]
+async fn cors_exposes_the_response_headers_the_web_client_reads(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.server.cors_origins = vec!["http://localhost:3000".to_owned()];
+    })
+    .await;
+
+    let request = Request::builder()
+        .method("GET")
+        .uri("/api/v2/health")
+        .header(header::ORIGIN, "http://localhost:3000")
+        .body(Body::empty())
+        .unwrap();
+    let res = app.send(request).await;
+
+    assert_eq!(res.status, StatusCode::OK);
+    let exposed = res
+        .headers
+        .get(header::ACCESS_CONTROL_EXPOSE_HEADERS)
+        .expect("cross-origin responses carry an expose-headers list")
+        .to_str()
+        .unwrap()
+        .to_ascii_lowercase();
+    for header_name in ["etag", "x-request-id"] {
+        assert!(
+            exposed.contains(header_name),
+            "`{header_name}` must be exposed; got `{exposed}`"
+        );
+    }
+}
