@@ -23,6 +23,9 @@ const mocks = vi.hoisted(() => ({
   apiResult: vi.fn(),
   revalidateTag: vi.fn(),
   getAssessmentSubmission: vi.fn(),
+  getAssessment: vi.fn(),
+  getActivityAssessment: vi.fn(),
+  runItem: vi.fn(),
 }))
 
 vi.mock('@/lib/api-client', () => ({
@@ -32,6 +35,18 @@ vi.mock('@/lib/api-client', () => ({
 
 vi.mock('next/cache', () => ({
   revalidateTag: mocks.revalidateTag,
+}))
+
+// v2: getAssessmentByUuid/ByActivityUuid go through the generated Orval
+// fetchers, not apiJson — mock those directly rather than the transport.
+vi.mock('@/lib/api/generated/assessments/assessments', () => ({
+  getAssessment: mocks.getAssessment,
+  getActivityAssessment: mocks.getActivityAssessment,
+}))
+
+// v2: runCodeItem goes through the generated code-run fetcher.
+vi.mock('@/lib/api/generated/code/code', () => ({
+  runItem: mocks.runItem,
 }))
 
 vi.mock('@services/config/config', () => ({
@@ -54,34 +69,54 @@ import { getAssessmentByUuid, getAssessmentByActivityUuid } from '@/services/ass
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function makeAssessment(overrides = {}) {
+/** A wire-shaped `AssessmentDetail` (v2 `GET assessments/{id}` / `GET activities/{id}/assessment` response). */
+function wireAssessmentDetail(overrides: Record<string, unknown> = {}) {
   return {
-    id: 1,
-    assessment_uuid: 'asm_test_1',
-    activity_id: 42,
-    activity_uuid: 'activity_test_1',
-    course_id: 1,
-    course_uuid: 'course_test_1',
-    chapter_id: 10,
-    kind: 'EXAM' as const,
+    id: 'asm_test_1',
+    activity_id: 'activity_test_1',
+    course_id: 'course_test_1',
+    kind: 'exam' as const,
     title: 'Test ManualAssessment',
     description: 'A test assessment',
-    lifecycle: 'PUBLISHED',
-    published_at: '2026-05-01T10:00:00Z',
+    lifecycle: 'published',
+    published_at_unix: 1_746_093_600,
+    scheduled_at_unix: null,
+    archived_at_unix: null,
     ...overrides,
   }
 }
 
-function mockFetchSuccess(data: unknown) {
-  mocks.apiJson.mockResolvedValue(data)
-}
-
-function mockFetch404() {
-  mocks.apiJson.mockRejectedValue(new APIError({ code: 'NOT_FOUND', message: 'Not found', status: 404 }))
-}
-
-function mockFetchNetworkError() {
-  mocks.apiJson.mockRejectedValue(new Error('Network error'))
+/** A wire-shaped `TeacherSubmission` (v2 `PATCH submissions/{id}/grade` response). Mirrors grading-service.test.ts. */
+function wireTeacherSubmission(overrides: Record<string, unknown> = {}) {
+  return {
+    id: '11111111-1111-4111-8111-111111111111',
+    assessment_id: '22222222-2222-4222-8222-222222222222',
+    user: {
+      id: '33333333-3333-4333-8333-333333333333',
+      username: 'student.one',
+      display_name: 'Student One',
+      email: 'student.one@example.com',
+    },
+    status: 'graded',
+    release_state: 'awaiting_release',
+    attempt_number: 1,
+    answers: {},
+    grading: { feedback: 'Good work.', items: [], needs_manual_review: false, auto_graded: false },
+    is_late: false,
+    late_penalty_pct: 0,
+    violation_count: 0,
+    violations: [],
+    version: 1,
+    content_version: 1,
+    policy_version: 1,
+    feedback: [],
+    final_score: 85,
+    auto_score: 80,
+    started_at_unix: 1_700_000_000,
+    submitted_at_unix: 1_700_000_100,
+    graded_at_unix: 1_700_000_200,
+    ...overrides,
+  }
 }
 
 function mockMetaSuccess(data: unknown) {
@@ -111,18 +146,18 @@ beforeEach(() => {
 
 describe('getAssessmentByUuid', () => {
   it('returns the assessment on success', async () => {
-    const assessment = makeAssessment()
-    mockFetchSuccess(assessment)
+    const assessment = wireAssessmentDetail()
+    mocks.getAssessment.mockResolvedValue(assessment)
 
     const result = await getAssessmentByUuid('asm_test_1')
 
-    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/asm_test_1', expect.any(Object))
+    expect(mocks.getAssessment).toHaveBeenCalledWith('asm_test_1')
     expect(result?.assessment_uuid).toBe('asm_test_1')
-    expect(result?.lifecycle).toBe('PUBLISHED')
+    expect(result?.lifecycle).toBe('published')
   })
 
   it('returns null on 404', async () => {
-    mockFetch404()
+    mocks.getAssessment.mockRejectedValue(new APIError({ code: 'NOT_FOUND', message: 'Not found', status: 404 }))
 
     const result = await getAssessmentByUuid('ghost_uuid')
 
@@ -130,7 +165,7 @@ describe('getAssessmentByUuid', () => {
   })
 
   it('returns null on network error', async () => {
-    mockFetchNetworkError()
+    mocks.getAssessment.mockRejectedValue(new Error('Network error'))
 
     const result = await getAssessmentByUuid('any_uuid')
 
@@ -142,17 +177,17 @@ describe('getAssessmentByUuid', () => {
 
 describe('getAssessmentByActivityUuid', () => {
   it('calls the activity-scoped endpoint', async () => {
-    const assessment = makeAssessment({ activity_uuid: 'activity_abc' })
-    mockFetchSuccess(assessment)
+    const assessment = wireAssessmentDetail({ activity_id: 'activity_abc' })
+    mocks.getActivityAssessment.mockResolvedValue(assessment)
 
     const result = await getAssessmentByActivityUuid('activity_abc')
 
-    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/activity/activity_abc', expect.any(Object))
+    expect(mocks.getActivityAssessment).toHaveBeenCalledWith('activity_abc')
     expect(result?.activity_uuid).toBe('activity_abc')
   })
 
   it('returns null on 404', async () => {
-    mockFetch404()
+    mocks.getActivityAssessment.mockRejectedValue(new APIError({ code: 'NOT_FOUND', message: 'Not found', status: 404 }))
 
     const result = await getAssessmentByActivityUuid('activity_ghost')
 
@@ -160,7 +195,7 @@ describe('getAssessmentByActivityUuid', () => {
   })
 
   it('returns null on unexpected error', async () => {
-    mockFetchNetworkError()
+    mocks.getActivityAssessment.mockRejectedValue(new Error('Network error'))
 
     const result = await getAssessmentByActivityUuid('activity_err')
 
@@ -283,6 +318,8 @@ describe('listStudentPolicyOverrides', () => {
 // ── createStudentPolicyOverride ───────────────────────────────────────────────
 
 describe('createStudentPolicyOverride', () => {
+  const STUDENT_ID = '44444444-4444-4444-8444-444444444444'
+
   it('POSTs and returns created override', async () => {
     const override = {
       id: 1,
@@ -293,15 +330,17 @@ describe('createStudentPolicyOverride', () => {
     mockMetaSuccess(override)
 
     const result = await createStudentPolicyOverride('asm_1', {
-      user_id: 5,
+      user_id: STUDENT_ID,
       max_attempts_override: 2,
     })
 
+    // v2: the student id is a path segment, not a body field, and the body
+    // carries only the override block itself.
     expect(mocks.apiJson).toHaveBeenCalledWith(
-      'assessments/asm_1/overrides',
+      `assessments/asm_1/overrides/${STUDENT_ID}`,
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ user_id: 5, max_attempts_override: 2 }),
+        body: JSON.stringify({ max_attempts_override: 2 }),
       }),
     )
     expect(result.id).toBe(1)
@@ -311,7 +350,7 @@ describe('createStudentPolicyOverride', () => {
   it('throws on failure', async () => {
     mockMetaFailure('User not enrolled')
 
-    await expect(createStudentPolicyOverride('asm_1', { user_id: 999 })).rejects.toThrow('User not enrolled')
+    await expect(createStudentPolicyOverride('asm_1', { user_id: STUDENT_ID })).rejects.toThrow('User not enrolled')
   })
 })
 
@@ -370,7 +409,7 @@ describe('deleteStudentPolicyOverride', () => {
 
 describe('saveGradingDraft', () => {
   it('PATCHes the grade endpoint with item grades', async () => {
-    mockMetaSuccess({ submission_uuid: 'sub_1', status: 'GRADED' })
+    mockMetaSuccess(wireTeacherSubmission())
 
     const payload = {
       item_grades: [{ item_uuid: 'item_1', score: 80, feedback: 'Good.' }],
@@ -379,23 +418,31 @@ describe('saveGradingDraft', () => {
     }
     await saveGradingDraft('asm_1', 'sub_1', payload)
 
+    // v2: `PATCH submissions/{id}/grade` (no assessment prefix), body translated
+    // onto the real `GradeRequest` wire shape ({action, feedback, item_grades}
+    // with `item_id` in place of `item_uuid`).
     expect(mocks.apiJson).toHaveBeenCalledWith(
-      'assessments/asm_1/submissions/sub_1/grade',
+      'submissions/sub_1/grade',
       expect.objectContaining({
         method: 'PATCH',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          action: 'publish',
+          feedback: 'Well done',
+          item_grades: [{ item_id: 'item_1', score: 80, feedback: 'Good.' }],
+        }),
       }),
     )
     expect(mocks.revalidateTag).toHaveBeenCalledWith('submissions', 'max')
   })
 
   it('includes If-Match header when version is provided', async () => {
-    mockMetaSuccess({ submission_uuid: 'sub_v3' })
+    mockMetaSuccess(wireTeacherSubmission())
 
     await saveGradingDraft('asm_1', 'sub_v3', { item_grades: [] }, 3)
 
     const [, opts] = mocks.apiJson.mock.calls[0]!
-    expect(opts.headers['If-Match']).toBe('3')
+    // v2: set through ifMatchHeaders, which quotes the entity tag.
+    expect(opts.headers['If-Match']).toBe('"3"')
   })
 
   it('throws StaleGradeError when server returns 412', async () => {
@@ -422,31 +469,51 @@ describe('saveGradingDraft', () => {
 
 describe('runCodeItem', () => {
   it('POSTs code run request and returns result', async () => {
-    const runResult = {
-      run_id: 'run_1',
-      status: 'ACCEPTED',
+    // v2: a wire-shaped `CodeRun` — note `cases`, not the legacy `visible_results`.
+    const codeRun = {
+      id: 'run_1',
+      assessment_id: 'asm_1',
+      item_id: 'item_code_1',
+      language_id: 71,
+      status: 'accepted',
+      purpose: 'visible' as const,
+      replayed: false,
       passed: 3,
       total: 3,
       score: 100,
+      created_at_unix: 1_700_000_000,
+      finished_at_unix: 1_700_000_010,
+      cases: [
+        {
+          test_id: 'case_1',
+          description: 'Case 1',
+          status_description: 'Accepted',
+          passed: true,
+          is_visible: true,
+          weight: 1,
+        },
+      ],
     }
-    mockMetaSuccess(runResult)
+    mocks.runItem.mockResolvedValue(codeRun)
 
     const payload = { source: 'print("hello")', language: 71 }
     const result = await runCodeItem('asm_1', 'item_code_1', payload)
 
-    expect(mocks.apiJson).toHaveBeenCalledWith(
-      'assessments/asm_1/items/item_code_1/runs',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify(payload),
-      }),
+    // v2: `POST assessment-items/{id}/runs` via the generated `runItem()` fetcher.
+    expect(mocks.runItem).toHaveBeenCalledWith(
+      'item_code_1',
+      { language_id: 71, source: 'print("hello")', custom_input: null },
+      undefined,
     )
-    expect(result.status).toBe('ACCEPTED')
+    expect(result.run_id).toBe('run_1')
+    expect(result.status).toBe('accepted')
     expect(result.passed).toBe(3)
   })
 
   it('throws on failure', async () => {
-    mockMetaFailure('Language not supported')
+    mocks.runItem.mockRejectedValue(
+      new APIError({ code: 'API_ERROR', message: 'Language not supported', status: 400, data: {} }),
+    )
 
     await expect(runCodeItem('asm_1', 'item_1', { source: 'code', language: 999 })).rejects.toThrow(
       'Language not supported',
