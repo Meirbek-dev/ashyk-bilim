@@ -881,8 +881,10 @@
       "googleCancelled": "Вход через Google отменён.",
       "noAccountHint": "Учётные записи создаёт администратор платформы. Войдите через Google, если ваш адрес уже зарегистрирован."
     },
+    "hidePassword": "Скрыть пароль",
     "password": "Пароль",
-    "passwordPlaceholder": "Введите ваш пароль"
+    "passwordPlaceholder": "Введите ваш пароль",
+    "showPassword": "Показать пароль"
   },
   "Certificates": {
     "ActivityIndicators": {
@@ -6386,7 +6388,7 @@
         "emailChangeWarning": "Изменение адреса электронной почты потребует повторного входа",
         "emailPlaceholder": "Введите ваш адрес электронной почты",
         "displayName": "Имя для отображения",
-      "firstName": "Имя",
+        "firstName": "Имя",
         "firstNamePlaceholder": "Введите ваше имя",
         "language": "Язык",
         "lastName": "Фамилия",

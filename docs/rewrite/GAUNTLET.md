@@ -17,7 +17,7 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   `docker-compose.cutover.yml` to localhost). Zitadel PAT from
   `%TEMP%\zitadel-machinekey\pat.txt`.
 - Server: `ashyq serve` on :8000, `GET /api/v2/health` → `{"status":"ok"}`.
-- URL locale segments are SHORT codes `/ru`, `/kk`, `/en` (default `ru`), not `ru-RU` — `/ru-RU/...` 307s to `/ru/ru-RU/...` and 404s.
+- URL locale prefixes are `/ru` (ru-RU, default), **`/kz`** (kk-KZ — country code, not `kk`) and `/en` (en-US), per `apps/web/src/i18n/config.ts`. A wrong prefix is not rejected: `/ru-RU/x` and `/kk/x` 307 to `/ru/ru-RU/x` and `/ru/kk/x`, which then render as unknown routes.
 - Web: `apps/web/.env.local` points NEXT_PUBLIC_API_URL / INTERNAL_API_URL at
   `http://localhost:8000/api/v2/`. Launch with `preview_start {name:"web"}` (:3000).
   The `api` launch.json entry is the legacy Python app — never use it.
@@ -113,12 +113,12 @@ Regenerate this survey with `scratchpad/drift.py`.
 
 | id | area | route(s) | roles | status | last critic verdict |
 |---|---|---|---|---|---|
-| F01 | login + session | `/[locale]/auth/login` | all | todo | — |
-| F02 | MFA (TOTP enroll/verify/remove) | `/dash/user-account/settings/security` | any | todo | — |
-| F03 | Google login intent | `/auth/login` → `/api/v2/auth/google` | any | todo | — |
-| F04 | sessions list + revoke + logout | `/dash/user-account/settings/security` | any | todo | — |
-| F05 | unauthorized / error pages | `/[locale]/(platform)/unauthorized` | all | todo | — |
-| F06 | locale switch ru/kk/en | all routes | any | todo | — |
+| F01 | login + session | `/ru/auth/login` | all | critic | builder-verified in ru+kz: happy path for all 3 roles, uniform `invalid-credentials` on wrong password AND unknown user, 422 `validation-failed` with field_errors on empty input, `deny_unknown_fields` on extra keys. UX-001 fixed. Awaiting fresh critic. |
+| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | fail | UX-003: enable and disable controls both render for an account with no TOTP. Enrolment flow itself unprobed. |
+| F03 | Google login intent | `/ru/auth/login` → `/api/v2/auth/google` | any | critic | unconfigured provider 303s to `/auth/login?error=service-unavailable`; the locale-less path 307s to `/ru/auth/login` keeping the query, and the page shows the localized alert "Сервис временно недоступен". Full OAuth round trip still unprobed (AB__GOOGLE__* unset locally). |
+| F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | probing | BUG-004 (CORS) fixed — the list was the symptom that found it. Revoke, logout and UX-002 still to verify. |
+| F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | probing | unknown path renders the localized 404 with a working "Вернуться на главную". `/unauthorized` itself not yet probed. |
+| F06 | locale switch ru/kz/en | all routes | any | probing | login renders fully translated in ru and kz (no English leakage, no raw codes). The in-app locale switcher and the other surfaces are unprobed. |
 | F07 | home / landing | `/[locale]` | learner | todo | — |
 | F08 | course browse + enroll | `/courses`, `/course/[uuid]` | learner | todo | — |
 | F09 | collections | `/collections`, `/collections/new`, `/collection/[id]` | learner+teacher | todo | — |
@@ -161,14 +161,14 @@ Regenerate this survey with `scratchpad/drift.py`.
 | BUG-005 | ALL | `request_id` is documented in the problem+json envelope (ARCHITECTURE §5, apps/web/AGENTS.md) but never reaches the wire. | `crates/api/src/error.rs:76` hard-codes `request_id: None` and nothing populates it; `ApiError::into_response` runs inside `PropagateRequestIdLayer` and cannot see the id. The web client falls back to the `x-request-id` header, so impact is limited. | — | see QUESTIONS.md §5 |
 | BUG-004 | ALL client-side | Every browser-side v2 call fails; the security page's session list spins on "Загрузка..." forever. Console: "Request header field traceparent is not allowed by Access-Control-Allow-Headers in preflight response". | `cors_layer` (apps/server/crates/api/src/app.rs:452) allowlisted only content-type/accept/x-request-id/last-event-id/idempotency-key. The web client stamps `traceparent` on EVERY request (apps/web/src/lib/api-client.ts:230,297) and `If-Match` on locked writes, and the layer also exposed no response headers, so a cross-origin caller could never read `ETag` (the new version after a locked write) or `x-request-id`. Invisible in production only because nginx puts web and API on one origin. | pending | — |
 | BUG-002 | F07 | Home page renders the "Курсы временно недоступны" degraded state for every user. | `fetchCourses` (apps/web/src/services/courses/courses.ts:257) calls the v1 URL `courses/page/{p}/limit/{l}`; the v2 server answers `no such route`, LandingContent's catch-all returns `LandingDegradedState`. Part of the drift map above. | — | — |
-| BUG-003 | F01,F07 | Dev console logs Next.js Cache Components errors on every render: E1432 `blocking-prerender-crypto` on route `/[locale]`, E1429 `blocking-prerender-metadata-runtime` on `/[locale]/auth/login`. `cacheComponents: true` is set in apps/web/next.config (line 34), so these are prerender-blocking violations that would fail a production build, not cosmetic warnings. | not yet investigated | — | — |
+| BUG-003 | F01,F07 | Dev console logs Next.js Cache Components errors on every render: E1432 `blocking-prerender-crypto` on route `/[locale]`, E1429 `blocking-prerender-metadata-runtime` on `/[locale]/auth/login`. `cacheComponents: true` is set in apps/web/next.config:34, so these block prerendering and would fail a production build. | E1432: `randomHex` (src/lib/api-client.ts) called `crypto.getRandomValues` during server render to mint a `traceparent`. The deterministic server fallback right below it was unreachable because `crypto.getRandomValues` DOES exist in Node — the guard only tested for the function. Now gated on being in the browser, matching the sibling `createFrontendRequestId`. E1429 (login `generateMetadata` → `getTranslations`) still open. | partial | — |
 | BUG-001 | F38 | No way to create a user in v2. Self-registration is deliberately out (apps/web/AGENTS.md "Not in v2", and the login page says accounts are created by the platform admin) — but there is no **admin** user-creation route either: openapi.v2.json has no `POST /users`, so after cutover accounts can only appear via `ashyq admin etl` / `zitadel-import`. Legacy had `POST /users` (apps/api/src/routers/users.py:60). | contract gap, no DECISIONS entry | — | see QUESTIONS.md |
 
 ## UX notes
 
 | id | feature | what felt wrong | decision |
 |---|---|---|---|
-| UX-001 | F01 | The password reveal control on the login page has the English accessible name "Show password" while the rest of the page is Russian (ru locale). | fix |
+| UX-001 | F01 | The password reveal control on the login page had the English accessible name "Show password" while the rest of the page was Russian. | **fixed** — `src/components/ui/custom/password-input.tsx` now uses `t('showPassword')`/`t('hidePassword')`; keys added to all three catalogs. Verified in the browser: "Показать пароль" (ru), "Құпия сөзді көрсету" (kz). |
 | UX-002 | F04 | With the API unreachable the session list showed an unlabelled spinner for well over a minute (react-query retried 7+ times with backoff) instead of reaching its error state. The error branch exists and is correct; the retry policy is what hides it. | fix — cap retries on this query so the existing `sessionsLoadError` + retry button appears within a few seconds |
 | UX-003 | F02 | The two-factor section renders "Включить двухфакторную аутентификацию" and "Отключить" side by side for an account with no TOTP enrolled. "Отключить" is a dead click. | fix — render the enable/disable control from the account's actual enrolment state |
 | UX-004 | F04 | A learner (role `user`) sees a "Пользователи" link in both the dashboard sidebar and the mobile nav, pointing at `/ru/dash/users/settings/users`. Needs checking against `user:read:platform` — if that grant is meant to allow the admin user directory, the nav is right and this row is `accept`; otherwise the nav leaks an admin surface. | investigate |

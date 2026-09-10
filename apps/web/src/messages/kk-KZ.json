@@ -882,8 +882,10 @@
       "googleCancelled": "Google арқылы кіру тоқтатылды.",
       "noAccountHint": "Есептік жазбаларды платформа әкімшісі жасайды. Мекенжайыңыз тіркелген болса, Google арқылы кіріңіз."
     },
+    "hidePassword": "Құпия сөзді жасыру",
     "password": "Пароль",
-    "passwordPlaceholder": "Құпия сөзді енгізіңіз"
+    "passwordPlaceholder": "Құпия сөзді енгізіңіз",
+    "showPassword": "Құпия сөзді көрсету"
   },
   "Certificates": {
     "ActivityIndicators": {
@@ -6403,7 +6405,7 @@
         "emailChangeWarning": "Электрондық пошта мекенжайын өзгерту қайта кіруді қажет етеді",
         "emailPlaceholder": "Электрондық пошта мекенжайыңызды енгізіңіз",
         "displayName": "Көрсетілетін есім",
-      "firstName": "Аты",
+        "firstName": "Аты",
         "firstNamePlaceholder": "Атыңызды енгізіңіз",
         "language": "Тіл",
         "lastName": "Тегі",

@@ -100,6 +100,12 @@ function createFrontendRequestId(): string {
 }
 
 function randomHex(byteCount: number): string | null {
+  // Browser only. `crypto.getRandomValues` exists on the server too, but calling
+  // it during render is a dynamic API: under Cache Components it makes the route
+  // unprerenderable (`blocking-prerender-crypto`). Server-side callers fall
+  // through to the process-prefix + counter path below, same as
+  // `createFrontendRequestId`.
+  if (typeof globalThis.window === 'undefined') return null
   if (typeof globalThis.crypto?.getRandomValues !== 'function') return null
 
   const bytes = new Uint8Array(byteCount)
