@@ -134,11 +134,6 @@ export async function getEditableCourses(page = 1, limit = 20, query = '', sortB
   return fetchEditableCourses(page, limit, query, sortBy, preset)
 }
 
-/** Blocked: no v2 route for `courses/{id}/rights`. */
-export async function getCourseUserRights(course_uuid: string) {
-  return apiJson(`courses/${stripEntityPrefix(course_uuid)}/rights`)
-}
-
 /**
  * Course + curriculum in the `AppCourse` shape (`chapters[].activities[]`).
  * Unpublished activities are dropped unless `withUnpublishedActivities` is set.
