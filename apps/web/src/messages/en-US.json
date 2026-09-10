@@ -7340,7 +7340,7 @@
     "filterUsers": "Users",
     "noResultsMessage": "We couldn't find any results for \"{query}\". Try adjusting your search terms or browse our featured content.",
     "noResultsTitle": "No results found",
-    "resultsFound": "{count} results found for \"{query}\"",
+    "resultsFound": "{count, plural, one {# result} other {# results}} found for \"{query}\"",
     "searchButton": "Search",
     "searchInputPlaceholder": "Search for courses, collections, users...",
     "searchTitle": "Search",

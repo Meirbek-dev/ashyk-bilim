@@ -7347,7 +7347,7 @@
     "filterUsers": "Пользователи",
     "noResultsMessage": "Мы не смогли найти результаты для \"{query}\". Попробуйте изменить поисковые термины или просмотреть наш рекомендуемый контент.",
     "noResultsTitle": "Результаты не найдены",
-    "resultsFound": "Найдено {count} результатов для \"{query}\"",
+    "resultsFound": "Найдено {count, plural, one {# результат} few {# результата} other {# результатов}} для \"{query}\"",
     "searchButton": "Поиск",
     "searchInputPlaceholder": "Поиск курсов, коллекций, пользователей...",
     "searchTitle": "Поиск",
