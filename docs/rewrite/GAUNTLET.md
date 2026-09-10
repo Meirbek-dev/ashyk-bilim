@@ -42,6 +42,11 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   click coordinate frame from the pane and every `left_click` by ref fails with
   "outside the viewport". Use `preset:"desktop"`.
 - Fable's rate limit was exhausted early in pass 1; builder subagents ran on Sonnet.
+- **Server test suite:** `cargo nextest run --workspace --build-jobs 4` still crashed
+  rustc with `STATUS_STACK_BUFFER_OVERRUN` while compiling `work_queue_flow` when three
+  subagents and the dev server were also running — the page-file hazard AGENTS.md warns
+  about. Run it with nothing else heavy running, and drop to `--build-jobs 2` if it
+  recurs. `just check` (fmt + clippy + sqlx offline) is cheap and was green.
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
@@ -125,7 +130,7 @@ Regenerate this survey with `scratchpad/drift.py`.
 | F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner+teacher | critic | probed as teacher: localized empty state → create form (lists real courses) → collection created → list refreshed with no reload → detail page shows the linked course. One defect found, BUG-013. Learner-role view, edit and delete unprobed. |
 | F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | todo | — |
 | F11 | trail / progress | `/trail` | learner | todo | — |
-| F12 | user profile | `/user/[username]` | learner | todo | — |
+| F12 | user profile | `/ru/user/[username]` | learner | fail | the page resolves the user (title "Профиль Daniyar Teacher", name and avatar render) but shows **no courses section at all** for a teacher who owns a course, and no bio. Two causes, both recorded: `GET users/{id}/courses` has no v2 route (QUESTIONS Q-2026-09-10-4) and the client approximation filters `courses?limit=100` by `creator_id`, which cannot see a private course; and v2 `UserHit` carries no `bio`/`profile`, so those sections render empty. |
 | F13 | taking a quiz/exam | `/assessments/[uuid]` | learner | todo | — |
 | F14 | code arena run | `/assessments/[uuid]` (code item) | learner | todo | — |
 | F15 | file submission upload | `/assessments/[uuid]` (file item) | learner | todo | — |
