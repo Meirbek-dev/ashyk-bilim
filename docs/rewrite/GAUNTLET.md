@@ -144,10 +144,10 @@ Regenerate this survey with `scratchpad/drift.py`.
 | F28 | work queue | `/dash/courses/[uuid]/review` | teacher | todo | — |
 | F29 | course collaboration/access | `/dash/courses/[uuid]/collaboration` | teacher | todo | — |
 | F30 | search | `/ru/search?q=` | any | critic | probed as teacher: finds the seeded course, facet counts (Все/Курсы/Коллекции/Пользователи) correct, fully localized. Fixed a Russian plural-agreement bug ("Найдено 1 результатов" → "результат"). Empty-query and permission-scoped results still unprobed. |
-| F31 | analytics: overview/performance/operations | `/dash/analytics/*` | teacher+admin | todo | — |
+| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | probing | overview renders as teacher: KPI tiles, period and comparison filters, charts, all localized. Server side verified per endpoint (200). Only empty data so far — needs real submissions before the numbers can be judged against legacy. |
 | F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | todo | — |
-| F33 | analytics: at-risk + watchlist | `/dash/analytics/learners/at-risk`, `/watchlist` | teacher | todo | — |
-| F34 | analytics CSV export | `/dash/analytics/*` | teacher | todo | — |
+| F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | probing | watchlist renders with correct localized empty states ("Нет учащихся в зоне риска для текущего охвата."). Needs at-risk data to judge the ranking. |
+| F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | probing | all three exports answer 200 `text/csv; charset=utf-8` with correct headers (at-risk, grading-backlog, course-progress). Per DECISIONS (Analytics P7) the CSV headers are deliberately snake_case codes, not localized. The in-browser download path is unprobed. |
 | F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | todo | — |
 | F36 | AI agent: lecture authoring critique | `/dash/courses/[uuid]` | teacher | todo | — |
 | F37 | AI agents: remaining 4 | assorted | teacher | todo | — |
