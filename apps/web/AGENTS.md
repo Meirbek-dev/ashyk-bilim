@@ -52,7 +52,9 @@ Python API (`apps/api`) is frozen reference material — never target it.
 - **Listings are keyset pages** `{ items, next_cursor }` (`Page<T>` in
   `@/lib/api/contract`, `collectPages` walks them). Pass `next_cursor` back as
   `cursor`; there is no offset paging or `total` except where the contract
-  says so (work queue, leaderboard).
+  says so (work queue, leaderboard, and every `analytics/teacher/*` listing —
+  those keep legacy `page`/`page_size` deliberately, see DECISIONS.md
+  "Analytics (2026-09-06, P7)"). Do not "fix" those into cursors.
 - **Errors are `application/problem+json`** (`{type,title,status,code,detail,
   details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
   exposes `code` (kebab-case, closed registry), `details`, `fieldErrors`,
