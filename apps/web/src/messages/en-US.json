@@ -10724,6 +10724,19 @@
       }
     }
   },
+  "LmsStatus": {
+    "ready": "Ready",
+    "needsAttention": "Needs Attention",
+    "blocked": "Blocked",
+    "inProgress": "In Progress",
+    "noWork": "No Work",
+    "limited": "Limited",
+    "unavailable": "Unavailable",
+    "published": "Published",
+    "private": "Private",
+    "draft": "Draft",
+    "unsaved": "Unsaved"
+  },
   "LandingDegraded": {
     "title": "Courses are temporarily unavailable",
     "description": "The learning service did not respond. You can retry now or use your dashboard while the course catalogue recovers.",
