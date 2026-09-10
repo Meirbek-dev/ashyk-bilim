@@ -11,9 +11,9 @@ import type {
   Role,
   RoleAuditListResponse,
   UpdateRoleBody,
-  UserBasic,
   UserRoleAssignment,
 } from '@/types/permissions'
+import type { AdminUser, AdminUserPage, Role as RbacRole } from '@/lib/api/generated/zod'
 import { apiJson } from '@/lib/api-client'
 
 // ============================================================================
@@ -47,8 +47,9 @@ export function listAllPermissions(): Promise<Permission[]> {
 // Roles - CRUD
 // ============================================================================
 
-export function listRoles(): Promise<Role[]> {
-  return request('roles')
+/** All roles with their grants (`GET rbac/roles`, v2 — slug-keyed, no numeric id). */
+export function listRoles(): Promise<RbacRole[]> {
+  return request('rbac/roles')
 }
 
 export function getRole(roleId: number): Promise<Role> {
@@ -106,31 +107,24 @@ export function listUserRoles(): Promise<UserRoleAssignment[]> {
   return request<UserRoleAssignment[]>('rbac/user-roles')
 }
 
-export function assignRoleToUser(userId: number, roleId: number): Promise<void> {
-  return request('rbac/roles/assign', {
+/** `POST users/{id}/roles` (v2) — body carries the role slug, not a numeric role id. */
+export function assignRoleToUser(userId: string, slug: string): Promise<void> {
+  return request(`users/${userId}/roles`, {
     method: 'POST',
-    body: JSON.stringify({ user_id: userId, role_id: roleId }),
+    body: JSON.stringify({ role: slug }),
   })
 }
 
-export function removeRoleFromUser(userId: number, roleId: number): Promise<void> {
-  return request('rbac/roles/revoke', {
-    method: 'POST',
-    body: JSON.stringify({ user_id: userId, role_id: roleId }),
-  })
+/** `DELETE users/{id}/roles/{slug}` (v2). */
+export function removeRoleFromUser(userId: string, slug: string): Promise<void> {
+  return request(`users/${userId}/roles/${slug}`, { method: 'DELETE' })
 }
 
 // ============================================================================
 // Users (used by role assignment UI)
 // ============================================================================
 
-export function listUsers(limit = 100): Promise<UserBasic[]> {
-  return request<UserBasic[] | { users: (UserBasic | { user: UserBasic })[] }>(`members?per_page=${limit}`).then(
-    data => {
-      const rows = Array.isArray(data) ? data : data.users
-      return rows
-        .map(row => ('user' in row ? row.user : row))
-        .filter((user): user is UserBasic => typeof user?.id === 'number')
-    },
-  )
+/** Admin user listing (`GET users`, v2 — `/members` is banned). */
+export function listUsers(limit = 100): Promise<AdminUser[]> {
+  return request<AdminUserPage>(`users?limit=${limit}`).then(page => page.items)
 }

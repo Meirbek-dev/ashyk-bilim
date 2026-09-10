@@ -5,6 +5,7 @@ import { linkResourcesToUserGroup } from '@services/usergroups/usergroups'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useUserGroups } from '@/features/users/hooks/useUsers'
+import type { Usergroup } from '@/lib/api/generated/zod'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import { ExternalLink, Users } from 'lucide-react'
@@ -13,12 +14,6 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-
-interface UserGroup {
-  id: number
-  name: string
-  description?: string
-}
 
 interface LinkToUserGroupProps {
   setUserGroupModal: (open: boolean) => void
@@ -32,26 +27,26 @@ function LinkToUserGroup(props: LinkToUserGroupProps) {
   const { data: usergroups } = useUserGroups({ enabled: Boolean(courseStructure) })
   const [selectedUserGroup, setSelectedUserGroup] = useState<string | null>(null)
 
-  const effectiveUserGroup = selectedUserGroup ?? (usergroups?.[0]?.id ? String(usergroups[0].id) : null)
+  const effectiveUserGroup = selectedUserGroup ?? usergroups?.[0]?.id ?? null
 
   const handleLink = async () => {
     if (!effectiveUserGroup) {
       toast.error(t('selectUserGroupFirst'))
       return
     }
+    const courseId = courseStructure.id
+    if (!courseId) {
+      toast.error(t('linkError', { error: t('unknownError') }))
+      return
+    }
 
     try {
-      const res = await linkResourcesToUserGroup(Number(effectiveUserGroup), [courseStructure.course_uuid], {
-        courseUuid: courseStructure.course_uuid,
+      await linkResourcesToUserGroup(effectiveUserGroup, [courseId], {
+        courseUuid: courseId,
       })
-      if (res.status === 200) {
-        props.setUserGroupModal(false)
-        toast.success(t('linkSuccess'))
-        await course.refreshEditorData()
-      } else {
-        const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
-        toast.error(t('linkError', { error: errorDetail }))
-      }
+      props.setUserGroupModal(false)
+      toast.success(t('linkSuccess'))
+      await course.refreshEditorData()
     } catch {
       toast.error(t('linkError', { error: t('unknownError') }))
     }
@@ -79,8 +74,8 @@ function LinkToUserGroup(props: LinkToUserGroupProps) {
                   {t('selectUserGroup')}
                 </NativeSelectOption>
               )}
-              {(usergroups ?? []).map((group: UserGroup) => (
-                <NativeSelectOption key={group.id} value={String(group.id)}>
+              {(usergroups ?? []).map((group: Usergroup) => (
+                <NativeSelectOption key={group.id} value={group.id}>
                   {group.name}
                 </NativeSelectOption>
               ))}

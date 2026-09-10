@@ -40,17 +40,16 @@ function AddUserGroup(props: AddUserGroupProps) {
 
   const handleSubmit = async (values: UserGroupFormValues) => {
     const toastID = toast.loading(t('toastLoading'))
-    const res = await createUserGroup(values)
-    if (res.status === 200) {
+    try {
+      await createUserGroup(values)
       await queryClient.invalidateQueries({
         queryKey: queryKeys.userGroups.all(),
       })
       props.setCreateUserGroupModal(false)
       toast.success(t('toastSuccess'), { id: toastID })
-      return
+    } catch {
+      toast.error(t('toastError'), { id: toastID })
     }
-
-    toast.error(t('toastError'), { id: toastID })
   }
 
   return (

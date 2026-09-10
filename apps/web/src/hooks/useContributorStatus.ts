@@ -4,11 +4,6 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 
 export type ContributorStatus = 'NONE' | 'PENDING' | 'ACTIVE' | 'INACTIVE'
 
-interface Contributor {
-  user_id: number
-  authorship_status: ContributorStatus
-}
-
 export function useContributorStatus(courseUuid: string) {
   const { user: viewer } = useSession()
   const userId = viewer?.id
@@ -19,9 +14,9 @@ export function useContributorStatus(courseUuid: string) {
       ...courseContributorsQueryOptions(userId ? normalizedCourseUuid : 'disabled'),
       enabled: Boolean(userId),
       select: (response): ContributorStatus => {
-        const contributors = Array.isArray(response?.data) ? (response.data as Contributor[]) : []
+        const contributors = Array.isArray(response?.data) ? response.data : []
         const currentUser = contributors.find(contributor => contributor.user_id === userId)
-        return currentUser?.authorship_status ?? 'NONE'
+        return (currentUser?.authorship_status as ContributorStatus | undefined) ?? 'NONE'
       },
     }),
   )

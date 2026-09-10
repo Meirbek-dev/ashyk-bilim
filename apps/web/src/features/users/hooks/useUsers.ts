@@ -4,7 +4,6 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import {
   allMembersQueryOptions,
   basicUsersQueryOptions,
-  membersQueryOptions,
   roleAuditLogQueryOptions,
   rolesQueryOptions,
   userByIdQueryOptions,
@@ -22,11 +21,9 @@ function userGroupsHookOptions(enabled = true) {
   })
 }
 
-function userGroupUsersHookOptions(userGroupId: number | null | undefined) {
-  const normalizedUserGroupId = userGroupId ?? 0
-
+function userGroupUsersHookOptions(userGroupId: string | null | undefined) {
   return queryOptions({
-    ...userGroupUsersQueryOptions(normalizedUserGroupId),
+    ...userGroupUsersQueryOptions(userGroupId ?? ''),
     enabled: Boolean(userGroupId),
   })
 }
@@ -83,16 +80,12 @@ export function useUserGroups(options?: { enabled?: boolean }) {
   return useQuery(userGroupsHookOptions(options?.enabled ?? true))
 }
 
-export function useUserGroupUsers(userGroupId: number | null | undefined) {
+export function useUserGroupUsers(userGroupId: string | null | undefined) {
   return useQuery(userGroupUsersHookOptions(userGroupId))
 }
 
 export function useAllMembers() {
   return useQuery(allMembersQueryOptions())
-}
-
-export function useMembers(page: number, perPage: number) {
-  return useQuery(membersQueryOptions(page, perPage))
 }
 
 export function useRoles() {

@@ -6,14 +6,14 @@ import { Field, FieldError, FieldLabel } from '@components/ui/field'
 import { BarLoader } from '@components/Objects/Loaders/BarLoader'
 import { Alert, AlertDescription } from '@components/ui/alert'
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { membersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
+import { allMembersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
 import { useRoles } from '@/features/users/hooks/useUsers'
 import { Controller, useForm } from 'react-hook-form'
 import { useState } from 'react'
 import { Button } from '@components/ui/button'
 import { useTranslations } from 'next-intl'
 import type { FC } from 'react'
-import type { Role } from '@/types/permissions'
+import type { Role } from '@/lib/api/generated/zod'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
@@ -58,27 +58,25 @@ const RolesUpdate: FC<Props> = props => {
     const aPriority = (a.priority ?? 0) * -1
     const bPriority = (b.priority ?? 0) * -1
     if (aPriority !== bPriority) return aPriority - bPriority
-    return (a.name || '').localeCompare(b.name || '')
+    return a.slug.localeCompare(b.slug)
   })
   const handleSubmit = async (values: FormData) => {
     setError(null)
 
     const toastId = toast.loading(t('toastLoading'))
     try {
-      const newRoleId = Number.parseInt(values.role, 10)
-      const oldRoleId = Number.parseInt(props.alreadyAssignedRole, 10)
       const userId = props.user.user?.id ?? props.user.id ?? props.user.user_id
-      if (typeof userId !== 'number') {
+      if (!userId) {
         throw new Error('User ID is missing')
       }
 
-      if (!Number.isNaN(oldRoleId)) {
-        await removeRoleFromUser(userId, oldRoleId)
+      if (props.alreadyAssignedRole) {
+        await removeRoleFromUser(userId, props.alreadyAssignedRole)
       }
-      await assignRoleToUser(userId, newRoleId)
+      await assignRoleToUser(userId, values.role)
 
       await queryClient.invalidateQueries({
-        queryKey: membersQueryOptions(1, 20).queryKey.slice(0, 2),
+        queryKey: allMembersQueryOptions().queryKey,
       })
       await queryClient.invalidateQueries({
         queryKey: userRoleAssignmentsQueryOptions().queryKey,
@@ -125,8 +123,8 @@ const RolesUpdate: FC<Props> = props => {
                   </NativeSelectOption>
                 ) : (
                   sortedRoles.map((role: Role) => (
-                    <NativeSelectOption key={role.id} value={role.id.toString()}>
-                      {role.name}
+                    <NativeSelectOption key={role.slug} value={role.slug}>
+                      {role.slug}
                     </NativeSelectOption>
                   ))
                 )}

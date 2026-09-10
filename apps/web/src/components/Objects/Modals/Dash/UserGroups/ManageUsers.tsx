@@ -1,9 +1,12 @@
 'use client'
 
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { linkUserToUserGroup, unLinkUserToUserGroup } from '@services/usergroups/usergroups'
-import { useAllMembers, useUserGroupUsers } from '@/features/users/hooks/useUsers'
+import { useAllMembers } from '@/features/users/hooks/useUsers'
+import { userGroupUsersQueryOptions } from '@/features/users/queries/users.query'
+import { useApiError } from '@/hooks/useApiError'
 import { queryKeys } from '@/lib/react-query/queryKeys'
+import type { AdminUser } from '@/lib/api/generated/zod'
 import DataTable from '@components/ui/data-table'
 import type { DataTableColumnDef } from '@components/ui/data-table'
 import { Check, Plus, X } from 'lucide-react'
@@ -13,90 +16,59 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 
 interface ManageUsersProps {
-  usergroup_id: number
-}
-
-interface UserRow {
-  user: {
-    id: number
-    username: string
-    first_name?: string
-    middle_name?: string
-    last_name?: string
-  }
+  usergroup_id: string
 }
 
 function ManageUsers(props: ManageUsersProps) {
   const t = useTranslations('Components.ManageUsers')
   const queryClient = useQueryClient()
-  const { data: Users } = useAllMembers()
+  const { handleApiError } = useApiError()
+  const { data: users = [] } = useAllMembers()
   const userGroupUsersKey = queryKeys.userGroups.users(props.usergroup_id)
-  const { data: UGusers } = useUserGroupUsers(props.usergroup_id) as { data?: AppUserSummary[] }
+  const { data: members = [] } = useQuery(userGroupUsersQueryOptions(props.usergroup_id))
 
-  // Normalize Users response which may be either an array or a paginated object { users: [], total, ... }
-  const platformUsersList = (data: unknown) => {
-    if (!data) return []
-    const payload = data as AppPayload
-    if (Array.isArray(payload)) return payload
-    if (Array.isArray(payload.users)) return payload.users
-    return []
-  }
+  const isUserPartOfGroup = (user_id: string) => members.some(member => member.id === user_id)
 
-  const isUserPartOfGroup = (user_id: number) => {
-    if (UGusers) {
-      return UGusers.some((user: AppUserSummary) => user.id === user_id)
-    }
-    return false
-  }
-
-  const handleLinkUser = async (user_id: number) => {
-    const res = await linkUserToUserGroup(props.usergroup_id, user_id)
-    if (res.status === 200) {
+  const handleLinkUser = async (user_id: string) => {
+    try {
+      await linkUserToUserGroup(props.usergroup_id, user_id)
       toast.success(t('linkSuccess'))
       await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
-    } else {
-      const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
-      toast.error(t('linkError', { error: errorDetail }))
+    } catch (error) {
+      toast.error(t('linkError', { error: handleApiError(error, { fallback: t('unknownError') }).message }))
     }
   }
 
-  const handleUnlinkUser = async (user_id: number) => {
-    const res = await unLinkUserToUserGroup(props.usergroup_id, user_id)
-    if (res.status === 200) {
+  const handleUnlinkUser = async (user_id: string) => {
+    try {
+      await unLinkUserToUserGroup(props.usergroup_id, user_id)
       toast.success(t('unlinkSuccess'))
       await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
-    } else {
-      const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
-      toast.error(t('unlinkError', { error: errorDetail }))
+    } catch (error) {
+      toast.error(t('unlinkError', { error: handleApiError(error, { fallback: t('unknownError') }).message }))
     }
   }
 
-  const rows = platformUsersList(Users) as UserRow[]
-  const columns: DataTableColumnDef<UserRow>[] = [
+  const columns: DataTableColumnDef<AdminUser>[] = [
     {
-      accessorFn: row =>
-        [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username].filter(Boolean).join(' '),
+      accessorFn: row => `${row.display_name} ${row.username}`,
       id: 'user',
       header: t('userHeader'),
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
-          <span>
-            {[row.original.user.first_name, row.original.user.middle_name, row.original.user.last_name]
-              .filter(Boolean)
-              .join(' ')}
-          </span>
+          <span>{row.original.display_name}</span>
           <span className="rounded-full bg-neutral-100 p-1 px-2 text-xs font-semibold text-neutral-400">
-            @{row.original.user.username}
+            @{row.original.username}
           </span>
         </div>
       ),
     },
     {
-      accessorFn: row => (isUserPartOfGroup(row.user.id) ? t('linkedStatus') : t('notLinkedStatus')),
+      accessorFn: row => (isUserPartOfGroup(row.id) ? t('linkedStatus') : t('notLinkedStatus')),
       id: 'linked',
       header: t('linkedHeader'),
       cell: ({ row }) =>
-        isUserPartOfGroup(row.original.user.id) ? (
+        isUserPartOfGroup(row.original.id) ? (
           <div className="flex w-fit items-center space-x-1 rounded-full bg-cyan-100 px-4 py-1 text-cyan-800">
             <Check size={16} />
             <span>{t('linkedStatus')}</span>
@@ -116,7 +88,7 @@ function ManageUsers(props: ManageUsersProps) {
         <div className="flex items-end space-x-2">
           <Button
             type="button"
-            onClick={() => handleLinkUser(row.original.user.id)}
+            onClick={() => handleLinkUser(row.original.id)}
             variant="ghost"
             className="flex items-center space-x-2 rounded-md bg-cyan-700 p-1 px-3 text-sm font-bold text-cyan-100 hover:cursor-pointer hover:bg-cyan-800"
           >
@@ -125,7 +97,7 @@ function ManageUsers(props: ManageUsersProps) {
           </Button>
           <Button
             type="button"
-            onClick={() => handleUnlinkUser(row.original.user.id)}
+            onClick={() => handleUnlinkUser(row.original.id)}
             variant="ghost"
             className="flex items-center space-x-2 rounded-md bg-gray-700 p-1 px-3 text-sm font-bold text-gray-100 hover:cursor-pointer hover:bg-gray-800"
           >
@@ -139,7 +111,7 @@ function ManageUsers(props: ManageUsersProps) {
 
   return (
     <div className="py-3">
-      <DataTable columns={columns} data={rows} pageSize={8} storageKey={`usergroup-${props.usergroup_id}-users`} />
+      <DataTable columns={columns} data={users} pageSize={8} storageKey={`usergroup-${props.usergroup_id}-users`} />
     </div>
   )
 }

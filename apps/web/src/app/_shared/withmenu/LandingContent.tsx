@@ -42,42 +42,31 @@ function logLandingFetchError(scope: string, error: unknown) {
   })
 }
 
-function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | null) {
-  if (!trailData?.runs) return courses
+/** Course as returned by `getCourses` (v2 `Course` + the legacy `course_uuid` alias). */
+type CatalogCourse = Awaited<ReturnType<typeof getCourses>>['courses'][number]
 
-  return [...courses].toSorted((a, b) => {
-    const aCleanUuid = a.course_uuid?.replace('course_', '')
-    const bCleanUuid = b.course_uuid?.replace('course_', '')
+/** Percent of a run's published steps that are complete (0 when the course is not on the trail). */
+function runProgress(run: AppTrailRun | undefined): number {
+  const total = run?.course_total_steps ?? 0
+  const completed = run?.steps?.filter(step => step.complete).length ?? 0
+  return total > 0 ? Math.round((completed / total) * 100) : 0
+}
 
-    const aRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
-    const bRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
+/** In-progress courses first, then by progress, then newest (`created_at_unix`). */
+export function sortCoursesByProgress<T extends CatalogCourse>(courses: T[], trailData: AppTrailData | null): T[] {
+  if (!trailData?.runs?.length) return courses
 
-    const getProgress = (run: AppTrailRun | undefined, course: AppCourse) => {
-      if (!run) return 0
-      const total =
-        run.course_total_steps ||
-        course.chapters?.reduce((acc: number, chap: AppChapter) => acc + (chap.activities?.length || 0), 0) ||
-        0
-      const completed = run.steps?.filter((s: AppTrailStep) => s.complete === true)?.length || 0
-      return total > 0 ? Math.round((completed / total) * 100) : 0
-    }
+  const progressById = new Map(trailData.runs.map(run => [run.course.id, runProgress(run)]))
 
-    const aProgress = getProgress(aRun, a)
-    const bProgress = getProgress(bRun, b)
-
+  return courses.toSorted((a, b) => {
+    const aProgress = progressById.get(a.id) ?? 0
+    const bProgress = progressById.get(b.id) ?? 0
     const aInProgress = aProgress > 0 && aProgress < 100
     const bInProgress = bProgress > 0 && bProgress < 100
 
-    // 1. In-progress courses first
     if (aInProgress !== bInProgress) return bInProgress ? 1 : -1
-
-    // 2. Higher progress first
     if (aProgress !== bProgress) return bProgress - aProgress
-
-    // 3. Fallback to newest
-    const aDate = new Date(a.creation_date || a.created_at || a.update_date || 0).getTime()
-    const bDate = new Date(b.creation_date || b.created_at || b.update_date || 0).getTime()
-    return bDate - aDate
+    return b.created_at_unix - a.created_at_unix
   })
 }
 
@@ -107,11 +96,20 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
         })
       : Promise.resolve(null)
 
+    // Only the platform and the course catalog are fatal; the side sections degrade on their own.
     const [resCoursesData, resCollections, resGamificationData, resTrailData] = await Promise.all([
       getCourses(undefined, page, 20),
-      getCollections(),
+      getCollections().catch((error: unknown) => {
+        logLandingFetchError('Collections fetch failed', error)
+        return [] as AppCollection[]
+      }),
       gamificationPromise,
-      session ? getCurrentTrail().catch(() => null) : Promise.resolve(null),
+      session
+        ? getCurrentTrail().catch((error: unknown) => {
+            logLandingFetchError('Trail fetch failed', error)
+            return null
+          })
+        : Promise.resolve(null),
     ])
 
     coursesData = resCoursesData

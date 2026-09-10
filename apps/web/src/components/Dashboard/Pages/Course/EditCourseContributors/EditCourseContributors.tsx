@@ -58,7 +58,7 @@ interface SearchUser {
   email: string
   avatar_image: string
   avatar_url?: string
-  id: number
+  id: string
   user_uuid: string
 }
 

@@ -1,6 +1,8 @@
 'use client'
 
 import { apiJson } from '@/lib/api-client'
+import { collectPages } from '@/lib/api/contract'
+import type { AdminUser, AdminUserPage, Usergroup, UsergroupMember, UsergroupPage } from '@/lib/api/generated/zod'
 import { listRoleAuditLog, listRoles, listUserRoles, listUsers } from '@services/rbac'
 import { queryOptions } from '@tanstack/react-query'
 import { getCoursesByUser, getUserById, getUserByUsername, userKeys } from '@/lib/users/client'
@@ -27,36 +29,28 @@ export function userCoursesQueryOptions(userId: string) {
   })
 }
 
+/** Every usergroup (keyset pages walked to the end). */
 export function userGroupsQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.userGroups.all(),
-    queryFn: () => apiJson<{ id: number; name: string; description?: string }[]>(`usergroups`),
+    queryFn: (): Promise<Usergroup[]> =>
+      collectPages(cursor => apiJson<UsergroupPage>(`usergroups?limit=100${cursor ? `&cursor=${cursor}` : ''}`)),
   })
 }
 
-export function userGroupUsersQueryOptions(userGroupId: number) {
+export function userGroupUsersQueryOptions(userGroupId: string) {
   return queryOptions({
     queryKey: queryKeys.userGroups.users(userGroupId),
-    queryFn: () => apiJson<unknown[]>(`usergroups/${userGroupId}/users`),
+    queryFn: () => apiJson<UsergroupMember[]>(`usergroups/${userGroupId}/members`),
   })
 }
 
+/** Admin user listing (`GET /users`, keyset pages walked to the end). */
 export function allMembersQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.users.admin({}),
-    queryFn: () => apiJson(`users?limit=100`),
-  })
-}
-
-export function membersQueryOptions(page: number, perPage: number) {
-  return queryOptions({
-    queryKey: queryKeys.users.admin({ cursor: String(page) }),
-    queryFn: () =>
-      apiJson<{ items: unknown[]; next_cursor?: string | null }>(`users?limit=${perPage}`).then(data => ({
-        total: data.items.length,
-        total_pages: data.next_cursor ? page + 1 : page,
-        users: data.items,
-      })),
+    queryFn: (): Promise<AdminUser[]> =>
+      collectPages(cursor => apiJson<AdminUserPage>(`users?limit=100${cursor ? `&cursor=${cursor}` : ''}`)),
   })
 }
 

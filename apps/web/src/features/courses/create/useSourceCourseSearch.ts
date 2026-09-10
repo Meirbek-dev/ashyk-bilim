@@ -38,7 +38,7 @@ export function useSourceCourseSearch(initialQuery = ''): UseSourceCourseSearchR
         setOptions(
           results.map(c => ({
             courseUuid: cleanCourseUuid(c.course_uuid),
-            name: c.name,
+            name: c.name ?? '',
           })),
         )
         setState('success')

@@ -19,15 +19,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Actions, Resources, Scopes } from '@/components/Security'
 import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate'
 import { useSession } from '@/hooks/useSession'
-import { useMembers } from '@/features/users/hooks/useUsers'
-import type { PaginationState } from '@tanstack/react-table'
+import { useAllMembers, useRoles } from '@/features/users/hooks/useUsers'
+import type { AdminUser } from '@/lib/api/generated/zod'
 import DataTable from '@/components/ui/data-table'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
 
 import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { removeUser } from '@/services/platform/platform'
-import { membersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
+import { allMembersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
 import React, { useState, useTransition, useSyncExternalStore } from 'react'
 
 const emptySubscribe = () => () => {}
@@ -38,47 +38,14 @@ import { Button } from '@/components/ui/button'
 
 const USERS_PER_PAGE = 20
 
-interface UserSessionRoleLike {
-  role?: { priority?: number } | null
-  priority?: number
-}
-
-const getRolePriority = (roleObj: { role?: unknown; priority?: number } | string | null | undefined) => {
-  if (!roleObj) return 0
-  if (typeof roleObj === 'string') return 0
-  let priority = roleObj.priority
-  if (roleObj.role && typeof roleObj.role === 'object' && 'priority' in roleObj.role) {
-    const nested = roleObj.role as { priority?: unknown }
-    if (typeof nested.priority === 'number') {
-      priority = nested.priority
-    }
-  }
-  return priority ?? 0
-}
-
 interface RemoveUserButtonProps {
-  userId: number
+  userId: string
   username: string
-  onRemove: (userId: number) => Promise<void>
+  onRemove: (userId: string) => Promise<void>
   t: (key: string, values?: Record<string, string>) => string
 }
 
-interface UserRow {
-  user: {
-    id: number
-    user_uuid?: string
-    username: string
-    first_name?: string
-    middle_name?: string
-    last_name?: string
-    email?: string
-  }
-  role: {
-    id?: number
-    name?: string
-    priority?: number
-  }
-}
+type UserRow = AdminUser
 
 function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -127,34 +94,22 @@ function Users() {
   const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.APP)
   const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.APP)
 
-  const currentUserPriority = React.useMemo(() => {
-    try {
-      const userRoles = sessionData?.roles
-      if (!userRoles || userRoles.length === 0) return 0
-      return Math.max(
-        ...userRoles.map((r: AppRoleSummary | UserSessionRoleLike) =>
-          getRolePriority((r as AppRoleSummary).role ?? (r as UserSessionRoleLike).role ?? r),
-        ),
-      )
-    } catch {
-      return 0
-    }
-  }, [sessionData?.roles])
+  const { data: roles } = useRoles()
+  const rolePriority = React.useCallback(
+    (slugs: readonly string[] | undefined) =>
+      Math.max(0, ...(slugs ?? []).map(slug => roles?.find(role => role.slug === slug)?.priority ?? 0)),
+    [roles],
+  )
+  const currentUserPriority = rolePriority(sessionData?.roles)
+  const isAdminUser = sessionData?.permissions.includes('*:*:*') ?? false
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: USERS_PER_PAGE,
-  })
   const queryClient = useQueryClient()
-  const { data: usersData, isLoading } = useMembers(pagination.pageIndex + 1, pagination.pageSize)
+  const { data: users = [], isLoading } = useAllMembers()
   const hasMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
     () => false,
   )
-
-  const totalUsers = usersData?.total ?? 0
-  const totalPages = usersData?.total_pages ?? 1
 
   const [rolesModal, setRolesModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null)
@@ -170,21 +125,13 @@ function Users() {
   }, [])
 
   const handleRemoveUser = React.useCallback(
-    async (user_id: number) => {
+    async (user_id: string) => {
       const toastId = toast.loading(t('removingUser'))
       try {
-        const res = await removeUser(user_id)
-        if (res.status === 200) {
-          await queryClient.invalidateQueries({
-            queryKey: membersQueryOptions(1, USERS_PER_PAGE).queryKey.slice(0, 2),
-          })
-          await queryClient.invalidateQueries({
-            queryKey: userRoleAssignmentsQueryOptions().queryKey,
-          })
-          toast.success(t('userRemovedSuccess'), { id: toastId })
-        } else {
-          toast.error(t('errors.removeUserFailed'), { id: toastId })
-        }
+        await removeUser(user_id)
+        await queryClient.invalidateQueries({ queryKey: allMembersQueryOptions().queryKey })
+        await queryClient.invalidateQueries({ queryKey: userRoleAssignmentsQueryOptions().queryKey })
+        toast.success(t('userRemovedSuccess'), { id: toastId })
       } catch {
         toast.error(t('errors.removeUserFailed'), { id: toastId })
       }
@@ -192,36 +139,32 @@ function Users() {
     [queryClient, t],
   )
 
-  const users = (usersData?.users ?? []) as UserRow[]
+  const activeUsers = React.useMemo(() => users.filter(user => user.status === 'active'), [users])
   const columns = React.useMemo<DataTableColumnDef<UserRow>[]>(
     () => [
       {
-        accessorFn: row =>
-          [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username, row.user.email]
-            .filter(Boolean)
-            .join(' '),
+        accessorFn: row => `${row.display_name} ${row.username} ${row.email}`,
         id: 'user',
         header: t('userHeader'),
-        cell: ({ row }) => {
-          const fullName = [row.original.user.first_name, row.original.user.middle_name, row.original.user.last_name]
-            .filter(Boolean)
-            .join(' ')
-          return (
-            <div className="flex items-center gap-2">
-              {fullName && <span className="font-medium">{fullName}</span>}
-              <Badge variant="outline" className="font-mono text-xs">
-                @{row.original.user.username}
-              </Badge>
-            </div>
-          )
-        },
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            {row.original.display_name && <span className="font-medium">{row.original.display_name}</span>}
+            <Badge variant="outline" className="font-mono text-xs">
+              @{row.original.username}
+            </Badge>
+          </div>
+        ),
       },
       {
-        accessorFn: row => row.role?.name || '',
+        accessorFn: row => row.roles.join(' '),
         id: 'role',
         header: t('roleHeader'),
         cell: ({ row }) =>
-          row.original.role?.name ? <Badge variant="secondary">{row.original.role.name}</Badge> : null,
+          row.original.roles.map(slug => (
+            <Badge key={slug} variant="secondary" className="mr-1">
+              {slug}
+            </Badge>
+          )),
       },
       {
         id: 'actions',
@@ -229,17 +172,14 @@ function Users() {
         enableSorting: false,
         cell: ({ row }) => {
           const user = row.original
-          const isSelf = currentUser?.user_uuid === user.user.user_uuid || currentUser?.id === user.user.id
-          const targetPriority = getRolePriority(user.role)
-          const canManage = !isSelf && currentUserPriority > targetPriority
-          const isMainAdmin = currentUser?.id === 1
+          const isSelf = currentUser?.id === user.id
+          const targetPriority = rolePriority(user.roles)
+          const canManage = !isSelf && (isAdminUser || currentUserPriority > targetPriority)
 
           if (isSelf) return <span className="text-muted-foreground text-xs">{t('cannotEditSelf')}</span>
-          if (!isSelf && !isMainAdmin && currentUserPriority <= targetPriority) {
+          if (!canManage) {
             return <span className="text-muted-foreground text-xs">{t('cannotManageHigherRole')}</span>
           }
-          if (!canManage)
-            return <span className="text-muted-foreground text-xs">{t('noActionsForAdministrators')}</span>
 
           const showEditRole = canUpdateRole
           const showRemoveUser = canDeleteUser
@@ -252,7 +192,7 @@ function Users() {
             <div className="flex items-center gap-2">
               {showEditRole && (
                 <Modal
-                  isDialogOpen={rolesModal ? selectedUser?.user?.user_uuid === user.user.user_uuid : false}
+                  isDialogOpen={rolesModal ? selectedUser?.id === user.id : false}
                   onOpenChange={isOpen => {
                     if (!isOpen) handleCloseRolesModal()
                   }}
@@ -260,33 +200,21 @@ function Users() {
                   dialogContent={
                     selectedUser ? (
                       <RolesUpdate
-                        alreadyAssignedRole={selectedUser.role?.id?.toString() || ''}
+                        alreadyAssignedRole={selectedUser.roles[0] ?? ''}
                         setRolesModal={setRolesModal}
                         user={{
-                          id: selectedUser.user.id,
-                          user_id: selectedUser.user.id,
-                          username: selectedUser.user.username,
-                          ...(selectedUser.user.user_uuid ? { user_uuid: selectedUser.user.user_uuid } : {}),
-                          ...(selectedUser.user.email ? { email: selectedUser.user.email } : {}),
-                          ...(selectedUser.user.first_name ? { first_name: selectedUser.user.first_name } : {}),
-                          ...(selectedUser.user.middle_name ? { middle_name: selectedUser.user.middle_name } : {}),
-                          ...(selectedUser.user.last_name ? { last_name: selectedUser.user.last_name } : {}),
-                          user: {
-                            id: selectedUser.user.id,
-                            username: selectedUser.user.username,
-                            ...(selectedUser.user.user_uuid ? { user_uuid: selectedUser.user.user_uuid } : {}),
-                            ...(selectedUser.user.email ? { email: selectedUser.user.email } : {}),
-                            ...(selectedUser.user.first_name ? { first_name: selectedUser.user.first_name } : {}),
-                            ...(selectedUser.user.middle_name ? { middle_name: selectedUser.user.middle_name } : {}),
-                            ...(selectedUser.user.last_name ? { last_name: selectedUser.user.last_name } : {}),
-                          },
+                          id: selectedUser.id,
+                          user_id: selectedUser.id,
+                          username: selectedUser.username,
+                          email: selectedUser.email,
+                          first_name: selectedUser.display_name,
                         }}
                       />
                     ) : null
                   }
                   dialogTitle={t('updateRoleModalTitle')}
                   dialogDescription={t('updateRoleModalDescription', {
-                    username: user.user.username,
+                    username: user.username,
                   })}
                   dialogTrigger={
                     <span>
@@ -299,12 +227,7 @@ function Users() {
                 />
               )}
               {showRemoveUser && (
-                <RemoveUserButton
-                  userId={user.user.id}
-                  username={user.user.username}
-                  onRemove={handleRemoveUser}
-                  t={t}
-                />
+                <RemoveUserButton userId={user.id} username={user.username} onRemove={handleRemoveUser} t={t} />
               )}
             </div>
           )
@@ -315,11 +238,12 @@ function Users() {
       canDeleteUser,
       canUpdateRole,
       currentUser?.id,
-      currentUser?.user_uuid,
       currentUserPriority,
       handleCloseRolesModal,
       handleRolesModal,
       handleRemoveUser,
+      isAdminUser,
+      rolePriority,
       rolesModal,
       selectedUser,
       t,
@@ -347,12 +271,8 @@ function Users() {
         <CardContent className="pt-4">
           <DataTable
             columns={columns}
-            data={users}
-            serverPaginated
-            pageSize={pagination.pageSize}
-            pageCount={totalPages}
-            totalRows={totalUsers}
-            onPaginationChange={setPagination}
+            data={activeUsers}
+            pageSize={USERS_PER_PAGE}
             storageKey="platform-users"
             labels={{
               searchPlaceholder: t('searchPlaceholder'),

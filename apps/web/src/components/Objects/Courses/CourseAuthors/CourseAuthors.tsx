@@ -39,7 +39,7 @@ const getCourseUpdatesQueryKey = (courseUuid?: string | null) =>
 
 interface Author {
   user: {
-    id: number
+    id: string
     user_uuid: string
     avatar_image: string
     first_name: string
@@ -312,11 +312,11 @@ function NewUpdateForm({
 }
 
 interface CourseUpdatePayload {
-  id: number
+  id: string
   title: string
   content: string
   creation_date: string
-  courseupdate_uuid: number
+  courseupdate_uuid: string
 }
 
 function UpdatesListView({ courseUuid }: { courseUuid: string }) {

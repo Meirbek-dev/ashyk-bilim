@@ -14,7 +14,7 @@ import * as v from 'valibot'
 
 interface EditUserGroupProps {
   usergroup: {
-    id: number
+    id: string
     name: string
     description: string
   }
@@ -43,17 +43,15 @@ function EditUserGroup(props: EditUserGroupProps) {
   })
 
   const handleSubmit = async (values: UserGroupFormValues) => {
-    const res = await updateUserGroup(props.usergroup.id, values)
-
-    if (res.status === 200) {
+    try {
+      await updateUserGroup(props.usergroup.id, values)
       toast.success(t('toastSuccess'))
       await queryClient.invalidateQueries({
         queryKey: queryKeys.userGroups.all(),
       })
-      return
+    } catch {
+      toast.error(t('toastError'))
     }
-
-    toast.error(t('toastError'))
   }
 
   return (

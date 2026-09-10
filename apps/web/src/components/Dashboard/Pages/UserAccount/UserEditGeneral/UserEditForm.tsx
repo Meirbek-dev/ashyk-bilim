@@ -7,26 +7,7 @@ import { Controller } from 'react-hook-form'
 import type { UseFormReturn } from 'react-hook-form'
 import type { FormValues } from './schema'
 import { SUPPORTED_FILES } from './avatar-utils'
-import {
-  AlertTriangle,
-  Award,
-  BookOpen,
-  Briefcase,
-  Building2,
-  Calendar,
-  Check,
-  FileWarning,
-  Globe,
-  GraduationCap,
-  Info,
-  Laptop2,
-  Lightbulb,
-  Link,
-  Loader2,
-  MapPin,
-  UploadCloud,
-  Users,
-} from 'lucide-react'
+import { Check, FileWarning, Info, Loader2, UploadCloud } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
 import { Card, CardContent } from '@components/ui/card'
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
@@ -70,7 +51,6 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                     <Input id={field.name} type="email" readOnly placeholder={t('emailPlaceholder')} {...field} />
                   </FieldContent>
                   <FieldError errors={[fieldState.error]} />
-
                 </Field>
               )}
             />
@@ -103,7 +83,6 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                   </Field>
                 )}
               />
-
             </div>
 
             <Controller
@@ -143,7 +122,6 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
               <ThemeModeToggle className="ml-4" />
             </div>
           </div>
-
         </div>
 
         {/* Profile Picture Section */}

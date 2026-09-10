@@ -1,81 +1,58 @@
 'use server'
 
 import { apiJson, apiResult } from '@/lib/api-client'
+import type { Certification, VerifiedCertificate } from '@/lib/api/generated/zod'
 import { courseTag, tags } from '@/lib/cacheTags'
 
 interface CertificationInvalidationOptions {
-  lastKnownUpdateDate?: string | undefined
   courseUuid?: string
 }
 
+async function revalidateCertificationTags(options?: CertificationInvalidationOptions) {
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
+  if (options?.courseUuid) revalidateTag(courseTag.certifications(options.courseUuid), 'max')
+}
+
 export interface CreateCertificationParams {
-  course_id: number
+  course_id: string
   config: AppPayload
   options?: CertificationInvalidationOptions
 }
 
 export async function createCertification({ course_id, config, options }: CreateCertificationParams) {
-  const response = await apiJson<AppCertification>('certifications/', {
+  const response = await apiJson<Certification>('certifications', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      course_id,
-      config,
-      last_known_update_date: options?.lastKnownUpdateDate ?? undefined,
-    }),
+    body: JSON.stringify({ course_id, config }),
   })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-  if (options?.courseUuid) revalidateTag(courseTag.certifications(options.courseUuid), 'max')
-
+  await revalidateCertificationTags(options)
   return response
 }
 
 export interface UpdateCertificationParams {
-  certification_uuid: string
+  certification_id: string
   config: AppPayload
   options?: CertificationInvalidationOptions
 }
 
-export async function updateCertification({ certification_uuid, config, options }: UpdateCertificationParams) {
-  const response = await apiJson<AppCertification>(`certifications/${certification_uuid}`, {
-    method: 'PUT',
+export async function updateCertification({ certification_id, config, options }: UpdateCertificationParams) {
+  const response = await apiJson<Certification>(`certifications/${certification_id}`, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      config,
-      last_known_update_date: options?.lastKnownUpdateDate ?? undefined,
-    }),
+    body: JSON.stringify({ config }),
   })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-  if (options?.courseUuid) revalidateTag(courseTag.certifications(options.courseUuid), 'max')
-
+  await revalidateCertificationTags(options)
   return response
 }
 
-export async function deleteCertification(certification_uuid: string, options?: CertificationInvalidationOptions) {
-  const query = new URLSearchParams()
-  if (options?.lastKnownUpdateDate) query.set('last_known_update_date', options.lastKnownUpdateDate)
-
-  const response = await apiJson<AppPayload>(
-    `certifications/${certification_uuid}${query.size > 0 ? `?${query.toString()}` : ''}`,
-    {
-      method: 'DELETE',
-    },
-  )
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-  if (options?.courseUuid) revalidateTag(courseTag.certifications(options.courseUuid), 'max')
-
+export async function deleteCertification(certification_id: string, options?: CertificationInvalidationOptions) {
+  const response = await apiJson<void>(`certifications/${certification_id}`, { method: 'DELETE' })
+  await revalidateCertificationTags(options)
   return response
 }
 
-export async function getCertificateByUuid(user_certification_uuid: string) {
-  return apiResult<AppCertification>(`certifications/certificate/${user_certification_uuid}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  })
+/** Public verification view by the certificate's `verify_code` (`GET /certificates/{code}`). */
+export async function getCertificateByCode(code: string) {
+  return apiResult<VerifiedCertificate>(`certificates/${code}`)
 }

@@ -24,6 +24,7 @@ import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { useUserGroups } from '@/features/users/hooks/useUsers'
 import DataTable from '@components/ui/data-table'
 import type { DataTableColumnDef } from '@components/ui/data-table'
+import type { Usergroup } from '@/lib/api/generated/zod'
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -31,8 +32,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 
 interface DeleteUserGroupButtonProps {
-  usergroupId: number
-  onDelete: (usergroupId: number) => Promise<void>
+  usergroupId: string
+  onDelete: (usergroupId: string) => Promise<void>
   t: (key: string) => string
 }
 
@@ -82,31 +83,27 @@ function UserGroups() {
   const [userGroupManagementModal, setUserGroupManagementModal] = useState(false)
   const [createUserGroupModal, setCreateUserGroupModal] = useState(false)
   const [editUserGroupModal, setEditUserGroupModal] = useState(false)
-  const [selectedUserGroup, setSelectedUserGroup] = useState<AppUserGroup | null>(null)
-  const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null)
-  const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(null)
+  const [selectedUserGroup, setSelectedUserGroup] = useState<Usergroup | null>(null)
+  const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<string | null>(null)
+  const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data: usergroups, error, isLoading } = useUserGroups()
 
-  const deleteUserGroupUI = async (usergroup_id: number) => {
+  const deleteUserGroupUI = async (usergroup_id: string) => {
     const toastId = toast.loading(t('deletingUserGroup'))
     try {
-      const res = await deleteUserGroup(usergroup_id)
-      if (res.status === 200) {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.userGroups.all(),
-        })
-        toast.success(t('userGroupDeletedSuccess'), { id: toastId })
-      } else {
-        toast.error(t('errors.deleteUserGroupFailed'), { id: toastId })
-      }
+      await deleteUserGroup(usergroup_id)
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.userGroups.all(),
+      })
+      toast.success(t('userGroupDeletedSuccess'), { id: toastId })
     } catch {
       toast.error(t('errors.deleteUserGroupFailed'), { id: toastId })
     }
   }
 
-  const handleOpenModal = (modalType: 'manage' | 'edit', userGroup: AppUserGroup) => {
+  const handleOpenModal = (modalType: 'manage' | 'edit', userGroup: Usergroup) => {
     setSelectedUserGroup(userGroup)
     if (modalType === 'manage') {
       setSelectedUserGroupIdForManage(userGroup.id ?? null)
@@ -135,7 +132,7 @@ function UserGroups() {
   }
   if (error) return <div>{t('errorLoadingUserGroups')}</div>
 
-  const columns: DataTableColumnDef<AppUserGroup>[] = [
+  const columns: DataTableColumnDef<Usergroup>[] = [
     {
       accessorKey: 'name',
       header: t('userGroupHeader'),
@@ -158,11 +155,7 @@ function UserGroups() {
           }}
           minHeight="lg"
           minWidth="lg"
-          dialogContent={
-            selectedUserGroup && typeof selectedUserGroup.id === 'number' ? (
-              <ManageUsers usergroup_id={selectedUserGroup.id} />
-            ) : null
-          }
+          dialogContent={selectedUserGroup ? <ManageUsers usergroup_id={selectedUserGroup.id} /> : null}
           dialogTitle={t('manageUsersModalTitle')}
           dialogDescription={t('manageUsersModalDescription')}
           dialogTrigger={
@@ -203,7 +196,7 @@ function UserGroups() {
             minHeight="sm"
             minWidth="sm"
             dialogContent={
-              selectedUserGroup && typeof selectedUserGroup.id === 'number' ? (
+              selectedUserGroup ? (
                 <EditUserGroup
                   usergroup={{
                     id: selectedUserGroup.id,
@@ -214,9 +207,7 @@ function UserGroups() {
               ) : null
             }
           />
-          {typeof row.original.id === 'number' && (
-            <DeleteUserGroupButton usergroupId={row.original.id} onDelete={deleteUserGroupUI} t={t} />
-          )}
+          <DeleteUserGroupButton usergroupId={row.original.id} onDelete={deleteUserGroupUI} t={t} />
         </div>
       ),
     },

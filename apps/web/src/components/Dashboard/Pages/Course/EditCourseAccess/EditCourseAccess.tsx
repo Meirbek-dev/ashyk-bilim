@@ -45,6 +45,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import { getCourseReadiness } from '@services/courses/courses'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Link } from '@/i18n/navigation'
+import type { Usergroup } from '@/lib/api/generated/zod'
 
 function EditCourseAccess() {
   const course = useCourse()
@@ -61,7 +62,7 @@ function EditCourseAccess() {
   const linkedUserGroupsResource = editorData.linkedUserGroups
   const usergroups = (
     Array.isArray(linkedUserGroupsResource.data) ? linkedUserGroupsResource.data : []
-  ) as AppUserGroup[]
+  ) as Usergroup[]
   const isUserGroupsLoading = course.isEditorDataLoading && editorData.linkedUserGroups.data === null
   const {
     draft: draftPublic,
@@ -223,7 +224,7 @@ function UserGroupsSection({
 }: {
   courseUuid: string
   error: string | null
-  usergroups: AppUserGroup[]
+  usergroups: Usergroup[]
   isLoading: boolean
 }) {
   const [userGroupModal, setUserGroupModal] = useState(false)
@@ -266,7 +267,7 @@ function UserGroupsTable({
   isLoading,
 }: {
   courseUuid: string
-  usergroups: AppUserGroup[]
+  usergroups: Usergroup[]
   isLoading: boolean
 }) {
   const t = useTranslations('DashPage.Courses.Access')
@@ -315,28 +316,22 @@ function UserGroupsTable({
   )
 }
 
-function UnlinkUserGroupRow({ usergroup, courseUuid }: { usergroup: AppUserGroup; courseUuid: string }) {
+function UnlinkUserGroupRow({ usergroup, courseUuid }: { usergroup: Usergroup; courseUuid: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const course = useCourse()
   const t = useTranslations('DashPage.Courses.Access')
 
   const removeUserGroupLink = () => {
-    if (typeof usergroup.id !== 'number') return
     const userGroupId = usergroup.id
     startTransition(async () => {
       try {
-        const res = await unLinkResourcesToUserGroup(userGroupId, [courseUuid], {
+        await unLinkResourcesToUserGroup(userGroupId, [courseUuid], {
           courseUuid,
         })
-        if (res.status === 200) {
-          toast.success(t('unlinkUserGroupSuccess'))
-          await course.refreshEditorData()
-          setIsOpen(false)
-        } else {
-          const detail = (res.data as AppPayload | undefined)?.detail || ''
-          toast.error(t('unlinkUserGroupErrorDetailed', { error: detail }))
-        }
+        toast.success(t('unlinkUserGroupSuccess'))
+        await course.refreshEditorData()
+        setIsOpen(false)
       } catch {
         toast.error(t('unlinkUserGroupErrorGeneric'))
       }

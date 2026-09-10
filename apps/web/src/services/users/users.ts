@@ -1,65 +1,54 @@
 'use server'
 import { apiJson, apiResult } from '@/lib/api-client'
-import { tags } from '@/lib/cacheTags'
+import type { AdminUserPage, SearchResults, UserHit } from '@/lib/api/generated/zod'
 
-export interface AppUserProfileDetail {
-  icon: string
-  id?: number | string
-  text: string
+/**
+ * Public profile projection (server side). v2 has no `GET /users/{id}`:
+ * other users are reachable through `GET /search` (public hit) or the
+ * admin listing `GET /users`. `first_name`/`last_name`/`bio`/`profile` are
+ * kept for the profile page which still renders the legacy shape.
+ */
+export interface AppUserProfileData {
+  avatar_key: string | null
+  bio: string
+  details: Record<string, { icon: string; id: string; text: string }>
+  display_name: string
+  first_name: string
+  id: string
+  last_name: string
+  profile: Record<string, unknown>
+  username: string
 }
 
-export interface AppUserProfileData extends AppUserSummary {
-  bio?: string | null
-  details?: Record<string, AppUserProfileDetail>
-  id: number
-  profile?: string | Record<string, unknown> | null
-  user_uuid: string
+function toProfile(user: UserHit | AdminUserPage['items'][number]): AppUserProfileData {
+  return {
+    id: user.id,
+    username: user.username,
+    display_name: user.display_name,
+    first_name: user.display_name,
+    last_name: '',
+    bio: '',
+    details: {},
+    profile: {},
+    avatar_key: 'avatar_key' in user ? (user.avatar_key ?? null) : null,
+  }
 }
 
-export async function getUser(user_id: number): Promise<AppUserProfileData> {
-  return apiJson<AppUserProfileData>(`users/id/${user_id}`)
+export async function getUser(user_id: string): Promise<AppUserProfileData> {
+  const page = await apiJson<AdminUserPage>(`users?q=${encodeURIComponent(user_id)}&limit=20`)
+  const user = page.items.find(candidate => candidate.id === user_id)
+  if (!user) throw new Error(`User ${user_id} was not found`)
+  return toProfile(user)
 }
 
 export async function getUserByUsername(username: string): Promise<AppUserProfileData> {
-  return apiJson<AppUserProfileData>(`users/username/${username}`)
+  const results = await apiJson<SearchResults>(`search?q=${encodeURIComponent(username)}&limit=20`)
+  const user = results.users.find(candidate => candidate.username.toLowerCase() === username.toLowerCase())
+  if (!user) throw new Error(`User ${username} was not found`)
+  return toProfile(user)
 }
 
+// BLOCKED: no v2 route for "courses made or contributed by a user" (legacy GET /users/{id}/courses).
 export async function getCoursesByUser(user_id: number) {
   return apiResult<AppCourse[]>(`users/${user_id}/courses`)
-}
-
-export async function updateUserAvatar(user_id: number, avatar_file: File) {
-  const formData = new FormData()
-  formData.append('avatar_file', avatar_file)
-  const data = await apiJson<AppUserProfileData>(`users/update_avatar/${user_id}`, {
-    method: 'PUT',
-    body: formData,
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.users, 'max')
-
-  return data
-}
-
-export async function updateUserTheme(user_id: number, theme: string) {
-  const data = await apiJson<AppPayload>(`users/preferences/theme/${user_id}?theme=${encodeURIComponent(theme)}`, {
-    method: 'PUT',
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.users, 'max')
-
-  return data
-}
-
-export async function updateUserLocale(user_id: number, locale: string) {
-  const data = await apiJson<AppPayload>(`users/preferences/locale/${user_id}?locale=${encodeURIComponent(locale)}`, {
-    method: 'PUT',
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.users, 'max')
-
-  return data
 }

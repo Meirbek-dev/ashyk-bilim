@@ -33,19 +33,18 @@ interface UserProfileClientProps {
 }
 
 interface UserProfileData {
-  avatar_image?: string | null
+  avatar_key?: string | null
   bio?: string | null
   details?: Record<string, ProfileDetail>
   first_name?: string
-  id: number
+  id: string
   last_name?: string
   middle_name?: string | null
-  user_uuid: string
 }
 
 interface ProfileDetail {
   icon: string
-  id?: number | string
+  id?: string
   text: string
 }
 
@@ -179,10 +178,8 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
           <div className="border-background overflow-hidden rounded-full border-4 shadow-lg">
             <UserAvatar
               size="3xl"
-              avatar_url={
-                userData.avatar_image ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image) : ''
-              }
-              {...(!userData.avatar_image && { predefined_avatar: 'empty' })}
+              avatar_url={userData.avatar_key ? getUserAvatarMediaDirectory(userData.id, userData.avatar_key) : ''}
+              {...(!userData.avatar_key && { predefined_avatar: 'empty' })}
               userId={userData.id}
               showProfilePopup
             />
@@ -392,32 +389,12 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                           ) : userCourses.length > 0 ? (
                             <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
                               {userCourses.map(course => {
-                                const { authors, description, thumbnail_image, ...courseWithoutAuthors } = course
-                                const mappedAuthors: AppCourseAuthor[] | undefined = authors?.flatMap(author => {
-                                  if (!author.user) return []
-                                  return [
-                                    {
-                                      authorship: author.authorship,
-                                      authorship_status: author.authorship_status,
-                                      user: {
-                                        id: author.user.id,
-                                        user_uuid: author.user.user_uuid,
-                                        avatar_image: author.user.avatar_image ?? '',
-                                        first_name: author.user.first_name,
-                                        ...(author.user.middle_name ? { middle_name: author.user.middle_name } : {}),
-                                        last_name: author.user.last_name,
-                                        username: author.user.username,
-                                      },
-                                    },
-                                  ]
-                                })
                                 const courseThumbnailData: CourseThumbnailData = {
-                                  course_uuid: courseWithoutAuthors.course_uuid,
-                                  name: courseWithoutAuthors.name,
-                                  update_date: courseWithoutAuthors.update_date,
-                                  description: description ?? '',
-                                  thumbnail_image: thumbnail_image ?? '',
-                                  ...(mappedAuthors ? { authors: mappedAuthors } : {}),
+                                  course_uuid: course.course_uuid,
+                                  name: course.name ?? '',
+                                  update_date: course.update_date ?? null,
+                                  description: course.description ?? '',
+                                  thumbnail_image: course.thumbnail_image ?? '',
                                 }
 
                                 return (

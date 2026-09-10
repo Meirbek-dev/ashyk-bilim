@@ -103,16 +103,6 @@ declare global {
     middle_name?: string | null
     last_name?: string
     avatar_image?: string | null
-    role?: string | AppRoleSummary
-    roles?: AppRoleSummary[]
-    [key: string]: unknown
-  }
-
-  interface AppRoleSummary {
-    id?: number
-    name?: string
-    priority?: number
-    role?: string | AppRoleSummary
     [key: string]: unknown
   }
 
@@ -195,16 +185,6 @@ declare global {
   interface AppTrailData {
     runs: AppTrailRun[]
     recent_transactions?: unknown[]
-    [key: string]: unknown
-  }
-
-  interface AppUserGroup {
-    id?: number
-    usergroup_id?: number
-    usergroup_uuid?: string
-    name?: string
-    description?: string
-    users?: AppUserSummary[]
     [key: string]: unknown
   }
 

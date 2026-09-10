@@ -1,5 +1,5 @@
 import CertificateVerificationPage from '@components/Pages/Certificate/CertificateVerificationPage'
-import { getCertificateByUuid } from '@services/courses/certifications'
+import { getCertificateByCode } from '@services/courses/certifications'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 import type React from 'react'
@@ -15,11 +15,12 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
   const t = await getTranslations('Certificates.CertificateVerifyPage')
 
   try {
-    const result = await getCertificateByUuid(uuid)
+    const result = await getCertificateByCode(uuid)
 
     if (result.data) {
       const certificateData = result.data
-      const certificationName = certificateData.certification.config.certification_name
+      const rawName = certificateData.certification.config.certification_name
+      const certificationName = typeof rawName === 'string' ? rawName : ''
       const courseName = certificateData.course.name ?? ''
 
       return {

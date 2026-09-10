@@ -87,14 +87,6 @@ export default function RBACAdminClient() {
 
   const [auditPage, setAuditPage] = useState(1)
   const isSuperAdmin = can(Resources.ROLE, Actions.MANAGE, Scopes.ALL)
-  const currentUserMaxPriority = useMemo(() => {
-    const sessionRoles = session.session?.roles ?? []
-    return sessionRoles.reduce(
-      (maxPriority: number, assignment: (typeof sessionRoles)[number]) =>
-        Math.max(maxPriority, assignment.role?.priority ?? 0),
-      0,
-    )
-  }, [session.session?.roles])
 
   const {
     data: permissions = EMPTY_PERMISSIONS,
@@ -133,6 +125,15 @@ export default function RBACAdminClient() {
         .map(role => Object.assign(role, { permissions: [] })),
     )
   }
+
+  const currentUserMaxPriority = useMemo(() => {
+    const sessionRoleSlugs = session.session?.roles ?? []
+    return sessionRoleSlugs.reduce(
+      (maxPriority: number, slug: string) => Math.max(maxPriority, roles.find(role => role.slug === slug)?.priority ?? 0),
+      0,
+    )
+  }, [session.session?.roles, roles])
+
   const auditLogQuery = useRoleAuditLog(auditPage, 20, {
     enabled: activeTab === 'audit',
   })

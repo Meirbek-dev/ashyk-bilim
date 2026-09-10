@@ -57,7 +57,7 @@ const CERTIFICATE_PATTERNS = [
 ] as const satisfies readonly { value: string; icon: LucideIcon }[]
 
 interface CourseCertificationResource {
-  certification_uuid: string
+  id: string
   config: AppCertification['certification']['config']
 }
 
@@ -308,32 +308,33 @@ function EditCourseCertification() {
         if (isCertificationEnabled) {
           if (existingCertification) {
             await updateCertification({
-              certification_uuid: existingCertification.certification_uuid,
+              certification_id: existingCertification.id,
               config,
 
               options: {
                 courseUuid: courseStructure.course_uuid,
-                lastKnownUpdateDate: courseStructure.update_date,
               },
             })
             return
           }
 
+          if (!courseStructure.id) {
+            throw new Error('Course ID is missing')
+          }
+
           await createCertification({
-            course_id: courseStructure.id ?? 0,
+            course_id: courseStructure.id,
             config,
             options: {
               courseUuid: courseStructure.course_uuid,
-              lastKnownUpdateDate: courseStructure.update_date,
             },
           })
           return
         }
 
         if (existingCertification) {
-          await deleteCertification(existingCertification.certification_uuid, {
+          await deleteCertification(existingCertification.id, {
             courseUuid: courseStructure.course_uuid,
-            lastKnownUpdateDate: courseStructure.update_date,
           })
         }
 
