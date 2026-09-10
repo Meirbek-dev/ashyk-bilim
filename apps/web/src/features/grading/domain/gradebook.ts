@@ -43,7 +43,7 @@ export const GRADEBOOK_SAVED_FILTERS: GradebookSavedFilterId[] = [
   'not_started',
 ]
 
-export function gradebookCellKey(userId: number, activityId: number) {
+export function gradebookCellKey(userId: string, activityId: string) {
   return `${userId}:${activityId}`
 }
 
@@ -55,7 +55,7 @@ export function gradebookActivityKind(activity: GradebookActivity) {
   return activity.assessment_type ?? activity.activity_type.replace('TYPE_', '').replaceAll('_', ' ')
 }
 
-export function emptyGradebookCell(userId: number, activityId: number): ActivityProgressCell {
+export function emptyGradebookCell(userId: string, activityId: string): ActivityProgressCell {
   return {
     user_id: userId,
     activity_id: activityId,
@@ -98,8 +98,8 @@ export function filterGradebookStudents(
 }
 
 export function buildGradebookRollups(data: CourseGradebookResponse, kind: GradebookRollupKind): GradebookRollupRow[] {
-  const cellsByActivity = new Map<number, ActivityProgressCell[]>()
-  const cellsByStudent = new Map<number, ActivityProgressCell[]>()
+  const cellsByActivity = new Map<string, ActivityProgressCell[]>()
+  const cellsByStudent = new Map<string, ActivityProgressCell[]>()
 
   for (const cell of data.cells) {
     cellsByActivity.set(cell.activity_id, [...(cellsByActivity.get(cell.activity_id) ?? []), cell])

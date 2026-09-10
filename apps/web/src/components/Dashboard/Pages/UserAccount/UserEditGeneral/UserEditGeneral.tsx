@@ -13,8 +13,6 @@ import { Loader2 } from 'lucide-react'
 import { Card } from '@components/ui/card'
 import { updateProfile, updateUserAvatar } from '@/lib/users/client'
 import { useSession } from '@/hooks/useSession'
-import { logout } from '@services/auth/auth'
-import { getAbsoluteUrl } from '@services/config/config'
 import { getUserLocale } from '@/i18n/locale'
 import type { Locale } from '@/i18n/config'
 
@@ -48,12 +46,9 @@ function UserEditGeneral() {
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       username: '',
-      first_name: '',
-      middle_name: '',
-      last_name: '',
+      display_name: '',
       email: '',
       bio: '',
-      details: {},
     },
     mode: 'onChange',
   })
@@ -63,19 +58,15 @@ function UserEditGeneral() {
       if (me?.id) {
         try {
           const [userDataResponse, localeResponse] = await Promise.all([Promise.resolve(me), getUserLocale()])
-          const details = (userDataResponse.details as FormValues['details'] | undefined) ?? {}
           setUserData(userDataResponse)
           setCurrentLocale(localeResponse)
 
           // Reset form with fetched data
           form.reset({
             username: userDataResponse.username || '',
-            first_name: userDataResponse.first_name || '',
-            middle_name: userDataResponse.middle_name || '',
-            last_name: userDataResponse.last_name || '',
+            display_name: userDataResponse.display_name || '',
             email: userDataResponse.email || '',
             bio: userDataResponse.bio || '',
-            details,
           })
         } catch (fetchError) {
           const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error'
@@ -138,7 +129,7 @@ function UserEditGeneral() {
         if (prev) URL.revokeObjectURL(prev)
         return previewUrl
       })
-      await updateUserAvatar(me.id, uploadFile)
+      await updateUserAvatar(uploadFile)
       setSuccess(t('avatarSuccess'))
       router.refresh()
     } catch (uploadError) {
@@ -149,41 +140,21 @@ function UserEditGeneral() {
     }
   }
 
-  const handleEmailChange = async (newEmail: string) => {
-    toast.success(t('profileUpdateSuccess'), {
-      duration: 4000,
-    })
-
-    toast(t('promptLogoutOnEmailChange', { newEmail }), {
-      duration: 4000,
-      icon: '📧',
-    })
-
-    // Wait for 4 seconds before signing out
-    await new Promise(resolve => setTimeout(resolve, 4000))
-    await logout({ redirectTo: getAbsoluteUrl('/') })
-  }
-
   const onSubmit = async (values: FormValues) => {
     if (!userData?.id) {
       toast.error(t('profileUpdateError'))
       return
     }
 
-    const isEmailChanged = values.email !== userData.email
     const loadingToast = toast.loading(t('updating'))
 
     try {
-      await updateProfile(values, userData.id)
-      setUserData(current => (current ? { ...current, ...values, middle_name: values.middle_name ?? null } : null))
+      await updateProfile({ display_name: values.display_name, bio: values.bio ?? '' })
+      setUserData(current => (current ? { ...current, ...values } : null))
 
       toast.dismiss(loadingToast)
-      if (isEmailChanged) {
-        await handleEmailChange(values.email)
-      } else {
-        router.refresh()
-        toast.success(t('profileUpdateSuccess'))
-      }
+      router.refresh()
+      toast.success(t('profileUpdateSuccess'))
     } catch (updateError) {
       console.error('Profile update error:', updateError)
       toast.error(t('profileUpdateError'), {

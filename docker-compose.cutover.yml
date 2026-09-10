@@ -1,0 +1,129 @@
+# Production override. Requires Docker Compose >= 2.24.4 (!override).
+# Use with BOTH docker-compose.yml and docker-compose.rewrite.yml; see MIGRATION.md.
+# Legacy containers/data stay available for rollback, but cannot auto-start.
+services:
+  api:
+    profiles: [legacy]
+  taskiq-worker:
+    profiles: [legacy]
+  taskiq-scheduler:
+    profiles: [legacy]
+  migrate:
+    profiles: [legacy]
+
+  nginx:
+    volumes:
+      - ./extra/nginx.v2.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./extra/nginx.v2.routes.conf:/etc/nginx/snippets/v2-routes.conf:ro
+    depends_on: !override
+      web:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
+
+  web:
+    image: ashyq-web:${REWRITE_IMAGE_TAG:?Set REWRITE_IMAGE_TAG to the release commit}
+    build:
+      args:
+        NEXT_PUBLIC_SITE_URL: https://${NGINX_SERVER_NAME:?}/
+        NEXT_PUBLIC_API_URL: https://${NGINX_SERVER_NAME:?}/api/v2/
+        NEXT_PUBLIC_MEDIA_URL: https://${NGINX_SERVER_NAME:?}/
+    environment:
+      INTERNAL_API_URL: http://server:8000/api/v2/
+
+  server:
+    image: ashyq-server:${REWRITE_IMAGE_TAG:?Set REWRITE_IMAGE_TAG to the release commit}
+    profiles: !override []
+    environment: &production
+      AB__ENVIRONMENT: production
+      AB__SERVER__HOST: 0.0.0.0
+      AB__SERVER__PORT: 8000
+      AB__SERVER__CORS_ORIGINS: '["https://${NGINX_SERVER_NAME:?}"]'
+      AB__DATABASE__URL: ${AB__DATABASE__URL:?Set the new ashyq database URL}
+      AB__REDIS__URL: redis://redis:6379/2
+      AB__ZITADEL__BASE_URL: http://zitadel:8080
+      AB__ZITADEL__PAT: ${AB__ZITADEL__PAT:?Set the provisioner PAT after Zitadel bootstrap}
+      AB__STORAGE__ENDPOINT: https://${NGINX_SERVER_NAME:?}
+      AB__STORAGE__ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
+      AB__STORAGE__SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
+      AB__STORAGE__PUBLIC_BUCKET: ab-public
+      AB__STORAGE__PRIVATE_BUCKET: ab-private
+      AB__TELEMETRY__JSON_LOGS: 'true'
+      AB__JUDGE0__BASE_URL: http://judge0-server:2358
+    # Liveness avoids a dependency cycle: storage uses the public nginx origin.
+    # Full readiness is an explicit post-nginx cutover gate.
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8000/api/v2/health']
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+    depends_on:
+      zitadel:
+        condition: service_started
+      rustfs:
+        condition: service_started
+
+  worker:
+    image: ashyq-server:${REWRITE_IMAGE_TAG:?}
+    profiles: !override []
+    environment: *production
+    depends_on:
+      zitadel:
+        condition: service_started
+      rustfs:
+        condition: service_started
+
+  server-migrate:
+    image: ashyq-server:${REWRITE_IMAGE_TAG:?}
+    profiles: !override [maintenance]
+    environment: *production
+
+  zitadel:
+    profiles: !override []
+    ports: !override []
+    command: ['start-from-init', '--masterkeyFromEnv', '--tlsMode', 'disabled']
+    environment:
+      ZITADEL_EXTERNALDOMAIN: zitadel
+      ZITADEL_EXTERNALPORT: 8080
+      ZITADEL_EXTERNALSECURE: 'false'
+      ZITADEL_FIRSTINSTANCE_PATPATH: /machinekey/pat.txt
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: ashyq-provisioner
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: ashyq-provisioner
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: ${ZITADEL_PAT_EXPIRATION:?Set PAT expiry in RFC3339 format}
+    volumes:
+      - zitadel_machinekey:/machinekey
+
+  rustfs:
+    profiles: !override []
+    ports: !override []
+
+  storage-admin:
+    image: docker.io/amazon/aws-cli:2.36.37
+    profiles: [maintenance]
+    environment:
+      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}
+      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:?}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://rustfs:9000
+      AWS_PAGER: ''
+    volumes:
+      - ./extra/storage-public-policy.json:/policy.json:ro
+    networks: [data-net]
+
+  db:
+    ports: !override []
+  redis:
+    ports: !override []
+  judge0-server:
+    ports: !override []
+
+  backup:
+    volumes:
+      - rustfs_data:/backup/rustfs:ro
+      - zitadel_machinekey:/backup/zitadel_machinekey:ro
+
+volumes:
+  zitadel_machinekey:

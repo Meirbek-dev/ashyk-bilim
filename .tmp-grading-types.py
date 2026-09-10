@@ -1,4 +1,7 @@
-import type { GradedItem as WireGradedItem, GradingBreakdown as WireGradingBreakdown, Stats, UserSummary } from '@/lib/api/generated/zod'
+from pathlib import Path
+p = Path('apps/web/src/features/grading/domain/types.ts')
+s = p.read_text()
+head = '''import type { GradedItem as WireGradedItem, GradingBreakdown as WireGradingBreakdown, Stats, UserSummary } from '@/lib/api/generated/zod'
 import type { ActivityProgressCell as ProgressCell, ActivityProgressState } from '@/features/assessments/domain/progress'
 import type { SubmissionStatus } from '@/features/assessments/domain/submission-status'
 export type { ActivityProgressState, SubmissionStatus }
@@ -124,114 +127,11 @@ export function normalizeSubmissionsPage(data: SubmissionsPage): SubmissionsPage
   return { ...data, items: data.items.map(normalizeSubmission) }
 }
 
-export type ReleaseState = 'HIDDEN' | 'AWAITING_RELEASE' | 'VISIBLE' | 'RETURNED_FOR_REVISION'
-
-export interface CodeRunRecord {
-  run_id: string
-  language_id: number
-  status?: string
-  passed?: number
-  total?: number
-  score?: number | null
-  stdout?: string | null
-  stderr?: string | null
-  time?: number | null
-  memory?: number | null
-  details?: unknown[]
-  created_at?: string | null
-}
-
-export interface AntiCheatViolation {
-  kind: string
-  occurred_at: string
-  count?: number
-}
-
-export interface PlagiarismScore {
-  score: number
-  checked_at: string
-  flagged?: boolean
-  details?: Record<string, unknown>
-}
-
-export type PlagiarismCheckStatus = 'pending' | 'checking' | 'complete' | 'failed'
-
-export interface PlagiarismState {
-  status: PlagiarismCheckStatus
-  score: number | null
-  flagged: boolean
-  error: string | null
-}
-
-export interface SubmissionMetadata {
-  latest_run?: CodeRunRecord | null
-  runs?: CodeRunRecord[]
-  violations?: AntiCheatViolation[]
-  plagiarism?: PlagiarismScore | null
-  plagiarism_status?: PlagiarismCheckStatus | string | null
-  plagiarism_error?: string | null
-  [key: string]: unknown
-}
-
-export function getSubmissionMetadata(submission: { metadata_json?: unknown }): SubmissionMetadata {
-  const raw = submission.metadata_json
-  return raw && typeof raw === 'object' ? (raw as SubmissionMetadata) : {}
-}
-
-export function getSubmissionViolations(submission: { metadata_json?: unknown }): AntiCheatViolation[] {
-  const { violations } = getSubmissionMetadata(submission)
-  return Array.isArray(violations) ? violations : []
-}
-
-export function getSubmissionPlagiarismState(submission: { metadata_json?: unknown }): PlagiarismState {
-  const metadata = getSubmissionMetadata(submission)
-  const status = metadata.plagiarism_status
-  const plagiarism = metadata.plagiarism ?? null
-
-  if (status === 'failed') {
-    return {
-      status: 'failed',
-      score: plagiarism?.score ?? null,
-      flagged: Boolean(plagiarism?.flagged),
-      error: metadata.plagiarism_error ?? 'Plagiarism check failed',
-    }
-  }
-
-  if (status === 'checking') {
-    return {
-      status: 'checking',
-      score: plagiarism?.score ?? null,
-      flagged: Boolean(plagiarism?.flagged),
-      error: null,
-    }
-  }
-
-  if (plagiarism) {
-    return {
-      status: 'complete',
-      score: plagiarism.score,
-      flagged: Boolean(plagiarism.flagged),
-      error: null,
-    }
-  }
-
-  return {
-    status: 'pending',
-    score: null,
-    flagged: false,
-    error: null,
-  }
-}
-
-export interface SubmissionReviewViewModel {
-  surface: 'SUBMISSION_REVIEW'
-  submission: Submission
-  displayName: string
-  releaseState: ReleaseState
-  scoreLabel: string
-  isLate: boolean
-  needsTeacherAction: boolean
-  canTeacherEdit: boolean
-  canPublish: boolean
-  canReturn: boolean
-}
+'''
+p.write_text(head + s[s.index('export type ReleaseState'):])
+for name in ['apps/web/src/features/grading/domain/gradebook.ts', 'apps/web/src/features/grading/gradebook/CourseGradebookCommandCenter.tsx']:
+ p = Path(name); s = p.read_text().replace('userId: number', 'userId: string').replace('activityId: number', 'activityId: string').replace('Map<number,', 'Map<string,'); p.write_text(s)
+p = Path('apps/web/src/types/grading.ts'); s=p.read_text()
+for name in ['BatchGradeItem','BatchGradeRequest','BatchGradeResponse','ItemFeedback']:
+ s=s.replace('  '+name+',\n','')
+p.write_text(s)

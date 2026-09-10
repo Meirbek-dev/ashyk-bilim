@@ -26,7 +26,7 @@ interface DiscussionListProps {
 
 function userSummaryToDiscussionUser(user: AppUserSummary) {
   return {
-    id: user.id ?? 0,
+    id: user.id ?? '',
     user_uuid: user.user_uuid || '',
     username: user.username || '',
     first_name: user.first_name || '',
@@ -58,6 +58,10 @@ const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: strin
   }
 
   return {
+    can_update: discussion.can_update,
+    can_delete: discussion.can_delete,
+    can_moderate: discussion.can_moderate,
+    is_owner: discussion.is_owner,
     id: discussion.id?.toString() || '',
     discussion_uuid: discussion.discussion_uuid || '',
     username: discussion.user?.username || anonymousLabel,
@@ -166,7 +170,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       const newReply = await createDiscussion(courseUuid, {
         content: replyContent,
         type: 'reply',
-        parent_discussion_id: Number.parseInt(parentPost.id, 10),
+        parent_discussion_id: parentPost.id,
       })
 
       // If the new reply doesn't have user data, populate it with current user

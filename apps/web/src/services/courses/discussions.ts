@@ -1,168 +1,70 @@
 'use server'
 
 import { apiJson } from '@/lib/api-client'
+import { Discussion as WireDiscussion, DiscussionPage, ReactionState } from '@/lib/api/generated/zod'
+import type { Discussion as WireDiscussionType } from '@/lib/api/generated/zod'
+import { collectPages } from '@/lib/api/contract'
 import { tags } from '@/lib/cacheTags'
-import { getServerAPIUrl } from '@services/config/config'
 
-export async function getCourseDiscussions(
-  course_uuid: string,
-  includeReplies = true,
-  limit = 50,
-  offset = 0,
-): Promise<Discussion[]> {
-  const normalizedCourseUuid = course_uuid.startsWith('course_') ? course_uuid : `course_${course_uuid}`
-  try {
-    return await apiJson<Discussion[]>(
-      `courses/${normalizedCourseUuid}/discussions?include_replies=${includeReplies}&limit=${limit}&offset=${offset}`,
-      {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        baseUrl: getServerAPIUrl(),
-        timeoutMs: 10_000,
-      },
-    )
-  } catch {
-    return []
-  }
-}
-
-/*
- This file includes POST, PUT, DELETE requests for course discussions
-*/
-
-export interface DiscussionCreate {
-  content: string
-  type?: 'post' | 'reply'
-  parent_discussion_id?: number
-}
-
-export interface DiscussionUpdate {
-  content?: string
-  status?: 'active' | 'hidden' | 'deleted'
-}
-
-export interface Discussion {
-  id: number
+export interface Discussion extends Omit<WireDiscussionType, 'replies'> {
   discussion_uuid: string
-  content: string
   type: 'post' | 'reply'
-  status: 'active' | 'hidden' | 'deleted'
-  course_id: number
-  user_id: number
-  parent_discussion_id?: number
-  likes_count: number
-  dislikes_count: number
-  replies_count: number
   creation_date: string
   update_date: string
-  user?: {
-    id: number
-    user_uuid: string
-    username: string
-    first_name: string
-    last_name: string
-    email: string
-    avatar_image?: string
-    bio?: string
-    details?: unknown
-    profile?: unknown
+  user?: { id: string; user_uuid: string; username: string; first_name: string; last_name: string; email: string; avatar_image?: string }
+  replies: Discussion[]
+}
+
+function normalize(value: WireDiscussionType): Discussion {
+  return {
+    ...value,
+    discussion_uuid: value.id,
+    type: value.parent_id ? 'reply' : 'post',
+    creation_date: new Date(value.created_at_unix * 1000).toISOString(),
+    update_date: new Date(value.updated_at_unix * 1000).toISOString(),
+    ...(value.author ? { user: { id: value.author.id, user_uuid: value.author.id, username: value.author.username, first_name: value.author.display_name, last_name: '', email: '', avatar_image: value.author.avatar_key ?? '' } } : {}),
+    replies: value.replies.map(reply => normalize({ ...reply, replies: [] })),
   }
-  replies?: Discussion[]
-  is_liked: boolean
-  is_disliked: boolean
 }
 
-export async function createDiscussion(course_uuid: string, discussion: DiscussionCreate): Promise<Discussion> {
-  const data = await apiJson<Discussion>(`courses/${course_uuid}/discussions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(discussion),
-  })
-
+async function invalidate() {
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
+}
 
+export async function getCourseDiscussions(courseId: string, includeReplies = true, limit = 50): Promise<Discussion[]> {
+  const items = await collectPages(cursor => apiJson(`courses/${courseId}/discussions?include_replies=${includeReplies}&limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, {}, data => DiscussionPage.parse(data)))
+  return items.map(normalize)
+}
+
+export interface DiscussionCreate { content: string; type?: 'post' | 'reply'; parent_discussion_id?: string }
+export interface DiscussionUpdate { content?: string; status?: 'active' | 'hidden' | 'deleted' }
+
+export async function createDiscussion(courseId: string, discussion: DiscussionCreate): Promise<Discussion> {
+  const data = await apiJson(`courses/${courseId}/discussions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: discussion.content, parent_id: discussion.parent_discussion_id ?? null }) }, data => WireDiscussion.parse(data))
+  await invalidate()
+  return normalize(data)
+}
+
+export async function updateDiscussion(_courseId: string, id: string, discussion: DiscussionUpdate): Promise<Discussion> {
+  const data = await apiJson(`discussions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(discussion) }, data => WireDiscussion.parse(data))
+  await invalidate()
+  return normalize(data)
+}
+
+export async function deleteDiscussion(_courseId: string, id: string): Promise<void> {
+  await apiJson(`discussions/${id}`, { method: 'DELETE' })
+  await invalidate()
+}
+
+export async function toggleDiscussionLike(_courseId: string, id: string) {
+  const data = await apiJson(`discussions/${id}/like`, { method: 'PUT' }, data => ReactionState.parse(data))
+  await invalidate()
   return data
 }
 
-export async function updateDiscussion(
-  course_uuid: string,
-  discussion_uuid: string,
-  discussion: DiscussionUpdate,
-): Promise<Discussion> {
-  const data = await apiJson<Discussion>(`courses/${course_uuid}/discussions/${discussion_uuid}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(discussion),
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
-  return data
-}
-
-export async function deleteDiscussion(course_uuid: string, discussion_uuid: string): Promise<{ message: string }> {
-  const data = await apiJson<{ message: string }>(`courses/${course_uuid}/discussions/${discussion_uuid}`, {
-    method: 'DELETE',
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
-  return data
-}
-
-export async function toggleDiscussionLike(
-  course_uuid: string,
-  discussion_uuid: string,
-): Promise<{
-  message: string
-  is_liked: boolean
-  is_disliked: boolean
-  likes_count: number
-  dislikes_count: number
-}> {
-  const data = await apiJson<{
-    message: string
-    is_liked: boolean
-    is_disliked: boolean
-    likes_count: number
-    dislikes_count: number
-  }>(`courses/${course_uuid}/discussions/${discussion_uuid}/like`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
-  return data
-}
-
-export async function toggleDiscussionDislike(
-  course_uuid: string,
-  discussion_uuid: string,
-): Promise<{
-  message: string
-  is_liked: boolean
-  is_disliked: boolean
-  likes_count: number
-  dislikes_count: number
-}> {
-  const data = await apiJson<{
-    message: string
-    is_liked: boolean
-    is_disliked: boolean
-    likes_count: number
-    dislikes_count: number
-  }>(`courses/${course_uuid}/discussions/${discussion_uuid}/dislike`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
+export async function toggleDiscussionDislike(_courseId: string, id: string) {
+  const data = await apiJson(`discussions/${id}/dislike`, { method: 'PUT' }, data => ReactionState.parse(data))
+  await invalidate()
   return data
 }

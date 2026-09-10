@@ -13,18 +13,6 @@
       "skillPath": "skills/executing-plans/SKILL.md",
       "computedHash": "78a07800ee99a5861ae10be59d79fad085fdca10444e8aaeb2691597e357cff8"
     },
-    "fastapi": {
-      "source": "fastapi/fastapi",
-      "sourceType": "github",
-      "skillPath": "fastapi/.agents/skills/fastapi/SKILL.md",
-      "computedHash": "187b2e06c41cdb6c6beeab15e6db4aeb1bf62f57735974646ad5646af8aacc66"
-    },
-    "fastapi-async-patterns": {
-      "source": "thebushidocollective/han",
-      "sourceType": "github",
-      "skillPath": "plugins/frameworks/fastapi/skills/fastapi-async-patterns/SKILL.md",
-      "computedHash": "d0c1d5dcdee3459acb609b23b815396e99c315d7c96a1f9d1c5d2b1931ef62cf"
-    },
     "fix-errors": {
       "source": "microsoft/vscode",
       "sourceType": "github",

@@ -18,7 +18,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useUserByIdQuery, useUserByUsernameQuery } from '@/features/users/hooks/useUsers'
-import type { UserProfile } from '@/lib/api/generated/zod'
+import type { PublicUser } from '@/lib/users/client'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import UserAvatar from '@components/Objects/UserAvatar'
@@ -32,7 +32,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
-type UserData = UserProfile
+type UserData = PublicUser
 interface UserDetail {
   id: string
   label: string
@@ -227,7 +227,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
                     size="xl"
                     avatar_url={
                       userData.avatar_image
-                        ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image)
+                        ? getUserAvatarMediaDirectory(userData.id, userData.avatar_image)
                         : ''
                     }
                     {...(!userData.avatar_image ? { predefined_avatar: 'empty' } : {})}

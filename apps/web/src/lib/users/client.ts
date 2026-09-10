@@ -28,8 +28,8 @@ export const userKeys = {
 }
 
 export interface PublicUser {
-  avatar_image?: string | null
-  avatar_key?: string | null
+  avatar_image?: string | null | undefined
+  avatar_key?: string | null | undefined
   bio: string
   details: Record<string, { icon: string; id: string; label: string; text: string }>
   display_name: string
@@ -37,6 +37,7 @@ export interface PublicUser {
   first_name: string
   id: string
   last_name: string
+  middle_name?: string
   profile: Record<string, unknown>
   roles?: string[]
   username: string

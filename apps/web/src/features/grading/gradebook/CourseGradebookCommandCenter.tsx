@@ -135,7 +135,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
 
   if (!data) return <div className="text-muted-foreground text-sm">{t('unavailable')}</div>
 
-  const openReview = (activityId: number, submissionUuid?: string | null) => {
+  const openReview = (activityId: string, submissionUuid?: string | null) => {
     const activity = data.activities.find(item => item.id === activityId)
     if (!activity?.activity_uuid) return
     const cleanCourse = courseUuid.replace(/^course_/, '')
@@ -153,7 +153,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     openReview(action.activity_id, action.submission_uuid)
   }
 
-  const openActivityReview = (activityId: number) => {
+  const openActivityReview = (activityId: string) => {
     const activity = data.activities.find(item => item.id === activityId)
     if (!activity?.activity_uuid) return
     const cleanCourse = courseUuid.replace(/^course_/, '')
@@ -369,7 +369,7 @@ function TeacherActionsPanel({
 }: {
   data: CourseGradebookResponse
   onOpenAction: (action: TeacherAction) => void
-  onOpenActivity: (activityId: number) => void
+  onOpenActivity: (activityId: string) => void
 }) {
   const t = useTranslations('Features.Grading.Gradebook')
   const actions = data.teacher_actions.slice(0, 6)
@@ -415,7 +415,7 @@ function TeacherActionsPanel({
 }
 
 function uniqueActionActivities(actions: TeacherAction[]) {
-  const byActivity = new Map<number, Pick<TeacherAction, 'activity_id' | 'activity_name'>>()
+  const byActivity = new Map<string, Pick<TeacherAction, 'activity_id' | 'activity_name'>>()
   for (const action of actions) {
     byActivity.set(action.activity_id, {
       activity_id: action.activity_id,
