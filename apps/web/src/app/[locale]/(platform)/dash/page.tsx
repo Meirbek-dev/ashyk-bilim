@@ -8,6 +8,8 @@ import { getEditableCourses } from '@services/courses/courses'
 import { getAdminAnalyticsOverview, getTeacherOverview } from '@services/analytics/teacher'
 import { buildDashboardWorkQueue, DashboardWorkQueue } from '@/features/work-queue'
 import { apiJson } from '@/lib/api-client'
+import { unixToIso } from '@/lib/api/contract'
+import type { WorkItem, WorkQueue } from '@/lib/api/generated/zod'
 
 import type { Action, Resource, Scope } from '@/types/permissions'
 import type { AdminAnalyticsResponse, TeacherOverviewResponse } from '@/types/analytics'
@@ -24,24 +26,21 @@ interface AIUsageSummary {
   remaining_budget: number
 }
 
-interface WorkQueueApiResponse {
-  items: {
-    id: string
-    role: 'learner' | 'teacher'
-    kind: string
-    status: string
-    priority: 'critical' | 'high' | 'normal' | 'low'
-    title: string
-    description: string
-    href: string
-    primary_action: string
-    course_title?: string | null
-    activity_title?: string | null
-    due_at?: string | null
-    created_at?: string | null
-  }[]
-  total: number
-  next_cursor?: string | null
+/** `WorkItem` with `*_unix` timestamps rendered as ISO for `buildDashboardWorkQueue`. */
+type WorkQueueApiResponse = Omit<WorkQueue, 'items'> & {
+  items: (WorkItem & { due_at: string | null; created_at: string | null })[]
+}
+
+async function fetchWork(role: WorkQueue['items'][number]['role']): Promise<WorkQueueApiResponse> {
+  const queue = await apiJson<WorkQueue>(`work?role=${role}&limit=50`)
+  return {
+    ...queue,
+    items: queue.items.map(item => ({
+      ...item,
+      due_at: unixToIso(item.due_at_unix),
+      created_at: unixToIso(item.created_at_unix),
+    })),
+  }
 }
 
 const analyticsQueueQuery = {
@@ -168,6 +167,7 @@ export default async function PlatformDashHomePage() {
   }
 
   const queue = buildDashboardWorkQueue({
+    t: tQueue,
     access,
     learnerSignal: learnerWork
       ? { items: learnerWork.items.map(localizeWorkItem), signalAvailable: true }
@@ -314,7 +314,7 @@ async function getSafeAIUsageSummary(): Promise<{ data: AIUsageSummary | null; e
 
 async function getSafeLearnerWork(): Promise<{ data: WorkQueueApiResponse | null; error: string | null }> {
   try {
-    const data = await apiJson<WorkQueueApiResponse>('me/work?role=learner&limit=50')
+    const data = await fetchWork('learner')
     return { data, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load learner work:', error)
@@ -324,7 +324,7 @@ async function getSafeLearnerWork(): Promise<{ data: WorkQueueApiResponse | null
 
 async function getSafeTeacherWork(): Promise<{ data: WorkQueueApiResponse | null; error: string | null }> {
   try {
-    const data = await apiJson<WorkQueueApiResponse>('me/work?role=teacher&limit=50')
+    const data = await fetchWork('teacher')
     return { data, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load teacher work:', error)

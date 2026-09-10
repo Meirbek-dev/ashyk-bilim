@@ -108,7 +108,7 @@ export function DataTablePagination<TData extends RowData, TSelected = unknown>(
         </div>
         <div className="flex items-center space-x-2">
           <Button
-            aria-label="Go to first page"
+            aria-label={t('firstPage')}
             variant="outline"
             size="icon"
             className="hidden h-8 w-8 lg:flex"
@@ -143,7 +143,7 @@ export function DataTablePagination<TData extends RowData, TSelected = unknown>(
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button
-            aria-label="Go to last page"
+            aria-label={t('lastPage')}
             variant="outline"
             size="icon"
             className="hidden h-8 w-8 lg:flex"

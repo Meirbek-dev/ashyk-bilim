@@ -1165,7 +1165,9 @@
       "reset": "Reset",
       "toggleColumns": "Toggle columns",
       "searchColumns": "Search columns...",
-      "noColumns": "No columns found."
+      "noColumns": "No columns found.",
+      "firstPage": "Go to first page",
+      "lastPage": "Go to last page"
     },
     "DragAndDrop": {
       "liftItem": "Picked up item {index} of {count}",
@@ -7850,7 +7852,9 @@
   },
   "Features": {
     "ContentMarkdown": {
-      "imageLabel": "Image"
+      "imageLabel": "Image",
+      "copyCode": "Copy code",
+      "copiedCode": "Copied code"
     },
     "Grading": {
       "Gradebook": {
@@ -10563,6 +10567,160 @@
         "title": "Release {activity}",
         "description": "A grade in {course} is saved but not visible to the learner.",
         "action": "Review and release"
+      }
+    },
+    "sections": {
+      "learner": {
+        "title": "Learner Work",
+        "description": "Assignments and course actions that need the learner next.",
+        "emptyTitle": "No learner work is queued",
+        "emptyDescription": "You are caught up. Browse a course when you are ready to continue learning.",
+        "unavailable": {
+          "title": "Check learning work",
+          "description": "Your learning queue could not be loaded. Open Courses to continue directly.",
+          "action": "Browse Courses"
+        }
+      },
+      "teacher": {
+        "title": "Teacher Work",
+        "description": "Course readiness, grading, and learner intervention work.",
+        "emptyTitle": "No teacher work is queued",
+        "emptyDescription": "Courses, grading backlog, and learner risk checks will appear here when they need action."
+      },
+      "admin": {
+        "title": "Admin Work",
+        "description": "Access, policy, and operational work for the platform.",
+        "emptyTitle": "No admin work is queued",
+        "emptyDescription": "Access reviews and operations signals will appear here when your role can act on them."
+      }
+    },
+    "sourceLabels": {
+      "learning": "Learning",
+      "gradingQueue": "Grading Queue",
+      "courseManagement": "Course Management",
+      "teacherAnalytics": "Teacher Analytics",
+      "crossCourseQueue": "Cross-Course Queue",
+      "adminAnalytics": "Admin Analytics",
+      "aiOperations": "AI Operations",
+      "accessControl": "Access Control"
+    },
+    "builderItems": {
+      "courseReadiness": {
+        "title": "Review course readiness",
+        "description": "Draft, private, or incomplete courses need teacher review before learners rely on them.",
+        "action": "Open Courses"
+      },
+      "createFirstCourse": {
+        "title": "Create the first course",
+        "description": "The teaching workspace has no editable courses yet.",
+        "action": "Create Course"
+      },
+      "coursesUnavailable": {
+        "title": "Check courses feed",
+        "description": "Course management is available, but its summary could not be loaded. Open Courses to retry.",
+        "action": "Open Courses"
+      },
+      "gradingSlaBreaches": {
+        "title": "Fix grading SLA breaches",
+        "action": "Open SLA Queue",
+        "latencyMissing": "Feedback is missing the target response window.",
+        "latencyHours": "Median feedback latency is {hours} hours.",
+        "latencyDays": "Median feedback latency is {days} days."
+      },
+      "gradingBacklog": {
+        "title": "Grade pending submissions",
+        "description": "Manual assessment work is waiting for review and feedback.",
+        "action": "Open Grading"
+      },
+      "manualAssessment": {
+        "description": "{course} has manual submissions waiting for review.",
+        "action": "Open Assessment"
+      },
+      "forecastGradingLoad": {
+        "title": "Plan the 7-day grading load",
+        "description": "Forecasted submissions exceed the current backlog.",
+        "action": "Open Forecast"
+      },
+      "learnerRisk": {
+        "title": "Intervene with at-risk learners",
+        "description": "Learners with stalled progress or assessment blocks need action.",
+        "action": "Open Watchlist"
+      },
+      "teacherAnalyticsUnavailable": {
+        "title": "Check analytics feed",
+        "description": "Teacher analytics could not be loaded. Open Analytics to retry.",
+        "action": "Open Analytics"
+      },
+      "adminAiBudgetCritical": {
+        "title": "Review AI budget before requests fail",
+        "description": "AI usage has consumed {percent}% of the monthly token budget.",
+        "action": "Open AI Admin"
+      },
+      "adminAiBudgetWarning": {
+        "title": "Plan AI budget usage",
+        "description": "AI usage is at {percent}% of the monthly token budget.",
+        "action": "Open AI Admin"
+      },
+      "adminWorkloadHotspots": {
+        "title": "Review teacher workload hotspots",
+        "description": "Teacher workload has SLA breaches that need operations review.",
+        "action": "Open Admin Analytics"
+      },
+      "adminTeacherBacklog": {
+        "title": "Inspect teacher backlog",
+        "description": "Workload is accumulating across managed courses.",
+        "action": "Open Workload"
+      },
+      "userAccessAudit": {
+        "title": "Audit user access",
+        "description": "Review users and groups before expanding course or analytics permissions.",
+        "action": "Open Users"
+      },
+      "rolePolicyReview": {
+        "title": "Review role policy",
+        "description": "Keep system roles aligned with the learner, teacher, and admin dashboard model.",
+        "action": "Open Roles"
+      },
+      "adminAnalyticsUnavailable": {
+        "title": "Check admin analytics feed",
+        "description": "Admin workload signals could not be loaded. Open Admin Analytics to retry.",
+        "action": "Open Admin Analytics"
+      }
+    },
+    "metrics": {
+      "courses": "courses",
+      "breaches": "breaches",
+      "submissions": "submissions",
+      "awaitingReview": "awaiting review",
+      "forecast": "forecast",
+      "learners": "learners",
+      "percentUsed": "% used"
+    },
+    "tools": {
+      "browseCourses": {
+        "title": "Browse Courses",
+        "description": "Find published learning content."
+      },
+      "courses": {
+        "title": "Courses",
+        "description": "Create and manage courses, chapters, and assessment tasks."
+      },
+      "analytics": {
+        "title": "Analytics",
+        "description": "Open learner, course, and assessment analytics."
+      },
+      "users": {
+        "title": "Users",
+        "description": "Manage organization users and groups."
+      },
+      "admin": {
+        "title": "Admin",
+        "description": "Manage roles, AI operations, and platform policy.",
+        "badge": "System"
+      },
+      "account": {
+        "title": "Account Settings",
+        "description": "Update profile, security, and personal preferences."
       }
     }
   },
