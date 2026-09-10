@@ -76,10 +76,10 @@ vi.mock('@/hooks/useGradingPanel', () => ({
 
 function createSubmission(overrides: Partial<Submission> = {}): Submission {
   return {
-    id: 1,
+    id: 'submission_review',
     submission_uuid: 'submission_review',
-    user_id: 9,
-    activity_id: 42,
+    user_id: 'user_student',
+    activity_id: 'activity_review',
     status: 'GRADED',
     version: 3,
     final_score: 91,
@@ -95,9 +95,9 @@ function createSubmission(overrides: Partial<Submission> = {}): Submission {
     answers_json: {},
     metadata_json: {},
     user: {
-      id: 9,
-      user_uuid: 'user_student',
+      id: 'user_student',
       username: 'student',
+      display_name: 'Student One',
       first_name: 'Student',
       last_name: 'One',
       email: 'student.one@example.test',
@@ -176,7 +176,6 @@ describe('teacher review controls', () => {
         final_score: 91,
         feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
         status: 'PUBLISHED',
-        item_feedback: [],
       },
       3,
       'assessment_review',
@@ -188,7 +187,6 @@ describe('teacher review controls', () => {
         final_score: 77,
         feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
         status: 'PUBLISHED',
-        item_feedback: [],
       },
       3,
       'assessment_review',
@@ -217,9 +215,9 @@ describe('teacher review controls', () => {
         submissions={[
           createSubmission({
             user: {
-              id: 9,
-              user_uuid: 'user_a',
+              id: 'user_a',
               username: 'student.a',
+              display_name: 'A Student',
               first_name: 'A',
               last_name: 'Student',
               email: 'a@example.test',
@@ -228,9 +226,9 @@ describe('teacher review controls', () => {
           createSubmission({
             submission_uuid: 'submission_two',
             user: {
-              id: 10,
-              user_uuid: 'user_b',
+              id: 'user_b',
               username: 'student.b',
+              display_name: 'B Student',
               first_name: 'B',
               last_name: 'Student',
               email: 'b@example.test',
@@ -265,7 +263,7 @@ describe('teacher review controls', () => {
       expect(mocks.createStudentPolicyOverrideMock).toHaveBeenCalledTimes(2)
     })
     expect(mocks.createStudentPolicyOverrideMock).toHaveBeenNthCalledWith(1, 'assessment_review', {
-      user_id: 9,
+      user_id: 'user_a',
       due_at_override: expectedDueAt.toISOString(),
       note: 'Medical extension',
     })

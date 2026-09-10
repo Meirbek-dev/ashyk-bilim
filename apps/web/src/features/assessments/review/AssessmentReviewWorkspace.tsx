@@ -5,13 +5,20 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import { apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { assessmentTypeToKind } from '@/features/assessments/domain/view-models'
 import { loadKindModule } from '@/features/assessments/registry'
 import type { KindModule } from '@/features/assessments/registry'
 import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace'
 import { reportClientError } from '@/services/telemetry/client'
+import { getActivityAssessment } from '@/lib/api/generated/assessments/assessments'
+import type { AssessmentDetail } from '@/lib/api/generated/zod'
+
+const KIND_FROM_WIRE: Record<AssessmentDetail['kind'], 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ'> = {
+  exam: 'EXAM',
+  code_challenge: 'CODE_CHALLENGE',
+  quiz: 'QUIZ',
+}
 
 interface AssessmentReviewWorkspaceProps {
   /** Activity UUID — route param (may include "activity_" prefix). */
@@ -25,12 +32,25 @@ interface AssessmentReviewDetail {
   kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ'
   review_projection?: {
     assessment_uuid: string
-    activity_id: number
     activity_uuid: string
     title: string
     kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ'
     default_filter?: 'ALL' | 'NEEDS_GRADING' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
   } | null
+}
+
+function reviewDetailFromWire(assessment: AssessmentDetail): AssessmentReviewDetail {
+  const kind = KIND_FROM_WIRE[assessment.kind]
+  return {
+    assessment_uuid: assessment.id,
+    kind,
+    review_projection: {
+      assessment_uuid: assessment.id,
+      activity_uuid: assessment.activity_id,
+      title: assessment.title,
+      kind,
+    },
+  }
 }
 
 export default function AssessmentReviewWorkspace({
@@ -48,7 +68,7 @@ export default function AssessmentReviewWorkspace({
   } = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.activity(cleanUuid),
-      queryFn: () => apiJson<AssessmentReviewDetail>(`assessments/activity/${cleanUuid}`),
+      queryFn: async () => reviewDetailFromWire(await getActivityAssessment(cleanUuid)),
       enabled: Boolean(cleanUuid),
     }),
   )
@@ -97,7 +117,9 @@ export default function AssessmentReviewWorkspace({
 
   return (
     <GradingReviewWorkspace
-      activityId={reviewProjection.activity_id}
+      // v2 activity ids are UUID strings; `activityId` is a legacy numeric prop only
+      // used as a non-null "stats are ready" gate downstream (useSubmissionStats).
+      activityId={0}
       assessmentUuid={reviewProjection.assessment_uuid}
       activityUuid={reviewProjection.activity_uuid}
       title={reviewProjection.title}

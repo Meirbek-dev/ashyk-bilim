@@ -8,9 +8,9 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { apiJson } from '@/lib/api-client'
 import type { CodeChallengeSettings, Judge0Language } from '@/services/courses/code-challenges'
 import { cn } from '@/lib/utils'
+import { referenceCheck } from '@/lib/api/generated/code/code'
 
 interface ReferenceSolutionRunnerProps {
   draft: CodeChallengeSettings
@@ -53,13 +53,31 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
     setIsValidating(true)
     setResults(null)
     try {
-      const data = await apiJson<{ results: Record<number, ValidationResultLanguage> }>(
-        `assessments/${draft.uuid}/code-challenge/validate`,
-        {
-          method: 'POST',
-        },
-      )
-      setResults(data.results)
+      const data = await referenceCheck(draft.uuid)
+      const results: Record<number, ValidationResultLanguage> = {}
+      for (const check of data.results) {
+        results[check.language_id] = {
+          ok: check.ok,
+          status: check.status,
+          passed: check.passed,
+          total: check.total,
+          ...(check.score !== undefined && check.score !== null ? { score: check.score } : {}),
+          ...(check.compile_output ? { compile_output: check.compile_output } : {}),
+          ...(check.message ? { message: check.message } : {}),
+          details: check.cases.map(caseResult => ({
+            test_id: caseResult.test_id,
+            passed: caseResult.passed,
+            status_description: caseResult.status_description,
+            ...(caseResult.time_seconds !== undefined && caseResult.time_seconds !== null
+              ? { time: caseResult.time_seconds }
+              : {}),
+            ...(caseResult.memory_kb !== undefined && caseResult.memory_kb !== null
+              ? { memory: caseResult.memory_kb }
+              : {}),
+          })),
+        }
+      }
+      setResults(results)
       toast.success(t('referenceValidationFinished'))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('referenceValidationFailed'))

@@ -74,21 +74,21 @@ vi.mock('@/hooks/use-mobile', () => ({
 function baseGradebook(): CourseGradebookResponse {
   return {
     course_uuid: 'course_gradebook',
-    course_id: 1,
+    course_id: 'course_gradebook',
     course_name: 'Course',
     students: [
       {
-        id: 10,
-        user_uuid: 'user_student_one',
+        id: 'user_student_one',
         username: 'student.one',
+        display_name: 'Student One',
         first_name: 'Student',
         last_name: 'One',
         email: 'student.one@example.com',
       },
       {
-        id: 11,
-        user_uuid: 'user_student_two',
+        id: 'user_student_two',
         username: 'student.two',
+        display_name: 'Student Two',
         first_name: 'Student',
         last_name: 'Two',
         email: 'student.two@example.com',
@@ -96,26 +96,24 @@ function baseGradebook(): CourseGradebookResponse {
     ],
     activities: [
       {
-        id: 1,
+        id: 'activity_manual_assessment',
         activity_uuid: 'activity_manual_assessment',
         name: 'ManualAssessment',
         activity_type: 'TYPE_FILE_SUBMISSION',
         assessment_type: 'EXAM',
-        order: 1,
       },
       {
-        id: 2,
+        id: 'activity_quiz',
         activity_uuid: 'activity_quiz',
         name: 'Quiz',
         activity_type: 'TYPE_DYNAMIC',
         assessment_type: 'QUIZ',
-        order: 2,
       },
     ],
     cells: [
       {
-        user_id: 10,
-        activity_id: 1,
+        user_id: 'user_student_one',
+        activity_id: 'activity_manual_assessment',
         state: 'NEEDS_GRADING',
         score: null,
         passed: null,
@@ -124,12 +122,11 @@ function baseGradebook(): CourseGradebookResponse {
         attempt_count: 2,
         latest_submission_uuid: 'submission_manual_assessment',
         latest_submission_status: 'PENDING',
-        submitted_at: '2026-01-02T10:00:00Z',
         due_at: '2026-01-01T10:00:00Z',
       },
       {
-        user_id: 10,
-        activity_id: 2,
+        user_id: 'user_student_one',
+        activity_id: 'activity_quiz',
         state: 'PASSED',
         score: 88,
         passed: true,
@@ -140,16 +137,16 @@ function baseGradebook(): CourseGradebookResponse {
         latest_submission_status: 'PUBLISHED',
       },
       {
-        user_id: 11,
-        activity_id: 1,
+        user_id: 'user_student_two',
+        activity_id: 'activity_manual_assessment',
         state: 'NOT_STARTED',
         is_late: false,
         teacher_action_required: false,
         attempt_count: 0,
       },
       {
-        user_id: 11,
-        activity_id: 2,
+        user_id: 'user_student_two',
+        activity_id: 'activity_quiz',
         state: 'RETURNED',
         score: 45,
         passed: false,
@@ -162,14 +159,11 @@ function baseGradebook(): CourseGradebookResponse {
     ],
     teacher_actions: [
       {
-        action_type: 'GRADE_SUBMISSION',
-        user_id: 10,
-        activity_id: 1,
+        user_id: 'user_student_one',
+        activity_id: 'activity_manual_assessment',
         submission_uuid: 'submission_manual_assessment',
         student_name: 'Student One',
         activity_name: 'ManualAssessment',
-        submitted_at: '2026-01-02T10:00:00Z',
-        is_late: true,
       },
     ],
     summary: {
@@ -325,7 +319,7 @@ describe('CourseGradebookCommandCenter', () => {
     gradebook = {
       ...gradebook,
       cells: gradebook.cells.map(cell =>
-        cell.user_id === 11 && cell.activity_id === 2
+        cell.user_id === 'user_student_two' && cell.activity_id === 'activity_quiz'
           ? {
               ...cell,
               state: 'NEEDS_GRADING',
@@ -339,13 +333,11 @@ describe('CourseGradebookCommandCenter', () => {
       teacher_actions: [
         ...gradebook.teacher_actions,
         {
-          action_type: 'GRADE_SUBMISSION',
-          user_id: 11,
-          activity_id: 2,
+          user_id: 'user_student_two',
+          activity_id: 'activity_quiz',
           submission_uuid: 'submission_resubmitted',
           student_name: 'Student Two',
           activity_name: 'Quiz',
-          is_late: false,
         },
       ],
       summary: {

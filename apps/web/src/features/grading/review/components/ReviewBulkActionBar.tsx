@@ -60,7 +60,9 @@ export default function ReviewBulkActionBar({
   const [failedSubmissions, setFailedSubmissions] = useState<{ name: string; error: string }[]>([])
 
   const gradeable = submissions.filter(submission => submission.final_score !== null)
-  const userIds = submissions.map(submission => submission.user?.id).filter((id): id is number => Number.isFinite(id))
+  const userIds = submissions
+    .map(submission => submission.user?.id)
+    .filter((id): id is string => typeof id === 'string')
   const releaseSummary = useMemo(() => {
     let visible = 0
     let hidden = 0
@@ -382,7 +384,6 @@ async function saveGradesWithinAssessment(
           final_score: submission.final_score ?? 0,
           status,
           feedback: appendAuditNote(submission.grading_json?.feedback ?? '', auditNote),
-          item_feedback: [],
         },
         submission.version,
         assessmentUuid,

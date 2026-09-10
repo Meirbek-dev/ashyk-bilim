@@ -20,7 +20,13 @@ export function reviewItemFromWire(value: unknown): Submission {
 
 export function teacherSubmissionFromWire(value: unknown): Submission {
   const item = TeacherSubmission.parse(value)
-  const learner = submissionFromWire({ ...item, draft_version: 0, total_items: Object.keys(item.answers).length })
+  const answeredCount = Object.keys(item.answers).length
+  const learner = submissionFromWire({
+    ...item,
+    draft_version: 0,
+    total_items: answeredCount,
+    answered_count: answeredCount,
+  })
   return {
     ...reviewItemFromWire(item), assessment_id: item.assessment_id,
     answers_json: learner.answers_json, grading_json: item.grading,

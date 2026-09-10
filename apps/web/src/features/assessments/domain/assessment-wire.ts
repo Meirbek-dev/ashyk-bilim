@@ -123,6 +123,90 @@ export function itemFromWire(item: AssessmentDetail['items'][number]): Assessmen
   }
 }
 
+const variantsToWire = { SINGLE_CHOICE: 'single_choice', MULTIPLE_CHOICE: 'multiple_choice', TRUE_FALSE: 'true_false' } as const
+const scoringToWire = {
+  PARTIAL_CREDIT: 'partial_credit',
+  ALL_OR_NOTHING: 'all_or_nothing',
+  BEST_SUBMISSION: 'best_submission',
+  LATEST_SUBMISSION: 'latest_submission',
+} as const
+const matchingToWire = {
+  EXACT: 'exact',
+  TRIMMED: 'trimmed',
+  IGNORE_WHITESPACE: 'ignore_whitespace',
+  NUMERIC_TOLERANCE: 'numeric_tolerance',
+  CUSTOM_CHECKER: 'custom_checker',
+} as const
+
+/** Inverse of {@link itemFromWire}'s body mapping — for `PATCH assessment-items/{id}` / `POST assessments/{id}/items`. */
+export function itemBodyToWire(body: ItemBody) {
+  switch (body.kind) {
+    case 'CHOICE': {
+      return {
+        kind: 'choice' as const,
+        prompt: body.prompt,
+        options: body.options.map(option => ({ id: option.id, text: option.text, is_correct: option.is_correct })),
+        multiple: body.multiple,
+        variant: body.variant ? variantsToWire[body.variant] : null,
+        explanation: body.explanation ?? null,
+      }
+    }
+    case 'OPEN_TEXT': {
+      return {
+        kind: 'open_text' as const,
+        prompt: body.prompt,
+        min_words: body.min_words ?? null,
+        rubric: body.rubric ?? null,
+      }
+    }
+    case 'FORM': {
+      return {
+        kind: 'form' as const,
+        prompt: body.prompt,
+        fields: body.fields.map(field => ({
+          id: field.id,
+          label: field.label,
+          field_type: field.field_type,
+          required: field.required,
+        })),
+      }
+    }
+    case 'MATCHING': {
+      return {
+        kind: 'matching' as const,
+        prompt: body.prompt,
+        pairs: body.pairs,
+        explanation: body.explanation ?? null,
+      }
+    }
+    case 'CODE': {
+      return {
+        kind: 'code' as const,
+        prompt: body.prompt,
+        input_spec: body.input_spec ?? '',
+        output_spec: body.output_spec ?? '',
+        constraints: body.constraints ?? [],
+        languages: body.languages,
+        starter_code: body.starter_code,
+        reference_solutions: body.reference_solutions ?? {},
+        tests: body.tests.map(test => ({
+          id: test.id,
+          input: test.input,
+          expected_output: test.expected_output,
+          is_visible: test.is_visible,
+          weight: test.weight,
+          description: test.description ?? null,
+          match_mode: matchingToWire[test.match_mode ?? 'EXACT'],
+        })),
+        time_limit_seconds: body.time_limit_seconds ?? null,
+        memory_limit_mb: body.memory_limit_mb ?? null,
+        max_output_kb: body.max_output_kb ?? null,
+        scoring_strategy: scoringToWire[body.scoring_strategy ?? 'PARTIAL_CREDIT'],
+      }
+    }
+  }
+}
+
 export function policyFromWire(policy: AssessmentDetail['policy'], effective?: AttemptState['effective']): PolicyView {
   const timing = effective ?? policy
   const visibility = { none: 'NONE', score_only: 'SCORE_ONLY', full: 'FULL' } as const

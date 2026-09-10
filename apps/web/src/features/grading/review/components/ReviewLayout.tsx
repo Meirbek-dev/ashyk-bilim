@@ -4,16 +4,9 @@ import { BookOpenCheck, Clock4, TrendingUp, Users } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
-import type { Submission } from '@/features/grading/domain'
+import type { Submission, SubmissionStats } from '@/features/grading/domain'
 import { cn } from '@/lib/utils'
 import ReviewBulkActionBar from './ReviewBulkActionBar'
-
-interface SubmissionStats {
-  total: number
-  needs_grading_count: number
-  avg_score: number | null
-  pass_rate: number | null
-}
 
 interface ReviewQueueSummary {
   awaitingRelease: number
@@ -108,13 +101,13 @@ function StatsGrid({
       />
       <StatTile
         label={t('layout.stats.avgScore')}
-        value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'}
+        value={stats.avg_score != null ? `${stats.avg_score.toFixed(1)}%` : '--'}
         icon={TrendingUp}
         accent="blue"
       />
       <StatTile
         label={t('layout.stats.passRate')}
-        value={stats.pass_rate !== null ? `${stats.pass_rate.toFixed(0)}%` : '--'}
+        value={stats.pass_rate != null ? `${stats.pass_rate.toFixed(0)}%` : '--'}
         icon={BookOpenCheck}
         accent="lime"
       />

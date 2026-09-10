@@ -4,6 +4,8 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { apiJson } from '@/lib/api-client'
+import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
+import { toUnix } from '@/lib/api/contract'
 import { useAssessmentStudioContext } from '../context'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import {
@@ -128,11 +130,19 @@ export function NativeItemAuthor({
     async (nextState: AssessmentEditorState) => {
       setAssessmentSaveState('saving')
       try {
-        await apiJson(`assessments/${assessment.assessment_uuid}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildAssessmentPatch(mode, assessment, nextState)),
-        })
+        const { details, policy } = buildAssessmentPatch(mode, assessment, nextState)
+        await Promise.all([
+          apiJson(`assessments/${assessment.assessment_uuid}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(details),
+          }),
+          apiJson(`assessments/${assessment.assessment_uuid}/policy`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(policy),
+          }),
+        ])
         lastSavedAssessmentRef.current = serializeAssessmentState(nextState)
         setAssessmentSaveState('saved')
         await refresh()
@@ -148,14 +158,13 @@ export function NativeItemAuthor({
     async (nextItem: EditableItem) => {
       setItemSaveState('saving')
       try {
-        await apiJson(`assessments/${assessment.assessment_uuid}/items/${nextItem.item_uuid}`, {
+        await apiJson(`assessment-items/${nextItem.item_uuid}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            kind: nextItem.kind,
             title: nextItem.title,
             max_score: nextItem.max_score,
-            body: nextItem.body,
+            body: itemBodyToWire(nextItem.body),
             metadata: nextItem.metadata,
           }),
         })
@@ -220,15 +229,10 @@ export function NativeItemAuthor({
       const previousOrder = localOrderedUuids
       setLocalOrderedUuids(orderedUuids)
       try {
-        await apiJson(`assessments/${assessment.assessment_uuid}/items:reorder`, {
+        await apiJson(`assessments/${assessment.assessment_uuid}/items/reorder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: orderedUuids.map((item_uuid, index) => ({
-              item_uuid,
-              order: index + 1,
-            })),
-          }),
+          body: JSON.stringify({ items: orderedUuids }),
         })
         await refresh()
       } catch (error) {
@@ -242,7 +246,7 @@ export function NativeItemAuthor({
   const updateItemMetadata = useCallback(
     async (itemUuid: string, metadata: EditableItem['metadata']) => {
       try {
-        await apiJson(`assessments/${assessment.assessment_uuid}/items/${itemUuid}`, {
+        await apiJson(`assessment-items/${itemUuid}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ metadata }),
@@ -265,9 +269,9 @@ export function NativeItemAuthor({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: lifecycle,
-            scheduled_at: scheduledAt ?? null,
-            audit_note: auditNote?.trim() || null,
+            to: lifecycle.toLowerCase(),
+            scheduled_at_unix: toUnix(scheduledAt),
+            note: auditNote?.trim() || null,
           }),
         })
         await refresh()

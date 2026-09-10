@@ -46,6 +46,8 @@ import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
 import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge'
 import QuestionInspectorPanel from './QuestionInspectorPanel'
 import { apiJson } from '@/lib/api-client'
+import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
+import type { ItemBody } from '@/features/assessments/domain/items'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -216,7 +218,7 @@ export default function BuilderCanvasTab({
       try {
         await Promise.all(
           items.map(async item => {
-            await apiJson(`assessments/${assessmentUuid}/items/${item.item_uuid}`, {
+            await apiJson(`assessment-items/${item.item_uuid}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -250,15 +252,19 @@ export default function BuilderCanvasTab({
   const createItem = (kind: SupportedStudioItemKind) => {
     startCreateTransition(async () => {
       try {
-        const body = buildDefaultItemPayload(kind, t('defaultItemTitle'))
-        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessmentUuid}/items`, {
+        const payload = buildDefaultItemPayload(kind, t('defaultItemTitle'))
+        const created = await apiJson<{ id?: string }>(`assessments/${assessmentUuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            title: payload.title,
+            max_score: payload.max_score,
+            body: itemBodyToWire(payload.body as ItemBody),
+          }),
         })
         toast.success(t('itemCreated', { itemNoun }))
-        if (typeof created.item_uuid === 'string') {
-          await onItemCreated(created.item_uuid)
+        if (typeof created.id === 'string') {
+          await onItemCreated(created.id)
         }
       } catch (error) {
         console.error('Failed to create assessment item', error)
@@ -271,20 +277,19 @@ export default function BuilderCanvasTab({
     if (!itemState) return
     startDuplicateTransition(async () => {
       try {
-        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessmentUuid}/items`, {
+        const created = await apiJson<{ id?: string }>(`assessments/${assessmentUuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            kind: itemState.kind,
             title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun }),
             max_score: itemState.max_score,
-            body: structuredClone(itemState.body),
+            body: itemBodyToWire(structuredClone(itemState.body)),
             metadata: structuredClone(itemState.metadata),
           }),
         })
         toast.success(t('itemDuplicated', { itemNoun }))
-        if (typeof created.item_uuid === 'string') {
-          await onItemDuplicated(created.item_uuid)
+        if (typeof created.id === 'string') {
+          await onItemDuplicated(created.id)
         }
       } catch (error) {
         console.error('Failed to duplicate assessment item', error)
@@ -297,7 +302,7 @@ export default function BuilderCanvasTab({
     if (!itemState) return
     startDeleteTransition(async () => {
       try {
-        await apiJson(`assessments/${assessmentUuid}/items/${itemState.item_uuid}`, {
+        await apiJson(`assessment-items/${itemState.item_uuid}`, {
           method: 'DELETE',
         })
         toast.success(t('itemDeleted', { itemNoun }))

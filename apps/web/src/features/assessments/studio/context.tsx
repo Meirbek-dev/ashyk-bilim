@@ -12,7 +12,8 @@ import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import ErrorUI from '@/components/Objects/Elements/Error/Error'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import type { AssessmentStudioDetail, StudioReadinessPayload } from './utils'
-import { toWorkspaceReadinessIssues } from './utils'
+import { studioDetailFromWire, toWorkspaceReadinessIssues } from './utils'
+import { getActivityAssessment } from '@/lib/api/generated/assessments/assessments'
 import type { AssessmentWorkspaceView, WorkspaceReadinessIssue } from './studioTypes'
 import type { SaveLedgerEntry, SaveLedgerSummary } from './workspace/saveLedger'
 import { summarizeSaveLedger } from './workspace/saveLedger'
@@ -50,7 +51,7 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
   } = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-      queryFn: () => apiJson<AssessmentStudioDetail>(`assessments/activity/${normalizedActivityUuid}`),
+      queryFn: async () => studioDetailFromWire(await getActivityAssessment(normalizedActivityUuid)),
       enabled: Boolean(normalizedActivityUuid),
     }),
   )

@@ -50,17 +50,16 @@ describe('gradebook rollup taxonomy', () => {
     const kind: GradebookRollupKind = 'activity_category'
     const data = {
       course_uuid: 'course_1',
-      course_id: 1,
+      course_id: 'course_1',
       course_name: 'Course',
       students: [],
       activities: [
         {
-          id: 1,
+          id: 'activity_1',
           activity_uuid: 'activity_1',
           name: 'Quiz',
           activity_type: 'TYPE_DYNAMIC',
           assessment_type: 'QUIZ',
-          order: 0,
         },
       ],
       cells: [],

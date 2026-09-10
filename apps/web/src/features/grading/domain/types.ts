@@ -44,10 +44,17 @@ export interface SubmissionsPage {
   total: number
 }
 export interface SubmissionStats extends Stats { needs_grading_count: number }
+export interface TeacherItemGradeInput {
+  item_id: string
+  score?: number | null
+  feedback?: string
+}
 export interface TeacherGradeInput {
   status: 'GRADED' | 'PUBLISHED' | 'RETURNED'
   final_score?: number | null
   feedback?: string
+  /** Per-item scores, wired to `PATCH /submissions/{id}/grade`'s `item_grades`. */
+  item_grades?: TeacherItemGradeInput[]
 }
 export interface ActivityProgressCell extends ProgressCell {
   attempt_count: number

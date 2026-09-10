@@ -11,7 +11,7 @@ import {
 describe('grading boundary normalization', () => {
   it('fills default values for optional activity progress cells', () => {
     const normalized = normalizeActivityProgressCell({
-      activity_id: 7,
+      activity_id: 'activity_7',
       state: 'NOT_STARTED',
     })
 

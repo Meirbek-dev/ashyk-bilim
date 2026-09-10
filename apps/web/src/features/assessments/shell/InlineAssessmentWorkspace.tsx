@@ -94,7 +94,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       if (!vm.assessmentUuid) return
       setIsPending(true)
       try {
-        await apiJson(`assessments/${vm.assessmentUuid}/start`, {
+        await apiJson(`assessments/${vm.assessmentUuid}/submissions`, {
           method: 'POST',
         })
         await Promise.all([
