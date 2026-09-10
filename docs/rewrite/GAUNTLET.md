@@ -29,6 +29,19 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   | admin | admin@ashyq.local | admin | `admin` |
   Created via Zitadel `POST /v2/users/human` + rows in `users`/`user_roles`.
   There is no v2 user-creation endpoint (see BUG-001), so recreate them this way.
+- **Observing API traffic: watch the SERVER log, not the browser.** Almost every v2
+  call is made server-side by Next (server components / the BFF), so the browser's
+  network panel shows only `localhost:3000` traffic. Only genuinely client-side
+  TanStack Query calls appear as cross-origin requests to `:8000`.
+- **Browser tooling quirk:** in this pane `javascript_tool` and `get_page_text` evaluate
+  against a stale detached document — they report an empty body, `display:none` roots and
+  no React fibers even when the page renders correctly. Trust `read_page`, `find` and
+  screenshots; do not diagnose from `javascript_tool`.
+- `read_page` with `filter:"interactive"` often returns "(empty page)"; use `filter:"all"`.
+  Do not emulate a viewport with `resize_window` — a custom size desynchronises the
+  click coordinate frame from the pane and every `left_click` by ref fails with
+  "outside the viewport". Use `preset:"desktop"`.
+- Fable's rate limit was exhausted early in pass 1; builder subagents ran on Sonnet.
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
@@ -145,12 +158,17 @@ Regenerate this survey with `scratchpad/drift.py`.
 
 | id | feature | symptom | root cause | fix commit | verified by critic |
 |---|---|---|---|---|---|
+| BUG-005 | ALL | `request_id` is documented in the problem+json envelope (ARCHITECTURE §5, apps/web/AGENTS.md) but never reaches the wire. | `crates/api/src/error.rs:76` hard-codes `request_id: None` and nothing populates it; `ApiError::into_response` runs inside `PropagateRequestIdLayer` and cannot see the id. The web client falls back to the `x-request-id` header, so impact is limited. | — | see QUESTIONS.md §5 |
+| BUG-004 | ALL client-side | Every browser-side v2 call fails; the security page's session list spins on "Загрузка..." forever. Console: "Request header field traceparent is not allowed by Access-Control-Allow-Headers in preflight response". | `cors_layer` (apps/server/crates/api/src/app.rs:452) allowlisted only content-type/accept/x-request-id/last-event-id/idempotency-key. The web client stamps `traceparent` on EVERY request (apps/web/src/lib/api-client.ts:230,297) and `If-Match` on locked writes, and the layer also exposed no response headers, so a cross-origin caller could never read `ETag` (the new version after a locked write) or `x-request-id`. Invisible in production only because nginx puts web and API on one origin. | pending | — |
 | BUG-002 | F07 | Home page renders the "Курсы временно недоступны" degraded state for every user. | `fetchCourses` (apps/web/src/services/courses/courses.ts:257) calls the v1 URL `courses/page/{p}/limit/{l}`; the v2 server answers `no such route`, LandingContent's catch-all returns `LandingDegradedState`. Part of the drift map above. | — | — |
 | BUG-003 | F01,F07 | Dev console logs Next.js Cache Components errors on every render: E1432 `blocking-prerender-crypto` on route `/[locale]`, E1429 `blocking-prerender-metadata-runtime` on `/[locale]/auth/login`. `cacheComponents: true` is set in apps/web/next.config (line 34), so these are prerender-blocking violations that would fail a production build, not cosmetic warnings. | not yet investigated | — | — |
-| BUG-001 | F38 | No way to create a user in v2: legacy has `POST /users` (apps/api/src/routers/users.py:60) and ARCHITECTURE.md:551 lists signup among the auth pages to rework, but openapi.v2.json exposes no user-creation route and apps/web has no signup page. Accounts can only appear via `ashyq admin etl`/`zitadel-import`. | not yet investigated | — | — |
+| BUG-001 | F38 | No way to create a user in v2. Self-registration is deliberately out (apps/web/AGENTS.md "Not in v2", and the login page says accounts are created by the platform admin) — but there is no **admin** user-creation route either: openapi.v2.json has no `POST /users`, so after cutover accounts can only appear via `ashyq admin etl` / `zitadel-import`. Legacy had `POST /users` (apps/api/src/routers/users.py:60). | contract gap, no DECISIONS entry | — | see QUESTIONS.md |
 
 ## UX notes
 
 | id | feature | what felt wrong | decision |
 |---|---|---|---|
 | UX-001 | F01 | The password reveal control on the login page has the English accessible name "Show password" while the rest of the page is Russian (ru locale). | fix |
+| UX-002 | F04 | With the API unreachable the session list showed an unlabelled spinner for well over a minute (react-query retried 7+ times with backoff) instead of reaching its error state. The error branch exists and is correct; the retry policy is what hides it. | fix — cap retries on this query so the existing `sessionsLoadError` + retry button appears within a few seconds |
+| UX-003 | F02 | The two-factor section renders "Включить двухфакторную аутентификацию" and "Отключить" side by side for an account with no TOTP enrolled. "Отключить" is a dead click. | fix — render the enable/disable control from the account's actual enrolment state |
+| UX-004 | F04 | A learner (role `user`) sees a "Пользователи" link in both the dashboard sidebar and the mobile nav, pointing at `/ru/dash/users/settings/users`. Needs checking against `user:read:platform` — if that grant is meant to allow the admin user directory, the nav is right and this row is `accept`; otherwise the nav leaks an admin surface. | investigate |
