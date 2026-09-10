@@ -816,13 +816,10 @@
       "medium": "Орташа"
     },
     "relativeTime": {
-      "dayAgo": "{count} күн бұрын",
-      "daysAgo": "{count} күн бұрын",
-      "hourAgo": "{count} сағат бұрын",
-      "hoursAgo": "{count} сағат бұрын",
+      "day": "{count} күн бұрын",
+      "hour": "{count} сағат бұрын",
       "justNow": "әзір ғана",
-      "minuteAgo": "{count} минут бұрын",
-      "minutesAgo": "{count} минут бұрын"
+      "minute": "{count} минут бұрын"
     },
     "status": {
       "active": "Белсенді",
@@ -3419,13 +3416,10 @@
           "medium": "Орташа"
         },
         "relativeTime": {
-          "dayAgo": "{count} күн бұрын",
-          "daysAgo": "{count} күн бұрын",
-          "hourAgo": "{count} сағат бұрын",
-          "hoursAgo": "{count} сағат бұрын",
+          "day": "{count} күн бұрын",
+          "hour": "{count} сағат бұрын",
           "justNow": "қазір ғана",
-          "minuteAgo": "{count} минут бұрын",
-          "minutesAgo": "{count} минут бұрын"
+          "minute": "{count} минут бұрын"
         },
         "status": {
           "active": "Белсенді",

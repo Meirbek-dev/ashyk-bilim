@@ -332,7 +332,7 @@
       "underConstructionIcon": "🛠️",
       "timeLimitValue": "{value}мс",
       "timeSecondsValue": "{value}с",
-      "hiddenTestsCount": "{count} скрытых тестов",
+      "hiddenTestsCount": "{count, plural, one {# скрытый тест} few {# скрытых теста} other {# скрытых тестов}}",
       "memoryLimitValue": "{value}МБ",
       "courseChallenges": "Курс / Задачи",
       "problems": "Задачи",
@@ -660,7 +660,7 @@
       "timeRemaining": "Осталось времени",
       "totalQuestions": "Всего вопросов",
       "unanswered": "Без ответа",
-      "unansweredQuestionsWarning": "У вас {count} вопросов без ответа. Вы уверены, что хотите отправить?",
+      "unansweredQuestionsWarning": "У вас {count, plural, one {# вопрос} few {# вопроса} other {# вопросов}} без ответа. Вы уверены, что хотите отправить?",
       "unlimited": "Неограниченно",
       "unlimitedAttempts": "Неограниченные попытки",
       "unsupportedQuestionType": "Неподдерживаемый тип вопроса",
@@ -671,7 +671,7 @@
       "violationDialogGuidance": "Как избежать: оставайтесь в полноэкранном режиме (если требуется), не переключайтесь между вкладками и не используйте инструменты разработчика или копирование/вставку во время теста.",
       "violationDialogTitle": "Обнаружено нарушение безопасности",
       "violationWarning": "Нарушения: {count}/{max}. Осталось {remaining} до автоматической отправки.",
-      "violationsRecorded": "Зафиксировано {count} нарушений во время теста",
+      "violationsRecorded": "Зафиксировано {count, plural, one {# нарушение} few {# нарушения} other {# нарушений}} во время теста",
       "yourAnswer": "Ваш ответ",
       "latestSubmission": "Последняя отправка",
       "resumedDraft": "Черновик восстановлен",
@@ -817,13 +817,10 @@
       "medium": "Средний"
     },
     "relativeTime": {
-      "dayAgo": "{count} день назад",
-      "daysAgo": "{count} дней назад",
-      "hourAgo": "{count} час назад",
-      "hoursAgo": "{count} часов назад",
+      "day": "{count, plural, one {# день назад} few {# дня назад} other {# дней назад}}",
+      "hour": "{count, plural, one {# час назад} few {# часа назад} other {# часов назад}}",
       "justNow": "только что",
-      "minuteAgo": "{count} минуту назад",
-      "minutesAgo": "{count} минут назад"
+      "minute": "{count, plural, one {# минуту назад} few {# минуты назад} other {# минут назад}}"
     },
     "status": {
       "active": "Активен",
@@ -1146,7 +1143,7 @@
     "DataTable": {
       "searchPlaceholder": "Поиск по таблице...",
       "emptyMessage": "Строки не найдены.",
-      "visibleRows": "{count} видимых строк",
+      "visibleRows": "{count, plural, one {# видимая строка} few {# видимых строки} other {# видимых строк}}",
       "showingRows": "{from}–{to} из {total}",
       "page": "Страница {current} из {total}",
       "prev": "Назад",
@@ -1944,7 +1941,7 @@
       "updating": "Обновление роли...",
       "updateRole": "Обновить роль",
       "updatedRole": "Роль успешно обновлена",
-      "acrossResourceTypes": "По {count} типам ресурсов",
+      "acrossResourceTypes": "{count, plural, one {По # типу ресурсов} few {По # типа ресурсов} other {По # типам ресурсов}}",
       "actions": "Действия",
       "allPermissionsDescription": "Список всех доступных разрешений в системе.",
       "allPermissionsTitle": "Все разрешения",
@@ -1969,7 +1966,7 @@
       "custom": "пользовательская",
       "deleteRole": "Удалить роль",
       "deleteRoleConfirmation": "Вы уверены, что хотите удалить эту роль? Это действие нельзя отменить.",
-      "deleteRoleConfirmationWithUsers": "Эта роль назначена {count} пользователям. Удаление снимет их доступ. Продолжить?",
+      "deleteRoleConfirmationWithUsers": "Эта роль назначена {count, plural, one {# пользователю} few {# пользователям} other {# пользователям}}. Удаление снимет их доступ. Продолжить?",
       "deleteRoleError": "Не удалось удалить роль",
       "deleteRoleTitle": "Удаление роли",
       "deletedRoleSuccess": "Роль успешно удалена",
@@ -2004,7 +2001,7 @@
       "permissionAdded": "Разрешение добавлено",
       "permissionRemoved": "Разрешение удалено",
       "permissions": "Разрешения",
-      "permissionsCount": "{count} разрешений",
+      "permissionsCount": "{count, plural, one {# разрешение} few {# разрешения} other {# разрешений}}",
       "permissionsTab": "Разрешения",
       "resourcePermissionsAdded": "Все разрешения ресурса {resourceType} добавлены",
       "resourcePermissionsRemoved": "Все разрешения ресурса {resourceType} удалены",
@@ -2529,7 +2526,7 @@
     },
     "validation": {
       "required": "Содержимое обязательно.",
-      "tooLong": "Содержимое превышает лимит на {count} символов.",
+      "tooLong": "Содержимое превышает лимит на {count, plural, one {# символ} few {# символа} other {# символов}}.",
       "nearLimit": "Содержимое приближается к лимиту символов.",
       "rawHtml": "Встроенный HTML не поддерживается.",
       "unsafeLink": "Одна или несколько ссылок используют небезопасный протокол.",
@@ -2749,7 +2746,7 @@
         "atLeastOneLearningItem": "Должен быть хотя бы один элемент обучения с текстом",
         "invalidFormat": "Неверный формат",
         "invalidJsonFormat": "Неверный формат JSON",
-        "maxLength": "Должно быть не более {count} символов",
+        "maxLength": "Должно быть не более {count, plural, one {# символа} few {# символов} other {# символов}}",
         "required": "Поле {fieldName} обязательно для заполнения",
         "saveFailed": "Не удалось сохранить общую информацию о курсе."
       },
@@ -2866,7 +2863,7 @@
   "CoursePage": {
     "about": "О курсе",
     "access": "Доступ",
-    "activitiesCount": "{count} учебных задач",
+    "activitiesCount": "{count, plural, one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
     "activityCount": "{count, plural, =0 {0 учебных задач} one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
     "activityCounter": "{current} из {total}",
     "activityNotPublished": "Это учебная задача еще не опубликовано",
@@ -2914,7 +2911,7 @@
     "reply": "Ответить",
     "save": "Сохранить",
     "saveChanges": "Сохранить изменения",
-    "showReplies": "Показать {count} ответов",
+    "showReplies": "Показать {count, plural, one {# ответ} few {# ответа} other {# ответов}}",
     "startDiscussionPlaceholder": "Начните обсуждение этого курса...",
     "statusComplete": "Завершено",
     "statusGraded": "Оценено",
@@ -2979,7 +2976,7 @@
       "updateContentPlaceholder": "Поделитесь деталями вашего обновления...",
       "pageStatus": "Страница {current} из {total}",
       "previousPage": "Предыдущая",
-      "resultsCount": "{count} курсов",
+      "resultsCount": "{count, plural, one {# курс} few {# курса} other {# курсов}}",
       "rightsGuide": "Права и доступ",
       "searchButton": "Поиск",
       "searchPlaceholder": "Поиск редактируемых курсов",
@@ -3063,7 +3060,7 @@
       "moreAuthors": "& еще {count}",
       "progressCard": {
         "activitiesCompletedLabel": "активностей завершено",
-        "chapterActivitiesCount": "{completed}/{total} активностей",
+        "chapterActivitiesCount": "{completed}/{total, plural, one {# активность} few {# активности} other {# активностей}}",
         "complete": "Завершено",
         "completedAllActivities": "Отличная работа! Вы завершили все активности.",
         "courseCompleted": "Курс завершён!"
@@ -3415,13 +3412,10 @@
           "medium": "Средний"
         },
         "relativeTime": {
-          "dayAgo": "{count} день назад",
-          "daysAgo": "{count} дней назад",
-          "hourAgo": "{count} час назад",
-          "hoursAgo": "{count} часов назад",
+          "day": "{count, plural, one {# день назад} few {# дня назад} other {# дней назад}}",
+          "hour": "{count, plural, one {# час назад} few {# часа назад} other {# часов назад}}",
           "justNow": "только что",
-          "minuteAgo": "{count} минуту назад",
-          "minutesAgo": "{count} минут назад"
+          "minute": "{count, plural, one {# минуту назад} few {# минуты назад} other {# минут назад}}"
         },
         "status": {
           "active": "Активный",
@@ -3462,7 +3456,7 @@
       "avgProgress": "Средний прогресс",
       "backupData": "Резервное копирование данных",
       "basedOnLoginStreaks": "Основано на серии входов",
-      "bulkOperationCompletedDescription": "Успешно обработано {count} пользователей",
+      "bulkOperationCompletedDescription": "Успешно обработано {count, plural, one {# пользователь} few {# пользователя} other {# пользователей}}",
       "bulkOperationCompletedTitle": "Массовая операция завершена",
       "bulkOperationFailedDescription": "Попробуйте еще раз",
       "bulkOperationFailedTitle": "Ошибка массовой операции",
@@ -3708,7 +3702,7 @@
           "updated": "Обновлено",
           "selectAll": "Выбрать все работы на этой странице",
           "selectSubmission": "Выбрать работу для {student}",
-          "selectedCount": "{count} работ выбрано",
+          "selectedCount": "{count, plural, one {# работа} few {# работы} other {# работ}} выбрано",
           "clearSelection": "Снять выбор",
           "batchGrade": "Пакетная оценка"
         },
@@ -4160,7 +4154,7 @@
         "noCoursesAvailable": "Курсы пока недоступны",
         "pageStatus": "Страница {current} из {total}",
         "previousPage": "Предыдущая",
-        "resultsCount": "{count} курсов",
+        "resultsCount": "{count, plural, one {# курс} few {# курса} other {# курсов}}",
         "rightsGuide": "Права и доступ",
         "searchButton": "Поиск",
         "searchPlaceholder": "Поиск редактируемых курсов",
@@ -5267,7 +5261,7 @@
       },
       "title": "Настройки геймификации",
       "toast": {
-        "fromActivities": "из {count} активностей",
+        "fromActivities": "из {count, plural, one {# активности} few {# активностей} other {# активностей}}",
         "levelUp": "Новый уровень!"
       }
     },
@@ -5294,9 +5288,9 @@
       "Form": {
         "errorMessageDefault": "Неверный ввод",
         "invalidEmail": "Неверный адрес электронной почты",
-        "maxChars": "Должно быть не более {count} символов",
+        "maxChars": "Должно быть не более {count, plural, one {# символа} few {# символов} other {# символов}}",
         "minAmount": "Сумма должна быть не менее {min}",
-        "minChars": "Должно быть не менее {count} символов",
+        "minChars": "Должно быть не менее {count, plural, one {# символа} few {# символов} other {# символов}}",
         "positiveNumber": "Должно быть положительное число",
         "requiredField": "Поле {fieldName} обязательно для заполнения"
       },
@@ -5507,7 +5501,7 @@
         "Errors": {
           "invalidVideoUrl": "Пожалуйста, введите действительный URL-адрес {type}.",
           "logoUploadFailed": "Не удалось загрузить логотип.",
-          "maxPreviewsError": "Вы можете добавить только {count} больше предварительных просмотров.",
+          "maxPreviewsError": "Вы можете добавить только {count, plural, one {# больше предварительный просмотр} few {# больше предварительных просмотра} other {# больше предварительных просмотров}}.",
           "previewOrderUpdateFailed": "Не удалось обновить порядок предварительного просмотра.",
           "previewRemoveFailed": "Не удалось удалить предварительный просмотр.",
           "previewsUploadFailed": "Не удалось загрузить предварительные просмотры.",
@@ -5525,12 +5519,12 @@
           "logoUpdatedSuccess": "Логотип успешно обновлен.",
           "previewOrderUpdatedSuccess": "Порядок предварительного просмотра успешно обновлен.",
           "previewRemovedSuccess": "Предварительный просмотр успешно удален.",
-          "previewsAddedSuccess": "{count} предварительных просмотров успешно добавлены.",
+          "previewsAddedSuccess": "{count, plural, one {# предварительный просмотр успешно добавлен} few {# предварительных просмотра успешно добавлены} other {# предварительных просмотров успешно добавлены}}.",
           "removingPreview": "Удаление предварительного просмотра...",
           "thumbnailUpdatedSuccess": "Эскиз успешно обновлен.",
           "updatingPreviewOrder": "Обновление порядка предварительного просмотра...",
           "uploadingLogo": "Загрузка логотипа...",
-          "uploadingPreviews": "Загрузка {count} предварительных просмотров...",
+          "uploadingPreviews": "Загрузка {count, plural, one {# предварительного просмотра} few {# предварительных просмотров} other {# предварительных просмотров}}...",
           "uploadingThumbnail": "Загрузка эскиза...",
           "videoPreviewAddFailed": "Не удалось добавить предварительный просмотр видео.",
           "videoPreviewAddedSuccess": "Предварительный просмотр видео успешно добавлен."
@@ -6229,7 +6223,7 @@
         "toast": {
           "dailyLoginBonus": "Ежедневный бонус за вход!",
           "earnedXP": "Заработано {xp} опыта.",
-          "fromActivities": "из {count} действий",
+          "fromActivities": "из {count, plural, one {# действия} few {# действий} other {# действий}}",
           "levelUp": "Уровень выше!",
           "preferencesError": "Не удалось сохранить настройки",
           "preferencesReset": "Настройки сброшены по умолчанию",
@@ -7132,7 +7126,7 @@
       "formUnavailable": "Форма оценивания недоступна."
     },
     "Batch": {
-      "title": "Пакетное оценивание ({count} работ)",
+      "title": "Пакетное оценивание ({count, plural, one {# работа} few {# работы} other {# работ}})",
       "subtitle": "Изменено черновиков: {count}",
       "close": "Закрыть панель пакетного оценивания",
       "position": "Студент {current} из {total}: {student}",
@@ -7143,7 +7137,7 @@
       "submitAll": "Отправить все ({count})",
       "submitting": "Отправка...",
       "confirmSubmitTitle": "Отправить оценки выбранным студентам?",
-      "confirmSubmitDesc": "Отправить оценки для {count} студентов? Это действие нельзя отменить.",
+      "confirmSubmitDesc": "Отправить оценки для {count, plural, one {# студента} few {# студентов} other {# студентов}}? Это действие нельзя отменить.",
       "confirmSubmitAction": "Отправить все ({count})",
       "nothingToSubmit": "Измените хотя бы одну работу перед отправкой",
       "scoreRequired": "Для каждой изменённой работы нужна итоговая оценка",
@@ -7455,7 +7449,7 @@
     },
     "filters": {
       "label": "Аналитика",
-      "scopedCourses": "{count} курсов в охвате",
+      "scopedCourses": "{count, plural, one {# курс} few {# курса} other {# курсов}} в охвате",
       "buckets": "шаги: {bucket}",
       "windowPrefix": "Период: {window}",
       "comparePrefix": "Сравнение: {compare}",
@@ -7605,7 +7599,7 @@
     "table": {
       "searchDefault": "Поиск...",
       "emptyDefault": "Строки не найдены для выбранных фильтров.",
-      "visibleRows": "{count} видимых строк",
+      "visibleRows": "{count, plural, one {# видимая строка} few {# видимых строки} other {# видимых строк}}",
       "showingRows": "{from}–{to} из {total}",
       "page": "Страница {current} из {total}",
       "pagination": "Пагинация",
@@ -7675,7 +7669,7 @@
       "healthy": "В норме",
       "searchPlaceholder": "Поиск по учебные задачим...",
       "emptyMessage": "Нет проблемных учебных задач для текущего охвата.",
-      "rowCount": "{count} проблемных учебных задач"
+      "rowCount": "{count, plural, one {# проблемная учебная задача} few {# проблемные учебные задачи} other {# проблемных учебных задач}}"
     },
     "atRisk": {
       "interventionsCount": "{count, plural, one {# мера поддержки зафиксирована} few {# меры поддержки зафиксировано} other {# мер поддержки зафиксировано}}",
@@ -7700,7 +7694,7 @@
       "emptyMessage": "Нет учащихся в зоне риска для текущих фильтров.",
       "interventionLogged": "Мера поддержки зафиксирована",
       "interventionLogFailed": "Не удалось зафиксировать меру поддержки",
-      "gradeSubmissions": "Проверить {count} работ(у) →",
+      "gradeSubmissions": "Проверить {count, plural, one {# работу} few {# работы} other {# работ}} →",
       "riskComponents": {
         "inactivity": "Неактивность",
         "progress": "Отставание",
@@ -7753,7 +7747,7 @@
       "atRiskUnavailableDesc": "Для просмотра учащихся в зоне риска требуется аутентифицированный сеанс.",
       "atRiskLoadError": "Не удалось загрузить представление рисков учащихся.",
       "atRiskPageTitle": "Полный список учащихся в зоне риска",
-      "atRiskPageDescription": "{total} учащихся в охвате, ранжированных по уровню риска.",
+      "atRiskPageDescription": "{total, plural, one {# учащийся в охвате, ранжированный по уровню риска.} few {# учащегося в охвате, ранжированных по уровню риска.} other {# учащихся в охвате, ранжированных по уровню риска.}}",
       "courseDetailBadge": "Детали курса",
       "courseStatCompletion": "Завершение",
       "courseStatAvgProgress": "Средний прогресс",
@@ -7968,7 +7962,7 @@
             "attempt": "Попытка"
           },
           "totals": {
-            "submissions": "{count} работ",
+            "submissions": "{count, plural, one {# работа} few {# работы} other {# работ}}",
             "selected": "{count} выбрано"
           },
           "loading": "Загрузка",
@@ -8053,7 +8047,7 @@
             "releaseFinished": "Публикация оценок завершена",
             "releaseDetail": "Новых видимых: {published}. Уже видимых: {alreadyVisible}."
           },
-          "failedSubmissionsTitle": "{count} работа(ы) не удалось обновить:",
+          "failedSubmissionsTitle": "{count, plural, one {# работу} few {# работы} other {# работ}} не удалось обновить:",
           "preview": {
             "selectedSubmissions": "Выбранные работы",
             "gradeReady": "Готово к оценке",
@@ -8200,7 +8194,7 @@
           "curriculum": "Учебный план",
           "studio": "Студия"
         },
-        "issueCount": "{count} проблем",
+        "issueCount": "{count, plural, one {# проблема} few {# проблемы} other {# проблем}}",
         "preview": "Предпросмотр",
         "scheduleOptions": "Параметры планирования",
         "schedulePublication": "Запланировать публикацию",
@@ -8398,7 +8392,7 @@
           "impactIntegrity": "Контроль",
           "summaryTimed": "{minutes} мин. после старта",
           "summaryUntimed": "Без таймера",
-          "summaryAttempts": "{count} попыток",
+          "summaryAttempts": "{count, plural, one {# попытка} few {# попытки} other {# попыток}}",
           "summaryUnlimitedAttempts": "Без ограничения попыток",
           "summaryIntegrityOn": "Включены контрольные ограничения",
           "summaryIntegrityOff": "Контрольные ограничения выключены",
@@ -8499,7 +8493,7 @@
           "previewEmptyPair": "Пустое значение",
           "previewEmptyField": "Поле без названия",
           "previewFieldMeta": "{type} · {required}",
-          "previewMinWords": "Развернутый ответ студента · минимум {count} слов",
+          "previewMinWords": "Развернутый ответ студента · минимум {count, plural, one {# слово} few {# слова} other {# слов}}",
           "previewOpenText": "Развернутый ответ студента",
           "correct": "Верно",
           "required": "обязательное",
@@ -8999,7 +8993,7 @@
           "focus": "Фокус",
           "returnedForRevisionTitle": "Возвращено на доработку",
           "returnedForRevisionDescription": "Преподаватель вернул вашу работу для внесения исправлений. Пожалуйста, ознакомьтесь с комментариями и отправьте работу повторно.",
-          "violationsRecorded": "Зафиксировано {count} нарушений во время теста",
+          "violationsRecorded": "Зафиксировано {count, plural, one {# нарушение} few {# нарушения} other {# нарушений}} во время теста",
           "antiCheatDefaultNotice": "Могут применяться меры защиты от копирования, навигации и полноэкранного режима.",
           "antiCheatCopyPaste": "блокировка копирования и вставки",
           "antiCheatTabSwitch": "отслеживание переключения вкладок",
@@ -9092,7 +9086,7 @@
           "timeRemaining": "Осталось времени",
           "totalQuestions": "Всего вопросов",
           "unanswered": "Без ответа",
-          "unansweredQuestionsWarning": "У вас {count} вопросов без ответа. Вы уверены, что хотите отправить?",
+          "unansweredQuestionsWarning": "У вас {count, plural, one {# вопрос} few {# вопроса} other {# вопросов}} без ответа. Вы уверены, что хотите отправить?",
           "unlimited": "Неограниченно",
           "unlimitedAttempts": "Неограниченные попытки",
           "unsupportedQuestionType": "Неподдерживаемый тип вопроса",
@@ -9130,7 +9124,7 @@
           "connectionLostTitle": "Подключение потеряно",
           "connectionLostDescription": "Пожалуйста, проверьте интернет-соединение. Ваш прогресс сохраняется локально и синхронизируется при восстановлении сети.",
           "draftConflictDescription": "Более новая версия #{latestVersion} ваших ответов была сохранена на сервере в {latestSavedAt}. Какую версию вы хотите использовать?",
-          "draftConflictAnswerCounts": "Локально: {localCount} ответов | На сервере: {serverCount} ответов"
+          "draftConflictAnswerCounts": "Локально: {localCount, plural, one {# ответ} few {# ответа} other {# ответов}} | На сервере: {serverCount, plural, one {# ответ} few {# ответа} other {# ответов}}"
         },
         "CodeChallenge": {
           "actualOutput": "Ваш вывод",
@@ -9861,7 +9855,7 @@
     "noCertificateAvailable": "Сертификат недоступен",
     "quitCourseButton": "Покинуть курс",
     "stepsLabel": "шагов",
-    "stepsProgress": "{completed} / {total} шагов",
+    "stepsProgress": "{completed} / {total, plural, one {# шаг} few {# шага} other {# шагов}}",
     "viewCertificate": "Просмотреть сертификат"
   },
   "TrailPage": {

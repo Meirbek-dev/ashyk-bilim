@@ -240,7 +240,7 @@
       "underConstructionIcon": "🛠️",
       "timeLimitValue": "{value}ms",
       "timeSecondsValue": "{value}s",
-      "hiddenTestsCount": "{count} hidden tests",
+      "hiddenTestsCount": "{count, plural, one {# hidden test} other {# hidden tests}}",
       "memoryLimitValue": "{value}MB",
       "otherLanguages": "Other Languages",
       "output": "Output",
@@ -656,7 +656,7 @@
       "timeRemaining": "Time remaining",
       "totalQuestions": "Total Questions",
       "unanswered": "Unanswered",
-      "unansweredQuestionsWarning": "You have {count} unanswered questions. Are you sure you want to submit?",
+      "unansweredQuestionsWarning": "You have {count, plural, one {# unanswered question} other {# unanswered questions}}. Are you sure you want to submit?",
       "unlimited": "Unlimited",
       "unlimitedAttempts": "Unlimited Attempts",
       "unsupportedQuestionType": "Unsupported question type",
@@ -667,7 +667,7 @@
       "violationDialogGuidance": "How to avoid: stay in fullscreen (if required), avoid switching tabs, and do not use developer tools or copy/paste during the exam. If you'd like to appeal, follow the link below.",
       "violationDialogTitle": "Security violation detected",
       "violationWarning": "Violations: {count}/{max}. You have {remaining} remaining before auto-submit. If you believe this is a mistake, {appealLink}.",
-      "violationsRecorded": "{count} violations recorded during this exam",
+      "violationsRecorded": "{count, plural, one {# violation} other {# violations}} recorded during this exam",
       "yourAnswer": "Your Answer",
       "latestSubmission": "Latest submission",
       "resultsWaitingForReleaseTitle": "Results awaiting publication",
@@ -813,13 +813,10 @@
       "medium": "Medium"
     },
     "relativeTime": {
-      "dayAgo": "{count} day ago",
-      "daysAgo": "{count} days ago",
-      "hourAgo": "{count} hour ago",
-      "hoursAgo": "{count} hours ago",
+      "day": "{count, plural, one {# day ago} other {# days ago}}",
+      "hour": "{count, plural, one {# hour ago} other {# hours ago}}",
       "justNow": "just now",
-      "minuteAgo": "{count} minute ago",
-      "minutesAgo": "{count} minutes ago"
+      "minute": "{count, plural, one {# minute ago} other {# minutes ago}}"
     },
     "status": {
       "active": "Active",
@@ -1144,7 +1141,7 @@
     "DataTable": {
       "searchPlaceholder": "Search table...",
       "emptyMessage": "No rows found.",
-      "visibleRows": "{count} visible rows",
+      "visibleRows": "{count, plural, one {# visible row} other {# visible rows}}",
       "showingRows": "{from}–{to} of {total}",
       "page": "Page {current} of {total}",
       "prev": "Previous",
@@ -1970,7 +1967,7 @@
       "cloneLoadFailed": "Failed to load role for cloning",
       "deleteRole": "Delete Role",
       "deleteRoleConfirmation": "Are you sure you want to delete this role? This action cannot be undone.",
-      "deleteRoleConfirmationWithUsers": "This role is assigned to {count} users. Deleting it will remove their access. Continue?",
+      "deleteRoleConfirmationWithUsers": "This role is assigned to {count, plural, one {# user} other {# users}}. Deleting it will remove their access. Continue?",
       "deleteRoleError": "Failed to delete role",
       "deleteRoleTitle": "Delete Role",
       "deletedRoleSuccess": "Role deleted successfully",
@@ -1985,7 +1982,7 @@
       "noDescription": "No description",
       "noPermissions": "No permissions",
       "permissions": "Permissions",
-      "permissionsCount": "{count} permissions",
+      "permissionsCount": "{count, plural, one {# permission} other {# permissions}}",
       "permissionsAria": "Manage permissions for {roleName}",
       "permissionLoadFailed": "Failed to load role permissions",
       "permissionSearchPlaceholder": "Search permissions by code, resource, or description",
@@ -2028,7 +2025,7 @@
       "custom": "custom",
       "resourceTypes": "Resource Types",
       "resourceTypesHint": "course, user, organization, ...",
-      "acrossResourceTypes": "Across {count} resource types",
+      "acrossResourceTypes": "Across {count, plural, one {# resource type} other {# resource types}}",
       "permissionAdded": "Permission added",
       "permissionRemoved": "Permission removed",
       "failedToUpdatePermission": "Failed to update permission",
@@ -2528,7 +2525,7 @@
     },
     "validation": {
       "required": "Content is required.",
-      "tooLong": "Content is {count} characters over the limit.",
+      "tooLong": "Content is {count, plural, one {# character} other {# characters}} over the limit.",
       "nearLimit": "Content is approaching the character limit.",
       "rawHtml": "Raw HTML is not supported.",
       "unsafeLink": "One or more links use an unsafe protocol.",
@@ -2748,7 +2745,7 @@
         "atLeastOneLearningItem": "At least one learning item is required",
         "invalidFormat": "Invalid format",
         "invalidJsonFormat": "Invalid JSON format",
-        "maxLength": "Must be {count} characters or less",
+        "maxLength": "Must be {count, plural, one {# character} other {# characters}} or less",
         "required": "{fieldName} is required",
         "saveFailed": "Failed to save course general info."
       },
@@ -2866,7 +2863,7 @@
   "CoursePage": {
     "about": "About",
     "access": "Access",
-    "activitiesCount": "{count} Activities",
+    "activitiesCount": "{count, plural, one {# Activity} other {# Activities}}",
     "activityCount": "{count, plural, =0 {0 Activities} one {# Activity} other {# Activities}}",
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
@@ -2914,7 +2911,7 @@
     "reply": "Reply",
     "save": "Save draft",
     "saveChanges": "Save Changes",
-    "showReplies": "Show {count} replies",
+    "showReplies": "Show {count, plural, one {# reply} other {# replies}}",
     "startDiscussionPlaceholder": "Start a discussion about this course...",
     "statusComplete": "Complete",
     "statusGraded": "Graded",
@@ -3048,7 +3045,7 @@
       "moreAuthors": "& {count} more",
       "progressCard": {
         "activitiesCompletedLabel": "activities completed",
-        "chapterActivitiesCount": "{completed}/{total} activities",
+        "chapterActivitiesCount": "{completed}/{total, plural, one {# activity} other {# activities}}",
         "complete": "Complete",
         "completedAllActivities": "Great job! You have completed all activities.",
         "courseCompleted": "Course Completed!"
@@ -3400,13 +3397,10 @@
           "medium": "Medium"
         },
         "relativeTime": {
-          "dayAgo": "{count} day ago",
-          "daysAgo": "{count} days ago",
-          "hourAgo": "{count} hour ago",
-          "hoursAgo": "{count} hours ago",
+          "day": "{count, plural, one {# day ago} other {# days ago}}",
+          "hour": "{count, plural, one {# hour ago} other {# hours ago}}",
           "justNow": "just now",
-          "minuteAgo": "{count} minute ago",
-          "minutesAgo": "{count} minutes ago"
+          "minute": "{count, plural, one {# minute ago} other {# minutes ago}}"
         },
         "status": {
           "active": "Active",
@@ -3447,7 +3441,7 @@
       "avgProgress": "Avg. Progress",
       "backupData": "Backup Data",
       "basedOnLoginStreaks": "Based on login streaks",
-      "bulkOperationCompletedDescription": "Successfully processed {count} users",
+      "bulkOperationCompletedDescription": "Successfully processed {count, plural, one {# user} other {# users}}",
       "bulkOperationCompletedTitle": "Bulk Operation Completed",
       "bulkOperationFailedDescription": "Please try again",
       "bulkOperationFailedTitle": "Bulk Operation Failed",
@@ -3684,7 +3678,7 @@
           "course": "Course",
           "selectAll": "Select all submissions on this page",
           "selectSubmission": "Select submission for {student}",
-          "selectedCount": "{count} submissions selected",
+          "selectedCount": "{count, plural, one {# submission} other {# submissions}} selected",
           "clearSelection": "Clear selection",
           "batchGrade": "Batch Grade",
           "emptyMessage": "No courses match the current filters.",
@@ -4146,7 +4140,7 @@
         "noCoursesAvailable": "No courses available yet",
         "pageStatus": "Page {current} of {total}",
         "previousPage": "Previous",
-        "resultsCount": "{count} courses",
+        "resultsCount": "{count, plural, one {# course} other {# courses}}",
         "rightsGuide": "Rights Guide",
         "searchButton": "Search",
         "searchPlaceholder": "Search editable courses",
@@ -5253,7 +5247,7 @@
       },
       "title": "Gamification Settings",
       "toast": {
-        "fromActivities": "from {count} activities",
+        "fromActivities": "from {count, plural, one {# activity} other {# activities}}",
         "levelUp": "Level Up!"
       }
     },
@@ -5280,9 +5274,9 @@
       "Form": {
         "errorMessageDefault": "Invalid input",
         "invalidEmail": "Invalid email",
-        "maxChars": "Must be {count} characters or less",
+        "maxChars": "Must be {count, plural, one {# character} other {# characters}} or less",
         "minAmount": "Amount must be at least {min}",
-        "minChars": "Must be at least {count} characters",
+        "minChars": "Must be at least {count, plural, one {# character} other {# characters}}",
         "positiveNumber": "Must be a positive number",
         "requiredField": "{fieldName} is required"
       },
@@ -5505,7 +5499,7 @@
         "Errors": {
           "invalidVideoUrl": "Please enter a valid {type} URL.",
           "logoUploadFailed": "Failed to upload logo.",
-          "maxPreviewsError": "You can only add {count} more preview(s).",
+          "maxPreviewsError": "You can only add {count, plural, one {# more preview} other {# more previews}}.",
           "previewOrderUpdateFailed": "Failed to update preview order.",
           "previewRemoveFailed": "Failed to remove preview.",
           "previewsUploadFailed": "Failed to upload previews.",
@@ -5523,12 +5517,12 @@
           "logoUpdatedSuccess": "Logo updated successfully.",
           "previewOrderUpdatedSuccess": "Preview order updated successfully.",
           "previewRemovedSuccess": "Preview removed successfully.",
-          "previewsAddedSuccess": "{count} preview(s) added successfully.",
+          "previewsAddedSuccess": "{count, plural, one {# preview} other {# previews}} added successfully.",
           "removingPreview": "Removing preview...",
           "thumbnailUpdatedSuccess": "Thumbnail updated successfully.",
           "updatingPreviewOrder": "Updating preview order...",
           "uploadingLogo": "Uploading logo...",
-          "uploadingPreviews": "Uploading {count} preview(s)...",
+          "uploadingPreviews": "Uploading {count, plural, one {# preview} other {# previews}}...",
           "uploadingThumbnail": "Uploading thumbnail...",
           "videoPreviewAddFailed": "Failed to add video preview.",
           "videoPreviewAddedSuccess": "Video preview added successfully."
@@ -6227,7 +6221,7 @@
         "toast": {
           "dailyLoginBonus": "Daily Login Bonus!",
           "earnedXP": "Earned {xp} XP",
-          "fromActivities": "from {count} activities",
+          "fromActivities": "from {count, plural, one {# activity} other {# activities}}",
           "levelUp": "Level Up!",
           "preferencesError": "Failed to save preferences",
           "preferencesReset": "Preferences reset to defaults",
@@ -7125,7 +7119,7 @@
       "formUnavailable": "Grading form is unavailable."
     },
     "Batch": {
-      "title": "Batch Grade ({count} submissions)",
+      "title": "Batch Grade ({count, plural, one {# submission} other {# submissions}})",
       "subtitle": "{count} drafts edited",
       "close": "Close batch grading panel",
       "position": "Student {current} of {total}: {student}",
@@ -7136,7 +7130,7 @@
       "submitAll": "Submit All ({count})",
       "submitting": "Submitting...",
       "confirmSubmitTitle": "Submit grades for selected students?",
-      "confirmSubmitDesc": "Submit grades for {count} students? This cannot be undone.",
+      "confirmSubmitDesc": "Submit grades for {count, plural, one {# student} other {# students}}? This cannot be undone.",
       "confirmSubmitAction": "Submit All ({count})",
       "nothingToSubmit": "Edit at least one submission before submitting",
       "scoreRequired": "Every edited submission must have a final score",
@@ -7448,7 +7442,7 @@
     },
     "filters": {
       "label": "Teacher Analytics",
-      "scopedCourses": "{count} scoped courses",
+      "scopedCourses": "{count, plural, one {# scoped course} other {# scoped courses}}",
       "buckets": "{bucket} buckets",
       "windowPrefix": "Window: {window}",
       "comparePrefix": "Compare: {compare}",
@@ -7598,7 +7592,7 @@
     "table": {
       "searchDefault": "Search...",
       "emptyDefault": "No rows found for the selected filters.",
-      "visibleRows": "{count} visible rows",
+      "visibleRows": "{count, plural, one {# visible row} other {# visible rows}}",
       "showingRows": "{from}–{to} of {total}",
       "page": "Page {current} of {total}",
       "pagination": "Pagination",
@@ -7658,7 +7652,7 @@
       "healthy": "Healthy",
       "searchPlaceholder": "Search assessments...",
       "emptyMessage": "No assessment outliers match the current scope.",
-      "rowCount": "{count} assessment outliers"
+      "rowCount": "{count, plural, one {# assessment outlier} other {# assessment outliers}}"
     },
     "atRisk": {
       "interventionsCount": "{count, plural, =1 {# intervention logged} other {# interventions logged}}",
@@ -7683,7 +7677,7 @@
       "emptyMessage": "No at-risk learners are visible for the current filters.",
       "interventionLogged": "Intervention logged",
       "interventionLogFailed": "Failed to log intervention",
-      "gradeSubmissions": "Grade {count} pending submission(s) →",
+      "gradeSubmissions": "Grade {count, plural, one {# pending submission} other {# pending submissions}} →",
       "riskComponents": {
         "inactivity": "Inactivity",
         "progress": "Progress gap",
@@ -7736,7 +7730,7 @@
       "atRiskUnavailableDesc": "An authenticated session is required to inspect at-risk learners.",
       "atRiskLoadError": "The learner risk view could not be loaded.",
       "atRiskPageTitle": "Full at-risk learner list",
-      "atRiskPageDescription": "Showing {total} scoped learners ranked by risk score.",
+      "atRiskPageDescription": "Showing {total, plural, one {# scoped learner} other {# scoped learners}} ranked by risk score.",
       "courseDetailBadge": "Course detail",
       "courseStatCompletion": "Completion",
       "courseStatAvgProgress": "Average progress",
@@ -7951,7 +7945,7 @@
             "attempt": "Attempt"
           },
           "totals": {
-            "submissions": "{count} submissions",
+            "submissions": "{count, plural, one {# submission} other {# submissions}}",
             "selected": "{count} selected"
           },
           "loading": "Loading",
@@ -8036,7 +8030,7 @@
             "releaseFinished": "Grade release finished",
             "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}."
           },
-          "failedSubmissionsTitle": "{count} submission(s) failed to update:",
+          "failedSubmissionsTitle": "{count, plural, one {# submission} other {# submissions}} failed to update:",
           "preview": {
             "selectedSubmissions": "Selected submissions",
             "gradeReady": "Grade-ready",
@@ -8456,7 +8450,7 @@
           "timeRemaining": "Time remaining",
           "totalQuestions": "Total Questions",
           "unanswered": "Unanswered",
-          "unansweredQuestionsWarning": "You have {count} unanswered questions. Are you sure you want to submit?",
+          "unansweredQuestionsWarning": "You have {count, plural, one {# unanswered question} other {# unanswered questions}}. Are you sure you want to submit?",
           "unlimited": "Unlimited",
           "unlimitedAttempts": "Unlimited Attempts",
           "unsupportedQuestionType": "Unsupported question type",
@@ -8467,7 +8461,7 @@
           "violationDialogGuidance": "How to avoid: stay in fullscreen (if required), avoid switching tabs, and do not use developer tools or copy/paste during the exam. If you'd like to appeal, follow the link below.",
           "violationDialogTitle": "Security violation detected",
           "violationWarning": "Violations: {count}/{max}. You have {remaining} remaining before auto-submit. If you believe this is a mistake, {appealLink}.",
-          "violationsRecorded": "{count} violations recorded during this exam",
+          "violationsRecorded": "{count, plural, one {# violation} other {# violations}} recorded during this exam",
           "yourAnswer": "Your Answer",
           "focus": "Focus",
           "exitFocus": "Exit focus mode",
@@ -8513,7 +8507,7 @@
           "connectionLostTitle": "Connection Lost",
           "connectionLostDescription": "Please check your internet connection. Your progress is saved locally and will sync when online.",
           "draftConflictDescription": "A newer version #{latestVersion} of your answers was saved on the server at {latestSavedAt}. Which version do you want to use?",
-          "draftConflictAnswerCounts": "Local: {localCount} answers | Server: {serverCount} answers"
+          "draftConflictAnswerCounts": "Local: {localCount, plural, one {# answer} other {# answers}} | Server: {serverCount, plural, one {# answer} other {# answers}}"
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",
@@ -8727,7 +8721,7 @@
           "curriculum": "Curriculum",
           "studio": "Studio"
         },
-        "issueCount": "{count} issues",
+        "issueCount": "{count, plural, one {# issue} other {# issues}}",
         "preview": "Preview",
         "scheduleOptions": "Schedule options",
         "schedulePublication": "Schedule publication",
@@ -8924,7 +8918,7 @@
           "impactIntegrity": "Integrity",
           "summaryTimed": "{minutes} minutes after start",
           "summaryUntimed": "No timer",
-          "summaryAttempts": "{count} attempt(s)",
+          "summaryAttempts": "{count, plural, one {# attempt} other {# attempts}}",
           "summaryUnlimitedAttempts": "Unlimited attempts",
           "summaryIntegrityOn": "Deterrent checks enabled",
           "summaryIntegrityOff": "No deterrent checks",
@@ -9025,7 +9019,7 @@
           "previewEmptyPair": "Empty value",
           "previewEmptyField": "Untitled field",
           "previewFieldMeta": "{type} · {required}",
-          "previewMinWords": "Student long answer · minimum {count} words",
+          "previewMinWords": "Student long answer · minimum {count, plural, one {# word} other {# words}}",
           "previewOpenText": "Student long answer",
           "correct": "Correct",
           "required": "required",
@@ -9845,7 +9839,7 @@
     "noCertificateAvailable": "No certificate available",
     "quitCourseButton": "Quit Course",
     "stepsLabel": "steps",
-    "stepsProgress": "{completed} / {total} steps",
+    "stepsProgress": "{completed} / {total, plural, one {# step} other {# steps}}",
     "viewCertificate": "View Certificate"
   },
   "TrailPage": {
