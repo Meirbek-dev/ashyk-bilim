@@ -48,9 +48,34 @@ describe('Navigation Policy', () => {
     })
   })
 
+  describe('canAccessDashboard', () => {
+    it('should return true for a learner who can submit assessments', () => {
+      // The dashboard root always renders the caller's own work queue.
+      const can = mockCan(new Set(['assessment:submit:assigned']))
+      expect(canAccessDashboard(can)).toBe(true)
+    })
+
+    it('should return false for a guest with no submit or admin grants', () => {
+      const can = mockCan(new Set(['course:read:all']))
+      expect(canAccessDashboard(can)).toBe(false)
+    })
+  })
+
   describe('canSeeUsers', () => {
-    it('should return true if user can read users on platform', () => {
+    it('should return false for a learner holding only user:read:platform', () => {
+      // Every learner has this grant (public profiles). The admin directory
+      // behind the nav entry needs platform:read:platform and answers 403.
       const can = mockCan(new Set(['user:read:platform']))
+      expect(canSeeUsers(can)).toBe(false)
+    })
+
+    it('should return true if user can read the platform directory', () => {
+      const can = mockCan(new Set(['platform:read:platform']))
+      expect(canSeeUsers(can)).toBe(true)
+    })
+
+    it('should return true for a teacher who can read usergroups on platform', () => {
+      const can = mockCan(new Set(['usergroup:read:platform']))
       expect(canSeeUsers(can)).toBe(true)
     })
 

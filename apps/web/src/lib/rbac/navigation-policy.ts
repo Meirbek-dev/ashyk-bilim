@@ -25,11 +25,17 @@ export function canSeeAnalytics(can: CanCheck): boolean {
   )
 }
 
+// The users area holds the admin directory (`GET /users`, which the server
+// gates on `platform:read:platform`) and the usergroups tab (`GET /usergroups`,
+// `usergroup:read:platform`). It must NOT key off `user:read:platform` — every
+// learner holds that grant, for reading public profiles, and would see the nav
+// entry and land on a directory the server answers 403 for.
 export function canSeeUsers(can: CanCheck): boolean {
   return (
+    can(Resources.APP, Actions.READ, Scopes.APP) ||
     can(Resources.USER, Actions.UPDATE, Scopes.APP) ||
-    can(Resources.USER, Actions.READ, Scopes.APP) ||
-    can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP)
+    can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP) ||
+    can(Resources.USERGROUP, Actions.READ, Scopes.APP)
   )
 }
 
@@ -44,6 +50,16 @@ export function canSeeAdmin(can: CanCheck): boolean {
   )
 }
 
+// The dashboard root is not teacher-only: it always renders the caller's own
+// learner work queue (`GET /work`, which every authenticated role may read), so
+// anyone who can submit work has something there. Gating this on the four
+// admin-ish areas above hid the entry point from learners.
 export function canAccessDashboard(can: CanCheck): boolean {
-  return canSeeCourses(can) || canSeeAnalytics(can) || canSeeUsers(can) || canSeeAdmin(can)
+  return (
+    canSeeCourses(can) ||
+    canSeeAnalytics(can) ||
+    canSeeUsers(can) ||
+    canSeeAdmin(can) ||
+    can(Resources.ASSESSMENT, Actions.SUBMIT, Scopes.ASSIGNED)
+  )
 }
