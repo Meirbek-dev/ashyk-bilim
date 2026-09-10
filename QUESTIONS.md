@@ -87,6 +87,22 @@ Until this is decided, `src/services/rbac.ts` keeps `getRole`,
 `listRoleAuditLog`, `addPermissionToRole` and `removePermissionFromRole` pointing
 at v1 routes that 404, and both pages are broken.
 
+### Q-2026-09-10-7 — Nothing reports whether an account has TOTP enrolled (blocks F02)
+
+The security page cannot render a correct two-factor state on load. No v2 response
+carries an enrolment flag: `GET /auth/session` (`SessionInfo`), `GET /users/me`
+(`UserProfile`) and the `auth/mfa/totp*` endpoints all lack one. `POST auth/mfa/totp`
+only signals an existing enrolment by answering 409 if you actually try to enrol,
+and `DELETE` is idempotent, so neither can be used to probe safely.
+
+The page therefore assumes "not enrolled" on every load: an account that already has
+TOTP is offered "Enable" rather than "Disable" until it enrols again in-session.
+(The worse symptom — both buttons rendered at once — is fixed.)
+
+**Options:** (a) add `mfa_enabled` to `SessionInfo` and/or `UserProfile` — the BFF
+already calls Zitadel's `list_auth_method_types` during login, so the data is at hand;
+(b) add a small `GET /auth/mfa/totp` returning the enrolment state.
+
 ### Q-2026-09-10-5 — `request_id` is documented in the error envelope but never set
 
 `ARCHITECTURE.md` §5 and `apps/web/AGENTS.md` both say problem+json responses carry
