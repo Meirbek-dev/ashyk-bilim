@@ -64,6 +64,29 @@ For `users/{id}/courses` the client currently approximates by filtering
 `courses?limit=100` on `creator_id` — that silently drops contributors and anything
 past the first 100 courses, so it is a wrong answer rather than a missing one.
 
+### Q-2026-09-10-6 — The RBAC admin surface has no v2 contract (blocks F38)
+
+`/dash/admin/roles` and `/dash/admin/users` cannot be ported: v2 exposes only
+`GET|POST rbac/roles`, `PATCH|DELETE rbac/roles/{slug}` and a bulk
+`PUT rbac/roles/{slug}/permissions`. The pages need, and legacy had, a per-role
+`GET`, per-permission add/remove, a role audit log (`roles/audit-log`), a
+permission registry (`roles/permissions/all`), and a per-user role listing
+(`rbac/user-roles`). None exist.
+
+The v2 role model is also differently shaped: roles are keyed by `slug` with an
+embedded `permissions: string[]`, while the pages assume numeric `id` + `name`
+and a separate permissions collection.
+
+**Options:** (a) add the missing read routes and keep the pages; (b) accept the
+bulk-only model and rewrite both pages against it (role list → edit permissions
+as a set → save), dropping the audit log; (c) declare the RBAC admin surface
+operator-only and remove the pages in favour of `ashyq admin`.
+
+Until this is decided, `src/services/rbac.ts` keeps `getRole`,
+`getRolePermissions`, `createRole`, `updateRole`, `deleteRole`,
+`listRoleAuditLog`, `addPermissionToRole` and `removePermissionFromRole` pointing
+at v1 routes that 404, and both pages are broken.
+
 ### Q-2026-09-10-5 — `request_id` is documented in the error envelope but never set
 
 `ARCHITECTURE.md` §5 and `apps/web/AGENTS.md` both say problem+json responses carry
