@@ -1,14 +1,21 @@
 'use server'
 
 import { apiResult } from '@/lib/api-client'
+import { CourseUpdate } from '@/lib/api/generated/zod'
+import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
 import { tags } from '@/lib/cacheTags'
 
+/** `POST courses/{id}/updates` — answers 201 with the created `CourseUpdate`. */
 export async function createCourseUpdate(body: AppPayload) {
-  const data = await apiResult(`courses/${body.course_uuid}/updates`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  const data = await apiResult(
+    `courses/${stripEntityPrefix(String(body.course_uuid ?? ''))}/updates`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: body.title, content: body.content }),
+    },
+    CourseUpdate.parse,
+  )
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -16,10 +23,9 @@ export async function createCourseUpdate(body: AppPayload) {
   return data
 }
 
-export async function deleteCourseUpdate(course_uuid: string, update_uuid: number) {
-  const data = await apiResult(`courses/${course_uuid}/update/${update_uuid}`, {
-    method: 'DELETE',
-  })
+/** `DELETE course-updates/{id}` — answers 204. */
+export async function deleteCourseUpdate(_course_uuid: string, update_uuid: string | number) {
+  const data = await apiResult(`course-updates/${update_uuid}`, { method: 'DELETE' })
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')

@@ -1,58 +1,73 @@
 'use server'
 
 import { apiJson } from '@/lib/api-client'
+import { Chapter } from '@/lib/api/generated/zod'
 import type { CourseOrderPayload } from '@/schemas/chapterSchemas'
+import { stripEntityPrefix, toAppChapter } from '@/hooks/courses/courseKeys'
 import { courseTag, tags } from '@/lib/cacheTags'
 
 /*
  This file includes only POST, PATCH, DELETE requests
 */
 
+const json = (method: 'POST' | 'PATCH', body: unknown) => ({
+  method,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+})
+
+async function revalidateCourses() {
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.courses, 'max')
+}
+
+/** `thumbnail_image` is not in the v2 `UpdateChapterRequest` and is dropped. */
 export async function updateChapter(chapterUuid: string, data: AppPayload): Promise<AppChapter> {
-  const response = await apiJson<AppChapter>(`chapters/${chapterUuid}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
-  return response
+  const chapter = await apiJson(
+    `chapters/${stripEntityPrefix(chapterUuid)}`,
+    json('PATCH', {
+      ...(data.name === undefined ? {} : { name: data.name }),
+      ...(data.description === undefined ? {} : { description: data.description }),
+    }),
+    Chapter.parse,
+  )
+  await revalidateCourses()
+  return toAppChapter(chapter)
 }
 
+/**
+ * Re-applies the whole order through `POST chapters/{id}/move` and
+ * `POST activities/{id}/move` (1-based positions; the server clamps and renumbers).
+ * ponytail: N+M sequential requests per drag; diff against the previous order if it gets slow.
+ */
 export async function updateCourseOrderStructure(course_uuid: string, data: CourseOrderPayload) {
-  const response = await apiJson(`chapters/course/${course_uuid}/order`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
+  for (const [chapterIndex, chapter] of data.chapter_order_by_uuids.entries()) {
+    const chapterId = stripEntityPrefix(chapter.chapter_uuid)
+    await apiJson(`chapters/${chapterId}/move`, json('POST', { position: chapterIndex + 1 }))
+    for (const [activityIndex, activityUuid] of chapter.activities_order_by_uuids.entries()) {
+      await apiJson(
+        `activities/${stripEntityPrefix(activityUuid)}/move`,
+        json('POST', { chapter_id: chapterId, position: activityIndex + 1 }),
+      )
+    }
+  }
 
+  await revalidateCourses()
   const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-  revalidateTag(courseTag.detail(course_uuid), 'max')
-
-  return response
+  revalidateTag(courseTag.detail(stripEntityPrefix(course_uuid)), 'max')
 }
 
-export async function createChapter(data: AppPayload): Promise<AppChapter> {
-  const response = await apiJson<AppChapter>('chapters', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
-  return response
+export async function createChapter(data: AppPayload & { course_uuid: string }): Promise<AppChapter> {
+  const chapter = await apiJson(
+    `courses/${stripEntityPrefix(data.course_uuid)}/chapters`,
+    json('POST', { name: data.name, description: data.description ?? null }),
+    Chapter.parse,
+  )
+  await revalidateCourses()
+  return { ...toAppChapter(chapter), activities: [] }
 }
 
 export async function deleteChapter(chapterUuid: string) {
-  const response = await apiJson(`chapters/${chapterUuid}`, { method: 'DELETE' })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
-  return response
+  await apiJson(`chapters/${stripEntityPrefix(chapterUuid)}`, { method: 'DELETE' })
+  await revalidateCourses()
 }

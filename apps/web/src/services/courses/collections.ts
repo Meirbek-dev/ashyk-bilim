@@ -1,6 +1,8 @@
 'use server'
 
 import { apiJson } from '@/lib/api-client'
+import { Collection, CollectionPage } from '@/lib/api/generated/zod'
+import { stripEntityPrefix, toAppCollection } from '@/hooks/courses/courseKeys'
 import { tags } from '@/lib/cacheTags'
 
 import { getAPIUrl } from '../config/config'
@@ -9,55 +11,50 @@ import { getAPIUrl } from '../config/config'
  This file includes POST, PUT, DELETE requests and cached GET requests
 */
 
-export async function deleteCollection(collection_uuid: string): Promise<AppPayload> {
-  const data = await apiJson<AppPayload>(`collections/${collection_uuid}`, {
-    method: 'DELETE',
-  })
+const serverGet = () => ({ method: 'GET', baseUrl: getAPIUrl(), timeoutMs: 10_000 })
+
+export async function deleteCollection(collection_uuid: string): Promise<void> {
+  await apiJson(`collections/${stripEntityPrefix(collection_uuid)}`, { method: 'DELETE' })
+
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.collections, 'max')
+}
+
+/** `courses` are v2 course ids (`CreateCollectionRequest`). */
+export async function createCollection(collection: {
+  name: string
+  description?: string | null
+  public?: boolean | null
+  courses?: (string | number)[] | null
+}): Promise<AppCollection> {
+  const data = await apiJson(
+    'collections',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: collection.name,
+        description: collection.description ?? null,
+        public: collection.public ?? null,
+        courses: collection.courses?.map(id => stripEntityPrefix(String(id))) ?? null,
+      }),
+    },
+    Collection.parse,
+  )
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.collections, 'max')
 
-  return data
+  return toAppCollection(data)
 }
 
-export async function createCollection(collection: AppCollection): Promise<AppCollection> {
-  const data = await apiJson<AppCollection>('collections/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(collection),
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.collections, 'max')
-
-  return data
+export async function getCollectionById(collection_uuid: string, _next?: unknown): Promise<AppCollection> {
+  const data = await apiJson(`collections/${stripEntityPrefix(collection_uuid)}`, serverGet(), Collection.parse)
+  return toAppCollection(data)
 }
 
-async function fetchCollectionById(collection_uuid: string): Promise<AppCollection> {
-  return apiJson<AppCollection>(`collections/collection_${collection_uuid}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    baseUrl: getAPIUrl(),
-    timeoutMs: 10_000,
-  })
-}
-
-export async function getCollectionById(collection_uuid: string, _next?: unknown) {
-  return fetchCollectionById(collection_uuid)
-}
-
-/**
- * Cached fetch for collections
- */
-async function fetchCollections(): Promise<AppCollection[]> {
-  return apiJson<AppCollection[]>('collections/page/1/limit/20', {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    baseUrl: getAPIUrl(),
-    timeoutMs: 10_000,
-  })
-}
-
-export async function getCollections(_next?: unknown) {
-  return fetchCollections()
+/** First keyset page of collections (`GET collections?limit=`). */
+export async function getCollections(_next?: unknown, limit = 20): Promise<AppCollection[]> {
+  const page = await apiJson(`collections?limit=${limit}`, serverGet(), CollectionPage.parse)
+  return page.items.map(toAppCollection)
 }

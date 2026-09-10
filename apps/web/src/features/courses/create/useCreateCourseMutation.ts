@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { createNewCourse, getCourseMetadata } from '@services/courses/courses'
 import { createChapter } from '@services/courses/chapters'
 import {
@@ -11,19 +12,14 @@ import type { CourseCreatePayload, CourseCreateResult } from './course-create-ty
 
 export function useCreateCourseMutation() {
   const [isPending, setIsPending] = useState(false)
+  const tStarterChapters = useTranslations('DashPage.CourseManagement.Wizard.starterChapters')
 
   const mutate = useCallback(
     async (payload: CourseCreatePayload, destination: 'overview' | 'curriculum'): Promise<CourseCreateResult> => {
       setIsPending(true)
       try {
-        // Map structureMode to API template param
-        const apiTemplate =
-          payload.structureMode === 'copy-outline'
-            ? undefined // handled client-side
-            : payload.structureMode === 'starter'
-              ? 'starter'
-              : 'blank'
-
+        // `template` has no v2 contract (`CreateCourseRequest` is `{name, description?, about?, tags?}`);
+        // 'starter' and 'copy-outline' seed chapters client-side after the plain `POST courses` below.
         const result = await createNewCourse(
           {
             name: payload.title.trim(),
@@ -31,7 +27,6 @@ export function useCreateCourseMutation() {
             learnings: JSON.stringify([]),
             tags: JSON.stringify([]),
             visibility: false,
-            template: apiTemplate,
           },
           null,
         )
@@ -114,6 +109,45 @@ export function useCreateCourseMutation() {
           }
         }
 
+        // For starter: seed the two promised starter chapters (Introduction, Core lessons)
+        if (payload.structureMode === 'starter') {
+          const starterChapters = [
+            { name: tStarterChapters('introduction.name'), description: tStarterChapters('introduction.description') },
+            { name: tStarterChapters('coreLessons.name'), description: tStarterChapters('coreLessons.description') },
+          ]
+
+          const results = await Promise.allSettled(
+            starterChapters.map(chapter =>
+              createChapter({
+                name: chapter.name,
+                description: chapter.description,
+                thumbnail_image: '',
+                course_uuid: createdCourseUuid,
+              }),
+            ),
+          )
+
+          const succeeded = results.filter(r => r.status === 'fulfilled').length
+          const failed = results.filter(r => r.status === 'rejected').length
+
+          if (failed > 0) {
+            return {
+              status: 'partial',
+              courseUuid,
+              importedChapterCount: succeeded,
+              failedChapterCount: failed,
+              destinationPath,
+            }
+          }
+
+          return {
+            status: 'success',
+            courseUuid,
+            importedChapterCount: succeeded,
+            destinationPath,
+          }
+        }
+
         return {
           status: 'success',
           courseUuid,
@@ -127,7 +161,7 @@ export function useCreateCourseMutation() {
         setIsPending(false)
       }
     },
-    [],
+    [tStarterChapters],
   )
 
   return { mutate, isPending }

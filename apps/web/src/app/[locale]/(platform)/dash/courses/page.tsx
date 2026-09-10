@@ -89,7 +89,7 @@ async function PlatformDashCoursesPageInner(props: { searchParams: Promise<PageS
 
   return (
     <CoursesHome
-      courses={courses}
+      courses={courses.map(course => ({ ...course, name: course.name ?? '' }))}
       totalCourses={total}
       currentPage={currentPage}
       searchQuery={query}

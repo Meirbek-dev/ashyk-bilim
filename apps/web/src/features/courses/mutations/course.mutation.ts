@@ -21,7 +21,7 @@ interface MutationOptions {
 }
 
 interface ContributorDraftUser {
-  id: number
+  id: string
   username: string
   first_name?: string
   middle_name?: string
@@ -238,8 +238,10 @@ export function updateCourseContributorMutationOptions(courseUuid: string, query
           ...current,
           contributors: {
             ...current.contributors,
+            // `contributor.user_id` is a v2 UUID string; `contributorUserId` is still the legacy
+            // numeric id used by `EditCourseContributors.tsx` (not in this builder's scope) — compare as strings.
             data: (current.contributors.data ?? []).map((contributor: AppCourseAuthor) =>
-              contributor.user_id === contributorUserId ? Object.assign(contributor, payload) : contributor,
+              contributor.user_id === String(contributorUserId) ? Object.assign(contributor, payload) : contributor,
             ),
           },
         }
@@ -276,7 +278,9 @@ export function removeCourseContributorsMutationOptions(courseUuid: string, quer
       await queryClient.cancelQueries({ queryKey: editorBundleKey })
       const previousEditorBundle = queryClient.getQueryData(editorBundleKey)
       const usernameSet = new Set(usernames)
-      const userIdSet = new Set(userIds)
+      // `contributor.user_id` is a v2 UUID string; `userIds` are still the legacy numeric ids
+      // used by `EditCourseContributors.tsx` (not in this builder's scope) — compare as strings.
+      const userIdSet = new Set(userIds.map(String))
 
       queryClient.setQueryData(editorBundleKey, (current: CourseEditorBundle | undefined) => {
         if (!current) return current

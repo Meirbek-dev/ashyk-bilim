@@ -4,7 +4,13 @@ import type {
   SubmissionStatus as CanonicalSubmissionStatus,
   Submission as GradingSubmission,
 } from '@/features/grading/domain'
-import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
+import type { AssessmentItem, ItemAnswer, ItemBody } from '@/features/assessments/domain/items'
+import { getActivityAssessment } from '@/lib/api/generated/assessments/assessments'
+import { itemBodyToWire, itemFromWire } from '@/features/assessments/domain/assessment-wire'
+import { unixToIso } from '@/lib/api/contract'
+import { languages as fetchLanguages, runItem } from '@/lib/api/generated/code/code'
+import type { CodeRun } from '@/lib/api/generated/zod'
+import { idempotencyHeaders } from '@/lib/api/headers'
 
 export interface CodeChallengeSettings {
   uuid: string
@@ -129,7 +135,8 @@ export interface Judge0Language {
   id: number
   name: string
   monaco_language: string
-  is_archived: boolean
+  /** v2's `GET /code/languages` already filters to the allowed, non-archived set. */
+  is_archived?: boolean
 }
 
 interface CodeAssessmentItemBody {
@@ -216,7 +223,7 @@ const isHint = (value: unknown): value is CodeChallengeHint => {
 
 const isHintArray = (value: unknown): value is CodeChallengeHint[] => Array.isArray(value) && value.every(isHint)
 
-const readCanonicalMetadata = (value: CanonicalSubmissionRead['metadata_json']): CanonicalMetadata => {
+const readCanonicalMetadata = (value: unknown): CanonicalMetadata => {
   if (!isRecord(value)) return {}
 
   const latestRunValue = value.latest_run
@@ -233,7 +240,7 @@ const readCanonicalMetadata = (value: CanonicalSubmissionRead['metadata_json']):
   }
 }
 
-const readCodeAnswers = (value: CanonicalSubmissionRead['answers_json']) => {
+const readCodeAnswers = (value: unknown) => {
   if (!isRecord(value)) return {}
 
   const answersValue = value.answers
@@ -244,17 +251,28 @@ const readCodeAnswers = (value: CanonicalSubmissionRead['answers_json']) => {
   return Object.fromEntries(entries) as Record<string, CanonicalCodeAnswer>
 }
 
-function normalizeActivityUuid(activityUuid: string) {
-  return activityUuid.startsWith('activity_') ? activityUuid : `activity_${activityUuid}`
-}
-
 export async function getJudge0Languages(): Promise<Judge0Language[]> {
-  return apiJson<Judge0Language[]>('code-execution/languages')
+  return fetchLanguages()
 }
 
 async function loadCodeAssessment(activityUuid: string): Promise<CodeAssessmentRead | null> {
   try {
-    return await apiJson<CodeAssessmentRead>(`assessments/activity/${normalizeActivityUuid(activityUuid)}`)
+    const assessment = await getActivityAssessment(activityUuid.replace(/^activity_/, ''))
+    return {
+      assessment_uuid: assessment.id,
+      title: assessment.title,
+      description: assessment.description,
+      lifecycle: assessment.lifecycle,
+      scheduled_at: unixToIso(assessment.scheduled_at_unix),
+      published_at: unixToIso(assessment.published_at_unix),
+      archived_at: unixToIso(assessment.archived_at_unix),
+      // v2 has no policy settings_json bucket; code-challenge-specific fields
+      // (difficulty/execution_mode/hints/max_submissions/allow_custom_input)
+      // have no wire home and fall back to `toCodeChallengeSettings`'s
+      // defaults — see report under "Blocked".
+      assessment_policy: null,
+      items: assessment.items.map(itemFromWire),
+    }
   } catch (error) {
     if (isApiError(error) && error.status === 404) return null
     throw error
@@ -437,14 +455,13 @@ async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<
   const codeItem = getCodeAssessmentItem(assessment)
   const body = toCodeItemBody(assessment, codeItem, settings)
   const payload = {
-    kind: 'CODE',
     title: codeItem?.title ?? assessment.title,
-    body,
+    body: itemBodyToWire(body as ItemBody),
     max_score: typeof settings.points === 'number' ? settings.points : (codeItem?.max_score ?? 100),
   }
 
   if (codeItem) {
-    await apiJson(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}`, {
+    await apiJson(`assessment-items/${codeItem.item_uuid}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -515,18 +532,18 @@ export async function saveCodeChallengeSettings(
     throw serviceError('CODE_CHALLENGE_NOT_FOUND', 'Code challenge assessment not found', 404)
   }
 
-  await apiJson(`assessments/${assessment.assessment_uuid}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      policy: {
-        settings_json: {
-          ...assessment.assessment_policy?.settings_json,
-          ...settings,
-        },
-      },
-    }),
-  })
+  // v2's `UpdateAssessmentRequest` has no `policy.settings_json` bucket (the
+  // legacy free-form settings bag doesn't exist on the wire); only `title`
+  // has a real v2 home here, so that's all that's patched at the assessment
+  // level. Difficulty/execution_mode/hints/max_submissions/allow_custom_input
+  // have nowhere to persist — see report under "Blocked".
+  if (settings.title !== undefined) {
+    await apiJson(`assessments/${assessment.assessment_uuid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: settings.title }),
+    })
+  }
 
   await upsertCodeItem(assessment, settings)
 
@@ -572,6 +589,36 @@ export async function submitCode(
   return mapCanonicalCodeSubmission(submission)
 }
 
+function codeRunToCanonical(run: CodeRun): CanonicalCodeRunResponse {
+  const firstCase = run.cases[0]
+  return {
+    status: run.status.toUpperCase(),
+    passed: run.passed,
+    total: run.total,
+    ...(run.compile_output ? { compile_output: run.compile_output } : {}),
+    ...(run.error_message ? { error_message: run.error_message } : {}),
+    ...(firstCase?.stdout ? { stdout: firstCase.stdout } : {}),
+    ...(firstCase?.stderr ? { stderr: firstCase.stderr } : {}),
+    ...(firstCase?.time_seconds !== undefined && firstCase.time_seconds !== null ? { time: firstCase.time_seconds } : {}),
+    ...(firstCase?.memory_kb !== undefined && firstCase.memory_kb !== null ? { memory: firstCase.memory_kb } : {}),
+    visible_results: run.cases.map(caseResult => ({
+      test_id: caseResult.test_id,
+      passed: caseResult.passed,
+      status_id: caseResult.status_id ?? null,
+      status_description: caseResult.status_description,
+      description: caseResult.description ?? null,
+      weight: caseResult.weight ?? null,
+      ...(caseResult.stdin ? { stdin: caseResult.stdin } : {}),
+      ...(caseResult.expected ? { expected: caseResult.expected } : {}),
+      ...(caseResult.actual ? { actual: caseResult.actual } : {}),
+      ...(caseResult.time_seconds !== undefined && caseResult.time_seconds !== null
+        ? { time: caseResult.time_seconds }
+        : {}),
+      ...(caseResult.memory_kb !== undefined && caseResult.memory_kb !== null ? { memory: caseResult.memory_kb } : {}),
+    })),
+  }
+}
+
 export async function runTests(
   activityUuid: string,
   sourceCode: string,
@@ -587,17 +634,16 @@ export async function runTests(
     throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
   }
 
-  const run = await apiJson<CanonicalCodeRunResponse>(
-    `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language: languageId,
-        source: sourceCode,
-        idempotency_key: codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode),
-      }),
-    },
+  const run = codeRunToCanonical(
+    await runItem(
+      codeItem.item_uuid,
+      { language_id: languageId, source: sourceCode },
+      {
+        headers: idempotencyHeaders(
+          codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode),
+        ),
+      },
+    ),
   )
 
   if (run.status === 'DEGRADED') {
@@ -633,24 +679,16 @@ export async function runCustomTest(
     throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
   }
 
-  const run = await apiJson<CanonicalCodeRunResponse>(
-    `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language: languageId,
-        source: sourceCode,
-        custom_input: stdin,
-        idempotency_key: codeRunIdempotencyKey(
-          assessment.assessment_uuid,
-          codeItem.item_uuid,
-          languageId,
-          sourceCode,
-          stdin,
+  const run = codeRunToCanonical(
+    await runItem(
+      codeItem.item_uuid,
+      { language_id: languageId, source: sourceCode, custom_input: stdin },
+      {
+        headers: idempotencyHeaders(
+          codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode, stdin),
         ),
-      }),
-    },
+      },
+    ),
   )
 
   if (run.status === 'DEGRADED') {

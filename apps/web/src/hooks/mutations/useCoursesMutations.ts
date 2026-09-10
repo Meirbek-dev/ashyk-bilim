@@ -17,7 +17,7 @@ interface MutationOptions {
 }
 
 interface ContributorDraftUser {
-  id: number
+  id: string
   username: string
   first_name?: string
   middle_name?: string
