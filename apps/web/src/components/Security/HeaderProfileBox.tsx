@@ -11,7 +11,7 @@ import { ChevronDown, Crown, LogOut, Shield, User as UserIcon, Users } from 'luc
 import { Tooltip, TooltipContent, TooltipTrigger } from '@components/ui/tooltip'
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
 import { useSession } from '@/hooks/useSession'
-import { logout } from '@services/auth/auth'
+import { useLogout } from '@/lib/auth/use-logout'
 import { getAbsoluteUrl } from '@services/config/config'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { RoleSlugs } from '@/types/permissions'
@@ -19,7 +19,6 @@ import { Button } from '@components/ui/button'
 import { Badge } from '@components/ui/badge'
 import type { Session } from '@/lib/auth/types'
 import { useTranslations } from 'next-intl'
-import { useTransition } from 'react'
 import Link from '@components/ui/AppLink'
 import type { ReactNode } from 'react'
 
@@ -44,7 +43,7 @@ export function HeaderProfileBox() {
   const { isAuthenticated, session, user } = useSession()
   const { canAccessDashboard } = useNavigationPermissions()
   const t = useTranslations('Header')
-  const [isLoggingOut, startLogoutTransition] = useTransition()
+  const { logout: handleLogout, isLoggingOut } = useLogout()
 
   // v2 sessions carry role slugs (`admin`, `instructor`, …); system roles
   // get a curated badge, anything else is a custom role shown by slug.
@@ -86,12 +85,6 @@ export function HeaderProfileBox() {
   const customRoles: CustomRoleInfo[] = userRoles
     .filter((slug: SessionRole) => !SYSTEM_ROLE_SLUGS.has(slug))
     .map((slug: SessionRole) => ({ name: slug }))
-
-  const handleLogout = () => {
-    startLogoutTransition(() => {
-      void logout()
-    })
-  }
 
   return (
     <div className="flex items-center">

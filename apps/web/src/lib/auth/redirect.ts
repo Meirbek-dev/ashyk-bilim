@@ -1,5 +1,5 @@
 export { isAuthRoute, isProtectedRoute } from './routes'
-export { getPostAuthRedirect, normalizeReturnTo } from './return-to'
+export { getPostAuthRedirect, normalizeInternalPath, normalizeReturnTo } from './return-to'
 import { buildLoginRedirect as buildLoginRedirectForReturnTo } from './return-to'
 
 // ── Redirect helpers ──────────────────────────────────────────────────────────

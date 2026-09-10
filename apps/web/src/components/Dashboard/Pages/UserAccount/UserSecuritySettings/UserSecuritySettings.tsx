@@ -46,6 +46,12 @@ function SessionsSection({ t }: { t: Translator }) {
     queryKey: queryKeys.auth.sessions(),
     queryFn: listSessions,
     staleTime: 15_000,
+    // The app-wide default (queryClient.ts) retries 3x with a 5s delay each —
+    // up to a minute of an unlabelled spinner before `sessionsLoadError` (and
+    // its retry button) ever gets a chance to render. Cap it here so a real
+    // outage surfaces in a few seconds instead.
+    retry: 1,
+    retryDelay: 1_000,
   })
 
   const revokeMutation = useMutation({
@@ -224,14 +230,24 @@ function TotpSection({ t }: { t: Translator }) {
             </Button>
           </div>
         </form>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending || active}>
-            <KeyRound size={14} aria-hidden="true" />
-            {active ? t('totpActive') : t('enableTotp')}
-          </Button>
+      ) : active ? (
+        // Enrolled: only offer disabling it — the enable control is a dead
+        // click once TOTP is already on (the account never gets a second
+        // "not yet enrolled" state to enable into).
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground text-sm">{t('totpActive')}</span>
           <Button variant="outline" onClick={() => removeMutation.mutate()} disabled={removeMutation.isPending}>
             {t('disableTotp')}
+          </Button>
+        </div>
+      ) : (
+        // Not enrolled: disabling is meaningless (and `DELETE` is
+        // idempotent, so it would silently "succeed" without ever having
+        // done anything) — only offer enabling it.
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending}>
+            <KeyRound size={14} aria-hidden="true" />
+            {t('enableTotp')}
           </Button>
         </div>
       )}

@@ -183,18 +183,22 @@ describe('Frontend Auth Actions (v2 BFF)', () => {
   })
 
   describe('logoutAction', () => {
-    it('should post to the logout endpoint, drop the cookie and redirect', async () => {
+    it('should post to the logout endpoint, drop the cookie and redirect to the login page', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 204,
         headers: new Headers(),
       })
 
+      // `/login` is an auth route — `normalizeReturnTo` (used for post-LOGIN
+      // returnTo targets) would collapse it to `/` to stop a login loop, but
+      // that's the wrong sanitizer for a post-LOGOUT destination: landing
+      // back on `/login` after logging out is exactly the point (BUG-009).
       try {
         await logoutAction('/login')
         expect.fail('Should have redirected')
       } catch (e: any) {
-        expect(e.message).toBe('REDIRECTED_TO:/')
+        expect(e.message).toBe('REDIRECTED_TO:/login')
       }
 
       expect(mockFetch).toHaveBeenCalledTimes(1)

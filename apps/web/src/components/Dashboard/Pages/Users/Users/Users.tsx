@@ -20,6 +20,7 @@ import { Actions, Resources, Scopes } from '@/components/Security'
 import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate'
 import { useSession } from '@/hooks/useSession'
 import { useAllMembers, useRoles } from '@/features/users/hooks/useUsers'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import type { AdminUser } from '@/lib/api/generated/zod'
 import DataTable from '@/components/ui/data-table'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
@@ -91,6 +92,7 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
 function Users() {
   const { session: sessionData, user: currentUser, can } = useSession()
   const t = useTranslations('DashPage.UserSettings.usersSection')
+  const tErrors = useTranslations('Errors')
   const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.APP)
   const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.APP)
 
@@ -104,7 +106,8 @@ function Users() {
   const isAdminUser = sessionData?.permissions.includes('*:*:*') ?? false
 
   const queryClient = useQueryClient()
-  const { data: users = [], isLoading } = useAllMembers()
+  const { data: users = [], isLoading, isError, error } = useAllMembers()
+  const isForbidden = isError && hasErrorCode(error, 'forbidden')
   const hasMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -257,6 +260,27 @@ function Users() {
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-12 w-full rounded-lg" />
         ))}
+      </div>
+    )
+  }
+
+  // A 403 is a permission denial, not an empty org — rendering it through
+  // the DataTable's "no results" state would tell a learner/teacher there
+  // are simply no users, which is false and hides why they can't see any.
+  if (isForbidden) {
+    return (
+      <div className="mx-10 mt-6">
+        <Card>
+          <CardHeader className="border-b">
+            <CardTitle>{t('activeUsersTitle')}</CardTitle>
+            <CardDescription>{t('description')}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
+            <AlertTriangle className="text-muted-foreground size-8" aria-hidden="true" />
+            <p className="font-medium">{tErrors('accessDenied')}</p>
+            <p className="text-muted-foreground text-sm">{tErrors('permissionDenied')}</p>
+          </CardContent>
+        </Card>
       </div>
     )
   }

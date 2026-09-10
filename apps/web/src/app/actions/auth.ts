@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { parseApiErrorEnvelope } from '@/lib/api/assertSuccess'
-import { getPostAuthRedirect, normalizeReturnTo } from '@/lib/auth/redirect'
+import { getPostAuthRedirect, normalizeInternalPath } from '@/lib/auth/redirect'
 import { applyBackendSetCookies, postAuthJson, serverAuthFetch } from '@/lib/auth/server-auth-fetch'
 import { SESSION_COOKIE_NAME } from '@/lib/auth/types'
 
@@ -120,6 +120,10 @@ export async function logoutAction(redirectTo?: string | null): Promise<void> {
   revalidatePath('/', 'layout')
 
   if (redirectTo) {
-    redirect(normalizeReturnTo(redirectTo))
+    // Not `normalizeReturnTo`: that one forces auth routes back to `/` to
+    // stop a post-login `returnTo` from looping to the login page. A
+    // post-LOGOUT destination is the opposite case — it's usually `/login`
+    // itself, and that must be allowed through.
+    redirect(normalizeInternalPath(redirectTo))
   }
 }
