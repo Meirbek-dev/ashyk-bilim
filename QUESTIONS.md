@@ -122,6 +122,14 @@ literals onto catalog keys, which is string-matching a wire payload. DECISIONS
 `feedback_code` (+ params) alongside `feedback` and let the client localize; keep
 teacher-written prose as-is.
 
+### Q-2026-09-12-1 — Matching items: the learner read still carries the pairing
+
+The learner assessment read is now redacted (choice keys, rubrics, reference
+solutions, hidden tests), but a `matching` item's `pairs` are both the prompt
+columns and the answer key. Hiding them needs a learner-facing shape (`left[]`,
+`right[]` shuffled) distinct from the author's `pairs[]`. **Option:** add
+`MatchingLearnerBody` on the wire and have the attempt UI build columns from it.
+
 ### Q-2026-09-10-5 — `request_id` is documented in the error envelope but never set
 
 `ARCHITECTURE.md` §5 and `apps/web/AGENTS.md` both say problem+json responses carry
