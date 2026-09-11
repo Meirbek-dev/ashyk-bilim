@@ -62,7 +62,6 @@ export default function DiscussionPost({
   // Use backend permission metadata
   const canUpdate = post.can_update ?? false
   const canDelete = post.can_delete ?? false
-  const canModerate = post.can_moderate ?? false
   const isOwner = post.is_owner ?? false
 
   const netScore = post.upvotes - post.downvotes
@@ -101,14 +100,9 @@ export default function DiscussionPost({
                 <div className="flex flex-wrap items-center gap-2">
                   <h4 className="text-foreground font-semibold">{getUserDisplayName(post.firstName, post.lastName)}</h4>
                   <span className="text-muted-foreground text-sm">@{post.username}</span>
-                  {canModerate && (
-                    <Badge variant="destructive" className="h-auto px-1.5 py-0.5 text-xs">
-                      {t('moderator')}
-                    </Badge>
-                  )}
                   {isOwner && (
                     <Badge variant="secondary" className="h-auto px-1.5 py-0.5 text-xs">
-                      {t('author')}
+                      {t('you')}
                     </Badge>
                   )}
                   <div className="text-muted-foreground flex items-center gap-1 text-xs">
@@ -306,7 +300,6 @@ export default function DiscussionPost({
                   key={reply.id}
                   reply={reply}
                   postId={post.id}
-                  currentUser={currentUser}
                   onVoteReply={onVoteReply}
                   onDeleteReply={onDeleteReply}
                   onEditReply={onEditReply}

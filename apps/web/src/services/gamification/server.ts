@@ -4,40 +4,12 @@ import type { DashboardData, PlatformLeaderboard, UserGamificationProfile } from
 import { gamificationTags } from '@/lib/cacheTags'
 import { extractStreakInfo } from '@/types/gamification/profile'
 import { getServerAPIUrl } from '@/services/config/config'
-import { Dashboard, Leaderboard, StreakUpdate } from '@/lib/api/generated/zod'
-import type { Profile } from '@/lib/api/generated/zod'
-import { fromUnix, unixToIso } from '@/lib/api/contract'
-import { getContentUrl } from '@/services/media/media'
+import { Dashboard, Leaderboard, Profile, StreakUpdate } from '@/lib/api/generated/zod'
+import { fromUnix } from '@/lib/api/contract'
+import { normalizeLeaderboard, normalizeProfile } from './normalize'
 import { revalidateTag } from 'next/cache'
 import { apiJson } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
-
-function normalizeProfile(profile: Profile): UserGamificationProfile {
-  return {
-    ...profile,
-    created_at: fromUnix(profile.created_at_unix).toISOString(),
-    updated_at: fromUnix(profile.updated_at_unix).toISOString(),
-    last_xp_award_date: unixToIso(profile.last_xp_award_at_unix),
-    last_login_date: unixToIso(profile.last_login_at_unix),
-    last_learning_date: unixToIso(profile.last_learning_at_unix),
-  }
-}
-
-function normalizeLeaderboard(leaderboard: Leaderboard): PlatformLeaderboard {
-  return {
-    entries: leaderboard.entries.map(entry => ({
-      user_id: entry.user_id,
-      username: entry.username,
-      display_name: entry.display_name,
-      total_xp: entry.total_xp,
-      level: entry.level,
-      rank: entry.rank,
-      avatar_url: entry.avatar_key ? getContentUrl(entry.avatar_key) : null,
-    })),
-    total_participants: leaderboard.total_participants,
-    last_updated: new Date().toISOString(),
-  }
-}
 
 export async function getServerGamificationDashboard(): Promise<DashboardData | null> {
   try {
@@ -91,12 +63,13 @@ export async function updateStreakOnServer(type: 'login' | 'learning'): Promise<
   return result
 }
 
-export async function updatePreferencesOnServer(preferences: Record<string, unknown>) {
-  const result = await apiJson('gamification/preferences', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(preferences),
-  })
+/** `PATCH gamification/preferences` merges top-level keys and answers the full profile. */
+export async function updatePreferencesOnServer(preferences: Record<string, unknown>): Promise<UserGamificationProfile> {
+  const result = await apiJson(
+    'gamification/preferences',
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(preferences) },
+    value => Profile.parse(value),
+  )
   revalidateGamificationTags()
-  return result
+  return normalizeProfile(result)
 }

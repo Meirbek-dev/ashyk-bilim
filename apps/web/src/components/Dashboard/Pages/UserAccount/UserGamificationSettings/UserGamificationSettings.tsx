@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GamificationProfileSection } from '@/components/Dashboard/Gamification'
-import { updatePreferencesAction } from '@/app/actions/gamification'
 import { useGamificationStore } from '@/stores/gamification'
 import { Check, Loader2, Save } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -36,6 +35,7 @@ const DEFAULT_PREFERENCES: GamificationPreferences = {
 export default function UserGamificationSettings() {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
   const profile = useGamificationStore(s => s.profile)
+  const updatePreferences = useGamificationStore(s => s.updatePreferences)
 
   const [prevProfile, setPrevProfile] = useState<typeof profile | null>(null)
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES)
@@ -85,7 +85,7 @@ export default function UserGamificationSettings() {
         },
       }
 
-      await updatePreferencesAction(fullPreferences)
+      await updatePreferences(fullPreferences)
 
       setHasChanges(false)
       setSaveSuccess(true)

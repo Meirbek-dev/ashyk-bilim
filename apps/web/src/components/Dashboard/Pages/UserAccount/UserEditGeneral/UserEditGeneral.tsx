@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react'
 import { Card } from '@components/ui/card'
 import { updateProfile, updateUserAvatar } from '@/lib/users/client'
 import { useSession } from '@/hooks/useSession'
+import { useApiError } from '@/hooks/useApiError'
 import { getUserLocale } from '@/i18n/locale'
 import type { Locale } from '@/i18n/config'
 
@@ -41,6 +42,7 @@ function UserEditGeneral() {
   const validationSchema = createValidationSchema(t)
 
   type UserEditFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>
+  const { handleApiError, toastApiError } = useApiError<UserEditFormInput>()
 
   const form = useForm<UserEditFormInput, unknown, FormValues>({
     resolver: valibotResolver(validationSchema),
@@ -69,9 +71,7 @@ function UserEditGeneral() {
             bio: userDataResponse.bio || '',
           })
         } catch (fetchError) {
-          const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error'
-          console.error('Error fetching initial data:', errorMessage, fetchError)
-          setError('Failed to load user data.')
+          setError(handleApiError(fetchError, { fallback: t('profileLoadError') }).message)
         } finally {
           setInitialLoading(false)
         }
@@ -81,7 +81,7 @@ function UserEditGeneral() {
     }
 
     fetchData()
-  }, [form, me])
+  }, [form, handleApiError, me, t])
 
   useEffect(() => {
     return () => {
@@ -133,8 +133,7 @@ function UserEditGeneral() {
       setSuccess(t('avatarSuccess'))
       router.refresh()
     } catch (uploadError) {
-      console.error('Avatar upload error:', uploadError)
-      setError(t('avatarError'))
+      setError(handleApiError(uploadError, { fallback: t('avatarError') }).message)
     } finally {
       setIsLoading(false)
     }
@@ -156,10 +155,7 @@ function UserEditGeneral() {
       router.refresh()
       toast.success(t('profileUpdateSuccess'))
     } catch (updateError) {
-      console.error('Profile update error:', updateError)
-      toast.error(t('profileUpdateError'), {
-        id: loadingToast,
-      })
+      toastApiError(updateError, { setError: form.setError, fallback: t('profileUpdateError'), toastId: loadingToast })
     }
   }
 

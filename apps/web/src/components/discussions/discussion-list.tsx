@@ -15,6 +15,7 @@ import DiscussionForm from './discussion-form'
 import { Badge } from '@/components/ui/badge'
 import { MessageCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useApiError } from '@/hooks/useApiError'
 import type { DiscussionPostData, DiscussionReplyData } from './types'
 
 interface DiscussionListProps {
@@ -24,78 +25,64 @@ interface DiscussionListProps {
   onMutate?: () => void
 }
 
-function userSummaryToDiscussionUser(user: AppUserSummary) {
+/** Fallback author when the server omits `author` (never in v2, kept for the optimistic path). */
+function userSummaryToDiscussionUser(user: AppUserSummary): NonNullable<Discussion['user']> {
+  const displayName = typeof user.display_name === 'string' ? user.display_name : ''
   return {
     id: user.id ?? '',
-    user_uuid: user.user_uuid || '',
+    user_uuid: user.id ?? '',
     username: user.username || '',
-    first_name: user.first_name || '',
+    first_name: user.first_name || displayName,
     last_name: user.last_name || '',
     email: user.email || '',
     avatar_image: user.avatar_image || '',
-    bio: typeof user.bio === 'string' ? user.bio : '',
-    details: user.details || {},
-    profile: user.profile || {},
   }
 }
+
+const toReplyData = (reply: Discussion, anonymousLabel: string): DiscussionReplyData => ({
+  id: reply.id,
+  discussion_uuid: reply.discussion_uuid,
+  username: reply.user?.username || anonymousLabel,
+  firstName: reply.user?.first_name || '',
+  lastName: reply.user?.last_name || '',
+  replyMessage: reply.content,
+  createDate: reply.creation_date,
+  updateDate: reply.update_date,
+  upvotes: reply.likes_count,
+  downvotes: reply.dislikes_count,
+  userVote: reply.is_liked ? 'up' : reply.is_disliked ? 'down' : null,
+  is_liked: reply.is_liked,
+  is_disliked: reply.is_disliked,
+  can_update: reply.can_update,
+  can_delete: reply.can_delete,
+  is_owner: reply.is_owner,
+})
 
 // Helper to transform API response to UI format
-const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: string): DiscussionPostData => {
-  // Handle date formatting properly
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return new Date().toISOString()
-    // If it's already a valid ISO string, return it
-    if (dateStr.includes('T') || dateStr.includes('Z')) {
-      return dateStr
-    }
-    // If it's a timestamp string, parse it
-    try {
-      const date = new Date(dateStr)
-      return date.toISOString()
-    } catch {
-      return new Date().toISOString()
-    }
-  }
-
-  return {
-    can_update: discussion.can_update,
-    can_delete: discussion.can_delete,
-    can_moderate: discussion.can_moderate,
-    is_owner: discussion.is_owner,
-    id: discussion.id?.toString() || '',
-    discussion_uuid: discussion.discussion_uuid || '',
-    username: discussion.user?.username || anonymousLabel,
-    firstName: discussion.user?.first_name || '',
-    lastName: discussion.user?.last_name || '',
-    postMessage: discussion.content || '',
-    createDate: formatDate(discussion.creation_date),
-    updateDate: formatDate(discussion.update_date),
-    upvotes: discussion.likes_count ?? 0,
-    downvotes: discussion.dislikes_count ?? 0,
-    userVote: discussion.is_liked ? 'up' : discussion.is_disliked ? 'down' : null,
-    is_liked: discussion.is_liked,
-    is_disliked: discussion.is_disliked,
-    replies:
-      discussion.replies?.map((reply: Discussion) => ({
-        id: reply.id?.toString() || '',
-        discussion_uuid: reply.discussion_uuid || '',
-        username: reply.user?.username || anonymousLabel,
-        firstName: reply.user?.first_name || '',
-        lastName: reply.user?.last_name || '',
-        replyMessage: reply.content || '',
-        createDate: formatDate(reply.creation_date),
-        updateDate: formatDate(reply.update_date),
-        upvotes: reply.likes_count ?? 0,
-        downvotes: reply.dislikes_count ?? 0,
-        userVote: reply.is_liked ? 'up' : reply.is_disliked ? 'down' : null,
-        is_liked: reply.is_liked,
-        is_disliked: reply.is_disliked,
-      })) || [],
-  }
-}
+const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: string): DiscussionPostData => ({
+  can_update: discussion.can_update,
+  can_delete: discussion.can_delete,
+  can_moderate: discussion.can_moderate,
+  is_owner: discussion.is_owner,
+  id: discussion.id,
+  discussion_uuid: discussion.discussion_uuid,
+  username: discussion.user?.username || anonymousLabel,
+  firstName: discussion.user?.first_name || '',
+  lastName: discussion.user?.last_name || '',
+  postMessage: discussion.content,
+  createDate: discussion.creation_date,
+  updateDate: discussion.update_date,
+  upvotes: discussion.likes_count,
+  downvotes: discussion.dislikes_count,
+  userVote: discussion.is_liked ? 'up' : discussion.is_disliked ? 'down' : null,
+  is_liked: discussion.is_liked,
+  is_disliked: discussion.is_disliked,
+  replies: (discussion.replies ?? []).map(reply => toReplyData(reply, anonymousLabel)),
+})
 
 export default function DiscussionList({ initialPosts, currentUser, courseUuid, onMutate }: DiscussionListProps) {
   const t = useTranslations('CoursePage')
+  const { toastApiError } = useApiError()
   const anonymousLabel = t('anonymous')
   const discussionUser = currentUser ?? {}
   // Use lazy initialization to transform initial posts
@@ -147,14 +134,8 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       if (onMutate) {
         onMutate()
       }
-    } catch (error: unknown) {
-      console.error('Failed to create discussion:', error)
-      const err = error as Error & { status?: number; stack?: string }
-      console.error('Error details:', {
-        message: err.message,
-        status: err.status,
-        stack: err.stack,
-      })
+    } catch (error) {
+      toastApiError(error, { fallback: t('errors.createFailed') })
     }
   }
 
@@ -178,20 +159,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         newReply.user = userSummaryToDiscussionUser(currentUser)
       }
 
-      // Transform the reply to match UI expectations
-      const transformedReply = {
-        id: newReply.id?.toString() || '',
-        discussion_uuid: newReply.discussion_uuid || '',
-        username: newReply.user?.username || 'Anonymous',
-        firstName: newReply.user?.first_name || '',
-        lastName: newReply.user?.last_name || '',
-        replyMessage: newReply.content || '',
-        createDate: newReply.creation_date || new Date().toISOString(),
-        updateDate: newReply.update_date || new Date().toISOString(),
-        upvotes: Number.parseInt(newReply.likes_count.toString(), 10) || 0,
-        downvotes: 0,
-        userVote: null,
-      }
+      const transformedReply = toReplyData(newReply, anonymousLabel)
 
       // Update local state with the new reply
       setPosts(
@@ -204,14 +172,8 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       if (onMutate) {
         onMutate()
       }
-    } catch (error: unknown) {
-      console.error('Failed to create reply:', error)
-      const err = error as Error & { status?: number; stack?: string }
-      console.error('Error details:', {
-        message: err.message,
-        status: err.status,
-        stack: err.stack,
-      })
+    } catch (error) {
+      toastApiError(error, { fallback: t('errors.replyFailed') })
     }
   }
 
@@ -249,9 +211,8 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       if (onMutate) {
         onMutate()
       }
-    } catch (error: unknown) {
-      console.error('Failed to toggle vote on post:', error)
-      // You could show a toast notification here
+    } catch (error) {
+      toastApiError(error, { fallback: t('errors.voteFailed') })
     }
   }
 
@@ -307,7 +268,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         onMutate()
       }
     } catch (error) {
-      console.error('Failed to vote on reply:', error)
+      toastApiError(error, { fallback: t('errors.voteFailed') })
     }
   }
 
@@ -324,7 +285,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         onMutate()
       }
     } catch (error) {
-      console.error('Failed to delete discussion:', error)
+      toastApiError(error, { fallback: t('errors.deleteFailed') })
     }
   }
 
@@ -363,7 +324,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         onMutate()
       }
     } catch (error) {
-      console.error('Failed to delete reply:', error)
+      toastApiError(error, { fallback: t('errors.deleteFailed') })
     }
   }
 
@@ -392,7 +353,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         onMutate()
       }
     } catch (error) {
-      console.error('Failed to update discussion:', error)
+      toastApiError(error, { fallback: t('errors.updateFailed') })
     }
   }
 
@@ -439,7 +400,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         onMutate()
       }
     } catch (error) {
-      console.error('Failed to update reply:', error)
+      toastApiError(error, { fallback: t('errors.updateFailed') })
     }
   }
 

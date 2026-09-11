@@ -525,7 +525,15 @@
       "submissionRequiresReview": "Решение требует проверки",
       "testCasesPassed": "Пройдено тестов: {passed}/{total}",
       "starterTemplate": "Начальный шаблон",
-      "studentSubmission": "Решение студента"
+      "studentSubmission": "Решение студента",
+      "languagesUnavailable": "Среда выполнения кода недоступна: запуск тестов временно невозможен, но вы можете редактировать и сохранять решение.",
+      "attemptStatus": {
+        "draft": "Черновик",
+        "pending": "На проверке",
+        "graded": "Проверено",
+        "published": "Оценено",
+        "returned": "Возвращено на доработку"
+      }
     },
     "DocumentPdf": {
       "viewerTitle": "Просмотрщик PDF-документов"
@@ -2935,7 +2943,15 @@
     "vote": "голос",
     "votes": "голосов",
     "whatYouWillLearn": "Что вы изучите",
-    "writeReplyPlaceholder": "Написать ответ..."
+    "writeReplyPlaceholder": "Написать ответ...",
+    "you": "Вы",
+    "errors": {
+      "createFailed": "Не удалось опубликовать обсуждение",
+      "replyFailed": "Не удалось отправить ответ",
+      "voteFailed": "Не удалось сохранить голос",
+      "deleteFailed": "Не удалось удалить сообщение",
+      "updateFailed": "Не удалось сохранить изменения"
+    }
   },
   "Courses": {
     "CourseActionsMobile": {
@@ -5397,7 +5413,8 @@
       "uploadingAndCreating": "Загрузка файла и создание активности...",
       "uploadingImage": "Загрузка изображения...",
       "userGroupDeletedSuccess": "Группа пользователей удалена.",
-      "userRemovedSuccess": "Пользователь удален."
+      "userRemovedSuccess": "Пользователь удален.",
+      "profileLoadError": "Не удалось загрузить данные профиля"
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -6799,13 +6816,13 @@
     "somethingWentWrong": "Что-то пошло не так!",
     "technicalDetails": "Технические детали:",
     "tryAgain": "Попробуйте снова",
-    "rateLimited": "Too many requests. Please try again shortly.",
-    "networkUnavailable": "Network unavailable. Please check your connection.",
-    "sessionExpired": "Your session has expired. Please log in again.",
-    "permissionDenied": "You do not have permission to perform this action.",
-    "validationFailed": "Please correct the highlighted fields and try again.",
-    "serverError": "An internal server error occurred. Please try again later.",
-    "defaultError": "Failed to correctly process the request. Please try again.",
+    "rateLimited": "Слишком много запросов. Попробуйте чуть позже.",
+    "networkUnavailable": "Нет соединения с сетью. Проверьте подключение.",
+    "sessionExpired": "Сеанс истёк. Войдите снова.",
+    "permissionDenied": "У вас нет прав для этого действия.",
+    "validationFailed": "Исправьте выделенные поля и попробуйте снова.",
+    "serverError": "Внутренняя ошибка сервера. Попробуйте позже.",
+    "defaultError": "Не удалось обработать запрос. Попробуйте снова.",
     "accessDenied": "Доступ запрещен",
     "accessDeniedMessage": "У вас нет прав для доступа к этому курсу.",
     "assessmentsLoadError": "Произошла ошибка при загрузке этого теста. Пожалуйста, попробуйте обновить страницу или проверить подключение.",
@@ -10289,7 +10306,10 @@
     },
     "errorRecovery": {
       "title": "Сбой работы ИИ",
-      "retry": "Повторить"
+      "retry": "Повторить",
+      "unavailableTitle": "ИИ недоступен",
+      "unavailableDescription": "Функции ИИ сейчас недоступны. Попробуйте позже.",
+      "fallback": "Не удалось выполнить запрос к ИИ."
     },
     "privacyNotice": {
       "title": "Область данных",
@@ -10359,7 +10379,8 @@
       "cancelledStatus": "Ответ остановлен. Частичный текст сохранён.",
       "error": "Не удалось завершить ответ. Ваш вопрос сохранён.",
       "retry": "Повторить",
-      "dismiss": "Закрыть"
+      "dismiss": "Закрыть",
+      "unavailable": "Функции ИИ сейчас недоступны. Попробуйте позже."
     },
     "courseAIHub": {
       "title": "ИИ-поддержка обучения",
@@ -10556,6 +10577,13 @@
         "score": "Оценка",
         "status": "Статус"
       }
+    },
+    "artifactLifecycle": {
+      "queued": "В очереди",
+      "evidenceChecked": "Источники проверены",
+      "draftArtifact": "Черновик результата",
+      "finalArtifact": "Итоговый результат",
+      "ready": "Готово"
     }
   },
   "PageLoading": {

@@ -318,12 +318,8 @@ function EditCourseCertification() {
             return
           }
 
-          if (!courseStructure.id) {
-            throw new Error('Course ID is missing')
-          }
-
           await createCertification({
-            course_id: courseStructure.id,
+            course_id: courseStructure.course_uuid,
             config,
             options: {
               courseUuid: courseStructure.course_uuid,

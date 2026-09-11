@@ -521,7 +521,15 @@
       "submissionRequiresReview": "Submission Requires Review",
       "testCasesPassed": "{passed}/{total} Test Cases Passed",
       "starterTemplate": "Starter Template",
-      "studentSubmission": "Student Submission"
+      "studentSubmission": "Student Submission",
+      "languagesUnavailable": "The code runner is unavailable: tests cannot run right now, but you can still edit and save your solution.",
+      "attemptStatus": {
+        "draft": "Draft",
+        "pending": "Under review",
+        "graded": "Graded",
+        "published": "Scored",
+        "returned": "Returned for revision"
+      }
     },
     "DocumentPdf": {
       "viewerTitle": "PDF Document Viewer"
@@ -2935,7 +2943,15 @@
     "vote": "vote",
     "votes": "votes",
     "whatYouWillLearn": "What you will learn",
-    "writeReplyPlaceholder": "Write a reply..."
+    "writeReplyPlaceholder": "Write a reply...",
+    "you": "You",
+    "errors": {
+      "createFailed": "Could not post the discussion",
+      "replyFailed": "Could not post the reply",
+      "voteFailed": "Could not save your vote",
+      "deleteFailed": "Could not delete the message",
+      "updateFailed": "Could not save the changes"
+    }
   },
   "Courses": {
     "CourseActionsMobile": {
@@ -5392,7 +5408,8 @@
       "uploadingAndCreating": "Uploading file and creating activity...",
       "uploadingImage": "Uploading image...",
       "userGroupDeletedSuccess": "User group deleted.",
-      "userRemovedSuccess": "User removed from organization."
+      "userRemovedSuccess": "User removed from organization.",
+      "profileLoadError": "Could not load the profile data"
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -10273,7 +10290,10 @@
     },
     "errorRecovery": {
       "title": "AI run failed",
-      "retry": "Retry"
+      "retry": "Retry",
+      "unavailableTitle": "AI unavailable",
+      "unavailableDescription": "AI features are currently unavailable. Try again later.",
+      "fallback": "The AI request could not be completed."
     },
     "privacyNotice": {
       "title": "Data scope",
@@ -10343,7 +10363,8 @@
       "cancelledStatus": "Answer stopped. The partial response is preserved.",
       "error": "The answer could not be completed. Your question is still here.",
       "retry": "Try again",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "unavailable": "AI features are currently unavailable. Try again later."
     },
     "courseAIHub": {
       "title": "AI learning support",
@@ -10540,6 +10561,13 @@
         "score": "Score",
         "status": "Status"
       }
+    },
+    "artifactLifecycle": {
+      "queued": "Queued",
+      "evidenceChecked": "Evidence checked",
+      "draftArtifact": "Draft artifact",
+      "finalArtifact": "Final artifact",
+      "ready": "Ready"
     }
   },
   "PageLoading": {

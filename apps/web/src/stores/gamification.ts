@@ -173,18 +173,11 @@ export const useGamificationStore = create<GamificationState & GamificationActio
         updatePreferences: async preferences => {
           set({ error: null })
           try {
-            await updatePreferencesAction(preferences)
-            set(s => {
-              if (s.profile) {
-                return {
-                  profile: {
-                    ...s.profile,
-                    preferences: { ...s.profile.preferences, ...preferences },
-                  },
-                }
-              }
-              return s
-            })
+            const profile = await updatePreferencesAction(preferences)
+            set(s => ({
+              profile,
+              dashboard: s.dashboard ? { ...s.dashboard, profile } : s.dashboard,
+            }))
           } catch (error) {
             const message = getErrorMessage(error, 'Failed to update preferences')
             const statusCode = getErrorStatus(error)

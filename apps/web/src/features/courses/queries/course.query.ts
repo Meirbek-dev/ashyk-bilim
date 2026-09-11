@@ -8,6 +8,7 @@ import {
   CoursePage,
   CourseUpdate,
   IssuedCertificate,
+  Leaderboard,
   Trail,
   VerifiedCertificate,
 } from '@/lib/api/generated/zod'
@@ -22,7 +23,7 @@ import {
   toAppTrail,
 } from '@/hooks/courses/courseKeys'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import type { PlatformLeaderboard } from '@/types/gamification'
+import { normalizeLeaderboard } from '@/services/gamification/normalize'
 
 interface CourseListResponse<TCourse> {
   courses: TCourse[]
@@ -155,7 +156,8 @@ export function trailCurrentQueryOptions() {
 export function trailLeaderboardQueryOptions(limit = 10) {
   return queryOptions({
     queryKey: queryKeys.trail.leaderboard(limit),
-    queryFn: () => apiJson<PlatformLeaderboard>(`gamification/leaderboard?limit=${limit}`),
+    queryFn: async () =>
+      normalizeLeaderboard(await apiJson(`gamification/leaderboard?limit=${limit}`, {}, Leaderboard.parse)),
   })
 }
 

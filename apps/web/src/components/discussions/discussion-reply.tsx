@@ -2,10 +2,8 @@
 
 import { ArrowBigDown, ArrowBigUp, Clock, Edit, Trash2 } from 'lucide-react'
 import { useFormatter, useNow, useTranslations } from 'next-intl'
-import { Actions, Resources, Scopes } from '@/types/permissions'
 import RichContentRenderer from './rich-content-renderer'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { useSession } from '@/hooks/useSession'
 import { Button } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -29,7 +27,6 @@ import type { DiscussionReplyData } from './types'
 interface DiscussionReplyProps {
   reply: DiscussionReplyData
   postId: string
-  currentUser: AppUserSummary
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
   onDeleteReply: (postId: string, replyId: string) => void
   onEditReply: (postId: string, replyId: string, newMessage: string) => void
@@ -38,7 +35,6 @@ interface DiscussionReplyProps {
 export default function DiscussionReply({
   reply,
   postId,
-  currentUser,
   onVoteReply,
   onDeleteReply,
   onEditReply,
@@ -49,10 +45,12 @@ export default function DiscussionReply({
   const [_isPending, startTransition] = useTransition()
   const format = useFormatter()
   const now = useNow()
-  const { can } = useSession()
-  const canModerateDiscussion = can(Resources.DISCUSSION, Actions.MODERATE, Scopes.APP)
+  // Capabilities come from the wire (`can_update` / `can_delete` are already
+  // resolved against the viewer's grants server-side).
+  const canUpdate = reply.can_update ?? false
+  const canDelete = reply.can_delete ?? false
+  const isOwner = reply.is_owner ?? false
 
-  const isOwnReply = reply.username === currentUser?.username
   const netScore = reply.upvotes - reply.downvotes
 
   const getUserDisplayName = (firstName?: string, lastName?: string) => {
@@ -71,13 +69,6 @@ export default function DiscussionReply({
     })
   }
 
-  // Helper to check if a given user is a platform admin
-  const isAuthorAdmin = (username: string) => {
-    if (!reply?.username) return false
-    // If current user is admin and is the author, show badge
-    return canModerateDiscussion && username === currentUser?.username
-  }
-
   return (
     <div className="group border-border hover:border-muted-foreground relative ml-6 border-l-2 py-4 pl-6 transition-colors">
       {/* Connection line dot */}
@@ -94,9 +85,9 @@ export default function DiscussionReply({
                 {getUserDisplayName(reply.firstName, reply.lastName)}
               </span>
               <span className="text-muted-foreground truncate text-sm">@{reply.username}</span>
-              {isAuthorAdmin(reply.username) && (
-                <Badge variant="destructive" className="h-auto px-1.5 py-0.5 text-xs">
-                  {t('admin')}
+              {isOwner && (
+                <Badge variant="secondary" className="h-auto px-1.5 py-0.5 text-xs">
+                  {t('you')}
                 </Badge>
               )}
               <div className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
@@ -111,9 +102,9 @@ export default function DiscussionReply({
             </div>
 
             {/* Action buttons */}
-            {(canModerateDiscussion || isOwnReply) && !editing && (
+            {(canUpdate || canDelete) && !editing && (
               <div className="mr-5 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                {isOwnReply && (
+                {canUpdate && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -126,6 +117,7 @@ export default function DiscussionReply({
                     <Edit size={12} />
                   </Button>
                 )}
+                {canDelete && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -134,6 +126,7 @@ export default function DiscussionReply({
                 >
                   <Trash2 size={12} />
                 </Button>
+                )}
               </div>
             )}
           </div>

@@ -12,6 +12,9 @@ export interface DiscussionReplyData {
   userVote: 'up' | 'down' | null
   is_liked?: boolean
   is_disliked?: boolean
+  can_update?: boolean
+  can_delete?: boolean
+  is_owner?: boolean
 }
 
 export interface DiscussionPostData {

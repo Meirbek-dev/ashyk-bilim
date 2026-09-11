@@ -524,7 +524,15 @@
       "submissionRequiresReview": "Жіберілген жұмыс тексеруді қажет етеді",
       "testCasesPassed": "Өткен тест жағдайлары: {passed}/{total}",
       "starterTemplate": "Бастапқы үлгі",
-      "studentSubmission": "Студенттің шешімі"
+      "studentSubmission": "Студенттің шешімі",
+      "languagesUnavailable": "Код орындау ортасы қолжетімсіз: тесттерді іске қосу уақытша мүмкін емес, бірақ шешімді өңдеп, сақтай аласыз.",
+      "attemptStatus": {
+        "draft": "Жоба",
+        "pending": "Тексеруде",
+        "graded": "Тексерілді",
+        "published": "Бағаланды",
+        "returned": "Қайта өңдеуге қайтарылды"
+      }
     },
     "DocumentPdf": {
       "viewerTitle": "PDF құжаттарды қарау құралы"
@@ -2938,7 +2946,15 @@
     "vote": "дауыс",
     "votes": "дауыс",
     "whatYouWillLearn": "Не үйренесіз",
-    "writeReplyPlaceholder": "Жауап жазу..."
+    "writeReplyPlaceholder": "Жауап жазу...",
+    "you": "Сіз",
+    "errors": {
+      "createFailed": "Талқылауды жариялау мүмкін болмады",
+      "replyFailed": "Жауапты жіберу мүмкін болмады",
+      "voteFailed": "Дауысты сақтау мүмкін болмады",
+      "deleteFailed": "Хабарламаны жою мүмкін болмады",
+      "updateFailed": "Өзгерістерді сақтау мүмкін болмады"
+    }
   },
   "Courses": {
     "CourseActionsMobile": {
@@ -5411,7 +5427,8 @@
       "uploadingAndCreating": "Файл жүктелуде және белсенділік жасалуда...",
       "uploadingImage": "Сурет жүктелуде...",
       "userGroupDeletedSuccess": "Пайдаланушы тобы жойылды.",
-      "userRemovedSuccess": "Пайдаланушы ұйымнан жойылды."
+      "userRemovedSuccess": "Пайдаланушы ұйымнан жойылды.",
+      "profileLoadError": "Профиль деректерін жүктеу мүмкін болмады"
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -6816,13 +6833,13 @@
     "somethingWentWrong": "Бірдеңе дұрыс болмады!",
     "technicalDetails": "Техникалық мәліметтер:",
     "tryAgain": "Қайтадан көріңіз",
-    "rateLimited": "Too many requests. Please try again shortly.",
-    "networkUnavailable": "Network unavailable. Please check your connection.",
-    "sessionExpired": "Your session has expired. Please log in again.",
-    "permissionDenied": "You do not have permission to perform this action.",
-    "validationFailed": "Please correct the highlighted fields and try again.",
-    "serverError": "An internal server error occurred. Please try again later.",
-    "defaultError": "Failed to correctly process the request. Please try again.",
+    "rateLimited": "Сұраулар тым көп. Сәл кейінірек қайталап көріңіз.",
+    "networkUnavailable": "Желіге қосылым жоқ. Байланысты тексеріңіз.",
+    "sessionExpired": "Сеанс мерзімі аяқталды. Қайта кіріңіз.",
+    "permissionDenied": "Бұл әрекетке рұқсатыңыз жоқ.",
+    "validationFailed": "Белгіленген өрістерді түзетіп, қайталап көріңіз.",
+    "serverError": "Сервердің ішкі қатесі. Кейінірек қайталап көріңіз.",
+    "defaultError": "Сұрауды өңдеу мүмкін болмады. Қайталап көріңіз.",
     "accessDenied": "Қолжетімсіз",
     "accessDeniedMessage": "Бұл курсқа кіруге рұқсатыңыз жоқ.",
     "assessmentsLoadError": "Бұл бағалау көрінісін жүктеу кезінде қате орын алды. Қайта жүктеп көріңіз немесе қосылымды тексеріңіз.",
@@ -10463,7 +10480,10 @@
     },
     "errorRecovery": {
       "title": "ЖИ жұмысы сәтсіз аяқталды",
-      "retry": "Қайталау"
+      "retry": "Қайталау",
+      "unavailableTitle": "ЖИ қолжетімсіз",
+      "unavailableDescription": "ЖИ функциялары қазір қолжетімсіз. Кейінірек қайталап көріңіз.",
+      "fallback": "ЖИ сұрауын орындау мүмкін болмады."
     },
     "privacyNotice": {
       "title": "Деректер ауқымы",
@@ -10533,7 +10553,8 @@
       "cancelledStatus": "Жауап тоқтатылды. Жартылай жауап сақталды.",
       "error": "Жауапты аяқтау мүмкін болмады. Сұрағыңыз сақталды.",
       "retry": "Қайталау",
-      "dismiss": "Жабу"
+      "dismiss": "Жабу",
+      "unavailable": "ЖИ функциялары қазір қолжетімсіз. Кейінірек қайталап көріңіз."
     },
     "courseAIHub": {
       "title": "ЖИ оқу қолдауы",
@@ -10730,6 +10751,13 @@
         "score": "Ұпай",
         "status": "Күй"
       }
+    },
+    "artifactLifecycle": {
+      "queued": "Кезекте",
+      "evidenceChecked": "Дереккөздер тексерілді",
+      "draftArtifact": "Нәтиженің жобасы",
+      "finalArtifact": "Қорытынды нәтиже",
+      "ready": "Дайын"
     }
   },
   "PageLoading": {
