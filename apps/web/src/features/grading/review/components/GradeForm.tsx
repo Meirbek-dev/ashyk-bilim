@@ -20,8 +20,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   canPublishGrade,
   canReturnSubmission,
+  canSaveGradeDraft,
   canTeacherEditGrade,
   getReleaseState,
+  isScoreInputInvalid,
   localizeAutoGraderFeedback,
 } from '@/features/grading/domain'
 import type { GradedItem, GradingBreakdown, Submission, TeacherGradeInput } from '@/features/grading/domain'
@@ -101,6 +103,19 @@ export default function GradeForm({
   const maxPossible = useMemo(() => gradedItems.reduce((acc, item) => acc + item.max_score, 0), [gradedItems])
 
   const editable = submission ? canTeacherEditGrade(submission.status) : false
+  // Field-level validation: a typed score outside 0..=max blocks save/publish
+  // with a visible error instead of being silently clamped.
+  const finalScoreInvalid = (!hasItemGrading || overrideScore) && isScoreInputInvalid(draft.score)
+  const invalidItemIds = useMemo(
+    () =>
+      new Set(
+        gradedItems
+          .filter(item => isScoreInputInvalid(itemDrafts[item.item_id]?.score ?? '', item.max_score))
+          .map(item => item.item_id),
+      ),
+    [gradedItems, itemDrafts],
+  )
+  const hasInvalidScore = finalScoreInvalid || invalidItemIds.size > 0
 
   const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.final_score ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
   const [prevSyncTrigger, setPrevSyncTrigger] = useState<string>('')
@@ -146,6 +161,10 @@ export default function GradeForm({
   const saveWithItemGrading = useCallback(
     (status: 'save' | 'publish' | 'return') => {
       if (!submission || !assessmentUuid) return
+      if (hasInvalidScore) {
+        toast.error(t('invalidScore'))
+        return
+      }
 
       const itemGrades: ItemGradeEntry[] = gradedItems.map(item => {
         const entry = itemDrafts[item.item_id]
@@ -226,6 +245,7 @@ export default function GradeForm({
       submission,
       assessmentUuid,
       gradedItems,
+      hasInvalidScore,
       itemDrafts,
       overrideScore,
       draft,
@@ -255,7 +275,7 @@ export default function GradeForm({
   // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
   const handleCtrlEnter = useCallback(
     (event: KeyboardEvent) => {
-      if (!editable || isSaving) return
+      if (!editable || isSaving || hasInvalidScore) return
       const isCtrl = event.ctrlKey || event.metaKey
       if (!isCtrl || event.key !== 'Enter') return
       event.preventDefault()
@@ -265,7 +285,7 @@ export default function GradeForm({
         saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED')
       }
     },
-    [editable, isSaving, hasItemGrading, saveWithItemGrading, saveOverallScore],
+    [editable, isSaving, hasInvalidScore, hasItemGrading, saveWithItemGrading, saveOverallScore],
   )
 
   useEffect(() => {
@@ -292,6 +312,9 @@ export default function GradeForm({
 
   const canPublishNow = canPublishGrade(submission.status)
   const canReturnNow = canReturnSubmission(submission.status)
+  const canSaveDraftNow = canSaveGradeDraft(submission.status)
+  const isRepublish = submission.status === 'PUBLISHED'
+  const actionHint = isRepublish ? t('republishHint') : canPublishNow ? null : t('publishPrerequisite')
   const releaseState =
     'release_state' in submission && submission.release_state
       ? submission.release_state
@@ -397,6 +420,8 @@ export default function GradeForm({
                       step={0.5}
                       value={entry?.score ?? String(item.score)}
                       disabled={!editable || isSaving}
+                      aria-invalid={invalidItemIds.has(item.item_id) || undefined}
+                      aria-describedby={invalidItemIds.has(item.item_id) ? `item-score-error-${item.item_id}` : undefined}
                       className="w-20"
                       onChange={e => patchItemDraft(item.item_id, 'score', e.target.value)}
                     />
@@ -405,6 +430,11 @@ export default function GradeForm({
                       <span className="ml-auto text-xs text-amber-600">{t('needsReview')}</span>
                     )}
                   </div>
+                  {invalidItemIds.has(item.item_id) ? (
+                    <p id={`item-score-error-${item.item_id}`} className="text-destructive text-xs" role="alert">
+                      {tItemGrading('invalidItemScore', { max: item.max_score })}
+                    </p>
+                  ) : null}
                   <MarkdownEditor
                     placeholder={tItemGrading('itemFeedback')}
                     value={entry?.feedback ?? item.feedback ?? ''}
@@ -441,11 +471,18 @@ export default function GradeForm({
                     step={0.5}
                     value={draft.score}
                     disabled={!editable || isSaving}
+                    aria-invalid={finalScoreInvalid || undefined}
+                    aria-describedby={finalScoreInvalid ? 'override-score-error' : undefined}
                     onChange={e => setDraft(cur => ({ ...cur, score: e.target.value }))}
                     className="w-24"
                   />
                   <span className="text-muted-foreground text-sm">{t('scoreOutOf100')}</span>
                 </div>
+                {finalScoreInvalid ? (
+                  <p id="override-score-error" className="text-destructive text-xs" role="alert">
+                    {t('invalidScore')}
+                  </p>
+                ) : null}
                 <Input
                   placeholder={tItemGrading('overrideReason')}
                   value={overrideReason}
@@ -476,7 +513,7 @@ export default function GradeForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!editable || isSaving}
+              disabled={!editable || isSaving || !canSaveDraftNow || hasInvalidScore}
               onClick={() => saveWithItemGrading('save')}
             >
               {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
@@ -484,11 +521,11 @@ export default function GradeForm({
             </Button>
             <Button
               type="button"
-              disabled={!editable || isSaving || !canPublishNow}
+              disabled={!editable || isSaving || !canPublishNow || hasInvalidScore}
               onClick={() => saveWithItemGrading('publish')}
             >
               <Send className="size-4" />
-              {tItemGrading('publish')}
+              {isRepublish ? tItemGrading('republish') : tItemGrading('publish')}
             </Button>
             <Button
               type="button"
@@ -499,7 +536,7 @@ export default function GradeForm({
               <RotateCcw className="size-4" />
               {tItemGrading('returnForRevision')}
             </Button>
-            {!canPublishNow ? <p className="text-muted-foreground text-xs">{t('publishPrerequisite')}</p> : null}
+            {actionHint ? <p className="text-muted-foreground text-xs">{actionHint}</p> : null}
           </div>
         </div>
       ) : (
@@ -516,6 +553,8 @@ export default function GradeForm({
                 step={0.5}
                 value={draft.score}
                 disabled={!editable || isSaving}
+                aria-invalid={finalScoreInvalid || undefined}
+                aria-describedby={finalScoreInvalid ? 'review-score-error' : undefined}
                 onChange={event =>
                   setDraft(current => ({
                     ...current,
@@ -525,6 +564,11 @@ export default function GradeForm({
               />
               <span className="text-muted-foreground text-sm">{t('scoreOutOf100')}</span>
             </div>
+            {finalScoreInvalid ? (
+              <p id="review-score-error" className="text-destructive text-xs" role="alert">
+                {t('invalidScore')}
+              </p>
+            ) : null}
             {submission.auto_score !== null && submission.auto_score !== undefined ? (
               <Button
                 type="button"
@@ -561,7 +605,7 @@ export default function GradeForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!editable || isSaving}
+              disabled={!editable || isSaving || !canSaveDraftNow || hasInvalidScore}
               onClick={() => saveOverallScore('GRADED')}
             >
               {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
@@ -569,11 +613,11 @@ export default function GradeForm({
             </Button>
             <Button
               type="button"
-              disabled={!editable || isSaving || !canPublishNow}
+              disabled={!editable || isSaving || !canPublishNow || hasInvalidScore}
               onClick={() => saveOverallScore('PUBLISHED')}
             >
               <Send className="size-4" />
-              {t('publishGrade')}
+              {isRepublish ? t('republishGrade') : t('publishGrade')}
             </Button>
             <Button
               type="button"
@@ -584,7 +628,7 @@ export default function GradeForm({
               <RotateCcw className="size-4" />
               {t('returnForRevision')}
             </Button>
-            {!canPublishNow ? <p className="text-muted-foreground text-xs">{t('publishPrerequisite')}</p> : null}
+            {actionHint ? <p className="text-muted-foreground text-xs">{actionHint}</p> : null}
           </div>
         </>
       )}

@@ -6,6 +6,7 @@ export {
   SUBMISSION_STATUS_LABELS,
   canPublishGrade,
   canReturnSubmission,
+  canSaveGradeDraft,
   canTeacherEditGrade,
   canTransitionSubmission,
   getSubmissionStatusLabel,

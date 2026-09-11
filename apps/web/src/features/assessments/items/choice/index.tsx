@@ -532,6 +532,13 @@ function toChoiceAnswerLabel(answer: unknown): string {
   }
 }
 
+const CHOICE_KIND_LABEL_KEYS: Record<ChoiceAttemptItem['kind'], string> = {
+  CHOICE_SINGLE: 'single',
+  CHOICE_MULTIPLE: 'multiple',
+  TRUE_FALSE: 'trueFalse',
+  MATCHING: 'matching',
+}
+
 export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
   const t = useTranslations('Features.Assessments.Items.Choice')
 
@@ -559,7 +566,7 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
   return (
     <div className="bg-card rounded-md border p-3">
       <div className="mb-2 flex items-center gap-2">
-        <Badge variant="outline">{item.kind.replaceAll('_', ' ')}</Badge>
+        <Badge variant="outline">{t(`kinds.${CHOICE_KIND_LABEL_KEYS[item.kind]}`)}</Badge>
         {typeof item.points === 'number' ? (
           <Badge variant="secondary">{t('points', { count: item.points })}</Badge>
         ) : null}

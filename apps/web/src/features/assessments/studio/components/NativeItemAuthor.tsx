@@ -276,12 +276,12 @@ export function NativeItemAuthor({
           }),
         })
         await refresh()
-        toast.success(tStudio('lifecycleChanged', { state: lifecycle }))
+        toast.success(tStudio('lifecycleChanged', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'))
       }
     },
-    [assessment.assessment_uuid, refresh, t],
+    [assessment.assessment_uuid, refresh, t, tStudio],
   )
 
   const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue)

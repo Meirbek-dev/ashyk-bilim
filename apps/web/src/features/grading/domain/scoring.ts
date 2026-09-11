@@ -1,6 +1,13 @@
 import type { GradedItem } from './types'
 
+import { parseScoreInput } from '@/features/assessments/domain/score'
+
 export { formatPercent as formatPercentScore, parseScoreInput } from '@/features/assessments/domain/score'
+
+/** A non-empty score the grader typed that is not a number within 0..=max — shown as a field error. */
+export function isScoreInputInvalid(value: string, maxScore = 100): boolean {
+  return value.trim() !== '' && parseScoreInput(value, maxScore) === null
+}
 
 export function formatScoreFraction(score: number | null | undefined, maxScore = 100): string {
   return score === null || score === undefined ? '--' : `${Math.round(score * 100) / 100}/${maxScore}`

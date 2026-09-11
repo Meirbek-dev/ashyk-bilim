@@ -6,9 +6,7 @@ import { cn } from '@/lib/utils'
 import type { MarkdownEditorSaveState, MarkdownPresetConfig } from '../presets/presets'
 import type { MarkdownValidationIssue } from '../hooks/useMarkdownValidation'
 import { getHighestMarkdownIssueSeverity } from '../hooks/useMarkdownValidation'
-import { useTranslations } from 'next-intl'
-
-const formatStatusNumber = (value: number) => new Intl.NumberFormat('en-US').format(value)
+import { useFormatter, useTranslations } from 'next-intl'
 
 interface EditorStatusBarProps {
   config: MarkdownPresetConfig
@@ -21,6 +19,7 @@ interface EditorStatusBarProps {
 
 export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveState, issues }: EditorStatusBarProps) {
   const t = useTranslations('MarkdownEditor')
+  const format = useFormatter()
   const [showAllIssues, setShowAllIssues] = useState(false)
   const severity = getHighestMarkdownIssueSeverity(issues)
   const firstIssue = issues[0]
@@ -60,7 +59,7 @@ export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveSta
           </>
         )}
         <span className="text-muted-foreground/50 hidden sm:inline">
-          {wordCount} {wordCount === 1 ? t('statusBar.word') : t('statusBar.words')}
+          {t('statusBar.wordCount', { count: wordCount })}
         </span>
       </div>
 
@@ -110,7 +109,7 @@ export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveSta
             !nearLimit && 'text-muted-foreground',
           )}
         >
-          {formatStatusNumber(charCount)}/{formatStatusNumber(config.maxLength)}
+          {format.number(charCount)}/{format.number(config.maxLength)}
         </span>
       </div>
     </div>

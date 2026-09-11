@@ -20,9 +20,13 @@ vi.mock('next-intl', () => ({
       'toolbar.viewSource': 'Source',
     }
     if (key === 'statusBar.issueToggle') return `${values?.count ?? 0} issues`
+    if (key === 'statusBar.wordCount') return `${values?.count ?? 0} words`
+    if (key === 'editorAriaLabel') return `${values?.label} editor`
+    if (key === 'sourceAriaLabel') return `${values?.label} Markdown source`
     if (labels[key]) return labels[key]
     return key.split('.').at(-1) ?? key
   },
+  useFormatter: () => ({ number: (value: number) => String(value) }),
 }))
 
 describe('MarkdownEditor', () => {

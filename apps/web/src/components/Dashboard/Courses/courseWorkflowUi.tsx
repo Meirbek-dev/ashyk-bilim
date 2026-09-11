@@ -7,7 +7,20 @@ import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
+import { queryOptions } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { getCourseReadiness } from '@services/courses/courses'
+
+/**
+ * Server readiness (`GET courses/{id}/readiness`) — the single source for the
+ * workspace header badge and the review tab, so both read the same verdict.
+ */
+export function courseReadinessQueryOptions(courseUuid: string) {
+  return queryOptions({
+    queryKey: ['courses', courseUuid, 'readiness'] as const,
+    queryFn: () => getCourseReadiness(courseUuid),
+  })
+}
 
 type CourseWorkflowBadgeTone = 'default' | 'info' | 'success' | 'warning' | 'danger'
 

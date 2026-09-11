@@ -72,6 +72,26 @@ export function classifyValidationIssue(issue: ValidationIssue): ClassifiedValid
   }
 }
 
+/**
+ * Readiness codes are a closed registry (`assessment.empty`, `choice.prompt_missing`, …);
+ * every code has a catalog entry under `NativeItemStudio.validation` keyed as
+ * `assessment_empty`. The server's English `message` is only a fallback for a code
+ * the catalog does not know yet — and that is logged so the gap gets fixed.
+ */
+export function validationIssueMessageKey(code: string): string {
+  return code.replaceAll('.', '_')
+}
+
+export function localizeValidationIssue(
+  issue: Pick<ValidationIssue, 'code' | 'message'>,
+  resolve: (key: string) => string | undefined,
+): string {
+  const localized = resolve(validationIssueMessageKey(issue.code))
+  if (localized !== undefined) return localized
+  console.warn(`[assessments] no catalog entry for readiness code "${issue.code}"`)
+  return issue.message
+}
+
 export function issuesForArea(
   issues: ValidationIssue[],
   area: ValidationArea,

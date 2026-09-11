@@ -12,6 +12,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { apiJson } from '@/lib/api-client'
+import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
 import { cn } from '@/lib/utils'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
@@ -52,10 +53,10 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
   const kindLabels: Record<SupportedStudioItemKind, string> = {
-    CHOICE: t('kindLabels.choice'),
-    OPEN_TEXT: t('kindLabels.openText'),
-    FORM: t('kindLabels.form'),
-    MATCHING: t('kindLabels.matching'),
+    CHOICE: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.CHOICE}`),
+    OPEN_TEXT: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.OPEN_TEXT}`),
+    FORM: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.FORM}`),
+    MATCHING: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.MATCHING}`),
   }
   const [isCreating, startTransition] = useTransition()
 

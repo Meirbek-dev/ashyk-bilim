@@ -53,6 +53,7 @@ vi.mock('sonner', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => 'en',
+  useFormatter: () => ({ number: (value: number) => String(value) }),
 }))
 
 vi.mock('@/services/grading/grading', () => ({
@@ -400,7 +401,7 @@ describe('teacher review controls', () => {
     expect(onSaved).toHaveBeenCalledTimes(1)
   })
 
-  it('explains already visible grades and keeps publish disabled after release', () => {
+  it('explains already visible grades and offers a re-publish (PUBLISHED → PUBLISHED is the only allowed move)', () => {
     mocks.gradingPanelState.submission = createSubmission({
       status: 'PUBLISHED',
       final_score: 88,
@@ -426,6 +427,10 @@ describe('teacher review controls', () => {
     )
 
     expect(screen.getByText('releaseStateVisible')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled()
+    expect(screen.getByText('republishHint')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'republishGrade' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'saveDraftGrade' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'returnForRevision' })).toBeDisabled()
+    expect(screen.getByLabelText('finalScore')).toBeEnabled()
   })
 })

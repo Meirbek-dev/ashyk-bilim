@@ -129,7 +129,7 @@ export function MarkdownEditor({
     editorProps: {
       attributes: {
         class: cn('outline-none px-4 py-3 focus:outline-none'),
-        'aria-label': `${config.label} editor`,
+        'aria-label': t('editorAriaLabel', { label: config.label }),
         'aria-multiline': 'true',
         role: 'textbox',
       },
@@ -244,7 +244,7 @@ export function MarkdownEditor({
             disabled={disabled}
             onBlur={onBlur}
             onChange={event => handleSourceChange(event.target.value)}
-            aria-label={`${config.label} Markdown source`}
+            aria-label={t('sourceAriaLabel', { label: config.label })}
             spellCheck={false}
             className={cn(
               'bg-background min-h-0 w-full resize-none overflow-y-auto px-4 py-3 font-mono text-sm leading-6 outline-none',

@@ -46,9 +46,11 @@ import { useAssessmentStudioContext } from '@/features/assessments/studio/contex
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
 import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge'
 import QuestionInspectorPanel from './QuestionInspectorPanel'
+import { InlineIssueMessage } from '../components/ValidationIssues'
 import { apiJson } from '@/lib/api-client'
 import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
 import type { ItemBody } from '@/features/assessments/domain/items'
+import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -156,10 +158,10 @@ export default function BuilderCanvasTab({
   const outlineWindow = useMemo(() => getOutlineWindow(items, selectedItemUuid), [items, selectedItemUuid])
 
   const kindLabels: Record<SupportedStudioItemKind, string> = {
-    CHOICE: t('kindLabels.choice'),
-    OPEN_TEXT: t('kindLabels.openText'),
-    FORM: t('kindLabels.form'),
-    MATCHING: t('kindLabels.matching'),
+    CHOICE: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.CHOICE}`),
+    OPEN_TEXT: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.OPEN_TEXT}`),
+    FORM: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.FORM}`),
+    MATCHING: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.MATCHING}`),
   }
 
   const sensors = useSensors(
@@ -790,7 +792,9 @@ function SortableOutlineItem({
               <TooltipContent side="right" className="max-w-[200px]">
                 <ul className="space-y-1 text-xs">
                   {issues.slice(0, 3).map((issue, i) => (
-                    <li key={i}>• {issue.message}</li>
+                    <li key={i}>
+                      • <InlineIssueMessage issue={issue} />
+                    </li>
                   ))}
                   {issues.length > 3 && <li>{t('moreIssues', { count: issues.length - 3 })}</li>}
                 </ul>

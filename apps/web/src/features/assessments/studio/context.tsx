@@ -8,6 +8,7 @@ import { queryKeys } from '@/lib/react-query/queryKeys'
 import type { KindAuthorProps } from '@/features/assessments/registry'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import { isAssessmentEditable } from '@/features/assessments/domain/lifecycle'
+import { localizeValidationIssue } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import ErrorUI from '@/components/Objects/Elements/Error/Error'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
@@ -142,6 +143,14 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
   }, [assessment, normalizedActivityUuid, queryClient])
 
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const tValidation = useTranslations('Features.Assessments.Studio.NativeItemStudio.validation')
+  // Readiness issues carry the server's English `message`; the UI only ever shows
+  // the catalog text for the `code` (fallback to `message` for unknown codes).
+  const localizeIssue = useCallback(
+    (issue: Pick<ValidationIssue, 'code' | 'message'>) =>
+      localizeValidationIssue(issue, key => (tValidation.has(key) ? tValidation(key) : undefined)),
+    [tValidation],
+  )
 
   const items = useMemo(() => {
     if (!assessment) return []
@@ -159,14 +168,18 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
     if (!issues) return []
     return issues.map(issue => ({
       code: issue.code,
-      message: issue.message,
+      message: localizeIssue(issue),
       ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
       ...(issue.field ? { field: issue.field } : {}),
       ...(issue.action_label ? { actionLabel: issue.action_label } : {}),
     }))
-  }, [issues])
+  }, [issues, localizeIssue])
 
-  const readinessIssues = useMemo(() => toWorkspaceReadinessIssues(readinessQuery.data), [readinessQuery.data])
+  const readinessIssues = useMemo(
+    () =>
+      toWorkspaceReadinessIssues(readinessQuery.data).map(issue => ({ ...issue, message: localizeIssue(issue) })),
+    [readinessQuery.data, localizeIssue],
+  )
 
   const saveLedger = useMemo(() => summarizeSaveLedger(saveLedgerEntries), [saveLedgerEntries])
 

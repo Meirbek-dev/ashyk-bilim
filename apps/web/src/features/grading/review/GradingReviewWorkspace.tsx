@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 import type { KindModule } from '@/features/assessments/registry'
 import { useSubmissionStats } from '@/hooks/useSubmissionStats'
@@ -36,7 +36,6 @@ export default function GradingReviewWorkspace({
   initialFilter,
 }: GradingReviewWorkspaceProps) {
   const searchParams = useSearchParams()
-  const router = useRouter()
 
   // ── URL-persisted filters ─────────────────────────────────────────────────
   const filterFromUrl = (searchParams.get('filter') as StatusFilter | null) ?? initialFilter ?? 'NEEDS_GRADING'
@@ -72,9 +71,15 @@ export default function GradingReviewWorkspace({
         if (updates.submission === null) next.delete('submission')
         else next.set('submission', updates.submission)
       }
-      router.replace(`?${next.toString()}`, { scroll: false })
+      // Mirror the selection into the URL without a server round-trip. A
+      // `router.replace` re-renders the page segment for the new search params
+      // (and re-passes `initialSubmissionUuid`), which let the list highlight
+      // drift from the attempt actually loaded (BUG-030). The studio uses the
+      // same replaceState pattern for its view state.
+      const query = next.toString()
+      globalThis.history.replaceState(null, '', `${globalThis.location.pathname}${query ? `?${query}` : ''}`)
     },
-    [router, searchParams],
+    [searchParams],
   )
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialSubmissionUuid ?? null)
   const [selectedUuids, setSelectedUuids] = useState<Set<string>>(new Set())

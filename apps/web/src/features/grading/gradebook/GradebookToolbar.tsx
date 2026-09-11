@@ -127,12 +127,19 @@ function SummaryTile({
   )
 }
 
+/** Gradebook activity kind → `activityTypes.*` catalog key; accepts wire kinds (`quiz`) and legacy `TYPE_*` tokens. */
+const ACTIVITY_TYPE_LABEL_KEYS: Record<string, string> = {
+  exam: 'exam',
+  code_challenge: 'codeChallenge',
+  quiz: 'quiz',
+  custom: 'quiz',
+  dynamic: 'quiz',
+  form: 'form',
+  file_submission: 'file',
+  file: 'file',
+}
+
 export function labelActivityType(t: (key: string) => string, type: string) {
-  const key = type.toLowerCase()
-  if (key === 'type_exam' || key === 'exam') return t('activityTypes.exam')
-  if (key === 'type_code_challenge' || key === 'code_challenge') return t('activityTypes.codeChallenge')
-  if (key === 'type_custom' || key === 'type_dynamic' || key === 'quiz') return t('activityTypes.quiz')
-  if (key === 'type_form' || key === 'form') return t('activityTypes.form')
-  if (key === 'type_file_submission' || key === 'type_file' || key === 'file') return t('activityTypes.file')
-  return type.replace('TYPE_', '').replaceAll('_', ' ')
+  const key = ACTIVITY_TYPE_LABEL_KEYS[type.toLowerCase().replace(/^type_/, '')]
+  return key ? t(`activityTypes.${key}`) : type.replace('TYPE_', '').replaceAll('_', ' ')
 }

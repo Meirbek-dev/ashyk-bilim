@@ -21,6 +21,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useQuery, queryOptions } from '@tanstack/react-query'
 
 import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
+import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
 import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness'
 import type { ClassifiedValidationIssue } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
@@ -99,6 +100,7 @@ export default function PublishDashboardTab({
   onLifecycleChange,
 }: PublishDashboardTabProps) {
   const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
+  const tStudio = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduledAt, setScheduledAt] = useState('')
   const [pendingAction, setPendingAction] = useState<'publish' | 'schedule' | null>(null)
@@ -294,7 +296,9 @@ export default function PublishDashboardTab({
                   return (
                     <div key={kind} className="flex items-center gap-2">
                       <Icon className="text-muted-foreground size-3.5 shrink-0" />
-                      <span className="min-w-0 flex-1 truncate text-xs">{kind.replaceAll('_', ' ')}</span>
+                      <span className="min-w-0 flex-1 truncate text-xs">
+                        {tStudio(`kindLabels.${ITEM_KIND_LABEL_KEYS[kind]}`)}
+                      </span>
                       <Badge variant="secondary" className="text-xs">
                         {count}
                       </Badge>

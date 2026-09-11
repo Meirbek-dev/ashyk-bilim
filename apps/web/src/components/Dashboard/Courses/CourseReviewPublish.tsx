@@ -1,18 +1,22 @@
 'use client'
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, CheckCircle2, ExternalLink, Eye, Loader2 } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { CourseStatusBadge, courseWorkflowCardClass, courseWorkflowSummaryCardClass } from './courseWorkflowUi'
+import {
+  CourseStatusBadge,
+  courseReadinessQueryOptions,
+  courseWorkflowCardClass,
+  courseWorkflowSummaryCardClass,
+} from './courseWorkflowUi'
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { InlineError } from '@/components/ui/error-state'
 import { getAbsoluteUrl } from '@services/config/config'
-import { getCourseReadiness } from '@services/courses/courses'
 import type { CourseReadiness } from '@services/courses/courses'
 import { useCourseEditorStore } from '@/stores/courses'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -32,12 +36,7 @@ export default function CourseReviewPublish({
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const [isPending, startTransition] = useTransition()
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const readinessQuery = useQuery(
-    queryOptions({
-      queryKey: ['courses', course.courseStructure.course_uuid, 'readiness'],
-      queryFn: () => getCourseReadiness(course.courseStructure.course_uuid),
-    }),
-  )
+  const readinessQuery = useQuery(courseReadinessQueryOptions(course.courseStructure.course_uuid))
   const readiness = readinessQuery.data
   const blockers = readiness?.issues.filter(issue => issue.severity === 'blocker') ?? []
   const warnings = readiness?.issues.filter(issue => issue.severity === 'warning') ?? []

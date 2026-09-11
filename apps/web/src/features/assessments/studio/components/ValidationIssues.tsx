@@ -1,10 +1,11 @@
 import { useTranslations } from 'next-intl'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
+import { localizeValidationIssue } from '@/features/assessments/domain/readiness'
 import type { classifyValidationIssue } from '@/features/assessments/domain/readiness'
 
 export function useIssueMessage(issue: ValidationIssue): string {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio.validation')
-  return t(issue.code.replaceAll('.', '_'))
+  return localizeValidationIssue(issue, key => (t.has(key) ? t(key) : undefined))
 }
 
 export function InlineIssueMessage({ issue }: { issue: ValidationIssue }) {

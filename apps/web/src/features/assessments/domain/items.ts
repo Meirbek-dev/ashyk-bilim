@@ -1,5 +1,22 @@
 export type UnifiedItemKind = 'CHOICE' | 'OPEN_TEXT' | 'FORM' | 'CODE' | 'MATCHING'
 
+/**
+ * The one item-kind → catalog-key map. Labels live under
+ * `Features.Assessments.Studio.NativeItemStudio.kindLabels.<key>`; every surface
+ * (studio outline, canvas, publish breakdown, grading inspector) resolves through it.
+ */
+export const ITEM_KIND_LABEL_KEYS: Record<UnifiedItemKind, string> = {
+  CHOICE: 'choice',
+  OPEN_TEXT: 'openText',
+  FORM: 'form',
+  MATCHING: 'matching',
+  CODE: 'code',
+}
+
+export function itemKindLabelKey(kind: string): string | undefined {
+  return ITEM_KIND_LABEL_KEYS[kind as UnifiedItemKind]
+}
+
 export interface ChoiceOption {
   id: string
   text: string

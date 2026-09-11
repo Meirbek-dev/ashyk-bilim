@@ -204,7 +204,7 @@ function AssessmentReadinessStrip() {
                     )}
                     <div className="min-w-0">
                       <p className="truncate font-medium">{issue.message}</p>
-                      <p className="text-muted-foreground mt-0.5 truncate text-xs">{issue.why ?? issue.code}</p>
+                      {issue.why ? <p className="text-muted-foreground mt-0.5 truncate text-xs">{issue.why}</p> : null}
                     </div>
                   </div>
                 </button>

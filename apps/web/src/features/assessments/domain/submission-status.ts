@@ -61,7 +61,7 @@ export const SUBMISSION_ALLOWED_TRANSITIONS: Record<string, SubmissionStatus[]> 
   DRAFT: ['PENDING'],
   PENDING: ['GRADED', 'RETURNED'],
   GRADED: ['PUBLISHED', 'RETURNED'],
-  PUBLISHED: ['GRADED', 'RETURNED'],
+  PUBLISHED: ['PUBLISHED'],
   RETURNED: ['PENDING'],
 }
 
@@ -81,14 +81,24 @@ export function needsTeacherAction(status: SubmissionStatus | null | undefined):
   return status === 'PENDING'
 }
 
+/**
+ * Mirrors the server's `transition_allowed` (grading/teacher.rs): a PUBLISHED
+ * attempt can only be re-published (`action: 'publish'`), never parked as a
+ * draft or returned — so the form stays editable but only the publish action is
+ * offered.
+ */
 export function canTeacherEditGrade(status: SubmissionStatus | null | undefined): boolean {
+  return status === 'PENDING' || status === 'GRADED' || status === 'RETURNED' || status === 'PUBLISHED'
+}
+
+export function canSaveGradeDraft(status: SubmissionStatus | null | undefined): boolean {
   return status === 'PENDING' || status === 'GRADED' || status === 'RETURNED'
 }
 
 export function canPublishGrade(status: SubmissionStatus | null | undefined): boolean {
-  return status === 'GRADED'
+  return status === 'GRADED' || status === 'PUBLISHED'
 }
 
 export function canReturnSubmission(status: SubmissionStatus | null | undefined): boolean {
-  return status === 'PENDING' || status === 'GRADED' || status === 'PUBLISHED'
+  return status === 'PENDING' || status === 'GRADED'
 }

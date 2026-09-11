@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query'
 import { assessmentByActivityQueryOptions } from '@/features/assessments/queries'
 import { itemFromWire } from '@/features/assessments/domain/assessment-wire'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
+import { itemKindLabelKey } from '@/features/assessments/domain/items'
 import { CanonicalReviewAnswer } from '@/features/assessments/shared/canonical-item-rendering'
 import { useGradingPanel } from '@/hooks/useGradingPanel'
 import { useAnnotations } from '../AnnotationContext'
@@ -251,6 +252,7 @@ export function SubmittedAnswers({
   answersByItem?: Record<string, ItemAnswer>
 }) {
   const t = useTranslations('Features.Grading.Review')
+  const tKinds = useTranslations('Features.Assessments.Studio.NativeItemStudio.kindLabels')
   // The grader needs the items only; the learner attempt hook would also
   // fetch the *teacher's* attempt state for this assessment.
   const { data: assessment } = useQuery({
@@ -290,7 +292,7 @@ export function SubmittedAnswers({
             <div key={item.item_uuid ?? index} className="bg-card rounded-lg border p-4">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <Badge variant="secondary">{t('submissionInspector.itemLabel', { index: index + 1 })}</Badge>
-                <Badge variant="outline">{item.kind}</Badge>
+                <Badge variant="outline">{tKinds(itemKindLabelKey(item.kind) ?? 'unknown')}</Badge>
               </div>
               <p className="mb-3 text-sm font-medium">
                 {item.title ||

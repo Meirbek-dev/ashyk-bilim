@@ -24,6 +24,7 @@ import {
   Lock,
   Pencil,
   LayoutTemplate,
+  ListChecks,
   Trash2,
   Video,
   X as XIcon,
@@ -103,6 +104,12 @@ const ACTIVITY_CONFIG = {
     Icon: ClipboardList,
     translationKey: 'exam',
     colorClass: 'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300',
+  },
+  TYPE_CUSTOM: {
+    Icon: ListChecks,
+    translationKey: 'quiz',
+    colorClass:
+      'border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300',
   },
   TYPE_CODE_CHALLENGE: {
     Icon: Code2,
@@ -421,6 +428,7 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
 
   if (
     activity.activity_type === 'TYPE_EXAM' ||
+    activity.activity_type === 'TYPE_CUSTOM' ||
     activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
     activity.activity_type === 'TYPE_FILE_SUBMISSION'
   ) {
