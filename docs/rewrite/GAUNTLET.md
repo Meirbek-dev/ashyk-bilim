@@ -118,7 +118,7 @@ Regenerate this survey with `scratchpad/drift.py`.
 | pass | date | features probed | bugs found/fixed | gate | commit |
 |---|---|---|---|---|---|
 | 0 | 2026-09-10 | setup only: stack, accounts, ledger | — | — | e654349 |
-| 1 | 2026-09-10/11 | auth (F01–F06), home (F07), collections (F09), trail (F11), search (F30), analytics (F31/F34), admin users (F38), course create + workspace (F19), plus the whole v1→v2 client drift survey | 15 bugs found, 10 fixed; 6 UX rows; 7 contract gaps to QUESTIONS.md | server: `just check` green, nextest **281/281**. web: typecheck 80 → 10 (all 10 in the contract-blocked admin pages, Q-6), vitest **467/467**, check:error-codes 25/25, `next build` prerenders all 208 pages. | 15f0f1c |
+| 1 | 2026-09-10/11 | auth (F01–F06), home (F07), collections (F09), trail (F11), search (F30), analytics (F31/F34), admin users (F38), course create + workspace (F19), plus the whole v1→v2 client drift survey | 15 bugs found, 10 fixed; 6 UX rows; 7 contract gaps to QUESTIONS.md | server: `just check` green, nextest **281/281**. web: typecheck 80 → 10 (all 10 in the contract-blocked admin pages, Q-6), vitest **467/467**, check:error-codes 25/25, `next build` prerenders all 208 pages. CI green: https://github.com/Meirbek-dev/ashyk-bilim/actions/runs/34619423463 | 6b1d2de+ |
 
 ## Features
 
