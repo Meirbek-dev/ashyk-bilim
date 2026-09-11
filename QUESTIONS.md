@@ -112,6 +112,16 @@ per-assessment rules are not replicated. Publishing an unready assessment is alr
 blocked in the studio, so the practical gap is a file submission with no config.
 **Options:** (a) accept as-is; (b) add `GET courses/{id}/readiness` server-side.
 
+### Q-2026-09-11-2 — The auto-grader writes English prose into item feedback
+
+`apps/server/crates/domain/src/grading/grader.rs` stores literals such as "No answer
+provided" and "Partially correct (2/3)" in `grading.items[].feedback`, which both the
+teacher review and the learner result render. The client now maps the seven known
+literals onto catalog keys, which is string-matching a wire payload. DECISIONS
+"Analytics" already chose codes-not-prose for that subsystem. **Option:** emit a
+`feedback_code` (+ params) alongside `feedback` and let the client localize; keep
+teacher-written prose as-is.
+
 ### Q-2026-09-10-5 — `request_id` is documented in the error envelope but never set
 
 `ARCHITECTURE.md` §5 and `apps/web/AGENTS.md` both say problem+json responses carry
