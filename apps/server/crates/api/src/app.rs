@@ -33,6 +33,9 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         version = env!("CARGO_PKG_VERSION"),
         description = "University LMS / MOOC platform API (v2, Rust rewrite).",
     ),
+    // Enums that only appear as query parameters are not collected from the
+    // route registrations; anything referenced by `IntoParams` goes here.
+    components(schemas(crate::dto::grading::ReviewStatus)),
     tags(
         (name = "health", description = "Liveness and readiness probes"),
         (name = "auth", description = "Sessions and authentication (BFF cookie)"),

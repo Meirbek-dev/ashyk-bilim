@@ -19118,6 +19118,17 @@
           }
         }
       },
+      "ReviewStatus": {
+        "type": "string",
+        "description": "Queue filter; `needs_grading` is `pending`.",
+        "enum": [
+          "needs_grading",
+          "pending",
+          "graded",
+          "published",
+          "returned"
+        ]
+      },
       "ReviewVisibility": {
         "type": "string",
         "enum": [

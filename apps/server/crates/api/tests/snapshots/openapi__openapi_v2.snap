@@ -8068,6 +8068,17 @@ expression: json
         ],
         "type": "object"
       },
+      "ReviewStatus": {
+        "description": "Queue filter; `needs_grading` is `pending`.",
+        "enum": [
+          "needs_grading",
+          "pending",
+          "graded",
+          "published",
+          "returned"
+        ],
+        "type": "string"
+      },
       "ReviewVisibility": {
         "enum": [
           "none",
