@@ -1,24 +1,19 @@
 /**
- * Unified RBAC service - single file for all permission and role API calls.
- *
- * Every RBAC-related fetch in the frontend should go through this module.
- * No inline network calls for roles/permissions anywhere else.
+ * RBAC service — every role / grant / user-status call in the frontend goes
+ * through this module (v2: roles are slug-keyed, grants are
+ * `resource:action:scope` strings, no numeric ids, no audit log, no
+ * permission registry endpoint).
  */
 
 import type {
+  AdminUserPage,
   CreateRoleBody,
-  Permission,
+  ListUsersParams,
   Role,
-  RoleAuditListResponse,
+  SetUserStatusBody,
   UpdateRoleBody,
-  UserRoleAssignment,
-} from '@/types/permissions'
-import type { AdminUser, AdminUserPage, Role as RbacRole } from '@/lib/api/generated/zod'
+} from '@/lib/api/generated/zod'
 import { apiJson } from '@/lib/api-client'
-
-// ============================================================================
-// Internal helpers
-// ============================================================================
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers)
@@ -31,100 +26,58 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   })
 }
 
-// ============================================================================
-// My permissions
-// ============================================================================
+// ── Roles ────────────────────────────────────────────────────────────────────
 
-// ============================================================================
-// Permissions - read-only
-// ============================================================================
-
-export function listAllPermissions(): Promise<Permission[]> {
-  return request('roles/permissions/all')
-}
-
-// ============================================================================
-// Roles - CRUD
-// ============================================================================
-
-/** All roles with their grants (`GET rbac/roles`, v2 — slug-keyed, no numeric id). */
-export function listRoles(): Promise<RbacRole[]> {
+/** All roles with their grants (`GET rbac/roles`). */
+export function listRoles(): Promise<Role[]> {
   return request('rbac/roles')
 }
 
-export function getRole(roleId: number): Promise<Role> {
-  return request(`roles/${roleId}`)
+/** `POST rbac/roles` — custom role; 409 `conflict` when the slug is taken. */
+export function createRole(body: CreateRoleBody): Promise<void> {
+  return request('rbac/roles', { method: 'POST', body: JSON.stringify(body) })
 }
 
-export function getRolePermissions(roleId: number): Promise<Permission[]> {
-  return request(`roles/${roleId}/permissions`)
+/** `PATCH rbac/roles/{slug}` — custom roles only (system roles answer 404). */
+export function updateRole(slug: string, body: UpdateRoleBody): Promise<void> {
+  return request(`rbac/roles/${slug}`, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
-export function createRole(body: CreateRoleBody): Promise<Role> {
-  return request('roles', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
+/** `DELETE rbac/roles/{slug}` — custom roles only (system roles answer 403). */
+export function deleteRole(slug: string): Promise<void> {
+  return request(`rbac/roles/${slug}`, { method: 'DELETE' })
 }
 
-export function updateRole(roleId: number, body: UpdateRoleBody): Promise<Role> {
-  return request(`roles/${roleId}`, {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  })
+/** `PUT rbac/roles/{slug}/permissions` — full replacement of the grant set. */
+export function setRolePermissions(slug: string, permissions: string[]): Promise<void> {
+  return request(`rbac/roles/${slug}/permissions`, { method: 'PUT', body: JSON.stringify({ permissions }) })
 }
 
-export function deleteRole(roleId: number): Promise<void> {
-  return request(`roles/${roleId}`, { method: 'DELETE' })
-}
+// ── User ↔ role ──────────────────────────────────────────────────────────────
 
-export function listRoleAuditLog(page = 1, pageSize = 20): Promise<RoleAuditListResponse> {
-  return request(`roles/audit-log?page=${page}&page_size=${pageSize}`)
-}
-
-// ============================================================================
-// Role ↔ Permission assignment
-// ============================================================================
-
-export function addPermissionToRole(roleId: number, permissionId: number): Promise<void> {
-  return request(`roles/${roleId}/permissions`, {
-    method: 'POST',
-    body: JSON.stringify({ permission_id: permissionId }),
-  })
-}
-
-export function removePermissionFromRole(roleId: number, permissionId: number): Promise<void> {
-  return request(`roles/${roleId}/permissions/${permissionId}`, {
-    method: 'DELETE',
-  })
-}
-
-// ============================================================================
-// User ↔ Role assignment
-// ============================================================================
-
-export function listUserRoles(): Promise<UserRoleAssignment[]> {
-  return request<UserRoleAssignment[]>('rbac/user-roles')
-}
-
-/** `POST users/{id}/roles` (v2) — body carries the role slug, not a numeric role id. */
+/** `POST users/{id}/roles` — idempotent (204 when the user already holds it). */
 export function assignRoleToUser(userId: string, slug: string): Promise<void> {
-  return request(`users/${userId}/roles`, {
-    method: 'POST',
-    body: JSON.stringify({ role: slug }),
-  })
+  return request(`users/${userId}/roles`, { method: 'POST', body: JSON.stringify({ role: slug }) })
 }
 
-/** `DELETE users/{id}/roles/{slug}` (v2). */
+/** `DELETE users/{id}/roles/{slug}` — 409 `conflict` when it would remove the last admin. */
 export function removeRoleFromUser(userId: string, slug: string): Promise<void> {
   return request(`users/${userId}/roles/${slug}`, { method: 'DELETE' })
 }
 
-// ============================================================================
-// Users (used by role assignment UI)
-// ============================================================================
+// ── Users ────────────────────────────────────────────────────────────────────
 
-/** Admin user listing (`GET users`, v2 — `/members` is banned). */
-export function listUsers(limit = 100): Promise<AdminUser[]> {
-  return request<AdminUserPage>(`users?limit=${limit}`).then(page => page.items)
+/** One keyset page of the admin user listing (`GET users?q&cursor&limit`). */
+export function listUsers(params: ListUsersParams = {}): Promise<AdminUserPage> {
+  const search = new URLSearchParams()
+  if (params.q) search.set('q', params.q)
+  if (params.cursor) search.set('cursor', params.cursor)
+  if (params.limit) search.set('limit', String(params.limit))
+  const query = search.toString()
+  return request(`users${query ? `?${query}` : ''}`)
+}
+
+/** `PATCH users/{id}/status` — 409 `conflict` on self-disable. */
+export function setUserStatus(userId: string, body: SetUserStatusBody): Promise<void> {
+  return request(`users/${userId}/status`, { method: 'PATCH', body: JSON.stringify(body) })
 }

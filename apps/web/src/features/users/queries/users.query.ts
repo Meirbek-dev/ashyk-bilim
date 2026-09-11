@@ -3,8 +3,8 @@
 import { apiJson } from '@/lib/api-client'
 import { collectPages } from '@/lib/api/contract'
 import type { AdminUser, AdminUserPage, Usergroup, UsergroupMember, UsergroupPage } from '@/lib/api/generated/zod'
-import { listRoleAuditLog, listRoles, listUserRoles, listUsers } from '@services/rbac'
-import { queryOptions } from '@tanstack/react-query'
+import { listRoles, listUsers } from '@services/rbac'
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 import { getCoursesByUser, getUserById, getUserByUsername, userKeys } from '@/lib/users/client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 
@@ -61,23 +61,13 @@ export function rolesQueryOptions() {
   })
 }
 
-export function roleAuditLogQueryOptions(page: number, pageSize = 20) {
-  return queryOptions({
-    queryKey: ['users', 'role-audit-log', page, pageSize] as const,
-    queryFn: () => listRoleAuditLog(page, pageSize),
-  })
-}
-
-export function userRoleAssignmentsQueryOptions() {
-  return queryOptions({
-    queryKey: queryKeys.users.roleAssignments(),
-    queryFn: () => listUserRoles(),
-  })
-}
-
-export function basicUsersQueryOptions(limit = 100) {
-  return queryOptions({
-    queryKey: queryKeys.users.basicList(limit),
-    queryFn: () => listUsers(limit),
+/** Admin user listing, one keyset page at a time (`GET /users?q&cursor`). */
+export function adminUsersInfiniteQueryOptions(q: string) {
+  return infiniteQueryOptions({
+    queryKey: queryKeys.users.admin({ q }),
+    queryFn: ({ pageParam }): Promise<AdminUserPage> =>
+      listUsers({ q, limit: 50, ...(pageParam ? { cursor: pageParam } : {}) }),
+    initialPageParam: null as string | null,
+    getNextPageParam: page => page.next_cursor ?? null,
   })
 }

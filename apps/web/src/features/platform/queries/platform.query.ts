@@ -1,6 +1,5 @@
 'use client'
 
-import { listAllPermissions } from '@services/rbac'
 import { apiJson } from '@/lib/api-client'
 import { queryOptions } from '@tanstack/react-query'
 import type { Platform } from '@/types/platform'
@@ -15,13 +14,5 @@ export function platformConfigQueryOptions() {
     staleTime: PLATFORM_CONFIG_STALE_TIME_MS,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-  })
-}
-
-export function platformPermissionsQueryOptions() {
-  return queryOptions({
-    queryKey: queryKeys.platform.permissions(),
-    queryFn: () => listAllPermissions(),
-    staleTime: 3_600_000,
   })
 }

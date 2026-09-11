@@ -32,7 +32,6 @@ vi.mock('@/services/rbac', () => ({ assignRoleToUser, removeRoleFromUser }))
 
 vi.mock('@/features/users/queries/users.query', () => ({
   allMembersQueryOptions: () => ({ queryKey: ['members'] }),
-  userRoleAssignmentsQueryOptions: () => ({ queryKey: ['role-assignments'] }),
 }))
 
 vi.mock('@/features/users/hooks/useUsers', () => ({

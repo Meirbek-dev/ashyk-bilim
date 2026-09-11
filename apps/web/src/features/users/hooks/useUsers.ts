@@ -1,17 +1,15 @@
 'use client'
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
+  adminUsersInfiniteQueryOptions,
   allMembersQueryOptions,
-  basicUsersQueryOptions,
-  roleAuditLogQueryOptions,
   rolesQueryOptions,
   userByIdQueryOptions,
   userByUsernameQueryOptions,
   userCoursesQueryOptions,
   userGroupUsersQueryOptions,
   userGroupsQueryOptions,
-  userRoleAssignmentsQueryOptions,
 } from '../queries/users.query'
 
 function userGroupsHookOptions(enabled = true) {
@@ -55,27 +53,6 @@ function userCoursesHookOptions(userId: string | null | undefined, enabled = tru
   })
 }
 
-function userRoleAssignmentsHookOptions(enabled = true) {
-  return queryOptions({
-    ...userRoleAssignmentsQueryOptions(),
-    enabled,
-  })
-}
-
-function basicUsersHookOptions(limit = 100, enabled = true) {
-  return queryOptions({
-    ...basicUsersQueryOptions(limit),
-    enabled,
-  })
-}
-
-function roleAuditLogHookOptions(page: number, pageSize = 20, enabled = true) {
-  return queryOptions({
-    ...roleAuditLogQueryOptions(page, pageSize),
-    enabled,
-  })
-}
-
 export function useUserGroups(options?: { enabled?: boolean }) {
   return useQuery(userGroupsHookOptions(options?.enabled ?? true))
 }
@@ -84,24 +61,16 @@ export function useUserGroupUsers(userGroupId: string | null | undefined) {
   return useQuery(userGroupUsersHookOptions(userGroupId))
 }
 
-export function useAllMembers() {
-  return useQuery(allMembersQueryOptions())
+export function useAllMembers(options?: { enabled?: boolean }) {
+  return useQuery(queryOptions({ ...allMembersQueryOptions(), enabled: options?.enabled ?? true }))
+}
+
+export function useAdminUsers(q: string) {
+  return useInfiniteQuery(adminUsersInfiniteQueryOptions(q))
 }
 
 export function useRoles() {
   return useQuery(rolesQueryOptions())
-}
-
-export function useRoleAuditLog(page: number, pageSize = 20, options?: { enabled?: boolean }) {
-  return useQuery(roleAuditLogHookOptions(page, pageSize, options?.enabled ?? true))
-}
-
-export function useUserRoleAssignments(options?: { enabled?: boolean }) {
-  return useQuery(userRoleAssignmentsHookOptions(options?.enabled ?? true))
-}
-
-export function useBasicUsers(limit = 100, options?: { enabled?: boolean }) {
-  return useQuery(basicUsersHookOptions(limit, options?.enabled ?? true))
 }
 
 export function useUserCourses(userId: string | null | undefined, options?: { enabled?: boolean }) {

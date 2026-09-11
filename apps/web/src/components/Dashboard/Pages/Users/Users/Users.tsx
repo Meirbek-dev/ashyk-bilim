@@ -30,7 +30,7 @@ import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { removeUser } from '@/services/platform/platform'
-import { allMembersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
+import { allMembersQueryOptions } from '@/features/users/queries/users.query'
 import React, { useState, useTransition, useSyncExternalStore } from 'react'
 
 const emptySubscribe = () => () => {}
@@ -144,7 +144,6 @@ function Users() {
       try {
         await removeUser(user_id)
         await queryClient.invalidateQueries({ queryKey: allMembersQueryOptions().queryKey })
-        await queryClient.invalidateQueries({ queryKey: userRoleAssignmentsQueryOptions().queryKey })
         toast.success(t('userRemovedSuccess'), { id: toastId })
       } catch {
         toast.error(t('errors.removeUserFailed'), { id: toastId })

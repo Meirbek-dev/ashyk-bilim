@@ -1802,300 +1802,89 @@
       "trail": "Progress"
     },
     "Roles": {
-      "AddRole": {
-        "cancel": "Cancel",
-        "couldntCreateNewRole": "Couldn't create new role",
-        "createRole": "Create Role",
-        "createdNewRole": "Role created successfully",
-        "creating": "Creating role...",
-        "description": "Description",
-        "descriptionMinLength": "Description must be at least {length} characters",
-        "descriptionPlaceholder": "Describe what this role can do...",
-        "descriptionRequired": "Description is required",
-        "deselect": "Deselect",
-        "deselectAll": "Deselect All",
-        "nameMinLength": "Name must be at least {length} characters",
-        "permissions": {
-          "access": "Access",
-          "create": "Create",
-          "delete": "Delete",
-          "deleteOwn": "Delete Own",
-          "read": "Read",
-          "readOwn": "Read Own",
-          "update": "Update",
-          "updateOwn": "Update Own"
-        },
-        "permissionsNote": "Permissions are managed through the new role-based access control system.",
-        "permissionsTitle": "Permissions",
-        "predefinedRights": "Predefined Role Templates",
-        "predefinedRoles": {
-          "admin": {
-            "description": "Full platform control with all permissions",
-            "name": "Admin"
-          },
-          "analyst": {
-            "description": "Read-only access with analytics capabilities",
-            "name": "Analyst"
-          },
-          "contentCreator": {
-            "description": "Can create and edit content but not manage users",
-            "name": "Content Creator"
-          },
-          "courseManager": {
-            "description": "Can manage courses, chapters, and activities",
-            "name": "Course Manager"
-          },
-          "guest": {
-            "description": "Limited access for external users",
-            "name": "Guest"
-          },
-          "instructor": {
-            "description": "Can create and manage their own courses",
-            "name": "Instructor"
-          },
-          "moderator": {
-            "description": "Can moderate content and manage activities",
-            "name": "Moderator"
-          },
-          "userManager": {
-            "description": "Can manage users and user groups",
-            "name": "User Manager"
-          },
-          "viewer": {
-            "description": "Read-only access to courses and content",
-            "name": "Viewer"
-          }
-        },
-        "roleName": "Role Name",
-        "roleNamePlaceholder": "e.g., Course Manager",
-        "roleNameRequired": "Role name is required",
-        "sections": {
-          "activities": "Activities",
-          "collections": "Collections",
-          "courseChapters": "Course Chapters",
-          "courses": "Courses",
-          "dashboard": "Dashboard",
-          "organizations": "Organizations",
-          "roles": "Roles",
-          "userGroups": "User Groups",
-          "users": "Users"
-        },
-        "select": "Select",
-        "selectAll": "Select All",
-        "unknownError": "An unknown error occurred"
-      },
-      "EditRole": {
-        "cancel": "Cancel",
-        "couldntUpdateRole": "Couldn't update role",
-        "description": "Description",
-        "descriptionPlaceholder": "Describe what this role can do...",
-        "deselect": "Deselect",
-        "deselectAll": "Deselect All",
-        "permissions": {
-          "access": "Access",
-          "create": "Create",
-          "delete": "Delete",
-          "deleteOwn": "Delete Own",
-          "read": "Read",
-          "readOwn": "Read Own",
-          "update": "Update",
-          "updateOwn": "Update Own"
-        },
-        "permissionsNote": "Permissions are managed through the new role-based access control system.",
-        "permissionsTitle": "Permissions",
-        "predefinedRights": "Predefined Role Templates",
-        "predefinedRoles": {
-          "admin": {
-            "description": "Full platform control with all permissions",
-            "name": "Admin"
-          },
-          "analyst": {
-            "description": "Read-only access with analytics capabilities",
-            "name": "Analyst"
-          },
-          "contentCreator": {
-            "description": "Can create and edit content but not manage users",
-            "name": "Content Creator"
-          },
-          "courseManager": {
-            "description": "Can manage courses, chapters, and activities",
-            "name": "Course Manager"
-          },
-          "guest": {
-            "description": "Limited access for external users",
-            "name": "Guest"
-          },
-          "instructor": {
-            "description": "Can create and manage their own courses",
-            "name": "Instructor"
-          },
-          "moderator": {
-            "description": "Can moderate content and manage activities",
-            "name": "Moderator"
-          },
-          "userManager": {
-            "description": "Can manage users and user groups",
-            "name": "User Manager"
-          },
-          "viewer": {
-            "description": "Read-only access to courses and content",
-            "name": "Viewer"
-          }
-        },
-        "roleName": "Role Name",
-        "roleNamePlaceholder": "e.g., Course Manager",
-        "sections": {
-          "activities": "Activities",
-          "collections": "Collections",
-          "courseChapters": "Course Chapters",
-          "courses": "Courses",
-          "dashboard": "Dashboard",
-          "organizations": "Organizations",
-          "roles": "Roles",
-          "userGroups": "User Groups",
-          "users": "Users"
-        },
-        "select": "Select",
-        "selectAll": "Select All",
-        "updateRole": "Update Role",
-        "updatedRole": "Role updated successfully",
-        "updating": "Updating role..."
-      },
-      "updating": "Updating role...",
-      "updateRole": "Update Role",
-      "updatedRole": "Role updated successfully",
-      "basicAccess": "Basic access",
-      "cardTitle": "Organization Roles",
-      "createRole": "Create Role",
-      "createRoleDescription": "Define a new role with specific permissions",
-      "createRoleTitle": "Create New Role",
-      "cloneRole": "Clone Role",
-      "cloneRoleTitle": "Clone Role",
-      "cloneRoleDescription": "Create a new role using this role as a template",
-      "cloneSuccess": "Role cloned successfully",
-      "cloneLoadFailed": "Failed to load role for cloning",
-      "deleteRole": "Delete Role",
-      "deleteRoleConfirmation": "Are you sure you want to delete this role? This action cannot be undone.",
-      "deleteRoleConfirmationWithUsers": "This role is assigned to {count, plural, one {# user} other {# users}}. Deleting it will remove their access. Continue?",
-      "deleteRoleError": "Failed to delete role",
-      "deleteRoleTitle": "Delete Role",
-      "deletedRoleSuccess": "Role deleted successfully",
-      "deleting": "Deleting role...",
-      "description": "Description",
-      "edit": "Edit",
-      "editRoleDescription": "Modify the role permissions and details",
-      "editRoleTitle": "Edit Role",
-      "fullAccess": "Full access",
-      "globalRole": "Global role",
-      "instructorAccess": "Instructor access",
-      "noDescription": "No description",
-      "noPermissions": "No permissions",
-      "permissions": "Permissions",
-      "permissionsCount": "{count, plural, one {# permission} other {# permissions}}",
-      "permissionsAria": "Manage permissions for {roleName}",
-      "permissionLoadFailed": "Failed to load role permissions",
-      "permissionSearchPlaceholder": "Search permissions by code, resource, or description",
-      "roleName": "Role Name",
-      "systemWide": "System-wide",
-      "rolesTab": "Roles",
-      "permissionsTab": "Permissions",
-      "auditLogTab": "Audit Log",
+      "userRolesTitle": "User roles",
+      "userRolesDescription": "Assign and remove roles for platform members",
+      "addRole": "Add role",
+      "assignRoleTitle": "Assign role",
+      "assignRoleDescription": "Pick a user and the role to assign.",
+      "userLabel": "User",
+      "roleLabel": "Role",
+      "selectUserPlaceholder": "Search by name or email…",
+      "selectRolePlaceholder": "Select a role",
+      "noMatches": "No matches",
+      "assignRole": "Assign role",
+      "cancel": "Cancel",
+      "save": "Save",
+      "assignedRoleSuccess": "Role assigned",
+      "removedRoleSuccess": "Role removed",
+      "removeRoleAria": "Remove role {roleName}",
+      "removeRoleConfirmTitle": "Remove role",
+      "removeRoleConfirmDescription": "Remove the “{roleName}” role from {name}?",
+      "removeRoleConfirm": "Remove",
+      "searchUsers": "Search by name, username or email…",
       "tableHead": {
+        "user": "User",
+        "email": "Email",
+        "status": "Status",
+        "roles": "Roles",
         "role": "Role",
         "slug": "Slug",
         "type": "Type",
         "priority": "Priority",
         "permissions": "Permissions",
-        "users": "Users",
         "actions": "Actions"
       },
-      "allPermissionsTitle": "All Permissions",
-      "allPermissionsDescription": "A list of all permissions available in the system.",
-      "scopeHierarchy": "Scope hierarchy",
-      "scopeHierarchyValue": "all → platform → assigned → own",
-      "managePermissionsTitle": "Manage Permissions",
-      "managePermissionsDescription": "Select a resource type to manage granular permissions.",
-      "fieldName": "Name",
-      "namePlaceholder": "e.g., Content Manager",
-      "fieldSlug": "Slug",
-      "slugPlaceholder": "e.g., content_manager",
-      "slugHelp": "A short unique identifier used programmatically",
-      "slugCreateHelp": "The slug is a permanent identifier used in API calls and policies. It will be locked after creation.",
-      "slugImmutableHelp": "The slug is a permanent identifier used in API calls and policies. It cannot be changed after creation.",
-      "fieldDescription": "Description",
-      "descriptionPlaceholder": "e.g., Can manage course content",
-      "priorityMaxHelp": "Maximum allowed priority is {max} based on your current role.",
-      "title": "Access Control",
-      "cardDescription": "Manage roles and permissions for your organization",
-      "loadFailed": "Failed to load roles and permissions",
-      "sessionRefreshWarning": "Permissions may be stale. Please refresh the page.",
-      "totalRoles": "Total Roles",
-      "system": "system",
-      "custom": "custom",
-      "resourceTypes": "Resource Types",
-      "resourceTypesHint": "course, user, organization, ...",
-      "acrossResourceTypes": "Across {count, plural, one {# resource type} other {# resource types}}",
-      "permissionAdded": "Permission added",
-      "permissionRemoved": "Permission removed",
-      "failedToUpdatePermission": "Failed to update permission",
-      "resourcePermissionsAdded": "All {resourceType} permissions added",
-      "resourcePermissionsRemoved": "All {resourceType} permissions removed",
-      "systemRoleReadOnlyBanner": "System roles are managed by the platform and cannot be modified. Clone this role to create an editable copy.",
-      "allResources": "All resources",
-      "loadingPermissions": "Loading permissions...",
-      "selectAllResource": "Select all",
-      "noPermissionsFound": "No permissions match your filters",
-      "done": "Done",
-      "searchRolesPlaceholder": "Search roles...",
-      "editRoleAria": "Edit {roleName} role",
-      "deleteRoleAria": "Delete {roleName} role",
-      "cloneRoleAria": "Clone {roleName} role",
-      "auditLogTitle": "Role Audit Log",
-      "auditLogDescription": "Review role and permission changes in this organization.",
-      "auditLogLoadFailed": "Failed to load audit log",
-      "loadingAuditLog": "Loading audit log...",
-      "userRolesTitle": "User Roles",
-      "permissionTable": {
-        "resource": "Resource",
-        "code": "Permission",
-        "action": "Action",
-        "scope": "Scope",
-        "description": "Description"
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled"
       },
-      "columns": "Columns",
-      "exportCSV": "Export CSV",
-      "exportStarted": "Download started",
-      "userRolesDescription": "Manage role assignments for organization members",
-      "assignRole": "Assign Role",
-      "assignRoleTitle": "Assign Role to User",
-      "assignRoleDescription": "Select a user and a role to assign to them.",
-      "userLabel": "User",
-      "roleLabel": "Role",
-      "assignedRoleSuccess": "Role assigned successfully",
-      "removedRoleSuccess": "Role removed successfully",
-      "removeRoleConfirmTitle": "Remove Role",
-      "removeRoleConfirmDescription": "Are you sure you want to remove the {roleName} role from this user?",
-      "removeRoleConfirm": "Remove",
+      "disableUser": "Disable",
+      "enableUser": "Enable",
+      "disableConfirmTitle": "Disable the account of {name}?",
+      "disableConfirmDescription": "Every live session of this user is revoked. The account can be re-enabled later.",
+      "statusUpdated": "Account status updated",
+      "loadMore": "Load more",
+      "noUsers": "No users found",
+      "loadFailed": "Failed to load data",
+      "title": "Roles and permissions",
+      "cardDescription": "System roles are managed by the platform; custom roles can be created and configured",
+      "createRole": "Create role",
+      "createRoleTitle": "New role",
+      "createRoleDescription": "Create a custom role, then configure its permissions.",
+      "editRoleTitle": "Edit role",
+      "editRoleDescription": "Name, description and priority of the role.",
+      "fieldName": "Name",
+      "fieldSlug": "Slug",
+      "fieldDescription": "Description",
+      "fieldPriority": "Priority",
+      "namePlaceholder": "e.g. Teaching assistant",
+      "slugPlaceholder": "e.g. teaching-assistant",
+      "slugHelp": "Permanent kebab-case identifier; cannot be changed after creation.",
+      "descriptionPlaceholder": "What this role can do",
+      "createdRole": "Role created",
+      "updatedRole": "Role updated",
+      "deletedRole": "Role deleted",
+      "permissionsSaved": "Role permissions saved",
+      "deleteRoleTitle": "Delete the “{roleName}” role?",
+      "deleteRoleDescription": "Users holding this role lose its permissions immediately. This cannot be undone.",
       "deleteRoleConfirm": "Delete",
-      "selectUserPlaceholder": "Select a user",
-      "selectRolePlaceholder": "Select a role",
-      "searchUsersOrRoles": "Search users or roles...",
-      "assignedAt": "Assigned At",
-      "expires": "Expires",
-      "actions": "Actions",
-      "noUserRoleAssignments": "No user role assignments found",
-      "never": "Never",
-      "previous": "Previous",
-      "next": "Next",
-      "audit": {
-        "timestamp": "Timestamp",
-        "actor": "Actor",
-        "action": "Action",
-        "role": "Role",
-        "summary": "Summary",
-        "empty": "No audit events yet",
-        "pagination": "Page {page} of {totalPages}"
-      }
+      "system": "System",
+      "custom": "Custom",
+      "systemRoleReadOnly": "System role: managed by the platform, cannot be edited",
+      "grantsCount": "{count, plural, one {# permission} other {# permissions}}",
+      "managePermissionsTitle": "Permissions of “{roleName}”",
+      "managePermissionsDescription": "Permissions are resource:action:scope triples. Pick from the list or type one.",
+      "grantPlaceholder": "e.g. course:read:all",
+      "addGrant": "Add",
+      "invalidGrant": "A permission must look like resource:action:scope (lowercase, “_” or “*”)",
+      "removeGrantAria": "Remove permission {grant}",
+      "noGrants": "This role has no permissions",
+      "editRoleAria": "Edit role {roleName}",
+      "deleteRoleAria": "Delete role {roleName}",
+      "permissionsAria": "Permissions of role {roleName}",
+      "slugTaken": "A role with this slug already exists",
+      "lastAdminConflict": "The admin role cannot be removed from the last administrator",
+      "selfDisableConflict": "You cannot disable your own account"
     },
     "PageLoading": {
       "loading": "Loading..."
@@ -10855,22 +10644,28 @@
   },
   "roles": {
     "admin": {
-      "name": "Administrator"
+      "name": "Administrator",
+      "description": "Full access to the whole platform"
     },
     "maintainer": {
-      "name": "Maintainer"
+      "name": "Maintainer",
+      "description": "Maintains content and courses across the platform"
     },
     "instructor": {
-      "name": "Instructor"
+      "name": "Teacher",
+      "description": "Creates and runs their own courses"
     },
     "moderator": {
-      "name": "Moderator"
+      "name": "Moderator",
+      "description": "Moderates discussions and content"
     },
     "user": {
-      "name": "User"
+      "name": "User",
+      "description": "Learns on courses"
     },
     "guest": {
-      "name": "Guest"
+      "name": "Guest",
+      "description": "Limited access without an account"
     }
   }
 }

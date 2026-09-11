@@ -1789,300 +1789,89 @@
       "trail": "Прогресс"
     },
     "Roles": {
-      "AddRole": {
-        "cancel": "Бас тарту",
-        "couldntCreateNewRole": "Жаңа рөлді құру мүмкін болмады",
-        "createRole": "Рөл құру",
-        "createdNewRole": "Рөл сәтті құрылды",
-        "creating": "Рөл құрылуда...",
-        "description": "Сипаттама",
-        "descriptionMinLength": "Сипаттама кемінде {length} таңбадан тұруы керек",
-        "descriptionPlaceholder": "Бұл рөл не істей алатынын сипаттаңыз...",
-        "descriptionRequired": "Сипаттама міндетті",
-        "deselect": "Таңдауды алып тастау",
-        "deselectAll": "Барлығын алып тастау",
-        "nameMinLength": "Атауы кемінде {length} таңбадан тұруы керек",
-        "permissions": {
-          "access": "Қол жеткізу",
-          "create": "Құру",
-          "delete": "Жою",
-          "deleteOwn": "Өзін жою",
-          "read": "Оқу",
-          "readOwn": "Өзін оқу",
-          "update": "Жаңарту",
-          "updateOwn": "Өзін жаңарту"
-        },
-        "permissionsNote": "Рұқсаттар жаңа рөлге негізделген қатынасты басқару жүйесі арқылы басқарылады.",
-        "permissionsTitle": "Рұқсаттар",
-        "predefinedRights": "Алдын ала дайын рөл үлгілері",
-        "predefinedRoles": {
-          "admin": {
-            "description": "Барлық рұқсаттармен толық бақылау",
-            "name": "Әкімші"
-          },
-          "analyst": {
-            "description": "Тек оқу құқығы бар, аналитика мүмкіндігімен",
-            "name": "Аналитик"
-          },
-          "contentCreator": {
-            "description": "Контент құра алады және өңдей алады, бірақ пайдаланушыларды басқара алмайды",
-            "name": "Контент жасаушы"
-          },
-          "courseManager": {
-            "description": "Курстарды, бөлімдерді және оқу әрекеттеріды басқара алады",
-            "name": "Курс менеджері"
-          },
-          "guest": {
-            "description": "Сыртқы пайдаланушыларға шектеулі қол жеткізу",
-            "name": "Қонақ"
-          },
-          "instructor": {
-            "description": "Өз курстарын құрып, басқара алады",
-            "name": "Оқытушы"
-          },
-          "moderator": {
-            "description": "Контентті модерациялап, оқу әрекеттеріды басқара алады",
-            "name": "Модератор"
-          },
-          "userManager": {
-            "description": "Пайдаланушылар мен топтарды басқара алады",
-            "name": "Пайдаланушы менеджері"
-          },
-          "viewer": {
-            "description": "Курстар мен контентті тек оқуға қол жеткізу",
-            "name": "Көрермен"
-          }
-        },
-        "roleName": "Рөл атауы",
-        "roleNamePlaceholder": "мысалы, Курс менеджері",
-        "roleNameRequired": "Рөл атауы міндетті",
-        "sections": {
-          "activities": "Белсенділіктер",
-          "collections": "Жинақтар",
-          "courseChapters": "Курс бөлімдері",
-          "courses": "Курстар",
-          "dashboard": "Бақылау тақтасы",
-          "organizations": "Ұйымдар",
-          "roles": "Рөлдер",
-          "userGroups": "Пайдаланушы топтары",
-          "users": "Пайдаланушылар"
-        },
-        "select": "Таңдау",
-        "selectAll": "Барлығын таңдау",
-        "unknownError": "Белгісіз қате пайда болды"
-      },
-      "EditRole": {
-        "cancel": "Бас тарту",
-        "couldntUpdateRole": "Рөлді жаңарту мүмкін болмады",
-        "description": "Сипаттама",
-        "descriptionPlaceholder": "Бұл рөл не істей алатынын сипаттаңыз...",
-        "deselect": "Таңдауды алып тастау",
-        "deselectAll": "Барлығын алып тастау",
-        "permissions": {
-          "access": "Қол жеткізу",
-          "create": "Құру",
-          "delete": "Жою",
-          "deleteOwn": "Өзін жою",
-          "read": "Оқу",
-          "readOwn": "Өзін оқу",
-          "update": "Жаңарту",
-          "updateOwn": "Өзін жаңарту"
-        },
-        "permissionsNote": "Рұқсаттар жаңа рөлге негізделген қатынасты басқару жүйесі арқылы басқарылады.",
-        "permissionsTitle": "Рұқсаттар",
-        "predefinedRights": "Алдын ала дайын рөл үлгілері",
-        "predefinedRoles": {
-          "admin": {
-            "description": "Барлық рұқсаттармен толық бақылау",
-            "name": "Әкімші"
-          },
-          "analyst": {
-            "description": "Тек оқу құқығы бар, аналитика мүмкіндігімен",
-            "name": "Аналитик"
-          },
-          "contentCreator": {
-            "description": "Контент құра алады және өңдей алады, бірақ пайдаланушыларды басқара алмайды",
-            "name": "Контент жасаушы"
-          },
-          "courseManager": {
-            "description": "Курстарды, бөлімдерді және оқу әрекеттеріды басқара алады",
-            "name": "Курс менеджері"
-          },
-          "guest": {
-            "description": "Сыртқы пайдаланушыларға шектеулі қол жеткізу",
-            "name": "Қонақ"
-          },
-          "instructor": {
-            "description": "Өз курстарын құрып, басқара алады",
-            "name": "Оқытушы"
-          },
-          "moderator": {
-            "description": "Контентті модерациялап, оқу әрекеттеріды басқара алады",
-            "name": "Модератор"
-          },
-          "userManager": {
-            "description": "Пайдаланушылар мен топтарды басқара алады",
-            "name": "Пайдаланушы менеджері"
-          },
-          "viewer": {
-            "description": "Курстар мен контентті тек оқуға қол жеткізу",
-            "name": "Көрермен"
-          }
-        },
-        "roleName": "Рөл атауы",
-        "roleNamePlaceholder": "мысалы, Курс менеджері",
-        "sections": {
-          "activities": "Белсенділіктер",
-          "collections": "Жинақтар",
-          "courseChapters": "Курс бөлімдері",
-          "courses": "Курстар",
-          "dashboard": "Бақылау тақтасы",
-          "organizations": "Ұйымдар",
-          "roles": "Рөлдер",
-          "userGroups": "Пайдаланушы топтары",
-          "users": "Пайдаланушылар"
-        },
-        "select": "Таңдау",
-        "selectAll": "Барлығын таңдау",
-        "updateRole": "Рөлді жаңарту",
-        "updatedRole": "Рөл сәтті жаңартылды",
-        "updating": "Рөл жаңартылуда..."
-      },
-      "updating": "Рөл жаңартылуда...",
-      "updateRole": "Рөлді жаңарту",
-      "updatedRole": "Рөл сәтті жаңартылды",
-      "acrossResourceTypes": "{count} ресурс түрлерінен тұрады",
-      "actions": "Әрекеттер",
-      "allPermissionsDescription": "Жүйеде қолжетімді барлық рұқсаттардың тізімі.",
-      "allPermissionsTitle": "Барлық рұқсаттар",
-      "scopeHierarchy": "Қамту иерархиясы",
-      "scopeHierarchyValue": "all → platform → assigned → own",
-      "assignRole": "Рөл тағайындау",
-      "assignRoleDescription": "Пайдаланушы мен рольді таңдап, тағайындаңыз.",
-      "assignRoleTitle": "Пайдаланушыға рөл тағайындау",
-      "assignedAt": "Тапсырылған уақыт",
-      "assignedRoleSuccess": "Рөл сәтті тағайындалды",
-      "basicAccess": "Негізгі қол жеткізу",
-      "cardDescription": "Ұйымдағы рөлдерді және рұқсаттарды басқарыңыз",
-      "cardTitle": "Ұйым рөлдері",
-      "createRole": "Жаңа рөл құру",
-      "createRoleDescription": "Белгілі бір рұқсаттары бар жаңа рөлді анықтаңыз",
-      "createRoleTitle": "Жаңа рөл жасау",
-      "cloneRole": "Рөлді клондау",
-      "cloneRoleTitle": "Рөлді клондау",
-      "cloneRoleDescription": "Осы рөлді үлгі етіп жаңа рөл жасаңыз",
-      "cloneSuccess": "Рөл сәтті клонданды",
-      "cloneLoadFailed": "Клондау үшін рөлді жүктеу мүмкін болмады",
-      "custom": "қолданушының",
-      "deleteRole": "Рөлді жою",
-      "deleteRoleConfirmation": "Бұл рөлді жойғыңыз келетініне сенімдісіз бе? Бұл әрекетті қайтару мүмкін емес.",
-      "deleteRoleConfirmationWithUsers": "Бұл рөл {count} пайдаланушыға берілген. Жою олардың қолжетімділігін алып тастайды. Жалғастырасыз ба?",
-      "deleteRoleError": "Рөлді жою мүмкін болмады",
-      "deleteRoleTitle": "Рөлді жою",
-      "deletedRoleSuccess": "Рөл сәтті жойылды",
-      "deleting": "Рөл жойылуда...",
-      "description": "Сипаттама",
-      "edit": "Өңдеу",
-      "editRoleDescription": "Рөлдің рұқсаттарын және мәліметтерін өзгертіңіз",
-      "editRoleTitle": "Рөлді өңдеу",
-      "permissionsAria": "{roleName} рөлінің рұқсаттарын басқару",
-      "editRoleAria": "{roleName} рөлін өңдеу",
-      "deleteRoleAria": "{roleName} рөлін жою",
-      "cloneRoleAria": "{roleName} рөлін клондау",
-      "expires": "Мерзімі аяқталу",
-      "failedToUpdatePermission": "Рұқсатты жаңарту мүмкін болмады",
-      "fieldDescription": "Сипаттама",
-      "fieldName": "Атауы",
-      "namePlaceholder": "мысалы, Контент менеджері",
-      "fieldSlug": "Слаг",
-      "slugPlaceholder": "мысалы, content_manager",
-      "fullAccess": "Толық қолжетімділік",
-      "globalRole": "Ғаламдық рөл",
-      "instructorAccess": "Оқытушыға қол жеткізу",
-      "managePermissionsDescription": "Есептік ресурс түрін таңдап, егжей-тегжейлі рұқсаттарды баптаңыз.",
-      "managePermissionsTitle": "Рұқсаттарды басқару",
-      "permissionLoadFailed": "Рөл рұқсаттарын жүктеу мүмкін болмады",
-      "permissionSearchPlaceholder": "Код, ресурс немесе сипаттама бойынша іздеу",
-      "never": "Ешқашан",
-      "noDescription": "Сипаттама жоқ",
-      "noPermissions": "Рұқсаттар жоқ",
-      "noPermissionsFound": "Сүзгіге сәйкес рұқсат табылмады",
-      "noUserRoleAssignments": "Пайдаланушы рөлдері табылмады",
-      "permissionAdded": "Рұқсат қосылды",
-      "permissionRemoved": "Рұқсат жойылды",
-      "permissions": "Рұқсаттар",
-      "permissionsCount": "{count} рұқсат",
-      "permissionsTab": "Рұқсаттар",
-      "resourcePermissionsAdded": "{resourceType} ресурсының барлық рұқсаты қосылды",
-      "resourcePermissionsRemoved": "{resourceType} ресурсының барлық рұқсаты алынды",
-      "removedRoleSuccess": "Рөл сәтті жойылды",
-      "removeRoleConfirmTitle": "Рөлді жою",
-      "removeRoleConfirmDescription": "{roleName} рөлін осы пайдаланушыдан алып тастағыңыз келетініне сенімдісіз бе?",
-      "removeRoleConfirm": "Жою",
-      "deleteRoleConfirm": "Жою",
+      "userRolesTitle": "Пайдаланушы рөлдері",
+      "userRolesDescription": "Платформа қатысушыларының рөлдерін тағайындаңыз және алып тастаңыз",
+      "addRole": "Рөл қосу",
+      "assignRoleTitle": "Рөл тағайындау",
+      "assignRoleDescription": "Пайдаланушыны және тағайындалатын рөлді таңдаңыз.",
+      "userLabel": "Пайдаланушы",
       "roleLabel": "Рөл",
-      "roleName": "Рөл атауы",
-      "rolesTab": "Рөлдер",
-      "auditLogTab": "Аудит журналы",
-      "auditLogTitle": "Рөлдер аудит журналы",
-      "auditLogDescription": "Ұйымдағы рөлдер мен рұқсаттар өзгерісінің тарихы.",
-      "auditLogLoadFailed": "Аудит журналын жүктеу мүмкін болмады",
-      "loadingAuditLog": "Аудит журналы жүктелуде...",
-      "searchRolesPlaceholder": "Рөлдерді іздеу...",
-      "searchUsersOrRoles": "Пайдаланушылар мен рөлдерді іздеу...",
+      "selectUserPlaceholder": "Аты немесе email бойынша іздеу…",
       "selectRolePlaceholder": "Рөлді таңдаңыз",
-      "selectUserPlaceholder": "Пайдаланушыны таңдаңыз",
-      "slugHelp": "Бағдарламалық түрде қолданылатын қысқа бірегей идентификатор",
-      "slugCreateHelp": "Слаг — API мен саясаттарда қолданылатын тұрақты идентификатор. Құрылғаннан кейін өзгертілмейді.",
-      "slugImmutableHelp": "Слаг — API мен саясаттарда қолданылатын тұрақты идентификатор. Оны құрылғаннан кейін өзгертуге болмайды.",
-      "system": "жүйелік",
-      "systemWide": "Жүйе деңгейінде",
-      "systemRoleReadOnlyBanner": "Жүйелік рөлдерді платформа басқарады және өзгертуге болмайды. Өңделетін көшірме жасау үшін бұл рөлді клондаңыз.",
+      "noMatches": "Ештеңе табылмады",
+      "assignRole": "Рөл тағайындау",
+      "cancel": "Бас тарту",
+      "save": "Сақтау",
+      "assignedRoleSuccess": "Рөл тағайындалды",
+      "removedRoleSuccess": "Рөл алынып тасталды",
+      "removeRoleAria": "{roleName} рөлін алып тастау",
+      "removeRoleConfirmTitle": "Рөлді алып тастау",
+      "removeRoleConfirmDescription": "{name} пайдаланушысынан «{roleName}» рөлін алып тастау керек пе?",
+      "removeRoleConfirm": "Алып тастау",
+      "searchUsers": "Аты, логині немесе email бойынша іздеу…",
       "tableHead": {
-        "actions": "Әрекеттер",
-        "permissions": "Рұқсаттар",
-        "priority": "Басымдық",
+        "user": "Пайдаланушы",
+        "email": "Email",
+        "status": "Күйі",
+        "roles": "Рөлдер",
         "role": "Рөл",
         "slug": "Слаг",
         "type": "Түрі",
-        "users": "Пайдаланушылар"
+        "priority": "Басымдық",
+        "permissions": "Құқықтар",
+        "actions": "Әрекеттер"
       },
-      "title": "Қол жетімділікті басқару",
-      "totalRoles": "Жалпы рөлдер",
-      "resourceTypes": "Ресурс түрлері",
-      "resourceTypesHint": "course, user, organization, ...",
-      "allResources": "Барлық ресурстар",
-      "loadingPermissions": "Рұқсаттар жүктелуде...",
-      "selectAllResource": "Барлығын таңдау",
-      "done": "Дайын",
-      "loadFailed": "Рөлдер мен рұқсаттарды жүктеу мүмкін болмады",
-      "sessionRefreshWarning": "Рұқсаттар ескірген болуы мүмкін. Бетті жаңартыңыз.",
-      "descriptionPlaceholder": "мысалы, Курс контентін басқара алады",
-      "priorityMaxHelp": "Қазіргі рөліңіз бойынша ең жоғары рұқсат етілген басымдық: {max}.",
-      "userLabel": "Пайдаланушы",
-      "userRolesDescription": "Ұйым мүшелеріне рөлдерді тағайындауды басқарыңыз",
-      "userRolesTitle": "Пайдаланушы рөлдері",
-      "permissionTable": {
-        "resource": "Ресурс",
-        "code": "Рұқсат",
-        "action": "Әрекет",
-        "scope": "Ауқым",
-        "description": "Сипаттама"
+      "status": {
+        "active": "Белсенді",
+        "disabled": "Өшірілген"
       },
-      "columns": "Бағандар",
-      "exportCSV": "CSV экспорттау",
-      "exportStarted": "Жүктеу басталды",
-      "previous": "Артқа",
-      "next": "Келесі",
-      "audit": {
-        "timestamp": "Уақыты",
-        "actor": "Орындаушы",
-        "action": "Әрекет",
-        "role": "Рөл",
-        "summary": "Қысқаша",
-        "empty": "Әзірге аудит жазбалары жоқ",
-        "pagination": "{page} / {totalPages} бет"
-      }
+      "disableUser": "Өшіру",
+      "enableUser": "Қосу",
+      "disableConfirmTitle": "{name} аккаунтын өшіру керек пе?",
+      "disableConfirmDescription": "Пайдаланушының барлық белсенді сессиялары аяқталады. Аккаунтты қайта қосуға болады.",
+      "statusUpdated": "Аккаунт күйі жаңартылды",
+      "loadMore": "Тағы көрсету",
+      "noUsers": "Пайдаланушылар табылмады",
+      "loadFailed": "Деректерді жүктеу мүмкін болмады",
+      "title": "Рөлдер мен құқықтар",
+      "cardDescription": "Жүйелік рөлдерді платформа басқарады; пайдаланушы рөлдерін құрып, баптауға болады",
+      "createRole": "Рөл құру",
+      "createRoleTitle": "Жаңа рөл",
+      "createRoleDescription": "Пайдаланушы рөлін құрып, содан кейін оның құқықтарын баптаңыз.",
+      "editRoleTitle": "Рөлді өзгерту",
+      "editRoleDescription": "Рөлдің атауы, сипаттамасы және басымдығы.",
+      "fieldName": "Атауы",
+      "fieldSlug": "Слаг",
+      "fieldDescription": "Сипаттама",
+      "fieldPriority": "Басымдық",
+      "namePlaceholder": "Мысалы, Оқытушы көмекшісі",
+      "slugPlaceholder": "мысалы, teaching-assistant",
+      "slugHelp": "Kebab-case форматындағы тұрақты идентификатор; құрылғаннан кейін өзгермейді.",
+      "descriptionPlaceholder": "Бұл рөл не істей алады",
+      "createdRole": "Рөл құрылды",
+      "updatedRole": "Рөл жаңартылды",
+      "deletedRole": "Рөл жойылды",
+      "permissionsSaved": "Рөл құқықтары сақталды",
+      "deleteRoleTitle": "«{roleName}» рөлін жою керек пе?",
+      "deleteRoleDescription": "Бұл рөлі бар пайдаланушылар оның құқықтарынан бірден айырылады. Әрекетті қайтару мүмкін емес.",
+      "deleteRoleConfirm": "Жою",
+      "system": "Жүйелік",
+      "custom": "Пайдаланушылық",
+      "systemRoleReadOnly": "Жүйелік рөл: платформа басқарады, өзгерту мүмкін емес",
+      "grantsCount": "{count, plural, one {# құқық} other {# құқық}}",
+      "managePermissionsTitle": "«{roleName}» рөлінің құқықтары",
+      "managePermissionsDescription": "Құқықтар ресурс:әрекет:аумақ форматында. Тізімнен таңдаңыз немесе қолмен енгізіңіз.",
+      "grantPlaceholder": "мысалы, course:read:all",
+      "addGrant": "Қосу",
+      "invalidGrant": "Құқық ресурс:әрекет:аумақ түрінде болуы керек (латын әріптері, «_» немесе «*»)",
+      "removeGrantAria": "{grant} құқығын алып тастау",
+      "noGrants": "Рөлде құқықтар жоқ",
+      "editRoleAria": "{roleName} рөлін өзгерту",
+      "deleteRoleAria": "{roleName} рөлін жою",
+      "permissionsAria": "{roleName} рөлінің құқықтары",
+      "slugTaken": "Мұндай слагы бар рөл бұрыннан бар",
+      "lastAdminConflict": "Соңғы әкімшінің әкімші рөлін алып тастауға болмайды",
+      "selfDisableConflict": "Өз аккаунтыңызды өшіре алмайсыз"
     },
     "PageLoading": {
       "loading": "Жүктелуде..."
@@ -11045,22 +10834,28 @@
   },
   "roles": {
     "admin": {
-      "name": "Әкімші"
+      "name": "Әкімші",
+      "description": "Бүкіл платформаға толық қолжетімділік"
     },
     "maintainer": {
-      "name": "Мейнтейнер"
+      "name": "Мейнтейнер",
+      "description": "Бүкіл платформаның контенті мен курстарын сүйемелдеу"
     },
     "instructor": {
-      "name": "Оқытушы"
+      "name": "Оқытушы",
+      "description": "Өз курстарын құру және жүргізу"
     },
     "moderator": {
-      "name": "Модератор"
+      "name": "Модератор",
+      "description": "Талқылаулар мен контентті модерациялау"
     },
     "user": {
-      "name": "Пайдаланушы"
+      "name": "Пайдаланушы",
+      "description": "Курстарда оқу"
     },
     "guest": {
-      "name": "Қонақ"
+      "name": "Қонақ",
+      "description": "Аккаунтсыз шектеулі қолжетімділік"
     }
   }
 }

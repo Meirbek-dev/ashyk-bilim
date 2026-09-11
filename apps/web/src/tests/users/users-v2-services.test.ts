@@ -15,15 +15,13 @@ vi.mock('@/lib/users/client', () => ({
   userKeys: { byId: vi.fn(), byUsername: vi.fn(), coursesByUser: vi.fn() },
 }))
 vi.mock('@services/rbac', () => ({
-  listRoleAuditLog: vi.fn(),
   listRoles: vi.fn(),
-  listUserRoles: vi.fn(),
   listUsers: vi.fn(),
 }))
 vi.mock('@/lib/react-query/queryKeys', () => ({
   queryKeys: {
     userGroups: { all: () => ['ug'], users: (id: string) => ['ug', id] },
-    users: { admin: () => ['users'], roles: () => ['roles'], roleAssignments: () => ['ra'], basicList: () => ['bl'] },
+    users: { admin: () => ['users'], roles: () => ['roles'] },
   },
 }))
 

@@ -1788,300 +1788,89 @@
       "trail": "Прогресс"
     },
     "Roles": {
-      "AddRole": {
-        "cancel": "Отмена",
-        "couldntCreateNewRole": "Не удалось создать новую роль",
-        "createRole": "Создать роль",
-        "createdNewRole": "Роль успешно создана",
-        "creating": "Создание роли...",
-        "description": "Описание",
-        "descriptionMinLength": "Описание должно содержать минимум {length} символов",
-        "descriptionPlaceholder": "Опишите, что может делать эта роль...",
-        "descriptionRequired": "Описание обязательно",
-        "deselect": "Снять выделение",
-        "deselectAll": "Снять всё выделение",
-        "nameMinLength": "Имя должно содержать минимум {length} символов",
-        "permissions": {
-          "access": "Доступ",
-          "create": "Создание",
-          "delete": "Удаление",
-          "deleteOwn": "Удаление своих",
-          "read": "Чтение",
-          "readOwn": "Чтение своих",
-          "update": "Изменение",
-          "updateOwn": "Изменение своих"
-        },
-        "permissionsNote": "Разрешения управляются с помощью новой системы контроля доступа на основе ролей.",
-        "permissionsTitle": "Разрешения",
-        "predefinedRights": "Предустановленные шаблоны ролей",
-        "predefinedRoles": {
-          "admin": {
-            "description": "Полный контроль над платформой со всеми разрешениями",
-            "name": "Администратор"
-          },
-          "analyst": {
-            "description": "Доступ только для чтения с возможностями аналитики",
-            "name": "Аналитик"
-          },
-          "contentCreator": {
-            "description": "Может создавать и редактировать контент, но не управлять пользователями",
-            "name": "Контент-менеджер"
-          },
-          "courseManager": {
-            "description": "Может управлять курсами, главами и активностями",
-            "name": "Менеджер курсов"
-          },
-          "guest": {
-            "description": "Ограниченный доступ для внешних пользователей",
-            "name": "Гость"
-          },
-          "instructor": {
-            "description": "Может создавать и управлять своими курсами",
-            "name": "Преподаватель"
-          },
-          "moderator": {
-            "description": "Может модерировать контент и управлять активностями",
-            "name": "Модератор"
-          },
-          "userManager": {
-            "description": "Может управлять пользователями и группами",
-            "name": "Менеджер пользователей"
-          },
-          "viewer": {
-            "description": "Доступ только для чтения курсов и контента",
-            "name": "Наблюдатель"
-          }
-        },
-        "roleName": "Название роли",
-        "roleNamePlaceholder": "например, Менеджер курсов",
-        "roleNameRequired": "Название роли обязательно",
-        "sections": {
-          "activities": "Активности",
-          "collections": "Коллекции",
-          "courseChapters": "Главы курсов",
-          "courses": "Курсы",
-          "dashboard": "Панель управления",
-          "organizations": "Организации",
-          "roles": "Роли",
-          "userGroups": "Группы пользователей",
-          "users": "Пользователи"
-        },
-        "select": "Выбрать",
-        "selectAll": "Выбрать всё",
-        "unknownError": "Произошла неизвестная ошибка"
-      },
-      "EditRole": {
-        "cancel": "Отмена",
-        "couldntUpdateRole": "Не удалось обновить роль",
-        "description": "Описание",
-        "descriptionPlaceholder": "Опишите, что может делать эта роль...",
-        "deselect": "Снять выделение",
-        "deselectAll": "Снять всё выделение",
-        "permissions": {
-          "access": "Доступ",
-          "create": "Создание",
-          "delete": "Удаление",
-          "deleteOwn": "Удаление своих",
-          "read": "Чтение",
-          "readOwn": "Чтение своих",
-          "update": "Изменение",
-          "updateOwn": "Изменение своих"
-        },
-        "permissionsNote": "Разрешения управляются с помощью новой системы контроля доступа на основе ролей.",
-        "permissionsTitle": "Разрешения",
-        "predefinedRights": "Предустановленные шаблоны ролей",
-        "predefinedRoles": {
-          "admin": {
-            "description": "Полный контроль над платформой со всеми разрешениями",
-            "name": "Администратор"
-          },
-          "analyst": {
-            "description": "Доступ только для чтения с возможностями аналитики",
-            "name": "Аналитик"
-          },
-          "contentCreator": {
-            "description": "Может создавать и редактировать контент, но не управлять пользователями",
-            "name": "Контент-менеджер"
-          },
-          "courseManager": {
-            "description": "Может управлять курсами, главами и активностями",
-            "name": "Менеджер курсов"
-          },
-          "guest": {
-            "description": "Ограниченный доступ для внешних пользователей",
-            "name": "Гость"
-          },
-          "instructor": {
-            "description": "Может создавать и управлять своими курсами",
-            "name": "Преподаватель"
-          },
-          "moderator": {
-            "description": "Может модерировать контент и управлять активностями",
-            "name": "Модератор"
-          },
-          "userManager": {
-            "description": "Может управлять пользователями и группами",
-            "name": "Менеджер пользователей"
-          },
-          "viewer": {
-            "description": "Доступ только для чтения курсов и контента",
-            "name": "Наблюдатель"
-          }
-        },
-        "roleName": "Имя роли",
-        "roleNamePlaceholder": "например, Менеджер курсов",
-        "sections": {
-          "activities": "Активности",
-          "collections": "Коллекции",
-          "courseChapters": "Главы курсов",
-          "courses": "Курсы",
-          "dashboard": "Панель управления",
-          "organizations": "Организации",
-          "roles": "Роли",
-          "userGroups": "Группы пользователей",
-          "users": "Пользователи"
-        },
-        "select": "Выбрать",
-        "selectAll": "Выбрать всё",
-        "updateRole": "Обновить роль",
-        "updatedRole": "Роль успешно обновлена",
-        "updating": "Обновление роли..."
-      },
-      "updating": "Обновление роли...",
-      "updateRole": "Обновить роль",
-      "updatedRole": "Роль успешно обновлена",
-      "acrossResourceTypes": "{count, plural, one {По # типу ресурсов} few {По # типа ресурсов} other {По # типам ресурсов}}",
-      "actions": "Действия",
-      "allPermissionsDescription": "Список всех доступных разрешений в системе.",
-      "allPermissionsTitle": "Все разрешения",
-      "scopeHierarchy": "Иерархия областей",
-      "scopeHierarchyValue": "all → platform → assigned → own",
-      "assignRole": "Назначить роль",
-      "assignRoleDescription": "Выберите пользователя и роль для назначения.",
-      "assignRoleTitle": "Назначить роль пользователю",
-      "assignedAt": "Назначено",
-      "assignedRoleSuccess": "Роль успешно назначена",
-      "basicAccess": "Базовый доступ",
-      "cardDescription": "Управляйте ролями и разрешениями вашей организации",
-      "cardTitle": "Роли",
-      "createRole": "Создать роль",
-      "createRoleDescription": "Определите новую роль с конкретными разрешениями",
-      "createRoleTitle": "Создание новой роли",
-      "cloneRole": "Клонировать роль",
-      "cloneRoleTitle": "Клонирование роли",
-      "cloneRoleDescription": "Создайте новую роль на основе выбранной",
-      "cloneSuccess": "Роль успешно клонирована",
-      "cloneLoadFailed": "Не удалось загрузить роль для клонирования",
-      "custom": "пользовательская",
-      "deleteRole": "Удалить роль",
-      "deleteRoleConfirmation": "Вы уверены, что хотите удалить эту роль? Это действие нельзя отменить.",
-      "deleteRoleConfirmationWithUsers": "Эта роль назначена {count, plural, one {# пользователю} few {# пользователям} other {# пользователям}}. Удаление снимет их доступ. Продолжить?",
-      "deleteRoleError": "Не удалось удалить роль",
-      "deleteRoleTitle": "Удаление роли",
-      "deletedRoleSuccess": "Роль успешно удалена",
-      "deleting": "Удаление роли...",
-      "description": "Описание",
-      "edit": "Редактировать",
-      "editRoleDescription": "Измените разрешения и детали роли",
-      "editRoleTitle": "Редактирование роли",
-      "permissionsAria": "Управлять разрешениями роли {roleName}",
-      "editRoleAria": "Редактировать роль {roleName}",
-      "deleteRoleAria": "Удалить роль {roleName}",
-      "cloneRoleAria": "Клонировать роль {roleName}",
-      "expires": "Истекает",
-      "failedToUpdatePermission": "Не удалось обновить разрешение",
-      "fieldDescription": "Описание",
-      "fieldName": "Название",
-      "namePlaceholder": "например, Менеджер контента",
-      "fieldSlug": "Слаг",
-      "slugPlaceholder": "например, content_manager",
-      "fullAccess": "Полный доступ",
-      "globalRole": "Глобальная роль",
-      "instructorAccess": "Доступ инструктора",
-      "managePermissionsDescription": "Выберите тип ресурса для управления детальными правами.",
-      "managePermissionsTitle": "Управление разрешениями",
-      "permissionLoadFailed": "Не удалось загрузить разрешения роли",
-      "permissionSearchPlaceholder": "Искать по коду, ресурсу или описанию",
-      "never": "Никогда",
-      "noDescription": "Нет описания",
-      "noPermissions": "Нет разрешений",
-      "noPermissionsFound": "Нет разрешений по текущему фильтру",
-      "noUserRoleAssignments": "Назначения ролей пользователей не найдены",
-      "permissionAdded": "Разрешение добавлено",
-      "permissionRemoved": "Разрешение удалено",
-      "permissions": "Разрешения",
-      "permissionsCount": "{count, plural, one {# разрешение} few {# разрешения} other {# разрешений}}",
-      "permissionsTab": "Разрешения",
-      "resourcePermissionsAdded": "Все разрешения ресурса {resourceType} добавлены",
-      "resourcePermissionsRemoved": "Все разрешения ресурса {resourceType} удалены",
-      "removedRoleSuccess": "Роль успешно удалена",
-      "removeRoleConfirmTitle": "Удалить роль",
-      "removeRoleConfirmDescription": "Вы уверены, что хотите убрать роль {roleName} у этого пользователя?",
-      "removeRoleConfirm": "Удалить",
-      "deleteRoleConfirm": "Удалить",
+      "userRolesTitle": "Роли пользователей",
+      "userRolesDescription": "Назначайте и снимайте роли участников платформы",
+      "addRole": "Добавить роль",
+      "assignRoleTitle": "Назначить роль",
+      "assignRoleDescription": "Выберите пользователя и роль, которую нужно назначить.",
+      "userLabel": "Пользователь",
       "roleLabel": "Роль",
-      "roleName": "Имя роли",
-      "rolesTab": "Роли",
-      "auditLogTab": "Журнал аудита",
-      "auditLogTitle": "Журнал аудита ролей",
-      "auditLogDescription": "История изменений ролей и разрешений в организации.",
-      "auditLogLoadFailed": "Не удалось загрузить журнал аудита",
-      "loadingAuditLog": "Загрузка журнала аудита...",
-      "searchRolesPlaceholder": "Поиск ролей...",
-      "searchUsersOrRoles": "Поиск пользователей или ролей...",
+      "selectUserPlaceholder": "Поиск по имени или email…",
       "selectRolePlaceholder": "Выберите роль",
-      "selectUserPlaceholder": "Выберите пользователя",
-      "slugHelp": "Короткий уникальный идентификатор используемый в коде",
-      "slugCreateHelp": "Слаг - постоянный идентификатор для API и политик. После создания его нельзя изменить.",
-      "slugImmutableHelp": "Слаг - постоянный идентификатор для API и политик. Его нельзя изменить после создания.",
-      "system": "системная",
-      "systemWide": "На уровне всей системы",
-      "systemRoleReadOnlyBanner": "Системные роли управляются платформой и не могут быть изменены. Клонируйте роль, чтобы создать редактируемую копию.",
+      "noMatches": "Ничего не найдено",
+      "assignRole": "Назначить роль",
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "assignedRoleSuccess": "Роль назначена",
+      "removedRoleSuccess": "Роль снята",
+      "removeRoleAria": "Снять роль {roleName}",
+      "removeRoleConfirmTitle": "Снять роль",
+      "removeRoleConfirmDescription": "Снять роль «{roleName}» у пользователя {name}?",
+      "removeRoleConfirm": "Снять",
+      "searchUsers": "Поиск по имени, логину или email…",
       "tableHead": {
-        "actions": "Действия",
-        "permissions": "Разрешения",
-        "priority": "Приоритет",
+        "user": "Пользователь",
+        "email": "Email",
+        "status": "Статус",
+        "roles": "Роли",
         "role": "Роль",
         "slug": "Слаг",
         "type": "Тип",
-        "users": "Пользователи"
+        "priority": "Приоритет",
+        "permissions": "Права",
+        "actions": "Действия"
       },
-      "title": "Управление доступом",
-      "totalRoles": "Всего ролей",
-      "resourceTypes": "Типы ресурсов",
-      "resourceTypesHint": "course, user, organization, ...",
-      "allResources": "Все ресурсы",
-      "loadingPermissions": "Загрузка разрешений...",
-      "selectAllResource": "Выбрать все",
-      "done": "Готово",
-      "loadFailed": "Не удалось загрузить роли и разрешения",
-      "sessionRefreshWarning": "Разрешения могут быть устаревшими. Обновите страницу.",
-      "descriptionPlaceholder": "например, Может управлять контентом курса",
-      "priorityMaxHelp": "Максимально допустимый приоритет: {max} согласно вашей текущей роли.",
-      "userLabel": "Пользователь",
-      "userRolesDescription": "Управляйте назначениями ролей для участников организации",
-      "userRolesTitle": "Роли пользователей",
-      "permissionTable": {
-        "resource": "Ресурс",
-        "code": "Разрешение",
-        "action": "Действие",
-        "scope": "Область",
-        "description": "Описание"
+      "status": {
+        "active": "Активен",
+        "disabled": "Отключён"
       },
-      "columns": "Колонки",
-      "exportCSV": "Экспорт CSV",
-      "exportStarted": "Загрузка начата",
-      "previous": "Назад",
-      "next": "Далее",
-      "audit": {
-        "timestamp": "Время",
-        "actor": "Кто",
-        "action": "Действие",
-        "role": "Роль",
-        "summary": "Сводка",
-        "empty": "Событий аудита пока нет",
-        "pagination": "Страница {page} из {totalPages}"
-      }
+      "disableUser": "Отключить",
+      "enableUser": "Включить",
+      "disableConfirmTitle": "Отключить аккаунт {name}?",
+      "disableConfirmDescription": "Все активные сессии пользователя будут завершены. Аккаунт можно включить снова.",
+      "statusUpdated": "Статус аккаунта обновлён",
+      "loadMore": "Показать ещё",
+      "noUsers": "Пользователи не найдены",
+      "loadFailed": "Не удалось загрузить данные",
+      "title": "Роли и права",
+      "cardDescription": "Системные роли задаются платформой; пользовательские роли можно создавать и настраивать",
+      "createRole": "Создать роль",
+      "createRoleTitle": "Новая роль",
+      "createRoleDescription": "Создайте пользовательскую роль, затем настройте её права.",
+      "editRoleTitle": "Изменить роль",
+      "editRoleDescription": "Название, описание и приоритет роли.",
+      "fieldName": "Название",
+      "fieldSlug": "Слаг",
+      "fieldDescription": "Описание",
+      "fieldPriority": "Приоритет",
+      "namePlaceholder": "Например, Ассистент преподавателя",
+      "slugPlaceholder": "например, teaching-assistant",
+      "slugHelp": "Постоянный идентификатор в kebab-case; после создания не меняется.",
+      "descriptionPlaceholder": "Что может делать эта роль",
+      "createdRole": "Роль создана",
+      "updatedRole": "Роль обновлена",
+      "deletedRole": "Роль удалена",
+      "permissionsSaved": "Права роли сохранены",
+      "deleteRoleTitle": "Удалить роль «{roleName}»?",
+      "deleteRoleDescription": "Пользователи с этой ролью сразу потеряют её права. Действие необратимо.",
+      "deleteRoleConfirm": "Удалить",
+      "system": "Системная",
+      "custom": "Пользовательская",
+      "systemRoleReadOnly": "Системная роль: управляется платформой, изменить нельзя",
+      "grantsCount": "{count, plural, one {# право} few {# права} other {# прав}}",
+      "managePermissionsTitle": "Права роли «{roleName}»",
+      "managePermissionsDescription": "Права в формате ресурс:действие:область. Выберите из списка или введите вручную.",
+      "grantPlaceholder": "например, course:read:all",
+      "addGrant": "Добавить",
+      "invalidGrant": "Право должно иметь вид ресурс:действие:область (латиница, «_» или «*»)",
+      "removeGrantAria": "Убрать право {grant}",
+      "noGrants": "У роли нет прав",
+      "editRoleAria": "Изменить роль {roleName}",
+      "deleteRoleAria": "Удалить роль {roleName}",
+      "permissionsAria": "Права роли {roleName}",
+      "slugTaken": "Роль с таким слагом уже существует",
+      "lastAdminConflict": "Нельзя снять роль администратора у последнего администратора",
+      "selfDisableConflict": "Нельзя отключить собственный аккаунт"
     },
     "PageLoading": {
       "loading": "Загрузка..."
@@ -10871,22 +10660,28 @@
   },
   "roles": {
     "admin": {
-      "name": "Администратор"
+      "name": "Администратор",
+      "description": "Полный доступ ко всей платформе"
     },
     "maintainer": {
-      "name": "Мейнтейнер"
+      "name": "Мейнтейнер",
+      "description": "Сопровождение контента и курсов всей платформы"
     },
     "instructor": {
-      "name": "Преподаватель"
+      "name": "Преподаватель",
+      "description": "Создание и ведение собственных курсов"
     },
     "moderator": {
-      "name": "Модератор"
+      "name": "Модератор",
+      "description": "Модерация обсуждений и контента"
     },
     "user": {
-      "name": "Пользователь"
+      "name": "Пользователь",
+      "description": "Обучение на курсах"
     },
     "guest": {
-      "name": "Гость"
+      "name": "Гость",
+      "description": "Ограниченный доступ без аккаунта"
     }
   }
 }

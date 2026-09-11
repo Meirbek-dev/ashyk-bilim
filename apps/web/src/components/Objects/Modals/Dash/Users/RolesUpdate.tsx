@@ -6,7 +6,7 @@ import { Field, FieldError, FieldLabel } from '@components/ui/field'
 import { BarLoader } from '@components/Objects/Loaders/BarLoader'
 import { Alert, AlertDescription } from '@components/ui/alert'
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { allMembersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
+import { allMembersQueryOptions } from '@/features/users/queries/users.query'
 import { useRoles } from '@/features/users/hooks/useUsers'
 import { Controller, useForm } from 'react-hook-form'
 import { useState } from 'react'
@@ -77,9 +77,6 @@ const RolesUpdate: FC<Props> = props => {
 
       await queryClient.invalidateQueries({
         queryKey: allMembersQueryOptions().queryKey,
-      })
-      await queryClient.invalidateQueries({
-        queryKey: userRoleAssignmentsQueryOptions().queryKey,
       })
       props.setRolesModal(false)
       toast.success(t('toastSuccess'), { id: toastId })

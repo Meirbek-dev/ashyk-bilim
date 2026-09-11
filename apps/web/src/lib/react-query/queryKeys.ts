@@ -82,7 +82,6 @@ export const queryKeys = {
   platform: {
     config: () => ['platform', 'config'] as const,
     courses: () => ['platform', 'courses'] as const,
-    permissions: () => ['platform', 'permissions'] as const,
   },
   trail: {
     current: () => ['trail', 'current'] as const,
@@ -98,11 +97,10 @@ export const queryKeys = {
   },
   users: {
     me: () => ['users', 'me'] as const,
-    admin: (params: { q?: string; cursor?: string | null }) => ['users', 'admin', params] as const,
-    basicList: (limit = 100) => ['users', 'basic-list', { limit }] as const,
+    adminAll: () => ['users', 'admin'] as const,
+    admin: (params: { q?: string }) => [...queryKeys.users.adminAll(), params] as const,
     byId: (userId: string) => ['users', 'detail', userId] as const,
     byUsername: (username: string) => ['users', 'username', username] as const,
-    roleAssignments: () => ['users', 'role-assignments'] as const,
     roles: () => ['users', 'roles'] as const,
   },
 }
