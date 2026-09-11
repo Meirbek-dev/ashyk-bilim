@@ -7963,7 +7963,10 @@
             "total": "Барлығы",
             "needsGrading": "Тексерілуде",
             "avgScore": "Орташа балл",
-            "passRate": "Өту көрсеткіші"
+            "passRate": "Өту көрсеткіші",
+            "awaitingRelease": "Жариялауды күтуде",
+            "slaBreaches": "SLA бұзулары",
+            "slaTarget": "Мақсат: {hours} сағ"
           }
         },
         "submissionList": {
@@ -8005,6 +8008,13 @@
           "releaseHidden": "Жасырын бағаларды жариялау",
           "deadlinePlaceholder": "Күн мен уақытты таңдаңыз",
           "reasonPlaceholder": "Себебі",
+          "auditNote": {
+            "label": "Аудит жазбасы",
+            "placeholder": "Жаппай әрекеттің себебі",
+            "help": "Жариялау, қайтару және бағаларды ашу үшін міндетті.",
+            "tooShort": "Кемінде 8 таңба енгізіңіз.",
+            "unknownError": "Белгісіз қате"
+          },
           "extend": "Ұзарту",
           "export": "Экспорт",
           "lastResult": "Соңғы нәтиже: {detail}",
@@ -10210,6 +10220,15 @@
     "overallFeedback": "Жалпы пікір",
     "itemScore": "Балл",
     "itemFeedback": "Пікір",
+    "autoFeedback": {
+      "noAnswer": "Жауап берілмеген",
+      "noCorrectAnswer": "Дұрыс жауап анықталмаған",
+      "correct": "Дұрыс",
+      "incorrect": "Қате",
+      "partialNoCredit": "Ішінара дұрыс (ішінара балл жоқ)",
+      "partial": "Ішінара дұрыс ({hits}/{total})",
+      "pairsMatched": "Сәйкес келген жұптар: {correct}/{total}"
+    },
     "rubricCriterion": "Критерий",
     "rubricScore": "Балл",
     "rubricMaxScore": "Макс. балл",

@@ -7929,7 +7929,10 @@
             "total": "Total",
             "needsGrading": "Needs Grading",
             "avgScore": "Avg Score",
-            "passRate": "Pass Rate"
+            "passRate": "Pass Rate",
+            "awaitingRelease": "Awaiting release",
+            "slaBreaches": "SLA breaches",
+            "slaTarget": "{hours}h target"
           }
         },
         "submissionList": {
@@ -8003,6 +8006,13 @@
           "releaseHidden": "Release hidden grades",
           "deadlinePlaceholder": "Pick date and time",
           "reasonPlaceholder": "Reason",
+          "auditNote": {
+            "label": "Audit note",
+            "placeholder": "Reason for this bulk action",
+            "help": "Required for publish, return, and release actions.",
+            "tooShort": "Enter at least 8 characters.",
+            "unknownError": "Unknown error"
+          },
           "extend": "Extend",
           "export": "Export",
           "lastResult": "Last result: {detail}",
@@ -10021,6 +10031,15 @@
     "overallFeedback": "Overall feedback",
     "itemScore": "Score",
     "itemFeedback": "Feedback",
+    "autoFeedback": {
+      "noAnswer": "No answer provided",
+      "noCorrectAnswer": "No correct answer defined",
+      "correct": "Correct",
+      "incorrect": "Incorrect",
+      "partialNoCredit": "Partially correct (no partial credit)",
+      "partial": "Partially correct ({hits}/{total})",
+      "pairsMatched": "{correct}/{total} pairs matched"
+    },
     "rubricCriterion": "Criterion",
     "rubricScore": "Score",
     "rubricMaxScore": "Max score",

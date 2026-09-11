@@ -14,12 +14,6 @@ interface ReviewQueueSummary {
   slaHours: number
 }
 
-const reviewLayoutCopy = {
-  awaitingRelease: 'Awaiting release',
-  slaBreaches: 'SLA breaches',
-  slaWindow: '{hours}h target',
-}
-
 export default function ReviewLayout({
   activityId,
   assessmentUuid,
@@ -91,12 +85,12 @@ function StatsGrid({
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       <StatTile label={t('layout.stats.total')} value={stats.total} icon={Users} />
       <StatTile label={t('layout.stats.needsGrading')} value={stats.needs_grading_count} icon={Clock4} accent="amber" />
-      <StatTile label={reviewLayoutCopy.awaitingRelease} value={reviewQueueSummary.awaitingRelease} icon={Clock4} />
+      <StatTile label={t('layout.stats.awaitingRelease')} value={reviewQueueSummary.awaitingRelease} icon={Clock4} />
       <StatTile
-        label={reviewLayoutCopy.slaBreaches}
+        label={t('layout.stats.slaBreaches')}
         value={reviewQueueSummary.slaBreaches}
         icon={Clock4}
-        detail={reviewLayoutCopy.slaWindow.replace('{hours}', String(reviewQueueSummary.slaHours))}
+        detail={t('layout.stats.slaTarget', { hours: reviewQueueSummary.slaHours })}
         accent="amber"
       />
       <StatTile

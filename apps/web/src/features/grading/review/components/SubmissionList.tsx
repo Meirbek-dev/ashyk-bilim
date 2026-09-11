@@ -13,10 +13,6 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { StatusFilter, SubmissionListProps } from '../types'
 
-const submissionListCopy = {
-  awaitingRelease: 'Awaiting Release',
-}
-
 export default function SubmissionList({
   submissions,
   total,
@@ -60,7 +56,7 @@ export default function SubmissionList({
           >
             <NativeSelectOption value="ALL">{t('filters.all')}</NativeSelectOption>
             <NativeSelectOption value="NEEDS_GRADING">{t('filters.needsGrading')}</NativeSelectOption>
-            <NativeSelectOption value="AWAITING_RELEASE">{submissionListCopy.awaitingRelease}</NativeSelectOption>
+            <NativeSelectOption value="AWAITING_RELEASE">{tReview('releaseStateAwaitingRelease')}</NativeSelectOption>
             <NativeSelectOption value="PENDING">{tTable('statusPending')}</NativeSelectOption>
             <NativeSelectOption value="GRADED">{tTable('statusGraded')}</NativeSelectOption>
             <NativeSelectOption value="PUBLISHED">{tTable('statusPublished')}</NativeSelectOption>
@@ -113,7 +109,7 @@ export default function SubmissionList({
                   >
                     <div className="truncate text-sm font-medium">{displayName}</div>
                     <div className="text-muted-foreground truncate text-xs">
-                      {submission.user?.email ?? `User #${submission.user_id}`}
+                      {submission.user?.email ?? submission.user_id}
                     </div>
                     <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-xs">
                       <span>

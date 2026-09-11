@@ -30,13 +30,6 @@ interface BulkActionSummary {
   tone: 'default' | 'success' | 'warning'
 }
 
-const auditCopy = {
-  label: 'Audit Note',
-  placeholder: 'Reason for this bulk action',
-  help: 'Required for publish, return, and release actions.',
-  tooShort: 'Enter at least 8 characters.',
-}
-
 export default function ReviewBulkActionBar({
   activityId: _activityId,
   assessmentUuid,
@@ -94,7 +87,7 @@ export default function ReviewBulkActionBar({
     }
     startTransition(async () => {
       try {
-        const result = await saveGradesWithinAssessment(assessmentUuid, gradeable, status, auditNote.trim())
+        const result = await saveGradesWithinAssessment(assessmentUuid, gradeable, status, auditNote.trim(), t('auditNote.unknownError'))
         setFailedSubmissions(result.failures)
         if (result.failures.length > 0) {
           toast.warning(t('toasts.bulkPartialFailure', { failed: result.failures.length }))
@@ -292,15 +285,15 @@ export default function ReviewBulkActionBar({
             {actionNeedsAuditNote ? (
               <div className="space-y-2 rounded-md border p-3">
                 <label htmlFor="bulk-audit-note" className="text-sm font-medium">
-                  {auditCopy.label}
+                  {t('auditNote.label')}
                 </label>
                 <Input
                   id="bulk-audit-note"
                   value={auditNote}
-                  placeholder={auditCopy.placeholder}
+                  placeholder={t('auditNote.placeholder')}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAuditNote(event.target.value)}
                 />
-                <p className="text-muted-foreground text-xs">{auditNoteValid ? auditCopy.help : auditCopy.tooShort}</p>
+                <p className="text-muted-foreground text-xs">{auditNoteValid ? t('auditNote.help') : t('auditNote.tooShort')}</p>
               </div>
             ) : null}
             {pendingAction === 'release-hidden' ? (
@@ -375,6 +368,7 @@ async function saveGradesWithinAssessment(
   submissions: Submission[],
   status: 'PUBLISHED' | 'RETURNED',
   auditNote: string,
+  unknownError: string,
 ) {
   const results = await Promise.allSettled(
     submissions.map(submission =>
@@ -406,7 +400,7 @@ async function saveGradesWithinAssessment(
 
       failures.push({
         name,
-        error: result.reason instanceof Error ? result.reason.message : 'Unknown error',
+        error: result.reason instanceof Error ? result.reason.message : unknownError,
       })
     }
   })

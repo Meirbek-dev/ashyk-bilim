@@ -7946,7 +7946,10 @@
             "total": "Всего",
             "needsGrading": "На проверке",
             "avgScore": "Средний балл",
-            "passRate": "Процент сдачи"
+            "passRate": "Процент сдачи",
+            "awaitingRelease": "Ожидают публикации",
+            "slaBreaches": "Нарушения SLA",
+            "slaTarget": "Цель: {hours} ч"
           }
         },
         "submissionList": {
@@ -8020,6 +8023,13 @@
           "releaseHidden": "Открыть скрытые оценки",
           "deadlinePlaceholder": "Выберите дату и время",
           "reasonPlaceholder": "Причина",
+          "auditNote": {
+            "label": "Примечание для аудита",
+            "placeholder": "Причина массового действия",
+            "help": "Обязательно для публикации, возврата и открытия оценок.",
+            "tooShort": "Введите не менее 8 символов.",
+            "unknownError": "Неизвестная ошибка"
+          },
           "extend": "Продлить",
           "export": "Экспорт",
           "lastResult": "Последний результат: {detail}",
@@ -10037,6 +10047,15 @@
     "overallFeedback": "Общий отзыв",
     "itemScore": "Балл",
     "itemFeedback": "Отзыв",
+    "autoFeedback": {
+      "noAnswer": "Ответ не дан",
+      "noCorrectAnswer": "Правильный ответ не задан",
+      "correct": "Верно",
+      "incorrect": "Неверно",
+      "partialNoCredit": "Частично верно (без частичного балла)",
+      "partial": "Частично верно ({hits}/{total})",
+      "pairsMatched": "Совпало пар: {correct}/{total}"
+    },
     "rubricCriterion": "Критерий",
     "rubricScore": "Балл",
     "rubricMaxScore": "Макс. балл",

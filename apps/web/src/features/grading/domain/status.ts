@@ -107,3 +107,30 @@ export function isActivityProgressOverdue(cell: ActivityProgressCell, now = Date
 export function activityProgressNeedsTeacherAction(cell: ActivityProgressCell): boolean {
   return cell.teacher_action_required && Boolean(cell.latest_submission_uuid)
 }
+
+const AUTO_GRADER_FEEDBACK_KEYS: Record<string, string> = {
+  'No answer provided': 'noAnswer',
+  'No correct answer defined': 'noCorrectAnswer',
+  Correct: 'correct',
+  Incorrect: 'incorrect',
+  'Partially correct (no partial credit)': 'partialNoCredit',
+}
+
+/**
+ * The server auto-grader (`apps/server` grading/grader.rs) writes fixed English
+ * feedback strings into `grading.items[].feedback`. Map them onto
+ * `ItemGrading.autoFeedback.*`; teacher-written feedback passes through as-is.
+ * Requires a translator scoped to 'ItemGrading'.
+ */
+export function localizeAutoGraderFeedback(
+  feedback: string | null | undefined,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
+  if (!feedback) return ''
+  const partial = /^Partially correct \((\d+)\/(\d+)\)$/.exec(feedback)
+  if (partial) return t('autoFeedback.partial', { hits: partial[1]!, total: partial[2]! })
+  const pairs = /^(\d+)\/(\d+) pairs matched$/.exec(feedback)
+  if (pairs) return t('autoFeedback.pairsMatched', { correct: pairs[1]!, total: pairs[2]! })
+  const key = AUTO_GRADER_FEEDBACK_KEYS[feedback]
+  return key ? t(`autoFeedback.${key}`) : feedback
+}

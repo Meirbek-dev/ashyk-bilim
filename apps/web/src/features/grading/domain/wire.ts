@@ -57,7 +57,8 @@ export function gradebookFromWire(pages: GradebookPage[], course: Course, assess
       latest_submission_uuid: c.submission_id, latest_submission_status: statuses[c.status],
       state: states[statuses[c.status]], score: c.final_score ?? null, passed,
       due_at: unixToIso(assessment.policy.due_at_unix), is_late: c.is_late,
-      teacher_action_required: c.status === 'pending',
+      // `graded` = scored but unreleased (batch release mode): the teacher still owes a publish.
+      teacher_action_required: c.status === 'pending' || c.status === 'graded',
     }
   })
   const activities = assessments.map(a => ({ id: a.activity_id, activity_uuid: a.activity_id, name: a.title, activity_type: `TYPE_${a.kind.toUpperCase()}`, assessment_type: a.kind }))

@@ -161,7 +161,7 @@ describe('teacher review controls', () => {
     expect(within(dialog).getByText('preview.hiddenFromStudent')).toBeInTheDocument()
     expect(within(dialog).getByText('preview.alreadyVisible')).toBeInTheDocument()
 
-    fireEvent.change(within(dialog).getByPlaceholderText('Reason for this bulk action'), {
+    fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
       target: { value: 'Publish graded submissions' },
     })
     fireEvent.click(within(dialog).getByRole('button', { name: 'confirmPublish' }))
@@ -300,7 +300,7 @@ describe('teacher review controls', () => {
     expect(within(dialog).getByText('dialogs.releaseTitle')).toBeInTheDocument()
     expect(within(dialog).getByText('preview.selectedHiddenSubmissions')).toBeInTheDocument()
 
-    fireEvent.change(within(dialog).getByPlaceholderText('Reason for this bulk action'), {
+    fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
       target: { value: 'Release hidden grades' },
     })
     fireEvent.click(within(dialog).getByRole('button', { name: 'releaseGrades' }))

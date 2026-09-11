@@ -2,7 +2,7 @@
 
 import type { ComponentType } from 'react'
 import { LoaderCircle, ShieldAlert } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 import { buildSubmissionReviewViewModel, getSubmissionDisplayName } from '@/features/grading/domain'
 import type { Submission } from '@/features/grading/domain'
@@ -35,6 +35,7 @@ export default function SubmissionInspector({
 }) {
   const { submission, isLoading } = useGradingPanel(selectedUuid, assessmentUuid)
   const t = useTranslations('Features.Grading.Review')
+  const format = useFormatter()
   const current = submission ?? fallbackSubmission
 
   if (!selectedUuid) {
@@ -76,7 +77,7 @@ export default function SubmissionInspector({
                 {t('submissionInspector.attemptNumber', {
                   number: current.attempt_number,
                 })}{' '}
-                · {formatDate(current.submitted_at)}
+                · {formatDate(format, current.submitted_at)}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -182,6 +183,7 @@ function getViolationCount(submission: Submission): number {
 
 function ViolationLog({ submission }: { submission: Submission }) {
   const t = useTranslations('Features.Grading.Review')
+  const format = useFormatter()
   const violations = getSubmissionViolations(submission)
 
   if (violations.length === 0) {
@@ -211,7 +213,7 @@ function ViolationLog({ submission }: { submission: Submission }) {
                 {kind}
               </Badge>
               <span className="text-muted-foreground grow text-right">
-                {occurredAt ? formatDate(occurredAt) : '—'}
+                {occurredAt ? formatDate(format, occurredAt) : '—'}
                 {count !== null && count > 1 ? ` ×${count}` : ''}
               </span>
             </li>
@@ -224,14 +226,15 @@ function ViolationLog({ submission }: { submission: Submission }) {
 
 function AttemptHistory({ submission }: { submission: Submission }) {
   const t = useTranslations('Features.Grading.Review')
+  const format = useFormatter()
 
   return (
     <section className="bg-card rounded-lg border p-4">
       <h3 className="text-sm font-semibold">{t('submissionInspector.attemptHistory')}</h3>
       <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <HistoryItem label={t('submissionInspector.started')} value={formatDate(submission.started_at)} />
-        <HistoryItem label={t('submissionInspector.submitted')} value={formatDate(submission.submitted_at)} />
-        <HistoryItem label={t('submissionInspector.graded')} value={formatDate(submission.graded_at)} />
+        <HistoryItem label={t('submissionInspector.started')} value={formatDate(format, submission.started_at)} />
+        <HistoryItem label={t('submissionInspector.submitted')} value={formatDate(format, submission.submitted_at)} />
+        <HistoryItem label={t('submissionInspector.graded')} value={formatDate(format, submission.graded_at)} />
         <HistoryItem label={t('submissionInspector.version')} value={`v${submission.version}`} />
       </div>
     </section>
@@ -345,14 +348,9 @@ function HistoryItem({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatDate(value?: string | null) {
+function formatDate(format: ReturnType<typeof useFormatter>, value?: string | null) {
   if (!value) return '--'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '--'
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+  return format.dateTime(date, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }

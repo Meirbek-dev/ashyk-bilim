@@ -17,7 +17,13 @@ import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { canPublishGrade, canReturnSubmission, canTeacherEditGrade, getReleaseState } from '@/features/grading/domain'
+import {
+  canPublishGrade,
+  canReturnSubmission,
+  canTeacherEditGrade,
+  getReleaseState,
+  localizeAutoGraderFeedback,
+} from '@/features/grading/domain'
 import type { GradedItem, GradingBreakdown, Submission, TeacherGradeInput } from '@/features/grading/domain'
 import { StaleGradeError } from '@/services/grading/errors'
 import { saveGradingDraft } from '@/services/assessments/assessment-actions'
@@ -74,8 +80,11 @@ export default function GradeForm({
 
   // Items from grading breakdown — may be empty for manual-only assessments
   const gradedItems: GradedItem[] = useMemo(() => {
-    return submission?.grading_json?.items ?? []
-  }, [submission?.grading_json?.items])
+    return (submission?.grading_json?.items ?? []).map(item => ({
+      ...item,
+      feedback: localizeAutoGraderFeedback(item.feedback, tItemGrading),
+    }))
+  }, [submission?.grading_json?.items, tItemGrading])
 
   const hasItemGrading = gradedItems.length > 0 && Boolean(assessmentUuid)
 
@@ -109,7 +118,7 @@ export default function GradeForm({
 
     if (submission?.grading_json?.items) {
       const next: Record<string, ItemDraftEntry> = {}
-      for (const item of submission.grading_json.items) {
+      for (const item of gradedItems) {
         next[item.item_id] = {
           score: String(item.score),
           feedback: item.feedback ?? '',
