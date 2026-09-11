@@ -46,19 +46,19 @@ vi.mock('@/features/course-qa/components/qa-panel', () => ({
 }))
 
 const run: AIOperationRun = {
-  completed_at: '2026-07-17T10:01:00Z',
+  completed_at_unix: 1_784_282_460,
   context: {},
   cost_estimate: 0.01,
   duration_ms: 1000,
   error_code: null,
-  feature: 'course-summary',
+  feature: 'course_analysis',
   input_tokens: 20,
   model_name: 'test-model',
   output_tokens: 30,
   retry_count: 0,
-  run_uuid: 'run-1',
-  started_at: '2026-07-17T10:00:00Z',
-  status: 'finished',
+  id: '01a09100-0000-7000-8000-000000000001',
+  started_at_unix: 1_784_282_400,
+  status: 'succeeded',
   stuck: false,
   time_to_first_text_ms: 100,
 }
@@ -69,6 +69,7 @@ function queryState(data?: unknown) {
     error: null,
     isError: false,
     isLoading: false,
+    isPending: false,
     refetch: vi.fn(),
   }
 }
@@ -81,7 +82,7 @@ describe('AIOperationsConsole query states', () => {
   })
 
   it('shows a loading placeholder', () => {
-    queryMocks.runs = { ...queryState(), isLoading: true }
+    queryMocks.runs = { ...queryState(), isLoading: true, isPending: true }
 
     const { container } = render(<AIOperationsConsole />)
 
@@ -116,7 +117,7 @@ describe('AIOperationsConsole query states', () => {
 
     render(<AIOperationsConsole />)
 
-    expect(screen.getByText('course-summary')).toBeInTheDocument()
+    expect(screen.getByText('course_analysis')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'AiExperience.operationsConsole.inspect' })).toBeInTheDocument()
   })
 
@@ -130,7 +131,7 @@ describe('AIOperationsConsole query states', () => {
     render(<AIOperationsConsole />)
 
     expect(screen.getByRole('alert')).toHaveTextContent('Errors.somethingWentWrong')
-    expect(screen.getByText('course-summary')).toBeInTheDocument()
+    expect(screen.getByText('course_analysis')).toBeInTheDocument()
   })
 })
 

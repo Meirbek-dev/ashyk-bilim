@@ -38,8 +38,8 @@ export function AIEvalDashboardPanel({ dashboard, loading }: AIEvalDashboardProp
   const runMetrics = [
     { key: 'queued', value: dashboard.runs.queued, icon: Clock3Icon },
     { key: 'running', value: dashboard.runs.running, icon: ActivityIcon },
-    { key: 'finished', value: dashboard.runs.finished, icon: CheckCircle2Icon },
-    { key: 'error', value: dashboard.runs.error, icon: XCircleIcon },
+    { key: 'succeeded', value: dashboard.runs.succeeded, icon: CheckCircle2Icon },
+    { key: 'failed', value: dashboard.runs.failed, icon: XCircleIcon },
     { key: 'aborted', value: dashboard.runs.aborted, icon: CircleSlashIcon },
   ] as const
 
@@ -70,7 +70,7 @@ export function AIEvalDashboardPanel({ dashboard, loading }: AIEvalDashboardProp
           <Metric
             label={t('evals.averageScore')}
             value={
-              dashboard.evals.average_score === null ? t('notAvailable') : dashboard.evals.average_score.toFixed(2)
+              dashboard.evals.average_score == null ? t('notAvailable') : dashboard.evals.average_score.toFixed(2)
             }
           />
         </div>
@@ -91,17 +91,17 @@ export function AIEvalDashboardPanel({ dashboard, loading }: AIEvalDashboardProp
               </TableHeader>
               <TableBody>
                 {dashboard.recent_evals.map(result => (
-                  <TableRow key={result.eval_uuid}>
+                  <TableRow key={result.id}>
                     <TableCell>{result.dataset}</TableCell>
                     <TableCell>{result.evaluator}</TableCell>
                     <TableCell className="tabular-nums">
-                      {result.score === null ? t('notAvailable') : result.score.toFixed(2)}
+                      {result.score == null ? t('notAvailable') : result.score.toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant={result.passed === false ? 'destructive' : result.passed ? 'secondary' : 'outline'}
                       >
-                        {result.passed === null ? t('pending') : result.passed ? t('passed') : t('failed')}
+                        {result.passed == null ? t('pending') : result.passed ? t('passed') : t('failed')}
                       </Badge>
                     </TableCell>
                   </TableRow>

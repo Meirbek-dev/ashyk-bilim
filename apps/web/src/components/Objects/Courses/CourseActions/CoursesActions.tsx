@@ -17,14 +17,18 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { learnerCourseProgress } from '@/features/learner-course/api'
+import type { LearnerCourseState } from '@/features/learner-course/api'
 
 interface CourseActionsProps {
   courseuuid: string
   course: AppCourse
   trailData?: AppTrailData | null | undefined
+  /** Single progress source (published activities only) — same data as the activity sidebar. */
+  learnerState?: LearnerCourseState | null | undefined
 }
 
-function CoursesActions({ courseuuid, course, trailData }: CourseActionsProps) {
+function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseActionsProps) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const { user: currentUser } = useSession()
@@ -51,10 +55,7 @@ function CoursesActions({ courseuuid, course, trailData }: CourseActionsProps) {
 
     // If already started, navigate to first unfinished activity
     if (isStarted) {
-      const run = trailData?.runs?.find((r: AppTrailRun) => {
-        const cleanRunCourseUuid = r.course?.course_uuid?.replace('course_', '')
-        return cleanRunCourseUuid === cleanCourseUuid
-      })
+      const { completedIds } = learnerCourseProgress(learnerState)
 
       // Find first unfinished activity
       let firstUnfinishedActivity: AppActivity | null = null
@@ -63,9 +64,7 @@ function CoursesActions({ courseuuid, course, trailData }: CourseActionsProps) {
         for (const chapter of course.chapters) {
           if (chapter.activities) {
             for (const activity of chapter.activities) {
-              const isCompleted = run?.steps?.some(
-                (step: AppTrailStep) => step.activity_id === activity.id && step.complete,
-              )
+              const isCompleted = completedIds.has(activity.activity_uuid.replace('activity_', ''))
               if (!isCompleted) {
                 firstUnfinishedActivity = activity
                 break
@@ -222,17 +221,12 @@ function CoursesActions({ courseuuid, course, trailData }: CourseActionsProps) {
   }
 
   const renderProgressSection = () => {
-    const totalActivities =
-      course.chapters?.reduce((acc: number, chapter: AppChapter) => acc + (chapter.activities?.length || 0), 0) || 0
-
-    const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
-      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-      return cleanRunCourseUuid === cleanCourseUuid
-    })
-
-    const completedActivities = run?.steps?.filter((step: AppTrailStep) => step.complete)?.length || 0
-    const progressPercentage = totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)
-    const isCompleted = progressPercentage === 100
+    const {
+      completed: completedActivities,
+      total: totalActivities,
+      percent: progressPercentage,
+    } = learnerCourseProgress(learnerState)
+    const isCompleted = totalActivities > 0 && progressPercentage === 100
 
     if (!isStarted) {
       return (
@@ -346,7 +340,7 @@ function CoursesActions({ courseuuid, course, trailData }: CourseActionsProps) {
           course={course}
           isOpen={isProgressOpen}
           onClose={() => setIsProgressOpen(false)}
-          trailData={trailData ?? undefined}
+          learnerState={learnerState}
         />
       </CardContent>
     </Card>

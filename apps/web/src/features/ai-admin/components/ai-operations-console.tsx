@@ -16,7 +16,7 @@ import { useCancelAIRun } from '@/features/ai-experience/api/use-cancel-ai-run'
 import { useAIOperationRunDetail, useAIOperationRuns } from '../api/use-ai-usage'
 import type { AIOperationFilters, AIOperationRun } from '../api/use-ai-usage'
 
-const STATUS_OPTIONS = ['all', 'queued', 'running', 'finished', 'error', 'aborted'] as const
+const STATUS_OPTIONS = ['all', 'queued', 'running', 'succeeded', 'failed', 'aborted'] as const
 
 function percentile(values: number[], position: number) {
   if (!values.length) return null
@@ -154,7 +154,8 @@ export function AIOperationsConsole() {
           />
         </div>
 
-        {runs.isLoading ? (
+        {/* `isPending`, not `isLoading`: SSR has no fetch in flight, so `isLoading` differed between server and client (hydration error). */}
+        {runs.isPending ? (
           <Skeleton className="h-48 w-full" />
         ) : (
           <Table>
@@ -170,18 +171,18 @@ export function AIOperationsConsole() {
             </TableHeader>
             <TableBody>
               {(runs.data ?? []).map(run => (
-                <TableRow key={run.run_uuid}>
+                <TableRow key={run.id}>
                   <TableCell>{run.feature}</TableCell>
                   <TableCell>
-                    <Badge variant={run.status === 'error' ? 'destructive' : run.stuck ? 'warning' : 'outline'}>
+                    <Badge variant={run.status === 'failed' ? 'destructive' : run.stuck ? 'warning' : 'outline'}>
                       {run.stuck ? t('stuck') : run.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{date.format(new Date(run.started_at))}</TableCell>
+                  <TableCell>{date.format(new Date(run.started_at_unix * 1000))}</TableCell>
                   <TableCell className="max-w-48 truncate">{run.model_name ?? t('notAvailable')}</TableCell>
                   <TableCell>{run.error_code ?? t('notAvailable')}</TableCell>
                   <TableCell>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedRun(run.run_uuid)}>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedRun(run.id)}>
                       {t('inspect')}
                     </Button>
                   </TableCell>
@@ -203,7 +204,7 @@ export function AIOperationsConsole() {
                     variant="destructive"
                     disabled={cancelRun.isPending}
                     onClick={() =>
-                      cancelRun.mutate(detail.data.run.run_uuid, {
+                      cancelRun.mutate(detail.data.run.id, {
                         onSuccess: () => {
                           void detail.refetch()
                           void runs.refetch()
@@ -239,15 +240,15 @@ export function AIOperationsConsole() {
                     error={detail.error}
                   />
                 ) : null}
-                <code className="break-all">{detail.data.run.run_uuid}</code>
+                <code className="break-all">{detail.data.run.id}</code>
                 <dl className="grid gap-2 sm:grid-cols-3">
                   <Metric label={t('table.feature')} value={detail.data.run.feature} />
                   <Metric label={t('table.model')} value={detail.data.run.model_name ?? t('notAvailable')} />
-                  <Metric label={t('artifacts')} value={number.format(detail.data.artifact_uuids.length)} />
+                  <Metric label={t('artifacts')} value={number.format(detail.data.artifacts.length)} />
                 </dl>
                 <ol className="flex flex-col gap-2">
                   {detail.data.events.map(event => (
-                    <li key={event.event_id} className="flex gap-3 border-s-2 ps-3">
+                    <li key={event.id} className="flex gap-3 border-s-2 ps-3">
                       <span className="text-muted-foreground tabular-nums">{event.sequence}</span>
                       <span>{event.event_type}</span>
                     </li>
@@ -263,14 +264,14 @@ export function AIOperationsConsole() {
 }
 
 function summarizeRuns(runs: AIOperationRun[]) {
-  const terminal = runs.filter(run => ['finished', 'error', 'aborted'].includes(run.status))
-  const durations = terminal.flatMap(run => (run.duration_ms === null ? [] : [run.duration_ms]))
-  const firstTextTimes = runs.flatMap(run => (run.time_to_first_text_ms === null ? [] : [run.time_to_first_text_ms]))
-  const costs = runs.flatMap(run => (run.cost_estimate === null ? [] : [run.cost_estimate]))
+  const terminal = runs.filter(run => ['succeeded', 'failed', 'aborted'].includes(run.status))
+  const durations = terminal.flatMap(run => (run.duration_ms == null ? [] : [run.duration_ms]))
+  const firstTextTimes = runs.flatMap(run => (run.time_to_first_text_ms == null ? [] : [run.time_to_first_text_ms]))
+  const costs = runs.flatMap(run => (run.cost_estimate == null ? [] : [run.cost_estimate]))
   return {
     total: runs.length,
     successRate: terminal.length
-      ? Math.round((terminal.filter(run => run.status === 'finished').length / terminal.length) * 100)
+      ? Math.round((terminal.filter(run => run.status === 'succeeded').length / terminal.length) * 100)
       : 0,
     cancelRate: terminal.length
       ? Math.round((terminal.filter(run => run.status === 'aborted').length / terminal.length) * 100)

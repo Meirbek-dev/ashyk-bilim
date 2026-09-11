@@ -14,10 +14,8 @@ interface MetadataProps {
   params: Promise<{ courseuuid: string }>
 }
 
-const fetchCourseMetadata = cache(async (courseuuid: string) => {
-  const session = await getSession()
-  return await getCourseMetadata(courseuuid, undefined, !!session)
-})
+// Learner surface: published activities only (matches the learner-state outline).
+const fetchCourseMetadata = cache(async (courseuuid: string) => getCourseMetadata(courseuuid))
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params

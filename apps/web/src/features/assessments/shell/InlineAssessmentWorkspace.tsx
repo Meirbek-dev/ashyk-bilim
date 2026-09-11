@@ -47,6 +47,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useTranslations('Features.ActivityWorkspace')
+  const tCommon = useTranslations('Common')
   const { handleApiError, toastApiError } = useApiError()
   const [isPending, setIsPending] = useState(false)
 
@@ -156,8 +157,13 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   if (isLoading || !vm) {
     return (
-      <div className="flex min-h-[28rem] items-center justify-center">
-        <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
+      <div
+        className="text-muted-foreground flex min-h-[28rem] flex-col items-center justify-center gap-3 text-sm"
+        role="status"
+        aria-live="polite"
+      >
+        <LoaderCircle className="size-6 animate-spin" aria-hidden="true" />
+        <span>{tCommon('loading')}</span>
       </div>
     )
   }

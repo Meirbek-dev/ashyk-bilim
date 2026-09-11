@@ -10,17 +10,14 @@ import { getStudentActivityRuntime } from '@/features/student-activity/api/runti
 import { queryKeys } from '@/lib/react-query/queryKeys'
 
 import ActivityClient from './activity'
-import { getSession } from '@/lib/auth/session'
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>
 }
 
 // Add this function at the top level to avoid duplicate fetches
-const fetchCourseMetadata = cache(async (courseuuid: string) => {
-  const session = await getSession()
-  return await getCourseMetadata(courseuuid, undefined, !!session)
-})
+// Learner surface: published activities only (matches the learner-state outline).
+const fetchCourseMetadata = cache(async (courseuuid: string) => getCourseMetadata(courseuuid))
 
 const fetchActivity = cache(async (activityid: string) => getActivity(activityid))
 

@@ -8,15 +8,25 @@ import { Button } from '@components/ui/button'
 interface ResourceNotFoundProps {
   courseuuid?: string
   session?: unknown
-  type?: 'activity' | 'course' | 'generic'
+  type?: 'activity' | 'activity-unavailable' | 'course' | 'generic'
 }
 
 export default function ResourceNotFound({ courseuuid, session, type = 'generic' }: ResourceNotFoundProps) {
   const tErrors = useTranslations('Errors')
   const router = useRouter()
 
-  const heading = type === 'activity' ? tErrors('activityNotFound') : tErrors('courseNotFound')
-  const message = type === 'activity' ? tErrors('activityNotFoundMessage') : tErrors('courseNotFoundMessage')
+  const heading =
+    type === 'activity'
+      ? tErrors('activityNotFound')
+      : type === 'activity-unavailable'
+        ? tErrors('activityUnavailable')
+        : tErrors('courseNotFound')
+  const message =
+    type === 'activity'
+      ? tErrors('activityNotFoundMessage')
+      : type === 'activity-unavailable'
+        ? tErrors('activityUnavailableMessage')
+        : tErrors('courseNotFoundMessage')
 
   const handleBackToCourse = () => {
     if (!courseuuid) return

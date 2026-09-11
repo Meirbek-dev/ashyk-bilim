@@ -142,7 +142,8 @@ function primaryAction(current: OutlineActivity, next: RuntimeNavItem | null): S
   return { id, enabled: current.allowed_actions.includes(id === 'review_policy' ? 'view_receipt' : id) }
 }
 
-function toRuntime(state: LearnerCourseState, activityId: string): StudentActivityRuntime {
+/** `null` when the activity is not in the learner outline (unpublished or foreign). */
+function toRuntime(state: LearnerCourseState, activityId: string): StudentActivityRuntime | null {
   const outline = state.outline.map(chapter => ({
     id: chapter.id,
     index: chapter.index,
@@ -154,7 +155,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
   )
   const currentIndex = flat.findIndex(item => item.activity.id === activityId)
   const currentEntry = currentIndex >= 0 ? flat[currentIndex] : undefined
-  if (!currentEntry) throw new Error(`Activity ${activityId} is not in course ${state.course_id}`)
+  if (!currentEntry) return null
 
   const { activity, chapter, index } = currentEntry
   const previous = currentIndex > 0 ? toNavItem(flat[currentIndex - 1]!.activity) : null
@@ -209,7 +210,7 @@ export async function runStudentActivityAction(
   courseUuid: string,
   activityUuid: string,
   action: StudentActivityActionRequest,
-) {
+): Promise<StudentActivityRuntime> {
   if (action.command === 'mark_complete') {
     await apiJson(`trail/activities/${activityUuid}`, { method: 'POST' })
   } else if (action.command === 'unmark_complete') {
@@ -217,5 +218,7 @@ export async function runStudentActivityAction(
   } else {
     throw new Error('Unsupported activity command')
   }
-  return getStudentActivityRuntime(courseUuid, activityUuid)
+  const runtime = await getStudentActivityRuntime(courseUuid, activityUuid)
+  if (!runtime) throw new Error(`Activity ${activityUuid} is not in course ${courseUuid}`)
+  return runtime
 }

@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 import { CourseAIHub } from '@/features/course-qa'
 import { useQuery } from '@tanstack/react-query'
-import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
+import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 interface CourseClientProps {
   course: AppCourse
@@ -129,6 +129,7 @@ function CourseClient(props: CourseClientProps) {
   const router = useRouter()
   const learnerStateQuery = useQuery(learnerCourseStateQueryOptions(courseuuid, Boolean(currentUser)))
   const learnerState = learnerStateQuery.data
+  const progress = useMemo(() => learnerCourseProgress(learnerState), [learnerState])
 
   const mutateDiscussions = () => {
     router.refresh()
@@ -182,11 +183,8 @@ function CourseClient(props: CourseClientProps) {
     }
   }
 
-  const isActivityDone = (activity: AppActivity) => {
-    return learnerState?.outline
-      .flatMap(chapter => chapter.activities)
-      .some(item => item.id === Number(activity.id) && item.complete)
-  }
+  const isActivityDone = (activity: AppActivity) =>
+    progress.completedIds.has(activity.activity_uuid.replace('activity_', ''))
 
   const isActivityCurrent = (activity: AppActivity) => {
     const activity_uuid = activity.activity_uuid.replace('activity_', '')
@@ -301,9 +299,13 @@ function CourseClient(props: CourseClientProps) {
                   )
                 })()}
 
-                {/* Progress indicators */}
+                {/* Progress indicators (learner-state is hydrated server-side, so this renders with the page) */}
                 {isEnrolled && (
-                  <ActivityIndicators course_uuid={props.course.course_uuid} course={course} trailData={trailData} />
+                  <ActivityIndicators
+                    course_uuid={props.course.course_uuid}
+                    course={course}
+                    completedActivityIds={progress.completedIds}
+                  />
                 )}
 
                 {/* Course description */}
@@ -495,7 +497,12 @@ function CourseClient(props: CourseClientProps) {
 
               {/* Sidebar */}
               <div className="hidden w-full shrink-0 space-y-4 md:block md:w-1/4">
-                <CoursesActions courseuuid={courseuuid} course={course} trailData={trailData} />
+                <CoursesActions
+                  courseuuid={courseuuid}
+                  course={course}
+                  trailData={trailData}
+                  learnerState={learnerState}
+                />
                 <CourseAuthors authors={(course.authors ?? []) as never} courseUuid={course.course_uuid} />
               </div>
             </div>

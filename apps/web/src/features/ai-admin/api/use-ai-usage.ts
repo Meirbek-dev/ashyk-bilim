@@ -4,93 +4,16 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 
 import { apiJson } from '@/lib/api-client'
 
-export interface AIUsageSummary {
-  total_runs: number
-  input_tokens: number
-  output_tokens: number
-  monthly_budget: number
-  remaining_budget: number
-}
+import { AdminRunDetail, AdminRunPage, AdminSettings, EvalDashboard, UsageSummary } from '@/lib/api/generated/zod'
 
-export interface AIFeatureSetting {
-  key: string
-  enabled: boolean
-  editable: boolean
-  source: string
-}
-
-export interface AIAdminSettings {
-  ai_enabled: boolean
-  provider_ready: boolean
-  model: string
-  monthly_token_budget: number
-  max_tokens_per_request: number
-  max_output_tokens: number
-  draft_mode_enabled: boolean
-  features: AIFeatureSetting[]
-}
-
-export interface AIRunAggregate {
-  total: number
-  queued: number
-  running: number
-  finished: number
-  error: number
-  aborted: number
-}
-
-export interface AIEvalSummary {
-  total: number
-  passed: number
-  failed: number
-  average_score: number | null
-}
-
-export interface AIEvalResultRead {
-  eval_uuid: string
-  run_id: number | null
-  dataset: string
-  evaluator: string
-  score: number | null
-  passed: boolean | null
-  details_json: Record<string, unknown>
-}
-
-export interface AIEvalDashboard {
-  runs: AIRunAggregate
-  evals: AIEvalSummary
-  recent_evals: AIEvalResultRead[]
-}
-
-export interface AIOperationRun {
-  run_uuid: string
-  status: string
-  feature: string
-  model_name: string | null
-  error_code: string | null
-  duration_ms: number | null
-  time_to_first_text_ms: number | null
-  input_tokens: number | null
-  output_tokens: number | null
-  cost_estimate: number | null
-  retry_count: number
-  started_at: string
-  completed_at: string | null
-  stuck: boolean
-  context: Record<string, unknown>
-}
-
-export interface AIOperationRunDetail {
-  run: AIOperationRun
-  events: {
-    event_id: string
-    sequence: number
-    event_type: string
-    created_at: string
-    payload: Record<string, unknown>
-  }[]
-  artifact_uuids: string[]
-}
+// Types come from the v2 contract (`AdminRunPage`, `EvalDashboard`, …);
+// the legacy v1 aliases are kept for the components' prop names.
+export type AIUsageSummary = UsageSummary
+export type AIAdminSettings = AdminSettings
+export type AIFeatureSetting = AdminSettings['features'][number]
+export type AIEvalDashboard = EvalDashboard
+export type AIOperationRun = AdminRunPage['items'][number]
+export type AIOperationRunDetail = AdminRunDetail
 
 export interface AIOperationFilters {
   days: number
@@ -103,21 +26,21 @@ export interface AIOperationFilters {
 export function aiUsageQueryOptions() {
   return queryOptions({
     queryKey: ['ai-usage'],
-    queryFn: () => apiJson<AIUsageSummary>('ai/usage'),
+    queryFn: () => apiJson('ai/usage', undefined, value => UsageSummary.parse(value)),
   })
 }
 
 export function aiAdminSettingsQueryOptions() {
   return queryOptions({
     queryKey: ['ai-admin-settings'],
-    queryFn: () => apiJson<AIAdminSettings>('ai/admin/settings'),
+    queryFn: () => apiJson('ai/admin/settings', undefined, value => AdminSettings.parse(value)),
   })
 }
 
 export function aiEvalDashboardQueryOptions() {
   return queryOptions({
     queryKey: ['ai-eval-dashboard'],
-    queryFn: () => apiJson<AIEvalDashboard>('ai/admin/evals'),
+    queryFn: () => apiJson('ai/admin/evals', undefined, value => EvalDashboard.parse(value)),
   })
 }
 
@@ -136,19 +59,21 @@ export function useAIEvalDashboard() {
 export function useAIOperationRuns(filters: AIOperationFilters) {
   const params = new URLSearchParams({ days: String(filters.days) })
   if (filters.status) params.set('status', filters.status)
-  if (filters.feature) params.set('feature', filters.feature)
+  if (filters.feature) params.set('kind', filters.feature)
   if (filters.provider) params.set('provider', filters.provider)
-  if (filters.courseUuid) params.set('course_uuid', filters.courseUuid)
+  if (filters.courseUuid) params.set('course_id', filters.courseUuid)
   return useQuery({
     queryKey: ['ai-operation-runs', filters],
-    queryFn: () => apiJson<AIOperationRun[]>(`ai/admin/runs?${params.toString()}`),
+    // Keyset page `{items, next_cursor}`; the console shows the first page.
+    // ponytail: walk `next_cursor` (collectPages) if one window ever exceeds a page.
+    queryFn: () => apiJson(`ai/admin/runs?${params.toString()}`, undefined, value => AdminRunPage.parse(value).items),
   })
 }
 
 export function useAIOperationRunDetail(runUuid: string | null) {
   return useQuery({
     queryKey: ['ai-operation-run', runUuid],
-    queryFn: () => apiJson<AIOperationRunDetail>(`ai/admin/runs/${runUuid}`),
+    queryFn: () => apiJson(`ai/admin/runs/${runUuid}`, undefined, value => AdminRunDetail.parse(value)),
     enabled: Boolean(runUuid),
   })
 }

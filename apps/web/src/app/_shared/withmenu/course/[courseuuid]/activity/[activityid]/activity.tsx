@@ -18,8 +18,9 @@ interface ActivityClientProps {
 export default function ActivityClient({ activityid, courseuuid, activity, course, runtime }: ActivityClientProps) {
   const resolvedRuntime = runtime ?? buildCourseEndRuntime(course)
 
+  // The server already fetched the (published-only) structure; seeding it skips one client round trip.
   return (
-    <CourseProvider courseuuid={course.course_uuid}>
+    <CourseProvider courseuuid={course.course_uuid} initialCourse={course}>
       <ActivityLayoutProvider>
         <StudentActivityWorkspace activity={activity} courseUuid={courseuuid} runtime={resolvedRuntime}>
           <ActivityContentRenderer

@@ -17,10 +17,8 @@ interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>
 }
 
-const fetchCourseMetadata = cache(async (courseuuid: string) => {
-  const session = await getSession()
-  return await getCourseMetadata(courseuuid, undefined, !!session)
-})
+// Learner surface: published activities only (matches the learner-state outline).
+const fetchCourseMetadata = cache(async (courseuuid: string) => getCourseMetadata(courseuuid))
 
 const fetchActivity = cache(async (activityid: string) => getActivity(activityid))
 
@@ -120,6 +118,12 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
       return <ResourceNotFound type="activity" courseuuid={courseuuid} session={activeSession} />
     }
     throw error
+  }
+
+  // Unpublished (or foreign) activity: the learner outline has no entry for it.
+  if (!isCourseEnd && !runtime) {
+    const activeSession = await getSession()
+    return <ResourceNotFound type="activity-unavailable" courseuuid={courseuuid} session={activeSession} />
   }
 
   const course: CourseStructure = {

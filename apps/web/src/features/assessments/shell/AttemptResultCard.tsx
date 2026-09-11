@@ -1,7 +1,7 @@
 'use client'
 
 import { CheckCircle2, ChevronDown, Clock, RotateCcw, XCircle } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -9,15 +9,6 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { formatPercent } from '@/features/assessments/domain/score'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -40,6 +31,7 @@ interface AttemptResultCardProps {
  */
 export default function AttemptResultCard({ vm, onRetry, onNext: _onNext, onStartRevision }: AttemptResultCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
+  const format = useFormatter()
   const [breakdownOpen, setBreakdownOpen] = useState(false)
 
   const { isResultVisible, score, isReturnedForRevision, canStartRevision, canSubmit } = vm
@@ -98,7 +90,7 @@ export default function AttemptResultCard({ vm, onRetry, onNext: _onNext, onStar
           </p>
 
           {vm.startedAt ? (
-            <p className="text-muted-foreground text-xs">{t('submittedOn', { date: formatDate(vm.startedAt) })}</p>
+            <p className="text-muted-foreground text-xs">{t('submittedOn', { date: format.dateTime(new Date(vm.startedAt), { dateStyle: 'medium', timeStyle: 'short' }) })}</p>
           ) : null}
         </div>
       </div>
@@ -124,16 +116,25 @@ export default function AttemptResultCard({ vm, onRetry, onNext: _onNext, onStar
           </button>
           {breakdownOpen ? (
             <div className="border-border divide-border divide-y border-t text-sm">
-              {vm.items.map((item, i) => (
-                <div key={item.id} className="flex items-center justify-between px-4 py-2">
-                  <span className="text-muted-foreground line-clamp-2 flex-1 pr-4">
-                    {i + 1}. {item.title}
-                  </span>
-                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                    {item.max_score > 0 ? `/ ${item.max_score}` : '—'}
-                  </span>
-                </div>
-              ))}
+              {vm.items.map((item, i) => {
+                const graded = vm.itemScores[item.id]
+                const maxScore = graded?.maxScore ?? item.max_score
+                return (
+                  <div key={item.id} className="flex items-center justify-between px-4 py-2">
+                    <span className="text-muted-foreground line-clamp-2 flex-1 pr-4">
+                      {i + 1}. {item.title}
+                    </span>
+                    <span
+                      className="text-muted-foreground shrink-0 text-xs tabular-nums"
+                      data-testid={`item-score-${item.id}`}
+                    >
+                      {maxScore > 0
+                        ? `${graded ? format.number(graded.score) : '—'} / ${format.number(maxScore)}`
+                        : '—'}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           ) : null}
         </div>

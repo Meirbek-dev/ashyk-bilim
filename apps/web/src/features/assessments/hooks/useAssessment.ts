@@ -216,6 +216,11 @@ function useAssessment(
     },
     policy,
     items: assessment.items.map(itemFromWire),
+    itemScores: visible
+      ? Object.fromEntries(
+          (latest?.grading?.items ?? []).map(item => [item.item_id, { score: item.score, maxScore: item.max_score }]),
+        )
+      : {},
     canEdit: state.can_continue || state.can_start,
     canSaveDraft: state.can_continue,
     canSubmit: state.can_continue || state.can_start,

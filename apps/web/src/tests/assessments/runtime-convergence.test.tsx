@@ -161,6 +161,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
         updated_at: '2026-05-05T10:00:00Z',
       },
     ],
+    itemScores: {},
     canEdit: true,
     canSaveDraft: true,
     canSubmit: true,

@@ -25,7 +25,8 @@ interface Props {
   course_uuid: string
   current_activity?: string
   enableNavigation?: boolean
-  trailData?: AppTrailData | null | undefined
+  /** Ids of completed activities from the learner-state outline (the single progress source). */
+  completedActivityIds: ReadonlySet<string>
 }
 
 // Helper functions
@@ -257,22 +258,10 @@ function ActivityIndicators(props: Props) {
     ? (activityIndex.indexByCleanUuid.get(cleanCurrentActivityId) ?? -1)
     : -1
 
-  // Memoized set of completed activity IDs for fast lookup
-  const completedActivityIds = useMemo(() => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = props.trailData?.runs?.find((activeRun: AppTrailRun) => {
-      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-      return cleanRunCourseUuid === cleanCourseUuid
-    })
-    return new Set(
-      (run?.steps ?? [])
-        .filter((step: AppTrailStep) => step.complete === true)
-        .map((step: AppTrailStep) => Number(step.activity_id)),
-    )
-  }, [props.trailData, course.course_uuid])
+  const { completedActivityIds } = props
 
-  function isActivityDone(activity: { id?: number | null }) {
-    return completedActivityIds.has(Number(activity.id))
+  function isActivityDone(activity: { cleanUuid?: string }) {
+    return Boolean(activity.cleanUuid) && completedActivityIds.has(activity.cleanUuid!)
   }
 
   function isActivityCurrent(activity: { cleanUuid?: string }) {

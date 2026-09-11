@@ -26,7 +26,8 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { Controller, useForm } from 'react-hook-form'
 import { Textarea } from '@components/ui/textarea'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
+import { Skeleton } from '@components/ui/skeleton'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
@@ -329,22 +330,17 @@ function UpdatesListView({ courseUuid }: { courseUuid: string }) {
   const t = useTranslations('Courses.CourseAuthors')
   const locale = useDateFnsLocale()
 
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    queueMicrotask(() => setMounted(true))
-  }, [])
+  // Reserve the empty-state height while loading so the card does not jump in.
+  if (!updates && isAuthenticated) return <Skeleton className="h-[8.25rem] w-full rounded-lg" />
 
-  if (!mounted || !updates || updates.length === 0) {
-    if (mounted && (!updates || updates.length === 0)) {
-      return (
-        <div className="border-border bg-muted/20 flex flex-col items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center">
-          <TentTree size={28} className="text-muted-foreground mb-2" />
-          <p className="text-foreground text-sm font-medium">{t('noUpdatesYet')}</p>
-          <p className="text-muted-foreground mt-1 text-xs">{t('updatesAppearHere')}</p>
-        </div>
-      )
-    }
-    return null // Return nothing while mounting if no data yet to match server
+  if (!updates || updates.length === 0) {
+    return (
+      <div className="border-border bg-muted/20 flex min-h-[8.25rem] flex-col items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center">
+        <TentTree size={28} className="text-muted-foreground mb-2" />
+        <p className="text-foreground text-sm font-medium">{t('noUpdatesYet')}</p>
+        <p className="text-muted-foreground mt-1 text-xs">{t('updatesAppearHere')}</p>
+      </div>
+    )
   }
 
   return (

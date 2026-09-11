@@ -37,7 +37,7 @@ interface LearnerCourseModulesProps {
 }
 
 interface CourseActivityAgendaItem {
-  activityId: number
+  activityId: string
   activityUuid: string
   title: string
   chapterName: string
@@ -314,11 +314,11 @@ function buildCourseProgressSnapshot(courseUuid: string, state?: LearnerCourseSt
     state?.outline.flatMap(chapter =>
       chapter.activities.map((activity, activityIndex) => ({
         activityId: activity.id,
-        activityUuid: activity.uuid,
+        activityUuid: activity.id,
         title: activity.title,
         chapterName: chapter.title,
         complete: activity.complete,
-        href: `${getAbsoluteUrl('')}/course/${courseUuid}/activity/${normalizeActivityUuid(activity.uuid)}`,
+        href: `${getAbsoluteUrl('')}/course/${courseUuid}/activity/${normalizeActivityUuid(activity.id)}`,
         index: activityIndex,
         returned: activity.state === 'returned',
       })),
@@ -326,7 +326,7 @@ function buildCourseProgressSnapshot(courseUuid: string, state?: LearnerCourseSt
   const completed = state?.progress.completed_required_count ?? 0
   const total = state?.progress.total_required_count ?? 0
   const percent = Math.round(state?.progress.progress_pct ?? 0)
-  const nextActivityUuid = state?.next_action.activity_uuid
+  const nextActivityUuid = state?.next_action.activity_id
 
   return {
     completed,

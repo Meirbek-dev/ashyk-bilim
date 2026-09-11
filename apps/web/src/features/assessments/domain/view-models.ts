@@ -84,6 +84,8 @@ export interface AttemptViewModel {
   score: NormalizedScore
   policy: PolicyView
   items: AssessmentItem[]
+  /** Released per-item grades keyed by item id (`GradedItem.score` / `max_score`); empty until released. */
+  itemScores: Record<string, { score: number; maxScore: number }>
   /** Student may edit answers. */
   canEdit: boolean
   /** Student may save a draft. */
