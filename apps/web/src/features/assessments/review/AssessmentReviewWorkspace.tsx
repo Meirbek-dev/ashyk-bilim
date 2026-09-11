@@ -67,7 +67,7 @@ export default function AssessmentReviewWorkspace({
     error,
   } = useQuery(
     queryOptions({
-      queryKey: queryKeys.assessments.activity(cleanUuid),
+      queryKey: queryKeys.assessments.review(cleanUuid),
       queryFn: async () => reviewDetailFromWire(await getActivityAssessment(cleanUuid)),
       enabled: Boolean(cleanUuid),
     }),

@@ -9,9 +9,12 @@ export const queryKeys = {
     mySubmissions: (assessmentUuid: string | null | undefined) =>
       ['assessments', 'submissions', 'me', assessmentUuid || 'missing'] as const,
     activity: (activityUuid: string) => ['assessments', 'activity', activityUuid] as const,
-    // The studio caches its own normalized shape; sharing `activity` with the
-    // raw-wire readers let whichever fetched first win the cache.
-    studio: (activityUuid: string) => ['assessments', 'studio', activityUuid] as const,
+    // Each consumer caches its own shape under the `activity` prefix, so the
+    // raw-wire key never carries a projection and a prefix invalidation of
+    // `activity(id)` still refreshes all of them.
+    studio: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'studio'] as const,
+    review: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'review'] as const,
+    activityAssessmentId: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'id'] as const,
     activityDetail: (activityUuid: string, assessmentUuid: string | null | undefined) =>
       ['assessments', 'activity', activityUuid, assessmentUuid || 'missing'] as const,
     detail: (assessmentUuid: string) => ['assessments', 'detail', assessmentUuid] as const,

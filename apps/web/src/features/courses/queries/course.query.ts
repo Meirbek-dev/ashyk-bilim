@@ -201,7 +201,7 @@ export function courseContributorsQueryOptions(courseUuid: string) {
 
 export function activityAssessmentUuidQueryOptions(activityUuid: string) {
   return queryOptions({
-    queryKey: queryKeys.assessments.activity(activityUuid),
+    queryKey: queryKeys.assessments.activityAssessmentId(activityUuid),
     queryFn: async () => {
       try {
         const data = await apiJson(

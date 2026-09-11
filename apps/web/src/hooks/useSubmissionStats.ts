@@ -7,7 +7,7 @@ import { submissionStatsQueryOptions } from '@/features/grading/queries/grading.
 function submissionStatsHookOptions(activityId: number | null, assessmentUuid?: string | null) {
   return queryOptions({
     ...submissionStatsQueryOptions(assessmentUuid ?? ''),
-    enabled: activityId !== null && Boolean(assessmentUuid),
+    enabled: Boolean(assessmentUuid),
   })
 }
 

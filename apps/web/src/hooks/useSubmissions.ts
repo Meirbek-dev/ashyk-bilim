@@ -37,7 +37,9 @@ function submissionsHookOptions(
       sortDir,
       status: queryStatus,
     }),
-    enabled: Boolean(activityId && assessmentUuid),
+    // v2 keys submissions by assessment id; `activityId` is a legacy numeric
+    // prop the v2 review passes as 0 and must not gate the query.
+    enabled: Boolean(assessmentUuid),
   })
 }
 
@@ -83,7 +85,7 @@ export function useSubmissions({
     isLoading: query.isPending,
     error: query.error ?? null,
     mutate: async () => {
-      if (!activityId || !assessmentUuid) return undefined
+      if (!assessmentUuid) return undefined
       await queryClient.invalidateQueries({ queryKey })
       return queryClient.fetchQuery(submissionsQueryOptions(queryParams))
     },

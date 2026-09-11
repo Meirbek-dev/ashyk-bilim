@@ -9,7 +9,9 @@ import type { Submission } from '@/features/grading/domain'
 import { getSubmissionPlagiarismState, getSubmissionViolations } from '@/features/grading/domain/types'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import type { KindReviewDetailProps } from '@/features/assessments/registry'
-import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment'
+import { useQuery } from '@tanstack/react-query'
+import { assessmentByActivityQueryOptions } from '@/features/assessments/queries'
+import { itemFromWire } from '@/features/assessments/domain/assessment-wire'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import { CanonicalReviewAnswer } from '@/features/assessments/shared/canonical-item-rendering'
 import { useGradingPanel } from '@/hooks/useGradingPanel'
@@ -246,8 +248,13 @@ export function SubmittedAnswers({
   answersByItem?: Record<string, ItemAnswer>
 }) {
   const t = useTranslations('Features.Grading.Review')
-  const { vm } = useAssessmentAttempt(activityUuid ?? null)
-  const items = vm?.surface === 'ATTEMPT' ? vm.vm.items : []
+  // The grader needs the items only; the learner attempt hook would also
+  // fetch the *teacher's* attempt state for this assessment.
+  const { data: assessment } = useQuery({
+    ...assessmentByActivityQueryOptions(activityUuid ?? ''),
+    enabled: Boolean(activityUuid),
+  })
+  const items: AssessmentItem[] = assessment ? assessment.items.map(itemFromWire) : []
   const canonicalAnswers = answersByItem ?? getCanonicalAnswersByItem(submission)
   const { annotationsByItem, addAnnotation, removeAnnotation } = useAnnotations()
 
