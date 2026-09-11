@@ -13,12 +13,26 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import { useTranslations } from 'next-intl'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { apiJson } from '@/lib/api-client'
+import {
+  createOverride,
+  deleteOverride,
+  getAccess,
+  listOverrides,
+  setAccess,
+  updateOverride,
+} from '@/lib/api/generated/assessments/assessments'
+import { usergroupsForCourse } from '@/lib/api/generated/usergroups/usergroups'
+import type { OverrideRequest, StudentOverride } from '@/lib/api/generated/zod'
+import { toUnix } from '@/lib/api/contract'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { collectGradebookPages } from '@/features/grading/queries/grading.query'
+import { useApiError } from '@/hooks/useApiError'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -27,294 +41,173 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import {
-  buildEligibleGroupsPath,
-  buildEligibleLearnersPath,
-  estimateAudiencePreviewCount,
-  getExcludedLoadedCount,
-} from './accessBuilderUtils'
-import type { AccessMode } from './accessBuilderUtils'
-
-interface AccessUser {
-  id: number
-  user_uuid: string
-  username: string
-  first_name?: string | null
-  last_name?: string | null
-  email: string
-}
-
-interface AccessUserGroup {
-  id: number
-  usergroup_uuid: string
-  name: string
-  description: string
-  member_count: number
-}
-
-interface AccessRead {
-  mode: AccessMode
-  users: AccessUser[]
-  usergroups: AccessUserGroup[]
-  effective_user_count: number
-}
-
-interface StudentPolicyOverride {
-  id: number
-  user_id: number
-  policy_id: number
-  max_attempts_override: number | null
-  due_at_override: string | null
-  time_limit_override_seconds: number | null
-  waive_late_penalty: boolean
-  note: string
-  expires_at: string | null
-  granted_by: number | null
-}
+import { estimateAudiencePreviewCount, filterByQuery, getExcludedLoadedCount, uniqueById } from './accessBuilderUtils'
+import type { AccessGroupRow, AccessLearner, AccessMode } from './accessBuilderUtils'
 
 interface AccessManagementTabProps {
   assessmentUuid: string
+  courseUuid: string | null
   disabled: boolean
 }
 
-export default function AccessManagementTab({ assessmentUuid, disabled }: AccessManagementTabProps) {
+export default function AccessManagementTab({ assessmentUuid, courseUuid, disabled }: AccessManagementTabProps) {
   const t = useTranslations('Features.Assessments.Studio.AccessManagement')
-  const [access, setAccess] = useState<AccessRead | null>(null)
-  const [eligibleUsers, setEligibleUsers] = useState<AccessUser[]>([])
-  const [eligibleGroups, setEligibleGroups] = useState<AccessUserGroup[]>([])
-  const [overrides, setOverrides] = useState<StudentPolicyOverride[]>([])
-  const [mode, setMode] = useState<AccessMode>('ALL_COURSE_LEARNERS')
-  const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set())
-  const [selectedGroups, setSelectedGroups] = useState<Set<number>>(new Set())
-  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set())
+  const queryClient = useQueryClient()
+  const { toastApiError } = useApiError()
+  const [mode, setMode] = useState<AccessMode>('all_course_learners')
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [query, setQuery] = useState('')
   const [groupQuery, setGroupQuery] = useState('')
   const [overrideAttempts, setOverrideAttempts] = useState('')
   const [overrideDueAt, setOverrideDueAt] = useState('')
   const [overrideWaiveLate, setOverrideWaiveLate] = useState(false)
   const [overrideNote, setOverrideNote] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSearchingUsers, setIsSearchingUsers] = useState(false)
-  const [isSearchingGroups, setIsSearchingGroups] = useState(false)
   const [lastSaveError, setLastSaveError] = useState<string | null>(null)
   const [lastOverrideError, setLastOverrideError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-  const [isOverridePending, startOverrideTransition] = useTransition()
 
-  const loadAccess = useCallback(async () => {
-    const [accessData, usersData, groupsData, overrideData] = await Promise.all([
-      apiJson<AccessRead>(`assessments/${assessmentUuid}/access`),
-      fetchEligibleUsers(assessmentUuid, ''),
-      fetchEligibleGroups(assessmentUuid, ''),
-      apiJson<StudentPolicyOverride[]>(`assessments/${assessmentUuid}/overrides`),
-    ])
-    setAccess(accessData)
-    setEligibleUsers(usersData)
-    setEligibleGroups(groupsData)
-    setOverrides(overrideData)
-    setMode(accessData.mode)
-    setSelectedUsers(new Set(accessData.users.map(user => user.id)))
-    setSelectedGroups(new Set(accessData.usergroups.map(group => group.id)))
-  }, [assessmentUuid])
-
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      setIsLoading(true)
-      try {
-        await loadAccess()
-      } catch (error) {
-        if (!cancelled) {
-          console.error('Failed to load assessment access builder', error)
-          toast.error(t('loadFailed'))
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [loadAccess, t])
+  const accessKey = queryKeys.assessments.access(assessmentUuid)
+  const overridesKey = queryKeys.assessments.overrides(assessmentUuid)
+  const accessQuery = useQuery({ queryKey: accessKey, queryFn: () => getAccess(assessmentUuid) })
+  const overridesQuery = useQuery({ queryKey: overridesKey, queryFn: () => listOverrides(assessmentUuid) })
+  // v2 has no `access/eligible-*` search routes: the pickers are the course's
+  // linked groups and the gradebook's learners, filtered client-side.
+  // ponytail: the gradebook only lists learners with a submission — v2 has no
+  // enrollment listing, so a never-submitted learner is only pickable once
+  // persisted (it then comes back in `AccessView.users`).
+  const groupsQuery = useQuery({
+    queryKey: queryKeys.courses.usergroups(courseUuid ?? ''),
+    queryFn: () => usergroupsForCourse(courseUuid ?? ''),
+    enabled: Boolean(courseUuid),
+  })
+  const learnersQuery = useQuery({
+    queryKey: queryKeys.courses.learners(courseUuid ?? ''),
+    queryFn: async () => uniqueById((await collectGradebookPages(courseUuid ?? '')).flatMap(page => page.users)),
+    enabled: Boolean(courseUuid),
+  })
+  const access = accessQuery.data ?? null
+  const overrides = useMemo(() => overridesQuery.data ?? [], [overridesQuery.data])
+  const isLoading =
+    accessQuery.isPending ||
+    overridesQuery.isPending ||
+    (Boolean(courseUuid) && (groupsQuery.isPending || learnersQuery.isPending))
+  const loadError = accessQuery.error ?? overridesQuery.error ?? groupsQuery.error ?? learnersQuery.error
 
   useEffect(() => {
-    let cancelled = false
-    const timeout = globalThis.setTimeout(() => {
-      void (async () => {
-        setIsSearchingUsers(true)
-        try {
-          const users = await fetchEligibleUsers(assessmentUuid, query)
-          if (!cancelled) setEligibleUsers(users)
-        } catch (error: unknown) {
-          if (!cancelled) {
-            console.error('Failed to search eligible assessment learners', error)
-            toast.error(t('searchFailed'))
-          }
-        } finally {
-          if (!cancelled) setIsSearchingUsers(false)
-        }
-      })()
-    }, 250)
-    return () => {
-      cancelled = true
-      globalThis.clearTimeout(timeout)
-    }
-  }, [assessmentUuid, query, t])
+    if (!access) return
+    setMode(access.mode)
+    setSelectedUsers(new Set(access.users.map(user => user.id)))
+    setSelectedGroups(new Set(access.usergroups.map(group => group.id)))
+  }, [access])
 
   useEffect(() => {
-    let cancelled = false
-    const timeout = globalThis.setTimeout(() => {
-      void (async () => {
-        setIsSearchingGroups(true)
-        try {
-          const groups = await fetchEligibleGroups(assessmentUuid, groupQuery)
-          if (!cancelled) setEligibleGroups(groups)
-        } catch (error: unknown) {
-          if (!cancelled) {
-            console.error('Failed to search eligible assessment groups', error)
-            toast.error(t('searchFailed'))
-          }
-        } finally {
-          if (!cancelled) setIsSearchingGroups(false)
-        }
-      })()
-    }, 250)
-    return () => {
-      cancelled = true
-      globalThis.clearTimeout(timeout)
-    }
-  }, [assessmentUuid, groupQuery, t])
+    if (loadError) toastApiError(loadError, { fallback: t('loadFailed') })
+  }, [loadError, t, toastApiError])
 
-  const usersById = useMemo(() => {
-    const entries = [...(access?.users ?? []), ...eligibleUsers].map(user => [user.id, user] as const)
-    return new Map(entries)
-  }, [access?.users, eligibleUsers])
-
-  const groupsById = useMemo(() => {
-    const entries = [...(access?.usergroups ?? []), ...eligibleGroups].map(group => [group.id, group] as const)
-    return new Map(entries)
-  }, [access?.usergroups, eligibleGroups])
+  const allUsers = useMemo<AccessLearner[]>(
+    () => uniqueById<AccessLearner>(learnersQuery.data ?? [], access?.users ?? []),
+    [access?.users, learnersQuery.data],
+  )
+  const allGroups = useMemo<AccessGroupRow[]>(
+    () => uniqueById<AccessGroupRow>(groupsQuery.data ?? [], access?.usergroups ?? []),
+    [access?.usergroups, groupsQuery.data],
+  )
+  const eligibleUsers = useMemo(
+    () => filterByQuery(allUsers, query, user => [user.display_name, user.username, user.email]),
+    [allUsers, query],
+  )
+  const eligibleGroups = useMemo(
+    () => filterByQuery(allGroups, groupQuery, group => [group.name, group.description]),
+    [allGroups, groupQuery],
+  )
+  const usersById = useMemo(() => new Map(allUsers.map(user => [user.id, user])), [allUsers])
+  const groupsById = useMemo(() => new Map(allGroups.map(group => [group.id, group])), [allGroups])
 
   const selectedUserRows = useMemo(
-    () => [...selectedUsers].map(id => usersById.get(id)).filter((user): user is AccessUser => Boolean(user)),
+    () => [...selectedUsers].map(id => usersById.get(id)).filter((user): user is AccessLearner => Boolean(user)),
     [selectedUsers, usersById],
   )
   const selectedGroupRows = useMemo(
-    () => [...selectedGroups].map(id => groupsById.get(id)).filter((group): group is AccessUserGroup => Boolean(group)),
+    () => [...selectedGroups].map(id => groupsById.get(id)).filter((group): group is AccessGroupRow => Boolean(group)),
     [groupsById, selectedGroups],
   )
   const overrideByUserId = useMemo(() => new Map(overrides.map(override => [override.user_id, override])), [overrides])
   const effectivePreviewCount = estimateAudiencePreviewCount({
     mode,
     persistedEffectiveCount: access?.effective_user_count ?? null,
-    loadedEligibleUserCount: eligibleUsers.length,
+    loadedEligibleUserCount: allUsers.length,
     selectedUserCount: selectedUsers.size,
     selectedGroupMemberCounts: selectedGroupRows.map(group => group.member_count),
   })
   const excludedLoadedCount = getExcludedLoadedCount(
-    eligibleUsers.map(user => user.id),
+    allUsers.map(user => user.id),
     selectedUsers,
   )
 
-  const save = useCallback(() => {
-    startTransition(async () => {
-      try {
-        setLastSaveError(null)
-        const next = await apiJson<AccessRead>(`assessments/${assessmentUuid}/access`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mode,
-            user_ids: mode === 'RESTRICTED' ? [...selectedUsers] : [],
-            usergroup_ids: mode === 'RESTRICTED' ? [...selectedGroups] : [],
-          }),
-        })
-        setAccess(next)
-        setMode(next.mode)
-        setSelectedUsers(new Set(next.users.map(user => user.id)))
-        setSelectedGroups(new Set(next.usergroups.map(group => group.id)))
-        toast.success(t('saved'))
-      } catch (error) {
-        const message = error instanceof Error ? error.message : t('saveFailed')
-        console.error('Failed to save assessment access', error)
-        setLastSaveError(message)
-        toast.error(message)
-      }
-    })
-  }, [assessmentUuid, mode, selectedGroups, selectedUsers, t])
-
-  const applyOverrides = useCallback(() => {
-    startOverrideTransition(async () => {
-      try {
-        setLastOverrideError(null)
-        const targetUserIds = [...selectedUsers]
-        if (targetUserIds.length === 0) {
-          toast.error(t('overrideNoUsers'))
-          return
-        }
-        const payload = {
-          max_attempts_override: overrideAttempts ? Number(overrideAttempts) : null,
-          due_at_override: overrideDueAt ? new Date(overrideDueAt).toISOString() : null,
-          waive_late_penalty: overrideWaiveLate,
-          note: overrideNote,
-        }
-        const nextOverrides = await Promise.all(
-          targetUserIds.map(async userId => {
-            const existing = overrideByUserId.get(userId)
-            return apiJson<StudentPolicyOverride>(
-              existing
-                ? `assessments/${assessmentUuid}/overrides/${userId}`
-                : `assessments/${assessmentUuid}/overrides`,
-              {
-                method: existing ? 'PATCH' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(existing ? payload : { user_id: userId, ...payload }),
-              },
-            )
-          }),
-        )
-        setOverrides(current => {
-          const byUser = new Map(current.map(override => [override.user_id, override]))
-          for (const override of nextOverrides) byUser.set(override.user_id, override)
-          return [...byUser.values()]
-        })
-        toast.success(t('overrideSaved', { count: nextOverrides.length }))
-      } catch (error) {
-        const message = error instanceof Error ? error.message : t('overrideSaveFailed')
-        console.error('Failed to save assessment accommodations', error)
-        setLastOverrideError(message)
-        toast.error(message)
-      }
-    })
-  }, [
-    assessmentUuid,
-    overrideAttempts,
-    overrideByUserId,
-    overrideDueAt,
-    overrideNote,
-    overrideWaiveLate,
-    selectedUsers,
-    t,
-  ])
-
-  const deleteOverride = useCallback(
-    (userId: number) => {
-      startOverrideTransition(async () => {
-        try {
-          await apiJson(`assessments/${assessmentUuid}/overrides/${userId}`, { method: 'DELETE' })
-          setOverrides(current => current.filter(override => override.user_id !== userId))
-          toast.success(t('overrideDeleted'))
-        } catch (error) {
-          const message = error instanceof Error ? error.message : t('overrideDeleteFailed')
-          console.error('Failed to delete assessment accommodation', error)
-          setLastOverrideError(message)
-          toast.error(message)
-        }
-      })
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      setAccess(assessmentUuid, {
+        mode,
+        user_ids: mode === 'restricted' ? [...selectedUsers] : [],
+        usergroup_ids: mode === 'restricted' ? [...selectedGroups] : [],
+      }),
+    onMutate: () => setLastSaveError(null),
+    onSuccess: next => {
+      queryClient.setQueryData(accessKey, next)
+      toast.success(t('saved'))
     },
-    [assessmentUuid, t],
-  )
+    onError: error => setLastSaveError(toastApiError(error, { fallback: t('saveFailed') }).message),
+  })
+  const save = () => saveMutation.mutate()
+
+  const overrideMutation = useMutation({
+    mutationFn: () => {
+      const payload: OverrideRequest = {
+        max_attempts_override: overrideAttempts ? Number(overrideAttempts) : null,
+        due_at_override_unix: toUnix(overrideDueAt || null),
+        waive_late_penalty: overrideWaiveLate,
+        note: overrideNote,
+      }
+      return Promise.all(
+        [...selectedUsers].map(userId =>
+          overrideByUserId.has(userId)
+            ? updateOverride(assessmentUuid, userId, payload)
+            : createOverride(assessmentUuid, userId, payload),
+        ),
+      )
+    },
+    onMutate: () => setLastOverrideError(null),
+    onSuccess: nextOverrides => {
+      queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) => {
+        const byUser = new Map(current.map(override => [override.user_id, override]))
+        for (const override of nextOverrides) byUser.set(override.user_id, override)
+        return [...byUser.values()]
+      })
+      toast.success(t('overrideSaved', { count: nextOverrides.length }))
+    },
+    onError: error => setLastOverrideError(toastApiError(error, { fallback: t('overrideSaveFailed') }).message),
+  })
+  const applyOverrides = () => {
+    if (selectedUsers.size === 0) {
+      toast.error(t('overrideNoUsers'))
+      return
+    }
+    overrideMutation.mutate()
+  }
+
+  const deleteOverrideMutation = useMutation({
+    mutationFn: (userId: string) => deleteOverride(assessmentUuid, userId),
+    onMutate: () => setLastOverrideError(null),
+    onSuccess: (_result, userId) => {
+      queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) =>
+        current.filter(override => override.user_id !== userId),
+      )
+      toast.success(t('overrideDeleted'))
+    },
+    onError: error => setLastOverrideError(toastApiError(error, { fallback: t('overrideDeleteFailed') }).message),
+  })
+  const isOverridePending = overrideMutation.isPending || deleteOverrideMutation.isPending
 
   if (isLoading) {
     return (
@@ -347,27 +240,31 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
           >
             <ModeOption
               id="access-all"
-              value="ALL_COURSE_LEARNERS"
+              value="all_course_learners"
               title={t('allCourseLearners')}
               description={t('allCourseLearnersDesc')}
-              active={mode === 'ALL_COURSE_LEARNERS'}
+              active={mode === 'all_course_learners'}
             />
             <ModeOption
               id="access-restricted"
-              value="RESTRICTED"
+              value="restricted"
               title={t('restricted')}
               description={t('restrictedDesc')}
-              active={mode === 'RESTRICTED'}
+              active={mode === 'restricted'}
             />
           </RadioGroup>
 
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
-              <Metric label={t('eligibleLoaded')} value={eligibleUsers.length} />
+              <Metric label={t('eligibleLoaded')} value={allUsers.length} />
               <Metric label={t('effectivePreview')} value={effectivePreviewCount} />
             </div>
-            <Button className="w-full" disabled={disabled || isPending} onClick={save}>
-              {isPending ? <LoaderCircle className="size-4 animate-spin" /> : <UserRoundCheck className="size-4" />}
+            <Button className="w-full" disabled={disabled || saveMutation.isPending} onClick={save}>
+              {saveMutation.isPending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <UserRoundCheck className="size-4" />
+              )}
               {t('save')}
             </Button>
           </div>
@@ -376,13 +273,12 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
-        <main className={cn('grid gap-5 lg:grid-cols-2', mode !== 'RESTRICTED' && 'opacity-60')}>
+        <main className={cn('grid gap-5 lg:grid-cols-2', mode !== 'restricted' && 'opacity-60')}>
           <AccessList
             title={t('students')}
             count={selectedUsers.size}
             search={query}
             searchPlaceholder={t('searchStudents')}
-            isSearching={isSearchingUsers}
             onSearch={setQuery}
           >
             {eligibleUsers.map(user => (
@@ -390,7 +286,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
                 key={user.id}
                 user={user}
                 selected={selectedUsers.has(user.id)}
-                disabled={disabled || mode !== 'RESTRICTED'}
+                disabled={disabled || mode !== 'restricted'}
                 hasOverride={overrideByUserId.has(user.id)}
                 onToggle={() => toggleSet(setSelectedUsers, user.id)}
               />
@@ -402,7 +298,6 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
             count={selectedGroups.size}
             search={groupQuery}
             searchPlaceholder={t('searchGroups')}
-            isSearching={isSearchingGroups}
             onSearch={setGroupQuery}
           >
             {eligibleGroups.map(group => (
@@ -411,7 +306,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
                 group={group}
                 selected={selectedGroups.has(group.id)}
                 expanded={expandedGroups.has(group.id)}
-                disabled={disabled || mode !== 'RESTRICTED'}
+                disabled={disabled || mode !== 'restricted'}
                 onToggle={() => toggleSet(setSelectedGroups, group.id)}
                 onExpand={() => toggleSet(setExpandedGroups, group.id)}
               />
@@ -434,7 +329,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
             disabled={disabled}
             onRemoveUser={id => toggleSet(setSelectedUsers, id)}
             onRemoveGroup={id => toggleSet(setSelectedGroups, id)}
-            onDeleteOverride={deleteOverride}
+            onDeleteOverride={userId => deleteOverrideMutation.mutate(userId)}
           />
           <AccommodationPanel
             attempts={overrideAttempts}
@@ -455,14 +350,6 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
       </div>
     </div>
   )
-}
-
-function fetchEligibleUsers(assessmentUuid: string, query: string) {
-  return apiJson<AccessUser[]>(buildEligibleLearnersPath(assessmentUuid, query))
-}
-
-function fetchEligibleGroups(assessmentUuid: string, query: string) {
-  return apiJson<AccessUserGroup[]>(buildEligibleGroupsPath(assessmentUuid, query))
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
@@ -525,11 +412,11 @@ function AudiencePreview({
         <h3 className="text-sm font-semibold">{t('previewTitle')}</h3>
       </div>
       <div className="space-y-2 text-sm">
-        <PreviewRow label={t('previewMode')} value={mode === 'RESTRICTED' ? t('restricted') : t('allCourseLearners')} />
+        <PreviewRow label={t('previewMode')} value={mode === 'restricted' ? t('restricted') : t('allCourseLearners')} />
         <PreviewRow label={t('previewSelectedUsers')} value={String(selectedUsers)} />
         <PreviewRow label={t('previewSelectedGroups')} value={String(selectedGroups)} />
         <PreviewRow label={t('previewEffective')} value={String(effectiveCount)} />
-        {mode === 'RESTRICTED' ? (
+        {mode === 'restricted' ? (
           <PreviewRow label={t('previewExcludedLoaded')} value={String(excludedLoadedCount)} />
         ) : null}
       </div>
@@ -552,7 +439,6 @@ function AccessList({
   count,
   search,
   searchPlaceholder,
-  isSearching,
   onSearch,
   children,
 }: {
@@ -560,7 +446,6 @@ function AccessList({
   count: number
   search: string
   searchPlaceholder: string
-  isSearching: boolean
   onSearch: (value: string) => void
   children: ReactNode
 }) {
@@ -577,11 +462,8 @@ function AccessList({
             value={search}
             onChange={event => onSearch(event.target.value)}
             placeholder={searchPlaceholder}
-            className="pr-9 pl-9"
+            className="pl-9"
           />
-          {isSearching ? (
-            <LoaderCircle className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin" />
-          ) : null}
         </div>
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">{children}</div>
@@ -596,7 +478,7 @@ function SelectableUserRow({
   hasOverride,
   onToggle,
 }: {
-  user: AccessUser
+  user: AccessLearner
   selected: boolean
   disabled: boolean
   hasOverride: boolean
@@ -614,7 +496,7 @@ function SelectableUserRow({
       <Checkbox checked={selected} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{displayUser(user)}</p>
-        <p className="text-muted-foreground truncate text-xs">{user.email}</p>
+        <p className="text-muted-foreground truncate text-xs">{user.email ?? user.username}</p>
       </div>
       {hasOverride ? <Badge variant="secondary">{t('overrideBadge')}</Badge> : null}
     </Button>
@@ -629,7 +511,7 @@ function SelectableGroupRow({
   onToggle,
   onExpand,
 }: {
-  group: AccessUserGroup
+  group: AccessGroupRow
   selected: boolean
   expanded: boolean
   disabled: boolean
@@ -679,13 +561,13 @@ function SelectedAudienceDrawer({
   onRemoveGroup,
   onDeleteOverride,
 }: {
-  users: AccessUser[]
-  groups: AccessUserGroup[]
-  overrides: Map<number, StudentPolicyOverride>
+  users: AccessLearner[]
+  groups: AccessGroupRow[]
+  overrides: Map<string, StudentOverride>
   disabled: boolean
-  onRemoveUser: (id: number) => void
-  onRemoveGroup: (id: number) => void
-  onDeleteOverride: (userId: number) => void
+  onRemoveUser: (id: string) => void
+  onRemoveGroup: (id: string) => void
+  onDeleteOverride: (userId: string) => void
 }) {
   const t = useTranslations('Features.Assessments.Studio.AccessManagement')
   return (
@@ -705,7 +587,7 @@ function SelectedAudienceDrawer({
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{displayUser(user)}</p>
-                  <p className="text-muted-foreground truncate text-xs">{user.email}</p>
+                  <p className="text-muted-foreground truncate text-xs">{user.email ?? user.username}</p>
                 </div>
                 <Button
                   type="button"
@@ -878,7 +760,7 @@ function RecoverableError({
   )
 }
 
-function toggleSet(setter: Dispatch<SetStateAction<Set<number>>>, id: number) {
+function toggleSet(setter: Dispatch<SetStateAction<Set<string>>>, id: string) {
   setter(current => {
     const next = new Set(current)
     if (next.has(id)) next.delete(id)
@@ -887,15 +769,14 @@ function toggleSet(setter: Dispatch<SetStateAction<Set<number>>>, id: number) {
   })
 }
 
-function displayUser(user: AccessUser) {
-  const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
-  return name || user.username
+function displayUser(user: AccessLearner) {
+  return user.display_name.trim() || user.username
 }
 
-function describeOverride(override: StudentPolicyOverride, t: ReturnType<typeof useTranslations>) {
+function describeOverride(override: StudentOverride, t: ReturnType<typeof useTranslations>) {
   const parts = [
     override.max_attempts_override ? t('overrideAttemptsValue', { count: override.max_attempts_override }) : null,
-    override.due_at_override ? t('overrideDueValue') : null,
+    override.due_at_override_unix ? t('overrideDueValue') : null,
     override.waive_late_penalty ? t('overrideWaiveLateValue') : null,
   ].filter(Boolean)
   return parts.length ? parts.join(' / ') : t('overrideBadge')

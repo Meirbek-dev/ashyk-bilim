@@ -25,6 +25,7 @@ import {
   getReleaseState,
   isScoreInputInvalid,
   localizeAutoGraderFeedback,
+  sumScores,
 } from '@/features/grading/domain'
 import type { GradedItem, GradingBreakdown, Submission, TeacherGradeInput } from '@/features/grading/domain'
 import { StaleGradeError } from '@/services/grading/errors'
@@ -93,14 +94,15 @@ export default function GradeForm({
   // Calculated total from item drafts (0 to sum of max_scores)
   const calculatedTotal = useMemo(() => {
     if (!hasItemGrading) return null
-    return gradedItems.reduce((acc, item) => {
-      const raw = itemDrafts[item.item_id]?.score ?? String(item.score)
-      const val = Number.parseFloat(raw)
-      return acc + (Number.isNaN(val) ? 0 : Math.min(val, item.max_score))
-    }, 0)
+    return sumScores(
+      gradedItems.map(item => {
+        const val = Number.parseFloat(itemDrafts[item.item_id]?.score ?? String(item.score))
+        return Number.isNaN(val) ? 0 : Math.min(val, item.max_score)
+      }),
+    )
   }, [hasItemGrading, gradedItems, itemDrafts])
 
-  const maxPossible = useMemo(() => gradedItems.reduce((acc, item) => acc + item.max_score, 0), [gradedItems])
+  const maxPossible = useMemo(() => sumScores(gradedItems.map(item => item.max_score)), [gradedItems])
 
   const editable = submission ? canTeacherEditGrade(submission.status) : false
   // Field-level validation: a typed score outside 0..=max blocks save/publish
@@ -396,7 +398,7 @@ export default function GradeForm({
             {calculatedTotal !== null && (
               <span className="text-muted-foreground text-xs">
                 {tItemGrading('scoreSummary', {
-                  earned: calculatedTotal.toFixed(1),
+                  earned: calculatedTotal,
                   possible: maxPossible,
                   percentage: maxPossible > 0 ? Math.round((calculatedTotal / maxPossible) * 100) : 0,
                 })}

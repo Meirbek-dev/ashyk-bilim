@@ -19,6 +19,7 @@
 
 import { testAsStudent as test, expect } from '../fixtures'
 import { getEnv, setEnv } from '../env'
+import { JUDGE0_SKIP_REASON, judge0Missing } from '../fixtures/environment'
 import { COURSE, CORRECT_PYTHON_SOLUTION, EXAM_ANSWERS, SAMPLE_PDF } from '../fixtures/test-data'
 import { ensureFixtureFiles } from '../utils/fixtures'
 
@@ -180,6 +181,7 @@ test.describe.serial('Student – Learning Journey', () => {
   // Keeping it last lets the rest of the chain run when the service is down.
 
   test('student can navigate to and submit the coding challenge', async ({ page, assessmentPage, coursePlayerPage }) => {
+    test.skip(judge0Missing(), JUDGE0_SKIP_REASON)
     await coursePlayerPage.gotoCourseLanding(courseUuid)
     const activityId = await coursePlayerPage.openActivity(new RegExp(COURSE.activities.codeChallenge, 'i'))
     setEnv('E2E_CODE_ACTIVITY_ID', activityId)

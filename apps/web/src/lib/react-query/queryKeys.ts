@@ -14,6 +14,8 @@ export const queryKeys = {
     // `activity(id)` still refreshes all of them.
     studio: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'studio'] as const,
     review: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'review'] as const,
+    access: (assessmentUuid: string) => ['assessments', 'access', assessmentUuid] as const,
+    overrides: (assessmentUuid: string) => ['assessments', 'overrides', assessmentUuid] as const,
     activityAssessmentId: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'id'] as const,
     activityDetail: (activityUuid: string, assessmentUuid: string | null | undefined) =>
       ['assessments', 'activity', activityUuid, assessmentUuid || 'missing'] as const,
@@ -36,6 +38,8 @@ export const queryKeys = {
   },
   courses: {
     contributors: (courseUuid: string) => ['courses', 'contributors', courseUuid] as const,
+    learners: (courseUuid: string) => ['courses', 'learners', courseUuid] as const,
+    usergroups: (courseUuid: string) => ['courses', 'usergroups', courseUuid] as const,
     metadata: (courseUuid: string) => ['courses', 'metadata', courseUuid] as const,
     updates: (courseUuid: string) => ['courses', 'updates', courseUuid] as const,
   },

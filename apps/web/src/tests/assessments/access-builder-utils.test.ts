@@ -1,26 +1,43 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import {
-  buildEligibleGroupsPath,
-  buildEligibleLearnersPath,
   estimateAudiencePreviewCount,
+  filterByQuery,
   getExcludedLoadedCount,
+  uniqueById,
 } from '@/features/assessments/studio/tabs/accessBuilderUtils'
 
 describe('assessment access builder helpers', () => {
-  it('builds server-side learner and group search paths with trimmed queries', () => {
-    expect(buildEligibleLearnersPath('assessment-1', '  Mira Smith  ')).toBe(
-      'assessments/assessment-1/access/eligible-learners?limit=50&q=Mira+Smith',
+  it('filters pickers client-side (v2 has no eligible-* search routes), trimming and ignoring case', () => {
+    const learners = [
+      { id: 'u1', username: 'mira', display_name: 'Mira Smith', email: 'mira@example.com' },
+      { id: 'u2', username: 'dan', display_name: 'Dan Lee', email: 'dan@example.com' },
+    ]
+    expect(filterByQuery(learners, '  mIRA ', user => [user.display_name, user.username, user.email])).toEqual([
+      learners[0],
+    ])
+    expect(filterByQuery(learners, 'example.com', user => [user.email])).toHaveLength(2)
+    expect(filterByQuery(learners, '', user => [user.username])).toBe(learners)
+  })
+
+  it('unions gradebook learners with the persisted allowlist, keeping the richer first row', () => {
+    const fromGradebook = [{ id: 'u1', username: 'mira', display_name: 'Mira', email: 'mira@example.com' }]
+    const fromAccess = [
+      { id: 'u1', username: 'mira', display_name: 'Mira' },
+      { id: 'u9', username: 'never-submitted', display_name: 'Only in allowlist' },
+    ]
+    const merged = uniqueById<{ id: string; username: string; display_name: string; email?: string }>(
+      fromGradebook,
+      fromAccess,
     )
-    expect(buildEligibleGroupsPath('assessment-1', '')).toBe(
-      'assessments/assessment-1/access/eligible-usergroups?limit=50',
-    )
+    expect(merged.map(user => user.id)).toEqual(['u1', 'u9'])
+    expect(merged[0]?.email).toBe('mira@example.com')
   })
 
   it('uses persisted all-course counts and selected restricted counts for the preview', () => {
     expect(
       estimateAudiencePreviewCount({
-        mode: 'ALL_COURSE_LEARNERS',
+        mode: 'all_course_learners',
         persistedEffectiveCount: 0,
         loadedEligibleUserCount: 50,
         selectedUserCount: 12,
@@ -30,7 +47,7 @@ describe('assessment access builder helpers', () => {
 
     expect(
       estimateAudiencePreviewCount({
-        mode: 'RESTRICTED',
+        mode: 'restricted',
         persistedEffectiveCount: 70,
         loadedEligibleUserCount: 50,
         selectedUserCount: 2,
@@ -39,7 +56,7 @@ describe('assessment access builder helpers', () => {
     ).toBe(22)
   })
 
-  it('counts exclusions only inside the currently loaded server result window', () => {
-    expect(getExcludedLoadedCount([1, 2, 3, 4], new Set([2, 9]))).toBe(3)
+  it('counts exclusions only inside the loaded learner list', () => {
+    expect(getExcludedLoadedCount(['a', 'b', 'c', 'd'], new Set(['b', 'z']))).toBe(3)
   })
 })

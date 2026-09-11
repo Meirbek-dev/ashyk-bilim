@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Assessment, Course, GradebookPage } from '@/lib/api/generated/zod'
+import type { Assessment, Course, Curriculum, GradebookPage } from '@/lib/api/generated/zod'
 import { gradebookFromWire } from '@/features/grading/domain/wire'
 import { localizeAutoGraderFeedback, matchesGradebookSavedFilter } from '@/features/grading/domain'
 
@@ -46,6 +46,15 @@ describe('gradebookFromWire (UX-013)', () => {
     expect(matchesGradebookSavedFilter(cell, 'needs_grading')).toBe(true)
     expect(data.summary.needs_grading_count).toBe(1)
     expect(data.teacher_actions.map(action => action.submission_uuid)).toEqual(['submission_1'])
+  })
+
+  it('labels columns with the curriculum activity name, not the assessment title', () => {
+    const curriculum = {
+      chapters: [{ activities: [{ id: 'activity_exam', name: 'Final Exam' }] }],
+    } as unknown as Curriculum
+    expect(gradebookFromWire([page('published')], course, [exam], curriculum).activities[0]!.name).toBe('Final Exam')
+    // Without a curriculum row (unlinked activity) the assessment title is the fallback.
+    expect(gradebookFromWire([page('published')], course, [exam]).activities[0]!.name).toBe('Exam')
   })
 
   it('leaves published work out of the teacher queue', () => {

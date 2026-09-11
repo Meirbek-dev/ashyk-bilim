@@ -385,7 +385,15 @@ export function NativeItemAuthor({
         />
       )}
 
-      {view === 'ACCESS' && <AccessManagementTab assessmentUuid={assessment.assessment_uuid} disabled={!isEditable} />}
+      {view === 'ACCESS' && (
+        // Audience + accommodations are live-assessment policy (v2 gates
+        // neither on lifecycle), not content: only an archived one is frozen.
+        <AccessManagementTab
+          assessmentUuid={assessment.assessment_uuid}
+          courseUuid={assessment.course_uuid ?? null}
+          disabled={assessment.lifecycle === 'ARCHIVED'}
+        />
+      )}
 
       {view === 'RESULTS' && (
         <ResultsReviewTab

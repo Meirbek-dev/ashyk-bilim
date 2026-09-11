@@ -26,7 +26,8 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { STORAGE_STATE_DIR, STORAGE_STATE } from './auth-states'
-import { getEnvOr, requireEnv } from './env'
+import { getEnvOr, requireEnv, setEnv } from './env'
+import { probeJudge0 } from './fixtures/environment'
 
 export { STORAGE_STATE_DIR, STORAGE_STATE }
 
@@ -170,6 +171,11 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   await captureStorageState(adminEmail, adminPassword, STORAGE_STATE.admin)
   await captureStorageState(teacherEmail, teacherPassword, STORAGE_STATE.teacher)
   await captureStorageState(studentEmail, studentPassword, STORAGE_STATE.student)
+
+  // 4. Infrastructure probes — recorded for the specs that need the service.
+  const judge0 = await probeJudge0(API_URL)
+  setEnv('E2E_JUDGE0', String(judge0))
+  if (!judge0) console.log('[setup] Judge0 not reachable (code/languages) — code-challenge tests will be skipped.')
 
   console.log('[setup] Global setup complete.')
 }

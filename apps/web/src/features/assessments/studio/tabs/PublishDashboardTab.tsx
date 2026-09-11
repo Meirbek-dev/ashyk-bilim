@@ -26,7 +26,8 @@ import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/do
 import type { ClassifiedValidationIssue } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
-import { apiJson } from '@/lib/api-client'
+import { getAccess } from '@/lib/api/generated/assessments/assessments'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -72,14 +73,10 @@ interface PublishDashboardTabProps {
   onLifecycleChange: (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => void
 }
 
-interface AccessRead {
-  effective_user_count: number
-}
-
 const assessmentAccessQueryOptions = (assessmentUuid: string) =>
   queryOptions({
-    queryKey: ['assessments', assessmentUuid, 'access', 'publish-gate'],
-    queryFn: () => apiJson<AccessRead>(`assessments/${assessmentUuid}/access`),
+    queryKey: queryKeys.assessments.access(assessmentUuid),
+    queryFn: () => getAccess(assessmentUuid),
     staleTime: 30_000,
   })
 

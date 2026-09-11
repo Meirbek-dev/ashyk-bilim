@@ -9018,7 +9018,7 @@
           "previewSelectedGroups": "Selected groups",
           "previewEffective": "Estimated access",
           "previewExcludedLoaded": "Excluded from loaded list",
-          "previewNote": "Search is server-side and capped to the current result window for large courses.",
+          "previewNote": "The list holds the learners from the course gradebook (at least one attempt) and the groups linked to the course; search filters that list.",
           "overrideBadge": "Accommodation",
           "expandGroup": "Show group expansion",
           "groupExpansion": "This group expands to {count, plural, =1 {# learner} other {# learners}} before individual exclusions.",
@@ -9888,6 +9888,20 @@
     "republish": "Publish again"
   },
   "FileSubmission": {
+    "mimeCategories": {
+      "pdf": "PDF",
+      "documents": "Documents",
+      "images": "Images",
+      "spreadsheets": "Spreadsheets",
+      "presentations": "Presentations",
+      "archives": "Archives",
+      "textAndCode": "Text and code",
+      "text": "Text",
+      "code": "Code",
+      "video": "Video",
+      "audio": "Audio",
+      "anyFile": "Any file"
+    },
     "requirementMaxFiles": "{count, plural, one {Up to # file} other {Up to # files}}",
     "requirementMaxSize": "{size} MB each",
     "maxFilesAllowed": "{count, plural, one {Maximum # file allowed} other {Maximum # files allowed}}",

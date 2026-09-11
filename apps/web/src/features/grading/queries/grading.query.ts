@@ -7,7 +7,7 @@ import { gradebookFromWire, reviewItemFromWire, statsFromWire, teacherSubmission
 import { queryOptions } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { getAPIUrl } from '@services/config/config'
-import { getCourse } from '@/lib/api/generated/courses/courses'
+import { getCourse, getCurriculum } from '@/lib/api/generated/courses/courses'
 import { listCourseAssessments } from '@/lib/api/generated/assessments/assessments'
 import { gradebook as fetchGradebookPage } from '@/lib/api/generated/grading/grading'
 import type { GradebookPage } from '@/lib/api/generated/zod'
@@ -80,7 +80,7 @@ export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid
 }
 
 /** Walks `GET courses/{id}/gradebook` to the end (keyset — no offset paging in v2). */
-async function collectGradebookPages(courseUuid: string, maxPages = 20): Promise<GradebookPage[]> {
+export async function collectGradebookPages(courseUuid: string, maxPages = 20): Promise<GradebookPage[]> {
   const pages: GradebookPage[] = []
   let cursor: string | null = null
   for (let index = 0; index < maxPages; index += 1) {
@@ -103,12 +103,13 @@ export function courseGradebookQueryOptions(courseUuid: string, params?: CourseG
     queryKey: queryKeys.grading.gradebook(courseUuid),
     queryFn: async () => {
       void params
-      const [pages, course, assessments] = await Promise.all([
+      const [pages, course, assessments, curriculum] = await Promise.all([
         collectGradebookPages(courseUuid),
         getCourse(courseUuid),
         listCourseAssessments(courseUuid),
+        getCurriculum(courseUuid),
       ])
-      return gradebookFromWire(pages, course, assessments)
+      return gradebookFromWire(pages, course, assessments, curriculum)
     },
     staleTime: 5000,
   })

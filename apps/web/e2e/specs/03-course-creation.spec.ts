@@ -19,6 +19,7 @@
 
 import { testAsTeacher as test, expect } from '../fixtures'
 import { getEnv, setEnv } from '../env'
+import { JUDGE0_SKIP_REASON, judge0Missing } from '../fixtures/environment'
 import { COURSE } from '../fixtures/test-data'
 import { ActivityStudioPage } from '../page-objects/ActivityStudioPage'
 
@@ -225,6 +226,7 @@ test.describe.serial('Teacher – Course Creation', () => {
   // ── 6. Code challenge activity ──────────────────────────────────────────
 
   test('teacher can add a Code Challenge activity', async ({ curriculumEditorPage }) => {
+    test.skip(judge0Missing(), JUDGE0_SKIP_REASON)
     await curriculumEditorPage.goto(courseUuid)
     await curriculumEditorPage.addActivityToChapter(
       COURSE.chapters.assessments,

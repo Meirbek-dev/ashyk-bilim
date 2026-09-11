@@ -8,11 +8,6 @@ import {
   CheckCircle2,
   Clock,
   FileArchive,
-  FileCode2,
-  FileImage,
-  FileSpreadsheet,
-  FileText,
-  FileVideo,
   LoaderCircle,
   Paperclip,
   Send,
@@ -43,6 +38,7 @@ import type { PendingFileSlot } from './FileUploadSlot'
 import FileSubmissionReceipt from './FileSubmissionReceipt'
 import FileSubmissionResult from './FileSubmissionResult'
 import { MarkdownContent } from '@/features/content-markdown'
+import { getMimeCategories } from '@/features/file-submissions/mime-categories'
 import { useApiError } from '@/hooks/useApiError'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -78,128 +74,6 @@ function formatDueDate(unix: number): string {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(fromUnix(unix))
-}
-
-// ── File category detection ───────────────────────────────────────────────────
-
-/** Groups raw MIME types into human-readable category labels with icons. */
-interface FileCategory {
-  label: string
-  icon: React.ElementType
-}
-
-const MIME_CATEGORY_MAP: { prefix: string; category: FileCategory }[] = [
-  { prefix: 'image/', category: { label: 'Изображения', icon: FileImage } },
-  { prefix: 'video/', category: { label: 'Видео', icon: FileVideo } },
-  { prefix: 'audio/', category: { label: 'Аудио', icon: FileVideo } },
-  {
-    prefix: 'text/x-python',
-    category: { label: 'Код', icon: FileCode2 },
-  },
-  {
-    prefix: 'text/javascript',
-    category: { label: 'Код', icon: FileCode2 },
-  },
-  {
-    prefix: 'text/typescript',
-    category: { label: 'Код', icon: FileCode2 },
-  },
-  { prefix: 'text/x-c', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'text/x-java', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'text/css', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'text/html', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'application/xml', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'text/plain', category: { label: 'Текст', icon: FileText } },
-  { prefix: 'text/markdown', category: { label: 'Текст', icon: FileText } },
-  { prefix: 'application/json', category: { label: 'Текст', icon: FileText } },
-  { prefix: 'application/pdf', category: { label: 'Документы', icon: FileText } },
-  {
-    prefix: 'application/msword',
-    category: { label: 'Документы', icon: FileText },
-  },
-  {
-    prefix: 'application/vnd.openxmlformats-officedocument.wordprocessingml',
-    category: { label: 'Документы', icon: FileText },
-  },
-  {
-    prefix: 'application/vnd.oasis.opendocument.text',
-    category: { label: 'Документы', icon: FileText },
-  },
-  { prefix: 'application/rtf', category: { label: 'Документы', icon: FileText } },
-  { prefix: 'application/epub', category: { label: 'Документы', icon: FileText } },
-  {
-    prefix: 'application/x-mobipocket',
-    category: { label: 'Документы', icon: FileText },
-  },
-  {
-    prefix: 'text/csv',
-    category: { label: 'Таблицы', icon: FileSpreadsheet },
-  },
-  {
-    prefix: 'application/vnd.ms-excel',
-    category: { label: 'Таблицы', icon: FileSpreadsheet },
-  },
-  {
-    prefix: 'application/vnd.openxmlformats-officedocument.spreadsheetml',
-    category: { label: 'Таблицы', icon: FileSpreadsheet },
-  },
-  {
-    prefix: 'application/vnd.oasis.opendocument.spreadsheet',
-    category: { label: 'Таблицы', icon: FileSpreadsheet },
-  },
-  {
-    prefix: 'application/vnd.ms-powerpoint',
-    category: { label: 'Презентации', icon: FileText },
-  },
-  {
-    prefix: 'application/vnd.openxmlformats-officedocument.presentationml',
-    category: { label: 'Презентации', icon: FileText },
-  },
-  { prefix: 'application/zip', category: { label: 'Архивы', icon: FileArchive } },
-  {
-    prefix: 'application/x-zip',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/x-rar',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/vnd.rar',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/x-7z',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/x-tar',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/gzip',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/x-gzip',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-]
-
-function getMimeCategories(mimes: string[]): FileCategory[] {
-  if (mimes.length === 0) return [{ label: 'Any file', icon: FileArchive }]
-  const seen = new Set<string>()
-  const result: FileCategory[] = []
-  for (const mime of mimes) {
-    const match = MIME_CATEGORY_MAP.find(m => mime.startsWith(m.prefix) || mime === m.prefix)
-    if (match && !seen.has(match.category.label)) {
-      seen.add(match.category.label)
-      result.push(match.category)
-    }
-  }
-  // Fallback: if nothing matched show a generic label
-  if (result.length === 0) return [{ label: 'Any file', icon: FileArchive }]
-  return result
 }
 
 // ── Status badge config ───────────────────────────────────────────────────────
@@ -522,6 +396,7 @@ function Header({
   attempt: FileSubmissionAttempt | null
 }) {
   const t = useTranslations('FileSubmission')
+  const tMime = useTranslations('FileSubmission.mimeCategories')
   const categories = useMemo(() => getMimeCategories(allowedMimes), [allowedMimes])
 
   return (
@@ -576,13 +451,13 @@ function Header({
             <div className="bg-border hidden h-4 w-px sm:block" />
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-muted-foreground text-xs font-medium">{t('allowedTypes')}:</span>
-              {categories.map(({ label, icon: Icon }) => (
+              {categories.map(({ key, icon: Icon }) => (
                 <span
-                  key={label}
+                  key={key}
                   className="bg-background border-border text-foreground/70 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium shadow-sm"
                 >
                   <Icon className="size-3 shrink-0" />
-                  {label}
+                  {tMime(key)}
                 </span>
               ))}
             </div>

@@ -8487,7 +8487,7 @@
           "previewSelectedGroups": "Выбранные группы",
           "previewEffective": "Оценка доступа",
           "previewExcludedLoaded": "Исключены из загруженного списка",
-          "previewNote": "Поиск выполняется на сервере и ограничен текущим окном результатов для больших курсов.",
+          "previewNote": "В списке — учащиеся из журнала оценок курса (с хотя бы одной попыткой) и группы, привязанные к курсу; поиск фильтрует этот список.",
           "overrideBadge": "Исключение",
           "expandGroup": "Показать раскрытие группы",
           "groupExpansion": "Эта группа раскрывается в {count, plural, one {# учащегося} few {# учащихся} many {# учащихся} other {# учащегося}} до индивидуальных исключений.",
@@ -9900,6 +9900,20 @@
     "republish": "Опубликовать заново"
   },
   "FileSubmission": {
+    "mimeCategories": {
+      "pdf": "PDF",
+      "documents": "Документы",
+      "images": "Изображения",
+      "spreadsheets": "Таблицы",
+      "presentations": "Презентации",
+      "archives": "Архивы",
+      "textAndCode": "Текст и код",
+      "text": "Текст",
+      "code": "Код",
+      "video": "Видео",
+      "audio": "Аудио",
+      "anyFile": "Любой файл"
+    },
     "requirementMaxFiles": "{count, plural, one {До # файла} few {До # файлов} many {До # файлов} other {До # файла}}",
     "requirementMaxSize": "До {size} МБ каждый",
     "maxFilesAllowed": "{count, plural, one {Можно загрузить не больше # файла} few {Можно загрузить не больше # файлов} many {Можно загрузить не больше # файлов} other {Можно загрузить не больше # файла}}",

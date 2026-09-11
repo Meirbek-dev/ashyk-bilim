@@ -16,12 +16,13 @@ import { courseKeys } from '@/hooks/courses/courseKeys'
 import { toUnix } from '@/lib/api/contract'
 import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
 import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
+import type { MimeCategoryKey } from '@/features/file-submissions/mime-categories'
 
-const MIME_PRESETS = [
-  { id: 'pdf', label: 'PDF', mimes: ['application/pdf'] },
+const MIME_PRESETS: { id: string; labelKey: MimeCategoryKey; mimes: string[] }[] = [
+  { id: 'pdf', labelKey: 'pdf', mimes: ['application/pdf'] },
   {
     id: 'documents',
-    label: 'Документы',
+    labelKey: 'documents',
     mimes: [
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -33,12 +34,12 @@ const MIME_PRESETS = [
   },
   {
     id: 'images',
-    label: 'Изображения',
+    labelKey: 'images',
     mimes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'],
   },
   {
     id: 'spreadsheets',
-    label: 'Таблицы',
+    labelKey: 'spreadsheets',
     mimes: [
       'text/csv',
       'application/vnd.ms-excel',
@@ -48,7 +49,7 @@ const MIME_PRESETS = [
   },
   {
     id: 'archives',
-    label: 'Архивы',
+    labelKey: 'archives',
     mimes: [
       'application/zip',
       'application/x-zip-compressed',
@@ -62,7 +63,7 @@ const MIME_PRESETS = [
   },
   {
     id: 'text',
-    label: 'Текст и код',
+    labelKey: 'textAndCode',
     mimes: [
       'text/plain',
       'text/markdown',
@@ -82,6 +83,7 @@ const MIME_PRESETS = [
 
 export default function FileSubmissionActivityModal({ chapterId, course, closeModal }: AppActivityModalProps) {
   const t = useTranslations('Components.NewFileSubmissionModal')
+  const tMime = useTranslations('FileSubmission.mimeCategories')
   const queryClient = useQueryClient()
   const [title, setTitle] = useState('')
   const [instructions, setInstructions] = useState('')
@@ -217,7 +219,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
             return (
               <Label key={preset.id} className="hover:bg-muted/50 cursor-pointer rounded-md border p-3 transition">
                 <Checkbox checked={checked} onCheckedChange={value => togglePreset(preset.mimes, value)} />
-                {preset.label}
+                {tMime(preset.labelKey)}
               </Label>
             )
           })}

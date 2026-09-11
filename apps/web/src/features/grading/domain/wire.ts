@@ -1,4 +1,4 @@
-import { Assessment, Course, GradebookPage, ReviewItem, Stats, TeacherSubmission } from '@/lib/api/generated/zod'
+import { Assessment, Course, Curriculum, GradebookPage, ReviewItem, Stats, TeacherSubmission } from '@/lib/api/generated/zod'
 import { unixToIso } from '@/lib/api/contract'
 import type { ActivityProgressCell, CourseGradebookResponse, Submission, SubmissionStatus } from './types'
 import { normalizeSubmission } from './types'
@@ -41,8 +41,15 @@ export function statsFromWire(value: unknown) {
   return { ...stats, needs_grading_count: stats.needs_grading, avg_score: stats.avg_score ?? null, pass_rate: stats.pass_rate ?? null }
 }
 
-export function gradebookFromWire(pages: GradebookPage[], course: Course, assessments: Assessment[]): CourseGradebookResponse {
+export function gradebookFromWire(
+  pages: GradebookPage[],
+  course: Course,
+  assessments: Assessment[],
+  curriculum?: Curriculum,
+): CourseGradebookResponse {
   const assessmentMap = new Map(assessments.map(a => [a.id, a]))
+  // Columns are activities, so they carry the activity's name, not the assessment title.
+  const activityNames = new Map(curriculum?.chapters.flatMap(ch => ch.activities.map(a => [a.id, a.name] as const)))
   const users = new Map(pages.flatMap(p => p.users).map(u => [u.id, { ...u, first_name: u.display_name }]))
   const cells: ActivityProgressCell[] = pages.flatMap(p => p.cells).map(c => {
     const assessment = assessmentMap.get(c.assessment_id)
@@ -61,7 +68,7 @@ export function gradebookFromWire(pages: GradebookPage[], course: Course, assess
       teacher_action_required: c.status === 'pending' || c.status === 'graded',
     }
   })
-  const activities = assessments.map(a => ({ id: a.activity_id, activity_uuid: a.activity_id, name: a.title, activity_type: `TYPE_${a.kind.toUpperCase()}`, assessment_type: a.kind }))
+  const activities = assessments.map(a => ({ id: a.activity_id, activity_uuid: a.activity_id, name: activityNames.get(a.activity_id) ?? a.title, activity_type: `TYPE_${a.kind.toUpperCase()}`, assessment_type: a.kind }))
   const now = Date.now()
   return {
     course_id: course.id, course_uuid: course.id, course_name: course.name,

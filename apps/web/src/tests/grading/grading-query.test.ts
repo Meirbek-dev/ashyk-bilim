@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 const mocks = vi.hoisted(() => ({
   apiJson: vi.fn(),
   getCourse: vi.fn(),
+  getCurriculum: vi.fn(),
   listCourseAssessments: vi.fn(),
   gradebook: vi.fn(),
 }))
@@ -13,6 +14,7 @@ vi.mock('@/lib/api-client', () => ({
 
 vi.mock('@/lib/api/generated/courses/courses', () => ({
   getCourse: mocks.getCourse,
+  getCurriculum: mocks.getCurriculum,
 }))
 
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({
@@ -78,6 +80,9 @@ describe('courseGradebookQueryOptions', () => {
       created_at_unix: 0,
       updated_at_unix: 0,
     })
+    mocks.getCurriculum.mockResolvedValue({
+      chapters: [{ activities: [{ id: 'activity_1', name: 'Week 3 · Exam' }] }],
+    })
     mocks.listCourseAssessments.mockResolvedValue([
       {
         id: ASM_ID,
@@ -134,6 +139,7 @@ describe('courseGradebookQueryOptions', () => {
     expect(result?.cells).toHaveLength(1)
     expect(result?.cells[0]?.score).toBe(90)
     expect(result?.activities[0]?.activity_uuid).toBe('activity_1')
+    expect(result?.activities[0]?.name).toBe('Week 3 · Exam')
   })
 })
 

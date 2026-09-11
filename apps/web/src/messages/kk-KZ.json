@@ -8467,7 +8467,7 @@
           "previewSelectedGroups": "Таңдалған топтар",
           "previewEffective": "Қолжетімділік бағасы",
           "previewExcludedLoaded": "Жүктелген тізімнен тыс",
-          "previewNote": "Іздеу серверде орындалады және үлкен курстар үшін ағымдағы нәтиже терезесімен шектеледі.",
+          "previewNote": "Тізімде курс бағалар журналындағы оқушылар (кемінде бір әрекеті бар) және курсқа байланған топтар; іздеу осы тізімді сүзеді.",
           "overrideBadge": "Жеке шарт",
           "expandGroup": "Топ кеңеюін көрсету",
           "groupExpansion": "Бұл топ жеке алып тастауларға дейін {count, plural, =1 {# оқушыға} other {# оқушыға}} кеңейеді.",
@@ -10074,6 +10074,20 @@
     "republish": "Қайта жариялау"
   },
   "FileSubmission": {
+    "mimeCategories": {
+      "pdf": "PDF",
+      "documents": "Құжаттар",
+      "images": "Суреттер",
+      "spreadsheets": "Кестелер",
+      "presentations": "Презентациялар",
+      "archives": "Мұрағаттар",
+      "textAndCode": "Мәтін және код",
+      "text": "Мәтін",
+      "code": "Код",
+      "video": "Бейне",
+      "audio": "Аудио",
+      "anyFile": "Кез келген файл"
+    },
     "requirementMaxFiles": "{count, plural, one {# файлға дейін} other {# файлға дейін}}",
     "requirementMaxSize": "Әр файл {size} МБ дейін",
     "maxFilesAllowed": "{count, plural, one {Ең көбі # файл} other {Ең көбі # файл}}",
