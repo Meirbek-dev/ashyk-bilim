@@ -2,11 +2,15 @@
 
 import { apiJson } from '@/lib/api-client'
 import type {
+  Submission,
   SubmissionStats,
   SubmissionStatus,
   SubmissionsPage,
 } from '@/features/grading/domain'
-import { normalizeSubmissionsPage } from '@/features/grading/domain'
+import { normalizeSubmission } from '@/features/grading/domain'
+import { unixToIso } from '@/lib/api/contract'
+import { ReviewPage } from '@/lib/api/generated/zod'
+import type { ReviewItem } from '@/lib/api/generated/zod'
 import { gradebookFromWire, statsFromWire, teacherSubmissionFromWire } from '@/features/grading/domain/wire'
 import { queryOptions } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -34,15 +38,60 @@ export interface CourseGradebookQueryParams {
   savedFilter?: string
 }
 
-function buildSubmissionsSearchParams(params: SubmissionListQueryParams) {
-  const searchParams = new URLSearchParams()
-  if (params.status !== 'ALL') searchParams.set('status', params.status)
-  if (params.search) searchParams.set('search', params.search)
-  searchParams.set('sort_by', params.sortBy)
-  searchParams.set('sort_dir', params.sortDir)
-  searchParams.set('page', String(params.page))
-  searchParams.set('page_size', String(params.pageSize))
-  return searchParams.toString()
+/** v2 status filter values (`ReviewStatus`): `needs_grading` is `pending`. */
+function toReviewStatus(status: SubmissionListQueryParams['status']): string | null {
+  if (status === 'ALL') return null
+  return status.toLowerCase()
+}
+
+function reviewItemToSubmission(item: ReviewItem): Submission {
+  return normalizeSubmission({
+    id: item.id,
+    submission_uuid: item.id,
+    user_id: item.user.id,
+    user: item.user,
+    status: item.status.toUpperCase() as Submission['status'],
+    attempt_number: item.attempt_number,
+    is_late: item.is_late,
+    auto_score: item.auto_score ?? null,
+    final_score: item.final_score ?? null,
+    version: item.version,
+    submitted_at: unixToIso(item.submitted_at_unix ?? null),
+    graded_at: unixToIso(item.graded_at_unix ?? null),
+  })
+}
+
+/**
+ * v2 lists submissions as keyset pages; the review UI still thinks in page
+ * numbers, so page N is reached by walking N-1 cursors. `total`/`pages` are
+ * what is knowable: exact once the last page is reached, otherwise "at least".
+ * ponytail: O(N) requests for page N — fine for a per-assessment queue.
+ */
+async function fetchSubmissionsPage(params: SubmissionListQueryParams): Promise<SubmissionsPage> {
+  const base = new URLSearchParams()
+  const status = toReviewStatus(params.status)
+  if (status) base.set('status', status)
+  if (params.search) base.set('search', params.search)
+  base.set('limit', String(params.pageSize))
+
+  let cursor: string | null = null
+  let page: ReviewPage = { items: [], next_cursor: null }
+  for (let index = 1; index <= params.page; index += 1) {
+    const query = new URLSearchParams(base)
+    if (cursor) query.set('cursor', cursor)
+    page = await apiJson(`assessments/${params.assessmentUuid}/submissions?${query}`, undefined, ReviewPage.parse)
+    cursor = page.next_cursor ?? null
+    if (!cursor) break
+  }
+  const seenBefore = (params.page - 1) * params.pageSize
+  const total = seenBefore + page.items.length + (page.next_cursor ? 1 : 0)
+  return {
+    items: page.items.map(reviewItemToSubmission),
+    page: params.page,
+    page_size: params.pageSize,
+    pages: page.next_cursor ? params.page + 1 : params.page,
+    total,
+  }
 }
 
 export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid: string) {
@@ -108,9 +157,6 @@ export function submissionStatsQueryOptions(assessmentUuid: string) {
 export function submissionsQueryOptions(params: SubmissionListQueryParams) {
   return queryOptions({
     queryKey: queryKeys.grading.submissions(params),
-    queryFn: async () => {
-      const path = `assessments/${params.assessmentUuid}/submissions`
-      return normalizeSubmissionsPage(await apiJson<SubmissionsPage>(`${path}?${buildSubmissionsSearchParams(params)}`))
-    },
+    queryFn: () => fetchSubmissionsPage(params),
   })
 }
