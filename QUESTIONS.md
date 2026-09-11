@@ -43,6 +43,12 @@ client cannot filter locally either.
 client filters. Note the legacy endpoint also backed `query`, `sort_by` and `preset`
 parameters and a summary count — decide whether those survive.
 
+**Interim (2026-09-12, 9d3c1bb):** took (c) without a contract change — `Course`
+already carries `creator_id`, and `GET /courses` returns the caller's own drafts,
+so the web walks the keyset pages and filters by the session's grants; query,
+sort and preset are applied client-side. Fine for a school-sized catalogue;
+a server-side `mine=true` filter is the upgrade path once catalogues grow.
+
 ### Q-2026-09-10-3 — Course collaboration / contributors (blocks F29)
 
 No v2 route for `courses/{id}/contributors`, `apply-contributor`,
@@ -81,6 +87,13 @@ and a separate permissions collection.
 bulk-only model and rewrite both pages against it (role list → edit permissions
 as a set → save), dropping the audit log; (c) declare the RBAC admin surface
 operator-only and remove the pages in favour of `ashyq admin`.
+
+**Interim (2026-09-12, 0f598ff):** took (b) — both pages now sit on the routes
+that exist; the audit log is gone. Still open for the owner: (i) the registry
+has one `conflict` code for slug-taken / last-admin / self-disable, so the web
+branches per endpoint to localise them — dedicated codes would be cleaner;
+(ii) `display_name_key`/`description_key` carry catalog keys for seeded roles
+but raw text for custom roles — document or split the field.
 
 Until this is decided, `src/services/rbac.ts` keeps `getRole`,
 `getRolePermissions`, `createRole`, `updateRole`, `deleteRole`,
