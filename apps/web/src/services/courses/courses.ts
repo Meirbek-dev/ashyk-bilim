@@ -1,7 +1,6 @@
 'use server'
 
 import { apiJson, apiResult } from '@/lib/api-client'
-import { isApiError } from '@/lib/api/assertSuccess'
 import { Course, CoursePage, Curriculum } from '@/lib/api/generated/zod'
 import { emptyPage } from '@/lib/api/contract'
 import type { Page } from '@/lib/api/contract'
@@ -14,13 +13,6 @@ import { courseTag, tags } from '@/lib/cacheTags'
 */
 
 export type NormalizedCourseWithPermissions = AppCourse
-
-interface EditableCoursesSummary {
-  total: number
-  ready: number
-  private: number
-  attention: number
-}
 
 const serverGet = () => ({ method: 'GET', baseUrl: getAPIUrl(), timeoutMs: 10_000 })
 
@@ -73,65 +65,6 @@ export async function getCourses(_next?: unknown, page = 1, limit = 20) {
   const next_cursor = result.next_cursor ?? null
   const total = (page - 1) * limit + courses.length + (next_cursor ? 1 : 0)
   return { courses, total, next_cursor }
-}
-
-/**
- * Courses the current user can edit.
- * Blocked: no v2 route for `courses/editable` yet; kept as-is so the dashboard compiles.
- */
-async function fetchEditableCourses(
-  page = 1,
-  limit = 20,
-  query = '',
-  sortBy = 'updated',
-  preset = '',
-): Promise<{
-  courses: AppCourse[]
-  total: number
-  summary: EditableCoursesSummary
-}> {
-  const queryParams = new URLSearchParams()
-  if (query?.trim()) {
-    queryParams.set('query', query.trim())
-  }
-  if (sortBy) {
-    queryParams.set('sort_by', sortBy)
-  }
-  if (preset?.trim()) {
-    queryParams.set('preset', preset.trim())
-  }
-
-  let result: Awaited<ReturnType<typeof apiResult<AppCourse[]>>>
-  try {
-    result = await apiResult<AppCourse[]>(
-      `courses/editable/page/${page}/limit/${limit}${queryParams.size > 0 ? `?${queryParams.toString()}` : ''}`,
-      serverGet(),
-    )
-  } catch (error) {
-    if (isApiError(error) && (error.status === 401 || error.status === 403)) {
-      return {
-        courses: [],
-        total: 0,
-        summary: { total: 0, ready: 0, private: 0, attention: 0 },
-      }
-    }
-    throw error
-  }
-
-  const courses = Array.isArray(result.data) ? result.data : []
-  const total = Number.parseInt(result.headers['x-total-count'] ?? '0', 10)
-  const summary = {
-    total: Number.parseInt(result.headers['x-summary-total'] ?? String(total), 10),
-    ready: Number.parseInt(result.headers['x-summary-ready'] ?? '0', 10),
-    private: Number.parseInt(result.headers['x-summary-private'] ?? '0', 10),
-    attention: Number.parseInt(result.headers['x-summary-attention'] ?? '0', 10),
-  }
-
-  return { courses, total, summary }
-}
-
-export async function getEditableCourses(page = 1, limit = 20, query = '', sortBy = 'updated', preset = '') {
-  return fetchEditableCourses(page, limit, query, sortBy, preset)
 }
 
 /**
@@ -288,17 +221,6 @@ export async function createNewCourse(
   await revalidateCourse()
 
   return { ...result, data: course }
-}
-
-/**
- * Search editable courses for the outline template combobox.
- * Blocked: no v2 route for `courses/editable`; resolves to `[]` on failure.
- */
-export async function searchEditableCourses(query: string, limit = 20) {
-  const courses = await apiJson<AppCourse[]>(
-    `courses/editable/page/1/limit/${limit}?query=${encodeURIComponent(query)}&sort_by=updated`,
-  ).catch(() => [])
-  return Array.isArray(courses) ? courses : []
 }
 
 export async function deleteCourseFromBackend(

@@ -47,7 +47,7 @@ function hasCreateCoursePermission(session: AuthSession, permsSet: Set<string>) 
   return can(session, permsSet, Resources.COURSE, Actions.CREATE, Scopes.APP)
 }
 
-function deriveCourseWorkspaceCapabilities(session: AuthSession, course: AppCourse): CourseWorkspaceCapabilities {
+export function deriveCourseWorkspaceCapabilities(session: AuthSession, course: AppCourse): CourseWorkspaceCapabilities {
   const permsSet = new Set(session.permissions)
   const isCreator = typeof course.creator_id === 'string' && course.creator_id === session.userId
 

@@ -104,7 +104,9 @@ export function buildDashboardWorkQueue({
     sections.push(teacherSection)
   }
 
-  if (access.hasUsersAccess || access.hasAdminAccess) {
+  // Admin work only for admins: `hasUsersAccess` is also true for instructors
+  // (`usergroup:read:platform`), and every item here lands on admin-only routes.
+  if (access.hasAdminAccess) {
     sections.push(adminSection)
   }
 
@@ -429,7 +431,8 @@ function buildAdminSection({ access, adminSignal, t }: AdminSectionInput): WorkQ
     })
   }
 
-  if (access.hasUsersAccess) {
+  // `/dash/users/settings/users` is the admin directory (`GET /users`, `platform:read:platform`).
+  if (access.hasAdminAccess) {
     items.push({
       id: 'user-access-audit',
       audience: 'admin',

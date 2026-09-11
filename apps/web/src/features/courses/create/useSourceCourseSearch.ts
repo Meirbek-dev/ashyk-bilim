@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { searchEditableCourses } from '@services/courses/courses'
+import { searchEditableCourses } from '@services/courses/editable'
 import { cleanCourseUuid } from '@/lib/course-management'
 import type { SourceCourseOption } from './course-create-types'
 

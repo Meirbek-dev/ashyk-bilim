@@ -1,6 +1,6 @@
 import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
-import { getEditableCourses } from '@services/courses/courses'
+import { getEditableCourses } from '@services/courses/editable'
 import type { PageSearchParams } from '@/lib/search-params'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { requireAnyPermission } from '@/lib/auth/permissions'

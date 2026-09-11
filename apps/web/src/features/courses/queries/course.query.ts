@@ -27,15 +27,7 @@ import { normalizeLeaderboard } from '@/services/gamification/normalize'
 
 interface CourseListResponse<TCourse> {
   courses: TCourse[]
-  /** Keyset listings have no total; only the (blocked) editable list still reports one. */
-  total?: number
   next_cursor?: string | null
-  summary?: {
-    total: number
-    ready: number
-    private: number
-    attention: number
-  }
 }
 
 export function courseQueryOptions<TCourse = unknown>(courseUuid: string) {
@@ -88,27 +80,6 @@ export function courseListQueryOptions<TCourse = unknown>(options: CourseListKey
   return queryOptions({
     queryKey: courseKeys.list(options),
     queryFn: () => fetchCoursePage<TCourse>(options),
-  })
-}
-
-/** Blocked: no v2 route for `courses/editable`. */
-export function editableCourseListQueryOptions<TCourse = unknown>(options: CourseListKeyOptions = {}) {
-  return queryOptions({
-    queryKey: courseKeys.editable(options),
-    queryFn: async (): Promise<CourseListResponse<TCourse>> => {
-      const response = await apiResult(courseEndpoints.editable(options))
-      const courses = Array.isArray(response.data) ? (response.data as TCourse[]) : []
-      return {
-        courses,
-        total: Number.parseInt(response.headers['x-total-count'] ?? '0', 10),
-        summary: {
-          total: Number.parseInt(response.headers['x-summary-total'] ?? response.headers['x-total-count'] ?? '0', 10),
-          ready: Number.parseInt(response.headers['x-summary-ready'] ?? '0', 10),
-          private: Number.parseInt(response.headers['x-summary-private'] ?? '0', 10),
-          attention: Number.parseInt(response.headers['x-summary-attention'] ?? '0', 10),
-        },
-      }
-    },
   })
 }
 

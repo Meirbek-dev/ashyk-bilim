@@ -6,8 +6,12 @@ testAsStudent.describe('Dashboard work queue - learner', () => {
 
     await expect(page).not.toHaveURL(/\/login/)
     await expect(page.getByTestId('dashboard-work-queue')).toBeVisible()
-    await expect(page.getByTestId('work-queue-learner')).toBeVisible()
-    await expect(page.getByTestId('work-queue-empty-learner')).toBeVisible()
+    const learnerQueue = page.getByTestId('work-queue-learner')
+    await expect(learnerQueue).toBeVisible()
+    // A learner with released feedback legitimately has items; either state is valid.
+    await expect(
+      learnerQueue.getByTestId(/^work-queue-item-/).first().or(page.getByTestId('work-queue-empty-learner')),
+    ).toBeVisible()
     await expect(page.getByTestId('dashboard-tools')).toBeVisible()
   })
 })
@@ -30,6 +34,7 @@ testAsAdmin.describe('Dashboard work queue - admin', () => {
     await expect(page).not.toHaveURL(/\/login/)
     await expect(page.getByTestId('work-queue-admin')).toBeVisible()
     await expect(page.getByTestId('dashboard-tools')).toBeVisible()
-    await expect(page.getByRole('link', { name: /open/i }).first()).toBeVisible()
+    // Item actions render as `<a role="button">` (`Button render={<AppLink/>}`), not links.
+    await expect(page.getByTestId('work-queue-admin').getByRole('button').first()).toBeVisible()
   })
 })

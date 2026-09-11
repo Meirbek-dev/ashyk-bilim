@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { buildDashboardWorkQueue } from '@/features/work-queue'
 
-describe('buildDashboardWorkQueue localization', () => {
+const t = (key: string) => `t:${key}`
+
+describe('buildDashboardWorkQueue', () => {
   it('renders the learner section title and empty state through the translator, not the English literal', () => {
     const access = {
       hasCoursesAccess: false,
@@ -10,8 +12,6 @@ describe('buildDashboardWorkQueue localization', () => {
       hasUsersAccess: false,
       hasAdminAccess: false,
     }
-
-    const t = (key: string) => `t:${key}`
 
     const queue = buildDashboardWorkQueue({
       access,
@@ -33,5 +33,32 @@ describe('buildDashboardWorkQueue localization', () => {
     expect(learnerSection?.title).not.toBe('Learner Work')
     expect(learnerSection?.description).not.toBe('Assignments and course actions that need the learner next.')
     expect(learnerSection?.emptyTitle).not.toBe('No learner work is queued')
+  })
+
+  it('gives instructor-like grants (users access via usergroup:read) only the teacher section', () => {
+    const queue = buildDashboardWorkQueue({
+      access: { hasCoursesAccess: true, hasAnalyticsAccess: true, hasUsersAccess: true, hasAdminAccess: false },
+      courseSummary: null,
+      teacherSignal: null,
+      adminSignal: null,
+      learnerSignal: null,
+      t,
+    })
+
+    expect(queue.sections.map(section => section.audience)).toEqual(['teacher'])
+  })
+
+  it('gives admins the admin section with the user directory item', () => {
+    const queue = buildDashboardWorkQueue({
+      access: { hasCoursesAccess: true, hasAnalyticsAccess: true, hasUsersAccess: true, hasAdminAccess: true },
+      courseSummary: null,
+      teacherSignal: null,
+      adminSignal: null,
+      learnerSignal: null,
+      t,
+    })
+
+    const admin = queue.sections.find(section => section.audience === 'admin')
+    expect(admin?.items.map(item => item.id)).toContain('user-access-audit')
   })
 })

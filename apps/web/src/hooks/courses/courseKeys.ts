@@ -110,10 +110,6 @@ export const courseEndpoints = {
   /** Keyset page (`{items, next_cursor}`); `page` is ignored, pass `cursor`. */
   list: ({ limit = 20, cursor }: CourseListKeyOptions = {}) => `courses${buildQueryString({ limit, cursor })}`,
 
-  // No v2 route yet (blocked): kept so the dashboard keeps compiling.
-  editable: ({ page = 1, limit = 20, query, sortBy = 'updated', preset }: CourseListKeyOptions = {}) =>
-    `courses/editable/page/${page}/limit/${limit}${buildQueryString({ query, sort_by: sortBy, preset })}`,
-
   detail: (courseUuid: string) => `courses/${stripEntityPrefix(courseUuid)}`,
 
   curriculum: (courseUuid: string) => `courses/${stripEntityPrefix(courseUuid)}/curriculum`,
@@ -133,16 +129,6 @@ export const courseKeys = {
   all: ['courses'] as const,
 
   list: (options: CourseListKeyOptions = {}) => ['courses', 'list', normalizeCourseListOptions(options)] as const,
-
-  editable: (options: CourseListKeyOptions = {}) =>
-    [
-      'courses',
-      'editable',
-      normalizeCourseListOptions({
-        ...options,
-        sortBy: options.sortBy ?? 'updated',
-      }),
-    ] as const,
 
   detail: (courseUuid: string) => ['courses', 'detail', stripEntityPrefix(courseUuid)] as const,
 
