@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { describeUserAgent } from '@/lib/user-agent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -91,7 +92,7 @@ function SessionsSection({ t }: { t: Translator }) {
             <li key={session.handle} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="truncate font-medium">
-                  {session.user_agent || t('unknownDevice')}
+                  {describeUserAgent(session.user_agent) ?? t('unknownDevice')}
                   {session.current ? (
                     <span className="bg-primary/10 text-primary ml-2 rounded px-1.5 py-0.5 text-xs">
                       {t('currentSession')}

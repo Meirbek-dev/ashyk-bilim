@@ -91,7 +91,8 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
             <InlineError description={threadQuery.error.message} error={threadQuery.error} />
           ) : messages.length === 0 ? (
             <QAStarterState
-              contextLabel={selectedThreadUuid ? t('threadContext') : t('activityContext')}
+              contextLabel={selectedThreadUuid ? t('threadContext') : activityUuid ? t('activityContext') : t('courseContext')}
+              hasActivity={Boolean(activityUuid)}
               onPrompt={submitQuestion}
             />
           ) : (
@@ -161,7 +162,15 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
   )
 }
 
-function QAStarterState({ contextLabel, onPrompt }: { contextLabel: string; onPrompt: (question: string) => void }) {
+function QAStarterState({
+  contextLabel,
+  hasActivity,
+  onPrompt,
+}: {
+  contextLabel: string
+  hasActivity: boolean
+  onPrompt: (question: string) => void
+}) {
   const t = useTranslations('AiExperience.qaInput')
   const prompts = [
     t('starterExplain'),
@@ -177,8 +186,8 @@ function QAStarterState({ contextLabel, onPrompt }: { contextLabel: string; onPr
         <EmptyMedia variant="icon">
           <MessageCircleQuestionIcon aria-hidden="true" />
         </EmptyMedia>
-        <EmptyTitle>{t('emptyTitle')}</EmptyTitle>
-        <EmptyDescription>{t('emptyDesc')}</EmptyDescription>
+        <EmptyTitle>{hasActivity ? t('emptyTitle') : t('emptyTitleCourse')}</EmptyTitle>
+        <EmptyDescription>{hasActivity ? t('emptyDesc') : t('emptyDescCourse')}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="max-w-none">
         <div className="flex flex-wrap justify-center gap-2">

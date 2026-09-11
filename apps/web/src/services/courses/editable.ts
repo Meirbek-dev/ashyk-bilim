@@ -4,6 +4,7 @@ import { listCourses } from '@/lib/api/generated/courses/courses'
 import { collectPages } from '@/lib/api/contract'
 import { toAppCourse } from '@/hooks/courses/courseKeys'
 import { getSession } from '@/lib/auth/session'
+import { getLocale } from 'next-intl/server'
 import { deriveCourseWorkspaceCapabilities } from '@/lib/course-management-server'
 
 /*
@@ -64,7 +65,10 @@ export async function getEditableCourses(
   sortBy = 'updated',
   preset = '',
 ): Promise<{ courses: AppCourse[]; total: number; summary: EditableCoursesSummary }> {
-  const all = await loadEditableCourses()
+  const [all, locale] = await Promise.all([loadEditableCourses(), getLocale()])
+  // Collation follows the viewer's locale (ru puts Cyrillic first), not the
+  // server process locale.
+  const collator = new Intl.Collator(locale, { sensitivity: 'base' })
   const summary = {
     total: all.length,
     ready: all.filter(course => course.public).length,
@@ -77,7 +81,7 @@ export async function getEditableCourses(
   const filtered = all
     .filter(course => matchesQuery(course, needle) && matchesPreset(course, preset.trim(), nowUnix))
     .sort((a, b) =>
-      sortBy === 'name' ? a.name.localeCompare(b.name) : b.updated_at_unix - a.updated_at_unix,
+      sortBy === 'name' ? collator.compare(a.name, b.name) : b.updated_at_unix - a.updated_at_unix,
     )
 
   const start = (page - 1) * limit

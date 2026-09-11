@@ -10161,7 +10161,11 @@
       "error": "The answer could not be completed. Your question is still here.",
       "retry": "Try again",
       "dismiss": "Dismiss",
-      "unavailable": "AI features are currently unavailable. Try again later."
+      "unavailable": "AI features are currently unavailable. Try again later.",
+      "threadDeleted": "Thread deleted",
+      "courseContext": "Using course material",
+      "emptyTitleCourse": "Ask about this course",
+      "emptyDescCourse": "Answers are grounded in the course material; inspect the sources before you rely on an answer."
     },
     "courseAIHub": {
       "title": "AI learning support",

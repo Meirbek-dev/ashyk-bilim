@@ -238,7 +238,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
           type="button"
           onClick={() => setIsProgressOpen(true)}
           variant="ghost"
-          className="group border-border/60 bg-muted/20 hover:border-border/80 hover:bg-muted/40 flex h-auto w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-xs"
+          className="group border-border/60 bg-muted/20 hover:border-border/80 hover:bg-muted/40 flex h-auto w-full items-center gap-4 rounded-xl border p-4 text-left whitespace-normal transition-all hover:shadow-xs"
         >
           <div className="bg-muted group-hover:bg-muted/80 relative flex size-14 shrink-0 items-center justify-center rounded-full transition-colors">
             <BookOpen className="text-muted-foreground size-6" />
