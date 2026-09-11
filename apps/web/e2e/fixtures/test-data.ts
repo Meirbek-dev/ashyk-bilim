@@ -57,9 +57,9 @@ export const SAMPLE_PDF = path.join(FIXTURES_DIR, 'sample.pdf')
 /** A simple Python function used in the coding challenge test */
 export const CORRECT_PYTHON_SOLUTION = `def add(a, b):\n    return a + b\n`
 
-/** Passing exam: answer indices that should yield a passing score */
+/** Passing exam: the correct answers (v2 shuffles questions and options, so answer by text) */
 export const EXAM_ANSWERS = {
-  question0ChoiceIndex: 0, // First question, first choice (set as correct)
-  question1IsTrue: true, // True/False — True
-  question2MultiSelectIndices: [0, 2], // Multi-select: choices 0 and 2
+  singleChoice: { question: 'What does HTML stand for?', answer: 'HyperText Markup Language' },
+  trueFalse: { question: 'JavaScript is a statically typed language.', answer: 'False' },
+  multiSelect: { question: 'Which of the following are JavaScript frameworks?', answers: ['React', 'Vue'] },
 }

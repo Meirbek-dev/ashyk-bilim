@@ -13,12 +13,12 @@ testAsTeacher.describe.serial('Assessment rewrite cockpit', () => {
   testAsTeacher('teacher can open the rewritten studio and navigate core views', async ({ page }) => {
     testAsTeacher.skip(!courseUuid || !examActivityId, 'Set E2E_COURSE_UUID and E2E_EXAM_ACTIVITY_ID first.')
 
-    await page.goto(`/dash/courses/${courseUuid}/activity/${examActivityId}/studio?view=questions`)
+    await page.goto(`/dash/courses/${courseUuid}/activity/${examActivityId}/studio?view=builder`) // v2 views: setup | builder | access | results | publish
     await expect(page.getByRole('button', { name: /questions|constructor|вопрос|сұрақ/i }).first()).toBeVisible({
       timeout: 15_000,
     })
 
-    await page.goto(`/dash/courses/${courseUuid}/activity/${examActivityId}/studio?view=audience`)
+    await page.goto(`/dash/courses/${courseUuid}/activity/${examActivityId}/studio?view=access`)
     await expect(page.getByRole('heading', { name: /access|доступ|қолжет/i }).first()).toBeVisible({ timeout: 15_000 })
 
     await page.goto(`/dash/courses/${courseUuid}/activity/${examActivityId}/studio?view=publish`)

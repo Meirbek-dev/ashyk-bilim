@@ -142,8 +142,9 @@ async function captureStorageState(login: string, password: string, outputPath: 
 // ---------------------------------------------------------------------------
 
 export default async function globalSetup(_config: FullConfig): Promise<void> {
-  // Ensure output directory exists
+  // Ensure output directory exists; drop cross-spec state left by an aborted run
   fs.mkdirSync(STORAGE_STATE_DIR, { recursive: true })
+  fs.rmSync(path.join(STORAGE_STATE_DIR, 'state.json'), { force: true })
 
   const teacherEmail = requireEnv('E2E_TEACHER_EMAIL')
   const teacherPassword = requireEnv('E2E_TEACHER_PASSWORD')

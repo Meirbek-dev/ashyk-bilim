@@ -46,6 +46,18 @@ interface LmsFixtures {
 // ---------------------------------------------------------------------------
 
 export const test = base.extend<LmsFixtures>({
+  // The react-scan dev toolbar (`#react-scan-root`, dev builds only) floats
+  // over the bottom of the page and intercepts clicks on fixed action bars.
+  page: async ({ page }, use) => {
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        const style = document.createElement('style')
+        style.textContent = '#react-scan-root { display: none !important; }'
+        document.head.append(style)
+      })
+    })
+    await use(page)
+  },
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
   navBar: async ({ page }, use) => use(new NavBar(page)),
   dashCoursesPage: async ({ page }, use) => use(new DashCoursesPage(page)),

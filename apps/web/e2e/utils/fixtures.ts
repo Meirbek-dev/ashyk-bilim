@@ -5,6 +5,10 @@
 
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// ESM: no `__dirname` (the specs are loaded as modules)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export function ensureFixtureFiles(): void {
   const fixturesDir = path.join(__dirname, '../fixtures/files')
