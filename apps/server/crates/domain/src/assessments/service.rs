@@ -603,7 +603,8 @@ impl AssessmentsService {
     pub async fn get(&self, actor: &Actor, id: AssessmentId) -> Result<AssessmentDetail> {
         let assessment = self.load(id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
-        if Self::require_scoped(actor, &course, Action::Author, "read").is_err() {
+        let author = Self::require_scoped(actor, &course, Action::Author, "read").is_ok();
+        if !author {
             let readable = assessment.lifecycle == Lifecycle::Published
                 && (actor.has(perm(Action::Read, Scope::Assigned))
                     || actor.has(perm(Action::Read, Scope::Platform)));
@@ -611,7 +612,13 @@ impl AssessmentsService {
                 return Err(Error::not_found("assessment"));
             }
         }
-        self.detail(id).await
+        let mut detail = self.detail(id).await?;
+        if !author {
+            for item in &mut detail.items {
+                item.body.redact_for_learner();
+            }
+        }
+        Ok(detail)
     }
 
     pub async fn get_by_activity(

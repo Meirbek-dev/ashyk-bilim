@@ -356,7 +356,11 @@ async fn code_challenge_defaults_kind_rules_and_visibility(pool: PgPool) {
                 "metadata": { "tags": [" Loops ", "loops", "Basics"], "difficulty": "easy" },
                 "body": {
                     "kind": "code", "prompt": "print fizzbuzz", "languages": [71],
-                    "tests": [{ "id": "t1", "input": "3", "expected_output": "Fizz" }]
+                    "reference_solutions": { "71": "print('Fizz')" },
+                    "tests": [
+                        { "id": "t1", "input": "3", "expected_output": "Fizz" },
+                        { "id": "t2", "input": "5", "expected_output": "Buzz", "is_visible": false }
+                    ]
                 }
             }),
         )
@@ -393,6 +397,25 @@ async fn code_challenge_defaults_kind_rules_and_visibility(pool: PgPool) {
         .get_as(&learner, &format!("/api/v2/assessments/{id}"))
         .await;
     assert_eq!(visible.status, StatusCode::OK);
+    // The learner read is redacted: no answer key, no reference solutions,
+    // no hidden tests. The author still sees everything.
+    let learner_body = &visible.json()["items"][0]["body"];
+    assert!(learner_body["reference_solutions"]
+        .as_object()
+        .unwrap()
+        .is_empty());
+    assert!(learner_body["tests"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|t| t["is_visible"] == true));
+    let author_view = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert!(!author_view.json()["items"][0]["body"]["reference_solutions"]
+        .as_object()
+        .unwrap()
+        .is_empty());
     let no_grant = app.mint_session(&[]).await;
     let still_hidden = app
         .get_as(&no_grant, &format!("/api/v2/assessments/{id}"))

@@ -201,6 +201,29 @@ pub enum ItemBody {
 }
 
 impl ItemBody {
+    /// Strip everything a learner must not see while attempting: the answer
+    /// key on choices, rubrics and explanations, reference solutions and
+    /// hidden tests. Authors read the full body; learners read this.
+    pub fn redact_for_learner(&mut self) {
+        match self {
+            Self::Choice(body) => {
+                for option in &mut body.options {
+                    option.is_correct = false;
+                }
+                body.explanation = None;
+            }
+            Self::OpenText(body) => body.rubric = None,
+            Self::Code(body) => {
+                body.reference_solutions.clear();
+                body.tests.retain(|test| test.is_visible);
+            }
+            // The learner UI builds both columns from `pairs`; the pairing
+            // itself is the key and needs a separate wire shape (ledger).
+            Self::Matching(body) => body.explanation = None,
+            Self::Form(_) => {}
+        }
+    }
+
     #[must_use]
     pub const fn kind(&self) -> ItemKind {
         match self {
