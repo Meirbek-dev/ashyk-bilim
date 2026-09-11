@@ -100,10 +100,6 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
   const onSubmit = async (values: SubmitValues) => {
     const toastLoading = toast.loading(t('creatingExam'))
     try {
-      const courseId = course?.courseStructure?.id
-      if (typeof courseId !== 'number') {
-        throw new Error('Course metadata is missing for exam creation')
-      }
 
       const settings = {
         time_limit: values.has_time_limit ? values.time_limit : null,
@@ -125,7 +121,6 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
 
       const data = await createExamMutation.mutateAsync({
         activityName: values.activity_name,
-        courseId,
         chapterId,
         examTitle: values.exam_title,
         examDescription: values.exam_description,
@@ -152,11 +147,9 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
 
         if (courseUuidClean) {
           const activityUuidClean = cleanActivityUuid(createdActivityUuid)
-          navigateTo(
-            `/course/${courseUuidClean}/activity/${activityUuidClean}${
-              withUnpublishedActivities ? '?withUnpublishedActivities=true' : ''
-            }`,
-          )
+          // A fresh assessment is unpublished, so the learner activity page
+          // (which reads the published outline) cannot show it — go to the studio.
+          navigateTo(`/dash/courses/${courseUuidClean}/activity/${activityUuidClean}/studio`)
         } else {
           navigateTo('/courses')
         }

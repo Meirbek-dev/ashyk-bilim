@@ -46,9 +46,9 @@ interface NewActivityModalProps {
   closeModal: () => void
   submitActivity: (payload: AppPayload) => Promise<void>
   submitFileActivity: (params: AppFileActivityInput) => Promise<void>
-  submitExternalVideo: (external_video_data: AppPayload, activity: AppPayload, chapterId: number) => Promise<void>
+  submitExternalVideo: (external_video_data: AppPayload, activity: AppPayload, chapterId: string) => Promise<void>
   createAndOpenActivity: (kind: 'dynamic' | 'codechallenge') => Promise<void>
-  chapterId: number
+  chapterId: string
   course: AppCourse | AppCourseContextShape
 }
 

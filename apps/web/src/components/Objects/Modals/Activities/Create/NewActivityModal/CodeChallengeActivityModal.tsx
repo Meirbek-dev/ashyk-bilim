@@ -23,7 +23,7 @@ const createValidationSchema = (t: (key: string) => string) =>
 
 interface CodeChallengeActivityModalProps {
   submitActivity?: (data: AppPayload) => Promise<void>
-  chapterId: number
+  chapterId: string
   course?: AppCourse | AppCourseContextShape
   closeModal?: () => void
 }

@@ -119,7 +119,7 @@ export function deleteActivityMutationOptions(queryClient: QueryClient, structur
 
 export function createActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
-    mutationFn: async ({ chapterId, payload }: { chapterId: number; payload: ActivityCreateValues }) => {
+    mutationFn: async ({ chapterId, payload }: { chapterId: string; payload: ActivityCreateValues }) => {
       const data: AppPayload = {
         ...payload,
         details: payload.details as AppPayload['details'],
@@ -141,7 +141,7 @@ export function createFileActivityMutationOptions(queryClient: QueryClient, stru
       payload,
       type,
     }: {
-      chapterId: number
+      chapterId: string
       file: File
       onProgress?: (progress: { percentage: number }) => void
       payload: Partial<ActivityCreateValues>
@@ -167,7 +167,7 @@ export function createExternalVideoMutationOptions(queryClient: QueryClient, str
       externalVideoData,
     }: {
       activityPayload: Partial<ActivityCreateValues>
-      chapterId: number
+      chapterId: string
       externalVideoData: Record<string, unknown>
     }) => createExternalVideoActivity(externalVideoData, activityPayload, chapterId),
     onSuccess: async () => {

@@ -79,17 +79,17 @@ declare global {
 
   interface AppFileActivityInput {
     activity: AppPayload
-    chapterId: number
+    chapterId: string
     file: File
     type: string
   }
 
   interface AppActivityModalProps {
-    chapterId: number
+    chapterId: string
     closeModal: () => void
     course?: AppCourse | AppCourseContextShape
     submitActivity?: (payload: AppPayload) => Promise<void>
-    submitExternalVideo?: (externalVideoData: AppPayload, activity: AppPayload, chapterId: number) => Promise<void>
+    submitExternalVideo?: (externalVideoData: AppPayload, activity: AppPayload, chapterId: string) => Promise<void>
     submitFileActivity?: (params: AppFileActivityInput) => Promise<void>
   }
 

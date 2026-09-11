@@ -130,7 +130,7 @@ function ChapterElement({
 
   const chapterUuid = chapter.chapter_uuid || ''
   const chapterName = chapter.name || ''
-  const chapterId = chapter.id ?? 0
+  const chapterId = chapter.id ?? ''
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: chapterUuid,
@@ -377,7 +377,7 @@ function ChapterElement({
       </SortableContext>
 
       <div className="px-4 pb-4">
-        <NewActivityButton chapterId={chapterId} />
+        <NewActivityButton chapterId={String(chapterId)} />
       </div>
     </div>
   )

@@ -97,14 +97,14 @@ async function uploadFormData(
 async function createVideoActivityStandard(
   file: File,
   data: AppPayload,
-  chapterId: number,
+  chapterId: string,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
   void options
 
   const formData = new FormData()
-  formData.append('chapter_id', chapterId.toString())
+  formData.append('chapter_id', chapterId)
   formData.append('name', data.name ?? '')
   formData.append('video_file', file)
 
@@ -122,7 +122,7 @@ async function createVideoActivityStandard(
 async function createVideoActivityChunked(
   file: File,
   data: AppPayload,
-  chapterId: number,
+  chapterId: string,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
@@ -154,7 +154,7 @@ async function createVideoActivityChunked(
   })
 
   const formData = new FormData()
-  formData.append('chapter_id', chapterId.toString())
+  formData.append('chapter_id', chapterId)
   formData.append('name', data.name ?? '')
   formData.append(
     'video_uploaded_path',
@@ -179,14 +179,14 @@ async function createVideoActivityChunked(
 async function createPdfActivityStandard(
   file: File,
   data: AppPayload,
-  chapterId: number,
+  chapterId: string,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
   void options
 
   const formData = new FormData()
-  formData.append('chapter_id', chapterId.toString())
+  formData.append('chapter_id', chapterId)
   formData.append('pdf_file', file)
   formData.append('name', data.name ?? '')
 
@@ -196,7 +196,7 @@ async function createPdfActivityStandard(
 async function createPdfActivityChunked(
   file: File,
   data: AppPayload,
-  chapterId: number,
+  chapterId: string,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
@@ -229,7 +229,7 @@ async function createPdfActivityChunked(
   })
 
   const formData = new FormData()
-  formData.append('chapter_id', chapterId.toString())
+  formData.append('chapter_id', chapterId)
   formData.append('name', data.name ?? '')
   formData.append('pdf_uploaded_path', uploadedPath)
 
@@ -240,7 +240,7 @@ export async function createFileActivity(
   file: File,
   type: string,
   data: AppPayload,
-  chapterId: number,
+  chapterId: string,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {

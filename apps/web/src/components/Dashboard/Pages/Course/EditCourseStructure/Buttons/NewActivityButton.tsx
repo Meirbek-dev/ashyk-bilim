@@ -22,7 +22,7 @@ import { courseKeys } from '@/hooks/courses/courseKeys'
 import type { ActivityCreateValues } from '@/schemas/activitySchemas'
 
 interface NewActivityButtonProps {
-  chapterId: number
+  chapterId: string
 }
 
 function NewActivityButton(props: NewActivityButtonProps) {
@@ -81,7 +81,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
     }
   }
 
-  const submitExternalVideo = async (external_video_data: AppPayload, activity: AppPayload, chapterId: number) => {
+  const submitExternalVideo = async (external_video_data: AppPayload, activity: AppPayload, chapterId: string) => {
     const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
       await activityMutations.createExternalVideo(
