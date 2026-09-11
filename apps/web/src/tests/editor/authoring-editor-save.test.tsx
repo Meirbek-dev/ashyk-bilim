@@ -84,13 +84,19 @@ vi.mock('../../components/Objects/Editor/Toolbar/EmbedPanel/EmbedPanel', () => (
   EmbedPanel: () => null,
 }))
 
+const headerProps = vi.hoisted(() => ({ courseUuid: '', activityUuid: '' }))
+
 vi.mock('../../components/Objects/Editor/chrome', () => ({
   EditorShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  EditorHeader: ({ onSave }: { onSave: () => void }) => (
-    <button type="button" onClick={onSave}>
-      save
-    </button>
-  ),
+  EditorHeader: ({ onSave, courseUuid, activityUuid }: { onSave: () => void; courseUuid: string; activityUuid: string }) => {
+    headerProps.courseUuid = courseUuid
+    headerProps.activityUuid = activityUuid
+    return (
+      <button type="button" onClick={onSave}>
+        save
+      </button>
+    )
+  },
 }))
 
 import { AuthoringEditor } from '../../components/Objects/Editor/views/AuthoringEditor'
@@ -122,5 +128,39 @@ describe('AuthoringEditor save', () => {
 
     expect(setContent).toHaveBeenCalledWith(updatedDocument)
     expect(setContent).not.toHaveBeenCalledWith(emptyDocument)
+  })
+
+  it('passes bare v2 ids to the header links (legacy prefixes stripped, bare ids untouched)', () => {
+    const noop = vi.fn()
+    const { unmount } = render(
+      <AuthoringEditor
+        content={emptyDocument}
+        activity={{ activity_uuid: 'activity_123', name: 'Lecture' }}
+        course={{ course_uuid: 'course_123', name: 'Course' }}
+        platform={null}
+        onContentChange={noop}
+        saveState="idle"
+        setContent={noop}
+      />,
+    )
+    expect(headerProps).toEqual({ courseUuid: '123', activityUuid: '123' })
+    unmount()
+
+    // v2 ids carry no prefix — the old `slice(7)` / `slice(9)` mangled them
+    render(
+      <AuthoringEditor
+        content={emptyDocument}
+        activity={{ activity_uuid: '01a0925e-dbb9-7cbc-a36c-4e0f8b24c9f8', name: 'Lecture' }}
+        course={{ course_uuid: '01a0925e-9659-75d4-b8c2-d29faefaf401', name: 'Course' }}
+        platform={null}
+        onContentChange={noop}
+        saveState="idle"
+        setContent={noop}
+      />,
+    )
+    expect(headerProps).toEqual({
+      courseUuid: '01a0925e-9659-75d4-b8c2-d29faefaf401',
+      activityUuid: '01a0925e-dbb9-7cbc-a36c-4e0f8b24c9f8',
+    })
   })
 })

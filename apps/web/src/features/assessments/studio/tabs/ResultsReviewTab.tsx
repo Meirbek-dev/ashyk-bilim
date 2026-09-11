@@ -27,7 +27,8 @@ import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulk
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import { getReleaseState, getSubmissionDisplayName } from '@/features/grading/domain'
 import { getSubmissionViolations } from '@/features/grading/domain/types'
-import type { ReleaseState, Submission, SubmissionStatus, SubmissionUser } from '@/features/grading/domain'
+import type { ReleaseState, Submission, SubmissionStatus } from '@/features/grading/domain'
+import { submissionStatsQueryOptions, submissionsQueryOptions } from '@/features/grading/queries/grading.query'
 import { cn } from '@/lib/utils'
 import { apiBody, apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -39,25 +40,7 @@ import { InlineError } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import {
-  buildSubmissionQueuePath,
-  countItemActionPrompts,
-  getItemActionPrompt,
-  summarizeIntegrityEvents,
-} from './operateViewUtils'
-
-interface ScoreDistributionBucket {
-  range: string
-  count: number
-}
-
-interface SubmissionStats {
-  total: number
-  needs_grading_count: number
-  avg_score: number | null
-  pass_rate: number | null
-  score_distribution: ScoreDistributionBucket[]
-}
+import { countItemActionPrompts, getItemActionPrompt, summarizeIntegrityEvents } from './operateViewUtils'
 
 interface ItemAnalytics {
   item_uuid: string
@@ -70,44 +53,11 @@ interface ItemAnalytics {
   discrimination_index: number | null
 }
 
-type ReviewQueueSubmission = Submission & {
-  submission_uuid: string
-  metadata_json: unknown
-  user: SubmissionUser | null
-  user_id: number | null
-  submitted_at?: string | null
-  updated_at?: string | null
-  release_state?: ReleaseState | string | null
-}
-
-interface ReviewQueueRead {
-  items: ReviewQueueSubmission[]
-  total: number
-  page: number
-  page_size: number
-  pages: number
-  contract_version?: number
-}
-
-const statsQueryOptions = (assessmentUuid: string) =>
-  queryOptions({
-    queryKey: queryKeys.assessments.stats(assessmentUuid),
-    queryFn: () => apiJson<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
-    staleTime: 30_000,
-  })
-
 const itemAnalyticsQueryOptions = (assessmentUuid: string) =>
   queryOptions({
     queryKey: queryKeys.assessments.itemAnalytics(assessmentUuid),
     queryFn: () => apiJson<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`),
     staleTime: 30_000,
-  })
-
-const queueQueryOptions = (assessmentUuid: string, queuePath: string) =>
-  queryOptions({
-    queryKey: ['assessments', assessmentUuid, 'operate-queue', queuePath],
-    queryFn: () => apiJson<ReviewQueueRead>(queuePath),
-    staleTime: 5000,
   })
 
 interface ResultsReviewTabProps {
@@ -132,26 +82,29 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   const [regradeCandidates, setRegradeCandidates] = useState<Set<string>>(new Set())
   const [isExporting, startExportTransition] = useTransition()
 
-  const queuePath = buildSubmissionQueuePath(assessmentUuid, {
-    status: statusFilter,
-    search,
-    sortBy,
-    sortDir,
-    page,
-    pageSize: 10,
-    lateOnly,
-  })
-
-  const statsQuery = useQuery(statsQueryOptions(assessmentUuid))
+  // v2 queue: keyset `GET assessments/{id}/submissions` (status/search/cursor/limit)
+  // walked page-by-page by the shared grading query; sort is applied client-side.
+  const statsQuery = useQuery(submissionStatsQueryOptions(assessmentUuid))
   const itemAnalyticsQuery = useQuery(itemAnalyticsQueryOptions(assessmentUuid))
-  const queueQuery = useQuery(queueQueryOptions(assessmentUuid, queuePath))
+  const queueQuery = useQuery(
+    submissionsQueryOptions({ assessmentUuid, page, pageSize: 10, search, sortBy, sortDir, status: statusFilter }),
+  )
 
   const stats = statsQuery.isSuccess ? statsQuery.data : null
   const itemAnalytics = itemAnalyticsQuery.isSuccess ? itemAnalyticsQuery.data : []
   const queue = queueQuery.isSuccess ? queueQuery.data : { items: [], total: 0, page, page_size: 10, pages: 1 }
-  const selectedSubmissions = queue.items.filter(submission => selectedUuids.has(submission.submission_uuid))
+  const sortValue = (submission: Submission) =>
+    sortBy === 'final_score'
+      ? (submission.final_score ?? -1)
+      : sortBy === 'attempt_number'
+        ? submission.attempt_number
+        : Date.parse(submission.submitted_at ?? submission.updated_at ?? '') || 0
+  const queueItems = queue.items
+    .filter(submission => !lateOnly || submission.is_late)
+    .toSorted((a, b) => (sortDir === 'asc' ? sortValue(a) - sortValue(b) : sortValue(b) - sortValue(a)))
+  const selectedSubmissions = queueItems.filter(submission => selectedUuids.has(submission.submission_uuid))
   const promptCounts = countItemActionPrompts(itemAnalytics)
-  const integritySummary = summarizeIntegrityEvents(queue.items)
+  const integritySummary = summarizeIntegrityEvents(queueItems)
 
   const cleanCourseUuid = courseUuid?.replace(/^course_/, '') ?? ''
   const cleanActivityUuid = activityUuid.replace(/^activity_/, '')
@@ -332,14 +285,14 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {queue.items.length === 0 ? (
+                {queueItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-muted-foreground h-32 text-center">
                       {queueQuery.isLoading ? t('loadingQueue') : t('emptyQueue')}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  queue.items.map(submission => {
+                  queueItems.map(submission => {
                     const violations = getSubmissionViolations(submission)
                     return (
                       <TableRow key={submission.submission_uuid}>
@@ -353,7 +306,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                         <TableCell>
                           <div className="font-medium">{getSubmissionDisplayName(submission)}</div>
                           <div className="text-muted-foreground text-xs">
-                            {submission.user?.email ?? `#${submission.user_id}`}
+                            {submission.user?.email ?? submission.user_id}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -445,11 +398,11 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         />
       </section>
 
-      {stats && stats.score_distribution.some(bucket => bucket.count > 0) ? (
+      {stats && stats.distribution.some(bucket => bucket.count > 0) ? (
         <div className="bg-card rounded-lg border p-5 shadow-sm">
           <h3 className="mb-4 text-sm font-semibold">{t('scoreDistributionTitle')}</h3>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={stats.score_distribution} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
+            <BarChart data={stats.distribution} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
               <XAxis dataKey="range" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="fill-muted-foreground" />

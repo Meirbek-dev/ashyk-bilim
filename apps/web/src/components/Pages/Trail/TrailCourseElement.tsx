@@ -41,7 +41,10 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
   }
 
   return (
-    <div className="border-border bg-card flex gap-4 rounded-xl border p-4 transition-shadow hover:shadow-md">
+    <div
+      data-trail-course={courseid}
+      className="border-border bg-card flex gap-4 rounded-xl border p-4 transition-shadow hover:shadow-md"
+    >
       {/* Thumbnail */}
       <Link href={getAbsoluteUrl(`/course/${courseid}`)} className="shrink-0">
         <div

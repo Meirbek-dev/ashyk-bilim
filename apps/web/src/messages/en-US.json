@@ -155,6 +155,10 @@
       "exampleTestCaseLabel": "e.g., Empty list check",
       "failed": "Failed",
       "form": {
+        "promptPlaceholder": "Write the problem statement here...",
+        "inputSpecPlaceholder": "Describe the input format, ranges, etc...",
+        "outputSpecPlaceholder": "Describe the expected output format, precision, etc...",
+        "constraintsPlaceholder": "e.g., 1 <= N <= 10^5\nOne constraint per line",
         "addHint": "Add Hint",
         "addTestCase": "Add Test Case",
         "advanced": "Advanced",

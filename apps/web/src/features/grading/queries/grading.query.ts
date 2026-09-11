@@ -1,17 +1,9 @@
 'use client'
 
 import { apiJson } from '@/lib/api-client'
-import type {
-  Submission,
-  SubmissionStats,
-  SubmissionStatus,
-  SubmissionsPage,
-} from '@/features/grading/domain'
-import { normalizeSubmission } from '@/features/grading/domain'
-import { unixToIso } from '@/lib/api/contract'
+import type { SubmissionStats, SubmissionStatus, SubmissionsPage } from '@/features/grading/domain'
 import { ReviewPage } from '@/lib/api/generated/zod'
-import type { ReviewItem } from '@/lib/api/generated/zod'
-import { gradebookFromWire, statsFromWire, teacherSubmissionFromWire } from '@/features/grading/domain/wire'
+import { gradebookFromWire, reviewItemFromWire, statsFromWire, teacherSubmissionFromWire } from '@/features/grading/domain/wire'
 import { queryOptions } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { getAPIUrl } from '@services/config/config'
@@ -44,23 +36,6 @@ function toReviewStatus(status: SubmissionListQueryParams['status']): string | n
   return status.toLowerCase()
 }
 
-function reviewItemToSubmission(item: ReviewItem): Submission {
-  return normalizeSubmission({
-    id: item.id,
-    submission_uuid: item.id,
-    user_id: item.user.id,
-    user: item.user,
-    status: item.status.toUpperCase() as Submission['status'],
-    attempt_number: item.attempt_number,
-    is_late: item.is_late,
-    auto_score: item.auto_score ?? null,
-    final_score: item.final_score ?? null,
-    version: item.version,
-    submitted_at: unixToIso(item.submitted_at_unix ?? null),
-    graded_at: unixToIso(item.graded_at_unix ?? null),
-  })
-}
-
 /**
  * v2 lists submissions as keyset pages; the review UI still thinks in page
  * numbers, so page N is reached by walking N-1 cursors. `total`/`pages` are
@@ -86,7 +61,7 @@ async function fetchSubmissionsPage(params: SubmissionListQueryParams): Promise<
   const seenBefore = (params.page - 1) * params.pageSize
   const total = seenBefore + page.items.length + (page.next_cursor ? 1 : 0)
   return {
-    items: page.items.map(reviewItemToSubmission),
+    items: page.items.map(reviewItemFromWire),
     page: params.page,
     page_size: params.pageSize,
     pages: page.next_cursor ? params.page + 1 : params.page,

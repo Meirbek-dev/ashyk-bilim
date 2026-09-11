@@ -23,7 +23,11 @@ vi.mock('@/lib/api/generated/grading/grading', () => ({
   gradebook: mocks.gradebook,
 }))
 
-import { courseGradebookQueryOptions, gradingDetailQueryOptions } from '@/features/grading/queries/grading.query'
+import {
+  courseGradebookQueryOptions,
+  gradingDetailQueryOptions,
+  submissionsQueryOptions,
+} from '@/features/grading/queries/grading.query'
 
 const SUB_ID = '11111111-1111-4111-8111-111111111111'
 const ASM_ID = '22222222-2222-4222-8222-222222222222'
@@ -130,5 +134,50 @@ describe('courseGradebookQueryOptions', () => {
     expect(result?.cells).toHaveLength(1)
     expect(result?.cells[0]?.score).toBe(90)
     expect(result?.activities[0]?.activity_uuid).toBe('activity_1')
+  })
+})
+
+describe('submissionsQueryOptions', () => {
+  it('reads the keyset queue with v2 params only and keeps the learner display name', async () => {
+    mocks.apiJson.mockReset()
+    mocks.apiJson.mockResolvedValue({
+      items: [
+        {
+          id: SUB_ID,
+          user: { id: USER_ID, username: 'learner', display_name: 'Aigerim Critic', email: 'learner@example.com' },
+          status: 'graded',
+          attempt_number: 1,
+          is_late: false,
+          version: 1,
+          auto_score: 100,
+          final_score: 100,
+          submitted_at_unix: 1_789_000_000,
+          graded_at_unix: 1_789_000_010,
+        },
+      ],
+      next_cursor: null,
+    })
+
+    const result = await submissionsQueryOptions({
+      assessmentUuid: ASM_ID,
+      page: 1,
+      pageSize: 10,
+      search: 'aig',
+      sortBy: 'submitted_at',
+      sortDir: 'desc',
+      status: 'NEEDS_GRADING',
+    }).queryFn?.(undefined as never)
+
+    const [path] = mocks.apiJson.mock.calls[0] as [string]
+    const params = new URL(path, 'http://x').searchParams
+    expect(path.startsWith(`assessments/${ASM_ID}/submissions?`)).toBe(true)
+    expect(Object.fromEntries(params)).toEqual({ status: 'needs_grading', search: 'aig', limit: '10' })
+    // No legacy paging / sorting on the wire (`page`, `page_size`, `sort_by` are 400s on v2)
+    expect(params.has('page')).toBe(false)
+    expect(params.has('sort_by')).toBe(false)
+
+    expect(result?.items[0]?.user?.first_name).toBe('Aigerim Critic')
+    expect(result?.items[0]?.status).toBe('GRADED')
+    expect(result?.pages).toBe(1)
   })
 })

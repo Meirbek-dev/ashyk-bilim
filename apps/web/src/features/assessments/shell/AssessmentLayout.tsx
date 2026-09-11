@@ -26,7 +26,7 @@ import type { KindModule } from '@/features/assessments/registry'
 import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptGuard'
 
 import { AssessmentChrome } from './AssessmentChrome'
-import { ActionBarContext, AssessmentActionBar, useActionBarState } from './AssessmentActionBar'
+import { ActionBarContext, AssessmentActionBar, resolvePrimaryButtonLabelKey, useActionBarState } from './AssessmentActionBar'
 import type { AttemptConflictState, AttemptRecoveryState } from './AssessmentActionBar'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -123,6 +123,8 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
 
   const returned = vm?.isReturnedForRevision || controls.status === 'RETURNED'
 
+  const primaryButtonLabelKey = resolvePrimaryButtonLabelKey(controls, vm?.primaryButtonLabelKey)
+
   // ── Loading ────────────────────────────────────────────────────────────────
 
   if (assessment.isLoading || !vm || !AttemptContent) {
@@ -164,7 +166,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
         <AssessmentActionBar
           controls={controls}
           returned={returned}
-          primaryButtonLabelKey={controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null}
+          primaryButtonLabelKey={primaryButtonLabelKey}
         />
         <RecoveryDialog recovery={controls.recovery ?? null} />
         <ConflictDialog conflict={controls.conflict ?? null} />
@@ -268,7 +270,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
         <AssessmentActionBar
           controls={controls}
           returned={returned}
-          primaryButtonLabelKey={controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null}
+          primaryButtonLabelKey={primaryButtonLabelKey}
         />
       </div>
 

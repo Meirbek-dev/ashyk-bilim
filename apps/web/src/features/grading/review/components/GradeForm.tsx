@@ -420,6 +420,7 @@ export default function GradeForm({
                       step={0.5}
                       value={entry?.score ?? String(item.score)}
                       disabled={!editable || isSaving}
+                      aria-label={`${idx + 1}. ${item.item_text || item.item_id}`}
                       aria-invalid={invalidItemIds.has(item.item_id) || undefined}
                       aria-describedby={invalidItemIds.has(item.item_id) ? `item-score-error-${item.item_id}` : undefined}
                       className="w-20"

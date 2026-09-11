@@ -7,16 +7,6 @@ export interface OperateItemAnalytics {
   discrimination_index: number | null
 }
 
-export interface SubmissionQueueParams {
-  status: string
-  search: string
-  sortBy: string
-  sortDir: 'asc' | 'desc'
-  page: number
-  pageSize: number
-  lateOnly: boolean
-}
-
 export interface SubmissionWithMetadata {
   submission_uuid: string
   metadata_json?: unknown
@@ -26,18 +16,6 @@ export interface IntegrityEventSummary {
   totalEvents: number
   affectedSubmissions: number
   topKind: string | null
-}
-
-export function buildSubmissionQueuePath(assessmentUuid: string, params: SubmissionQueueParams): string {
-  const searchParams = new URLSearchParams()
-  if (params.status !== 'ALL') searchParams.set('status', params.status)
-  if (params.search.trim()) searchParams.set('search', params.search.trim())
-  if (params.lateOnly) searchParams.set('late_only', 'true')
-  searchParams.set('sort_by', params.sortBy)
-  searchParams.set('sort_dir', params.sortDir)
-  searchParams.set('page', String(params.page))
-  searchParams.set('page_size', String(params.pageSize))
-  return `assessments/${assessmentUuid}/submissions?${searchParams.toString()}`
 }
 
 export function getItemActionPrompt(item: OperateItemAnalytics): ItemActionPrompt {
