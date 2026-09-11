@@ -172,7 +172,7 @@ export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey 
           />
           {navigation ? (
             <span className="text-muted-foreground text-sm">
-              {navigation.answered !== undefined ? `${navigation.answered} answered · ` : ''}
+              {navigation.answered !== undefined ? `${t('answeredSummary', { count: navigation.answered })} · ` : ''}
               {navigation.current} / {navigation.total}
             </span>
           ) : null}

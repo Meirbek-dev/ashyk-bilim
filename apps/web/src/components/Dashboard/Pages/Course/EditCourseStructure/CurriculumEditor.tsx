@@ -41,6 +41,7 @@ type ActiveDragData = { type: 'chapter'; chapter: AppChapter } | { type: 'activi
 
 function CurriculumEditor() {
   const t = useTranslations('CourseEdit.Structure')
+  const tCommon = useTranslations('Common.DragAndDrop')
 
   const course = useCourse()
   const course_structure = course.courseStructure
@@ -368,7 +369,7 @@ function CurriculumEditor() {
           onDragOver={handleDragOver}
           onDragEnd={event => void handleDragEnd(event)}
           onDragCancel={handleDragCancel}
-          accessibility={{ announcements }}
+          accessibility={{ announcements, screenReaderInstructions: { draggable: tCommon('instructions') } }}
         >
           <SortableContext items={chapterIds} strategy={verticalListSortingStrategy}>
             <div className={cn('space-y-4', activeDragType === 'chapter' && 'rounded-xl bg-muted/20')}>

@@ -4,7 +4,7 @@ import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { submissionStatsQueryOptions } from '@/features/grading/queries/grading.query'
 
-function submissionStatsHookOptions(activityId: number | null, assessmentUuid?: string | null) {
+function submissionStatsHookOptions(_activityId: number | null, assessmentUuid?: string | null) {
   return queryOptions({
     ...submissionStatsQueryOptions(assessmentUuid ?? ''),
     enabled: Boolean(assessmentUuid),

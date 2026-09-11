@@ -29,6 +29,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useTranslations } from 'next-intl'
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
@@ -125,6 +126,8 @@ export default function BuilderCanvasTab({
 }: BuilderCanvasTabProps) {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas')
+  const tDnd = useTranslations('Common.DragAndDrop')
+  const announcements = useDndAnnouncements(items.map(item => item.item_uuid))
   const [isCreating, startCreateTransition] = useTransition()
   const [isDuplicating, startDuplicateTransition] = useTransition()
   const [isDeleting, startDeleteTransition] = useTransition()
@@ -388,7 +391,12 @@ export default function BuilderCanvasTab({
               {t('outlineEmptyMessage', { itemNoun: itemNoun.toLowerCase() })}
             </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              accessibility={{ announcements, screenReaderInstructions: { draggable: tDnd('instructions') } }}
+            >
               <SortableContext items={items.map(item => item.item_uuid)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-1">
                   {outlineWindow.beforeCount > 0 ? <OutlineWindowSpacer count={outlineWindow.beforeCount} /> : null}

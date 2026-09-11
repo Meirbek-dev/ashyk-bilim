@@ -9,13 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
-
-function formatSeconds(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  if (h > 0) return `${h}h ${m}m`
-  return `${m} min`
-}
+import { useTimeLimitLabel } from '@/features/assessments/shared/useTimeLimitLabel'
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
@@ -31,6 +25,8 @@ interface AttemptEntryCardProps {
 
 export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntryCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
+  const tKinds = useTranslations('Features.Assessments.Studio.kinds')
+  const formatTimeLimit = useTimeLimitLabel()
 
   const { recommendedAction, policy, items } = vm
   const isBlocked = recommendedAction === 'blocked'
@@ -78,7 +74,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  {getKindLabel(vm.kind)}
+                  {tKinds(vm.kind)}
                 </span>
                 {isRevision ? (
                   <Badge variant="secondary" className="gap-1 text-xs">
@@ -103,7 +99,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
             <MetricCard
               icon={<Clock className="size-4" />}
               label={t('timeLimit')}
-              value={timeLimitSeconds ? formatSeconds(timeLimitSeconds) : t('unlimited')}
+              value={timeLimitSeconds ? formatTimeLimit(timeLimitSeconds) : t('unlimited')}
             />
             <MetricCard
               icon={<FileEdit className="size-4" />}
@@ -193,24 +189,4 @@ function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; va
       <span className="text-muted-foreground text-xs">{label}</span>
     </div>
   )
-}
-
-function getKindLabel(kind: string): string {
-  switch (kind) {
-    case 'TYPE_EXAM': {
-      return 'Тест'
-    }
-    case 'TYPE_CUSTOM': {
-      return 'Квиз'
-    }
-    case 'TYPE_CODE_CHALLENGE': {
-      return 'Задача по программированию'
-    }
-    case 'TYPE_FILE_SUBMISSION': {
-      return 'Отправка файла'
-    }
-    default: {
-      return kind
-    }
-  }
 }

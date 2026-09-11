@@ -516,10 +516,9 @@ function LifecycleConfirmationDialog({
 
         <div className="space-y-4">
           <div className="grid gap-2 sm:grid-cols-2">
-            <ImpactRow
-              label={tPublish('impactLearners')}
-              value={effectiveLearnerCount === null ? tPublish('unknown') : String(effectiveLearnerCount)}
-            />
+            {effectiveLearnerCount === null ? null : (
+              <ImpactRow label={tPublish('impactLearners')} value={String(effectiveLearnerCount)} />
+            )}
             <ImpactRow label={tPublish('impactQuestions')} value={String(itemCount)} />
             <ImpactRow label={tPublish('impactPoints')} value={String(totalPoints)} />
             <ImpactRow

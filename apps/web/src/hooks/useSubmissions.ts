@@ -16,7 +16,7 @@ export interface UseSubmissionsOptions {
 }
 
 function submissionsHookOptions(
-  activityId: number | null,
+  _activityId: number | null,
   assessmentUuid: string | null | undefined,
   page: number,
   pageSize: number,

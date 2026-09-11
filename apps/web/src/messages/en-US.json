@@ -1171,7 +1171,8 @@
       "moveItem": "Moved item to position {index} of {count}",
       "dropItem": "Dropped item at position {index} of {count}",
       "cancelDrag": "Drag cancelled, item returned to position {index}",
-      "dragHandle": "Drag to reorder"
+      "dragHandle": "Drag to reorder",
+      "instructions": "To pick up an item, press Space. Use the arrow keys to move it, press Space again to drop it, or press Escape to cancel."
     },
     "googleLogo": "Google logo",
     "loading": "Loading...",
@@ -8327,6 +8328,7 @@
           "answerReview": "Answer Review",
           "answered": "Answered",
           "answeredCount": "{answered} of {total} answered",
+          "answeredSummary": "{count, plural, one {# answered} other {# answered}}",
           "answersRecovered": "Your previous answers have been recovered",
           "antiCheatingDescription": "Violations are being monitored. After {threshold} violations, your exam will be auto-submitted.",
           "antiCheatingEnabled": "Anti-Cheating Protection Enabled",
@@ -8705,7 +8707,8 @@
           "QUIZ": "Quiz",
           "TYPE_FILE_SUBMISSION": "File Submission",
           "TYPE_EXAM": "Exam",
-          "TYPE_CODE_CHALLENGE": "Code Challenge"
+          "TYPE_CODE_CHALLENGE": "Code Challenge",
+          "TYPE_CUSTOM": "Quiz"
         },
         "loading": "Loading studio",
         "unavailable": "Studio is unavailable for this activity.",
@@ -9413,7 +9416,10 @@
       "fullscreenRecommended": "Fullscreen is recommended for this attempt.",
       "fullscreenExited": "Fullscreen was exited.",
       "answersUpdatedElsewhere": "Your answers were updated elsewhere. Review the latest draft before submitting.",
-      "submitFailed": "Failed to submit"
+      "submitFailed": "Failed to submit",
+      "timeLimitMinutes": "{minutes} min",
+      "timeLimitHours": "{hours} h",
+      "timeLimitHoursMinutes": "{hours} h {minutes} min"
     }
   },
   "Themes": {

@@ -1174,7 +1174,8 @@
       "moveItem": "Элемент {count} ішіндегі {index} орнына жылжытылды",
       "dropItem": "Элемент {count} ішіндегі {index} орнына тастады",
       "cancelDrag": "Сүйреу болдырылмады, элемент {index} орнына оралды",
-      "dragHandle": "Ретін өзгерту үшін сүйреңіз"
+      "dragHandle": "Ретін өзгерту үшін сүйреңіз",
+      "instructions": "Элементті алу үшін бос орын пернесін басыңыз. Оны көрсеткі пернелерімен жылжытыңыз, қою үшін бос орын пернесін қайта басыңыз, болдырмау үшін Escape басыңыз."
     },
     "googleLogo": "Google логотипі",
     "loading": "Жүктелуде...",
@@ -8195,7 +8196,8 @@
           "QUIZ": "Тест",
           "TYPE_FILE_SUBMISSION": "Файл жіберу",
           "TYPE_EXAM": "Емтихан",
-          "TYPE_CODE_CHALLENGE": "Код оқу әрекетісы"
+          "TYPE_CODE_CHALLENGE": "Код оқу әрекетісы",
+          "TYPE_CUSTOM": "Квиз"
         },
         "NativeItemStudio": {
           "itemNouns": {
@@ -8957,6 +8959,7 @@
           "answerReview": "Жауаптарды қарау",
           "answered": "Жауап берілді",
           "answeredCount": "{total}-дің {answered}-не жауап берілді",
+          "answeredSummary": "{count} сұраққа жауап берілді",
           "answersRecovered": "Бұрынғы жауаптарыңыз қалпына келтірілді",
           "antiCheatingDescription": "Бұзушылықтар бақыланады. {threshold} бұзушылықтан кейін емтиханыңыз автоматты түрде тапсырылады.",
           "antiCheatingEnabled": "Алаяқтыққа қарсы қорғау қосылды",
@@ -9577,7 +9580,7 @@
       "pendingGrade": "Баға күтілуде",
       "assessmentSubmitted": "Оқу әрекеті жіберілді",
       "gradeNotYetReleased": "Баға әлі жарияланған жоқ. Кейінірек тексеріңіз.",
-      "retryAssessment": "Оқу әрекетіны қайталау",
+      "retryAssessment": "Оқу әрекетін қайталау",
       "nextActivity": "Келесі оқу әрекеті",
       "breakdown": "Жауаптарды қарау",
       "attempt": "Әрекет",
@@ -9602,7 +9605,10 @@
       "fullscreenRecommended": "Бұл әрекет үшін толық экран режимі ұсынылады.",
       "fullscreenExited": "Толық экран режимінен шығу тіркелді.",
       "answersUpdatedElsewhere": "Жауаптарыңыз басқа жерде жаңартылды. Тапсырмас бұрын соңғы нобайды қарап шығыңыз.",
-      "submitFailed": "Тапсыру сәтсіз аяқталды"
+      "submitFailed": "Тапсыру сәтсіз аяқталды",
+      "timeLimitMinutes": "{minutes} мин",
+      "timeLimitHours": "{hours} сағ",
+      "timeLimitHoursMinutes": "{hours} сағ {minutes} мин"
     }
   },
   "Themes": {

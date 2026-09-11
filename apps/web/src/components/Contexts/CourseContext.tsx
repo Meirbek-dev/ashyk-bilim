@@ -1,6 +1,7 @@
 'use client'
 
 import { useCourseEditorBundle } from '@/hooks/courses/useCourseEditorBundle'
+import { useSession } from '@/hooks/useSession'
 import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react'
 import { createEmptyCourseEditorBundle } from '@services/courses/editor'
 import { useCourseStructure } from '@/hooks/courses/useCourseStructure'
@@ -85,11 +86,15 @@ export function CourseProvider({
     ...(initialCourse ? { fallbackData: initialCourse } : {}),
   })
 
+  // The editor bundle (contributors / usergroups / certifications) is teacher-only;
+  // a learner viewing an activity would just collect 403s and 404s.
+  const { can } = useSession()
+  const canEditCourse = can('course', 'update', 'own') || can('course', 'update', 'platform')
   const {
     editorData: editorBundleData,
     isLoading: isEditorDataLoading,
     mutate: mutateEditorBundle,
-  } = useCourseEditorBundle(courseuuid)
+  } = useCourseEditorBundle(canEditCourse ? courseuuid : null)
 
   useEffect(() => {
     if (courseStructureData) {

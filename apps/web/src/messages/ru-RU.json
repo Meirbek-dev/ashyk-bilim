@@ -1173,7 +1173,8 @@
       "moveItem": "Элемент перемещён на позицию {index} из {count}",
       "dropItem": "Элемент опущен на позицию {index} из {count}",
       "cancelDrag": "Перетаскивание отменено, элемент возвращён на позицию {index}",
-      "dragHandle": "Перетащить для изменения порядка"
+      "dragHandle": "Перетащить для изменения порядка",
+      "instructions": "Чтобы взять элемент, нажмите пробел. Перемещайте его стрелками, нажмите пробел ещё раз, чтобы отпустить, или Escape, чтобы отменить."
     },
     "googleLogo": "Логотип Google",
     "loading": "Загрузка...",
@@ -8178,7 +8179,8 @@
           "QUIZ": "Квиз",
           "TYPE_FILE_SUBMISSION": "Отправка файлов",
           "TYPE_EXAM": "Тест",
-          "TYPE_CODE_CHALLENGE": "Код-зона"
+          "TYPE_CODE_CHALLENGE": "Код-зона",
+          "TYPE_CUSTOM": "Квиз"
         },
         "loading": "Загрузка студии",
         "unavailable": "Студия недоступна для этой активности.",
@@ -8944,6 +8946,7 @@
           "answerReview": "Просмотр ответов",
           "answered": "Отвечено",
           "answeredCount": "Отвечено {answered} из {total}",
+          "answeredSummary": "{count, plural, one {Отвечено на # вопрос} few {Отвечено на # вопроса} many {Отвечено на # вопросов} other {Отвечено на # вопроса}}",
           "answersRecovered": "Ваши предыдущие ответы восстановлены",
           "antiCheatingDescription": "Нарушения отслеживаются. После {threshold} нарушений ваш тест будет автоматически завершён.",
           "antiCheatingEnabled": "Включена защита от списывания",
@@ -9401,10 +9404,10 @@
       "passed": "Пройдено",
       "failed": "Не пройдено",
       "pendingGrade": "Ожидание оценки",
-      "assessmentSubmitted": "Учебная задача отправлено",
+      "assessmentSubmitted": "Учебная задача отправлена",
       "gradeNotYetReleased": "Оценка ещё не опубликована. Проверьте позже.",
-      "retryAssessment": "Повторить учебная задача",
-      "nextActivity": "Следующее учебная задача",
+      "retryAssessment": "Повторить учебную задачу",
+      "nextActivity": "Следующая учебная задача",
       "breakdown": "Посмотреть ответы",
       "attempt": "Попытка",
       "attemptHistory": "История попыток",
@@ -9428,7 +9431,10 @@
       "fullscreenRecommended": "Для этой попытки рекомендуется полноэкранный режим.",
       "fullscreenExited": "Выход из полноэкранного режима зафиксирован.",
       "answersUpdatedElsewhere": "Ваши ответы были обновлены в другом месте. Просмотрите последнюю версию черновика перед отправкой.",
-      "submitFailed": "Не удалось отправить"
+      "submitFailed": "Не удалось отправить",
+      "timeLimitMinutes": "{minutes} мин",
+      "timeLimitHours": "{hours} ч",
+      "timeLimitHoursMinutes": "{hours} ч {minutes} мин"
     }
   },
   "Themes": {
