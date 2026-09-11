@@ -12,19 +12,22 @@ interface AILanguageControlProps {
 
 export function AILanguageControl({ value, onValueChange }: AILanguageControlProps) {
   const t = useTranslations('AiExperience.languageControl')
+  // `items` lets the closed trigger show the label, not the raw value.
+  const items = (['auto', 'kk', 'ru', 'en'] as const).map(code => ({ value: code, label: t(code) }))
   return (
     <Field className="max-w-xs">
       <FieldLabel>{t('label')}</FieldLabel>
-      <Select value={value} onValueChange={nextValue => nextValue && onValueChange(nextValue)}>
+      <Select value={value} onValueChange={nextValue => nextValue && onValueChange(nextValue)} items={items}>
         <SelectTrigger>
           <SelectValue placeholder={t('auto')} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectItem value="auto">{t('auto')}</SelectItem>
-            <SelectItem value="kk">{t('kk')}</SelectItem>
-            <SelectItem value="ru">{t('ru')}</SelectItem>
-            <SelectItem value="en">{t('en')}</SelectItem>
+            {items.map(item => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectGroup>
         </SelectContent>
       </Select>

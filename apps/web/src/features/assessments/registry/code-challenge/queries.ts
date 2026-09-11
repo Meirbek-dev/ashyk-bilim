@@ -1,14 +1,10 @@
 'use client'
 
 import { queryOptions } from '@tanstack/react-query'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import {
-  getCodeChallengeSettings,
-  getJudge0Languages,
-  getSubmission,
-  getSubmissions,
-} from '@/services/courses/code-challenges'
-import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
+import { getCodeChallengeSettings, getJudge0Languages, getSubmissions } from '@/services/courses/code-challenges'
+import type { CodeChallengeSettings, CodeSubmission } from '@/services/courses/code-challenges'
 
 export function codeChallengeSettingsQueryOptions(activityUuid: string) {
   return queryOptions({
@@ -24,24 +20,15 @@ export function judge0LanguagesQueryOptions() {
     queryFn: getJudge0Languages,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    // A 503 `code-runner-degraded` is a state (Judge0 down), not a blip: show it at once.
+    retry: (failureCount, error) => !hasErrorCode(error, 'code-runner-degraded') && failureCount < 3,
   })
 }
 
-export function codeChallengeSubmissionsQueryOptions<TSubmission = unknown>(activityUuid: string) {
+export function codeChallengeSubmissionsQueryOptions(activityUuid: string) {
   return queryOptions({
     queryKey: queryKeys.codeChallenges.submissions(activityUuid),
-    queryFn: async () => (await getSubmissions(activityUuid)) as TSubmission,
-    refetchOnWindowFocus: false,
-  })
-}
-
-export function codeChallengeSubmissionQueryOptions<TSubmission = unknown>(
-  activityUuid: string,
-  submissionUuid: string,
-) {
-  return queryOptions({
-    queryKey: queryKeys.codeChallenges.submission(activityUuid, submissionUuid),
-    queryFn: async () => (await getSubmission(activityUuid, submissionUuid)) as TSubmission,
+    queryFn: (): Promise<CodeSubmission[]> => getSubmissions(activityUuid),
     refetchOnWindowFocus: false,
   })
 }

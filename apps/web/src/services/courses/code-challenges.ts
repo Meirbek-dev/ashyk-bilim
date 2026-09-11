@@ -1,15 +1,12 @@
 import { apiJson } from '@/lib/api-client'
 import { APIError, isApiError } from '@/lib/api/assertSuccess'
-import type {
-  SubmissionStatus as CanonicalSubmissionStatus,
-  Submission as GradingSubmission,
-} from '@/features/grading/domain'
-import type { AssessmentItem, ItemAnswer, ItemBody } from '@/features/assessments/domain/items'
+import type { AssessmentItem, ItemBody } from '@/features/assessments/domain/items'
 import { getActivityAssessment } from '@/lib/api/generated/assessments/assessments'
 import { itemBodyToWire, itemFromWire } from '@/features/assessments/domain/assessment-wire'
 import { unixToIso } from '@/lib/api/contract'
-import { languages as fetchLanguages, runItem } from '@/lib/api/generated/code/code'
-import type { CodeRun } from '@/lib/api/generated/zod'
+import { codeGetRun, languages as fetchLanguages, runItem } from '@/lib/api/generated/code/code'
+import { mySubmissions } from '@/lib/api/generated/submissions/submissions'
+import type { CodeRun, StudentSubmission } from '@/lib/api/generated/zod'
 import { idempotencyHeaders } from '@/lib/api/headers'
 
 export interface CodeChallengeSettings {
@@ -54,36 +51,16 @@ export interface TestCase {
   match_mode?: 'EXACT' | 'TRIMMED' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'CUSTOM_CHECKER'
 }
 
+/** One attempt of the code challenge as the learner sees it (v2 `StudentSubmission`, code-specific view). */
 export interface CodeSubmission {
-  uuid: string
-  submission_uuid?: string
-  submission_status?: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED' | null
-  status:
-    | 'PENDING'
-    | 'PROCESSING'
-    | 'COMPLETED'
-    | 'FAILED'
-    | 'PENDING_JUDGE0'
-    | 'pending'
-    | 'processing'
-    | 'completed'
-    | 'failed'
-    | 'error'
-  score?: number
-  max_score?: number
+  id: string
+  attempt_number: number
+  status: StudentSubmission['status']
+  /** `null` until the grade is released. */
+  score: number | null
+  max_score: number
   language_id: number
-  created_at: string
-  results?: TestCaseResult[]
-}
-
-interface CanonicalRunRecord {
-  language_id?: number
-  details?: TestCaseResult[]
-}
-
-interface CanonicalMetadata {
-  judge0_state?: string
-  latest_run?: CanonicalRunRecord | null
+  submitted_at_unix: number | null
 }
 
 function serviceError(code: string, message: string, status = 0): APIError {
@@ -92,24 +69,6 @@ function serviceError(code: string, message: string, status = 0): APIError {
     message,
     status,
   })
-}
-
-interface CanonicalSubmissionRead {
-  submission_uuid: string
-  created_at: string
-  status: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
-  final_score?: number | null
-  auto_score?: number | null
-  answers_json?: { answers?: Record<string, ItemAnswer> } | Record<string, unknown> | null
-  metadata_json?: Record<string, unknown> | null
-}
-
-type CanonicalCodeAnswer = Extract<ItemAnswer, { kind: 'CODE' }>
-
-export interface CodeChallengeDraft {
-  id: number
-  submission_uuid: string
-  status: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
 }
 
 export interface TestCaseResult {
@@ -222,34 +181,6 @@ const isHint = (value: unknown): value is CodeChallengeHint => {
 }
 
 const isHintArray = (value: unknown): value is CodeChallengeHint[] => Array.isArray(value) && value.every(isHint)
-
-const readCanonicalMetadata = (value: unknown): CanonicalMetadata => {
-  if (!isRecord(value)) return {}
-
-  const latestRunValue = value.latest_run
-  const latestRun = isRecord(latestRunValue)
-    ? {
-        ...(typeof latestRunValue.language_id === 'number' ? { language_id: latestRunValue.language_id } : {}),
-        ...(Array.isArray(latestRunValue.details) ? { details: latestRunValue.details as TestCaseResult[] } : {}),
-      }
-    : null
-
-  return {
-    ...(typeof value.judge0_state === 'string' ? { judge0_state: value.judge0_state } : {}),
-    ...(latestRun ? { latest_run: latestRun } : {}),
-  }
-}
-
-const readCodeAnswers = (value: unknown) => {
-  if (!isRecord(value)) return {}
-
-  const answersValue = value.answers
-  if (!isRecord(answersValue)) return {}
-
-  const entries = Object.entries(answersValue).filter(([, answer]) => isRecord(answer) && answer.kind === 'CODE')
-
-  return Object.fromEntries(entries) as Record<string, CanonicalCodeAnswer>
-}
 
 export async function getJudge0Languages(): Promise<Judge0Language[]> {
   return fetchLanguages()
@@ -476,42 +407,16 @@ async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<
   })
 }
 
-function normalizeJudge0State(
-  judge0State: unknown,
-  submissionStatus: CanonicalSubmissionStatus,
-): CodeSubmission['status'] {
-  if (typeof judge0State === 'string' && judge0State.length > 0) {
-    return judge0State.toUpperCase() as CodeSubmission['status']
-  }
-  if (submissionStatus === 'DRAFT' || submissionStatus === 'PENDING') return 'PENDING'
-  return 'COMPLETED'
-}
-
-function mapCanonicalCodeSubmission(raw: GradingSubmission): CodeSubmission {
-  const metadata = readCanonicalMetadata(raw.metadata_json)
-  const answerMap = readCodeAnswers(raw.answers_json)
-  const firstCodeAnswer = Object.values(answerMap).find(answer => answer?.kind === 'CODE')
-  const results = Array.isArray(metadata.latest_run?.details) ? metadata.latest_run.details : undefined
-
+function toCodeSubmission(raw: StudentSubmission): CodeSubmission {
+  const codeAnswer = Object.values(raw.answers).find(answer => answer.kind === 'code')
   return {
-    uuid: raw.submission_uuid,
-    submission_uuid: raw.submission_uuid,
-    submission_status: raw.status,
-    status: normalizeJudge0State(metadata.judge0_state, raw.status),
+    id: raw.id,
+    attempt_number: raw.attempt_number,
+    status: raw.status,
+    score: raw.final_score ?? raw.auto_score ?? null,
     max_score: 100,
-    language_id:
-      typeof firstCodeAnswer?.language === 'number'
-        ? firstCodeAnswer.language
-        : typeof metadata.latest_run?.language_id === 'number'
-          ? metadata.latest_run.language_id
-          : 0,
-    created_at: raw.created_at,
-    ...(typeof raw.final_score === 'number'
-      ? { score: raw.final_score }
-      : raw.auto_score !== null && raw.auto_score !== undefined
-        ? { score: raw.auto_score }
-        : {}),
-    ...(results ? { results } : {}),
+    language_id: codeAnswer?.kind === 'code' ? codeAnswer.language : 0,
+    submitted_at_unix: raw.submitted_at_unix ?? raw.started_at_unix ?? null,
   }
 }
 
@@ -554,39 +459,20 @@ export async function saveCodeChallengeSettings(
   return toCodeChallengeSettings(refreshed, getCodeAssessmentItem(refreshed))
 }
 
-export async function submitCode(
-  activityUuid: string,
-  sourceCode: string,
-  languageId: number,
-): Promise<CodeSubmission> {
-  const assessment = await loadCodeAssessment(activityUuid)
-  if (!assessment) {
-    throw serviceError('CODE_CHALLENGE_NOT_FOUND', 'Code challenge assessment not found', 404)
+const CODE_RUN_POLL_MS = 1000
+
+/**
+ * `POST assessment-items/{id}/runs` executes inside the request, but the
+ * contract allows a `queued`/`running` answer; follow it on `GET code-runs/{id}`
+ * until terminal so callers only ever see a settled run.
+ */
+export async function awaitCodeRun(run: CodeRun): Promise<CodeRun> {
+  let current = run
+  while (current.status === 'queued' || current.status === 'running') {
+    await new Promise(resolve => setTimeout(resolve, CODE_RUN_POLL_MS))
+    current = await codeGetRun(current.id)
   }
-
-  const codeItem = getCodeAssessmentItem(assessment)
-  if (!codeItem) {
-    throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
-  }
-
-  const submission = await apiJson<GradingSubmission>(`assessments/${assessment.assessment_uuid}/submit`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      answers: [
-        {
-          item_uuid: codeItem.item_uuid,
-          answer: {
-            kind: 'CODE',
-            language: languageId,
-            source: sourceCode,
-          },
-        },
-      ],
-    }),
-  })
-
-  return mapCanonicalCodeSubmission(submission)
+  return current
 }
 
 function codeRunToCanonical(run: CodeRun): CanonicalCodeRunResponse {
@@ -599,7 +485,9 @@ function codeRunToCanonical(run: CodeRun): CanonicalCodeRunResponse {
     ...(run.error_message ? { error_message: run.error_message } : {}),
     ...(firstCase?.stdout ? { stdout: firstCase.stdout } : {}),
     ...(firstCase?.stderr ? { stderr: firstCase.stderr } : {}),
-    ...(firstCase?.time_seconds !== undefined && firstCase.time_seconds !== null ? { time: firstCase.time_seconds } : {}),
+    ...(firstCase?.time_seconds !== undefined && firstCase.time_seconds !== null
+      ? { time: firstCase.time_seconds }
+      : {}),
     ...(firstCase?.memory_kb !== undefined && firstCase.memory_kb !== null ? { memory: firstCase.memory_kb } : {}),
     visible_results: run.cases.map(caseResult => ({
       test_id: caseResult.test_id,
@@ -635,19 +523,21 @@ export async function runTests(
   }
 
   const run = codeRunToCanonical(
-    await runItem(
-      codeItem.item_uuid,
-      { language_id: languageId, source: sourceCode },
-      {
-        headers: idempotencyHeaders(
-          codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode),
-        ),
-      },
+    await awaitCodeRun(
+      await runItem(
+        codeItem.item_uuid,
+        { language_id: languageId, source: sourceCode },
+        {
+          headers: idempotencyHeaders(
+            codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode),
+          ),
+        },
+      ),
     ),
   )
 
   if (run.status === 'DEGRADED') {
-    throw serviceError('JUDGE0_UNAVAILABLE', run.error_message || 'Code runner is temporarily unavailable', 503)
+    throw serviceError('code-runner-degraded', run.error_message || 'Code runner is temporarily unavailable', 503)
   }
 
   return {
@@ -680,19 +570,21 @@ export async function runCustomTest(
   }
 
   const run = codeRunToCanonical(
-    await runItem(
-      codeItem.item_uuid,
-      { language_id: languageId, source: sourceCode, custom_input: stdin },
-      {
-        headers: idempotencyHeaders(
-          codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode, stdin),
-        ),
-      },
+    await awaitCodeRun(
+      await runItem(
+        codeItem.item_uuid,
+        { language_id: languageId, source: sourceCode, custom_input: stdin },
+        {
+          headers: idempotencyHeaders(
+            codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode, stdin),
+          ),
+        },
+      ),
     ),
   )
 
   if (run.status === 'DEGRADED') {
-    throw serviceError('JUDGE0_UNAVAILABLE', run.error_message || 'Code runner is temporarily unavailable', 503)
+    throw serviceError('code-runner-degraded', run.error_message || 'Code runner is temporarily unavailable', 503)
   }
 
   return {
@@ -706,24 +598,16 @@ export async function runCustomTest(
   }
 }
 
-export async function getSubmission(activityUuid: string, submissionUuid: string): Promise<CodeSubmission> {
-  const submissions = await getSubmissions(activityUuid)
-  const submission = submissions.find(item => item.submission_uuid === submissionUuid || item.uuid === submissionUuid)
-  if (!submission) {
-    throw serviceError('SUBMISSION_NOT_FOUND', 'Submission was not found', 404)
-  }
-  return submission
-}
-
+/** The learner's attempts, newest first (`GET assessments/{id}/submissions/me`). */
 export async function getSubmissions(activityUuid: string): Promise<CodeSubmission[]> {
   const assessment = await loadCodeAssessment(activityUuid)
   if (!assessment) {
     return []
   }
 
-  return (await apiJson<CanonicalSubmissionRead[]>(`assessments/${assessment.assessment_uuid}/me`)).map(submission =>
-    mapCanonicalCodeSubmission(submission as unknown as GradingSubmission),
-  )
+  return (await mySubmissions(assessment.assessment_uuid))
+    .map(toCodeSubmission)
+    .toSorted((a, b) => b.attempt_number - a.attempt_number)
 }
 
 interface CanonicalCodeRunTestResult {

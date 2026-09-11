@@ -50,7 +50,7 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
       <AIPrivacyNotice aiRole="teacher" />
       <AIArtifactLifecycle state={run.state} artifact={run.latestArtifact} />
       <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
-      {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => void run.start('auto')} /> : null}
+      {run.error ? <AIErrorRecovery error={run.error} onRetry={() => void run.start('auto')} /> : null}
       {analysis ? (
         <CourseAnalysisResultShell
           analysis={analysis}

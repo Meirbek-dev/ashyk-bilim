@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
+import { InlineError } from '@/components/ui/error-state'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -60,7 +61,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
   const [tab, setTab] = useState<BuilderTab>('problem')
   const [draft, setDraft] = useState<CodeChallengeSettings>(DEFAULT_SETTINGS)
   const { data: settings, isLoading } = useCodeChallengeSettings(activityUuid)
-  const { data: languages = [] } = useJudge0Languages()
+  const { data: languages = [], error: languagesError } = useJudge0Languages()
   const saveSettings = useSaveCodeChallengeSettings(activityUuid)
 
   const selectedLanguages = useMemo(
@@ -206,6 +207,13 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                 <h3 className="text-muted-foreground mb-3 text-xs font-bold tracking-wider uppercase">
                   {t('allowedLanguages')}
                 </h3>
+                {languagesError ? (
+                  <InlineError
+                    description={t('languageServiceUnavailableDescription')}
+                    error={languagesError}
+                    title={t('languageServiceUnavailableTitle')}
+                  />
+                ) : null}
                 {languages.map(language => {
                   const selected = draft.allowed_languages.includes(language.id)
                   return (

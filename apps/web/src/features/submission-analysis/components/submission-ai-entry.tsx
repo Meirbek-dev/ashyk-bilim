@@ -43,11 +43,11 @@ export function SubmissionAIEntry({
     persistenceKey: `submission-remediation:${submissionUuid ?? 'none'}`,
     queue: queueRemediation,
   })
-  const remediationArtifact = remediation.latestArtifact?.content_json
+  const remediationArtifact = remediation.latestArtifact?.content
 
   const remediationSession = remediationArtifact
     ? {
-        session_uuid: remediation.latestArtifact?.artifact_uuid ?? 'remediation_artifact',
+        session_uuid: remediation.latestArtifact?.id ?? 'remediation_artifact',
         status: 'active' as const,
         gate_mode: true,
         lecture_json: remediationArtifact,
@@ -80,7 +80,7 @@ export function SubmissionAIEntry({
         <AICommandList surface="submission" disabled={run.pending} onCommand={() => void run.start('auto')} />
         <AIArtifactLifecycle state={run.state} artifact={run.latestArtifact} />
         <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
-        {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => void run.start('auto')} /> : null}
+        {run.error ? <AIErrorRecovery error={run.error} onRetry={() => void run.start('auto')} /> : null}
         {latest.data ? <SubmissionAnalysisResultShell analysis={latest.data} /> : null}
         {latest.data && onDraftFeedback ? (
           <Button
@@ -105,7 +105,7 @@ export function SubmissionAIEntry({
         </Button>
         <AIRunProgress state={remediation.state} onCancel={remediation.pending ? remediation.cancel : undefined} />
         {remediationSession ? <RemediationResultShell session={remediationSession} /> : null}
-        {remediation.error ? <AIErrorRecovery message={remediation.error.message} /> : null}
+        {remediation.error ? <AIErrorRecovery error={remediation.error} /> : null}
       </CardContent>
     </Card>
   )

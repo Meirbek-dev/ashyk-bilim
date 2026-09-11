@@ -21,6 +21,7 @@ import { InlineError } from '@/components/ui/error-state'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { AICommandList, useActivityAIUrlState } from '@/features/ai-experience'
+import { fromUnix } from '@/lib/api/contract'
 
 import { useQAThread } from '../api/use-ask-question'
 import { useCourseQAChat } from '../api/use-course-qa-chat'
@@ -50,21 +51,20 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
     const pending: QAMessage[] = []
     if (chat.pendingQuestion) {
       pending.push({
-        message_uuid: 'pending-user',
+        id: 'pending-user',
         role: 'user',
         content: chat.pendingQuestion,
-        citations_json: {},
-        created_at: new Date().toISOString(),
+        created_at_unix: Math.floor(Date.now() / 1000),
       })
     }
     if (chat.partialAnswer) {
       pending.push({
-        message_uuid: 'pending-assistant',
+        id: 'pending-assistant',
         role: 'assistant',
         content: chat.partialAnswer,
-        citations_json: { citations: chat.citations },
-        message_metadata: { incomplete: chat.status === 'cancelled' },
-        created_at: new Date().toISOString(),
+        citations: { citations: chat.citations },
+        metadata: { incomplete: chat.status === 'cancelled' },
+        created_at_unix: Math.floor(Date.now() / 1000),
       })
     }
     return [...base, ...pending]
@@ -97,7 +97,7 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
           ) : (
             <div className="flex flex-col gap-3">
               {messages.map(message => (
-                <QAMessageView key={message.message_uuid} courseUuid={courseUuid} message={message} />
+                <QAMessageView key={message.id} courseUuid={courseUuid} message={message} />
               ))}
             </div>
           )}
@@ -106,7 +106,9 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
           {chat.status === 'streaming' ? t('streamingStatus') : null}
           {chat.status === 'cancelled' ? t('cancelledStatus') : null}
         </div>
-        {chat.errorCode ? (
+        {chat.errorCode === 'ai-disabled' ? (
+          <p className="text-muted-foreground rounded-lg border p-3 text-sm">{t('unavailable')}</p>
+        ) : chat.errorCode ? (
           <div className="border-destructive/30 bg-destructive/5 flex flex-wrap items-center gap-2 rounded-lg border p-3">
             <p className="min-w-0 flex-1 text-sm">{t('error')}</p>
             <Button type="button" size="sm" variant="outline" onClick={chat.retry}>
@@ -246,14 +248,14 @@ function QAThreadList({
             <p className="text-muted-foreground text-sm">{t('threadsEmpty')}</p>
           ) : null}
           {threads.map(thread => {
-            const updatedAt = new Date(thread.updated_at)
+            const updatedAt = fromUnix(thread.updated_at_unix)
             return (
-              <div key={thread.thread_uuid} className="flex min-w-0 items-center gap-1">
+              <div key={thread.id} className="flex min-w-0 items-center gap-1">
                 <Button
                   type="button"
-                  variant={currentThreadUuid === thread.thread_uuid ? 'secondary' : 'ghost'}
+                  variant={currentThreadUuid === thread.id ? 'secondary' : 'ghost'}
                   className="h-auto min-w-0 flex-1 justify-start px-2 py-2 text-start"
-                  onClick={() => onSelectThread(thread.thread_uuid)}
+                  onClick={() => onSelectThread(thread.id)}
                 >
                   <span className="flex min-w-0 flex-col gap-1">
                     <span className="truncate text-sm">{thread.title || thread.last_message_preview}</span>
@@ -268,7 +270,7 @@ function QAThreadList({
                   size="icon-sm"
                   variant="ghost"
                   aria-label={t('deleteThread')}
-                  onClick={() => onDeleteThread(thread.thread_uuid)}
+                  onClick={() => onDeleteThread(thread.id)}
                 >
                   <Trash2Icon aria-hidden="true" />
                 </Button>

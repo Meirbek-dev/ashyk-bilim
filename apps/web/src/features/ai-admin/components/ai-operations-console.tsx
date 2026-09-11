@@ -36,6 +36,9 @@ export function AIOperationsConsole() {
   const number = useMemo(() => new Intl.NumberFormat(locale), [locale])
   const date = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }), [locale])
   const metrics = useMemo(() => summarizeRuns(runs.data ?? []), [runs.data])
+  // `items` lets the closed triggers show labels instead of the raw "7" / "all".
+  const dayItems = [1, 7, 30].map(count => ({ value: String(count), label: t('days', { count }) }))
+  const statusItems = STATUS_OPTIONS.map(option => ({ value: option, label: t(`statuses.${option}`) }))
 
   if (runs.isError && !runs.data) {
     return (
@@ -71,14 +74,17 @@ export function AIOperationsConsole() {
           <Select
             value={String(filters.days)}
             onValueChange={value => value && setFilters(current => ({ ...current, days: Number(value) }))}
+            items={dayItems}
           >
             <SelectTrigger aria-label={t('timeRange')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">{t('days', { count: 1 })}</SelectItem>
-              <SelectItem value="7">{t('days', { count: 7 })}</SelectItem>
-              <SelectItem value="30">{t('days', { count: 30 })}</SelectItem>
+              {dayItems.map(item => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select
@@ -86,14 +92,15 @@ export function AIOperationsConsole() {
             onValueChange={value => {
               if (value) setFilters(current => ({ ...current, status: value === 'all' ? undefined : value }))
             }}
+            items={statusItems}
           >
             <SelectTrigger aria-label={t('statusFilter')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {STATUS_OPTIONS.map(option => (
-                <SelectItem key={option} value={option}>
-                  {t(`statuses.${option}`)}
+              {statusItems.map(item => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -175,7 +182,7 @@ export function AIOperationsConsole() {
                   <TableCell>{run.feature}</TableCell>
                   <TableCell>
                     <Badge variant={run.status === 'failed' ? 'destructive' : run.stuck ? 'warning' : 'outline'}>
-                      {run.stuck ? t('stuck') : run.status}
+                      {run.stuck ? t('stuck') : t(`statuses.${run.status}`)}
                     </Badge>
                   </TableCell>
                   <TableCell>{date.format(new Date(run.started_at_unix * 1000))}</TableCell>

@@ -14,7 +14,7 @@ import {
   CommandShortcut,
 } from '@/components/ui/command'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { ErrorState, InlineError } from '@/components/ui/error-state'
+import { InlineError } from '@/components/ui/error-state'
 import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import {
   useCodeChallengeSubmissions,
@@ -22,7 +22,6 @@ import {
   useRunCodeChallengeTests,
   useRunCustomTest,
 } from '@/features/assessments/hooks/code-challenge'
-import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges'
 import type { ItemAnswer } from '@/features/assessments/domain/items'
 import { cn } from '@/lib/utils'
 import type {
@@ -42,6 +41,13 @@ import { ResultsDock } from './ResultsDock'
 import { CodeArenaHeader } from './CodeArenaHeader'
 import { HintDrawer } from './HintDrawer'
 import { useApiError } from '@/hooks/useApiError'
+
+/** What the attempt shell needs to drive the arena's submit button. */
+export interface CodeChallengeSubmitControl {
+  canSubmit: boolean
+  isSubmitting: boolean
+  submit: () => Promise<void> | void
+}
 
 interface CodeArenaWorkspaceProps {
   problem: CodeChallengeProblem
@@ -86,19 +92,23 @@ export function CodeArenaWorkspace({
   const { handleApiError, toastApiError } = useApiError()
   const languagesQuery = useJudge0Languages()
   const submissionsQuery = useCodeChallengeSubmissions(problem.activityUuid)
-  const judge0Languages = useMemo(() => languagesQuery.data ?? [], [languagesQuery.data])
   const submissionsData = submissionsQuery.data
   const runCustom = useRunCustomTest(problem.activityUuid)
   const runTests = useRunCodeChallengeTests(problem.activityUuid)
   const submissions = Array.isArray(submissionsData) ? submissionsData : []
   const allowedLanguages = useMemo(() => settings.allowed_languages ?? [], [settings.allowed_languages])
-  const languages = useMemo(
-    () =>
-      allowedLanguages.length
-        ? judge0Languages.filter(language => allowedLanguages.includes(language.id))
-        : judge0Languages,
-    [allowedLanguages, judge0Languages],
-  )
+  const languages = useMemo(() => {
+    const judge0Languages = languagesQuery.data
+    // Judge0 down (503 `code-runner-degraded`): keep the editor usable on the item's own language ids.
+    if (!judge0Languages) {
+      return languagesQuery.isError
+        ? allowedLanguages.map(id => ({ id, name: t('languageIdFallback', { id }), monaco_language: 'plaintext' }))
+        : []
+    }
+    return allowedLanguages.length
+      ? judge0Languages.filter(language => allowedLanguages.includes(language.id))
+      : judge0Languages
+  }, [allowedLanguages, languagesQuery.data, languagesQuery.isError, t])
   const isRunning = runCustom.isPending || runTests.isPending || isSubmitting
   const starterCode = normalizeStarterCode(settings, languageId)
 
@@ -259,26 +269,9 @@ export function CodeArenaWorkspace({
     return () => globalThis.removeEventListener('keydown', onKeyDown)
   }, [handleRunTests, handleSubmit])
 
-  if (languagesQuery.isError) {
-    const processed = handleApiError(languagesQuery.error, { fallback: t('codeExecutionFailed') })
-    return (
-      <ErrorState
-        actionLabel={processed.actionLabel}
-        description={processed.message}
-        error={languagesQuery.error}
-        {...(processed.showRetry
-          ? {
-              onAction: () => {
-                void languagesQuery.refetch()
-              },
-            }
-          : {})}
-        title={t('codeExecutionFailed')}
-        variant="section"
-      />
-    )
-  }
-
+  const languagesError = languagesQuery.isError
+    ? handleApiError(languagesQuery.error, { fallback: t('languageServiceUnavailableTitle') })
+    : null
   const submissionsError = submissionsQuery.isError
     ? handleApiError(submissionsQuery.error, { fallback: t('codeExecutionFailed') })
     : null
@@ -294,6 +287,15 @@ export function CodeArenaWorkspace({
         onSubmit={handleSubmit}
         disabled={disabled}
       />
+
+      {languagesError ? (
+        <InlineError
+          className="m-3"
+          description={`${languagesError.message} ${t('languagesUnavailable')}`}
+          error={languagesQuery.error}
+          title={t('languageServiceUnavailableTitle')}
+        />
+      ) : null}
 
       {submissionsError ? (
         <InlineError

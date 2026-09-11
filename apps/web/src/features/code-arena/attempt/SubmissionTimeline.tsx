@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { fromUnix } from '@/lib/api/contract'
 import type { CodeSubmission } from '../domain'
 
 interface SubmissionTimelineProps {
@@ -24,22 +25,24 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
             {t('noSubmissionsYet')}
           </div>
         ) : (
-          submissions.map((submission, index) => (
-            <div key={submission.submission_uuid ?? submission.uuid ?? index} className="bg-card rounded-md border p-3">
+          submissions.map(submission => (
+            <div key={submission.id} className="bg-card rounded-md border p-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold">
-                      {t('attemptNumber', { number: submissions.length - index })}
+                      {t('attemptNumber', { number: submission.attempt_number })}
                     </span>
                     <Badge variant={submission.score === submission.max_score ? 'success' : 'secondary'}>
-                      {submission.score !== undefined
-                        ? `${Math.round(submission.score)}/${submission.max_score ?? 100}`
-                        : submission.status}
+                      {submission.score === null
+                        ? t(`attemptStatus.${submission.status}`)
+                        : `${Math.round(submission.score)}/${submission.max_score}`}
                     </Badge>
                   </div>
                   <div className="text-muted-foreground mt-1 text-xs">
-                    {submission.created_at ? new Date(submission.created_at).toLocaleString() : t('unknownTime')}
+                    {submission.submitted_at_unix === null
+                      ? t('unknownTime')
+                      : fromUnix(submission.submitted_at_unix).toLocaleString()}
                     {submission.language_id ? ` - ${t('languageIdFallback', { id: submission.language_id })}` : ''}
                   </div>
                 </div>

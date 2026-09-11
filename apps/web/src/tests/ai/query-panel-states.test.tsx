@@ -121,6 +121,20 @@ describe('AIOperationsConsole query states', () => {
     expect(screen.getByRole('button', { name: 'AiExperience.operationsConsole.inspect' })).toBeInTheDocument()
   })
 
+  it('shows localized labels on the closed filter triggers and status badges', () => {
+    queryMocks.runs = queryState([run])
+
+    render(<AIOperationsConsole />)
+
+    expect(screen.getByRole('combobox', { name: 'AiExperience.operationsConsole.timeRange' })).toHaveTextContent(
+      'AiExperience.operationsConsole.days',
+    )
+    expect(screen.getByRole('combobox', { name: 'AiExperience.operationsConsole.statusFilter' })).toHaveTextContent(
+      'AiExperience.operationsConsole.statuses.all',
+    )
+    expect(screen.getByText('AiExperience.operationsConsole.statuses.succeeded')).toBeInTheDocument()
+  })
+
   it('keeps stale data visible when a background refresh fails', () => {
     queryMocks.runs = {
       ...queryState([run]),

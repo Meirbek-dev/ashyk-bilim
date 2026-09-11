@@ -1,21 +1,29 @@
-import { describe, expect, it, vi } from 'vite-plus/test'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 const mocks = vi.hoisted(() => ({
+  codeGetRun: vi.fn(),
   languages: vi.fn(),
+  mySubmissions: vi.fn(),
   runItem: vi.fn(),
   getActivityAssessment: vi.fn(),
 }))
 
 vi.mock('@/lib/api/generated/code/code', () => ({
+  codeGetRun: mocks.codeGetRun,
   languages: mocks.languages,
   runItem: mocks.runItem,
+}))
+
+vi.mock('@/lib/api/generated/submissions/submissions', () => ({
+  mySubmissions: mocks.mySubmissions,
 }))
 
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({
   getActivityAssessment: mocks.getActivityAssessment,
 }))
 
-import { getJudge0Languages, runTests } from '@/services/courses/code-challenges'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { getJudge0Languages, getSubmissions, runTests } from '@/services/courses/code-challenges'
 
 const ITEM_ID = '55555555-5555-4555-8555-555555555555'
 const ASM_ID = '22222222-2222-4222-8222-222222222222'
@@ -93,31 +101,45 @@ describe('getJudge0Languages', () => {
   })
 })
 
+const RUN_ID = '77777777-7777-4777-8777-777777777777'
+
+function wireRun(status: 'queued' | 'running' | 'accepted' | 'degraded', cases = 1) {
+  return {
+    id: RUN_ID,
+    assessment_id: ASM_ID,
+    item_id: ITEM_ID,
+    purpose: 'visible',
+    status,
+    language_id: 71,
+    passed: status === 'accepted' ? cases : 0,
+    total: cases,
+    replayed: false,
+    created_at_unix: 0,
+    cases:
+      status === 'accepted'
+        ? [
+            {
+              test_id: 'case_1',
+              passed: true,
+              is_visible: true,
+              status_description: 'Accepted',
+              description: '',
+              weight: 1,
+            },
+          ]
+        : [],
+  }
+}
+
 describe('runTests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useRealTimers()
+  })
+
   it('resolves the code item from GET activities/{id}/assessment and runs via assessment-items/{id}/runs', async () => {
     mocks.getActivityAssessment.mockResolvedValue(wireAssessment())
-    mocks.runItem.mockResolvedValue({
-      id: 'run_1',
-      assessment_id: ASM_ID,
-      item_id: ITEM_ID,
-      purpose: 'visible',
-      status: 'accepted',
-      language_id: 71,
-      passed: 1,
-      total: 1,
-      replayed: false,
-      created_at_unix: 0,
-      cases: [
-        {
-          test_id: 'case_1',
-          passed: true,
-          is_visible: true,
-          status_description: 'Accepted',
-          description: '',
-          weight: 1,
-        },
-      ],
-    })
+    mocks.runItem.mockResolvedValue(wireRun('accepted'))
 
     const result = await runTests('activity_two-sum', 'print(1)', 71)
 
@@ -129,5 +151,64 @@ describe('runTests', () => {
     )
     expect(result.results).toHaveLength(1)
     expect(result.results[0]?.passed).toBe(true)
+  })
+
+  it('polls GET code-runs/{id} until the run leaves queued/running', async () => {
+    vi.useFakeTimers()
+    mocks.getActivityAssessment.mockResolvedValue(wireAssessment())
+    mocks.runItem.mockResolvedValue(wireRun('queued'))
+    mocks.codeGetRun.mockResolvedValueOnce(wireRun('running')).mockResolvedValueOnce(wireRun('accepted'))
+
+    const pending = runTests('activity_two-sum', 'print(1)', 71)
+    await vi.advanceTimersByTimeAsync(2500)
+    const result = await pending
+
+    expect(mocks.codeGetRun).toHaveBeenCalledTimes(2)
+    expect(mocks.codeGetRun).toHaveBeenCalledWith(RUN_ID)
+    expect(result.results[0]?.passed).toBe(true)
+  })
+
+  it('surfaces a degraded run under the contract code', async () => {
+    mocks.getActivityAssessment.mockResolvedValue(wireAssessment())
+    mocks.runItem.mockResolvedValue(wireRun('degraded'))
+
+    const error = await runTests('activity_two-sum', 'print(1)', 71).catch((thrown: unknown) => thrown)
+
+    expect(isApiError(error) && error.code).toBe('code-runner-degraded')
+  })
+})
+
+describe('getSubmissions', () => {
+  it('reads GET assessments/{id}/submissions/me and lists attempts newest first', async () => {
+    mocks.getActivityAssessment.mockResolvedValue(wireAssessment())
+    mocks.mySubmissions.mockResolvedValue([
+      {
+        id: 's1',
+        attempt_number: 1,
+        status: 'published',
+        final_score: 50,
+        auto_score: 50,
+        answers: { [ITEM_ID]: { kind: 'code', language: 71, source: 'print(1)' } },
+        started_at_unix: 10,
+        submitted_at_unix: 20,
+      },
+      {
+        id: 's2',
+        attempt_number: 2,
+        status: 'pending',
+        final_score: null,
+        auto_score: null,
+        answers: { [ITEM_ID]: { kind: 'code', language: 63, source: 'x' } },
+        started_at_unix: 30,
+        submitted_at_unix: 40,
+      },
+    ])
+
+    const result = await getSubmissions('activity_two-sum')
+
+    expect(mocks.mySubmissions).toHaveBeenCalledWith(ASM_ID)
+    expect(result.map(submission => submission.id)).toEqual(['s2', 's1'])
+    expect(result[0]).toMatchObject({ status: 'pending', score: null, language_id: 63, submitted_at_unix: 40 })
+    expect(result[1]).toMatchObject({ status: 'published', score: 50, language_id: 71, max_score: 100 })
   })
 })

@@ -45,7 +45,7 @@ function StudyCompanionPanelInner({
   >({
     queue,
   })
-  const answer = run.latestArtifact?.content_json
+  const answer = run.latestArtifact?.content
 
   return (
     <section className="flex flex-col gap-4">
@@ -84,7 +84,7 @@ function StudyCompanionPanelInner({
       </ToggleGroup>
       <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
       {answer ? <AIStreamingText text={answer.answer_markdown} /> : null}
-      {run.error ? <AIErrorRecovery message={run.error.message} /> : null}
+      {run.error ? <AIErrorRecovery error={run.error} /> : null}
     </section>
   )
 }
