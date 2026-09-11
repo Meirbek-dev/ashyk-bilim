@@ -1,267 +1,82 @@
 import { apiJson } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
-import type { Activity as ActivityRead } from '@/lib/api/generated/zod'
-import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload'
-
-const FILE_ACTIVITY_UPLOAD_TIMEOUT_MS = 5 * 60_000
+import { Block } from '@/lib/api/generated/zod'
+import { createActivity } from '@services/courses/activities'
+import { uploadFile } from '@services/media/uploads'
+import type { UploadPurpose } from '@services/media/uploads'
 
 export interface UploadProgress {
   percentage: number
-  currentChunk?: number
-  totalChunks?: number
 }
 
-interface ActivityInvalidationOptions {
-  courseUuid?: string
+const FILE_ACTIVITY_KINDS: Record<
+  string,
+  { purpose: UploadPurpose; blockType: string; activity_type: string; activity_sub_type: string }
+> = {
+  video: {
+    purpose: 'block-video',
+    blockType: 'video',
+    activity_type: 'TYPE_VIDEO',
+    activity_sub_type: 'SUBTYPE_VIDEO_HOSTED',
+  },
+  documentpdf: {
+    purpose: 'block-pdf',
+    blockType: 'pdf',
+    activity_type: 'TYPE_DOCUMENT',
+    activity_sub_type: 'SUBTYPE_DOCUMENT_PDF',
+  },
 }
 
-interface VideoActivityDetails {
-  autoplay?: boolean | undefined
-  endTime?: number | null | undefined
-  muted?: boolean | undefined
-  startTime?: number | undefined
-  subtitles?:
-    | {
-        file?: File | undefined
-        id?: string | number | undefined
-        label?: string | undefined
-        language?: string | undefined
-      }[]
-    | undefined
-}
-
-function buildVideoDetails(details: VideoActivityDetails): string {
-  const detailsToSend: {
-    autoplay?: boolean | undefined
-    endTime: number | null
-    muted?: boolean | undefined
-    startTime: number
-    subtitles?:
-      | { id?: string | number | undefined; language?: string | undefined; label?: string | undefined }[]
-      | undefined
-  } = {
-    startTime: details.startTime ?? 0,
-    endTime: details.endTime ?? null,
-  }
-
-  if (details.autoplay !== undefined) {
-    detailsToSend.autoplay = details.autoplay
-  }
-  if (details.muted !== undefined) {
-    detailsToSend.muted = details.muted
-  }
-
-  if (details.subtitles) {
-    detailsToSend.subtitles = details.subtitles.map(subtitle => {
-      const sub: { id?: string | number; language?: string; label?: string } = {}
-      if (subtitle.id !== undefined) sub.id = subtitle.id
-      if (subtitle.language !== undefined) sub.language = subtitle.language
-      if (subtitle.label !== undefined) sub.label = subtitle.label
-      return sub
-    })
-  }
-
-  return JSON.stringify(detailsToSend)
-}
-
-function appendSubtitleFiles(formData: FormData, subtitles: VideoActivityDetails['subtitles']): void {
-  if (!subtitles) return
-  for (const subtitle of subtitles) {
-    if (subtitle.file) {
-      formData.append('subtitle_files', subtitle.file)
-    }
-  }
-}
-
-async function uploadFormData(
-  path: string,
-  formData: FormData,
-  onProgress?: (progress: UploadProgress) => void,
-): Promise<ActivityRead> {
-  const json = await apiJson<ActivityRead>(path, {
-    method: 'POST',
-    body: formData,
-    timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
-  })
-  if (onProgress) {
-    try {
-      onProgress({ percentage: 100 })
-    } catch {
-      // ignore
-    }
-  }
-
-  return json
-}
-
-async function createVideoActivityStandard(
-  file: File,
-  data: AppPayload,
-  chapterId: string,
-  options?: ActivityInvalidationOptions,
-  onProgress?: (progress: UploadProgress) => void,
-): Promise<ActivityRead> {
-  void options
-
-  const formData = new FormData()
-  formData.append('chapter_id', chapterId)
-  formData.append('name', data.name ?? '')
-  formData.append('video_file', file)
-
-  if (data.details?.subtitles && Array.isArray(data.details.subtitles)) {
-    appendSubtitleFiles(formData, data.details.subtitles)
-  }
-
-  if (data.details) {
-    formData.append('details', buildVideoDetails(data.details))
-  }
-
-  return uploadFormData('activities/video', formData, onProgress)
-}
-
-async function createVideoActivityChunked(
-  file: File,
-  data: AppPayload,
-  chapterId: string,
-  options?: ActivityInvalidationOptions,
-  onProgress?: (progress: UploadProgress) => void,
-): Promise<ActivityRead> {
-  void options
-
-  const courseUuid = data.course_uuid
-
-  if (!courseUuid) {
-    throw clientApiError('INVALID_CLIENT_REQUEST', 'Missing course_uuid for chunked upload', {
-      path: 'activities/video',
-    })
-  }
-
-  const tempActivityUuid = `activity_temp_${Date.now()}`
-  const videoFormat = file.name.split('.').pop() || 'mp4'
-
-  await uploadFileChunked({
-    file,
-    directory: `courses/${courseUuid}/activities/${tempActivityUuid}/video`,
-    typeOfDir: 'platform',
-    filename: `video.${videoFormat}`,
-    onProgress: progress => {
-      onProgress?.({
-        percentage: progress.percentage,
-        currentChunk: progress.currentChunk,
-        totalChunks: progress.totalChunks,
-      })
-    },
-  })
-
-  const formData = new FormData()
-  formData.append('chapter_id', chapterId)
-  formData.append('name', data.name ?? '')
-  formData.append(
-    'video_uploaded_path',
-    `courses/${courseUuid}/activities/${tempActivityUuid}/video/video.${videoFormat}`,
-  )
-
-  if (data.details?.subtitles && Array.isArray(data.details.subtitles)) {
-    appendSubtitleFiles(formData, data.details.subtitles)
-  }
-
-  if (data.details) {
-    formData.append('details', buildVideoDetails(data.details))
-  }
-
-  return apiJson<ActivityRead>('activities/video', {
-    method: 'POST',
-    body: formData,
-    timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
-  })
-}
-
-async function createPdfActivityStandard(
-  file: File,
-  data: AppPayload,
-  chapterId: string,
-  options?: ActivityInvalidationOptions,
-  onProgress?: (progress: UploadProgress) => void,
-): Promise<ActivityRead> {
-  void options
-
-  const formData = new FormData()
-  formData.append('chapter_id', chapterId)
-  formData.append('pdf_file', file)
-  formData.append('name', data.name ?? '')
-
-  return uploadFormData('activities/documentpdf', formData, onProgress)
-}
-
-async function createPdfActivityChunked(
-  file: File,
-  data: AppPayload,
-  chapterId: string,
-  options?: ActivityInvalidationOptions,
-  onProgress?: (progress: UploadProgress) => void,
-): Promise<ActivityRead> {
-  void options
-
-  const courseUuid = data.course_uuid
-
-  if (!courseUuid) {
-    throw clientApiError('INVALID_CLIENT_REQUEST', 'Missing course_uuid for chunked upload', {
-      path: 'activities/documentpdf',
-    })
-  }
-
-  const tempActivityUuid = `activity_temp_${Date.now()}`
-  const pdfFormat = file.name.split('.').pop()?.toLowerCase() || 'pdf'
-  const uploadedPath = `courses/${courseUuid}/activities/${tempActivityUuid}/documentpdf/documentpdf.${pdfFormat}`
-
-  await uploadFileChunked({
-    file,
-    directory: `courses/${courseUuid}/activities/${tempActivityUuid}/documentpdf`,
-    typeOfDir: 'platform',
-    filename: `documentpdf.${pdfFormat}`,
-    onProgress: progress => {
-      onProgress?.({
-        percentage: progress.percentage,
-        currentChunk: progress.currentChunk,
-        totalChunks: progress.totalChunks,
-      })
-    },
-  })
-
-  const formData = new FormData()
-  formData.append('chapter_id', chapterId)
-  formData.append('name', data.name ?? '')
-  formData.append('pdf_uploaded_path', uploadedPath)
-
-  return uploadFormData('activities/documentpdf', formData, onProgress)
-}
-
+/**
+ * v2 file activity (AGENTS.md "Uploads never go through the API"):
+ *
+ *   uploadFile()                      presigned PUT, progress from the XHR
+ *   POST chapters/{id}/activities     (+ PATCH details/content via createActivity)
+ *   POST activities/{id}/blocks       claims the upload so the reaper keeps it
+ *
+ * `content.filename` carries the storage key: `Video.tsx` / `DocumentPdf.tsx`
+ * resolve it with `getContentUrl(key)`, the same way migrated rows work.
+ */
 export async function createFileActivity(
   file: File,
   type: string,
   data: AppPayload,
   chapterId: string,
-  options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
-): Promise<ActivityRead> {
-  if (type === 'video') {
-    if (shouldUseChunkedUpload(file.size)) {
-      return createVideoActivityChunked(file, data, chapterId, options, onProgress)
-    }
-
-    return createVideoActivityStandard(file, data, chapterId, options, onProgress)
+) {
+  const kind = FILE_ACTIVITY_KINDS[type]
+  if (!kind) {
+    throw clientApiError('INVALID_CLIENT_REQUEST', `Unsupported file activity type: ${type}`, {
+      details: { type },
+      path: 'activities',
+    })
   }
 
-  if (type === 'documentpdf') {
-    if (shouldUseChunkedUpload(file.size)) {
-      return createPdfActivityChunked(file, data, chapterId, options, onProgress)
-    }
-
-    return createPdfActivityStandard(file, data, chapterId, options, onProgress)
-  }
-
-  throw clientApiError('INVALID_CLIENT_REQUEST', `Unsupported file activity type: ${type}`, {
-    details: { type },
-    path: 'activities',
+  const upload = await uploadFile(file, kind.purpose, {
+    onProgress: progress => onProgress?.({ percentage: progress.percentage }),
   })
+
+  const activity = await createActivity(
+    {
+      name: data.name || file.name,
+      activity_type: kind.activity_type,
+      activity_sub_type: kind.activity_sub_type,
+      content: { filename: upload.key, upload_id: upload.id, file_name: file.name },
+      ...(data.details ? { details: data.details } : {}),
+    },
+    chapterId,
+    data.course_uuid ? { courseUuid: data.course_uuid } : undefined,
+  )
+
+  await apiJson(
+    `activities/${activity.activity_uuid}/blocks`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ block_type: kind.blockType, upload_id: upload.id, file_name: file.name }),
+    },
+    (body: unknown) => Block.parse(body),
+  )
+
+  return activity
 }

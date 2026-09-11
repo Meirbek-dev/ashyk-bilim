@@ -5,14 +5,15 @@ import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
+import { fromUnix } from '@/lib/api/contract'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatDateTime(value: string): string {
+function formatDateTime(unix: number): string {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value))
+  }).format(fromUnix(unix))
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -34,8 +35,8 @@ export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceipt
         <CheckCircle2 className="text-primary mt-0.5 size-5 shrink-0" />
         <div>
           <h3 className="font-semibold">{t('submissionReceived')}</h3>
-          {attempt.submitted_at ? (
-            <p className="text-muted-foreground text-sm">{formatDateTime(attempt.submitted_at)}</p>
+          {attempt.submitted_at_unix ? (
+            <p className="text-muted-foreground text-sm">{formatDateTime(attempt.submitted_at_unix)}</p>
           ) : null}
         </div>
         {attempt.is_late ? (
@@ -56,7 +57,7 @@ export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceipt
       {attempt.files.length > 0 ? (
         <div className="border-border divide-border rounded-lg border">
           {attempt.files.map(file => (
-            <div key={file.attempt_file_uuid} className="flex items-center gap-3 p-3 text-sm last:border-b-0">
+            <div key={file.id} className="flex items-center gap-3 p-3 text-sm last:border-b-0">
               <CheckCircle2 className="text-primary size-4 shrink-0" />
               <span className="min-w-0 truncate">{file.filename}</span>
             </div>

@@ -151,7 +151,7 @@ export function createFileActivityMutationOptions(queryClient: QueryClient, stru
         ...payload,
         details: payload.details as AppPayload['details'],
       }
-      return createFileActivity(file, type, data, chapterId, undefined, onProgress)
+      return createFileActivity(file, type, data, chapterId, onProgress)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: structureKey })

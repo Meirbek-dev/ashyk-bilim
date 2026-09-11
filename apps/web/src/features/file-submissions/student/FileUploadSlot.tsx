@@ -13,7 +13,7 @@ export type FileSlotStatus = 'queued' | 'uploading' | 'saved' | 'failed'
 export interface PendingFileSlot {
   id: string
   file: File
-  upload_uuid?: string
+  upload_id?: string
   status: FileSlotStatus
   progress: number // 0–100
   error?: string

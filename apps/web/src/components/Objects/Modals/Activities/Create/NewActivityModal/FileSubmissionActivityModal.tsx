@@ -13,6 +13,7 @@ import { Field, FieldContent, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { CalendarDatePicker } from '@/components/ui/calendar'
 import { courseKeys } from '@/hooks/courses/courseKeys'
+import { toUnix } from '@/lib/api/contract'
 import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
 import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
 
@@ -119,21 +120,15 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       toast.error(t('requiredFields'))
       return
     }
-    const courseId = course?.courseStructure?.id
-    if (typeof courseId !== 'number') {
-      toast.error(t('createError'))
-      return
-    }
     setIsSubmitting(true)
     try {
       await createFileSubmissionActivity({
         title,
         instructions,
-        due_at: dueAt || null,
+        due_at_unix: dueAt ? toUnix(new Date(dueAt)) : null,
         max_files: maxFiles,
         max_file_size_mb: maxSize === '' ? null : maxSize,
         allowed_mime_types: selectedMimes,
-        course_id: courseId,
         chapter_id: chapterId,
       })
       toast.success(t('createSuccess'))

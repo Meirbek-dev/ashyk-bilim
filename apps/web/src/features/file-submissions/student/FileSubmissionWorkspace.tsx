@@ -30,12 +30,13 @@ import {
   saveFileSubmissionDraft,
   startFileSubmissionDraft,
   submitFileSubmission,
-  uploadSubmissionFileWithProgress,
+  uploadSubmissionFile,
 } from '@/features/file-submissions/services/file-submissions'
 import type {
   FileSubmissionAttempt,
   FileSubmissionAttemptFile,
 } from '@/features/file-submissions/services/file-submissions'
+import { fromUnix } from '@/lib/api/contract'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import FileUploadSlot from './FileUploadSlot'
 import type { PendingFileSlot } from './FileUploadSlot'
@@ -72,11 +73,11 @@ function isAllowedFile(file: File, allowedMimes: string[], maxMb?: number | null
   })
 }
 
-function formatDueDate(value: string): string {
+function formatDueDate(unix: number): string {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value))
+  }).format(fromUnix(unix))
 }
 
 // ── File category detection ───────────────────────────────────────────────────
@@ -206,17 +207,17 @@ function getMimeCategories(mimes: string[]): FileCategory[] {
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
 
 const STATUS_BADGE: Record<string, BadgeVariant> = {
-  DRAFT: 'secondary',
-  SUBMITTED: 'default',
-  GRADED: 'secondary',
-  PUBLISHED: 'default',
-  RETURNED: 'destructive',
+  draft: 'secondary',
+  submitted: 'default',
+  graded: 'secondary',
+  published: 'default',
+  returned: 'destructive',
 }
 
 const LIFECYCLE_BADGE: Record<string, BadgeVariant> = {
-  PUBLISHED: 'default',
-  DRAFT: 'secondary',
-  ARCHIVED: 'outline',
+  published: 'default',
+  draft: 'secondary',
+  archived: 'outline',
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -227,13 +228,14 @@ const LIFECYCLE_BADGE: Record<string, BadgeVariant> = {
  * Student-facing file submission surface. State machine driven by the current
  * attempt status:
  *
- *  - PREFLIGHT / no attempt → file upload zone + start draft
- *  - DRAFT / RETURNED      → file list, upload zone, save/submit actions
- *  - SUBMITTED             → immutable receipt (FileSubmissionReceipt)
- *  - GRADED                → "Awaiting grade release" holding state
- *  - PUBLISHED             → grade + feedback (FileSubmissionResult)
+ *  - no attempt        → file upload zone + start draft
+ *  - draft / returned  → file list, upload zone, save/submit actions
+ *  - submitted         → immutable receipt (FileSubmissionReceipt)
+ *  - graded            → "Awaiting grade release" holding state
+ *  - published         → grade + feedback (FileSubmissionResult)
  *
- * Files are uploaded using XHR so per-byte progress events are available.
+ * Files go through the presigned upload pipeline (`uploadFile`), which reports
+ * per-byte progress from the storage PUT.
  */
 export default function FileSubmissionWorkspace({ activity }: FileSubmissionWorkspaceProps) {
   const t = useTranslations('FileSubmission')
@@ -254,11 +256,11 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
   const maxFiles = data?.max_files ?? 1
   const totalSelected = attachedFiles.length + slots.length
 
-  const canEdit = !status || status === 'DRAFT' || status === 'RETURNED'
+  const canEdit = !status || status === 'draft' || status === 'returned'
 
   // Invalidate trail XP when grade is published so the progress bar updates
   useEffect(() => {
-    if (status === 'PUBLISHED') {
+    if (status === 'published') {
       queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
     }
   }, [status, queryClient])
@@ -297,27 +299,26 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
       // Ensure draft exists
       if (!activeAttempt) {
-        await startFileSubmissionDraft(data.file_submission_uuid)
+        await startFileSubmissionDraft(data.id)
       }
 
       // Upload pending slots
       const uploaded: PendingFileSlot[] = []
 
       const uploadSlot = async (slot: PendingFileSlot) => {
-        if (slot.upload_uuid) {
+        if (slot.upload_id) {
           uploaded.push(slot)
           return
         }
         let errorMsg = ''
         setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, status: 'uploading', progress: 0 } : s)))
         try {
-          const result = await uploadSubmissionFileWithProgress(slot.file, (loaded, total) => {
-            const pct = total > 0 ? Math.round((loaded / total) * 100) : 0
-            setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, progress: pct } : s)))
+          const result = await uploadSubmissionFile(slot.file, ({ percentage }) => {
+            setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, progress: percentage } : s)))
           })
           const done = {
             ...slot,
-            upload_uuid: result.upload_uuid,
+            upload_id: result.id,
             status: 'saved' as const,
             progress: 100,
           }
@@ -336,18 +337,16 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
       const files = [
         ...attachedFiles.map((f: FileSubmissionAttemptFile) => ({
-          upload_uuid: f.upload_uuid,
+          upload_id: f.upload_id,
           display_name: f.filename,
         })),
         ...uploaded.map(s => ({
-          upload_uuid: s.upload_uuid!,
+          upload_id: s.upload_id!,
           display_name: s.file.name,
         })),
       ]
       const version = activeAttempt?.version ?? null
-      return submit
-        ? submitFileSubmission(data.file_submission_uuid, files, version)
-        : saveFileSubmissionDraft(data.file_submission_uuid, files, version)
+      return submit ? submitFileSubmission(data.id, files, version) : saveFileSubmissionDraft(data.id, files, version)
     },
     onSuccess: async (_attempt, { submit }) => {
       setSlots([])
@@ -364,7 +363,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
   const startMutation = useMutation({
     mutationFn: async () => {
       if (!data) throw new Error(t('notAvailable'))
-      return startFileSubmissionDraft(data.file_submission_uuid)
+      return startFileSubmissionDraft(data.id)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
@@ -407,7 +406,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   // ── State: submitted → receipt ─────────────────────────────────────────────
 
-  if (status === 'SUBMITTED' && activeAttempt) {
+  if (status === 'submitted' && activeAttempt) {
     return (
       <div className="space-y-6">
         <FileSubmissionReceipt attempt={activeAttempt} />
@@ -418,7 +417,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   // ── State: graded (not yet published) → waiting ────────────────────────────
 
-  if (status === 'GRADED') {
+  if (status === 'graded') {
     return (
       <div className="flex min-h-52 flex-col items-center justify-center gap-3">
         <Clock className="text-muted-foreground size-8" />
@@ -429,9 +428,10 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   // ── State: published → result ─────────────────────────────────────────────
 
-  if ((status === 'PUBLISHED' || status === 'RETURNED') && activeAttempt) {
-    const showResult = status === 'PUBLISHED' || (status === 'RETURNED' && activeAttempt.final_score !== null)
-    const canRevise = status === 'RETURNED'
+  if ((status === 'published' || status === 'returned') && activeAttempt) {
+    const showResult =
+      status === 'published' || (status === 'returned' && typeof activeAttempt.final_score === 'number')
+    const canRevise = status === 'returned'
     const handleRevise = canRevise
       ? async () => {
           await queryClient.invalidateQueries({
@@ -479,8 +479,8 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
         maxFiles={maxFiles}
         lifecycle={data.lifecycle}
         attempt={activeAttempt}
-        {...(data.due_at !== undefined ? { dueAt: data.due_at } : {})}
-        {...(data.max_file_size_mb !== undefined ? { maxFileSizeMb: data.max_file_size_mb } : {})}
+        dueAt={data.due_at_unix ?? null}
+        maxFileSizeMb={data.max_file_size_mb ?? null}
       />
       <DraftEditor
         data={data}
@@ -514,10 +514,10 @@ function Header({
   attempt,
 }: {
   instructions: string
-  dueAt?: string | null
+  dueAt: number | null
   allowedMimes: string[]
   maxFiles: number
-  maxFileSizeMb?: number | null
+  maxFileSizeMb: number | null
   lifecycle: string
   attempt: FileSubmissionAttempt | null
 }) {
@@ -687,7 +687,7 @@ function DraftEditor({
       {attachedFiles.length > 0 ? (
         <div className="border-border rounded-md border">
           {attachedFiles.map(file => (
-            <div key={file.attempt_file_uuid} className="flex items-center gap-3 border-b p-3 text-sm last:border-b-0">
+            <div key={file.id} className="flex items-center gap-3 border-b p-3 text-sm last:border-b-0">
               <CheckCircle2 className="text-primary size-4 shrink-0" />
               <span className="min-w-0 truncate">{file.filename}</span>
             </div>
@@ -744,15 +744,15 @@ function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) 
       <h3 className="text-sm font-semibold">{t('submissionHistory')}</h3>
       <div className="divide-border border-border rounded-md border">
         {attempts.map(attempt => (
-          <div key={attempt.attempt_uuid} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
+          <div key={attempt.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
             <div>
               <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
               <p className="text-muted-foreground text-xs">
-                {attempt.submitted_at
+                {attempt.submitted_at_unix
                   ? new Intl.DateTimeFormat(undefined, {
                       dateStyle: 'medium',
                       timeStyle: 'short',
-                    }).format(new Date(attempt.submitted_at))
+                    }).format(fromUnix(attempt.submitted_at_unix))
                   : t('draft')}{' '}
                 / {t('fileCount', { count: attempt.files.length })}
               </p>

@@ -45,7 +45,10 @@ import {
 import type {
   FileSubmissionAttempt,
   FileSubmissionAttemptStatus,
+  FileSubmissionGradePayload,
+  FileSubmissionReviewItem,
 } from '@/features/file-submissions/services/file-submissions'
+import { fromUnix } from '@/lib/api/contract'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
@@ -84,25 +87,19 @@ interface FileSubmissionReviewWorkspaceProps {
 const activityQueryKey = (activityUuid: string) => ['file-submission', 'review-activity', activityUuid] as const
 const PAGE_SIZE = 25
 type QueueStatus = FileSubmissionAttemptStatus | 'ALL'
+const QUEUE_STATUSES: FileSubmissionAttemptStatus[] = ['draft', 'submitted', 'graded', 'published', 'returned']
 
-const queueQueryKey = (fileSubmissionUuid: string) => ['file-submission', 'review-queue', fileSubmissionUuid] as const
-const queuePageQueryKey = (fileSubmissionUuid: string, status: QueueStatus, search: string, page: number) =>
-  [...queueQueryKey(fileSubmissionUuid), { status, search, page, pageSize: PAGE_SIZE }] as const
+const queueQueryKey = (fileSubmissionId: string) => ['file-submission', 'review-queue', fileSubmissionId] as const
+const queuePageQueryKey = (fileSubmissionId: string, status: QueueStatus, search: string, cursor: string | null) =>
+  [...queueQueryKey(fileSubmissionId), { status, search, cursor, limit: PAGE_SIZE }] as const
+const attemptQueryKey = (attemptId: string) => ['file-submission', 'review-attempt', attemptId] as const
 
 function parseQueueStatus(value: string | null): QueueStatus {
-  return value === 'DRAFT' ||
-    value === 'SUBMITTED' ||
-    value === 'GRADED' ||
-    value === 'PUBLISHED' ||
-    value === 'RETURNED'
-    ? value
-    : 'ALL'
+  return QUEUE_STATUSES.find(status => status === value) ?? 'ALL'
 }
 
-function parsePage(value: string | null): number {
-  const parsed = Number.parseInt(value ?? '', 10)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
-}
+const GRADE_ACTIONS = { GRADED: 'save', PUBLISHED: 'publish', RETURNED: 'return' } as const
+type GradeStatus = keyof typeof GRADE_ACTIONS
 
 export default function FileSubmissionReviewWorkspace({
   activityUuid,
@@ -116,13 +113,15 @@ export default function FileSubmissionReviewWorkspace({
   const [search, setSearch] = useState(() => urlSearchParams.get('search') ?? '')
   const deferredSearch = useDeferredValue(search.trim())
   const [status, setStatus] = useState<QueueStatus>(() => parseQueueStatus(urlSearchParams.get('status')))
-  const [page, setPage] = useState(() => parsePage(urlSearchParams.get('page')))
+  // Keyset paging: the cursor stack is the "previous pages" history.
+  const [cursors, setCursors] = useState<string[]>([])
+  const cursor = cursors.at(-1) ?? null
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialAttemptUuid ?? null)
-  const [pendingAttempt, setPendingAttempt] = useState<FileSubmissionAttempt | null>(null)
+  const [pendingAttempt, setPendingAttempt] = useState<FileSubmissionReviewItem | null>(null)
   const [isGradeDirty, setIsGradeDirty] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewFilename, setPreviewFilename] = useState<string | null>(null)
-  const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null) // attemptFileUuid
+  const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null) // attempt file id
   const t = useTranslations('FileSubmissionReview')
   const { handleApiError, toastApiError } = useApiError()
   const navigationGuard = useUnsavedChangesGuard(isGradeDirty, {
@@ -150,15 +149,13 @@ export default function FileSubmissionReviewWorkspace({
     else next.delete('search')
     if (status === 'ALL') next.delete('status')
     else next.set('status', status)
-    if (page === 1) next.delete('page')
-    else next.set('page', String(page))
 
     const current = urlSearchParams.toString()
     const nextValue = next.toString()
     if (nextValue !== current) {
       router.replace(nextValue ? `${pathname}?${nextValue}` : pathname, { scroll: false })
     }
-  }, [deferredSearch, page, pathname, router, status, urlSearchParams])
+  }, [deferredSearch, pathname, router, status, urlSearchParams])
 
   const {
     data: queue,
@@ -169,59 +166,41 @@ export default function FileSubmissionReviewWorkspace({
   } = useQuery(
     queryOptions({
       queryKey: config
-        ? queuePageQueryKey(config.file_submission_uuid, status, deferredSearch, page)
+        ? queuePageQueryKey(config.id, status, deferredSearch, cursor)
         : ['file-submission', 'review-queue', 'pending'],
       queryFn: () =>
-        getFileSubmissionReviewQueue(config!.file_submission_uuid, {
+        getFileSubmissionReviewQueue(config!.id, {
           status,
           search: deferredSearch,
-          page,
-          pageSize: PAGE_SIZE,
+          cursor,
+          limit: PAGE_SIZE,
         }),
-      enabled: Boolean(config?.file_submission_uuid),
+      enabled: Boolean(config?.id),
       placeholderData: previous => previous,
     }),
   )
 
-  const { data: linkedAttempt } = useQuery(
+  const queueItems = queue?.items ?? []
+  const selectedId = selectedUuid ?? queueItems[0]?.id ?? null
+
+  // The queue carries summaries only; files, feedback and rubric scores come
+  // from `GET file-submission-attempts/{id}`.
+  const { data: selected } = useQuery(
     queryOptions({
-      queryKey:
-        config && initialAttemptUuid
-          ? ['file-submission', 'review-attempt', config.file_submission_uuid, initialAttemptUuid]
-          : ['file-submission', 'review-attempt', 'pending'],
-      queryFn: () => getFileSubmissionReviewAttempt(config!.file_submission_uuid, initialAttemptUuid!),
-      enabled: Boolean(config?.file_submission_uuid && initialAttemptUuid),
+      queryKey: selectedId ? attemptQueryKey(selectedId) : ['file-submission', 'review-attempt', 'pending'],
+      queryFn: () => getFileSubmissionReviewAttempt(selectedId!),
+      enabled: Boolean(selectedId),
     }),
   )
 
-  const queueItems = queue?.items ?? []
-  const selected =
-    queueItems.find(attempt => attempt.attempt_uuid === selectedUuid) ??
-    (linkedAttempt?.attempt_uuid === selectedUuid ? linkedAttempt : null) ??
-    queueItems[0] ??
-    null
-
   const gradeMutation = useMutation({
-    mutationFn: async ({
-      attempt,
-      payload,
-    }: {
-      attempt: FileSubmissionAttempt
-      payload: Parameters<typeof gradeFileSubmissionAttempt>[2]
-    }) => {
-      if (!config) throw new Error('Submission is unavailable')
-      return await gradeFileSubmissionAttempt(
-        config.file_submission_uuid,
-        attempt.attempt_uuid,
-        payload,
-        attempt.version,
-      )
-    },
-    onSuccess: async () => {
-      if (config)
-        await queryClient.invalidateQueries({
-          queryKey: queueQueryKey(config.file_submission_uuid),
-        })
+    mutationFn: async ({ attempt, payload }: { attempt: FileSubmissionAttempt; payload: FileSubmissionGradePayload }) =>
+      gradeFileSubmissionAttempt(attempt.id, payload, attempt.version),
+    onSuccess: async (_saved, { attempt }) => {
+      await Promise.all([
+        config ? queryClient.invalidateQueries({ queryKey: queueQueryKey(config.id) }) : null,
+        queryClient.invalidateQueries({ queryKey: attemptQueryKey(attempt.id) }),
+      ])
       toast.success(t('submissionUpdated'))
     },
     onError: gradeError => {
@@ -232,18 +211,18 @@ export default function FileSubmissionReviewWorkspace({
 
   const parsedCriteria = config?.rubric ? parseRubricCriteria(config.rubric) : []
 
-  function selectAttempt(attempt: FileSubmissionAttempt) {
-    setSelectedUuid(attempt.attempt_uuid)
+  function selectAttempt(attempt: FileSubmissionReviewItem) {
+    setSelectedUuid(attempt.id)
     setIsGradeDirty(false)
     setPreviewUrl(null)
     setPreviewFilename(null)
     const next = new URLSearchParams(urlSearchParams.toString())
-    next.set('submission', attempt.attempt_uuid)
+    next.set('submission', attempt.id)
     router.replace(`${pathname}?${next.toString()}`, { scroll: false })
   }
 
-  function requestAttemptSelection(attempt: FileSubmissionAttempt) {
-    if (attempt.attempt_uuid === selected?.attempt_uuid) return
+  function requestAttemptSelection(attempt: FileSubmissionReviewItem) {
+    if (attempt.id === selectedId) return
     if (isGradeDirty) {
       setPendingAttempt(attempt)
       return
@@ -251,20 +230,20 @@ export default function FileSubmissionReviewWorkspace({
     selectAttempt(attempt)
   }
 
-  async function openFile(attemptFileUuid: string) {
+  async function openFile(fileId: string) {
     try {
-      const result = await getFileSubmissionFileUrl(attemptFileUuid)
-      window.open(result.get_url, '_blank', 'noopener,noreferrer')
+      const result = await getFileSubmissionFileUrl(fileId)
+      window.open(result.url, '_blank', 'noopener,noreferrer')
     } catch (error) {
       toastApiError(error, { fallback: t('openFileFailed') })
     }
   }
 
-  async function previewFile(attemptFileUuid: string, filename: string) {
-    setIsFetchingPreview(attemptFileUuid)
+  async function previewFile(fileId: string, filename: string) {
+    setIsFetchingPreview(fileId)
     try {
-      const result = await getFileSubmissionFileUrl(attemptFileUuid)
-      setPreviewUrl(result.get_url)
+      const result = await getFileSubmissionFileUrl(fileId)
+      setPreviewUrl(result.url)
       setPreviewFilename(filename)
     } catch (error) {
       toastApiError(error, { fallback: t('previewFileFailed') })
@@ -326,7 +305,7 @@ export default function FileSubmissionReviewWorkspace({
               value={search}
               onChange={event => {
                 setSearch(event.target.value)
-                setPage(1)
+                setCursors([])
               }}
               placeholder={t('searchLearnersPlaceholder')}
               className="pl-8"
@@ -341,15 +320,15 @@ export default function FileSubmissionReviewWorkspace({
             value={status}
             onChange={event => {
               setStatus(parseQueueStatus(event.target.value))
-              setPage(1)
+              setCursors([])
             }}
           >
             <NativeSelectOption value="ALL">{t('allStatuses')}</NativeSelectOption>
-            <NativeSelectOption value="SUBMITTED">{t('statusSubmitted')}</NativeSelectOption>
-            <NativeSelectOption value="GRADED">{t('statusGraded')}</NativeSelectOption>
-            <NativeSelectOption value="PUBLISHED">{t('statusPublished')}</NativeSelectOption>
-            <NativeSelectOption value="RETURNED">{t('statusReturned')}</NativeSelectOption>
-            <NativeSelectOption value="DRAFT">{t('statusDraft')}</NativeSelectOption>
+            <NativeSelectOption value="submitted">{t('statusSubmitted')}</NativeSelectOption>
+            <NativeSelectOption value="graded">{t('statusGraded')}</NativeSelectOption>
+            <NativeSelectOption value="published">{t('statusPublished')}</NativeSelectOption>
+            <NativeSelectOption value="returned">{t('statusReturned')}</NativeSelectOption>
+            <NativeSelectOption value="draft">{t('statusDraft')}</NativeSelectOption>
           </NativeSelect>
           <div className="flex items-center gap-2">
             <Button
@@ -358,7 +337,7 @@ export default function FileSubmissionReviewWorkspace({
               onClick={() =>
                 config &&
                 queryClient.invalidateQueries({
-                  queryKey: queueQueryKey(config.file_submission_uuid),
+                  queryKey: queueQueryKey(config.id),
                 })
               }
             >
@@ -369,7 +348,7 @@ export default function FileSubmissionReviewWorkspace({
               size="sm"
               variant="outline"
               nativeButton={false}
-              render={<a href={fileSubmissionExportUrl(config.file_submission_uuid)} aria-label={t('downloadCsv')} />}
+              render={<a href={fileSubmissionExportUrl(config.id)} aria-label={t('downloadCsv')} />}
             >
               <Download data-icon="inline-start" />
               CSV
@@ -383,11 +362,11 @@ export default function FileSubmissionReviewWorkspace({
             queueItems.map(attempt => (
               <Button
                 type="button"
-                key={attempt.attempt_uuid}
+                key={attempt.id}
                 variant="ghost"
                 className={cn(
                   'hover:bg-muted/60 h-auto w-full justify-start rounded-none p-4 text-left transition-colors',
-                  selected?.attempt_uuid === attempt.attempt_uuid && 'bg-muted',
+                  selectedId === attempt.id && 'bg-muted',
                 )}
                 onClick={() => requestAttemptSelection(attempt)}
               >
@@ -397,7 +376,7 @@ export default function FileSubmissionReviewWorkspace({
                     <p className="text-muted-foreground text-xs">
                       {t('attemptInfo', {
                         attemptNumber: attempt.attempt_number,
-                        count: attempt.files.length,
+                        count: attempt.file_count,
                       })}
                     </p>
                   </div>
@@ -407,34 +386,29 @@ export default function FileSubmissionReviewWorkspace({
             ))
           )}
         </div>
-        {queue.total > PAGE_SIZE ? (
+        {queue.next_cursor || cursors.length > 0 ? (
           <div className="border-border border-t p-3">
             <Pagination>
               <PaginationContent className="w-full justify-between">
                 <PaginationItem>
                   <PaginationPrevious
-                    aria-disabled={page <= 1}
-                    className={cn(page <= 1 && 'pointer-events-none opacity-50')}
-                    href={buildQueuePageHref(urlSearchParams, pathname, Math.max(1, page - 1))}
+                    aria-disabled={cursors.length === 0}
+                    className={cn(cursors.length === 0 && 'pointer-events-none opacity-50')}
+                    href="#"
                     onClick={event => {
                       event.preventDefault()
-                      if (page > 1) setPage(page - 1)
+                      setCursors(previous => previous.slice(0, -1))
                     }}
                   />
                 </PaginationItem>
                 <PaginationItem>
-                  <span className="text-muted-foreground px-2 text-sm tabular-nums">
-                    {t('pageOf', { page, pages: Math.max(1, Math.ceil(queue.total / PAGE_SIZE)) })}
-                  </span>
-                </PaginationItem>
-                <PaginationItem>
                   <PaginationNext
-                    aria-disabled={page * PAGE_SIZE >= queue.total}
-                    className={cn(page * PAGE_SIZE >= queue.total && 'pointer-events-none opacity-50')}
-                    href={buildQueuePageHref(urlSearchParams, pathname, page + 1)}
+                    aria-disabled={!queue.next_cursor}
+                    className={cn(!queue.next_cursor && 'pointer-events-none opacity-50')}
+                    href="#"
                     onClick={event => {
                       event.preventDefault()
-                      if (page * PAGE_SIZE < queue.total) setPage(page + 1)
+                      if (queue.next_cursor) setCursors(previous => [...previous, queue.next_cursor!])
                     }}
                   />
                 </PaginationItem>
@@ -452,16 +426,18 @@ export default function FileSubmissionReviewWorkspace({
                 <div>
                   <h2 className="text-xl font-semibold">{displayUser(selected)}</h2>
                   <p className="text-muted-foreground text-sm">
-                    {selected.submitted_at
+                    {selected.submitted_at_unix
                       ? t('submittedAt', {
-                          date: formatDate(selected.submitted_at),
+                          date: formatDate(selected.submitted_at_unix),
                         })
                       : t('submittedAsDraft')}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {selected.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
-                  {selected.final_score !== null ? <Badge variant="outline">{selected.final_score}%</Badge> : null}
+                  {typeof selected.final_score === 'number' ? (
+                    <Badge variant="outline">{selected.final_score}%</Badge>
+                  ) : null}
                   <AttemptStatusBadge status={selected.status} />
                 </div>
               </div>
@@ -472,16 +448,13 @@ export default function FileSubmissionReviewWorkspace({
                   selected.files.map(file => {
                     const previewable = isPreviewable(file.filename)
                     return (
-                      <div
-                        key={file.attempt_file_uuid}
-                        className="flex flex-wrap items-center justify-between gap-3 p-4"
-                      >
+                      <div key={file.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
                         <div className="flex min-w-0 items-center gap-3">
                           <FileText className="text-muted-foreground size-5 shrink-0" />
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium">{file.filename}</p>
                             <p className="text-muted-foreground text-xs">
-                              {formatBytes(file.size_bytes ?? 0)} · {file.scan_status.toLowerCase()}
+                              {formatBytes(file.size_bytes ?? 0)} · {file.scan_status}
                             </p>
                           </div>
                         </div>
@@ -490,17 +463,17 @@ export default function FileSubmissionReviewWorkspace({
                             <Button
                               size="sm"
                               variant={previewUrl !== null && previewFilename === file.filename ? 'default' : 'outline'}
-                              disabled={isFetchingPreview === file.attempt_file_uuid}
+                              disabled={isFetchingPreview === file.id}
                               onClick={() => {
                                 if (previewUrl !== null && previewFilename === file.filename) {
                                   setPreviewUrl(null)
                                   setPreviewFilename(null)
                                 } else {
-                                  previewFile(file.attempt_file_uuid, file.filename)
+                                  previewFile(file.id, file.filename)
                                 }
                               }}
                             >
-                              {isFetchingPreview === file.attempt_file_uuid ? (
+                              {isFetchingPreview === file.id ? (
                                 <Loader2 className="size-4 animate-spin" />
                               ) : (
                                 <Eye className="size-4" />
@@ -508,7 +481,7 @@ export default function FileSubmissionReviewWorkspace({
                               {t('preview')}
                             </Button>
                           )}
-                          <Button size="sm" variant="outline" onClick={() => openFile(file.attempt_file_uuid)}>
+                          <Button size="sm" variant="outline" onClick={() => openFile(file.id)}>
                             {previewable ? <ExternalLink className="size-4" /> : <Download className="size-4" />}
                             {previewable ? t('openButton') : t('downloadButton')}
                           </Button>
@@ -545,7 +518,7 @@ export default function FileSubmissionReviewWorkspace({
 
             <aside className="space-y-4">
               <GradeEditor
-                key={selected.attempt_uuid}
+                key={selected.id}
                 attempt={selected}
                 criteria={parsedCriteria}
                 isPending={gradeMutation.isPending}
@@ -607,22 +580,13 @@ export default function FileSubmissionReviewWorkspace({
   )
 }
 
-function displayUser(attempt: FileSubmissionAttempt) {
+function displayUser(attempt: FileSubmissionAttempt | FileSubmissionReviewItem) {
   const { user } = attempt
-  const fullName = `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim()
-  return fullName || user?.username || user?.email || 'Learner'
-}
-
-function buildQueuePageHref(searchParams: Readonly<URLSearchParams>, pathname: string, page: number): string {
-  const next = new URLSearchParams(searchParams.toString())
-  if (page <= 1) next.delete('page')
-  else next.set('page', String(page))
-  const query = next.toString()
-  return query ? `${pathname}?${query}` : pathname
+  return user?.display_name || user?.username || user?.email || 'Learner'
 }
 
 function readRubricScores(attempt: FileSubmissionAttempt): Record<string, number> {
-  const savedRubric = attempt.feedback?.rubric
+  const savedRubric = attempt.rubric_scores
   if (!savedRubric || typeof savedRubric !== 'object' || !('criteria' in savedRubric)) return {}
   const rawCriteria = (savedRubric as { criteria?: unknown }).criteria
   if (!Array.isArray(rawCriteria)) return {}
@@ -651,21 +615,19 @@ function GradeEditor({
   criteria: RubricCriterion[]
   isPending: boolean
   onDirtyChange: (dirty: boolean) => void
-  onSubmit: (payload: Parameters<typeof gradeFileSubmissionAttempt>[2]) => void
+  onSubmit: (payload: FileSubmissionGradePayload) => void
 }) {
   const t = useTranslations('FileSubmissionReview')
-  const [score, setScore] = useState(attempt.final_score === null ? '' : String(attempt.final_score))
-  const [feedback, setFeedback] = useState(
-    typeof attempt.feedback?.feedback === 'string' ? attempt.feedback.feedback : '',
-  )
+  const [score, setScore] = useState(typeof attempt.final_score === 'number' ? String(attempt.final_score) : '')
+  const [feedback, setFeedback] = useState(attempt.feedback ?? '')
   const [rubricScores, setRubricScores] = useState<Record<string, number>>(() => readRubricScores(attempt))
   const rubricTotalScore =
     criteria.length === 0
       ? null
       : criteria.reduce((total, criterion) => total + (rubricScores[criterion.criterion_id] ?? 0), 0)
-  const scoreId = `fs-review-score-${attempt.attempt_uuid}`
+  const scoreId = `fs-review-score-${attempt.id}`
 
-  function submit(status: 'GRADED' | 'PUBLISHED' | 'RETURNED') {
+  function submit(status: GradeStatus) {
     const rubric =
       criteria.length > 0
         ? {
@@ -678,10 +640,10 @@ function GradeEditor({
           }
         : {}
     onSubmit({
+      action: GRADE_ACTIONS[status],
       final_score: score.trim() === '' ? null : Number(score),
       feedback,
-      rubric,
-      status,
+      rubric_scores: rubric,
     })
   }
 
@@ -858,15 +820,15 @@ function FilePreviewPane({ url, filename }: { url: string; filename: string }) {
 }
 
 function AttemptStatusBadge({ status }: { status: string }) {
-  const variant = status === 'SUBMITTED' ? 'default' : status === 'RETURNED' ? 'destructive' : 'secondary'
-  return <Badge variant={variant}>{status.toLowerCase()}</Badge>
+  const variant = status === 'submitted' ? 'default' : status === 'returned' ? 'destructive' : 'secondary'
+  return <Badge variant={variant}>{status}</Badge>
 }
 
-function formatDate(value: string) {
+function formatDate(unix: number) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value))
+  }).format(fromUnix(unix))
 }
 
 function formatBytes(bytes: number) {

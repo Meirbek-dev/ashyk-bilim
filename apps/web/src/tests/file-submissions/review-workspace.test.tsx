@@ -5,7 +5,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import FileSubmissionReviewWorkspace from '@/features/file-submissions/review/FileSubmissionReviewWorkspace'
-import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
+import type {
+  FileSubmissionAttempt,
+  FileSubmissionReviewItem,
+} from '@/features/file-submissions/services/file-submissions'
 
 const mocks = vi.hoisted(() => ({
   getActivity: vi.fn(),
@@ -46,28 +49,34 @@ vi.mock('@/features/file-submissions/services/file-submissions', async importOri
   }
 })
 
-function attempt(uuid: string, name: string, score: number, feedback: string): FileSubmissionAttempt {
+function attempt(id: string, name: string, score: number, feedback: string): FileSubmissionAttempt {
   return {
-    attempt_uuid: uuid,
-    status: 'GRADED',
+    id,
+    status: 'graded',
     attempt_number: 1,
     files: [],
     is_late: false,
     late_penalty_pct: 0,
     final_score: score,
-    feedback: { feedback, rubric: {} },
+    feedback,
+    rubric_scores: {},
     version: 1,
-    submitted_at: '2026-07-12T09:00:00Z',
-    created_at: '2026-07-12T08:00:00Z',
-    updated_at: '2026-07-12T09:00:00Z',
+    submitted_at_unix: 1_783_933_200,
+    created_at_unix: 1_783_929_600,
+    updated_at_unix: 1_783_933_200,
     user: {
-      id: score,
+      id: `user_${name.toLowerCase()}`,
       username: name.toLowerCase(),
-      first_name: name,
-      last_name: 'Learner',
+      display_name: `${name} Learner`,
       email: `${name.toLowerCase()}@example.test`,
     },
   }
+}
+
+/** The review queue carries summaries; the full attempt comes from `GET file-submission-attempts/{id}`. */
+function queueItem(full: FileSubmissionAttempt): FileSubmissionReviewItem {
+  const { files, feedback: _feedback, rubric_scores: _rubric, ...rest } = full
+  return { ...rest, user: full.user!, file_count: files.length }
 }
 
 describe('file submission review workspace', () => {
@@ -76,11 +85,12 @@ describe('file submission review workspace', () => {
     const first = attempt('attempt_first', 'Aruzhan', 92, 'First learner feedback')
     const second = attempt('attempt_second', 'Dias', 64, 'Second learner feedback')
     mocks.getActivity.mockResolvedValue({
-      file_submission_uuid: 'file_submission_1',
+      id: 'file_submission_1',
       title: 'Portfolio',
       rubric: {},
     })
-    mocks.getQueue.mockResolvedValue({ items: [first, second], total: 2, page: 1, page_size: 25 })
+    mocks.getQueue.mockResolvedValue({ items: [queueItem(first), queueItem(second)], next_cursor: null })
+    mocks.getAttempt.mockImplementation(async (id: string) => (id === first.id ? first : second))
   })
 
   it('recreates the grade editor from the newly selected attempt', async () => {

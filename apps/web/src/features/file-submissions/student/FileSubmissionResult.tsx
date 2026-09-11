@@ -19,7 +19,7 @@ function formatScore(score: number | null | undefined): string {
 
 interface FileSubmissionResultProps {
   attempt: FileSubmissionAttempt
-  /** Called when the student chooses to revise. Only shown when status=RETURNED. */
+  /** Called when the student chooses to revise. Only shown when status=returned. */
   onRevise?: () => void
 }
 
@@ -30,9 +30,9 @@ interface FileSubmissionResultProps {
 export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissionResultProps) {
   const t = useTranslations('FileSubmission')
   const { status, final_score, late_penalty_pct, feedback } = attempt
-  const isReturned = status === 'RETURNED'
+  const isReturned = status === 'returned'
   const passing = final_score !== null && final_score !== undefined && final_score >= 60
-  const feedbackText = typeof feedback?.feedback === 'string' ? feedback.feedback : null
+  const feedbackText = feedback || null
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">

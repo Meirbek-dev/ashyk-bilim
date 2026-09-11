@@ -20,6 +20,7 @@ import {
   updateFileSubmissionActivity,
 } from '@/features/file-submissions/services/file-submissions'
 import type { FileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
+import { fromUnix, toUnix } from '@/lib/api/contract'
 import { getFriendlyMimeName } from '@/lib/file-validation'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
@@ -127,7 +128,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     setPrevData(data)
     setTitle(data.title)
     setInstructions(data.instructions)
-    setDueAt(data.due_at ? toDateTimeLocal(data.due_at) : '')
+    setDueAt(data.due_at_unix ? toDateTimeLocal(fromUnix(data.due_at_unix)) : '')
     setMaxFiles(data.max_files)
     setMaxFileSizeMb(data.max_file_size_mb ?? '')
     setAllowedMimeTypes(data.allowed_mime_types ?? [])
@@ -161,10 +162,10 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!data) throw new Error(t('unavailableError'))
-      return await updateFileSubmissionActivity(data.file_submission_uuid, {
+      return await updateFileSubmissionActivity(data.id, {
         title,
         instructions,
-        due_at: dueAt ? new Date(dueAt).toISOString() : null,
+        due_at_unix: dueAt ? toUnix(new Date(dueAt)) : null,
         max_files: maxFiles,
         max_file_size_mb: maxFileSizeMb === '' ? null : maxFileSizeMb,
         allowed_mime_types: allowedMimeTypes,
@@ -184,7 +185,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
   const publishMutation = useMutation({
     mutationFn: async () => {
       if (!data) throw new Error(t('unavailableError'))
-      return await publishFileSubmissionActivity(data.file_submission_uuid)
+      return await publishFileSubmissionActivity(data.id)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
@@ -253,11 +254,13 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold">{data.title}</h1>
-              <Badge variant={data.lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>{data.lifecycle}</Badge>
-              {data.due_at ? (
+              <Badge variant={data.lifecycle === 'published' ? 'default' : 'secondary'} className="capitalize">
+                {data.lifecycle}
+              </Badge>
+              {data.due_at_unix ? (
                 <Badge variant="outline">
                   <CalendarClock className="mr-1 size-3" />
-                  {formatDate(data.due_at)}
+                  {formatDate(fromUnix(data.due_at_unix))}
                 </Badge>
               ) : null}
             </div>
@@ -429,15 +432,14 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
   )
 }
 
-function toDateTimeLocal(value: string) {
-  const date = new Date(value)
+function toDateTimeLocal(date: Date) {
   const offset = date.getTimezoneOffset()
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16)
 }
 
-function formatDate(value: string) {
+function formatDate(date: Date) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value))
+  }).format(date)
 }
