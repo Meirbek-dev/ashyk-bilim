@@ -1,8 +1,9 @@
 'use client'
 
 import { ArrowBigDown, ArrowBigUp, Clock, Edit, Trash2 } from 'lucide-react'
-import { useFormatter, useNow, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import RichContentRenderer from './rich-content-renderer'
+import RelativeTime from './relative-time'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
@@ -43,8 +44,6 @@ export default function DiscussionReply({
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(reply.replyMessage)
   const [_isPending, startTransition] = useTransition()
-  const format = useFormatter()
-  const now = useNow()
   // Capabilities come from the wire (`can_update` / `can_delete` are already
   // resolved against the viewer's grants server-side).
   const canUpdate = reply.can_update ?? false
@@ -92,12 +91,7 @@ export default function DiscussionReply({
               )}
               <div className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
                 <Clock size={12} />
-                <span>{format.relativeTime(new Date(reply.createDate), now)}</span>
-                {reply.updateDate &&
-                  reply.createDate &&
-                  new Date(reply.updateDate).getTime() !== new Date(reply.createDate).getTime() && (
-                    <span className="text-muted-foreground text-xs">({t('edited')})</span>
-                  )}
+                <RelativeTime date={reply.createDate} />
               </div>
             </div>
 

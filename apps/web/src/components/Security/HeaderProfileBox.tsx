@@ -112,7 +112,7 @@ export function HeaderProfileBox() {
                 <UserAvatar size="sm" />
                 <div className="flex flex-col text-start">
                   <div className="flex items-center gap-2">
-                    <p className="text-foreground text-sm font-semibold capitalize">{user?.username}</p>
+                    <p className="text-foreground text-sm font-semibold">{user?.display_name?.trim() || user?.username}</p>
                     {shouldShowBadge && userRoleInfo && (
                       <Tooltip>
                         <TooltipTrigger
@@ -154,8 +154,8 @@ export function HeaderProfileBox() {
                   <div className="flex items-center gap-2">
                     <UserAvatar size="sm" />
                     <div>
-                      <p className="text-sm font-medium capitalize">{user?.username}</p>
-                      <p className="text-muted-foreground text-xs">{user?.email}</p>
+                      <p className="text-sm font-medium">{user?.display_name?.trim() || user?.username}</p>
+                      <p className="text-muted-foreground text-xs">@{user?.username}</p>
                     </div>
                   </div>
                 </div>

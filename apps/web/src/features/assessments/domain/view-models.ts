@@ -96,6 +96,8 @@ export interface AttemptViewModel {
   isReturnedForRevision: boolean
   /** Score and feedback are visible to the student. */
   isResultVisible: boolean
+  /** Effective passing threshold (percent), null when the policy has none. */
+  passingScore: number | null
   /** Backend reason codes explaining why start/save/submit actions are disabled. */
   disabledActionReasons: string[]
   serverNow: string | null

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 
 import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment'
@@ -16,6 +16,7 @@ import { ErrorState } from '@/components/ui/error-state'
 import { apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useApiError } from '@/hooks/useApiError'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,14 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
   const tCommon = useTranslations('Common')
   const { handleApiError, toastApiError } = useApiError()
   const [isPending, setIsPending] = useState(false)
+
+  // Completion is the projection's call (learner-state), the same source the
+  // outline sidebar ticks from — the latest attempt alone can disagree with it
+  // (best submitted score decides `passed`).
+  const learnerState = useQuery(learnerCourseStateQueryOptions(courseUuid))
+  const activityState = learnerState.data?.outline
+    .flatMap(chapter => chapter.activities)
+    .find(activity => activity.id === activityUuid)
 
   const vm = assessmentData?.surface === 'ATTEMPT' ? assessmentData.vm : null
   const recommendedAction = vm?.recommendedAction ?? 'noAction'
@@ -180,6 +189,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     return (
       <AttemptResultCard
         vm={vm}
+        activityState={activityState}
         onRetry={() => {
           void startAttempt()
         }}

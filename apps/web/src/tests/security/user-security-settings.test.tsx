@@ -6,6 +6,7 @@ import UserSecuritySettings from '@/components/Dashboard/Pages/UserAccount/UserS
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useFormatter: () => ({ dateTime: (date: Date) => date.toISOString() }),
 }))
 
 vi.mock('sonner', () => ({

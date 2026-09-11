@@ -2,8 +2,9 @@
 
 import { ArrowBigDown, ArrowBigUp, Clock, Edit, Reply, Send, Trash2 } from 'lucide-react'
 import { PermissionTooltip } from '@/components/Utils/PermissionTooltip'
-import { useFormatter, useNow, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import RichContentRenderer from './rich-content-renderer'
+import RelativeTime from './relative-time'
 import { Card, CardContent } from '@/components/ui/card'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { Separator } from '@/components/ui/separator'
@@ -56,8 +57,6 @@ export default function DiscussionPost({
   const [replyContent, setReplyContent] = useState('')
   const [editingPost, setEditingPost] = useState(false)
   const [editContent, setEditContent] = useState(post.postMessage)
-  const format = useFormatter()
-  const now = useNow()
 
   // Use backend permission metadata
   const canUpdate = post.can_update ?? false
@@ -107,12 +106,7 @@ export default function DiscussionPost({
                   )}
                   <div className="text-muted-foreground flex items-center gap-1 text-xs">
                     <Clock size={12} />
-                    <span>{format.relativeTime(new Date(post.createDate), now)}</span>
-                    {post.updateDate &&
-                      post.createDate &&
-                      new Date(post.updateDate).getTime() !== new Date(post.createDate).getTime() && (
-                        <span className="text-muted-foreground text-xs">({t('edited')})</span>
-                      )}
+                    <RelativeTime date={post.createDate} />
                   </div>
                 </div>
                 {(canDelete || canUpdate) && !editingPost && (

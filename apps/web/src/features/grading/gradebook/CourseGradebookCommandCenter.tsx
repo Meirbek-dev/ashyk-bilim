@@ -43,23 +43,34 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   const searchParams = useSearchParams()
   const isMobile = useIsMobile()
   const [page, setPage] = useState(() => normalizePage(searchParams.get('page')))
-  const [filters, setFilters] = useState<GradebookFilters>({
+  const [chosenFilters, setFilters] = useState<GradebookFilters>({
     savedFilter: normalizeSavedFilter(searchParams.get('filter')),
     search: searchParams.get('search') ?? '',
     activityType: searchParams.get('activityType') ?? 'all',
   })
   const gradebookQueryParams = useMemo(() => {
-    const trimmedSearch = filters.search.trim()
+    const trimmedSearch = chosenFilters.search.trim()
     return {
       page,
       pageSize: PAGE_SIZE,
-      activityType: filters.activityType,
-      savedFilter: filters.savedFilter,
+      activityType: chosenFilters.activityType,
+      savedFilter: chosenFilters.savedFilter,
       ...(trimmedSearch ? { search: trimmedSearch } : {}),
     }
-  }, [filters.activityType, filters.savedFilter, filters.search, page])
+  }, [chosenFilters.activityType, chosenFilters.savedFilter, chosenFilters.search, page])
   const { data, error, isError, isLoading, refetch } = useQuery(
     courseGradebookQueryOptions(courseUuid, gradebookQueryParams),
+  )
+  // The implicit default ("needs grading", no `filter` in the URL) would show
+  // an empty table when nothing needs review — fall back to "all" then.
+  const filters = useMemo<GradebookFilters>(
+    () =>
+      searchParams.get('filter') === null &&
+      chosenFilters.savedFilter === 'needs_grading' &&
+      data?.summary.needs_grading_count === 0
+        ? { ...chosenFilters, savedFilter: 'all' }
+        : chosenFilters,
+    [chosenFilters, data?.summary.needs_grading_count, searchParams],
   )
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
 
@@ -67,7 +78,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     (newFilters: GradebookFilters) => {
       setFilters(newFilters)
       const params = new URLSearchParams(searchParams.toString())
-      setParam(params, 'filter', newFilters.savedFilter === 'needs_grading' ? '' : newFilters.savedFilter)
+      setParam(params, 'filter', newFilters.savedFilter)
       setParam(params, 'search', newFilters.search)
       setParam(params, 'activityType', newFilters.activityType === 'all' ? '' : newFilters.activityType)
       params.delete('page')

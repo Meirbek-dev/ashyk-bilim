@@ -9,11 +9,14 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { formatPercent } from '@/features/assessments/domain/score'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
+import type { LearnerCourseState } from '@/features/learner-course/api'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface AttemptResultCardProps {
   vm: AttemptViewModel
+  /** The progress projection's row for this activity (learner-state outline); decides passed/score. */
+  activityState?: LearnerCourseState['outline'][number]['activities'][number] | undefined
   onRetry?: () => void
   onNext?: () => void
   onStartRevision?: () => void
@@ -29,15 +32,25 @@ interface AttemptResultCardProps {
  * they are secondary actions. The BottomActionBar handles the primary
  * "Next Activity" CTA via runtime.primary_action.
  */
-export default function AttemptResultCard({ vm, onRetry, onNext: _onNext, onStartRevision }: AttemptResultCardProps) {
+export default function AttemptResultCard({
+  vm,
+  activityState,
+  onRetry,
+  onNext: _onNext,
+  onStartRevision,
+}: AttemptResultCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
   const format = useFormatter()
   const [breakdownOpen, setBreakdownOpen] = useState(false)
 
   const { isResultVisible, score, isReturnedForRevision, canStartRevision, canSubmit } = vm
-  const pct = score.percent
-  const passing = pct !== null && pct >= 60
+  const latestPct = score.percent
+  // Headline = the projection (best submitted attempt), the same source the
+  // outline sidebar ticks from; fall back to the latest attempt when absent.
+  const pct = activityState?.score ?? latestPct
+  const passing = activityState?.passed ?? (pct !== null && pct >= (vm.passingScore ?? 60))
   const showScore = isResultVisible && pct !== null
+  const showLatest = showScore && latestPct !== null && latestPct !== pct
 
   return (
     <div className="mx-auto w-full max-w-2xl py-6">
@@ -88,6 +101,10 @@ export default function AttemptResultCard({ vm, onRetry, onNext: _onNext, onStar
           <p className="text-xl font-semibold">
             {showScore ? `${t('assessmentSubmitted')} · ${formatPercent(pct)}` : t('assessmentSubmitted')}
           </p>
+
+          {showLatest ? (
+            <p className="text-muted-foreground text-xs">{t('latestAttemptScore', { score: formatPercent(latestPct) })}</p>
+          ) : null}
 
           {vm.startedAt ? (
             <p className="text-muted-foreground text-xs">{t('submittedOn', { date: format.dateTime(new Date(vm.startedAt), { dateStyle: 'medium', timeStyle: 'short' }) })}</p>

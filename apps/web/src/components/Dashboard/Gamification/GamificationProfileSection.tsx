@@ -17,6 +17,8 @@ interface GamificationProfileSectionProps {
   className?: string
   variant?: 'full' | 'compact'
   data?: UserGamificationProfile | null
+  /** Force the skeleton (e.g. while a server fetch is pending). */
+  loading?: boolean
 }
 
 export function GamificationProfileSection({
@@ -24,12 +26,13 @@ export function GamificationProfileSection({
   className,
   variant: _variant = 'full',
   data,
+  loading = false,
 }: GamificationProfileSectionProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
   const storeProfile = useGamificationStore(s => s.profile)
   const storeIsLoading = useGamificationStore(s => s.isLoading)
   const profile = data ?? storeProfile ?? null
-  const isLoading = !profile && storeIsLoading
+  const isLoading = loading || (!profile && storeIsLoading)
   const { levelInfo, nextMilestone } = (() => {
     if (!profile) {
       return {

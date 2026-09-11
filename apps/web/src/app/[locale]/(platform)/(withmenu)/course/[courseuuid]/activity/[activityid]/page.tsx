@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 import { cache, Suspense } from 'react'
 import { getStudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { redirect } from '@/i18n/navigation'
-import { getLocale, setRequestLocale } from 'next-intl/server'
+import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
@@ -22,12 +22,23 @@ const fetchCourseMetadata = cache(async (courseuuid: string) => getCourseMetadat
 
 const fetchActivity = cache(async (activityid: string) => getActivity(activityid))
 
+const fetchRuntime = cache(async (courseuuid: string, activityid: string) =>
+  getStudentActivityRuntime(courseuuid, activityid),
+)
+
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const { courseuuid, activityid } = await props.params
   try {
     const course_meta = await fetchCourseMetadata(courseuuid)
     const isCourseEnd = activityid === 'end'
-    const activity = isCourseEnd ? null : await fetchActivity(activityid)
+    const [activity, runtime] = isCourseEnd
+      ? [null, null]
+      : await Promise.all([fetchActivity(activityid), fetchRuntime(courseuuid, activityid)])
+    if (!isCourseEnd && !runtime) {
+      // Unpublished: the learner outline has no entry, so the title must not name it.
+      const tErrors = await getTranslations('Errors')
+      return { title: `${tErrors('activityUnavailable')} - ${course_meta.name ?? ''}`, robots: { index: false } }
+    }
 
     const courseName = course_meta.name ?? ''
     const courseDescription = course_meta.description ?? ''
@@ -98,7 +109,7 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
     ;[course_meta, activity, runtime] = await Promise.all([
       fetchCourseMetadata(courseuuid),
       isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
-      isCourseEnd ? Promise.resolve(null) : getStudentActivityRuntime(courseuuid, activityid),
+      isCourseEnd ? Promise.resolve(null) : fetchRuntime(courseuuid, activityid),
     ])
   } catch (error: unknown) {
     const apiError = error as AppApiError

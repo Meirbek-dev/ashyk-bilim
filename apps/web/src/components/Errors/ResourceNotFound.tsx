@@ -46,25 +46,27 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
         <p className="text-muted-foreground mb-8 text-sm leading-relaxed">{message}</p>
 
         <div className="flex flex-col gap-2.5 sm:flex-row sm:justify-center">
-          {!!courseuuid && (
+          {courseuuid ? (
+            // Inside a course the only sensible exit is the course itself; the
+            // dashboard is not where a learner came from.
             <Button
-              variant="outline"
-              className="flex items-center gap-2 transition-colors duration-200"
+              variant="default"
+              className="flex items-center gap-2 shadow-sm transition-colors duration-200"
               onClick={handleBackToCourse}
             >
               <BookOpen className="h-4 w-4" />
               {tErrors('backToCourse')}
             </Button>
+          ) : (
+            <Button
+              variant="default"
+              className="flex items-center gap-2 shadow-sm transition-opacity duration-200"
+              onClick={() => router.push(session ? '/dash' : '/')}
+            >
+              <Home className="h-4 w-4" />
+              {tErrors('backToDashboard')}
+            </Button>
           )}
-
-          <Button
-            variant="default"
-            className="flex items-center gap-2 shadow-sm transition-opacity duration-200"
-            onClick={() => router.push(session ? '/dash' : '/')}
-          >
-            <Home className="h-4 w-4" />
-            {tErrors('backToDashboard')}
-          </Button>
         </div>
       </div>
     </div>

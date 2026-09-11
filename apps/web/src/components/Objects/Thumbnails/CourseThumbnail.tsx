@@ -36,6 +36,7 @@ import {
 import { ResourceActionsMenu } from '@/components/Utils/ResourceActionsMenu'
 import type { ResourceAction } from '@/components/Utils/ResourceActionsMenu'
 import { useSession } from '@/hooks/useSession'
+import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
 import { Card, CardContent, CardFooter } from '@components/ui/card'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import UserAvatar from '@components/Objects/UserAvatar'
@@ -505,16 +506,10 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
     })
   }, [trailData, cleanCourseUuid])
 
-  const { progressPercentage } = useMemo(() => {
-    const total =
-      courseRun?.course_total_steps ||
-      course.chapters?.reduce((acc, chapter) => acc + (chapter.activities?.length || 0), 0) ||
-      0
-    const completed = courseRun?.steps?.filter((step: AppTrailStep) => step.complete === true)?.length || 0
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
-
-    return { progressPercentage: percentage }
-  }, [courseRun, course.chapters])
+  // Trail `steps` are lesson-type only; completion comes from learner-state
+  // (same source as the course page). Only enrolled courses have a state.
+  const learnerProgress = useLearnerCourseProgress(cleanCourseUuid, isAuthenticated && Boolean(courseRun))
+  const progressPercentage = learnerProgress.isLoaded ? learnerProgress.percent : 0
 
   const thumbnailUrl = useMemo(() => {
     return course.thumbnail_image

@@ -309,8 +309,10 @@ function DashSidebar({ className }: SidebarProps) {
                 isCollapsed ? 'hidden w-0 opacity-0' : 'w-auto opacity-100'
               }`}
             >
-              <p className="text-sidebar-foreground truncate text-sm font-medium">@{user.username}</p>
-              <p className="text-sidebar-foreground/60 truncate text-xs">{user.email}</p>
+              <p className="text-sidebar-foreground truncate text-sm font-medium">
+                {user.display_name?.trim() || user.username}
+              </p>
+              <p className="text-sidebar-foreground/60 truncate text-xs">@{user.username}</p>
             </div>
           </div>
 

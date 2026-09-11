@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { KeyRound, Loader2, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react'
 import { Button } from '@components/ui/button'
@@ -34,12 +34,8 @@ export default function UserSecuritySettings() {
 
 type Translator = ReturnType<typeof useTranslations<'DashPage.UserAccountSettings.UserAccount.Security'>>
 
-function formatTimestamp(unix: number, locale: string | undefined): string {
-  const date = fromUnix(unix)
-  return date ? date.toLocaleString(locale) : ''
-}
-
 function SessionsSection({ t }: { t: Translator }) {
+  const format = useFormatter()
   const queryClient = useQueryClient()
   const { toastApiError } = useApiError()
   const sessionsQuery = useQuery({
@@ -104,7 +100,7 @@ function SessionsSection({ t }: { t: Translator }) {
                 </span>
                 <span className="text-muted-foreground text-xs">
                   {session.ip ? `${session.ip} · ` : ''}
-                  {t('lastSeen', { at: formatTimestamp(session.last_seen_unix, undefined) })}
+                  {t('lastSeen', { at: format.dateTime(fromUnix(session.last_seen_unix), { dateStyle: 'medium', timeStyle: 'short' }) })}
                 </span>
               </div>
               {!session.current ? (

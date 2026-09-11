@@ -173,6 +173,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     primaryButtonLabelKey: 'startRevision',
     isReturnedForRevision: true,
     isResultVisible: true,
+    passingScore: 60,
     disabledActionReasons: [],
     serverNow: null,
     startedAt: null,

@@ -2,13 +2,12 @@
 
 import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader'
 import SettingsTabs from '@components/Dashboard/Misc/SettingsTabs'
-import { Info, Lock, Trophy, User as UserIcon } from 'lucide-react'
+import { Info, Lock, Trophy } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 const TABS = [
   { id: 'general', labelKey: 'general', icon: Info },
-  { id: 'profile', labelKey: 'profile', icon: UserIcon },
   { id: 'gamification', labelKey: 'gamification', icon: Trophy },
   { id: 'security', labelKey: 'security', icon: Lock },
 ]

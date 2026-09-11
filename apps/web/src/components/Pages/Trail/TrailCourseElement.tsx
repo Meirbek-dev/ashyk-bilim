@@ -2,6 +2,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
+import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { Award, ExternalLink, Loader2, X } from 'lucide-react'
@@ -22,9 +23,11 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
   const courseid = course.course_uuid.replace('course_', '')
   const router = useRouter()
   const t = useTranslations('Trail')
-  const course_total_steps = run.course_total_steps ?? 0
-  const course_completed_steps = run.steps?.length ?? 0
-  const course_progress = course_total_steps > 0 ? Math.round((course_completed_steps / course_total_steps) * 100) : 0
+  // Trail `steps` are lesson-type only; completion comes from learner-state.
+  const learnerProgress = useLearnerCourseProgress(courseid)
+  const course_total_steps = learnerProgress.isLoaded ? learnerProgress.total : (run.course_total_steps ?? 0)
+  const course_completed_steps = learnerProgress.isLoaded ? learnerProgress.completed : 0
+  const course_progress = learnerProgress.isLoaded ? learnerProgress.percent : 0
   const isCompleted = course_progress === 100
   const certificateQuery = useUserCertificateByCourse(isCompleted ? course.course_uuid : null)
   const courseCertificate = certificateQuery.data?.data?.[0] ?? null

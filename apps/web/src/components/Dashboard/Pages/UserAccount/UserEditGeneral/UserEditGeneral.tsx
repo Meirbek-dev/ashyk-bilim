@@ -39,6 +39,7 @@ function UserEditGeneral() {
   const [currentLocale, setCurrentLocale] = useState<Locale | null>(null)
   const [initialLoading, setInitialLoading] = useState(true)
   const t = useTranslations('DashPage.Notifications')
+  const tCommon = useTranslations('Common')
   const validationSchema = createValidationSchema(t)
 
   type UserEditFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>
@@ -162,8 +163,13 @@ function UserEditGeneral() {
   if (initialLoading || !userData || !currentLocale) {
     return (
       <Card className="mx-0 sm:mx-10">
-        <div className="flex min-h-[400px] items-center justify-center">
-          <Loader2 className="text-primary h-8 w-8 animate-spin" />
+        <div
+          className="text-muted-foreground flex min-h-[400px] flex-col items-center justify-center gap-3 text-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="text-primary h-8 w-8 animate-spin" aria-hidden="true" />
+          <span>{tCommon('loading')}</span>
         </div>
       </Card>
     )

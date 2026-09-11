@@ -226,6 +226,7 @@ function useAssessment(
     canSubmit: state.can_continue || state.can_start,
     isReturnedForRevision: state.revision_requested,
     isResultVisible: visible,
+    passingScore: state.effective.passing_score ?? null,
     disabledActionReasons: state.disabled_reasons,
     serverNow: null,
     availableAt: unixToIso(state.opens_at_unix),

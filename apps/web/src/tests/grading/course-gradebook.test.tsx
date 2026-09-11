@@ -208,6 +208,20 @@ describe('CourseGradebookCommandCenter', () => {
     expect(within(table).getByText('states.returned')).toBeInTheDocument()
   })
 
+  // Gauntlet: the implicit "needs grading" default showed an empty table
+  // when nothing needed review.
+  it('defaults to "all" when nothing needs grading and no filter is in the URL', () => {
+    gradebook.summary.needs_grading_count = 0
+    for (const cell of gradebook.cells) {
+      if (cell.state === 'NEEDS_GRADING') Object.assign(cell, { state: 'PASSED', teacher_action_required: false })
+    }
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    const table = screen.getByRole('table')
+    expect(within(table).getByText('Student One')).toBeInTheDocument()
+    expect(within(table).getByText('Student Two')).toBeInTheDocument()
+  })
+
   it('requests a server-paginated gradebook using URL filters', () => {
     navigationMocks.searchParams = new URLSearchParams(
       'search=student&activityType=TYPE_DYNAMIC&filter=returned&page=2',

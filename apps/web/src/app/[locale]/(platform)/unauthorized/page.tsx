@@ -1,6 +1,15 @@
 import { useTranslations } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
 import Link from '@components/ui/AppLink'
 import { Button } from '@components/ui/button'
+import { APP_NAME } from '@/lib/constants'
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'UnauthorizedPage' })
+  return { title: `${t('title')} - ${APP_NAME}`, robots: { index: false } }
+}
 
 export default function UnauthorizedPage() {
   const t = useTranslations('UnauthorizedPage')

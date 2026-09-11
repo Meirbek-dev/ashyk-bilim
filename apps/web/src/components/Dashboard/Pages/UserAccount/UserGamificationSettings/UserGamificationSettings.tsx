@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GamificationProfileSection } from '@/components/Dashboard/Gamification'
 import { useGamificationStore } from '@/stores/gamification'
+import type { UserGamificationProfile } from '@/types/gamification'
 import { Check, Loader2, Save } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Switch } from '@/components/ui/switch'
@@ -32,35 +33,54 @@ const DEFAULT_PREFERENCES: GamificationPreferences = {
   animatedEffects: true,
 }
 
-export default function UserGamificationSettings() {
+/** The wire `preferences` object is free-form JSON; read the three keys this form owns. */
+export function readGamificationPreferences(
+  preferences: UserGamificationProfile['preferences'] | null | undefined,
+): GamificationPreferences {
+  const prefs = preferences as
+    | {
+        privacy?: { showOnLeaderboard?: boolean }
+        notifications?: { xpGain?: boolean }
+        display?: { animatedEffects?: boolean }
+      }
+    | null
+    | undefined
+  return {
+    showOnLeaderboard: prefs?.privacy?.showOnLeaderboard ?? DEFAULT_PREFERENCES.showOnLeaderboard,
+    xpGainNotifications: prefs?.notifications?.xpGain ?? DEFAULT_PREFERENCES.xpGainNotifications,
+    animatedEffects: prefs?.display?.animatedEffects ?? DEFAULT_PREFERENCES.animatedEffects,
+  }
+}
+
+interface UserGamificationSettingsProps {
+  /** Profile fetched server-side for this request — the source of truth on first render. */
+  initialProfile: UserGamificationProfile | null
+  /** Suspense fallback: reserve the card heights instead of flashing "no data". */
+  loading?: boolean
+}
+
+export default function UserGamificationSettings({ initialProfile, loading = false }: UserGamificationSettingsProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
   const profile = useGamificationStore(s => s.profile)
+  const hydrate = useGamificationStore(s => s._hydrate)
   const updatePreferences = useGamificationStore(s => s.updatePreferences)
 
-  const [prevProfile, setPrevProfile] = useState<typeof profile | null>(null)
-  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES)
+  // Only react to store *changes* after mount (saves, hydration); the first
+  // render is driven by `initialProfile`, not by the per-tab persisted cache.
+  const [prevProfile, setPrevProfile] = useState<typeof profile | null>(profile)
+  const [preferences, setPreferences] = useState(() => readGamificationPreferences(initialProfile?.preferences))
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const saveSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  useEffect(() => {
+    if (initialProfile) hydrate({ profile: initialProfile })
+  }, [initialProfile, hydrate])
+
   if (profile !== prevProfile) {
     setPrevProfile(profile)
-    if (profile?.preferences) {
-      const prefs = profile.preferences as
-        | {
-            privacy?: { showOnLeaderboard?: boolean }
-            notifications?: { xpGain?: boolean }
-            display?: { animatedEffects?: boolean }
-          }
-        | null
-        | undefined
-      setPreferences({
-        showOnLeaderboard: prefs?.privacy?.showOnLeaderboard ?? DEFAULT_PREFERENCES.showOnLeaderboard,
-        xpGainNotifications: prefs?.notifications?.xpGain ?? DEFAULT_PREFERENCES.xpGainNotifications,
-        animatedEffects: prefs?.display?.animatedEffects ?? DEFAULT_PREFERENCES.animatedEffects,
-      })
-    }
+    if (profile?.preferences) setPreferences(readGamificationPreferences(profile.preferences))
   }
 
   const handlePreferenceChange = (key: keyof GamificationPreferences, value: boolean) => {
@@ -113,7 +133,7 @@ export default function UserGamificationSettings() {
   return (
     <div className="space-y-6 px-4 pb-8 md:px-8">
       {/* Profile Overview */}
-      <GamificationProfileSection variant="full" />
+      <GamificationProfileSection variant="full" data={initialProfile} loading={loading} />
 
       {/* Settings Card */}
       <Card>
