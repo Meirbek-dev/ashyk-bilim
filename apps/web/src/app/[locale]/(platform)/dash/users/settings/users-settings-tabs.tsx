@@ -19,10 +19,12 @@ export default function UsersSettingsTabs() {
       ALL_TABS.filter(tab => {
         switch (tab.id) {
           case 'users': {
-            return can(Resources.USER, Actions.READ, Scopes.APP) || can(Resources.USER, Actions.UPDATE, Scopes.APP)
+            // `GET /users` is gated on `platform:read:platform`, never on
+            // `user:read:platform` (every learner holds that one).
+            return can(Resources.APP, Actions.READ, Scopes.APP) || can(Resources.USER, Actions.UPDATE, Scopes.APP)
           }
           case 'usergroups': {
-            return can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP)
+            return can(Resources.USERGROUP, Actions.READ, Scopes.APP) || can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP)
           }
           default: {
             return true

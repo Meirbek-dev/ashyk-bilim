@@ -521,7 +521,8 @@ function buildDashboardTools(access: DashboardAccess, t: WorkQueueTranslate): Da
       id: 'users',
       title: t('tools.users.title'),
       description: t('tools.users.description'),
-      href: '/dash/users/settings/users',
+      // The settings index lands on the first tab the caller may open.
+      href: '/dash/users/settings',
       audience: 'admin',
     },
     {
