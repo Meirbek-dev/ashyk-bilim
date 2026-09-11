@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT p.user_id AS \"user_id: UserId\", p.total_xp, p.level, u.username, u.display_name,\n                  u.avatar_key\n           FROM gamification_profiles p JOIN users u ON u.id = p.user_id\n           ORDER BY p.total_xp DESC, p.id\n           LIMIT $1 OFFSET $2",
+  "query": "SELECT p.user_id AS \"user_id: UserId\", p.total_xp, p.level, u.username, u.display_name,\n                  u.avatar_key\n           FROM gamification_profiles p JOIN users u ON u.id = p.user_id\n           WHERE p.preferences #> '{privacy,showOnLeaderboard}' IS DISTINCT FROM 'false'::jsonb\n           ORDER BY p.total_xp DESC, p.id\n           LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -85,5 +85,5 @@
       true
     ]
   },
-  "hash": "3ae2288138711c8db0262f1052ad2961700dd91db54f71128d69020b6387f1bf"
+  "hash": "c222500f6ed454a47ca2f2c7670e2a98c8df66e8e4cbd037e781662ebe045135"
 }

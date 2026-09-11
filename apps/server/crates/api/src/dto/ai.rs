@@ -147,6 +147,24 @@ pub struct RunStreamRequest {
     pub thread_id: String,
     #[garde(length(min = 1, max = 200))]
     pub run_id: String,
+    /// AG-UI protocol fields the client always sends; accepted and ignored.
+    #[garde(skip)]
+    #[schema(value_type = Option<Vec<Object>>)]
+    pub tools: Option<Vec<serde_json::Value>>,
+    #[garde(skip)]
+    #[schema(value_type = Option<Vec<Object>>)]
+    pub context: Option<Vec<serde_json::Value>>,
+    #[garde(skip)]
+    #[schema(value_type = Option<Object>)]
+    pub state: Option<serde_json::Value>,
+    #[garde(length(max = 200))]
+    pub parent_run_id: Option<String>,
+    #[garde(skip)]
+    #[schema(value_type = Option<Vec<Object>>)]
+    pub messages: Option<Vec<serde_json::Value>>,
+    #[garde(skip)]
+    #[schema(value_type = Option<Object>)]
+    pub forwarded_props: Option<serde_json::Value>,
 }
 
 // ── Course Q&A ──────────────────────────────────────────────────────────────
@@ -198,6 +216,18 @@ pub struct QaChatRequest {
     #[garde(dive)]
     #[serde(default)]
     pub forwarded_props: QaForwardedProps,
+    /// AG-UI protocol fields the client always sends; accepted and ignored.
+    #[garde(skip)]
+    #[schema(value_type = Option<Vec<Object>>)]
+    pub tools: Option<Vec<serde_json::Value>>,
+    #[garde(skip)]
+    #[schema(value_type = Option<Vec<Object>>)]
+    pub context: Option<Vec<serde_json::Value>>,
+    #[garde(skip)]
+    #[schema(value_type = Option<Object>)]
+    pub state: Option<serde_json::Value>,
+    #[garde(length(max = 200))]
+    pub parent_run_id: Option<String>,
 }
 
 impl QaChatRequest {

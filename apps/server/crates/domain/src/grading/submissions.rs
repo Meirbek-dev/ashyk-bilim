@@ -307,7 +307,7 @@ impl SubmissionsService {
             .await?;
         let detail = self
             .assessments
-            .get(actor, submission.assessment_id)
+            .get_for_grading(actor, submission.assessment_id)
             .await?;
         Ok(Context {
             submission,

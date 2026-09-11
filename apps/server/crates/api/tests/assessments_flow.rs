@@ -400,22 +400,28 @@ async fn code_challenge_defaults_kind_rules_and_visibility(pool: PgPool) {
     // The learner read is redacted: no answer key, no reference solutions,
     // no hidden tests. The author still sees everything.
     let learner_body = &visible.json()["items"][0]["body"];
-    assert!(learner_body["reference_solutions"]
-        .as_object()
-        .unwrap()
-        .is_empty());
-    assert!(learner_body["tests"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .all(|t| t["is_visible"] == true));
+    assert!(
+        learner_body["reference_solutions"]
+            .as_object()
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        learner_body["tests"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|t| t["is_visible"] == true)
+    );
     let author_view = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
         .await;
-    assert!(!author_view.json()["items"][0]["body"]["reference_solutions"]
-        .as_object()
-        .unwrap()
-        .is_empty());
+    assert!(
+        !author_view.json()["items"][0]["body"]["reference_solutions"]
+            .as_object()
+            .unwrap()
+            .is_empty()
+    );
     let no_grant = app.mint_session(&[]).await;
     let still_hidden = app
         .get_as(&no_grant, &format!("/api/v2/assessments/{id}"))

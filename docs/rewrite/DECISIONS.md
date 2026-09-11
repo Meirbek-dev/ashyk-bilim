@@ -541,6 +541,13 @@ Ported from `services/gamification` + `worker/tasks/xp_award.py`:
 - Leaderboard keeps `limit/offset` (a top-N list, not a feed) and carries
   username / display name / avatar key — no names split into first/last,
   no email.
+- **Leaderboard opt-out is honoured** (2026-09-12, gauntlet). The client
+  has always written `preferences.privacy.showOnLeaderboard`; the legacy
+  stored it and listed the user anyway. v2 excludes a profile whose value
+  is the JSON `false` from the leaderboard and `total_participants`;
+  `rank` (and the dashboard's `user_rank`) counts only listed profiles, so
+  it is the position the caller holds or would hold on the public board —
+  an opted-out user still sees their own rank.
 
 ## Analytics (2026-09-06, P7)
 

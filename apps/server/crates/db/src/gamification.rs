@@ -285,6 +285,7 @@ pub async fn leaderboard(pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<L
         r#"SELECT p.user_id AS "user_id: UserId", p.total_xp, p.level, u.username, u.display_name,
                   u.avatar_key
            FROM gamification_profiles p JOIN users u ON u.id = p.user_id
+           WHERE p.preferences #> '{privacy,showOnLeaderboard}' IS DISTINCT FROM 'false'::jsonb
            ORDER BY p.total_xp DESC, p.id
            LIMIT $1 OFFSET $2"#,
         limit,
@@ -295,16 +296,24 @@ pub async fn leaderboard(pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<L
     Ok(rows)
 }
 
+/// Profiles on the leaderboard: everyone except those who set
+/// `preferences.privacy.showOnLeaderboard = false` (the client's opt-out).
 pub async fn count_profiles(pool: &PgPool) -> Result<i64> {
-    let n = sqlx::query_scalar!(r#"SELECT count(*) AS "count!" FROM gamification_profiles"#)
-        .fetch_one(pool)
-        .await?;
+    let n = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "count!" FROM gamification_profiles
+           WHERE preferences #> '{privacy,showOnLeaderboard}' IS DISTINCT FROM 'false'::jsonb"#
+    )
+    .fetch_one(pool)
+    .await?;
     Ok(n)
 }
 
+/// Leaderboard members above `total_xp` — the caller's rank is this + 1,
+/// counted against the public board (opted-out profiles do not displace).
 pub async fn count_with_more_xp(pool: &PgPool, total_xp: i32) -> Result<i64> {
     let n = sqlx::query_scalar!(
-        r#"SELECT count(*) AS "count!" FROM gamification_profiles WHERE total_xp > $1"#,
+        r#"SELECT count(*) AS "count!" FROM gamification_profiles WHERE total_xp > $1
+           AND preferences #> '{privacy,showOnLeaderboard}' IS DISTINCT FROM 'false'::jsonb"#,
         total_xp
     )
     .fetch_one(pool)

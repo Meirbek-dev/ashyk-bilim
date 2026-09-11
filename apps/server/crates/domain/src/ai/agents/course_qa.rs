@@ -437,7 +437,7 @@ impl AiService {
                 client_turn_id: request.client_turn_id,
                 content: request.question.trim(),
                 confidence: None,
-                citations: &serde_json::json!([]),
+                citations: &serde_json::json!({}),
                 metadata: &serde_json::json!({}),
             },
         )

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT count(*) AS \"count!\" FROM gamification_profiles WHERE total_xp > $1",
+  "query": "SELECT count(*) AS \"count!\" FROM gamification_profiles\n           WHERE preferences #> '{privacy,showOnLeaderboard}' IS DISTINCT FROM 'false'::jsonb",
   "describe": {
     "columns": [
       {
@@ -11,13 +11,11 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Int4"
-      ]
+      "Left": []
     },
     "nullable": [
       null
     ]
   },
-  "hash": "db60e840f8c96e2eeffab147095a7fb3d63f396fbc5897869f13eb12dcd52508"
+  "hash": "573ca0d47843bbf446eaedf41c55403baa42b756542a7953881846bb05799f55"
 }

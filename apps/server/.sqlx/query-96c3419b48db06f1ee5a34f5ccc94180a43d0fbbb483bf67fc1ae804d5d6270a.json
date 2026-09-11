@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"count!\" FROM gamification_profiles WHERE total_xp > $1\n           AND preferences #> '{privacy,showOnLeaderboard}' IS DISTINCT FROM 'false'::jsonb",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "96c3419b48db06f1ee5a34f5ccc94180a43d0fbbb483bf67fc1ae804d5d6270a"
+}

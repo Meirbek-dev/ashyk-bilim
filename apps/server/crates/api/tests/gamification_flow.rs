@@ -184,6 +184,34 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     let bob_rank = app.get_as(&bob, "/api/v2/gamification/rank").await;
     assert_eq!(bob_rank.json()["rank"], 2);
 
+    // Opting out hides alice from the board; bob is ranked among the rest.
+    let opted_out = app
+        .patch_as(
+            &alice,
+            "/api/v2/gamification/preferences",
+            &serde_json::json!({ "privacy": { "showOnLeaderboard": false } }),
+        )
+        .await;
+    assert_eq!(opted_out.status, StatusCode::OK, "{}", opted_out.text());
+    let board = app
+        .get_as(&bob, "/api/v2/gamification/leaderboard?limit=5")
+        .await;
+    assert_eq!(board.json()["total_participants"], 1);
+    assert_eq!(board.json()["entries"].as_array().unwrap().len(), 1);
+    assert_eq!(board.json()["entries"][0]["username"], "bob");
+    let bob_rank = app.get_as(&bob, "/api/v2/gamification/rank").await;
+    assert_eq!(bob_rank.json()["rank"], 1);
+    app.patch_as(
+        &alice,
+        "/api/v2/gamification/preferences",
+        &serde_json::json!({ "privacy": { "showOnLeaderboard": true } }),
+    )
+    .await;
+    let board = app
+        .get_as(&bob, "/api/v2/gamification/leaderboard?limit=5")
+        .await;
+    assert_eq!(board.json()["total_participants"], 2);
+
     // Streak touch and preferences.
     let streak = app
         .post_as(

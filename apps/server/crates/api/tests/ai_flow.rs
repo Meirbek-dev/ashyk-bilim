@@ -230,10 +230,12 @@ async fn course_qa_streams_persists_and_replays(pool: PgPool) {
     .await;
     let base = app.serve().await;
     let client = reqwest::Client::new();
+    // The full AG-UI `RunAgentInput` shape `@ag-ui/client` sends.
     let body = serde_json::json!({
         "threadId": "client-thread-1", "runId": "client-run-1",
         "messages": [{ "id": "m1", "role": "user", "content": "What is a monad?" }],
-        "forwardedProps": { "client_turn_id": "turn-1", "language": "en" }
+        "forwardedProps": { "client_turn_id": "turn-1", "language": "en" },
+        "tools": [], "context": [], "state": {}
     });
 
     let mut stream = client
@@ -313,6 +315,8 @@ async fn course_qa_streams_persists_and_replays(pool: PgPool) {
     let messages = messages.json();
     assert_eq!(messages[0]["role"], "user");
     assert_eq!(messages[0]["client_turn_id"], "turn-1");
+    // `citations` is an object on every turn (the documented schema).
+    assert!(messages[0]["citations"].is_object(), "{}", messages[0]);
     assert_eq!(messages[1]["role"], "assistant");
     assert_eq!(messages[1]["confidence"], "high");
     assert_eq!(
@@ -342,6 +346,21 @@ async fn course_qa_streams_persists_and_replays(pool: PgPool) {
     assert_eq!(kinds.first().map(String::as_str), Some("running"));
     assert_eq!(kinds.last().map(String::as_str), Some("finished"));
     assert!(kinds.iter().any(|k| k == "model_started"));
+    // The run stream accepts the same AG-UI input and settles from the journal.
+    let mut followed = client
+        .post(format!("{base}/api/v2/ai/runs/{run_id}/stream"))
+        .header("cookie", &alice.cookie)
+        .json(&serde_json::json!({
+            "threadId": "client-thread-1", "runId": "client-run-2",
+            "messages": [], "forwardedProps": {}, "tools": [], "context": [], "state": {}
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(followed.status(), StatusCode::OK);
+    let mut journal_stream = String::new();
+    read_until(&mut followed, &mut journal_stream, "RUN_FINISHED").await;
+    assert_eq!(events(&journal_stream)[0]["runId"], "client-run-2");
     // Strangers see neither the thread nor the run.
     let bob = learner(&app, "bob").await;
     let hidden = app

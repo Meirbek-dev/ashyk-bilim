@@ -621,6 +621,18 @@ impl AssessmentsService {
         Ok(detail)
     }
 
+    /// Same visibility rule as [`Self::get`] but with the full item bodies:
+    /// for the grading pipeline, which needs the answer key for the very
+    /// learner the redaction hides it from. Never hand the result to a client.
+    pub async fn get_for_grading(
+        &self,
+        actor: &Actor,
+        id: AssessmentId,
+    ) -> Result<AssessmentDetail> {
+        self.get(actor, id).await?;
+        self.detail(id).await
+    }
+
     pub async fn get_by_activity(
         &self,
         actor: &Actor,

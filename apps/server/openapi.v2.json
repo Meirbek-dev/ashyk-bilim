@@ -18470,6 +18470,15 @@
           "runId"
         ],
         "properties": {
+          "context": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
           "forwardedProps": {
             "$ref": "#/components/schemas/QaForwardedProps"
           },
@@ -18479,11 +18488,33 @@
               "$ref": "#/components/schemas/QaWireMessage"
             }
           },
+          "parentRunId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "runId": {
             "type": "string"
           },
+          "state": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
           "threadId": {
             "type": "string"
+          },
+          "tools": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            },
+            "description": "AG-UI protocol fields the client always sends; accepted and ignored."
           }
         },
         "additionalProperties": false
@@ -19469,11 +19500,57 @@
           "runId"
         ],
         "properties": {
+          "context": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "forwardedProps": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "messages": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "parentRunId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "runId": {
             "type": "string"
           },
+          "state": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
           "threadId": {
             "type": "string"
+          },
+          "tools": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            },
+            "description": "AG-UI protocol fields the client always sends; accepted and ignored."
           }
         },
         "additionalProperties": false

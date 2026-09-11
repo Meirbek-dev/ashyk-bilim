@@ -7416,6 +7416,15 @@ expression: json
         "additionalProperties": false,
         "description": "AG-UI `RunAgentInput` for `POST /ai/qa/{course}/chat`.",
         "properties": {
+          "context": {
+            "items": {
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "forwardedProps": {
             "$ref": "#/components/schemas/QaForwardedProps"
           },
@@ -7425,11 +7434,33 @@ expression: json
             },
             "type": "array"
           },
+          "parentRunId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "runId": {
             "type": "string"
           },
+          "state": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
           "threadId": {
             "type": "string"
+          },
+          "tools": {
+            "description": "AG-UI protocol fields the client always sends; accepted and ignored.",
+            "items": {
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           }
         },
         "required": [
@@ -8415,11 +8446,57 @@ expression: json
         "additionalProperties": false,
         "description": "AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_*` event.",
         "properties": {
+          "context": {
+            "items": {
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "forwardedProps": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "messages": {
+            "items": {
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "parentRunId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "runId": {
             "type": "string"
           },
+          "state": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
           "threadId": {
             "type": "string"
+          },
+          "tools": {
+            "description": "AG-UI protocol fields the client always sends; accepted and ignored.",
+            "items": {
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           }
         },
         "required": [
