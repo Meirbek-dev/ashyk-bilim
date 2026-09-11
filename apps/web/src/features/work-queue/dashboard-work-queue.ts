@@ -545,7 +545,10 @@ function buildDashboardTools(access: DashboardAccess, t: WorkQueueTranslate): Da
   return tools.filter(tool => {
     if (tool.audience === 'all' || tool.audience === 'learner') return true
     if (tool.audience === 'teacher') return access.hasCoursesAccess || access.hasAnalyticsAccess
-    return access.hasUsersAccess || access.hasAdminAccess
+    // The users card is the only admin-audience tool an instructor may open
+    // (usergroups); `/dash/admin` needs the platform/role grants.
+    if (tool.id === 'users') return access.hasUsersAccess || access.hasAdminAccess
+    return access.hasAdminAccess
   })
 }
 

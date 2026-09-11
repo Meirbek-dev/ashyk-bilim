@@ -3509,6 +3509,9 @@
         "viewMode": {
           "cards": "Card view",
           "table": "Table view"
+        },
+        "card": {
+          "previewAsLearner": "Preview as learner"
         }
       },
       "Overview": {
@@ -6560,7 +6563,8 @@
         "noUserGroupsFound": "No user groups found.",
         "title": "Manage UserGroups & Users",
         "userGroupDeletedSuccess": "Deleted usergroup",
-        "userGroupHeader": "UserGroup"
+        "userGroupHeader": "UserGroup",
+        "loading": "Loading groups…"
       },
       "usergroupsTitle": "UserGroups",
       "users": "Users",
@@ -7116,7 +7120,8 @@
   "NotFoundPage": {
     "code": "404!",
     "button": "Return to Homepage",
-    "message": "We apologize for the inconvenience. It seems you are trying to access a page that has been deleted or never existed."
+    "message": "We apologize for the inconvenience. It seems you are trying to access a page that has been deleted or never existed.",
+    "title": "Page not found"
   },
   "RichTextEditor": {
     "addImage": "Add Image",

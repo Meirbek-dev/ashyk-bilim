@@ -353,7 +353,7 @@ export default function BuilderCanvasTab({
                 {allowedKinds.map(kind => {
                   const Icon = KIND_ICONS[kind]
                   return (
-                    <DropdownMenuItem key={kind} onSelect={() => createItem(kind)}>
+                    <DropdownMenuItem key={kind} onClick={() => createItem(kind)}>
                       <Icon className="mr-2 size-4" />
                       {kindLabels[kind]}
                     </DropdownMenuItem>

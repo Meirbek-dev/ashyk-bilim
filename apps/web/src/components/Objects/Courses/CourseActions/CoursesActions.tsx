@@ -20,6 +20,8 @@ import { toast } from 'sonner'
 import { learnerCourseProgress } from '@/features/learner-course/api'
 import type { LearnerCourseState } from '@/features/learner-course/api'
 
+const CONTRIBUTORS_ENABLED = false
+
 interface CourseActionsProps {
   courseuuid: string
   course: AppCourse
@@ -164,7 +166,9 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   }
 
   const renderContributorButton = () => {
-    if (contributorStatus === 'INACTIVE' || course.open_to_contributors !== true) {
+    // Blocked: no v2 contributor routes (QUESTIONS.md Q-2026-09-10-3) — the
+    // apply button would be a dead click, and `/signup` no longer exists.
+    if (contributorStatus === 'INACTIVE' || course.open_to_contributors !== true || !CONTRIBUTORS_ENABLED) {
       return null
     }
 

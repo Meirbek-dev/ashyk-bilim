@@ -49,7 +49,6 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { getAbsoluteUrl } from '@services/config/config'
 
 interface ManageableCourse extends Course {
   course_uuid: string
@@ -670,9 +669,8 @@ function CoursesHome({
               <div key={course.course_uuid} className="w-full">
                 <CourseThumbnail
                   customLink={getCourseManagementContext(course as AppCourse, 'card').workspaceHref}
-                  actionLink={getAbsoluteUrl(
-                    getCourseManagementContext(course as AppCourse, 'card').learnerPreviewHref,
-                  )}
+                  actionLink={getCourseManagementContext(course as AppCourse, 'card').learnerPreviewHref}
+                  actionLabel={t('card.previewAsLearner')}
                   course={course}
                   trailData={trailData}
                   trailLoading={isTrailLoading}

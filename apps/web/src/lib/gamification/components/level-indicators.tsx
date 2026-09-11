@@ -9,6 +9,8 @@
 
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import type { UserGamificationProfile } from '@/types/gamification'
 import { useReducedMotion } from '@/hooks/use-reduced-motion'
 import { motion, useAnimationControls } from 'motion/react'
@@ -37,6 +39,7 @@ export function LevelProgress({
   animated = true,
   className,
 }: LevelProgressProps) {
+  const tXp = useTranslations('DashPage.UserAccountSettings.Gamification')
   const previousLevelRef = useRef(profile.level)
   const controls = useAnimationControls()
   const prefersReducedMotion = useReducedMotion()
@@ -79,7 +82,9 @@ export function LevelProgress({
       {/* Minimal XP display */}
       <div className="text-muted-foreground/80 flex items-center justify-between text-[10px]">
         <span className="tabular-nums">{currentLevelXP.toLocaleString()}</span>
-        <span className="tabular-nums">{nextLevelXP.toLocaleString()} XP</span>
+        <span className="tabular-nums">
+          {nextLevelXP.toLocaleString()} {tXp('leaderboard.stats.xp')}
+        </span>
       </div>
     </motion.div>
   )
@@ -264,6 +269,7 @@ interface XPGainAnimationProps {
 }
 
 export function XPGainAnimation({ amount, trigger, position, onComplete }: XPGainAnimationProps) {
+  const tXp = useTranslations('DashPage.UserAccountSettings.Gamification')
   const [isVisible, setIsVisible] = useState(false)
   const onCompleteRef = useRef(onComplete)
   const showRafRef = useRef<number | null>(null)
@@ -318,7 +324,7 @@ export function XPGainAnimation({ amount, trigger, position, onComplete }: XPGai
       }}
     >
       <div className="border-primary/20 bg-primary/10 text-primary flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur-sm">
-        <Award className="h-3 w-3" />+{amount} XP
+        <Award className="h-3 w-3" />+{amount} {tXp('leaderboard.stats.xp')}
       </div>
     </motion.div>
   )

@@ -127,11 +127,6 @@ function UserGroups() {
     }
   }
 
-  if (isLoading) {
-    return <Loader2 size={16} className="mr-2 animate-spin" />
-  }
-  if (error) return <div>{t('errorLoadingUserGroups')}</div>
-
   const columns: DataTableColumnDef<Usergroup>[] = [
     {
       accessorKey: 'name',
@@ -244,13 +239,24 @@ function UserGroups() {
             </CardAction>
           </CardHeader>
           <CardContent className="pt-4">
-            <DataTable
-              columns={columns}
-              data={usergroups ?? []}
-              pageSize={10}
-              storageKey="platform-usergroups"
-              labels={{ emptyMessage: t('noUserGroupsFound') }}
-            />
+            {/* One root in every state — an early-return spinner hydrated
+                against a client that already held the query (mismatch). */}
+            {isLoading ? (
+              <div className="text-muted-foreground flex items-center gap-2 py-6 text-sm" role="status">
+                <Loader2 size={16} className="animate-spin" aria-hidden />
+                {t('loading')}
+              </div>
+            ) : error ? (
+              <div className="text-destructive py-6 text-sm">{t('errorLoadingUserGroups')}</div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={usergroups ?? []}
+                pageSize={10}
+                storageKey="platform-usergroups"
+                labels={{ emptyMessage: t('noUserGroupsFound') }}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

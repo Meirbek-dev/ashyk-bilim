@@ -1,31 +1,12 @@
-import { courseContributorsQueryOptions } from '@/features/courses/queries/course.query'
-import { useSession } from '@/hooks/useSession'
-import { queryOptions, useQuery } from '@tanstack/react-query'
-
 export type ContributorStatus = 'NONE' | 'PENDING' | 'ACTIVE' | 'INACTIVE'
 
-export function useContributorStatus(courseUuid: string) {
-  const { user: viewer } = useSession()
-  const userId = viewer?.id
-  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
-
-  const query = useQuery(
-    queryOptions({
-      ...courseContributorsQueryOptions(userId ? normalizedCourseUuid : 'disabled'),
-      enabled: Boolean(userId),
-      select: (response): ContributorStatus => {
-        const contributors = Array.isArray(response?.data) ? response.data : []
-        const currentUser = contributors.find(contributor => contributor.user_id === userId)
-        return (currentUser?.authorship_status as ContributorStatus | undefined) ?? 'NONE'
-      },
-    }),
-  )
-
+// Blocked: v2 has no `courses/{id}/contributors` route (QUESTIONS.md
+// Q-2026-09-10-3). Until the contract lands nobody is a contributor; asking
+// the server only produced a 404 on every course page.
+export function useContributorStatus(_courseUuid: string) {
   return {
-    contributorStatus: query.data ?? 'NONE',
-    isLoading: query.isPending,
-    refetch: async () => {
-      await query.refetch()
-    },
+    contributorStatus: 'NONE' as ContributorStatus,
+    isLoading: false,
+    refetch: async () => {},
   }
 }

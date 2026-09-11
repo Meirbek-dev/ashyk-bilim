@@ -148,9 +148,9 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
   return (
     <form onSubmit={submit} className="space-y-4">
       <Field>
-        <FieldLabel>{t('title')}</FieldLabel>
+        <FieldLabel htmlFor="file-submission-title">{t('title')}</FieldLabel>
         <FieldContent>
-          <Input value={title} onChange={event => setTitle(event.target.value)} />
+          <Input id="file-submission-title" value={title} onChange={event => setTitle(event.target.value)} />
         </FieldContent>
       </Field>
 

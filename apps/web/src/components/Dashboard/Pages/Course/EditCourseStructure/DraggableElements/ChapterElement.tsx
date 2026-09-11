@@ -211,6 +211,7 @@ function ChapterElement({
   return (
     <div
       ref={setNodeRef}
+      data-chapter-element={chapterUuid}
       style={{
         // CSS.Translate avoids the scaleX/Y artifacts from CSS.Transform
         transform: CSS.Translate.toString(transform),

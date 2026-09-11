@@ -16,7 +16,6 @@ import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { InlineError } from '@/components/ui/error-state'
-import { getAbsoluteUrl } from '@services/config/config'
 import type { CourseReadiness } from '@services/courses/courses'
 import { useCourseEditorStore } from '@/stores/courses'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -91,8 +90,8 @@ export default function CourseReviewPublish({
               variant="outline"
               nativeButton={false}
               render={
-                <a
-                  href={`${getAbsoluteUrl(`/course/${courseuuid}`)}?preview=learner`}
+                <AppLink
+                  href={`/course/${courseuuid}?preview=learner`}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t('openLearnerPreview')}

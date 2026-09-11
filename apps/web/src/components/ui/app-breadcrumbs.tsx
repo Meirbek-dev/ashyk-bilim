@@ -38,12 +38,12 @@ const DASH_BREADCRUMB_CONFIGS: Record<
     titleKey: 'UserAccountSettings.title',
   },
   users: {
-    href: '/dash/users/settings/users',
+    href: '/dash/users/settings',
     icon: Users,
     titleKey: 'Card.Users.title',
   },
   platformusers: {
-    href: '/dash/users/settings/users',
+    href: '/dash/users/settings',
     icon: Users,
     titleKey: 'Card.Users.title',
   },

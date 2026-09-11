@@ -15,6 +15,7 @@ import { BubbleMenu } from '@tiptap/react/menus'
 import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
 import { EmbedPanel } from '../Toolbar/EmbedPanel/EmbedPanel'
 import { useTranslations } from 'next-intl'
+import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
 import { useCallback, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 
@@ -137,8 +138,9 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
   const t = useTranslations('DashPage.Editor.Editor')
   const latestContentRef = useRef(props.content)
 
-  const courseUuid = props.course.course_uuid.slice(7)
-  const activityUuid = props.activity.activity_uuid.slice(9)
+  // v2 ids are bare UUIDs; legacy callers may still pass `course_` / `activity_` prefixes
+  const courseUuid = cleanCourseUuid(props.course.course_uuid)
+  const activityUuid = cleanActivityUuid(props.activity.activity_uuid)
 
   useEffect(() => {
     latestContentRef.current = props.content

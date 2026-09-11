@@ -190,7 +190,8 @@ export default function UserRolesClient() {
                           {user.roles.map(slug => (
                             <Badge key={slug} variant="outline" className="gap-1 pr-1">
                               {roleName(slug)}
-                              {canManageRoles && (
+                              {/* Stripping your own admin role locks you out of this page. */}
+                              {canManageRoles && !(isSelf && slug === 'admin') && (
                                 <button
                                   type="button"
                                   className="hover:bg-muted rounded-sm opacity-60 hover:opacity-100"

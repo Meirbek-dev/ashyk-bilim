@@ -28,7 +28,6 @@ import { buildCourseWorkspacePath, prefixedCourseUuid } from '@/lib/course-manag
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
 import { CourseProvider, useCourse } from '@components/Contexts/CourseContext'
 import type { CourseWorkspaceStage } from '@/lib/course-management'
-import { getAbsoluteUrl } from '@services/config/config'
 import { CourseStatusBadge, courseReadinessQueryOptions } from './courseWorkflowUi'
 import { useQuery } from '@tanstack/react-query'
 import { useDirtyGuard } from '@/hooks/useDirtyGuard'
@@ -170,7 +169,7 @@ function CourseWorkspaceChrome({
               size="sm"
               nativeButton={false}
               variant="outline"
-              render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} aria-label={t('previewButton')} />}
+              render={<AppLink href={`/course/${courseuuid}?preview=learner`} aria-label={t('previewButton')} />}
               className="h-9 gap-2 px-3 text-xs font-semibold"
             >
               <Eye className="size-4" />

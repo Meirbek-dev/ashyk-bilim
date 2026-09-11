@@ -17,7 +17,7 @@ vi.mock('@/features/certifications/hooks/useCertifications', () => ({
 vi.mock('@services/courses/activity', () => ({ removeCourse: vi.fn() }))
 vi.mock('@/lib/cache/revalidate', () => ({ revalidateTags: vi.fn() }))
 vi.mock('@services/media/media', () => ({ getCourseThumbnailMediaDirectory: () => '' }))
-vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p }))
+vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p, getSiteUrl: () => 'http://localhost:3000' }))
 
 const courseId = '01a0910d-2963-7483-a97d-40dc56e9aa20'
 const activity = (id: string, complete: boolean) => ({

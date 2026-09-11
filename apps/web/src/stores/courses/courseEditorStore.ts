@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { IS_DEVELOPMENT } from '@/services/config/env'
+import { cleanCourseUuid } from '@/lib/course-management'
 
 export type CourseDirtySection = 'general' | 'access' | 'contributors' | 'certification' | 'content'
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -60,8 +61,12 @@ export const useCourseEditorStore = create<CourseEditorState & CourseEditorActio
     (set, get) => ({
       ...initialState,
 
-      openEditor: (courseUuid, lastKnownUpdateDate) =>
+      openEditor: (rawCourseUuid, lastKnownUpdateDate) =>
         set(state => {
+          // Providers pass both `course_<id>` and the bare v2 id for the same
+          // course; compare normalized so a nested provider does not reset the
+          // editor state (activity save status) on every structure refetch.
+          const courseUuid = cleanCourseUuid(rawCourseUuid)
           if (state.activeCourseUuid === courseUuid) {
             return {
               activeCourseUuid: courseUuid,

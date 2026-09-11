@@ -117,7 +117,7 @@ const useNavigationItems = () => {
       ? [
           {
             title: t('tooltips.users'),
-            href: '/dash/users/settings/users',
+            href: '/dash/users/settings',
             icon: Users,
             tooltip: t('tooltips.users'),
             isActive: pathname.startsWith('/dash/users'),

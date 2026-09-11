@@ -103,25 +103,17 @@ function NewActivityButton(props: NewActivityButtonProps) {
     if (kind === 'codechallenge') {
       const toast_loading = toast.loading(tNotify('creatingActivity'))
       try {
-        const courseId = course.courseStructure.id
+        // v2 `CreateAssessmentRequest` is `{chapter_id, kind, title, description?, grading_type?}`
+        // (`additionalProperties: false`); the policy starts from the kind's preset.
         await apiJson('assessments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            kind: 'CODE_CHALLENGE',
-            title: t('quickCreate.codeChallengeName'),
-            description: '',
-            course_id: courseId,
+            kind: 'code_challenge',
             chapter_id: props.chapterId,
-            grading_type: 'PERCENTAGE',
-            policy: {
-              settings_json: {
-                difficulty: 'MEDIUM',
-                grading_strategy: 'PARTIAL_CREDIT',
-                execution_mode: 'COMPLETE_FEEDBACK',
-                allow_custom_input: true,
-              },
-            },
+            title: t('quickCreate.codeChallengeName'),
+            description: null,
+            grading_type: 'percentage',
           }),
         })
         // Invalidate course structure queries so the new activity appears on the page

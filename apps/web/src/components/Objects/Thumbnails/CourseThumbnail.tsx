@@ -73,6 +73,8 @@ export interface CourseThumbnailProps {
   course: Course
   customLink?: string
   actionLink?: string
+  /** Label for the footer action when `actionLink` is a preview, not enrolment. */
+  actionLabel?: string
   trailData?: AppTrailData | null | undefined
   trailLoading?: boolean
   /** Set to true for above-the-fold cards to eager-load the thumbnail (fixes LCP) */
@@ -292,6 +294,8 @@ interface CourseActionsProps {
   progressPercentage: number
   courseUrl: string
   courseName: string
+  /** Management cards link to the learner preview, not to "start learning". */
+  actionLabel?: string | undefined
   t: AppTranslator
 }
 
@@ -301,6 +305,7 @@ const CourseActions: FC<CourseActionsProps> = ({
   progressPercentage,
   courseUrl,
   courseName,
+  actionLabel,
   t,
 }) => {
   if (isLoading) {
@@ -344,13 +349,13 @@ const CourseActions: FC<CourseActionsProps> = ({
     <Button
       nativeButton={false}
       render={<Link href={courseUrl} />}
-      aria-label={t('startLearning')}
+      aria-label={actionLabel ?? t('startLearning')}
       size="sm"
       variant="outline"
       className="w-full"
     >
       <Play className="mr-2 h-3.5 w-3.5" />
-      {t('startLearning')}
+      {actionLabel ?? t('startLearning')}
     </Button>
   )
 }
@@ -474,6 +479,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   course,
   customLink,
   actionLink,
+  actionLabel,
   trailData,
   trailLoading = false,
   priority = false,
@@ -595,6 +601,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
           progressPercentage={progressPercentage}
           courseUrl={actionUrl}
           courseName={course.name || ''}
+          actionLabel={actionLink && !isEnrolled ? actionLabel : undefined}
           t={t}
         />
       </CardFooter>

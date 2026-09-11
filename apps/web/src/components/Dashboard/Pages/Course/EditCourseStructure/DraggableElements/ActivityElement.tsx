@@ -37,6 +37,7 @@ import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { useCourse } from '@components/Contexts/CourseContext'
+import { useSession } from '@/hooks/useSession'
 import { getAbsoluteUrl } from '@services/config/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -138,8 +139,14 @@ function ActivityElement({
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingActivity, setIsDeletingActivity] = useState(false)
 
-  const canUpdate = activity.can_update ?? false
-  const canDelete = activity.can_delete ?? false
+  // v2 activities carry no `can_*` flags: derive them from the session grants
+  // the way the course workspace does (`<resource>:<action>:platform`, or
+  // `:own` when the caller created the course).
+  const { can, session } = useSession()
+  const { courseStructure } = useCourse()
+  const isCreator = typeof courseStructure.creator_id === 'string' && courseStructure.creator_id === session?.userId
+  const canUpdate = can('activity', 'update', 'platform') || (isCreator && can('activity', 'update', 'own'))
+  const canDelete = can('activity', 'delete', 'platform') || (isCreator && can('activity', 'delete', 'own'))
 
   const handleStartEdit = () => {
     setEditedName(activity.name)
@@ -215,6 +222,8 @@ function ActivityElement({
 
   return (
     <div
+      data-activity-element={activity.activity_uuid}
+      data-activity-type={activity.activity_type}
       className={cn(
         'mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200',
         isDragging ? 'shadow-xl ring-2 ring-ring/30' : 'shadow-sm hover:shadow-md',

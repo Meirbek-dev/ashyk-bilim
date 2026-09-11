@@ -23,6 +23,8 @@ import {
   localItemValidationIssues,
 } from '@/features/assessments/domain/readiness'
 import { InlineIssueMessage } from './ValidationIssues'
+import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
+import type { ItemBody } from '@/features/assessments/domain/items'
 import { buildDefaultItemPayload } from '../utils'
 import type { SupportedStudioItemKind } from '../utils'
 
@@ -63,15 +65,21 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
   const createItem = (kind: SupportedStudioItemKind) => {
     startTransition(async () => {
       try {
-        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessment.assessment_uuid}/items`, {
+        // v2 `CreateItemRequest` is `{title, max_score, body}` with a lowercase-tagged body
+        const payload = buildDefaultItemPayload(kind, t('defaultItemTitle'))
+        const created = await apiJson<{ id?: string }>(`assessments/${assessment.assessment_uuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildDefaultItemPayload(kind, t('defaultItemTitle'))),
+          body: JSON.stringify({
+            title: payload.title,
+            max_score: payload.max_score,
+            body: itemBodyToWire(payload.body as ItemBody),
+          }),
         })
         toast.success(t('itemCreated', { itemNoun: displayItemNoun }))
         await refresh()
-        if (typeof created.item_uuid === 'string') {
-          setSelectedItemUuid(created.item_uuid)
+        if (typeof created.id === 'string') {
+          setSelectedItemUuid(created.id)
         }
       } catch (error) {
         toast.error(
@@ -105,7 +113,7 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
               {allowedKinds.map(kind => {
                 const Icon = KIND_ICONS[kind]
                 return (
-                  <DropdownMenuItem key={kind} onSelect={() => createItem(kind)}>
+                  <DropdownMenuItem key={kind} onClick={() => createItem(kind)}>
                     <Icon className="mr-2 size-4" />
                     {kindLabels[kind]}
                   </DropdownMenuItem>

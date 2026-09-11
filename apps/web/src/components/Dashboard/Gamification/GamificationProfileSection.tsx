@@ -126,7 +126,7 @@ export function GamificationProfileSection({
             <div className="flex items-center justify-between">
               <GlowingLevelBadge level={profile.level} size="lg" animated />
               <div className="text-right text-sm">
-                <div className="font-semibold">{profile.total_xp.toLocaleString()} XP</div>
+                <div className="font-semibold">{profile.total_xp.toLocaleString()} {t('leaderboard.stats.xp')}</div>
                 <div className="text-muted-foreground text-xs">
                   {profile.xp_to_next_level?.toLocaleString() || 0} {t('levelIndicators.xpToNext')}
                 </div>
