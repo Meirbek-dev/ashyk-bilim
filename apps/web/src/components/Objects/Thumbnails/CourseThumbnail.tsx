@@ -14,6 +14,7 @@ import {
 import { buildCourseWorkspacePath } from '@/lib/course-management'
 import { useMemo, useState, useTransition, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { formatDate } from '@/lib/date'
 import { useRouter } from 'next/navigation'
 import type { FC } from 'react'
 import { toast } from 'sonner'
@@ -86,19 +87,6 @@ const removeCoursePrefix = (courseUuid?: string): string => (courseUuid || '').r
 const getAuthorFullName = (author?: AppUserSummary): string =>
   author ? [author.first_name, author.middle_name, author.last_name].filter(Boolean).join(' ') : ''
 
-const formatDate = (dateString: string, locale: string): string => {
-  try {
-    return new Date(dateString).toLocaleDateString(locale, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC',
-    })
-  } catch {
-    return ''
-  }
-}
-
 // ============================================================================
 // Sub-components
 // ============================================================================
@@ -162,7 +150,7 @@ const CourseImage: FC<CourseImageProps> = ({
           aria-hidden="true"
         >
           <Calendar className="mr-1 h-3 w-3" />
-          {formatDate(updateDate, locale)}
+          {formatDate(updateDate, locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
         </Badge>
       )}
     </div>

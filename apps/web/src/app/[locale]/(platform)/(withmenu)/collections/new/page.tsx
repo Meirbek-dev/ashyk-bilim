@@ -1,5 +1,7 @@
 import NewCollection from '@/app/_shared/withmenu/collections/new/NewCollection'
 import { getPlatformThumbnailImage } from '@services/media/media'
+import { requirePermission } from '@/lib/auth/permissions'
+import { Actions, Resources, Scopes } from '@/types/permissions'
 import { APP_NAME } from '@/lib/constants'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
@@ -38,5 +40,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export default async function PlatformNewCollectionPage() {
+  await requirePermission(Actions.CREATE, Resources.COLLECTION, Scopes.APP)
   return <NewCollection />
 }

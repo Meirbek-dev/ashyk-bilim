@@ -25,6 +25,8 @@ interface LoginActionInput {
   /** Second factor — resubmitted after an `mfa-required` answer. */
   totpCode?: string | null
   returnTo?: string | null
+  /** Active UI locale (`ru-RU`, …) — prefixes an unprefixed `returnTo`. */
+  locale?: string | null
 }
 
 export type LoginFailureReason =
@@ -104,7 +106,7 @@ export async function loginAction(input: LoginActionInput): Promise<AuthActionRe
 
   await applyBackendSetCookies(response.headers)
   revalidatePath('/', 'layout')
-  redirect(getPostAuthRedirect(input.returnTo))
+  redirect(getPostAuthRedirect(input.returnTo, input.locale))
 }
 
 export async function logoutAction(redirectTo?: string | null): Promise<void> {

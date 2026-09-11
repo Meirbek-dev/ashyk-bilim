@@ -4,7 +4,10 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle2, Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { createCollection } from '@services/courses/collections'
+import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
+import { apiJson } from '@/lib/api-client'
+import { Collection } from '@/lib/api/generated/zod'
+import { useApiError } from '@/hooks/useApiError'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { getAbsoluteUrl } from '@services/config/config'
@@ -40,6 +43,7 @@ function NewCollection() {
   const [isPending, startTransition] = useTransition()
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
+  const { toastApiError } = useApiError()
   const { data: courses, error, isLoading } = useCourseList<CourseListItem>()
   const [isPublic, setIsPublic] = useState(true)
 
@@ -84,18 +88,28 @@ function NewCollection() {
 
     startTransition(() => setIsSubmitting(true))
     try {
-      const collection = {
-        name: name.trim(),
-        description: description.trim(),
-        courses: selectedCourses,
-        public: isPublic,
-      }
-      await createCollection(collection)
+      // Straight to the API (not the server action): a thrown problem+json is
+      // stripped to a generic error across the action boundary, so a 403
+      // could not be told apart from a crash (BUG-027).
+      await apiJson(
+        'collections',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            description: description.trim(),
+            public: isPublic,
+            courses: selectedCourses.map(id => stripEntityPrefix(String(id))),
+          }),
+        },
+        Collection.parse,
+      )
       await revalidateTags(['collections'])
       toast.success(t('toast.success'))
       startTransition(() => router.push(getAbsoluteUrl('/collections')))
-    } catch {
-      toast.error(t('toast.failure'))
+    } catch (error) {
+      toastApiError(error, { fallback: t('toast.failure') })
     } finally {
       startTransition(() => setIsSubmitting(false))
     }

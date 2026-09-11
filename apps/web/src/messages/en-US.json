@@ -2492,13 +2492,12 @@
     "statusBar": {
       "empty": "Empty",
       "markdown": "Markdown",
-      "word": "word",
-      "words": "words",
       "unsaved": "Unsaved",
       "saving": "Saving…",
       "saved": "Saved",
       "saveFailed": "Save failed",
-      "issueToggle": "{count, plural, one {# issue} other {# issues}}"
+      "issueToggle": "{count, plural, one {# issue} other {# issues}}",
+      "wordCount": "{count, plural, one {# word} other {# words}}"
     },
     "linkDialog": {
       "title": "Insert link",
@@ -2632,7 +2631,9 @@
         "description": "Public course overview shown to learners.",
         "placeholder": "Describe the course, audience, prerequisites, and outcomes..."
       }
-    }
+    },
+    "editorAriaLabel": "{label} editor",
+    "sourceAriaLabel": "{label} Markdown source"
   },
   "CourseBreadcrumbs": {
     "courses": "Courses"
@@ -6814,6 +6815,8 @@
     "ref": "Ref: {digest}",
     "activityNotFound": "Activity Not Found",
     "activityNotFoundMessage": "The activity you are looking for does not exist or has been removed.",
+    "activityUnavailable": "Activity not available",
+    "activityUnavailableMessage": "This activity is not published yet. Go back to the course to continue.",
     "courseNotFound": "Course Not Found",
     "courseNotFoundMessage": "The course you are looking for does not exist or has been removed.",
     "backToCourse": "Back to Course",
@@ -7117,7 +7120,9 @@
       "shortcutPublish": "Ctrl⇧↵",
       "shortcutFocusGrade": "G",
       "loadingSubmission": "Loading submission...",
-      "formUnavailable": "Grading form is unavailable."
+      "formUnavailable": "Grading form is unavailable.",
+      "republishHint": "This grade is already published. Changes become visible to the learner as soon as you publish again.",
+      "republishGrade": "Publish again"
     },
     "Batch": {
       "title": "Batch Grade ({count, plural, one {# submission} other {# submissions}})",
@@ -8764,7 +8769,9 @@
             "openText": "Open text",
             "fileUpload": "File upload",
             "form": "Form",
-            "matching": "Matching"
+            "matching": "Matching",
+            "code": "Code",
+            "unknown": "Unknown type"
           },
           "addKind": "Add {kind}",
           "outlineEmptyMessage": "Add a {itemNoun} to begin.",
@@ -8853,7 +8860,12 @@
             "form_field_label_missing": "Each form field needs a label.",
             "form_field_id_duplicate": "Form fields need unique IDs.",
             "code_languages_missing": "Select at least one allowed language",
-            "code_tests_missing": "Add at least one test case"
+            "code_tests_missing": "Add at least one test case",
+            "code_prompt_missing": "Code challenge prompt is required.",
+            "code_test_io_missing": "Every test case needs input and expected output.",
+            "code_test_weight_invalid": "Test case weight must be greater than zero.",
+            "item_kind_forbidden": "This question type is not allowed for this assessment.",
+            "schedule_after_due_at": "The publish date must be before the due date."
           },
           "duplicate": "Duplicate",
           "delete": "Delete",
@@ -10055,7 +10067,9 @@
       "published": "Grade published",
       "returned": "Returned for revision",
       "failed": "Failed to save grading"
-    }
+    },
+    "invalidItemScore": "Score must be between 0 and {max}",
+    "republish": "Publish again"
   },
   "FileSubmission": {
     "requirementMaxFiles": "{count, plural, one {Up to # file} other {Up to # files}}",
@@ -10447,8 +10461,8 @@
         "all": "All statuses",
         "queued": "Queued",
         "running": "Running",
-        "finished": "Finished",
-        "error": "Failed",
+        "succeeded": "Finished",
+        "failed": "Failed",
         "aborted": "Cancelled"
       },
       "metrics": {
@@ -10511,8 +10525,8 @@
       "runs": {
         "queued": "Queued",
         "running": "Running",
-        "finished": "Finished",
-        "error": "Failed",
+        "succeeded": "Finished",
+        "failed": "Failed",
         "aborted": "Cancelled"
       },
       "evals": {
@@ -10806,5 +10820,25 @@
     "startingCourse": "Starting course",
     "courseStarted": "Course started",
     "startCourseError": "Could not start course"
+  },
+  "roles": {
+    "admin": {
+      "name": "Administrator"
+    },
+    "maintainer": {
+      "name": "Maintainer"
+    },
+    "instructor": {
+      "name": "Instructor"
+    },
+    "moderator": {
+      "name": "Moderator"
+    },
+    "user": {
+      "name": "User"
+    },
+    "guest": {
+      "name": "Guest"
+    }
   }
 }

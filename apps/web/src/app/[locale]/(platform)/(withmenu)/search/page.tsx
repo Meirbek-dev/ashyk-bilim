@@ -22,14 +22,14 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   let description = `${t('searchContent')} ${APP_NAME}. ${t('discoverCourses')}, ${t('collections')}, ${t('andUsers')}.`
 
   if (searchQuery) {
-    title = `${t('searchResults')} "${searchQuery}" - ${APP_NAME}`
+    title = `${t('searchResults')}: ${searchQuery} - ${APP_NAME}`
     description = `${t('searchResultsFor')} "${searchQuery}" ${t('in')} ${APP_NAME}. ${t('findCourses')}, ${t('collections')}, ${t('andUsers')}.`
   }
 
   if (searchType !== 'all' && searchType) {
     const typeLabel = t(searchType as 'courses' | 'collections' | 'users')
     title = searchQuery
-      ? `${typeLabel} ${t('searchResults')} "${searchQuery}" - ${APP_NAME}`
+      ? `${typeLabel}: ${searchQuery} - ${APP_NAME}`
       : `${typeLabel} - ${APP_NAME}`
     description = searchQuery
       ? `${t('searchResultsFor')} "${searchQuery}" ${t('in')} ${typeLabel.toLowerCase()} ${t('at')} ${APP_NAME}.`

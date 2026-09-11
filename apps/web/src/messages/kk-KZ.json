@@ -2495,13 +2495,12 @@
     "statusBar": {
       "empty": "Бос",
       "markdown": "Markdown",
-      "word": "сөз",
-      "words": "сөздер",
       "unsaved": "Сақталмаған",
       "saving": "Saving…",
       "saved": "Сақталды",
       "saveFailed": "Сақтау сәтсіз аяқталды",
-      "issueToggle": "{count} қате"
+      "issueToggle": "{count} қате",
+      "wordCount": "{count, plural, one {# сөз} other {# сөз}}"
     },
     "linkDialog": {
       "title": "Сілтеме кірістіру",
@@ -2635,7 +2634,9 @@
         "description": "Оқушыларға көрсетілетін жалпы курс шолуы.",
         "placeholder": "Курсты, аудиторияны, алғышарттарды және нәтижелерді сипаттаңыз..."
       }
-    }
+    },
+    "editorAriaLabel": "Редактор: {label}",
+    "sourceAriaLabel": "Markdown бастапқы мәтіні: {label}"
   },
   "CourseBreadcrumbs": {
     "courses": "Курстар"
@@ -5855,7 +5856,7 @@
         "dangerZone": {
           "description": "Бұл әрекеттерді болдырмау мүмкін емес. Абайлаңыз.",
           "resetAllData": "Барлық деректерді қалпына келтіру",
-          "resetConfirmDescription": "Бұл XP, деңгейлер, сериялар мен жетістіктерді қоса алғанда барлық прогресті жояды. Бұл әрекетті болдырмау мүмкін емес.",
+          "resetConfirmDescription": "Бұл ТӨ, деңгейлер, сериялар мен жетістіктерді қоса алғанда барлық прогресті жояды. Бұл әрекетті болдырмау мүмкін емес.",
           "resetConfirmTitle": "Барлық геймификация деректерін қалпына келтіресіз бе?",
           "resetPreferences": "Баптауларды қалпына келтіру",
           "resetWarning": "Баптауларды қалпына келтіру әдепкі мәндерді қайтарады. Бұл әрекетті болдырмау мүмкін емес.",
@@ -5876,7 +5877,7 @@
           "failedToLoad": "Геймификация деректерін жүктеу мүмкін болмады",
           "leaderboard": "Көшбасшылар кестесі",
           "nextMilestone": "Келесі межелі мақсат",
-          "noActivityDescription": "XP жинауды және прогрессіңізді осында көруді бастау үшін әрекеттерді, курстарды немесе тесттерді аяқтаңыз!",
+          "noActivityDescription": "ТӨ жинауды және прогрессіңізді осында көруді бастау үшін әрекеттерді, курстарды немесе тесттерді аяқтаңыз!",
           "noData": "Геймификация деректері жоқ",
           "profile": "Профиль",
           "progress": "Прогресс",
@@ -5910,13 +5911,13 @@
         },
         "emptyStates": {
           "noActivity": "Әлі әрекет жоқ",
-          "noActivityDescription": "XP жинауды және рейтингте көтерілуді бастау үшін әрекеттерді орындаңыз!",
+          "noActivityDescription": "ТӨ жинауды және рейтингте көтерілуді бастау үшін әрекеттерді орындаңыз!",
           "noLeaderboard": "Көшбасшылар кестесі деректері жоқ",
-          "noLeaderboardDescription": "Бұл ұйымда XP жинаған бірінші адам болыңыз!",
+          "noLeaderboardDescription": "Бұл ұйымда ТӨ жинаған бірінші адам болыңыз!",
           "noProgress": "Прогресс деректері жоқ",
           "noProgressDescription": "Прогрессіңізді қадағалау үшін оқуды бастаңыз.",
           "noTransactions": "Жуықта әрекет жоқ",
-          "noTransactionsDescription": "Әрекеттерді орындаған кезде XP транзакцияларыңыз осында пайда болады."
+          "noTransactionsDescription": "Әрекеттерді орындаған кезде ТӨ транзакцияларыңыз осында пайда болады."
         },
         "engagement": {
           "activeDays": "Белсенді күндер",
@@ -5933,13 +5934,13 @@
           "strongHabit": "Мықты әдет қалыптасуда!"
         },
         "error": {
-          "awardXPFailed": "XP беру мүмкін болмады",
+          "awardXPFailed": "ТӨ беру мүмкін болмады",
           "loadFailed": "Геймификация деректерін жүктеу мүмкін болмады",
           "updatePreferencesFailed": "Баптауларды жаңарту мүмкін болмады",
           "updateStreakFailed": "Серияны жаңарту мүмкін болмады"
         },
         "errorMessages": {
-          "dailyLimitExceeded": "Күнделікті XP лимиті толды. Ертең қайта келіңіз!",
+          "dailyLimitExceeded": "Күнделікті ТӨ лимиті толды. Ертең қайта келіңіз!",
           "loadFailed": "Деректерді жүктеу мүмкін болмады",
           "networkError": "Желі қатесі. Қосылымыңызды тексеріңіз.",
           "retryAction": "Қайталау",
@@ -6099,7 +6100,7 @@
           "loadingProfile": "Профиль жүктелуде..."
         },
         "loginBonus": {
-          "dailyBonus": "+{xp} XP Күнделікті бонус",
+          "dailyBonus": "+{xp} ТӨ Күнделікті бонус",
           "frequencyDaily": "Күнделікті",
           "welcomeBack": "Қайта келуіңізбен!",
           "xpShort": "+{xp} ТӨ"
@@ -6131,7 +6132,7 @@
           "title": "Сіздің оқу профиліңіз"
         },
         "progress": {
-          "dailyXP": "Бүгінгі XP",
+          "dailyXP": "Бүгінгі ТӨ",
           "dailyXPValue": "{earned} / {cap}",
           "levelProgress": "Деңгей прогресі",
           "levelShort": "Дең.",
@@ -6145,7 +6146,7 @@
         "saving": "Сақталуда...",
         "settings": {
           "animatedEffects": "Анимацияланған эффектілер",
-          "animatedEffectsDescription": "Деңгей көтеру және XP алу үшін анимацияны қосу",
+          "animatedEffectsDescription": "Деңгей көтеру және ТӨ алу үшін анимацияны қосу",
           "descriptionSimplified": "Осы қарапайым опциялармен геймификация тәжірибеңізді баптаңыз",
           "save": "Өзгерістерді сақтау",
           "saveFailed": "Баптауларды сақтау мүмкін болмады",
@@ -6154,7 +6155,7 @@
           "showOnLeaderboard": "Көшбасшылар кестесінде мені көрсету",
           "showOnLeaderboardDescription": "Ұйым көшбасшылар кестесінде прогрессіңізді көрсету",
           "title": "Геймификация баптаулары",
-          "xpGainNotifications": "XP алу туралы хабарландырулар",
+          "xpGainNotifications": "ТӨ алу туралы хабарландырулар",
           "xpGainNotificationsDescription": "Тәжірибе ұпайларын алған кезде хабарландыруларды көрсету"
         },
         "stats": {
@@ -6240,7 +6241,7 @@
         "title": "Сіздің прогрессіңіз",
         "toast": {
           "dailyLoginBonus": "Күнделікті кіру бонусы!",
-          "earnedXP": "{xp} XP алынды",
+          "earnedXP": "{xp} ТӨ алынды",
           "fromActivities": "{count} әрекеттен",
           "levelUp": "Деңгей көтерілді!",
           "preferencesError": "Параметрлерді сақтау сәтсіз аяқталды",
@@ -6248,7 +6249,7 @@
           "preferencesSaved": "Параметрлер сәтті сақталды",
           "userNotAuthenticated": "Пайдаланушы аутентификацияланбаған",
           "welcomeBack": "Қош келдіңіз!",
-          "xpGained": "+{xp} XP"
+          "xpGained": "+{xp} ТӨ"
         },
         "xpGainToast": {
           "congratulations": "Құттықтаймыз!",
@@ -6833,6 +6834,8 @@
     "ref": "Код: {digest}",
     "activityNotFound": "Белсенділік табылмады",
     "activityNotFoundMessage": "Сіз іздеген белсенділік жоқ немесе жойылған.",
+    "activityUnavailable": "Белсенділік қолжетімсіз",
+    "activityUnavailableMessage": "Бұл белсенділік әлі жарияланбаған. Жалғастыру үшін курсқа оралыңыз.",
     "courseNotFound": "Курс табылмады",
     "courseNotFoundMessage": "Сіз іздеген курс жоқ немесе жойылған.",
     "backToCourse": "Курсқа оралу",
@@ -7141,7 +7144,9 @@
       "shortcutPublish": "Ctrl⇧↵",
       "shortcutFocusGrade": "G",
       "loadingSubmission": "Жіберім жүктелуде...",
-      "formUnavailable": "Бағалау формасы қолжетімді емес."
+      "formUnavailable": "Бағалау формасы қолжетімді емес.",
+      "republishHint": "Баға жарияланып қойған. Өзгерістер қайта жарияланғаннан кейін студентке бірден көрінеді.",
+      "republishGrade": "Қайта жариялау"
     },
     "Batch": {
       "title": "Топпен бағалау ({count} жұмыс)",
@@ -8222,7 +8227,9 @@
             "openText": "Ашық мәтін",
             "fileUpload": "Файлды жүктеу",
             "form": "Форма",
-            "matching": "Сәйкестендіру"
+            "matching": "Сәйкестендіру",
+            "code": "Код",
+            "unknown": "Белгісіз түр"
           },
           "addKind": "{kind} қосу",
           "outlineEmptyMessage": "Бастау үшін {itemNoun} қосыңыз.",
@@ -8310,7 +8317,13 @@
             "form_field_label_missing": "Әр форма өрісінің жазбасы болуы керек.",
             "form_field_id_duplicate": "Форма өрістерінің бірегей идентификаторлары болуы керек.",
             "code_languages_missing": "Кем дегенде бір рұқсат етілген тілді таңдаңыз",
-            "code_tests_missing": "Кем дегенде бір тесттік жағдайды қосыңыз"
+            "code_tests_missing": "Кем дегенде бір тесттік жағдайды қосыңыз",
+            "code_prompt_missing": "Код тапсырмасының тұжырымдамасы қажет.",
+            "code_test_io_missing": "Әр тест сценарийінде кіріс және күтілетін шығыс деректері болуы керек.",
+            "code_test_weight_invalid": "Тест сценарийінің салмағы нөлден үлкен болуы керек.",
+            "item_kind_forbidden": "Бұл сұрақ түрі осы бағалау үшін қолжетімсіз.",
+            "schedule_after_due_at": "Жариялау күні тапсыру мерзімінен ерте болуы керек.",
+            "assessment_empty": "Бағалауда оқу тапсырмалары жоқ."
           },
           "duplicate": "Көшірмесін жасау",
           "delete": "Жою",
@@ -10244,7 +10257,9 @@
       "published": "Баға жарияланды",
       "returned": "Қайта өңдеуге қайтарылды",
       "failed": "Бағалауды сақтау сәтсіз болды"
-    }
+    },
+    "invalidItemScore": "Балл 0 мен {max} аралығында болуы керек",
+    "republish": "Қайта жариялау"
   },
   "FileSubmission": {
     "requirementMaxFiles": "{count, plural, one {# файлға дейін} other {# файлға дейін}}",
@@ -10636,8 +10651,8 @@
         "all": "Барлық күйлер",
         "queued": "Кезекте",
         "running": "Орындалуда",
-        "finished": "Аяқталды",
-        "error": "Қате",
+        "succeeded": "Аяқталды",
+        "failed": "Қате",
         "aborted": "Тоқтатылды"
       },
       "metrics": {
@@ -10700,8 +10715,8 @@
       "runs": {
         "queued": "Кезекте",
         "running": "Орындалуда",
-        "finished": "Аяқталды",
-        "error": "Қате",
+        "succeeded": "Аяқталды",
+        "failed": "Қате",
         "aborted": "Болдырылмады"
       },
       "evals": {
@@ -10995,5 +11010,25 @@
     "startingCourse": "Курс басталуда",
     "courseStarted": "Курс басталды",
     "startCourseError": "Курсты бастау мүмкін болмады"
+  },
+  "roles": {
+    "admin": {
+      "name": "Әкімші"
+    },
+    "maintainer": {
+      "name": "Мейнтейнер"
+    },
+    "instructor": {
+      "name": "Оқытушы"
+    },
+    "moderator": {
+      "name": "Модератор"
+    },
+    "user": {
+      "name": "Пайдаланушы"
+    },
+    "guest": {
+      "name": "Қонақ"
+    }
   }
 }

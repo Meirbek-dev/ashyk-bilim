@@ -98,12 +98,6 @@ export function proxy(req: NextRequest) {
     return withRequestId(NextResponse.next(), requestId)
   }
 
-  if (pathname === '/redirect_from_auth') {
-    const redirectUrl = new URL('/', req.nextUrl.origin)
-    redirectUrl.search = req.nextUrl.search
-    return withRequestId(NextResponse.redirect(redirectUrl), requestId)
-  }
-
   if (pathname === '/sitemap.xml') {
     return rewriteWithHeaders(req, requestId, '/api/sitemap')
   }

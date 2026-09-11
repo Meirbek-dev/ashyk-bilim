@@ -2493,13 +2493,12 @@
     "statusBar": {
       "empty": "Пусто",
       "markdown": "Markdown",
-      "word": "слово",
-      "words": "слов",
       "unsaved": "Несохранено",
       "saving": "Сохранение…",
       "saved": "Сохранено",
       "saveFailed": "Ошибка сохранения",
-      "issueToggle": "{count, plural, one {# проблема} few {# проблемы} other {# проблем}}"
+      "issueToggle": "{count, plural, one {# проблема} few {# проблемы} other {# проблем}}",
+      "wordCount": "{count, plural, one {# слово} few {# слова} many {# слов} other {# слова}}"
     },
     "linkDialog": {
       "title": "Вставить ссылку",
@@ -2633,7 +2632,9 @@
         "description": "Публичный обзор курса, который видят учащиеся.",
         "placeholder": "Опишите курс, аудиторию, требования и результаты..."
       }
-    }
+    },
+    "editorAriaLabel": "Редактор: {label}",
+    "sourceAriaLabel": "Исходный Markdown: {label}"
   },
   "CourseBreadcrumbs": {
     "courses": "Курсы"
@@ -5838,7 +5839,7 @@
         "dangerZone": {
           "description": "Эти действия нельзя отменить. Будьте осторожны.",
           "resetAllData": "Сбросить все данные",
-          "resetConfirmDescription": "Это навсегда удалит весь прогресс: XP, уровни, серии и достижения. Это действие нельзя отменить.",
+          "resetConfirmDescription": "Это навсегда удалит весь прогресс: ОП, уровни, серии и достижения. Это действие нельзя отменить.",
           "resetConfirmTitle": "Сбросить все данные геймификации?",
           "resetPreferences": "Сбросить настройки",
           "resetWarning": "Сброс настроек восстановит значения по умолчанию. Это действие нельзя отменить.",
@@ -5859,7 +5860,7 @@
           "failedToLoad": "Не удалось загрузить данные геймификации",
           "leaderboard": "Таблица лидеров",
           "nextMilestone": "Следующая цель",
-          "noActivityDescription": "Завершите активности, курсы или тесты, чтобы начать зарабатывать XP и видеть свой прогресс здесь!",
+          "noActivityDescription": "Завершите активности, курсы или тесты, чтобы начать зарабатывать ОП и видеть свой прогресс здесь!",
           "noData": "Нет данных геймификации",
           "profile": "Профиль",
           "progress": "Прогресс",
@@ -5916,7 +5917,7 @@
           "strongHabit": "Формируется сильная привычка!"
         },
         "error": {
-          "awardXPFailed": "Не удалось начислить XP",
+          "awardXPFailed": "Не удалось начислить ОП",
           "loadFailed": "Не удалось загрузить данные геймификации",
           "updatePreferencesFailed": "Не удалось обновить настройки",
           "updateStreakFailed": "Не удалось обновить серию"
@@ -6082,7 +6083,7 @@
           "loadingProfile": "Загрузка профиля..."
         },
         "loginBonus": {
-          "dailyBonus": "+{xp} XP Ежедневный бонус",
+          "dailyBonus": "+{xp} ОП Ежедневный бонус",
           "frequencyDaily": "Ежедневно",
           "welcomeBack": "С возвращением!",
           "xpShort": "+{xp} ОП"
@@ -6114,7 +6115,7 @@
           "title": "Ваш профиль обучения"
         },
         "progress": {
-          "dailyXP": "XP за сегодня",
+          "dailyXP": "ОП за сегодня",
           "dailyXPValue": "{earned} / {cap}",
           "levelProgress": "Прогресс уровня",
           "levelShort": "Ур.",
@@ -6816,6 +6817,8 @@
     "ref": "Код: {digest}",
     "activityNotFound": "Активность не найдена",
     "activityNotFoundMessage": "Запрашиваемая активность не существует или была удалена.",
+    "activityUnavailable": "Активность недоступна",
+    "activityUnavailableMessage": "Эта активность ещё не опубликована. Вернитесь к курсу, чтобы продолжить.",
     "courseNotFound": "Курс не найден",
     "courseNotFoundMessage": "Запрашиваемый курс не существует или был удален.",
     "backToCourse": "Вернуться к курсу",
@@ -7124,7 +7127,9 @@
       "shortcutPublish": "Ctrl⇧↵",
       "shortcutFocusGrade": "G",
       "loadingSubmission": "Загрузка работы...",
-      "formUnavailable": "Форма оценивания недоступна."
+      "formUnavailable": "Форма оценивания недоступна.",
+      "republishHint": "Оценка уже опубликована. Изменения будут видны студенту сразу после повторной публикации.",
+      "republishGrade": "Опубликовать заново"
     },
     "Batch": {
       "title": "Пакетное оценивание ({count, plural, one {# работа} few {# работы} other {# работ}})",
@@ -8237,7 +8242,9 @@
             "openText": "Открытый текст",
             "fileUpload": "Загрузка файла",
             "form": "Форма",
-            "matching": "Сопоставление"
+            "matching": "Сопоставление",
+            "code": "Код",
+            "unknown": "Неизвестный тип"
           },
           "addKind": "Добавить {kind}",
           "outlineEmptyMessage": "Добавьте {itemNoun}, чтобы начать.",
@@ -8326,7 +8333,12 @@
             "form_field_label_missing": "Каждое поле формы должно иметь метку.",
             "form_field_id_duplicate": "Поля формы должны иметь уникальные идентификаторы.",
             "code_languages_missing": "Выберите хотя бы один разрешенный язык",
-            "code_tests_missing": "Добавьте хотя бы один тестовый сценарий"
+            "code_tests_missing": "Добавьте хотя бы один тестовый сценарий",
+            "code_prompt_missing": "Требуется формулировка задачи по коду.",
+            "code_test_io_missing": "Каждый тестовый сценарий должен содержать входные и ожидаемые выходные данные.",
+            "code_test_weight_invalid": "Вес тестового сценария должен быть больше нуля.",
+            "item_kind_forbidden": "Этот тип вопроса недоступен для данной оценки.",
+            "schedule_after_due_at": "Дата публикации должна быть раньше срока сдачи."
           },
           "duplicate": "Дублировать",
           "delete": "Удалить",
@@ -10071,7 +10083,9 @@
       "published": "Оценка опубликована",
       "returned": "Возвращено на доработку",
       "failed": "Не удалось сохранить оценку"
-    }
+    },
+    "invalidItemScore": "Балл должен быть от 0 до {max}",
+    "republish": "Опубликовать заново"
   },
   "FileSubmission": {
     "requirementMaxFiles": "{count, plural, one {До # файла} few {До # файлов} many {До # файлов} other {До # файла}}",
@@ -10463,8 +10477,8 @@
         "all": "Все статусы",
         "queued": "В очереди",
         "running": "Выполняется",
-        "finished": "Завершено",
-        "error": "Ошибка",
+        "succeeded": "Завершено",
+        "failed": "Ошибка",
         "aborted": "Отменено"
       },
       "metrics": {
@@ -10527,8 +10541,8 @@
       "runs": {
         "queued": "В очереди",
         "running": "Выполняется",
-        "finished": "Завершено",
-        "error": "Ошибка",
+        "succeeded": "Завершено",
+        "failed": "Ошибка",
         "aborted": "Отменено"
       },
       "evals": {
@@ -10822,5 +10836,25 @@
     "startingCourse": "Начинаем курс",
     "courseStarted": "Курс начат",
     "startCourseError": "Не удалось начать курс"
+  },
+  "roles": {
+    "admin": {
+      "name": "Администратор"
+    },
+    "maintainer": {
+      "name": "Мейнтейнер"
+    },
+    "instructor": {
+      "name": "Преподаватель"
+    },
+    "moderator": {
+      "name": "Модератор"
+    },
+    "user": {
+      "name": "Пользователь"
+    },
+    "guest": {
+      "name": "Гость"
+    }
   }
 }

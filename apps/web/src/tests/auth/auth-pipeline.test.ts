@@ -86,10 +86,10 @@ describe('Frontend Auth Actions (v2 BFF)', () => {
       })
 
       try {
-        await loginAction({ login: 'test@example.com', password: 'password123' })
+        await loginAction({ login: 'test@example.com', password: 'password123', locale: 'ru-RU' })
         expect.fail('Should have redirected')
       } catch (e: any) {
-        expect(e.message).toBe('REDIRECTED_TO:/redirect_from_auth')
+        expect(e.message).toBe('REDIRECTED_TO:/ru')
       }
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -126,7 +126,7 @@ describe('Frontend Auth Actions (v2 BFF)', () => {
       mockFetch.mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({}) })
 
       await expect(loginAction({ login: 'user', password: 'pw', totpCode: ' 123456 ' })).rejects.toThrow(
-        'REDIRECTED_TO:/redirect_from_auth',
+        'REDIRECTED_TO:/',
       )
 
       expect(JSON.parse(mockFetch.mock.calls[0]![1].body)).toEqual({

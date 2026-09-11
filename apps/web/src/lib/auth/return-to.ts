@@ -1,3 +1,4 @@
+import { localePrefixes } from '@/i18n/config'
 import { getPathInfo, isAuthRoute } from './routes'
 
 function containsUnsafeCharacters(value: string): boolean {
@@ -61,7 +62,15 @@ export function buildLoginRedirect(returnTo?: string | null): string {
   return `${loginPath}?returnTo=${encodeURIComponent(resolved)}`
 }
 
-export function getPostAuthRedirect(returnTo: string | null | undefined): string {
+/**
+ * Post-login destination: the sanitized `returnTo`, prefixed with the active
+ * locale when it carries none (`/` → `/ru`). Never an unprefixed path: the
+ * client router keeps the action's redirect URL as-is, so anything the
+ * middleware has to rewrite ends up as a stale address bar (BUG-023).
+ */
+export function getPostAuthRedirect(returnTo: string | null | undefined, locale?: string | null): string {
   const normalized = normalizeReturnTo(returnTo)
-  return normalized === '/' ? '/redirect_from_auth' : normalized
+  const prefix = locale && locale in localePrefixes ? localePrefixes[locale as keyof typeof localePrefixes] : ''
+  if (!prefix || getPathInfo(normalized).locale) return normalized
+  return normalized === '/' ? prefix : `${prefix}${normalized}`
 }

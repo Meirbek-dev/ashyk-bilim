@@ -10,18 +10,30 @@ import PasswordInput from '@components/ui/custom/password-input'
 import { SiGoogle } from '@icons-pack/react-simple-icons'
 import { Separator } from '@components/ui/separator'
 import { useActionState, useTransition } from 'react'
+import type { KeyboardEvent } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@components/ui/button'
 import AuthLogo from '@components/auth/logo'
 import AuthCard from '@components/auth/card'
 import { Input } from '@components/ui/input'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import * as v from 'valibot'
 
 /** Validates returnTo, rejecting open-redirect attempts. */
-function getSafeReturnTo(raw: string | null): string {
-  return getPostAuthRedirect(normalizeReturnTo(raw))
+function getSafeReturnTo(raw: string | null, locale: string): string {
+  return getPostAuthRedirect(normalizeReturnTo(raw), locale)
+}
+
+/**
+ * Implicit submission needs a `keypress`; some automation and IME paths only
+ * deliver `keydown`, which leaves Enter dead in the field. Submit on keydown
+ * instead (BUG-023a).
+ */
+function submitOnEnter(event: KeyboardEvent<HTMLFormElement>) {
+  if (event.key !== 'Enter' || event.defaultPrevented || !(event.target instanceof HTMLInputElement)) return
+  event.preventDefault()
+  event.currentTarget.requestSubmit()
 }
 
 type LoginStep = 'credentials' | 'totp'
@@ -49,6 +61,7 @@ function LoginClient() {
   const t = useTranslations('Auth.Login')
   const errorsT = useTranslations('Errors')
   const searchParams = useSearchParams()
+  const locale = useLocale()
   const [isPendingGoogle, startGoogleTransition] = useTransition()
 
   const messageForCode = (code: string | null | undefined): string | null => {
@@ -107,6 +120,7 @@ function LoginClient() {
           password: prev.password,
           totpCode: parsed.output.totpCode,
           returnTo,
+          locale,
         })
         if (!result.ok) {
           if (result.reason === 'invalid_totp_code' || result.reason === 'mfa_required') {
@@ -128,6 +142,7 @@ function LoginClient() {
         const passwordError = flat.nested?.password?.[0]
         return {
           ...INITIAL_STATE,
+          login: String(formData.get('login') ?? ''),
           fieldErrors: {
             ...(loginError ? { login: loginError } : {}),
             ...(passwordError ? { password: passwordError } : {}),
@@ -139,6 +154,7 @@ function LoginClient() {
         login: parsed.output.login,
         password: parsed.output.password,
         returnTo,
+        locale,
       })
 
       if (!result.ok) {
@@ -151,7 +167,7 @@ function LoginClient() {
             fieldErrors: {},
           }
         }
-        return { ...INITIAL_STATE, error: messageForFailure(result) }
+        return { ...INITIAL_STATE, login: parsed.output.login, error: messageForFailure(result) }
       }
 
       return { ...INITIAL_STATE }
@@ -161,7 +177,7 @@ function LoginClient() {
 
   const handleGoogleSignIn = () => {
     startGoogleTransition(() => {
-      const postLoginPath = getSafeReturnTo(searchParams.get('returnTo'))
+      const postLoginPath = getSafeReturnTo(searchParams.get('returnTo'), locale)
       const authorizeUrl = new URL(`${getPublicAPIUrl()}auth/google`)
       authorizeUrl.searchParams.set('callback', postLoginPath.startsWith('/') ? postLoginPath : '/')
       globalThis.location.href = authorizeUrl.toString()
@@ -201,7 +217,7 @@ function LoginClient() {
         </div>
       ) : null}
 
-      <form className="w-full space-y-4" action={action}>
+      <form className="w-full space-y-4" action={action} onKeyDown={submitOnEnter}>
         {state.step === 'credentials' ? (
           <>
             <Field>
@@ -210,6 +226,7 @@ function LoginClient() {
                 <Input
                   name="login"
                   type="text"
+                  defaultValue={state.login}
                   placeholder={t('loginIdentifierPlaceholder')}
                   autoComplete="username"
                   className="w-full"

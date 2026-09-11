@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test'
-import { buildLoginRedirect, isProtectedRoute, normalizeReturnTo, isAuthRoute } from '@/lib/auth/redirect'
+import { buildLoginRedirect, getPostAuthRedirect, isProtectedRoute, normalizeReturnTo, isAuthRoute } from '@/lib/auth/redirect'
 import { getPathInfo, isEditorLegacyRoute, toInternalAuthPath, toInternalEditorPath } from '@/lib/auth/routes'
 
 describe('Auth Redirect Logic', () => {
@@ -47,6 +47,21 @@ describe('Auth Redirect Logic', () => {
       expect(normalizeReturnTo('/auth/login')).toBe('/')
       expect(normalizeReturnTo('/en/login')).toBe('/')
       expect(normalizeReturnTo('/en/auth/login')).toBe('/')
+    })
+  })
+
+  describe('getPostAuthRedirect (BUG-023c)', () => {
+    it('lands on the locale root instead of /redirect_from_auth', () => {
+      expect(getPostAuthRedirect(null, 'ru-RU')).toBe('/ru')
+      expect(getPostAuthRedirect('/', 'kk-KZ')).toBe('/kz')
+      expect(getPostAuthRedirect(null)).toBe('/')
+    })
+
+    it('prefixes an unprefixed returnTo and keeps a prefixed one', () => {
+      expect(getPostAuthRedirect('/dash/courses?tab=x', 'ru-RU')).toBe('/ru/dash/courses?tab=x')
+      expect(getPostAuthRedirect('/kz/collections', 'ru-RU')).toBe('/kz/collections')
+      expect(getPostAuthRedirect('/en/login', 'en-US')).toBe('/en')
+      expect(getPostAuthRedirect('https://evil.com', 'ru-RU')).toBe('/ru')
     })
   })
 

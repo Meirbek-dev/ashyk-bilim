@@ -34,7 +34,7 @@ describe('learner runtime v2 adapter', () => {
   })
 
   it('uses the learner projection and preserves IDs and due dates', async () => {
-    const runtime = await getStudentActivityRuntime(courseId, activityId)
+    const runtime = (await getStudentActivityRuntime(courseId, activityId))!
     expect(apiJson).toHaveBeenCalledWith(`courses/${courseId}/learner-state`, {}, expect.any(Function))
     expect(runtime.activity).toMatchObject({ id: activityId, chapter_id: chapterId, type: 'TYPE_DYNAMIC' })
     expect(runtime.primary_action).toEqual({ id: 'mark_complete', enabled: true })
@@ -46,13 +46,17 @@ describe('learner runtime v2 adapter', () => {
     activity.activity_type = 'quiz'
     activity.state = 'returned'
     activity.allowed_actions = ['revise', 'view_feedback']
-    expect((await getStudentActivityRuntime(courseId, activityId)).primary_action).toEqual({
+    expect((await getStudentActivityRuntime(courseId, activityId))?.primary_action).toEqual({
       id: 'revise', enabled: true,
     })
     activity.state = 'locked'
-    expect((await getStudentActivityRuntime(courseId, activityId)).primary_action).toMatchObject({
+    expect((await getStudentActivityRuntime(courseId, activityId))?.primary_action).toMatchObject({
       id: 'none', enabled: false,
     })
+  })
+
+  it('returns null for an activity outside the learner outline (BUG-025: unpublished draft)', async () => {
+    expect(await getStudentActivityRuntime(courseId, '01a091ab-fafa-7a48-a60b-650685fb0464')).toBeNull()
   })
 
   it('marks completion through the trail endpoint and propagates mutation failures', async () => {
