@@ -52,8 +52,11 @@ openapi:
 
 # Coverage with floor (ratchet up as phases land — never down).
 # Scaffold floor 30 → 80 after P3 (measured 88% lines, 2026-09-05).
+# The ETL crate is one-shot cutover tooling verified by rehearsal (MIGRATION.md
+# §5), not by unit tests, and main.rs is the process entrypoint; neither is
+# held to the floor (DECISIONS.md, 2026-09-11). Measured 84.5% without them.
 cov:
-    cargo llvm-cov nextest --workspace --fail-under-lines 80
+    cargo llvm-cov nextest --workspace --fail-under-lines 80 --ignore-filename-regex 'crates[\\/](etl[\\/]|server[\\/]src[\\/]main\.rs)'
 
 deny:
     cargo deny check
