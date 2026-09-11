@@ -34,7 +34,8 @@ async function invalidate() {
 
 export async function getCourseDiscussions(courseId: string, includeReplies = true, limit = 50): Promise<Discussion[]> {
   const items = await collectPages(cursor => apiJson(`courses/${courseId}/discussions?include_replies=${includeReplies}&limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, {}, data => DiscussionPage.parse(data)))
-  return items.map(normalize)
+  // The generated recursive schema types nested `replies` as `unknown[]`; zod has already validated the shape.
+  return items.map(item => normalize(item as WireDiscussionType))
 }
 
 export interface DiscussionCreate { content: string; type?: 'post' | 'reply'; parent_discussion_id?: string }

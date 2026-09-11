@@ -1,5 +1,7 @@
 'use client'
 
+import type { Discussion } from '@services/courses/discussions'
+
 // Import Lucide icons
 import {
   ArrowRight,
@@ -46,7 +48,7 @@ interface CourseClientProps {
   course: AppCourse
   courseuuid: string
   current_activity?: string
-  initialDiscussions?: AppDiscussionPost[]
+  initialDiscussions?: Discussion[]
   trailData?: AppTrailData | null | undefined
 }
 

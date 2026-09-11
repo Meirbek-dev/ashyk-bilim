@@ -105,7 +105,7 @@ export default async function PlatformCoursePage(props: { params: Promise<{ loca
 
   const [discussions, trailData] = await Promise.all([
     session?.user && course_meta?.course_uuid
-      ? getCourseDiscussions(course_meta.course_uuid, true, 50, 0)
+      ? getCourseDiscussions(course_meta.course_uuid, true, 50)
       : Promise.resolve([]),
     session?.user ? getCurrentTrail() : Promise.resolve(null),
   ])

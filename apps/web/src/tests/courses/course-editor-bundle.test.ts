@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vite-plus/test'
 
-const mocks = vi.hoisted(() => ({ apiResult: vi.fn(async () => ({ data: [], status: 200, headers: {} })) }))
+const mocks = vi.hoisted(() => ({ apiResult: vi.fn(async (_path: string) => ({ data: [] as unknown[], status: 200, headers: {} as Record<string, string> })) }))
 vi.mock('@/lib/api-client', () => ({ apiResult: mocks.apiResult }))
 
 import { getCourseEditorBundle } from '@services/courses/editor'
