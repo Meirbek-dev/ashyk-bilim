@@ -50,7 +50,7 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
     error,
   } = useQuery(
     queryOptions({
-      queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
+      queryKey: queryKeys.assessments.studio(normalizedActivityUuid),
       queryFn: async () => studioDetailFromWire(await getActivityAssessment(normalizedActivityUuid)),
       enabled: Boolean(normalizedActivityUuid),
     }),
@@ -126,6 +126,9 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
   const refresh = useCallback(async () => {
     if (!assessment) return
     await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.assessments.studio(normalizedActivityUuid),
+      }),
       queryClient.invalidateQueries({
         queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
       }),

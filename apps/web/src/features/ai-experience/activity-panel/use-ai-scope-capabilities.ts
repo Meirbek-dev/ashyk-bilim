@@ -42,8 +42,8 @@ export interface AIScopeCapability {
 
 function scopeCapabilitiesPath(scope: AIScope) {
   const params = new URLSearchParams({ surface: scope.surface })
-  if (scope.activityUuid) params.set('activity_uuid', scope.activityUuid)
-  if (scope.submissionUuid) params.set('submission_uuid', scope.submissionUuid)
+  // v2 takes `activity_id` only; a submission scope resolves through its activity.
+  if (scope.activityUuid) params.set('activity_id', scope.activityUuid)
   return `ai/capabilities/scope/${scope.courseUuid}?${params.toString()}`
 }
 

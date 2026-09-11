@@ -63,6 +63,7 @@ export function NativeItemAuthor({
     clearSaveLedgerEntry,
   } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const tStudio = useTranslations('Features.Assessments.Studio')
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs')
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
 
@@ -275,7 +276,7 @@ export function NativeItemAuthor({
           }),
         })
         await refresh()
-        toast.success(t('lifecycleChanged', { state: lifecycle }))
+        toast.success(tStudio('lifecycleChanged', { state: lifecycle }))
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'))
       }

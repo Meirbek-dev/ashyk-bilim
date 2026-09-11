@@ -208,9 +208,33 @@ export interface CourseReadiness {
   scheduled_content_count: number
 }
 
-/** Blocked: no v2 route for `courses/{id}/readiness`. */
+/**
+ * v2 has no `courses/{id}/readiness`; the legacy check was derived from the
+ * curriculum, so the first (and only hard) rule is derived here the same way:
+ * a course with no learner-visible activity cannot be published. The legacy
+ * per-assessment / file-submission readiness rules are not replicated —
+ * the studio already blocks publishing an unready assessment
+ * (QUESTIONS.md Q-2026-09-11-1).
+ */
 export async function getCourseReadiness(courseUuid: string): Promise<CourseReadiness> {
-  return apiJson<CourseReadiness>(`courses/${stripEntityPrefix(courseUuid)}/readiness`, serverGet())
+  const id = stripEntityPrefix(courseUuid)
+  const curriculum = await apiJson(`courses/${id}/curriculum`, serverGet(), Curriculum.parse)
+  const activeContentCount = curriculum.chapters.reduce(
+    (count, chapter) => count + chapter.activities.filter(activity => activity.published).length,
+    0,
+  )
+  const issues: CourseReadiness['issues'] =
+    activeContentCount === 0
+      ? [
+          {
+            code: 'COURSE_NO_LEARNER_VISIBLE_ACTIVITIES',
+            severity: 'blocker',
+            message: 'COURSE_NO_LEARNER_VISIBLE_ACTIVITIES',
+            scope: 'course',
+          },
+        ]
+      : []
+  return { ready: issues.length === 0, issues, active_content_count: activeContentCount, scheduled_content_count: 0 }
 }
 
 export async function updateCourseLifecycle(courseUuid: string, makePublic: boolean, _options?: CourseWriteOptions) {

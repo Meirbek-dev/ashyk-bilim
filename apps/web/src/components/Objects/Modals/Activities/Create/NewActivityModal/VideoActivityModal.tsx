@@ -32,7 +32,7 @@ interface ExternalVideoObject {
   name: string
   type: string
   uri: string
-  chapter_id: number
+  chapter_id: string
   details: VideoDetails
   [key: string]: unknown
 }

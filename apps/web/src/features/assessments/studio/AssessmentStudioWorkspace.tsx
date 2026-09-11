@@ -104,7 +104,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           body: JSON.stringify({ to: 'ARCHIVED', scheduled_at: null }),
         })
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
+          queryKey: queryKeys.assessments.studio(activityUuid.replace(/^activity_/, '')),
         })
         toast.success(t('lifecycleChanged', { state: lifecycleLabels.ARCHIVED }))
       } catch (updateError) {

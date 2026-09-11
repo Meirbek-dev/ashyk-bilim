@@ -48,7 +48,7 @@ export interface FileSubmissionActivity {
   activity_uuid: string
   course_id?: number | null
   course_uuid?: string | null
-  chapter_id: number
+  chapter_id: string
   title: string
   instructions: string
   lifecycle: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
@@ -72,7 +72,7 @@ export interface FileSubmissionCreatePayload {
   title: string
   instructions: string
   course_id: number
-  chapter_id: number
+  chapter_id: string
   allowed_mime_types?: string[]
   max_files?: number
   max_file_size_mb?: number | null

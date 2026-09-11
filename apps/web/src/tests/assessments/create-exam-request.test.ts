@@ -28,7 +28,8 @@ describe('createExamWithActivity (v2)', () => {
       settings: { time_limit: 30, shuffle_questions: true, allow_result_review: false, attempt_limit: 1, violation_threshold: 3 },
     } as never, undefined as never)
 
-    const [create, policy, rename] = mocks.apiJson.mock.calls
+    const calls = mocks.apiJson.mock.calls as [string, { body: string }][]
+    const [create, policy, rename] = [calls[0]!, calls[1]!, calls[2]!]
     expect(create[0]).toBe('assessments')
     expect(JSON.parse(create[1].body)).toEqual({ kind: 'exam', chapter_id: 'ch-1', title: 'Тест 1', description: 'Основы', grading_type: 'percentage' })
     expect(policy[0]).toBe('assessments/asm-1/policy')

@@ -9,6 +9,9 @@ export const queryKeys = {
     mySubmissions: (assessmentUuid: string | null | undefined) =>
       ['assessments', 'submissions', 'me', assessmentUuid || 'missing'] as const,
     activity: (activityUuid: string) => ['assessments', 'activity', activityUuid] as const,
+    // The studio caches its own normalized shape; sharing `activity` with the
+    // raw-wire readers let whichever fetched first win the cache.
+    studio: (activityUuid: string) => ['assessments', 'studio', activityUuid] as const,
     activityDetail: (activityUuid: string, assessmentUuid: string | null | undefined) =>
       ['assessments', 'activity', activityUuid, assessmentUuid || 'missing'] as const,
     detail: (assessmentUuid: string) => ['assessments', 'detail', assessmentUuid] as const,
