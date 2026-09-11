@@ -166,8 +166,8 @@ describe('Security Invariants', () => {
     expect(screen.queryByTestId('secret')).toBeNull()
   })
 
-  it('should allow everything for super-admins with wildcard (*)', () => {
-    const adminSession = createMockSession(['*'])
+  it('should allow everything for super-admins with wildcard (*:*:*)', () => {
+    const adminSession = createMockSession(['*:*:*'])
     const AdminWrapper = ({ children }: { children: React.ReactNode }) => (
       <SessionProvider initialSession={adminSession}>{children}</SessionProvider>
     )

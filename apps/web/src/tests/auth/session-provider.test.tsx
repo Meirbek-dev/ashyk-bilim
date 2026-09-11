@@ -61,10 +61,10 @@ describe('SessionProvider & useSession', () => {
     expect(result.current.can('course', 'delete', 'platform')).toBe(false)
   })
 
-  it('should support wildcard permissions (*)', () => {
+  it('should support wildcard permissions (*:*:*)', () => {
     const adminSession: Session = {
       ...mockSession,
-      permissions: ['*'],
+      permissions: ['*:*:*'],
     }
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (

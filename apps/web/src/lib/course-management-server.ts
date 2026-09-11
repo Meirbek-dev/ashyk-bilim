@@ -22,18 +22,8 @@ export interface CourseWorkspaceCapabilities {
 
 type AuthSession = Awaited<ReturnType<typeof requireSession>>
 
-/**
- * `sessionCan` only recognizes a bare `*` as the all-access wildcard, but the
- * server's actual super-admin grant is the literal string `*:*:*` (confirmed
- * via `POST /auth/login` as admin@ashyq.local — `permissions: ["*:*:*"]`).
- * Handled locally until `@/lib/auth/permissions.ts` matches the real grant
- * (see handoff); `Users.tsx` and `session-provider.tsx` work around the same
- * gap with their own `.includes('*:*:*')` checks.
- */
-const SUPER_ADMIN_GRANT = '*:*:*'
-
 function can(session: AuthSession, permsSet: Set<string>, resource: Resource, action: Action, scope: Scope) {
-  return permsSet.has(SUPER_ADMIN_GRANT) || sessionCan(session, resource, action, scope, permsSet)
+  return sessionCan(session, resource, action, scope, permsSet)
 }
 
 /**

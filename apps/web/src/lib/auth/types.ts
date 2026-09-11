@@ -27,4 +27,6 @@ export const SESSION_COOKIE_NAME = 'ab_session'
 
 export const AUTH_COOKIE_NAMES = [SESSION_COOKIE_NAME] as const
 
-export const AUTH_PERMISSION_WILDCARD = '*'
+// The server's super-admin grant is the literal string `*:*:*` (see
+// `apps/server/crates/core/src/permission.rs`); a bare `*` never arrives.
+export const AUTH_PERMISSION_WILDCARD = '*:*:*'

@@ -1,5 +1,7 @@
 'use client'
 
+import { AUTH_PERMISSION_WILDCARD } from '@/lib/auth/types'
+
 import { useQueryClient } from '@tanstack/react-query'
 import {
   AlertDialog,
@@ -103,7 +105,7 @@ function Users() {
     [roles],
   )
   const currentUserPriority = rolePriority(sessionData?.roles)
-  const isAdminUser = sessionData?.permissions.includes('*:*:*') ?? false
+  const isAdminUser = sessionData?.permissions.includes(AUTH_PERMISSION_WILDCARD) ?? false
 
   const queryClient = useQueryClient()
   const { data: users = [], isLoading, isError, error } = useAllMembers()
