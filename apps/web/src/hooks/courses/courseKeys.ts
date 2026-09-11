@@ -17,13 +17,19 @@ export function toAppCourse<T extends Course>(course: T) {
   return { ...course, course_uuid: course.id, created_at: created, creation_date: created, update_date: updated }
 }
 
-export const toWireActivityType = (token: string) => token.replace(/^(?:SUB)?TYPE_/u, '').toLowerCase()
+export const toWireActivityType = (token: string) => {
+  const wire = token.replace(/^(?:SUB)?TYPE_/u, '').toLowerCase()
+  return wire === 'custom' ? 'quiz' : wire
+}
+
+/** v2 calls the legacy `TYPE_CUSTOM` activity a `quiz`; every renderer still keys on `TYPE_CUSTOM`. */
+export const toAppActivityType = (wire: string) => (wire === 'quiz' ? 'TYPE_CUSTOM' : `TYPE_${wire.toUpperCase()}`)
 
 export function toAppActivity<T extends Activity>(activity: T) {
   return {
     ...activity,
     activity_uuid: activity.id,
-    activity_type: `TYPE_${activity.activity_type.toUpperCase()}`,
+    activity_type: toAppActivityType(activity.activity_type),
     activity_sub_type: `SUBTYPE_${activity.activity_sub_type.toUpperCase()}`,
   }
 }

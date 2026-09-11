@@ -181,15 +181,18 @@ function useAssessment(
     visible: 'VISIBLE',
     returned_for_revision: 'RETURNED_FOR_REVISION',
   } as const
+  // A released result wins over "you may start again": with unlimited
+  // attempts the learner must still see the score they just earned. The
+  // result card offers the retake.
   const recommendedAction: AttemptViewModel['recommendedAction'] = state.can_continue
     ? 'continueDraft'
-    : state.can_start
-      ? state.revision_requested
-        ? 'startRevision'
-        : 'start'
+    : state.revision_requested && state.can_start
+      ? 'startRevision'
       : visible
         ? 'viewResult'
-        : latest?.release_state === 'awaiting_release'
+        : state.can_start
+          ? 'start'
+          : latest?.release_state === 'awaiting_release'
           ? 'waitForRelease'
           : state.disabled_reasons.length
             ? 'blocked'

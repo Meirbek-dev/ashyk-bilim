@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
@@ -74,6 +74,47 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     }
   }, [recommendedAction, setMode])
 
+  const startAttempt = useCallback(async () => {
+    if (!vm?.assessmentUuid) return
+    setIsPending(true)
+    try {
+      await apiJson(`assessments/${vm.assessmentUuid}/submissions`, {
+        method: 'POST',
+      })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.activity(activityUuid),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.detail(vm.assessmentUuid),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.draft(vm.assessmentUuid),
+        }),
+        // The attempt view is driven by these two; without them the page
+        // stayed on the overview until a full reload.
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.attemptState(vm.assessmentUuid),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.mySubmissions(vm.assessmentUuid),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.studentActivity.runtime(
+            courseUuid.replace(/^course_/, ''),
+            activityUuid.replace(/^activity_/, ''),
+          ),
+        }),
+      ])
+      setMode('ACTIVE_ATTEMPT')
+      router.refresh()
+    } catch (error) {
+      toastApiError(error, { fallback: t('startActivityFailed') })
+    } finally {
+      setIsPending(false)
+    }
+  }, [activityUuid, courseUuid, queryClient, router, setMode, t, toastApiError, vm])
+
   // ── Register BottomActionBar CTA for PREFLIGHT ──────────────────────────────
 
   useEffect(() => {
@@ -90,59 +131,12 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
     const label = recommendedAction === 'startRevision' ? t('startRevision') : t('startAssessment')
 
-    const handler = async () => {
-      if (!vm.assessmentUuid) return
-      setIsPending(true)
-      try {
-        await apiJson(`assessments/${vm.assessmentUuid}/submissions`, {
-          method: 'POST',
-        })
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.assessments.activity(activityUuid),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.assessments.detail(vm.assessmentUuid),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.assessments.draft(vm.assessmentUuid),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.studentActivity.runtime(
-              courseUuid.replace(/^course_/, ''),
-              activityUuid.replace(/^activity_/, ''),
-            ),
-          }),
-        ])
-        setMode('ACTIVE_ATTEMPT')
-        router.refresh()
-      } catch (error) {
-        toastApiError(error, { fallback: t('startActivityFailed') })
-      } finally {
-        setIsPending(false)
-      }
-    }
-
-    setBottomBarAction({ label, handler, isPending })
+    setBottomBarAction({ label, handler: startAttempt, isPending })
 
     return () => {
       setBottomBarAction(null)
     }
-  }, [
-    isPreflightMode,
-    canAct,
-    recommendedAction,
-    vm,
-    isPending,
-    activityUuid,
-    courseUuid,
-    queryClient,
-    router,
-    setBottomBarAction,
-    setMode,
-    t,
-    toastApiError,
-  ])
+  }, [isPreflightMode, canAct, recommendedAction, vm, isPending, setBottomBarAction, startAttempt, t])
 
   // ── Loading ─────────────────────────────────────────────────────────────────
 
@@ -181,10 +175,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       <AttemptResultCard
         vm={vm}
         onRetry={() => {
-          setMode('ACTIVE_ATTEMPT')
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.assessments.activity(activityUuid),
-          })
+          void startAttempt()
         }}
         onStartRevision={() => {
           setMode('ACTIVE_ATTEMPT')

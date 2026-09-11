@@ -17,7 +17,7 @@ import { queryOptions, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { startAssessmentSubmission } from '@/features/assessments/submission-client'
+import { reportSubmissionViolation, startAssessmentSubmission } from '@/features/assessments/submission-client'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -469,10 +469,21 @@ function ExamTakingContent({
     [onComplete, persistence, submissionState, t],
   )
 
-  const handleViolation = useCallback((type: string, count: number) => {
-    void type
-    violationCountRef.current = count
-  }, [])
+  const handleViolation = useCallback(
+    async (type: string, count: number) => {
+      violationCountRef.current = count
+      // The server keeps the authoritative count and audit trail
+      // (`POST submissions/{id}/violations`); the local tally only ever
+      // raises what is sent with the final submit.
+      try {
+        const state = await reportSubmissionViolation(attempt.id, type.toLowerCase())
+        violationCountRef.current = Math.max(violationCountRef.current, state.violation_count)
+      } catch {
+        // Reporting is best-effort; the guard's local threshold still applies.
+      }
+    },
+    [attempt.id],
+  )
 
   const toggleFlag = useCallback((index: number) => {
     setFlaggedIndexes(prev => {

@@ -1,3 +1,4 @@
+import { toAppActivityType } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
 import { unixToIso } from '@/lib/api/contract'
 import { LearnerCourseState } from '@/lib/api/generated/zod'
@@ -106,7 +107,7 @@ function toNavItem(activity: OutlineActivity): RuntimeNavItem {
     published: activity.available,
     state: activity.available ? activity.state : 'unavailable',
     title: activity.title,
-    type: activity.activity_type === 'quiz' ? 'TYPE_CUSTOM' : `TYPE_${activity.activity_type.toUpperCase()}`,
+    type: toAppActivityType(activity.activity_type),
     uuid: activity.id,
   }
 }

@@ -66,3 +66,22 @@ export function submitAssessmentDraft(
     submissionFromWire,
   )
 }
+
+export interface ViolationState {
+  violation_count: number
+  threshold: number
+  exceeded: boolean
+}
+
+/**
+ * Report one anti-cheat event on the open draft. The server keeps the
+ * authoritative count and the audit trail; a client-side tally sent only at
+ * submit time can never raise it above what was reported here.
+ */
+export function reportSubmissionViolation(submissionId: string, kind: string, detail?: string | null) {
+  return apiJson<ViolationState>(`submissions/${SubmissionId.parse(submissionId)}/violations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind, detail: detail ?? null }),
+  })
+}
