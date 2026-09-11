@@ -1,5 +1,6 @@
 import { apiResult } from '@/lib/api-client'
 import { getApiErrorMessage, isApiError } from '@/lib/api/assertSuccess'
+import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
 
 export interface CourseEditorResource<T> {
   data: T | null
@@ -48,10 +49,12 @@ const fetchArrayResource = async <T>(path: string): Promise<CourseEditorResource
 }
 
 export async function getCourseEditorBundle(courseUuid: string): Promise<CourseEditorBundle> {
+  const id = stripEntityPrefix(courseUuid)
   const [contributors, linkedUserGroups, certifications] = await Promise.all([
-    fetchArrayResource<AppCourseAuthor>(`courses/${courseUuid}/contributors`),
-    fetchArrayResource<unknown>(`usergroups/resource/${courseUuid}`),
-    fetchArrayResource<unknown>(`certifications/course/${courseUuid}`),
+    // Blocked: no v2 route for course contributors (QUESTIONS Q-2026-09-10-3).
+    fetchArrayResource<AppCourseAuthor>(`courses/${id}/contributors`),
+    fetchArrayResource<unknown>(`courses/${id}/usergroups`),
+    fetchArrayResource<unknown>(`courses/${id}/certifications`),
   ])
 
   return {
