@@ -14,7 +14,7 @@ export const config = {
      * untouched. Root files such as /favicon.ico are excluded, while dotted
      * dynamic route segments remain matchable.
      */
-    '/((?!api|trpc|_next|_vercel|fonts|umami|examples|\\.well-known|[\\w-]+\\.\\w+).*)',
+    '/((?!api|content|trpc|_next|_vercel|fonts|umami|examples|\\.well-known|[\\w-]+\\.\\w+).*)',
     '/sitemap.xml',
   ],
 }
