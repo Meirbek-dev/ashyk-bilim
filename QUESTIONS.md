@@ -103,6 +103,15 @@ TOTP is offered "Enable" rather than "Disable" until it enrols again in-session.
 already calls Zitadel's `list_auth_method_types` during login, so the data is at hand;
 (b) add a small `GET /auth/mfa/totp` returning the enrolment state.
 
+### Q-2026-09-11-1 — Course readiness lives client-side now; should it move to the server?
+
+v2 has no `courses/{id}/readiness`. Legacy computed it from the curriculum plus each
+assessment's/file-submission's own readiness. The client now derives the hard rule
+(no learner-visible activity → blocker) from `courses/{id}/curriculum`; the deeper
+per-assessment rules are not replicated. Publishing an unready assessment is already
+blocked in the studio, so the practical gap is a file submission with no config.
+**Options:** (a) accept as-is; (b) add `GET courses/{id}/readiness` server-side.
+
 ### Q-2026-09-10-5 — `request_id` is documented in the error envelope but never set
 
 `ARCHITECTURE.md` §5 and `apps/web/AGENTS.md` both say problem+json responses carry
