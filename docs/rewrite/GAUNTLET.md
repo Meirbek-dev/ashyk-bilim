@@ -52,6 +52,11 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 - **Reliable clicking in this pane:** stay at the pane's native size, take a screenshot,
   and click by COORDINATE from that screenshot's stated frame. `find`/`read_page` refs
   are fine for `form_input`, unreliable for `left_click`.
+- **Media locally:** apply `extra/storage-public-policy.json` to `ab-public` once after
+  creating the bucket (aws-cli, see the stack-up commands), set
+  `CONTENT_REWRITE_TARGET=http://localhost:9002/ab-public` and
+  `NEXT_PUBLIC_MEDIA_URL=http://localhost:3000/` in `apps/web/.env.local` — otherwise
+  avatars and block media 404 (ORB) because nothing serves `/content/`.
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
