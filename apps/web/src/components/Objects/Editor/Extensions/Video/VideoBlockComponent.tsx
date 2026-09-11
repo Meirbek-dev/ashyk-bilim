@@ -3,10 +3,10 @@
 import { AlertCircle, ArrowLeftRight, CheckCircle2, Download, Expand, Loader2, Upload, Video, X } from 'lucide-react'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import ArtPlayer from '@components/Objects/Activities/Video/Artplayer'
-import { getActivityBlockMediaDirectory } from '@services/media/media'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { uploadNewVideoFile } from '@services/blocks/Video/video'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { getBlockFileUrl } from '@services/blocks/upload'
+import type { BlockFileContent } from '@services/blocks/upload'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { constructAcceptValue } from '@/lib/constants'
 import { AnimatePresence, motion } from 'motion/react'
@@ -38,18 +38,9 @@ const sizeButtonCn = (isActive: boolean) =>
       : 'text-gray-600 bg-transparent border-gray-200 hover:bg-gray-50',
   )
 
-interface Course {
-  courseStructure: {
-    course_uuid: string
-  }
-}
-
 interface VideoBlockObject {
   block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
+  content: BlockFileContent
   size: VideoSize
 }
 
@@ -69,7 +60,6 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
   const locale = fullLocale.split('-')[0]
   const { node, extension, updateAttributes } = props
   usePlatform()
-  const course = useCourse() as Course | null
 
   const subtitleEntries = [
     { html: t('subtitles.russian'), url: '/subtitle.ru.srt' },
@@ -99,7 +89,6 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const isEditable = editorState?.isEditable
-  const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null
 
   const handleVideoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -141,44 +130,15 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
     }
   }
 
-  // MANUAL REVIEW: progressIntervalRef tracks simulated upload progress. If uploads can be aborted, ensure abort handling clears intervals and timeouts as well.
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
   const handleUpload = async (file: File) => {
     try {
       setIsLoading(true)
       setError(null)
       setUploadProgress(0)
 
-      // Simulate upload progress - store interval id in a ref so we can clear it on unmount
-      progressIntervalRef.current = globalThis.setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90))
-      }, 200)
-
-      const tempBlockUuid = `block_temp_${Date.now()}`
-
-      const object = await uploadNewVideoFile(
-        file,
-        extension.options.activity.activity_uuid,
-        course?.courseStructure.course_uuid,
-        tempBlockUuid,
+      const object = await uploadNewVideoFile(file, extension.options.activity.activity_uuid, progress =>
+        setUploadProgress(progress.percentage),
       )
-
-      // If we got a temporary block, set it immediately so UI updates predictably
-      if (object?.block_uuid && object.content) {
-        const optimisticBlock = {
-          ...object,
-          size: selectedSize,
-        }
-        setBlockObject(optimisticBlock)
-        updateAttributes({ blockObject: optimisticBlock })
-      }
-
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-        progressIntervalRef.current = null
-      }
-      setUploadProgress(100)
 
       const newBlockObject = {
         ...object,
@@ -197,10 +157,6 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
       const err = uploadError as Error | AppApiError
       setError((err && 'message' in err ? err.message : '') || t('errorUpload'))
     } finally {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-        progressIntervalRef.current = null
-      }
       setIsLoading(false)
     }
   }
@@ -224,31 +180,17 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
       updateAttributes({ blockObject: newBlockObject })
     }
   }
-  // Clear pending timeouts or intervals on unmount
+  // Clear the pending progress-reset timeout on unmount
   useEffect(() => {
     return () => {
       if (uploadResetTimeoutRef.current) {
         clearTimeout(uploadResetTimeoutRef.current)
         uploadResetTimeoutRef.current = null
       }
-      // Ensure any progress simulation interval is cleared on unmount
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-        progressIntervalRef.current = null
-      }
     }
   }, [])
 
-  const videoUrl =
-    blockObject && course?.courseStructure.course_uuid
-      ? getActivityBlockMediaDirectory({
-          courseId: course.courseStructure.course_uuid,
-          activityId: extension.options.activity.activity_uuid,
-          blockId: blockObject.block_uuid,
-          fileId: fileId || '',
-          type: 'videoBlock',
-        })
-      : null
+  const videoUrl = getBlockFileUrl(blockObject?.content)
 
   const handleDownload = () => {
     if (!videoUrl) return

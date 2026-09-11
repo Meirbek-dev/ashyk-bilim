@@ -10,16 +10,16 @@ import {
   Loader2,
   Upload,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import NextImage from '@components/ui/NextImage'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
-import { getActivityBlockMediaDirectory } from '@services/media/media'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { uploadNewImageFile } from '@services/blocks/Image/images'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { getBlockFileUrl } from '@services/blocks/upload'
+import type { BlockFileContent } from '@services/blocks/upload'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { constructAcceptValue } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -33,10 +33,7 @@ type Alignment = 'left' | 'center' | 'right'
 
 interface BlockObject {
   block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
+  content: BlockFileContent
 }
 
 interface ImageBlockProps {
@@ -404,7 +401,6 @@ function ViewerControls({ onExpand, onDownload, t }: ViewerControlsProps) {
 export default function ImageBlockComponent({ node, updateAttributes, extension }: ImageBlockProps) {
   const t = useTranslations('DashPage.Editor.ImageBlock')
   usePlatform()
-  const course = useCourse()
   const { isEditable } = useEditorProvider()
   const [blockObject, setBlockObject] = useState(node.attrs.blockObject)
   const [alignment, setAlignment] = useState<Alignment>(node.attrs.alignment || 'center')
@@ -413,19 +409,7 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
   const activityUuid = extension.options.activity.activity_uuid
   const initialWidth = node.attrs.size?.width && node.attrs.size.width > 0 ? node.attrs.size.width : DEFAULT_WIDTH
 
-  // Image URL computation
-  const imageUrl = useMemo(() => {
-    if (!blockObject || !course) return null
-
-    const fileId = `${blockObject.content.file_id}.${blockObject.content.file_format}`
-    return getActivityBlockMediaDirectory({
-      courseId: course.courseStructure.course_uuid,
-      activityId: activityUuid,
-      blockId: blockObject.block_uuid,
-      fileId,
-      type: 'imageBlock',
-    })
-  }, [blockObject, course, activityUuid])
+  const imageUrl = getBlockFileUrl(blockObject?.content)
 
   // Upload handling
   const { preview, isUploading, error, handleFileSelect, handleUpload, reset } = useImageUpload({

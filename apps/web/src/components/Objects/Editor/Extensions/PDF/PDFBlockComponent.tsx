@@ -2,10 +2,10 @@ import { FileUploadBlock, FileUploadBlockButton, FileUploadBlockInput } from '..
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { AlertTriangle, Download, Expand, FileText } from 'lucide-react'
-import { getActivityBlockMediaDirectory } from '@services/media/media'
-import { useCourse } from '@components/Contexts/CourseContext'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { uploadNewPDFFile } from '@services/blocks/Pdf/pdf'
+import { getBlockFileUrl } from '@services/blocks/upload'
+import type { BlockFileContent } from '@services/blocks/upload'
 import { constructAcceptValue } from '@/lib/constants'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
@@ -22,10 +22,7 @@ const MAX_HEIGHT = 1200
 
 interface PdfBlockObject {
   block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
+  content: BlockFileContent
 }
 
 interface PdfBlockSize {
@@ -51,7 +48,6 @@ function normalizeSize(size?: Partial<PdfBlockSize> | null): PdfBlockSize {
 
 function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionOptions>) {
   const t = useTranslations('DashPage.Editor.PDFBlock')
-  const course = useCourse()
   const [pdf, setPDF] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [blockObject, setblockObject] = useState(props.node.attrs.blockObject)
@@ -71,7 +67,7 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
 
   const [availableWidth, setAvailableWidth] = useState<number | null>(null)
   const nodeSize = props.node.attrs.size
-  const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null
+  const pdfUrl = getBlockFileUrl(blockObject?.content)
   const editorState = useEditorProvider()
   const { isEditable } = editorState
   const sizeRef = useRef(size)
@@ -129,15 +125,7 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
   }
 
   const handleDownload = () => {
-    if (!(fileId && blockObject)) return
-
-    const pdfUrl = getActivityBlockMediaDirectory({
-      courseId: course?.courseStructure.course_uuid || '',
-      activityId: props.extension.options.activity.activity_uuid,
-      blockId: blockObject.block_uuid,
-      fileId,
-      type: 'pdfBlock',
-    })
+    if (!(pdfUrl && blockObject)) return
 
     const link = document.createElement('a')
     link.href = pdfUrl || ''
@@ -207,16 +195,6 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
       isSyncingPanelsRef.current = false
     }
   }, [targetHeight, targetWidth])
-
-  const pdfUrl = blockObject
-    ? getActivityBlockMediaDirectory({
-        courseId: course?.courseStructure.course_uuid || '',
-        activityId: props.extension.options.activity.activity_uuid,
-        blockId: blockObject.block_uuid,
-        fileId: fileId || '',
-        type: 'pdfBlock',
-      })
-    : null
 
   const viewerStyle = {
     width: `${visibleWidth}px`,

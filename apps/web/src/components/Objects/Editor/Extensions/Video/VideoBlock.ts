@@ -1,15 +1,13 @@
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import { Node, mergeAttributes } from '@tiptap/core'
 import type { CommandProps } from '@tiptap/core'
+import type { BlockFileContent } from '@services/blocks/upload'
 
 import VideoBlockComponent from './VideoBlockComponent'
 
 export interface VideoBlockObject {
   block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
+  content: BlockFileContent
   size?: 'small' | 'medium' | 'large' | 'full'
 }
 
