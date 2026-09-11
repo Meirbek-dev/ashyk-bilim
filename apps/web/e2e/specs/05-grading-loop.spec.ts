@@ -13,7 +13,7 @@
  */
 
 import { testAsTeacher as test, expect } from '../fixtures'
-import { getEnv } from '../env'
+import { getEnv, setEnv } from '../env'
 import { USERS } from '../fixtures/test-data'
 
 test.describe.serial('Teacher – Grading Loop', () => {
@@ -117,7 +117,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     expect(page.url()).toContain(`/activity/${examActivityId}/review`)
   })
 
-  test('teacher can release the exam grade to the student', async ({ gradingReviewPage }) => {
+  test('teacher can release the exam grade to the student', async ({ page, gradingReviewPage }) => {
     if (!examActivityId) {
       test.skip(true, 'Exam activity ID not set — run course creation spec first')
       return
@@ -129,6 +129,10 @@ test.describe.serial('Teacher – Grading Loop', () => {
     // The assessment queue labels entries by display name or "@username"
     const learner = new RegExp(`${USERS.student.firstName}|@${USERS.student.email.split('@')[0]}`, 'i')
     await gradingReviewPage.selectSubmission(learner)
+    // The workspace mirrors the selection into `?submission=`; spec 07 reuses it.
+    await expect(page).toHaveURL(/[?&]submission=/)
+    const submissionUuid = new URL(page.url()).searchParams.get('submission')
+    if (submissionUuid) setEnv('E2E_SUBMISSION_UUID', submissionUuid)
 
     // Exam is auto-graded; release ("Publish grade") it to the learner. The
     // grade save is a server action (no `/api/v2` response to watch), so the
