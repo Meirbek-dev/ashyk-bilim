@@ -22,8 +22,8 @@ function loadEnv(file: string): void {
     if (k && !(k in process.env)) process.env[k] = v
   }
 }
+loadEnv(path.join(__dirname, 'e2e/.env.test.local')) // overrides win: first loader sets the key
 loadEnv(path.join(__dirname, 'e2e/.env.test'))
-loadEnv(path.join(__dirname, 'e2e/.env.test.local'))
 
 const PORT = getEnvOr('PORT', '3000')
 const BASE_URL = getEnvOr('E2E_BASE_URL', `http://localhost:${PORT}`)

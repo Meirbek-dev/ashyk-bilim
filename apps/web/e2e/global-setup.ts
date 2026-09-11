@@ -53,8 +53,8 @@ function loadEnvFile(filePath: string): void {
   }
 }
 
+loadEnvFile(path.join(__dirname, '.env.test.local')) // overrides win: first loader sets the key
 loadEnvFile(path.join(__dirname, '.env.test'))
-loadEnvFile(path.join(__dirname, '.env.test.local')) // overrides
 
 const API_URL = getEnvOr('E2E_API_URL', 'http://localhost:8080/api/v2').replace(/\/+$/u, '')
 const BASE_URL = getEnvOr('E2E_BASE_URL', 'http://localhost:3000')

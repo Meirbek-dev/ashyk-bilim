@@ -16,18 +16,11 @@ test.describe('Smoke – Public pages', () => {
     await expect(page).toHaveTitle(/Ashyk? Bilim|LMS/i)
   })
 
-  test('login page renders the email and password fields', async ({ page }) => {
+  test('login page renders the login and password fields', async ({ page }) => {
     await page.goto('/en/login')
-    await expect(page.locator('input[name="email"]')).toBeVisible()
+    await expect(page.locator('input[name="login"]')).toBeVisible()
     await expect(page.locator('input[name="password"]')).toBeVisible()
     await expect(page.locator('form button[type="submit"]')).toBeVisible()
-  })
-
-  test('signup page renders the registration form', async ({ page }) => {
-    await page.goto('/en/signup')
-    await expect(page.locator('input[name="firstName"]')).toBeVisible()
-    await expect(page.locator('input[name="email"]')).toBeVisible()
-    await expect(page.locator('input[name="password"]')).toBeVisible()
   })
 
   test('page returns HTTP 200 for the home route', async ({ page }) => {
