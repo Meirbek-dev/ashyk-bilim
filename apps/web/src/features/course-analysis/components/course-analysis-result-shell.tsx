@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { AlertTriangleIcon, CheckCircle2Icon, ClipboardCheckIcon, FileTextIcon, ShieldCheckIcon } from 'lucide-react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 import {
   AlertDialog,
@@ -23,12 +23,13 @@ import { Spinner } from '@/components/ui/spinner'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AIEvidencePanel } from '@/features/ai-experience'
 import type { AICitation } from '@/features/ai-experience'
+import { fromUnix } from '@/lib/api/contract'
 
 import { useReviewCourseFinding } from '../api/use-course-analysis'
-import type { CourseAnalysis } from '../api/use-course-analysis'
+import type { CourseAnalysisView } from '../api/use-course-analysis'
 
 interface CourseAnalysisResultShellProps {
-  analysis: CourseAnalysis
+  analysis: CourseAnalysisView
   courseUuid?: string | null | undefined
   onPublish?: () => void
   publishing?: boolean
@@ -49,37 +50,28 @@ export function CourseAnalysisResultShell({
   publishing,
 }: CourseAnalysisResultShellProps) {
   const t = useTranslations('AiExperience.courseAnalysisResultShell')
-  const locale = useLocale()
+  const format = useFormatter()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [reviewedEvidence, setReviewedEvidence] = useState(false)
-  const [prevUuid, setPrevUuid] = useState(analysis.analysis_uuid)
+  const [prevUuid, setPrevUuid] = useState(analysis.id)
   const findingReview = useReviewCourseFinding(courseUuid ?? '')
 
-  if (analysis.analysis_uuid !== prevUuid) {
-    setPrevUuid(analysis.analysis_uuid)
+  if (analysis.id !== prevUuid) {
+    setPrevUuid(analysis.id)
     setReviewedEvidence(false)
   }
-  const citations = useMemo(() => normalizeCitations(analysis.report_json.citations), [analysis.report_json.citations])
+  const citations = useMemo(() => normalizeCitations(analysis.report.citations), [analysis.report.citations])
   const findings = useMemo(
     () =>
-      normalizeFindings(analysis.report_json.recommendations, analysis.report_json.summary, {
+      normalizeFindings(analysis.report.recommendations, analysis.report.summary, {
         action: t('inspectCitationsAction'),
         title: t('summaryFindingTitle'),
       }),
-    [analysis.report_json.recommendations, analysis.report_json.summary, t],
+    [analysis.report.recommendations, analysis.report.summary, t],
   )
-  const risks = useMemo(() => normalizeStringList(analysis.report_json.risks), [analysis.report_json.risks])
-  const strengths = useMemo(() => normalizeStringList(analysis.report_json.strengths), [analysis.report_json.strengths])
-  const scoreFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale])
-  const dateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      }),
-    [locale],
-  )
-  const createdAt = analysis.created_at ? new Date(analysis.created_at) : null
+  const risks = useMemo(() => normalizeStringList(analysis.report.risks), [analysis.report.risks])
+  const strengths = useMemo(() => normalizeStringList(analysis.report.strengths), [analysis.report.strengths])
+  const createdAt = fromUnix(analysis.created_at_unix)
   const needsReview = analysis.status !== 'published'
 
   return (
@@ -92,27 +84,27 @@ export function CourseAnalysisResultShell({
               <ShieldCheckIcon data-icon="inline-start" aria-hidden="true" />
               {needsReview ? t('needsReview') : t('published')}
             </Badge>
-            {analysis.report_json.confidence ? (
-              <Badge variant="outline">{analysis.report_json.confidence}</Badge>
+            {analysis.report.confidence ? (
+              <Badge variant="outline">{analysis.report.confidence}</Badge>
             ) : null}
           </div>
           <h3 className="text-lg leading-tight font-semibold">
-            {t('title', { score: scoreFormatter.format(analysis.public_score) })}
+            {t('title', { score: format.number(analysis.public_score) })}
           </h3>
           {analysis.previous_public_score !== null && analysis.previous_public_score !== undefined ? (
             <p className="text-muted-foreground text-xs">
-              {t('previousScore', { score: scoreFormatter.format(analysis.previous_public_score) })}
+              {t('previousScore', { score: format.number(analysis.previous_public_score) })}
             </p>
           ) : null}
           <p className="text-muted-foreground max-w-prose text-sm leading-relaxed break-words">
-            {analysis.report_json.summary ?? t('defaultDescription')}
+            {analysis.report.summary ?? t('defaultDescription')}
           </p>
           <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
             <span>
               {analysis.model_name ? t('modelRecorded', { name: analysis.model_name }) : t('modelNotRecorded')}
             </span>
             <span>{t('citationsCount', { count: citations.length })}</span>
-            {createdAt && !Number.isNaN(createdAt.valueOf()) ? <span>{dateFormatter.format(createdAt)}</span> : null}
+            {createdAt ? <span>{format.dateTime(createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</span> : null}
           </div>
         </div>
         {onPublish ? (
@@ -133,9 +125,9 @@ export function CourseAnalysisResultShell({
           <FindingsTable
             findings={findings}
             pending={findingReview.isPending}
-            reviews={analysis.report_json.finding_reviews ?? {}}
+            reviews={analysis.report.finding_reviews ?? {}}
             onReview={(findingId, action) =>
-              findingReview.mutate({ action, analysisUuid: analysis.analysis_uuid, findingId })
+              findingReview.mutate({ action, analysisId: analysis.id, findingId })
             }
           />
           <ReportList empty={t('noStrengths')} icon="strength" items={strengths} title={t('contentStrengths')} />
@@ -193,7 +185,7 @@ function FindingsTable({
   findings: CourseFinding[]
   onReview: (findingId: string, action: 'accepted' | 'dismissed' | 'task_created') => void
   pending: boolean
-  reviews: NonNullable<CourseAnalysis['report_json']['finding_reviews']>
+  reviews: NonNullable<CourseAnalysisView['report']['finding_reviews']>
 }) {
   const t = useTranslations('AiExperience.courseAnalysisResultShell')
 

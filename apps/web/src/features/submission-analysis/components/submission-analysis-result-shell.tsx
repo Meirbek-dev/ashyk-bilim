@@ -5,28 +5,28 @@ import { Badge } from '@/components/ui/badge'
 import { AIResultShell, AIEvidencePanel } from '@/features/ai-experience'
 import type { AICitation } from '@/features/ai-experience'
 
-import type { SubmissionAnalysis } from '../api/use-submission-analysis'
+import type { SubmissionAnalysisView } from '../api/use-submission-analysis'
 
-export function SubmissionAnalysisResultShell({ analysis }: { analysis: SubmissionAnalysis }) {
+export function SubmissionAnalysisResultShell({ analysis }: { analysis: SubmissionAnalysisView }) {
   const t = useTranslations('AiExperience.submissionAnalysisResultShell')
   const citations = useMemo(
-    () => (analysis.analysis_json.citations ?? []) as AICitation[],
-    [analysis.analysis_json.citations],
+    () => (analysis.analysis.citations ?? []) as AICitation[],
+    [analysis.analysis.citations],
   )
 
   const contextValue = useMemo(
     () => ({
       title: t('title', { count: analysis.gap_count }),
-      description: analysis.analysis_json.summary ?? t('defaultDescription'),
+      description: analysis.analysis.summary ?? t('defaultDescription'),
       state: 'complete' as const,
-      confidence: analysis.analysis_json.confidence,
+      confidence: analysis.analysis.confidence,
       modelName: analysis.model_name,
       citations,
     }),
     [
       analysis.gap_count,
-      analysis.analysis_json.summary,
-      analysis.analysis_json.confidence,
+      analysis.analysis.summary,
+      analysis.analysis.confidence,
       analysis.model_name,
       citations,
       t,
@@ -39,7 +39,7 @@ export function SubmissionAnalysisResultShell({ analysis }: { analysis: Submissi
         <AIResultShell.Header />
         <AIResultShell.Body>
           <div className="flex flex-col gap-2">
-            {(analysis.analysis_json.knowledge_gaps ?? []).map(gap => (
+            {(analysis.analysis.knowledge_gaps ?? []).map(gap => (
               <div key={gap.concept} className="rounded-lg border p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{gap.concept}</p>

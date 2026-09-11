@@ -9429,6 +9429,7 @@
       "failed": "Failed",
       "pendingGrade": "Pending grade",
       "assessmentSubmitted": "Assessment submitted",
+      "latestAttemptScore": "Latest attempt: {score}",
       "gradeNotYetReleased": "Your grade has not been released yet. Check back later.",
       "retryAssessment": "Retry assessment",
       "nextActivity": "Next activity",
@@ -10131,8 +10132,6 @@
       "submitted": "Submitted",
       "graded": "Graded",
       "published": "Published",
-      "contentChanged": "Course content changed since this review",
-      "previousScore": "Previous review score: {score}",
       "returned": "Returned"
     }
   },
@@ -10383,7 +10382,8 @@
       "rerun": "Rerun",
       "analyze": "Analyze",
       "draftFeedback": "Draft feedback",
-      "defaultStatus": "Run an analysis to prepare a teacher-reviewed quality report before publishing AI-visible guidance."
+      "defaultStatus": "Run an analysis to prepare a teacher-reviewed quality report before publishing AI-visible guidance.",
+      "emptyTitle": "No analysis yet"
     },
     "courseAnalysisResultShell": {
       "title": "Course quality score {score}",
@@ -10419,13 +10419,17 @@
       "publishDialogTitle": "Publish reviewed score?",
       "publishDialogDescription": "This score, the findings list, and cited sources will become visible to students and staff enrolled in this course. A revised score will appear as an update, not a silent removal.",
       "cancelPublish": "Keep reviewing",
-      "confirmPublish": "Publish reviewed score"
+      "confirmPublish": "Publish reviewed score",
+      "contentChanged": "Course content changed since this review",
+      "previousScore": "Previous review score: {score}"
     },
     "submissionAIEntry": {
       "title": "AI submission insight",
       "description": "Knowledge gaps, evidence, and optional adaptive remediation.",
       "analyze": "Analyze",
-      "generateGate": "Generate remediation gate"
+      "generateGate": "Generate remediation gate",
+      "emptyTitle": "No analysis yet",
+      "emptyDescription": "Run an analysis to see knowledge gaps and evidence for this submission."
     },
     "submissionAnalysisResultShell": {
       "title": "{count} knowledge gaps",

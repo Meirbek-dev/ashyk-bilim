@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import {
   AIArtifactLifecycle,
+  AIEmptyState,
   AIErrorRecovery,
   AIPrivacyNotice,
   AIRunProgress,
@@ -56,10 +57,12 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
           analysis={analysis}
           courseUuid={courseUuid}
           publishing={publish.isPending}
-          onPublish={() => publish.mutate(analysis.analysis_uuid)}
+          onPublish={() => publish.mutate(analysis.id)}
         />
+      ) : latest.error ? (
+        <AIErrorRecovery error={latest.error} onRetry={() => void latest.refetch()} />
       ) : (
-        <p className="text-muted-foreground text-sm">{t('defaultStatus')}</p>
+        <AIEmptyState title={t('emptyTitle')} description={t('defaultStatus')} />
       )}
     </section>
   )

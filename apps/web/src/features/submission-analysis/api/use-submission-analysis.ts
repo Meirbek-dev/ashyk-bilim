@@ -1,60 +1,74 @@
 'use client'
 
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import * as zod from 'zod'
 
 import { apiJson } from '@/lib/api-client'
-import type { AIRunStatusPayload } from '@/features/ai-experience'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { queueSubmissionAnalysis } from '@/lib/api/generated/ai/ai'
+import { SubmissionAnalysis } from '@/lib/api/generated/zod'
 
-export interface SubmissionAnalysis {
-  analysis_uuid: string
-  gap_count: number
-  status: string
-  language: string
-  model_name?: string | null
-  analysis_json: {
-    summary?: string
-    confidence?: string
-    citations?: unknown[]
-    knowledge_gaps?: { concept: string; severity: string; remediation_goal: string }[]
-  }
+/** Known keys of the `analysis` blob (`SubmissionAnalysisReport`). */
+const SubmissionReport = zod.looseObject({
+  summary: zod.string().optional(),
+  confidence: zod.string().optional(),
+  citations: zod.array(zod.unknown()).optional(),
+  knowledge_gaps: zod
+    .array(zod.looseObject({ concept: zod.string(), severity: zod.string(), remediation_goal: zod.string() }))
+    .optional(),
+})
+
+export const SubmissionAnalysisView = SubmissionAnalysis.extend({ analysis: SubmissionReport })
+export type SubmissionAnalysisView = zod.output<typeof SubmissionAnalysisView>
+
+/** `null` body and 404 both mean "no analysis yet". */
+export function parseLatestSubmissionAnalysis(value: unknown): SubmissionAnalysisView | null {
+  return value === null ? null : SubmissionAnalysisView.parse(value)
 }
 
-export function latestSubmissionAnalysisQueryOptions(submissionUuid: string) {
+export function latestSubmissionAnalysisQueryOptions(submissionId: string) {
   return queryOptions({
-    queryKey: ['submission-analysis', submissionUuid],
-    queryFn: () => apiJson<SubmissionAnalysis | null>(`ai/submission-analysis/${submissionUuid}/latest`),
-    enabled: Boolean(submissionUuid),
+    queryKey: ['submission-analysis', submissionId],
+    queryFn: async () => {
+      try {
+        return await apiJson(`ai/submission-analysis/${submissionId}/latest`, undefined, parseLatestSubmissionAnalysis)
+      } catch (error) {
+        if (hasErrorCode(error, 'not-found')) return null
+        throw error
+      }
+    },
+    enabled: Boolean(submissionId),
   })
 }
 
-export function useLatestSubmissionAnalysis(submissionUuid: string) {
-  return useQuery(latestSubmissionAnalysisQueryOptions(submissionUuid))
+export function useLatestSubmissionAnalysis(submissionId: string) {
+  return useQuery(latestSubmissionAnalysisQueryOptions(submissionId))
 }
 
-export function useRunSubmissionAnalysis(submissionUuid: string) {
+export function useRunSubmissionAnalysis(submissionId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (language: string) =>
-      apiJson<SubmissionAnalysis>(`ai/submission-analysis/${submissionUuid}/analyze`, {
-        method: 'POST',
-        body: JSON.stringify({ language }),
-        headers: { 'content-type': 'application/json' },
-        timeoutMs: 120_000,
-      }),
+      apiJson(
+        `ai/submission-analysis/${submissionId}/analyze`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ language }),
+          headers: { 'content-type': 'application/json' },
+          timeoutMs: 120_000,
+        },
+        SubmissionAnalysisView.parse,
+      ),
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: latestSubmissionAnalysisQueryOptions(submissionUuid).queryKey,
+        queryKey: latestSubmissionAnalysisQueryOptions(submissionId).queryKey,
       }),
   })
 }
 
-export function useQueueSubmissionAnalysis(submissionUuid: string) {
+/** `202 RunStatus`; the run controller polls/streams the run and invalidates `latest`. */
+export function useQueueSubmissionAnalysis(submissionId: string) {
   return useMutation({
-    mutationFn: (language: string) =>
-      apiJson<AIRunStatusPayload>(`ai/submission-analysis/${submissionUuid}/analyze/queue`, {
-        method: 'POST',
-        body: JSON.stringify({ language }),
-        headers: { 'content-type': 'application/json' },
-      }),
+    mutationFn: (language: string) => queueSubmissionAnalysis(submissionId, { language }),
   })
 }

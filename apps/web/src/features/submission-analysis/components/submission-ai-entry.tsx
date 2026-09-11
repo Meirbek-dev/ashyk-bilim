@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { BrainCircuit, FilePenLine, RefreshCw, Route } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -8,19 +9,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   AIArtifactLifecycle,
   AICommandList,
+  AIEmptyState,
   AIErrorRecovery,
   AIRunProgress,
   useAIRunController,
 } from '@/features/ai-experience'
-import { RemediationResultShell, useQueueRemediation } from '@/features/remediation'
-import type { RemediationSession } from '@/features/remediation'
+import { RemediationLecture, RemediationResultShell, useQueueRemediation } from '@/features/remediation'
+import type { RemediationView } from '@/features/remediation'
 
 import {
   latestSubmissionAnalysisQueryOptions,
   useLatestSubmissionAnalysis,
   useQueueSubmissionAnalysis,
 } from '../api/use-submission-analysis'
-import type { SubmissionAnalysis } from '../api/use-submission-analysis'
+import type { SubmissionAnalysisView } from '../api/use-submission-analysis'
 import { SubmissionAnalysisResultShell } from './submission-analysis-result-shell'
 
 export function SubmissionAIEntry({
@@ -39,21 +41,16 @@ export function SubmissionAIEntry({
     queue: queueAnalysis,
   })
   const queueRemediation = useQueueRemediation(submissionUuid ?? '')
-  const remediation = useAIRunController<{ gate_mode: boolean; language: string }, RemediationSession['lecture_json']>({
+  const remediation = useAIRunController({
     persistenceKey: `submission-remediation:${submissionUuid ?? 'none'}`,
     queue: queueRemediation,
   })
-  const remediationArtifact = remediation.latestArtifact?.content
-
-  const remediationSession = remediationArtifact
-    ? {
-        session_uuid: remediation.latestArtifact?.id ?? 'remediation_artifact',
-        status: 'active' as const,
-        gate_mode: true,
-        lecture_json: remediationArtifact,
-        test_json: { questions: [] },
-      }
-    : null
+  const artifactContent = remediation.latestArtifact?.content
+  // The queued run's final artifact is the lecture bundle; the session row itself is not returned.
+  const remediationSession = useMemo<RemediationView | null>(() => {
+    const lecture = RemediationLecture.safeParse(artifactContent)
+    return lecture.success ? { gate_mode: true, lecture: lecture.data, status: 'assigned' } : null
+  }, [artifactContent])
 
   if (!submissionUuid) {
     return null
@@ -81,7 +78,13 @@ export function SubmissionAIEntry({
         <AIArtifactLifecycle state={run.state} artifact={run.latestArtifact} />
         <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
         {run.error ? <AIErrorRecovery error={run.error} onRetry={() => void run.start('auto')} /> : null}
-        {latest.data ? <SubmissionAnalysisResultShell analysis={latest.data} /> : null}
+        {latest.data ? (
+          <SubmissionAnalysisResultShell analysis={latest.data} />
+        ) : latest.error ? (
+          <AIErrorRecovery error={latest.error} onRetry={() => void latest.refetch()} />
+        ) : (
+          <AIEmptyState title={t('emptyTitle')} description={t('emptyDescription')} />
+        )}
         {latest.data && onDraftFeedback ? (
           <Button
             type="button"
@@ -111,7 +114,7 @@ export function SubmissionAIEntry({
   )
 }
 
-function buildFeedbackDraft(analysis: SubmissionAnalysis) {
-  const lines = analysis.analysis_json.knowledge_gaps?.map(gap => `- **${gap.concept}**: ${gap.remediation_goal}`)
-  return [analysis.analysis_json.summary, lines?.length ? lines.join('\n') : null].filter(Boolean).join('\n\n')
+function buildFeedbackDraft(analysis: SubmissionAnalysisView) {
+  const lines = analysis.analysis.knowledge_gaps?.map(gap => `- **${gap.concept}**: ${gap.remediation_goal}`)
+  return [analysis.analysis.summary, lines?.length ? lines.join('\n') : null].filter(Boolean).join('\n\n')
 }
