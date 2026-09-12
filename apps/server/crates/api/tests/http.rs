@@ -40,6 +40,29 @@ async fn unknown_routes_answer_problem_json(pool: PgPool) {
     assert!(body["type"].as_str().unwrap().ends_with("/not-found"));
 }
 
+/// The problem+json body carries the same correlation id as the header —
+/// a user copying the JSON gets something support can grep for.
+#[sqlx::test(migrations = "../../migrations")]
+async fn problem_bodies_carry_the_request_id(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let res = app.get("/api/v2/definitely-not-a-route").await;
+    let header = res.headers.get("x-request-id").unwrap().to_str().unwrap();
+    assert_eq!(res.json()["request_id"], header);
+
+    // A client-supplied id is propagated verbatim (tower-http keeps it).
+    let res = app
+        .send(
+            Request::builder()
+                .uri("/api/v2/auth/session")
+                .header("x-request-id", "trace-abc-123")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(res.json()["request_id"], "trace-abc-123");
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn openapi_json_is_served(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

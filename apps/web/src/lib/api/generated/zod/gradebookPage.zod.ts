@@ -11,6 +11,7 @@ export const GradebookPage = zod
   .object({
     assessments: zod.array(
       zod.object({
+        activity_id: zod.uuid(),
         due_at_unix: zod.int().nullish(),
         id: zod.uuid(),
         kind: zod
@@ -21,18 +22,35 @@ export const GradebookPage = zod
       }),
     ),
     cells: zod.array(
-      zod.object({
-        assessment_id: zod.uuid(),
-        attempt_number: zod.int(),
-        attempts: zod.int(),
-        final_score: zod.number().nullish(),
-        graded_at_unix: zod.int().nullish(),
-        is_late: zod.boolean(),
-        status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
-        submission_id: zod.uuid(),
-        submitted_at_unix: zod.int().nullish(),
-        user_id: zod.uuid(),
-      }),
+      zod
+        .object({
+          activity_id: zod.uuid(),
+          assessment_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          attempt_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          attempt_number: zod.int(),
+          attempts: zod.int(),
+          file_submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          final_score: zod.number().nullish(),
+          graded_at_unix: zod.int().nullish(),
+          is_late: zod.boolean(),
+          status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
+          submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          submitted_at_unix: zod.int().nullish(),
+          user_id: zod.uuid(),
+        })
+        .describe(
+          "One learner's latest non-draft attempt on one graded activity.\n\nExactly one id pair is set: `assessment_id` + `submission_id` for an\nassessment, `file_submission_id` + `attempt_id` for a file submission\n(whose `submitted` reads as `pending` here).",
+        ),
+    ),
+    file_submissions: zod.array(
+      zod
+        .object({
+          activity_id: zod.uuid(),
+          due_at_unix: zod.int().nullish(),
+          id: zod.uuid(),
+          title: zod.string(),
+        })
+        .describe('A file-submission activity as a gradebook column.'),
     ),
     next_cursor: zod.string().nullish(),
     users: zod.array(
@@ -44,7 +62,9 @@ export const GradebookPage = zod
       }),
     ),
   })
-  .describe('Latest submitted attempt per (learner, assessment), keyset-paged.')
+  .describe(
+    'Latest submitted attempt per (learner, graded activity), keyset-paged;\n`assessments` and `file_submissions` are the columns.',
+  )
 
 export type GradebookPage = zod.input<typeof GradebookPage>
 export type GradebookPageOutput = zod.output<typeof GradebookPage>

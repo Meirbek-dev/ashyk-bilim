@@ -39,14 +39,16 @@ async fn publish_replay_and_blocking_read() {
     assert_eq!(all[0].event, "grade.published");
     assert_eq!(all[0].event_id, first);
     assert_eq!(all[0].payload["final_score"], 90.0);
-    assert_eq!(all[0].submission_id, submission);
+    assert_eq!(all[0].submission_id, Some(submission));
     let after_first = events.replay(submission, &first, 100).await.unwrap();
     assert_eq!(after_first.len(), 1);
     assert_eq!(after_first[0].event_id, second);
 
     let mut subscriber = events.subscriber().await.unwrap();
+    // Longer than the redis crate's 500 ms default response timeout: an
+    // idle blocking read must wait out its own window, not error.
     let nothing = subscriber
-        .read(submission, &second, Duration::from_millis(200), 10)
+        .read(submission, &second, Duration::from_millis(800), 10)
         .await
         .unwrap();
     assert!(nothing.is_empty(), "no new events → timeout → empty");

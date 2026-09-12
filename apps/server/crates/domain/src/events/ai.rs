@@ -138,11 +138,7 @@ impl AiEvents {
     }
 
     pub async fn subscriber(&self) -> Result<AiSubscriber> {
-        let conn = self
-            .client
-            .get_multiplexed_async_connection()
-            .await
-            .map_err(|e| Error::internal("redis subscriber connection", e))?;
+        let conn = super::subscriber_connection(&self.client).await?;
         Ok(AiSubscriber { conn })
     }
 

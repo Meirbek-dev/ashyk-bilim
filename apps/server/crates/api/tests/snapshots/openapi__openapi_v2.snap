@@ -281,6 +281,36 @@ expression: json
         ],
         "type": "object"
       },
+      "AddContributorRequest": {
+        "additionalProperties": false,
+        "description": "Add someone to the roster by id or username (exactly one).",
+        "properties": {
+          "role": {
+            "description": "`maintainer | contributor | reporter` (default `contributor`).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserId"
+              }
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "AdminAnalyticsResponse": {
         "properties": {
           "cohort_retention": {
@@ -2655,6 +2685,23 @@ expression: json
         "format": "uuid",
         "type": "string"
       },
+      "ChangePasswordRequest": {
+        "additionalProperties": false,
+        "description": "Password change; the current password is checked by Zitadel.",
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "type": "object"
+      },
       "Chapter": {
         "properties": {
           "course_id": {
@@ -3396,10 +3443,56 @@ expression: json
         ],
         "type": "object"
       },
+      "Contributor": {
+        "description": "One roster entry.\n\nThe creator is always listed first as `creator/active`; the other roles\nare `maintainer | contributor | reporter`, statuses `pending | active |\ninactive`. Any active entry authors on the course like the creator.",
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "username",
+          "display_name",
+          "role",
+          "status",
+          "created_at_unix"
+        ],
+        "type": "object"
+      },
       "Course": {
         "properties": {
           "about": {
             "type": "string"
+          },
+          "contributor_ids": {
+            "description": "Active co-authors (`GET /courses/{id}/contributors`, status `active`);\nthey edit the course like the creator. Lets the client resolve its\nown `:own`-scoped grants the way the server does.",
+            "items": {
+              "$ref": "#/components/schemas/UserId"
+            },
+            "type": "array"
           },
           "created_at_unix": {
             "format": "int64",
@@ -3456,6 +3549,7 @@ expression: json
           "tags",
           "public",
           "open_to_contributors",
+          "contributor_ids",
           "created_at_unix",
           "updated_at_unix"
         ],
@@ -3621,6 +3715,17 @@ expression: json
                 "$ref": "#/components/schemas/CourseId"
               }
             ]
+          },
+          "summary": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CourseSummary",
+                "description": "Present only when the request had `mine=true`."
+              }
+            ]
           }
         },
         "required": [
@@ -3653,6 +3758,32 @@ expression: json
         ],
         "type": "object"
       },
+      "CourseReadiness": {
+        "description": "Course publish readiness. `ready` is `blockers.is_empty()`; the codes are\nlisted on `ab_domain::catalog::readiness` and localized by the web.",
+        "properties": {
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/ReadinessItem"
+            },
+            "type": "array"
+          },
+          "ready": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ReadinessItem"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "ready",
+          "blockers",
+          "warnings"
+        ],
+        "type": "object"
+      },
       "CourseRef": {
         "properties": {
           "id": {
@@ -3665,6 +3796,37 @@ expression: json
         "required": [
           "id",
           "name"
+        ],
+        "type": "object"
+      },
+      "CourseSummary": {
+        "description": "Counts over the caller's editable courses (only with `mine=true`;\nunaffected by `q`, `preset` or paging).",
+        "properties": {
+          "attention": {
+            "description": "Courses matching the `attention` preset.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "private": {
+            "description": "Drafts.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "ready": {
+            "description": "Published courses.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "ready",
+          "private",
+          "attention"
         ],
         "type": "object"
       },
@@ -4097,6 +4259,47 @@ expression: json
           "purpose",
           "mime",
           "size_bytes"
+        ],
+        "type": "object"
+      },
+      "CreateUserRequest": {
+        "additionalProperties": false,
+        "description": "Admin account creation (`POST /users`). No `Debug` — may carry a\npassword. Without one the account is IdP-only (Google sign-in).",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "roles": {
+            "description": "Extra role slugs on top of the default `user`.",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "first_name",
+          "last_name"
         ],
         "type": "object"
       },
@@ -4630,6 +4833,7 @@ expression: json
           "precondition-failed",
           "rate-limited",
           "payload-too-large",
+          "activity-not-ready",
           "service-unavailable",
           "invalid-credentials",
           "mfa-required",
@@ -4638,6 +4842,8 @@ expression: json
           "account-disabled",
           "google-oauth-expired",
           "invalid-totp-code",
+          "username-taken",
+          "email-taken",
           "code-runner-degraded",
           "compile-error",
           "language-not-allowed",
@@ -5441,6 +5647,9 @@ expression: json
       },
       "GradebookAssessment": {
         "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
           "due_at_unix": {
             "format": "int64",
             "type": [
@@ -5464,6 +5673,7 @@ expression: json
         },
         "required": [
           "id",
+          "activity_id",
           "title",
           "kind",
           "passing_score"
@@ -5471,9 +5681,30 @@ expression: json
         "type": "object"
       },
       "GradebookCell": {
+        "description": "One learner's latest non-draft attempt on one graded activity.\n\nExactly one id pair is set: `assessment_id` + `submission_id` for an\nassessment, `file_submission_id` + `attempt_id` for a file submission\n(whose `submitted` reads as `pending` here).",
         "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
           "assessment_id": {
-            "$ref": "#/components/schemas/AssessmentId"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssessmentId"
+              }
+            ]
+          },
+          "attempt_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FileAttemptId"
+              }
+            ]
           },
           "attempt_number": {
             "format": "int32",
@@ -5482,6 +5713,16 @@ expression: json
           "attempts": {
             "format": "int64",
             "type": "integer"
+          },
+          "file_submission_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FileSubmissionId"
+              }
+            ]
           },
           "final_score": {
             "format": "double",
@@ -5504,7 +5745,14 @@ expression: json
             "$ref": "#/components/schemas/SubmissionStatus"
           },
           "submission_id": {
-            "$ref": "#/components/schemas/SubmissionId"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionId"
+              }
+            ]
           },
           "submitted_at_unix": {
             "format": "int64",
@@ -5519,8 +5767,7 @@ expression: json
         },
         "required": [
           "user_id",
-          "assessment_id",
-          "submission_id",
+          "activity_id",
           "status",
           "attempt_number",
           "attempts",
@@ -5528,8 +5775,35 @@ expression: json
         ],
         "type": "object"
       },
+      "GradebookFileSubmission": {
+        "description": "A file-submission activity as a gradebook column.",
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "due_at_unix": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/FileSubmissionId"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "activity_id",
+          "title"
+        ],
+        "type": "object"
+      },
       "GradebookPage": {
-        "description": "Latest submitted attempt per (learner, assessment), keyset-paged.",
+        "description": "Latest submitted attempt per (learner, graded activity), keyset-paged;\n`assessments` and `file_submissions` are the columns.",
         "properties": {
           "assessments": {
             "items": {
@@ -5540,6 +5814,12 @@ expression: json
           "cells": {
             "items": {
               "$ref": "#/components/schemas/GradebookCell"
+            },
+            "type": "array"
+          },
+          "file_submissions": {
+            "items": {
+              "$ref": "#/components/schemas/GradebookFileSubmission"
             },
             "type": "array"
           },
@@ -5559,7 +5839,8 @@ expression: json
         "required": [
           "cells",
           "users",
-          "assessments"
+          "assessments",
+          "file_submissions"
         ],
         "type": "object"
       },
@@ -5574,7 +5855,18 @@ expression: json
           },
           "correct_answer": {},
           "feedback": {
+            "description": "English text (compatibility); the auto-grader also sets a code.",
             "type": "string"
+          },
+          "feedback_code": {
+            "description": "Auto-grader verdict for the client to localize (`no-answer`,\n`correct`, `partially-correct`, …); `None` for teacher prose.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "feedback_params": {
+            "description": "Placeholders for `feedback_code` (`{correct, total}`, …)."
           },
           "item_id": {
             "$ref": "#/components/schemas/AssessmentItemId"
@@ -6185,7 +6477,7 @@ expression: json
         ]
       },
       "ItemBody": {
-        "description": "Internally tagged on `kind` — the wire and storage shape.",
+        "description": "Internally tagged on `kind` — the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].",
         "oneOf": [
           {
             "allOf": [
@@ -6275,6 +6567,27 @@ expression: json
             "allOf": [
               {
                 "$ref": "#/components/schemas/MatchingBody"
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "matching"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MatchingLearnerBody"
               },
               {
                 "properties": {
@@ -6816,6 +7129,7 @@ expression: json
             ]
           },
           "pairs": {
+            "description": "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
             "items": {
               "$ref": "#/components/schemas/MatchingPair"
             },
@@ -6825,6 +7139,50 @@ expression: json
             "type": "string"
           }
         },
+        "required": [
+          "pairs"
+        ],
+        "type": "object"
+      },
+      "MatchingLearnerBody": {
+        "description": "The learner read of a matching item: the two columns with the right\none shuffled (stable per viewer and item), never the pairing. Authors\nkeep [`MatchingBody::pairs`].",
+        "properties": {
+          "left": {
+            "items": {
+              "$ref": "#/components/schemas/MatchingOption"
+            },
+            "type": "array"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "right": {
+            "items": {
+              "$ref": "#/components/schemas/MatchingOption"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "left",
+          "right"
+        ],
+        "type": "object"
+      },
+      "MatchingOption": {
+        "properties": {
+          "id": {
+            "description": "What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).",
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
         "type": "object"
       },
       "MatchingPair": {
@@ -7799,6 +8157,34 @@ expression: json
         ],
         "type": "object"
       },
+      "ReadinessItem": {
+        "description": "`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nactivity-unpublished | thumbnail-missing | certificate-not-configured`.",
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              }
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
       "ReferenceCheck": {
         "description": "One language's verdict from the author's reference check.",
         "properties": {
@@ -7869,6 +8255,36 @@ expression: json
         },
         "required": [
           "results"
+        ],
+        "type": "object"
+      },
+      "RegisterRequest": {
+        "additionalProperties": false,
+        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email, password of\nat least 8 characters.",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "username": {
+            "description": "3–48 characters: letters, digits, `.`, `_`, `-`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "password",
+          "first_name",
+          "last_name"
         ],
         "type": "object"
       },
@@ -8744,6 +9160,10 @@ expression: json
       "SessionInfo": {
         "description": "The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).",
         "properties": {
+          "mfa_enabled": {
+            "description": "TOTP enrolled on the account.",
+            "type": "boolean"
+          },
           "permissions": {
             "items": {
               "type": "string"
@@ -8763,7 +9183,8 @@ expression: json
         "required": [
           "user_id",
           "roles",
-          "permissions"
+          "permissions",
+          "mfa_enabled"
         ],
         "type": "object"
       },
@@ -10609,6 +11030,26 @@ expression: json
         },
         "type": "object"
       },
+      "UpdateContributorRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "description": "`maintainer | contributor | reporter`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "`pending | active | inactive` (`active` approves an application).",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "UpdateCourseRequest": {
         "additionalProperties": false,
         "properties": {
@@ -10956,6 +11397,10 @@ expression: json
           "locale": {
             "type": "string"
           },
+          "mfa_enabled": {
+            "description": "TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).",
+            "type": "boolean"
+          },
           "username": {
             "type": "string"
           }
@@ -10966,7 +11411,8 @@ expression: json
           "email",
           "display_name",
           "bio",
-          "locale"
+          "locale",
+          "mfa_enabled"
         ],
         "type": "object"
       },
@@ -11042,6 +11488,10 @@ expression: json
       },
       "Usergroup": {
         "properties": {
+          "can_write": {
+            "description": "Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).",
+            "type": "boolean"
+          },
           "created_at_unix": {
             "format": "int64",
             "type": "integer"
@@ -11079,6 +11529,7 @@ expression: json
           "name",
           "description",
           "member_count",
+          "can_write",
           "created_at_unix",
           "updated_at_unix"
         ],
@@ -11186,6 +11637,23 @@ expression: json
           }
         ],
         "description": "The public verification view."
+      },
+      "VerifyEmailRequest": {
+        "additionalProperties": false,
+        "description": "Confirm the emailed verification code.",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ],
+        "type": "object"
       },
       "ViolationRequest": {
         "additionalProperties": false,
@@ -17545,6 +18013,111 @@ expression: json
         ]
       }
     },
+    "/api/v2/auth/password": {
+      "post": {
+        "operationId": "change_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Password changed"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`invalid-credentials`: current password wrong"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "New password rejected by policy"
+          }
+        },
+        "summary": "Change the caller's password (current password checked by Zitadel).\nEvery other session of the caller is revoked.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/register": {
+      "post": {
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            },
+            "description": "Account created; verification code sent"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`username-taken` / `email-taken`"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many attempts"
+          }
+        },
+        "summary": "Self-registration: creates the account (default `user` role) and emails\na verification code. No session is opened — the client logs in next.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v2/auth/session": {
       "get": {
         "operationId": "current_session",
@@ -17640,6 +18213,50 @@ expression: json
           }
         },
         "summary": "Revoke one of the caller's own sessions by handle.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/verify-email": {
+      "post": {
+        "operationId": "verify_email",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Email verified"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid or expired code (`field_errors[].field == \"code\"`)"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many attempts"
+          }
+        },
+        "summary": "Confirm the email address with the emailed code (public).",
         "tags": [
           "auth"
         ]
@@ -18491,6 +19108,7 @@ expression: json
     },
     "/api/v2/courses": {
       "get": {
+        "description": "Public courses plus the caller's own and co-authored ones (platform\nupdaters/managers see everything). `mine=true` narrows to courses the\ncaller may edit and adds the `summary` block; `q`, `sort` and `preset`\nfilter/sort (see `CourseListQuery`).",
         "operationId": "list_courses",
         "parameters": [
           {
@@ -18511,6 +19129,42 @@ expression: json
               "format": "int64",
               "type": "integer"
             }
+          },
+          {
+            "description": "Only courses the caller may edit (adds `summary`)",
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Substring filter over name/description",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "`updated` (default) or `name`",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "`all` | `drafts` | `published` | `recent` | `attention`",
+            "in": "query",
+            "name": "preset",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -18525,7 +19179,7 @@ expression: json
             "description": "Page of courses"
           }
         },
-        "summary": "Newest-first course listing: public courses plus the caller's own\n(readers with `course:read:all` see everything).",
+        "summary": "Course listing.",
         "tags": [
           "courses"
         ]
@@ -18852,6 +19506,296 @@ expression: json
         ]
       }
     },
+    "/api/v2/courses/{id}/contributors": {
+      "get": {
+        "operationId": "list_contributors",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Contributor"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Roster"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          }
+        },
+        "summary": "Roster, creator first (course visibility; 404 otherwise).",
+        "tags": [
+          "courses"
+        ]
+      },
+      "post": {
+        "operationId": "add_contributor",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddContributorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contributor"
+                }
+              }
+            },
+            "description": "Added"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No roster access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown user"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Already on the roster"
+          }
+        },
+        "summary": "Add an active contributor by `user_id` or `username` (creator, active\nmaintainer, or `course:manage:platform`). 409 `conflict` when the user\nis already on the roster (or is the creator).",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v2/courses/{id}/contributors/apply": {
+      "post": {
+        "operationId": "apply_contributor",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contributor"
+                }
+              }
+            },
+            "description": "Application recorded"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Closed course or existing role"
+          }
+        },
+        "summary": "Apply to contribute (any signed-in user on an `open_to_contributors`\ncourse): creates a `contributor/pending` entry. 409 `conflict` when the\ncourse is closed or the caller already has a role.",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v2/courses/{id}/contributors/{user_id}": {
+      "delete": {
+        "operationId": "remove_contributor",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Contributor user id",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No roster access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not on the roster"
+          }
+        },
+        "summary": "Remove a contributor (reject an application, or drop an active one).",
+        "tags": [
+          "courses"
+        ]
+      },
+      "patch": {
+        "operationId": "update_contributor",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Contributor user id",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContributorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contributor"
+                }
+              }
+            },
+            "description": "Updated"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No roster access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not on the roster"
+          }
+        },
+        "summary": "Change a contributor's role and/or status (`status: active` approves a\npending application; the creator cannot be changed → 409).",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
     "/api/v2/courses/{id}/curriculum": {
       "get": {
         "operationId": "get_curriculum",
@@ -19077,7 +20021,137 @@ expression: json
             "description": "Gradebook page"
           }
         },
-        "summary": "Course gradebook: the latest submitted attempt per (learner, assessment).",
+        "summary": "Course gradebook: the latest submitted attempt per (learner, graded\nactivity) — assessment submissions and file-submission attempts.",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v2/courses/{id}/gradebook/export": {
+      "get": {
+        "description": "UTF-8 with BOM; the header and status words follow `Accept-Language`\n(`ru` default, `kk`, `en`); one column per assessment and file\nsubmission, a scored cell is its number.",
+        "operationId": "export_gradebook_csv",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "ru (default), kk or en",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "CSV"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No grading access"
+          }
+        },
+        "summary": "The gradebook matrix as CSV (graders).",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v2/courses/{id}/grading/events": {
+      "get": {
+        "description": "Event names: `connected`, `submission.submitted`, `grade.saved`,\n`grade.published`, `submission.returned`. `data` is\n`{event_id, event, payload, sent_at}` where `payload` carries\n`activity_id`, `user_id`, `status`, `final_score` and either\n`submission_id` (assessment) or `attempt_id` (file submission);\n`id` is the stream id to send back as `Last-Event-ID` on reconnect.",
+        "operationId": "course_grading_events",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Resume after this event id",
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Event stream"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No grading access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible course"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many open streams for this user"
+          }
+        },
+        "summary": "Every grade change and hand-in on a course as `text/event-stream`\n(graders).",
         "tags": [
           "grading"
         ]
@@ -19172,6 +20246,48 @@ expression: json
           }
         },
         "summary": "Publish/unpublish (legacy lifecycle semantics).",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v2/courses/{id}/readiness": {
+      "get": {
+        "operationId": "course_readiness",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseReadiness"
+                }
+              }
+            },
+            "description": "Readiness"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No write access"
+          }
+        },
+        "summary": "Publish readiness: blockers and warnings with stable codes (course write\naccess; 404 for invisible courses).",
         "tags": [
           "courses"
         ]
@@ -22148,6 +23264,65 @@ expression: json
         "tags": [
           "users"
         ]
+      },
+      "post": {
+        "operationId": "create_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUser"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`username-taken` / `email-taken`"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Validation failed (unknown role, weak password)"
+          }
+        },
+        "summary": "Admin account creation (requires `platform:manage:platform`): Zitadel\nhuman with a verified email + `users` row with `user` plus `roles`.\nWithout `password` the account signs in with Google only.",
+        "tags": [
+          "users"
+        ]
       }
     },
     "/api/v2/users/me": {
@@ -22389,6 +23564,67 @@ expression: json
           }
         },
         "summary": "Disable (revokes every live session) or re-enable an account\n(requires `platform:manage:platform`; self-disable is refused).",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v2/users/{username}/courses": {
+      "get": {
+        "operationId": "user_courses",
+        "parameters": [
+          {
+            "description": "Username (case-insensitive)",
+            "in": "path",
+            "name": "username",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "next_cursor from the previous page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Page size, 1..=100 (default 20)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoursePage"
+                }
+              }
+            },
+            "description": "Page of courses"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown user"
+          }
+        },
+        "summary": "Courses a user created or actively co-authors, newest first (public\nprofile). Private ones are included only for the user themself and\nplatform course managers.",
         "tags": [
           "users"
         ]

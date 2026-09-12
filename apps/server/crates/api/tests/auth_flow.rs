@@ -266,3 +266,281 @@ async fn session_management_lists_and_revokes_by_handle(pool: PgPool) {
         .await;
     assert_eq!(missing.status, StatusCode::NOT_FOUND);
 }
+
+// ── Self-registration, email verification, password change ─────────────────
+// Zitadel shapes captured live 2026-09-12: create with `returnCode` answers
+// `{userId, details, emailCode}`; a wrong verification code is code 3
+// "Code is invalid"; a wrong current password on the password change is
+// code 3 with a `CredentialsCheckError` detail; a policy-rejected new
+// password is code 3 with a plain detail.
+
+fn register_body(username: &str, email: &str) -> serde_json::Value {
+    serde_json::json!({
+        "username": username,
+        "email": email,
+        "password": "correct horse battery",
+        "first_name": "Aigerim",
+        "last_name": "Test",
+    })
+}
+
+async fn mock_user_create_with_code(zitadel: &MockServer, code: &str) {
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "email": { "returnCode": {} }
+        })))
+        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+            "userId": "z-new-1",
+            "details": {},
+            "emailCode": code
+        })))
+        .expect(1)
+        .mount(zitadel)
+        .await;
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn registration_creates_the_account_and_emails_the_code(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    mock_user_create_with_code(&app.zitadel, "ABC123").await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .and(wiremock::matchers::header(
+            "authorization",
+            "Bearer re_test",
+        ))
+        .and(wiremock::matchers::body_string_contains("ABC123"))
+        .and(wiremock::matchers::body_string_contains(
+            "aigerim@example.com",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({ "id": "em-1" })))
+        .expect(1)
+        .mount(&app.resend)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &register_body("aigerim", "aigerim@example.com"),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CREATED, "{}", res.json());
+    let body = res.json();
+    assert_eq!(body["username"], "aigerim");
+    assert_eq!(body["display_name"], "Aigerim Test");
+    assert_eq!(body["mfa_enabled"], false);
+    assert!(res.session_cookie().is_none(), "no session is opened");
+
+    let roles: Vec<String> = sqlx::query_scalar(
+        "SELECT r.slug FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+         JOIN users u ON u.id = ur.user_id WHERE u.username = 'aigerim'",
+    )
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(roles, vec!["user"]);
+
+    // Verification: wrong code → 422 on `code`; right code → 204.
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-new-1/email/verify"))
+        .and(wiremock::matchers::body_json(
+            serde_json::json!({ "verificationCode": "WRONG1" }),
+        ))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Code is invalid (COMMAND-eis9R)",
+            "details": [{ "id": "COMMAND-eis9R", "message": "Code is invalid" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-new-1/email/verify"))
+        .and(wiremock::matchers::body_json(
+            serde_json::json!({ "verificationCode": "ABC123" }),
+        ))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    let wrong = app
+        .post_json(
+            "/api/v2/auth/verify-email",
+            &serde_json::json!({ "email": "aigerim@example.com", "code": "WRONG1" }),
+        )
+        .await;
+    assert_eq!(wrong.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(wrong.json()["field_errors"][0]["field"], "code");
+    // Unknown email: same answer, no enumeration.
+    let ghost = app
+        .post_json(
+            "/api/v2/auth/verify-email",
+            &serde_json::json!({ "email": "ghost@example.com", "code": "ABC123" }),
+        )
+        .await;
+    assert_eq!(ghost.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let ok = app
+        .post_json(
+            "/api/v2/auth/verify-email",
+            &serde_json::json!({ "email": "aigerim@example.com", "code": "ABC123" }),
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::NO_CONTENT);
+
+    let events: Vec<String> =
+        sqlx::query_scalar("SELECT event FROM auth_audit_log ORDER BY created_at")
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(events, vec!["account-created", "email-verified"]);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn registration_survives_an_email_outage(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    mock_user_create_with_code(&app.zitadel, "ABC123").await;
+    // No Resend mount: the fake answers 404 and the flow must still 201.
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &register_body("nomail", "nomail@example.com"),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CREATED, "{}", res.json());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn registration_rejects_taken_username_and_email(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("taken", "taken@example.com", &["user"])
+        .await;
+    // Neither collision reaches Zitadel.
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .respond_with(ResponseTemplate::new(500))
+        .expect(0)
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &register_body("taken", "fresh@example.com"),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CONFLICT);
+    assert_eq!(res.json()["code"], "username-taken");
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &register_body("fresh", "taken@example.com"),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CONFLICT);
+    assert_eq!(res.json()["code"], "email-taken");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn registration_body_is_validated(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &serde_json::json!({
+                "username": "bad name!",
+                "email": "not-an-email",
+                "password": "short",
+                "first_name": "",
+                "last_name": "X",
+            }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let fields: Vec<String> = res.json()["field_errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["field"].as_str().unwrap().to_owned())
+        .collect();
+    for field in ["username", "email", "password", "first_name"] {
+        assert!(
+            fields.contains(&field.to_owned()),
+            "{field} flagged: {fields:?}"
+        );
+    }
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn password_change_checks_the_current_password_and_revokes_other_sessions(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("pwuser", "pw@example.com", &["user"]).await;
+    let current = app.mint_session_for(user, &[]).await;
+    let other = app.mint_session_for(user, &[]).await;
+    let zid = format!("z-{user}");
+
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/password")))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "currentPassword": "wrong"
+        })))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Password is invalid (COMMAND-3M0fs)",
+            "details": [{ "id": "COMMAND-3M0fs", "message": "Password is invalid", "failedAttempts": 1 }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/password")))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "currentPassword": "old horse",
+            "newPassword": { "password": "new horse battery", "changeRequired": false }
+        })))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+
+    let wrong = app
+        .post_as(
+            &current,
+            "/api/v2/auth/password",
+            &serde_json::json!({ "current_password": "wrong", "new_password": "new horse battery" }),
+        )
+        .await;
+    assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(wrong.json()["code"], "invalid-credentials");
+
+    let ok = app
+        .post_as(
+            &current,
+            "/api/v2/auth/password",
+            &serde_json::json!({ "current_password": "old horse", "new_password": "new horse battery" }),
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::NO_CONTENT);
+
+    // The current session survives, the other one is gone.
+    assert_eq!(
+        app.get_as(&current, "/api/v2/auth/session").await.status,
+        StatusCode::OK
+    );
+    assert_eq!(
+        app.get_as(&other, "/api/v2/auth/session").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+
+    // Anonymous callers cannot change anything.
+    let anon = app
+        .post_json(
+            "/api/v2/auth/password",
+            &serde_json::json!({ "current_password": "a", "new_password": "new horse battery" }),
+        )
+        .await;
+    assert_eq!(anon.status, StatusCode::UNAUTHORIZED);
+}

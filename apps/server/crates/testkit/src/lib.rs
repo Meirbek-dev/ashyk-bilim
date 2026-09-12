@@ -23,8 +23,8 @@ use std::time::Duration;
 use ab_clients::judge0::Judge0Client;
 use ab_clients::zitadel::{ZitadelClient, ZitadelConfig};
 use ab_core::config::{
-    AiConfig, Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ServerConfig,
-    TelemetryConfig,
+    AiConfig, Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ResendConfig,
+    ServerConfig, TelemetryConfig,
 };
 use ab_core::id::UserId;
 use ab_domain::code::CodeRunner;
@@ -54,6 +54,7 @@ pub fn test_config() -> Config {
             host: "127.0.0.1".into(),
             port: 0,
             cors_origins: vec![],
+            web_url: None,
         },
         database: DatabaseConfig {
             url: SecretString::from("postgres://injected-pool-unused"),
@@ -63,6 +64,7 @@ pub fn test_config() -> Config {
         redis: RedisConfig { url: None },
         zitadel: None,
         google: None,
+        resend: None,
         storage: None,
         judge0: None,
         telemetry: TelemetryConfig {
@@ -82,6 +84,9 @@ pub struct TestApp {
     pub zitadel: MockServer,
     /// Wiremock standing in for Google's OAuth endpoints.
     pub google: MockServer,
+    /// Wiremock standing in for Resend (`POST /emails`). Unmounted = the
+    /// send fails and the flow logs-and-continues, like an outage.
+    pub resend: MockServer,
     /// Wiremock standing in for Judge0 — see [`judge0::FakeJudge`].
     pub judge0: MockServer,
     /// Wiremock standing in for the OpenAI-compatible chat completions
@@ -108,8 +113,14 @@ impl TestApp {
         let google = MockServer::start().await;
         let judge0 = MockServer::start().await;
         let llm = MockServer::start().await;
+        let resend = MockServer::start().await;
         let mut config = test_config();
         config.ai = llm::test_ai_config(&llm);
+        config.resend = Some(ResendConfig {
+            api_key: SecretString::from("re_test"),
+            from: "Ashyq Bilim <noreply@test.local>".into(),
+            base_url: resend.uri(),
+        });
         adjust(&mut config);
         let judge0_client = Arc::new(
             Judge0Client::new(ab_clients::judge0::Judge0Config {
@@ -142,7 +153,11 @@ impl TestApp {
             })
             .expect("test google client"),
         );
-        let identity = IdentityService::new(pool.clone(), sessions.clone(), zitadel_client.clone());
+        let mailer = config.resend.clone().map(|c| {
+            Arc::new(ab_clients::resend::ResendClient::new(c).expect("test resend client"))
+        });
+        let identity = IdentityService::new(pool.clone(), sessions.clone(), zitadel_client.clone())
+            .with_mailer(mailer, config.server.web_url.clone());
         let google_auth = ab_domain::identity::GoogleAuthService::new(
             pool.clone(),
             sessions.clone(),
@@ -178,6 +193,7 @@ impl TestApp {
             sessions,
             zitadel,
             google,
+            resend,
             judge0,
             llm,
             judge0_client,
@@ -259,6 +275,7 @@ impl TestApp {
                 roles: vec!["test".into()],
                 permissions: permissions.iter().map(ToString::to_string).collect(),
                 rbac_version: 1,
+                mfa_enabled: false,
                 ip: None,
                 user_agent: Some("testkit".into()),
             })

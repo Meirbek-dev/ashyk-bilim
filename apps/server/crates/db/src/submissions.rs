@@ -7,8 +7,8 @@ use ab_core::assessments::{
     CodeRunStatus, SubmissionStatus,
 };
 use ab_core::id::{
-    AssessmentId, AssessmentItemId, BulkActionId, CodeRunId, CourseId, GradingEntryId,
-    ItemFeedbackId, SubmissionId, UserId,
+    ActivityId, AssessmentId, AssessmentItemId, BulkActionId, CodeRunId, CourseId, FileAttemptId,
+    FileSubmissionId, GradingEntryId, ItemFeedbackId, SubmissionId, UserId,
 };
 use sqlx::PgPool;
 
@@ -380,12 +380,18 @@ pub async fn list_non_draft(
 
 // ── Course gradebook ────────────────────────────────────────────────────────
 
-/// The latest submitted attempt of one learner on one assessment.
+/// The latest submitted attempt of one learner on one graded activity.
+///
+/// An assessment submission or a file-submission attempt: exactly one of
+/// the id pairs is set, and a file attempt `submitted` maps to `pending`.
 #[derive(Debug, Clone)]
 pub struct GradebookCellRow {
     pub user_id: UserId,
-    pub assessment_id: AssessmentId,
-    pub submission_id: SubmissionId,
+    pub activity_id: ActivityId,
+    pub assessment_id: Option<AssessmentId>,
+    pub submission_id: Option<SubmissionId>,
+    pub file_submission_id: Option<FileSubmissionId>,
+    pub attempt_id: Option<FileAttemptId>,
     pub status: SubmissionStatus,
     pub attempt_number: i32,
     /// Submitted attempts on this pair.
@@ -396,28 +402,44 @@ pub struct GradebookCellRow {
     pub graded_at: Option<i64>,
 }
 
-/// Latest non-draft submission per (learner, assessment) in a course,
-/// keyset on that pair.
+/// Latest non-draft attempt per (learner, activity) in a course, over both
+/// assessment submissions and file-submission attempts, keyset on that pair.
 pub async fn gradebook_cells(
     pool: &PgPool,
     course_id: CourseId,
-    after: Option<(UserId, AssessmentId)>,
+    after: Option<(UserId, ActivityId)>,
     limit: i64,
 ) -> Result<Vec<GradebookCellRow>> {
     let rows = sqlx::query_as!(
         GradebookCellRow,
-        r#"SELECT DISTINCT ON (s.user_id, s.assessment_id)
-                  s.user_id AS "user_id: UserId", s.assessment_id AS "assessment_id: AssessmentId",
-                  s.id AS "submission_id: SubmissionId", s.status AS "status: SubmissionStatus",
-                  s.attempt_number,
-                  count(*) OVER (PARTITION BY s.user_id, s.assessment_id) AS "attempts!",
-                  s.final_score, s.is_late,
-                  (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
-                  (extract(epoch FROM s.graded_at))::bigint AS "graded_at?"
-           FROM submissions s
-           WHERE s.course_id = $1 AND s.status <> 'draft'
-             AND ($2::uuid IS NULL OR (s.user_id, s.assessment_id) > ($2::uuid, $3::uuid))
-           ORDER BY s.user_id, s.assessment_id, s.id DESC
+        r#"SELECT DISTINCT ON (c.user_id, c.activity_id)
+                  c.user_id AS "user_id!: UserId", c.activity_id AS "activity_id!: ActivityId",
+                  c.assessment_id AS "assessment_id?: AssessmentId",
+                  c.submission_id AS "submission_id?: SubmissionId",
+                  c.file_submission_id AS "file_submission_id?: FileSubmissionId",
+                  c.attempt_id AS "attempt_id?: FileAttemptId",
+                  c.status AS "status!: SubmissionStatus", c.attempt_number AS "attempt_number!",
+                  count(*) OVER (PARTITION BY c.user_id, c.activity_id) AS "attempts!",
+                  c.final_score AS "final_score?", c.is_late AS "is_late!",
+                  (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM c.graded_at))::bigint AS "graded_at?"
+           FROM (
+               SELECT s.user_id, a.activity_id, s.assessment_id, s.id AS submission_id,
+                      NULL::uuid AS file_submission_id, NULL::uuid AS attempt_id,
+                      s.status, s.attempt_number, s.final_score, s.is_late,
+                      s.submitted_at, s.graded_at
+               FROM submissions s JOIN assessments a ON a.id = s.assessment_id
+               WHERE s.course_id = $1 AND s.status <> 'draft'
+               UNION ALL
+               SELECT fa.user_id, f.activity_id, NULL::uuid, NULL::uuid, f.id, fa.id,
+                      CASE WHEN fa.status = 'submitted' THEN 'pending' ELSE fa.status END,
+                      fa.attempt_number, fa.final_score, fa.is_late, fa.submitted_at, fa.graded_at
+               FROM file_submission_attempts fa
+               JOIN file_submissions f ON f.id = fa.file_submission_id
+               WHERE fa.course_id = $1 AND fa.status <> 'draft'
+           ) c
+           WHERE ($2::uuid IS NULL OR (c.user_id, c.activity_id) > ($2::uuid, $3::uuid))
+           ORDER BY c.user_id, c.activity_id, c.attempt_number DESC
            LIMIT $4"#,
         course_id.0,
         after.map(|(u, _)| u.0),

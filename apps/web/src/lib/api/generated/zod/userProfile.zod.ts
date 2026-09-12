@@ -14,6 +14,9 @@ export const UserProfile = zod.object({
   email: zod.string(),
   id: zod.uuid(),
   locale: zod.string(),
+  mfa_enabled: zod
+    .boolean()
+    .describe('TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).'),
   username: zod.string(),
 })
 

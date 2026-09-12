@@ -304,3 +304,75 @@ async fn curriculum_respects_course_access(pool: PgPool) {
     assert_eq!(visible.status, StatusCode::OK);
     assert_eq!(visible.json()["chapters"].as_array().unwrap().len(), 1);
 }
+
+/// The raw activity toggle refuses to publish a file-submission activity
+/// whose config is still a draft (409 `activity-not-ready`); publishing the
+/// config flips both.
+#[sqlx::test(migrations = "../../migrations")]
+async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("files", "files@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Files").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({
+                "chapter_id": chapter_id, "title": "Essay",
+                "instructions": "Upload your essay.",
+            }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let config_id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+
+    let refused = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "activity-not-ready");
+
+    // Readiness names the activity while the config is a draft — once it
+    // is published through the file-submission route, the course is ready.
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{config_id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/readiness"))
+        .await;
+    assert_eq!(readiness.json()["ready"], true, "{}", readiness.text());
+
+    // Renaming (no publish flip) is untouched by the gate.
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "name": "Essay v2", "published": true }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+}

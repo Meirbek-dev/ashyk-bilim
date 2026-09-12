@@ -1,0 +1,59 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT f.id AS \"id: FileSubmissionId\", f.activity_id AS \"activity_id: ActivityId\",\n                  a.name AS title, (extract(epoch FROM f.due_at))::bigint AS \"due_at?\"\n           FROM file_submissions f JOIN activities a ON a.id = f.activity_id\n           WHERE f.course_id = $1\n           ORDER BY a.position, f.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileSubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "due_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "34304ddf1174b331de2517018db6785a5c54941fae5a401ecec66b5566417d3a"
+}

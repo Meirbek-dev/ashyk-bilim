@@ -1235,7 +1235,8 @@ export const getGradebookUrl = (id: CourseId, params?: GradebookParams) => {
 }
 
 /**
- * @summary Course gradebook: the latest submitted attempt per (learner, assessment).
+ * @summary Course gradebook: the latest submitted attempt per (learner, graded
+activity) — assessment submissions and file-submission attempts.
  */
 export const gradebook = async (
   id: CourseId,
@@ -1321,7 +1322,8 @@ export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TErr
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Course gradebook: the latest submitted attempt per (learner, assessment).
+ * @summary Course gradebook: the latest submitted attempt per (learner, graded
+activity) — assessment submissions and file-submission attempts.
  */
 
 export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
@@ -1398,7 +1400,8 @@ export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Course gradebook: the latest submitted attempt per (learner, assessment).
+ * @summary Course gradebook: the latest submitted attempt per (learner, graded
+activity) — assessment submissions and file-submission attempts.
  */
 
 export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
@@ -1411,6 +1414,436 @@ export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getGradebookSuspenseQueryOptions(id, params, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getExportGradebookCsvUrl = (id: CourseId) => {
+  return `/api/v2/courses/${id}/gradebook/export`
+}
+
+/**
+ * UTF-8 with BOM; the header and status words follow `Accept-Language`
+ * (`ru` default, `kk`, `en`); one column per assessment and file
+ * submission, a scored cell is its number.
+ * @summary The gradebook matrix as CSV (graders).
+ */
+export const exportGradebookCsv = async (
+  id: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<string> => {
+  return orvalMutator<string>(
+    getExportGradebookCsvUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    stringParser,
+  )
+}
+
+export const getExportGradebookCsvQueryKey = (id: CourseId) => {
+  return [`/api/v2/courses/${id}/gradebook/export`] as const
+}
+
+export const getExportGradebookCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getExportGradebookCsvQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportGradebookCsv>>> = ({ signal }) =>
+    exportGradebookCsv(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportGradebookCsv>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ExportGradebookCsvQueryResult = NonNullable<Awaited<ReturnType<typeof exportGradebookCsv>>>
+export type ExportGradebookCsvQueryError = ErrorType<Problem>
+
+export function useExportGradebookCsv<
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportGradebookCsv>>,
+          TError,
+          Awaited<ReturnType<typeof exportGradebookCsv>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportGradebookCsv<
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportGradebookCsv>>,
+          TError,
+          Awaited<ReturnType<typeof exportGradebookCsv>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportGradebookCsv<
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The gradebook matrix as CSV (graders).
+ */
+
+export function useExportGradebookCsv<
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getExportGradebookCsvQueryOptions(id, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getExportGradebookCsvSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getExportGradebookCsvQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportGradebookCsv>>> = ({ signal }) =>
+    exportGradebookCsv(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof exportGradebookCsv>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ExportGradebookCsvSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof exportGradebookCsv>>>
+export type ExportGradebookCsvSuspenseQueryError = ErrorType<Problem>
+
+export function useExportGradebookCsvSuspense<
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportGradebookCsvSuspense<
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportGradebookCsvSuspense<
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The gradebook matrix as CSV (graders).
+ */
+
+export function useExportGradebookCsvSuspense<
+  TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getExportGradebookCsvSuspenseQueryOptions(id, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCourseGradingEventsUrl = (id: CourseId) => {
+  return `/api/v2/courses/${id}/grading/events`
+}
+
+/**
+ * Event names: `connected`, `submission.submitted`, `grade.saved`,
+ * `grade.published`, `submission.returned`. `data` is
+ * `{event_id, event, payload, sent_at}` where `payload` carries
+ * `activity_id`, `user_id`, `status`, `final_score` and either
+ * `submission_id` (assessment) or `attempt_id` (file submission);
+ * `id` is the stream id to send back as `Last-Event-ID` on reconnect.
+ * @summary Every grade change and hand-in on a course as `text/event-stream`
+(graders).
+ */
+export const courseGradingEvents = async (
+  id: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<string> => {
+  return orvalMutator<string>(
+    getCourseGradingEventsUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    stringParser,
+  )
+}
+
+export const getCourseGradingEventsQueryKey = (id: CourseId) => {
+  return [`/api/v2/courses/${id}/grading/events`] as const
+}
+
+export const getCourseGradingEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCourseGradingEventsQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof courseGradingEvents>>> = ({ signal }) =>
+    courseGradingEvents(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof courseGradingEvents>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CourseGradingEventsQueryResult = NonNullable<Awaited<ReturnType<typeof courseGradingEvents>>>
+export type CourseGradingEventsQueryError = ErrorType<Problem>
+
+export function useCourseGradingEvents<
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof courseGradingEvents>>,
+          TError,
+          Awaited<ReturnType<typeof courseGradingEvents>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseGradingEvents<
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof courseGradingEvents>>,
+          TError,
+          Awaited<ReturnType<typeof courseGradingEvents>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseGradingEvents<
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Every grade change and hand-in on a course as `text/event-stream`
+(graders).
+ */
+
+export function useCourseGradingEvents<
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCourseGradingEventsQueryOptions(id, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCourseGradingEventsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCourseGradingEventsQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof courseGradingEvents>>> = ({ signal }) =>
+    courseGradingEvents(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof courseGradingEvents>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CourseGradingEventsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof courseGradingEvents>>>
+export type CourseGradingEventsSuspenseQueryError = ErrorType<Problem>
+
+export function useCourseGradingEventsSuspense<
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseGradingEventsSuspense<
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseGradingEventsSuspense<
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Every grade change and hand-in on a course as `text/event-stream`
+(graders).
+ */
+
+export function useCourseGradingEventsSuspense<
+  TData = Awaited<ReturnType<typeof courseGradingEvents>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCourseGradingEventsSuspenseQueryOptions(id, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

@@ -239,6 +239,9 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::health::live))
         .routes(routes!(routes::health::ready))
         .routes(routes!(routes::auth::login))
+        .routes(routes!(routes::auth::register))
+        .routes(routes!(routes::auth::verify_email))
+        .routes(routes!(routes::auth::change_password))
         .routes(routes!(routes::auth::logout))
         .routes(routes!(routes::auth::current_session))
         .routes(routes!(routes::auth::list_sessions))
@@ -250,8 +253,12 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::auth::totp_remove))
         .routes(routes!(routes::users::my_profile))
         .routes(routes!(routes::users::update_my_profile))
-        .routes(routes!(routes::users::list_users))
+        .routes(routes!(
+            routes::users::list_users,
+            routes::users::create_user
+        ))
         .routes(routes!(routes::users::set_user_status))
+        .routes(routes!(routes::users::user_courses))
         .routes(routes!(routes::rbac::list_roles))
         .routes(routes!(routes::rbac::assign_role))
         .routes(routes!(routes::rbac::unassign_role))
@@ -284,6 +291,12 @@ fn catalog_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::courses::update_course))
         .routes(routes!(routes::courses::course_lifecycle))
         .routes(routes!(routes::courses::delete_course))
+        .routes(routes!(routes::courses::course_readiness))
+        .routes(routes!(routes::courses::list_contributors))
+        .routes(routes!(routes::courses::add_contributor))
+        .routes(routes!(routes::courses::update_contributor))
+        .routes(routes!(routes::courses::remove_contributor))
+        .routes(routes!(routes::courses::apply_contributor))
         .routes(routes!(routes::curriculum::get_curriculum))
         .routes(routes!(routes::curriculum::create_chapter))
         .routes(routes!(routes::curriculum::update_chapter))
@@ -362,7 +375,9 @@ fn submission_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::grading::extend_deadline))
         .routes(routes!(routes::grading::get_bulk_action))
         .routes(routes!(routes::grading::gradebook))
+        .routes(routes!(routes::grading::export_gradebook_csv))
         .routes(routes!(routes::sse::submission_events))
+        .routes(routes!(routes::sse::course_grading_events))
 }
 
 /// Outer router carrying the document metadata — the nest target must own the
@@ -407,6 +422,11 @@ pub fn build_router(state: AppState) -> Result<Router> {
             crate::error::ApiError(Error::app(ab_core::ErrorCode::NotFound, "no such route"))
         })
         .layer(axum::middleware::from_fn(crate::middleware::csrf_guard))
+        // Inside `SetRequestIdLayer`: makes the id reachable from
+        // `ApiError::into_response` (problem+json `request_id`).
+        .layer(axum::middleware::from_fn(
+            crate::middleware::request_id_scope,
+        ))
         .layer(
             ServiceBuilder::new()
                 .layer(SetRequestIdLayer::new(request_id.clone(), MakeRequestUuid))

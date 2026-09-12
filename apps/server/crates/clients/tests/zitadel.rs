@@ -5,7 +5,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_clients::zitadel::{
-    NewHumanUser, PasswordSessionOutcome, PasswordSpec, ZitadelClient, ZitadelConfig,
+    NewHumanUser, PasswordSessionOutcome, PasswordSpec, SessionUser, ZitadelClient, ZitadelConfig,
 };
 use secrecy::SecretString;
 use wiremock::matchers::{body_partial_json, header_regex, method, path, query_param};
@@ -43,7 +43,7 @@ async fn password_session_success() {
 
     let outcome = client(&server)
         .create_password_session(
-            "smoke-test@example.com",
+            &SessionUser::LoginName("smoke-test@example.com"),
             &SecretString::from("Sm0ke-test-pass!"),
             None,
         )
@@ -77,7 +77,11 @@ async fn password_session_invalid_credentials() {
         .await;
 
     let outcome = client(&server)
-        .create_password_session("smoke-test@example.com", &SecretString::from("wrong"), None)
+        .create_password_session(
+            &SessionUser::LoginName("smoke-test@example.com"),
+            &SecretString::from("wrong"),
+            None,
+        )
         .await
         .unwrap();
     match outcome {

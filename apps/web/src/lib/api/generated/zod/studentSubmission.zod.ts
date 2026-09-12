@@ -68,7 +68,20 @@ export const StudentSubmission = zod
               zod.object({
                 correct: zod.boolean().nullish().describe('`None` = not auto-gradeable.'),
                 correct_answer: zod.unknown().optional(),
-                feedback: zod.string().optional(),
+                feedback: zod
+                  .string()
+                  .optional()
+                  .describe('English text (compatibility); the auto-grader also sets a code.'),
+                feedback_code: zod
+                  .string()
+                  .nullish()
+                  .describe(
+                    'Auto-grader verdict for the client to localize (`no-answer`,\n`correct`, `partially-correct`, …); `None` for teacher prose.',
+                  ),
+                feedback_params: zod
+                  .unknown()
+                  .optional()
+                  .describe('Placeholders for `feedback_code` (`{correct, total}`, …).'),
                 item_id: zod.uuid(),
                 item_text: zod.string().optional(),
                 max_score: zod.number(),

@@ -8,6 +8,7 @@
 import * as zod from 'zod'
 
 export const GradebookAssessment = zod.object({
+  activity_id: zod.uuid(),
   due_at_unix: zod.int().nullish(),
   id: zod.uuid(),
   kind: zod

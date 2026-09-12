@@ -12,6 +12,11 @@ export const CoursePage = zod
     items: zod.array(
       zod.object({
         about: zod.string(),
+        contributor_ids: zod
+          .array(zod.uuid())
+          .describe(
+            'Active co-authors (`GET \/courses\/{id}\/contributors`, status `active`);\nthey edit the course like the creator. Lets the client resolve its\nown `:own`-scoped grants the way the server does.',
+          ),
         created_at_unix: zod.int(),
         creator_id: zod.union([zod.null(), zod.uuid()]).optional(),
         description: zod.string(),
@@ -28,6 +33,19 @@ export const CoursePage = zod
       }),
     ),
     next_cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+    summary: zod
+      .union([
+        zod.null(),
+        zod
+          .object({
+            attention: zod.int().describe('Courses matching the `attention` preset.'),
+            private: zod.int().describe('Drafts.'),
+            ready: zod.int().describe('Published courses.'),
+            total: zod.int(),
+          })
+          .describe('Present only when the request had `mine=true`.'),
+      ])
+      .optional(),
   })
   .describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
 

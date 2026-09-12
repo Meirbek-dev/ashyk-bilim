@@ -1,5 +1,8 @@
-//! Authentication flows: password login via Zitadel's Session API, logout,
-//! and session self-management (ARCHITECTURE §7).
+//! Authentication flows (ARCHITECTURE §7).
+//!
+//! Password login via Zitadel's Session API, logout, session
+//! self-management, self-registration with email verification, admin
+//! account creation and password change.
 //!
 //! Security posture:
 //! - Uniform `invalid-credentials` regardless of whether the user exists.
@@ -11,9 +14,14 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use ab_clients::zitadel::{PasswordSessionOutcome, TotpRegistration, ZitadelClient};
+use ab_clients::resend::ResendClient;
+use ab_clients::zitadel::{
+    NewHumanUser, PasswordSessionOutcome, PasswordSpec, SessionUser, TotpRegistration,
+    ZitadelClient,
+};
 use ab_core::id::UserId;
-use ab_core::{Error, ErrorCode, Result};
+use ab_core::permission::{Action, Permission, ResourceType, Scope};
+use ab_core::{Error, ErrorCode, FieldError, Result};
 use secrecy::SecretString;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
@@ -24,12 +32,54 @@ use crate::identity::sessions::{NewSession, SessionRecord, SessionStore};
 
 const IP_LIMIT: (u32, Duration) = (20, Duration::from_mins(5));
 const LOGIN_NAME_LIMIT: (u32, Duration) = (10, Duration::from_mins(15));
+/// Registrations and verification attempts per IP (account creation is the
+/// expensive path — two Zitadel calls plus an email).
+const REGISTER_IP_LIMIT: (u32, Duration) = (10, Duration::from_hours(1));
+
+pub const TOTP_METHOD: &str = "AUTHENTICATION_METHOD_TYPE_TOTP";
+
+/// Admin account creation (the legacy `user:create` is a platform-admin
+/// grant; v2 keys it on the same permission as the other user admin routes).
+const MANAGE_PLATFORM: Permission = Permission {
+    resource: ResourceType::Platform,
+    action: Action::Manage,
+    scope: Some(Scope::Platform),
+};
 
 /// Public, non-bearer identifier for a session (for listings/revocation).
 #[must_use]
 pub fn session_handle(session_id: &str) -> String {
     let digest = Sha256::digest(session_id.as_bytes());
     hex_prefix(&digest, 16)
+}
+
+/// Percent-encode a query value (RFC 3986 unreserved set kept as-is).
+fn query_encode(value: &str) -> String {
+    use std::fmt::Write as _;
+    let mut out = String::with_capacity(value.len());
+    for byte in value.bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
+            out.push(char::from(byte));
+        } else {
+            // Writing into a String cannot fail.
+            let _ = write!(out, "%{byte:02X}");
+        }
+    }
+    out
+}
+
+fn html_escape(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for ch in value.chars() {
+        match ch {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            _ => out.push(ch),
+        }
+    }
+    out
 }
 
 fn hex_prefix(bytes: &[u8], chars: usize) -> String {
@@ -62,7 +112,22 @@ pub struct LoginOk {
     pub user_id: UserId,
     pub roles: Vec<String>,
     pub permissions: Vec<String>,
+    pub mfa_enabled: bool,
 }
+
+/// Self-registration or admin creation input. No `Debug`: carries a password.
+pub struct NewAccount {
+    pub username: String,
+    pub email: String,
+    /// `None` = IdP-only account (admin path: the user signs in with Google).
+    pub password: Option<SecretString>,
+    pub first_name: String,
+    pub last_name: String,
+    pub ip: Option<String>,
+    pub user_agent: Option<String>,
+}
+
+pub use ab_db::identity::ProfileRow as Profile;
 
 #[derive(Debug)]
 pub struct SessionSummary {
@@ -80,6 +145,10 @@ pub struct IdentityService {
     sessions: SessionStore,
     zitadel: Arc<ZitadelClient>,
     limiter: RateLimiter,
+    /// `None` = email delivery unconfigured (codes are logged, accounts work).
+    mailer: Option<Arc<ResendClient>>,
+    /// Public web origin for links in emails (`AB__SERVER__WEB_URL`).
+    web_url: Option<String>,
 }
 
 impl IdentityService {
@@ -91,7 +160,21 @@ impl IdentityService {
             sessions,
             zitadel,
             limiter,
+            mailer: None,
+            web_url: None,
         }
+    }
+
+    /// Wire email delivery for verification codes.
+    #[must_use]
+    pub fn with_mailer(
+        mut self,
+        mailer: Option<Arc<ResendClient>>,
+        web_url: Option<String>,
+    ) -> Self {
+        self.mailer = mailer;
+        self.web_url = web_url;
+        self
     }
 
     #[must_use]
@@ -180,14 +263,16 @@ impl IdentityService {
                 ))
             }
             PasswordSessionOutcome::UserNotFound => {
+                // Our row exists but Zitadel's does not — identity drift.
+                // Loud in the logs; uniform message to the client.
+                tracing::error!(login = %input.login, "app user missing from zitadel");
                 self.audit(
                     None,
                     "login-failed",
                     input,
-                    serde_json::json!({ "login": input.login, "reason": "unknown-user" }),
+                    serde_json::json!({ "login": input.login, "reason": "zitadel-user-missing" }),
                 )
                 .await?;
-                // Uniform response: do not reveal which accounts exist.
                 Err(Error::app(
                     ErrorCode::InvalidCredentials,
                     "invalid credentials",
@@ -199,22 +284,33 @@ impl IdentityService {
     pub async fn login(&self, input: LoginInput) -> Result<LoginOk> {
         let login_key = self.enforce_login_limits(&input).await?;
 
-        let outcome = self
-            .zitadel
-            .create_password_session(&input.login, &input.password, input.totp_code.as_deref())
-            .await?;
-        let zsession = self.resolve_session_outcome(outcome, &input).await?;
-
+        // Our row first (username or email, legacy semantics), then the
+        // password check by Zitadel user id — Zitadel's login name may be
+        // either identifier depending on how the account was created.
         let Some(user) = ab_db::identity::find_user_for_login(&self.pool, &input.login).await?
         else {
-            // Zitadel authenticated an account our DB doesn't know — identity
-            // drift. Loud internal error; uniform message to the client.
-            tracing::error!(login = %input.login, "zitadel user missing from app database");
+            self.audit(
+                None,
+                "login-failed",
+                &input,
+                serde_json::json!({ "login": input.login, "reason": "unknown-user" }),
+            )
+            .await?;
+            // Uniform response: do not reveal which accounts exist.
             return Err(Error::app(
                 ErrorCode::InvalidCredentials,
                 "invalid credentials",
             ));
         };
+        let outcome = self
+            .zitadel
+            .create_password_session(
+                &SessionUser::Id(&user.zitadel_user_id),
+                &input.password,
+                input.totp_code.as_deref(),
+            )
+            .await?;
+        let zsession = self.resolve_session_outcome(outcome, &input).await?;
         if user.status != "active" {
             self.audit(
                 Some(user.id),
@@ -232,15 +328,15 @@ impl IdentityService {
         // BFF-enforced MFA: Zitadel's session API does not force TOTP by
         // itself — if the account has TOTP enrolled and no code came with
         // this attempt, demand the second factor before opening our session.
+        // A supplied (and Zitadel-accepted) code proves enrollment by itself;
+        // without one, an enrolled account never gets past this block.
+        let mfa_enabled = input.totp_code.is_some();
         if input.totp_code.is_none() {
             let methods = self
                 .zitadel
                 .list_auth_method_types(&user.zitadel_user_id)
                 .await?;
-            if methods
-                .iter()
-                .any(|m| m == "AUTHENTICATION_METHOD_TYPE_TOTP")
-            {
+            if methods.iter().any(|m| m == TOTP_METHOD) {
                 let token = SecretString::from(zsession.session_token.clone());
                 if let Err(err) = self
                     .zitadel
@@ -274,6 +370,7 @@ impl IdentityService {
                 roles: roles.clone(),
                 permissions: permissions.clone(),
                 rbac_version: user.rbac_version,
+                mfa_enabled,
                 ip: input.ip.clone(),
                 user_agent: input.user_agent.clone(),
             })
@@ -290,7 +387,256 @@ impl IdentityService {
             user_id: user.id,
             roles,
             permissions,
+            mfa_enabled,
         })
+    }
+
+    // ── Account creation (self-registration + admin) ───────────────────────
+
+    async fn enforce_register_limit(&self, ip: Option<&str>) -> Result<()> {
+        let Some(ip) = ip else { return Ok(()) };
+        let (limit, window) = REGISTER_IP_LIMIT;
+        if self
+            .limiter
+            .check(&format!("rl:register:ip:{ip}"), limit, window)
+            .await?
+        {
+            Ok(())
+        } else {
+            Err(Error::app(
+                ErrorCode::RateLimited,
+                "too many registration attempts",
+            ))
+        }
+    }
+
+    /// Legacy `_validate_unique_username` / `_validate_unique_email`, as
+    /// dedicated codes instead of a Russian 400 detail.
+    async fn require_unique(&self, username: &str, email: &str) -> Result<()> {
+        if ab_db::identity::find_user_id_by_username(&self.pool, username)
+            .await?
+            .is_some()
+        {
+            return Err(Error::app(
+                ErrorCode::UsernameTaken,
+                "username is already taken",
+            ));
+        }
+        if ab_db::identity::find_user_id_by_email(&self.pool, email)
+            .await?
+            .is_some()
+        {
+            return Err(Error::app(
+                ErrorCode::EmailTaken,
+                "email is already registered",
+            ));
+        }
+        Ok(())
+    }
+
+    /// Zitadel human + `users` row with the default `user` role. Returns the
+    /// profile and the email verification code (unverified accounts only).
+    async fn create_account(
+        &self,
+        account: &NewAccount,
+        email_verified: bool,
+    ) -> Result<(Profile, Option<String>)> {
+        self.require_unique(&account.username, &account.email)
+            .await?;
+        let created = self
+            .zitadel
+            .create_human_user_with_email_code(&NewHumanUser {
+                username: account.username.clone(),
+                given_name: account.first_name.clone(),
+                family_name: account.last_name.clone(),
+                email: account.email.clone(),
+                email_verified,
+                password: match &account.password {
+                    Some(password) => PasswordSpec::Plain(password.clone()),
+                    None => PasswordSpec::None,
+                },
+            })
+            .await
+            .map_err(|err| {
+                // Zitadel's own uniqueness check (login names span providers
+                // — a Google-created account may hold the name).
+                if err.code() == ErrorCode::Conflict {
+                    Error::app(ErrorCode::UsernameTaken, "username is already taken")
+                } else {
+                    err
+                }
+            })?;
+        let display_name = format!("{} {}", account.first_name, account.last_name);
+        let inserted = ab_db::identity::create_user_with_default_role(
+            &self.pool,
+            &created.user_id,
+            &account.username,
+            &account.email,
+            display_name.trim(),
+        )
+        .await?;
+        let Some(user_id) = inserted else {
+            // Lost a race since `require_unique`: undo the Zitadel side.
+            if let Err(err) = self.zitadel.delete_user(&created.user_id).await {
+                tracing::warn!(%err, "compensating zitadel user delete failed");
+            }
+            return Err(Error::app(
+                ErrorCode::UsernameTaken,
+                "username or email is already taken",
+            ));
+        };
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(user_id),
+            "account-created",
+            account.ip.as_deref(),
+            account.user_agent.as_deref(),
+            serde_json::json!({ "email_verified": email_verified }),
+        )
+        .await?;
+        let profile = ab_db::identity::get_profile(&self.pool, user_id)
+            .await?
+            .ok_or_else(|| Error::not_found("user"))?;
+        Ok((profile, created.email_code))
+    }
+
+    /// Public self-registration (DECISIONS 2026-09-12). The verification
+    /// code goes out via Resend; without a mailer it is logged and the
+    /// account still works — the legacy never gated login on verification.
+    pub async fn register(&self, account: NewAccount) -> Result<Profile> {
+        self.enforce_register_limit(account.ip.as_deref()).await?;
+        let (profile, code) = self.create_account(&account, false).await?;
+        if let Some(code) = code {
+            self.deliver_verification_code(&profile, &code).await;
+        }
+        Ok(profile)
+    }
+
+    async fn deliver_verification_code(&self, profile: &Profile, code: &str) {
+        let Some(mailer) = &self.mailer else {
+            tracing::warn!(
+                user_id = %profile.id,
+                email = %profile.email,
+                code,
+                "resend not configured: verification code not delivered"
+            );
+            return;
+        };
+        let base = self
+            .web_url
+            .as_deref()
+            .map(|b| b.trim_end_matches('/'))
+            .unwrap_or_default();
+        let link = format!(
+            "{base}/auth/verify-email?email={}&code={code}",
+            query_encode(&profile.email)
+        );
+        let html = format!(
+            "<p>Здравствуйте, {name}!</p>\
+             <p>Код подтверждения адреса электронной почты: <strong>{code}</strong></p>\
+             <p><a href=\"{link}\">Подтвердить адрес</a></p>\
+             <p>Если вы не регистрировались на Ashyq Bilim, просто проигнорируйте это письмо.</p>",
+            name = html_escape(&profile.display_name),
+            link = html_escape(&link),
+        );
+        if let Err(err) = mailer
+            .send(
+                &profile.email,
+                "Подтвердите адрес электронной почты — Ashyq Bilim",
+                &html,
+            )
+            .await
+        {
+            tracing::warn!(%err, user_id = %profile.id, "verification email not sent");
+        }
+    }
+
+    /// Confirm the address with the emailed code. Public: the caller proves
+    /// mailbox access, not a session. Uniform 422 on unknown email or wrong
+    /// code (no account enumeration).
+    pub async fn verify_email(&self, email: &str, code: &str, ip: Option<&str>) -> Result<()> {
+        self.enforce_register_limit(ip).await?;
+        let invalid = || {
+            Error::validation(vec![FieldError {
+                field: "code".into(),
+                code: "invalid".into(),
+                message: "verification code is invalid or expired".into(),
+            }])
+        };
+        let Some(user) = ab_db::identity::find_user_for_login(&self.pool, email).await? else {
+            return Err(invalid());
+        };
+        self.zitadel
+            .verify_email(&user.zitadel_user_id, code)
+            .await?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(user.id),
+            "email-verified",
+            ip,
+            None,
+            serde_json::json!({}),
+        )
+        .await
+    }
+
+    /// Admin creation (`POST /users`): the email is taken as verified (the
+    /// admin vouches for it, as the legacy did); optional extra roles.
+    pub async fn admin_create_user(
+        &self,
+        actor: &Actor,
+        account: NewAccount,
+        roles: &[String],
+    ) -> Result<ab_db::identity::AdminUserRow> {
+        actor.require(MANAGE_PLATFORM)?;
+        let mut role_ids = Vec::with_capacity(roles.len());
+        for slug in roles {
+            let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
+                .await?
+                .ok_or_else(|| {
+                    Error::validation(vec![FieldError {
+                        field: "roles".into(),
+                        code: "invalid".into(),
+                        message: format!("unknown role '{slug}'"),
+                    }])
+                })?;
+            role_ids.push(role.id);
+        }
+        let (profile, _) = self.create_account(&account, true).await?;
+        for role_id in role_ids {
+            ab_db::identity::assign_role(&self.pool, profile.id, role_id).await?;
+        }
+        ab_db::identity::get_admin_user(&self.pool, profile.id)
+            .await?
+            .ok_or_else(|| Error::not_found("user"))
+    }
+
+    /// Change the caller's password through Zitadel (current password
+    /// checked there). Every other session of the user is revoked — the
+    /// legacy tracked `password_changed_at` for exactly this.
+    pub async fn change_password(
+        &self,
+        actor: &Actor,
+        current: &SecretString,
+        new: &SecretString,
+    ) -> Result<()> {
+        self.zitadel
+            .change_password(&actor.zitadel_user_id, current, new)
+            .await?;
+        for id in self.sessions.list(actor.user_id).await? {
+            if id != actor.session_id {
+                self.sessions.revoke(actor.user_id, &id).await?;
+            }
+        }
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(actor.user_id),
+            "password-changed",
+            None,
+            None,
+            serde_json::json!({}),
+        )
+        .await
     }
 
     // ── TOTP self-service (optional MFA, DECISIONS.md: TOTP only) ──────────
@@ -306,6 +652,7 @@ impl IdentityService {
         self.zitadel
             .verify_totp(&actor.zitadel_user_id, code)
             .await?;
+        self.sessions.set_mfa_enabled(actor.user_id, true).await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             Some(actor.user_id),
@@ -320,6 +667,7 @@ impl IdentityService {
     /// Remove the TOTP authenticator (idempotent).
     pub async fn totp_remove(&self, actor: &Actor) -> Result<()> {
         self.zitadel.remove_totp(&actor.zitadel_user_id).await?;
+        self.sessions.set_mfa_enabled(actor.user_id, false).await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             Some(actor.user_id),

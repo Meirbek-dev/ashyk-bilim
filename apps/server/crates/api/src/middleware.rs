@@ -33,3 +33,29 @@ pub async fn csrf_guard(request: Request, next: Next) -> Result<Response, ApiErr
     }
     Ok(next.run(request).await)
 }
+
+tokio::task_local! {
+    /// The `x-request-id` of the request being handled — read by the error
+    /// mapper so the problem+json body carries the same id as the header.
+    static REQUEST_ID: String;
+}
+
+/// Runs the rest of the stack inside a [`REQUEST_ID`] scope (the id is the
+/// one `SetRequestIdLayer` generated or propagated).
+pub async fn request_id_scope(request: Request, next: Next) -> Response {
+    let id = request
+        .extensions()
+        .get::<tower_http::request_id::RequestId>()
+        .and_then(|id| id.header_value().to_str().ok())
+        .map(ToOwned::to_owned);
+    match id {
+        Some(id) => REQUEST_ID.scope(id, next.run(request)).await,
+        None => next.run(request).await,
+    }
+}
+
+/// The current request's id, when inside a handled request.
+#[must_use]
+pub fn current_request_id() -> Option<String> {
+    REQUEST_ID.try_with(Clone::clone).ok()
+}

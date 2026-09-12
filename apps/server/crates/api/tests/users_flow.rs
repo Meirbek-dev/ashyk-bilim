@@ -241,3 +241,164 @@ async fn admin_lists_users_and_disables_accounts(pool: PgPool) {
         .await;
     assert_eq!(enabled.status, StatusCode::NO_CONTENT);
 }
+
+// ── Admin account creation (`POST /users`, DECISIONS 2026-09-12) ────────────
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn admin_creates_accounts_with_roles(pool: PgPool) {
+    use wiremock::matchers::{body_partial_json, method, path};
+    use wiremock::{Mock, ResponseTemplate};
+
+    let app = TestApp::spawn(pool).await;
+    let admin_user = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(admin_user, &["platform:manage:platform"])
+        .await;
+    // The admin vouches for the address: created verified, no code, no
+    // email. A password-less body creates an IdP-only (Google) account.
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .and(body_partial_json(serde_json::json!({
+            "username": "newteacher",
+            "email": { "email": "nt@example.com", "isVerified": true }
+        })))
+        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+            "userId": "z-nt", "details": {}
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_as(
+            &admin,
+            "/api/v2/users",
+            &serde_json::json!({
+                "username": "newteacher",
+                "email": "nt@example.com",
+                "first_name": "New",
+                "last_name": "Teacher",
+                "roles": ["instructor"],
+            }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CREATED, "{}", res.json());
+    let body = res.json();
+    assert_eq!(body["username"], "newteacher");
+    assert_eq!(body["status"], "active");
+    assert_eq!(body["roles"], serde_json::json!(["instructor", "user"]));
+    assert!(app.resend.received_requests().await.unwrap().is_empty());
+
+    // Unknown role → 422 before anything is created.
+    let res = app
+        .post_as(
+            &admin,
+            "/api/v2/users",
+            &serde_json::json!({
+                "username": "another",
+                "email": "an@example.com",
+                "first_name": "A",
+                "last_name": "B",
+                "roles": ["wizard"],
+            }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(res.json()["field_errors"][0]["field"], "roles");
+
+    // Duplicate → dedicated code.
+    let res = app
+        .post_as(
+            &admin,
+            "/api/v2/users",
+            &serde_json::json!({
+                "username": "newteacher",
+                "email": "other@example.com",
+                "first_name": "A",
+                "last_name": "B",
+            }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CONFLICT);
+    assert_eq!(res.json()["code"], "username-taken");
+
+    // Not an admin → 403.
+    let pleb = app.mint_session(&["user:read:platform"]).await;
+    let res = app
+        .post_as(
+            &pleb,
+            "/api/v2/users",
+            &serde_json::json!({
+                "username": "sneaky",
+                "email": "s@example.com",
+                "first_name": "A",
+                "last_name": "B",
+            }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::FORBIDDEN);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let author = app
+        .create_user("author", "a@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            author,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+            ],
+        )
+        .await;
+    let mut ids = Vec::new();
+    for name in ["Public one", "Draft one"] {
+        let res = app
+            .post_as(
+                &teacher,
+                "/api/v2/courses",
+                &serde_json::json!({ "name": name }),
+            )
+            .await;
+        ids.push(res.json()["id"].as_str().unwrap().to_owned());
+    }
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/courses/{}/lifecycle", ids[0]),
+        &serde_json::json!({ "action": "publish" }),
+    )
+    .await;
+
+    // Strangers see public courses only; the author sees both.
+    let stranger = app.mint_session(&[]).await;
+    let public = app.get_as(&stranger, "/api/v2/users/Author/courses").await;
+    assert_eq!(public.status, StatusCode::OK, "{}", public.text());
+    assert_eq!(public.json()["items"].as_array().unwrap().len(), 1);
+    assert_eq!(public.json()["items"][0]["name"], "Public one");
+    let own = app.get_as(&teacher, "/api/v2/users/author/courses").await;
+    assert_eq!(own.json()["items"].as_array().unwrap().len(), 2);
+
+    // Active contributors are listed on their own profile too.
+    let helper = app
+        .create_user("helper", "h@example.com", &["instructor"])
+        .await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{}/contributors", ids[0]),
+            &serde_json::json!({ "user_id": helper }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let helped = app.get_as(&stranger, "/api/v2/users/helper/courses").await;
+    assert_eq!(helped.json()["items"].as_array().unwrap().len(), 1);
+
+    let unknown = app.get_as(&stranger, "/api/v2/users/nobody/courses").await;
+    assert_eq!(unknown.status, StatusCode::NOT_FOUND);
+}

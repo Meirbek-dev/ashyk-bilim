@@ -1,4 +1,5 @@
 use ab_core::id::{CourseId, UserId, UsergroupId};
+use ab_domain::identity::{Actor, UsergroupsService};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -9,13 +10,18 @@ pub struct Usergroup {
     pub description: String,
     pub creator_id: Option<UserId>,
     pub member_count: i64,
+    /// Whether the caller may edit/delete the group and change its members
+    /// or courses (`usergroup:manage:platform`, or creator with
+    /// `usergroup:create:platform`).
+    pub can_write: bool,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
 
-impl From<ab_domain::identity::usergroups::Usergroup> for Usergroup {
-    fn from(g: ab_domain::identity::usergroups::Usergroup) -> Self {
+impl Usergroup {
+    pub fn for_actor(g: ab_domain::identity::usergroups::Usergroup, actor: &Actor) -> Self {
         Self {
+            can_write: UsergroupsService::can_write(actor, &g),
             id: g.id,
             name: g.name,
             description: g.description,

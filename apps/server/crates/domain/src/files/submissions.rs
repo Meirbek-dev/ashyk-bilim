@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use ab_clients::storage::{Bucket, StorageClient};
 use ab_core::assessments::{
-    FileAttemptStatus, FileSubmissionLifecycle, GradeReleaseMode, LatePolicyKind,
+    FileAttemptStatus, FileSubmissionLifecycle, GradeReleaseMode, LatePolicyKind, SubmissionStatus,
 };
 use ab_core::id::{
     ActivityId, ChapterId, FileAttemptFileId, FileAttemptId, FileSubmissionId, UserId,
@@ -30,9 +30,10 @@ use utoipa::ToSchema;
 
 use crate::assessments::service::{AssessmentsService, LatePolicy, perm};
 use crate::catalog::courses::Course;
+use crate::events::GradingEvents;
 use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::grading::penalties::late_penalty_pct;
-use crate::grading::teacher::UserSummary;
+use crate::grading::teacher::{UserSummary, course_event_name};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
 
@@ -162,6 +163,8 @@ pub struct FileSubmissionsService {
     assessments: AssessmentsService,
     storage: Arc<StorageClient>,
     projector: ProgressProjector,
+    /// Course-stream fan-out of hand-ins and grades; `None` without Redis.
+    events: Option<GradingEvents>,
 }
 
 fn stale(expected: i64, actual: i64) -> Error {
@@ -237,7 +240,41 @@ impl FileSubmissionsService {
             pool,
             assessments,
             storage,
+            events: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_events(mut self, events: Option<GradingEvents>) -> Self {
+        self.events = events;
+        self
+    }
+
+    /// Course-stream event for an attempt landing in `status`
+    /// (`submission.submitted`, `grade.saved`, `grade.published`,
+    /// `submission.returned`).
+    async fn emit_course(&self, row: &FileSubmissionRow, attempt: &AttemptRow) {
+        let Some(events) = &self.events else {
+            return;
+        };
+        let status = match attempt.status {
+            FileAttemptStatus::Submitted => SubmissionStatus::Pending,
+            FileAttemptStatus::Graded => SubmissionStatus::Graded,
+            FileAttemptStatus::Published => SubmissionStatus::Published,
+            FileAttemptStatus::Returned => SubmissionStatus::Returned,
+            FileAttemptStatus::Draft => return,
+        };
+        events
+            .publish_best_effort(
+                row.course_id,
+                course_event_name(status),
+                serde_json::json!({
+                    "attempt_id": attempt.id, "activity_id": row.activity_id,
+                    "user_id": attempt.user_id, "status": status,
+                    "final_score": attempt.final_score,
+                }),
+            )
+            .await;
     }
 
     // ── Loading + gates ─────────────────────────────────────────────────
@@ -838,6 +875,7 @@ impl FileSubmissionsService {
         attempt = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
+        self.emit_course(&row, &attempt).await;
         self.attempt_view(attempt, false, true).await
     }
 
@@ -980,6 +1018,7 @@ impl FileSubmissionsService {
         let fresh = ab_db::file_submissions::get_attempt(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
+        self.emit_course(&row, &fresh).await;
         self.attempt_view(fresh, true, false).await
     }
 

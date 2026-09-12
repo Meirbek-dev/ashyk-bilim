@@ -68,7 +68,7 @@ struct Abilities {
 
 impl Abilities {
     fn of(actor: &Actor, course: &Course) -> Self {
-        let creator = course.creator_id == Some(actor.user_id);
+        let creator = course.is_author(actor.user_id);
         let moderate = actor.has(perm(Action::Moderate, Scope::Platform))
             || (creator && actor.has(perm(Action::Moderate, Scope::Own)));
         Self {

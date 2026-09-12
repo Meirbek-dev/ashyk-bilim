@@ -34,6 +34,46 @@ const fn count(n: usize) -> f64 {
     n as f64
 }
 
+/// One auto-graded item: points, correctness and the verdict as a code
+/// (+ placeholders) the client localizes, with the English text kept in
+/// `feedback` for compatibility.
+struct Verdict {
+    score: f64,
+    correct: Option<bool>,
+    code: &'static str,
+    params: Option<serde_json::Value>,
+    feedback: String,
+}
+
+impl Verdict {
+    fn new(score: f64, correct: bool, code: &'static str, feedback: &str) -> Self {
+        Self {
+            score,
+            correct: Some(correct),
+            code,
+            params: None,
+            feedback: feedback.to_owned(),
+        }
+    }
+
+    /// `{correct, total}` verdicts (`partially-correct`, `pairs-matched`, …).
+    fn ratio(
+        score: f64,
+        correct: bool,
+        code: &'static str,
+        (hits, total): (usize, usize),
+        feedback: String,
+    ) -> Self {
+        Self {
+            score,
+            correct: Some(correct),
+            code,
+            params: Some(serde_json::json!({ "correct": hits, "total": total })),
+            feedback,
+        }
+    }
+}
+
 /// Points per item as its `max_score` share of 100, or an even split.
 fn item_points(items: &[Item]) -> Vec<f64> {
     let total: f64 = items.iter().map(|i| i.max_score).sum();
@@ -50,7 +90,7 @@ fn grade_choice(
     selected: &[String],
     points: f64,
     policy: GraderPolicy,
-) -> (f64, Option<bool>, String) {
+) -> Verdict {
     let correct_ids: Vec<&str> = body
         .options
         .iter()
@@ -59,47 +99,58 @@ fn grade_choice(
         .collect();
     let chosen: Vec<&str> = selected.iter().map(String::as_str).collect();
     if chosen.is_empty() {
-        return (0.0, Some(false), "No answer provided".into());
+        return Verdict::new(0.0, false, "no-answer", "No answer provided");
     }
     if correct_ids.is_empty() {
-        return (points, Some(true), "No correct answer defined".into());
+        return Verdict::new(
+            points,
+            true,
+            "no-correct-answer",
+            "No correct answer defined",
+        );
     }
     let hits = chosen.iter().filter(|c| correct_ids.contains(c)).count();
     let misses = chosen.len() - hits;
     if misses == 0 && hits == correct_ids.len() {
-        return (round2(points), Some(true), "Correct".into());
+        return Verdict::new(round2(points), true, "correct", "Correct");
     }
     if hits > 0 {
         if !policy.partial_credit {
-            return (
+            return Verdict::new(
                 0.0,
-                Some(false),
-                "Partially correct (no partial credit)".into(),
+                false,
+                "partially-correct-no-credit",
+                "Partially correct (no partial credit)",
             );
         }
         let partial = count(hits) / count(correct_ids.len()) * points;
         let penalty = count(misses) / count(body.options.len().max(1)) * points * 0.5;
-        return (
+        return Verdict::ratio(
             round2((partial - penalty).max(0.0)),
-            Some(false),
+            false,
+            "partially-correct",
+            (hits, correct_ids.len()),
             format!("Partially correct ({hits}/{})", correct_ids.len()),
         );
     }
     let deduction = policy.negative_marking_percent / 100.0 * points;
-    (
+    Verdict::new(
         round2(-deduction.min(points)),
-        Some(false),
-        "Incorrect".into(),
+        false,
+        "incorrect",
+        "Incorrect",
     )
 }
 
+/// Answers name the columns' option ids, which are the pair texts (the
+/// learner body shuffles the right column; ids stay the texts).
 fn grade_matching(
     body: &crate::assessments::items::MatchingBody,
     matches: &[crate::grading::answers::MatchingAnswer],
     points: f64,
-) -> (f64, Option<bool>, String) {
+) -> Verdict {
     if matches.is_empty() {
-        return (0.0, Some(false), "No answer provided".into());
+        return Verdict::new(0.0, false, "no-answer", "No answer provided");
     }
     let expected = body.pairs.len().max(1);
     let correct = body
@@ -108,19 +159,22 @@ fn grade_matching(
         .filter(|p| {
             matches
                 .iter()
-                .any(|m| m.left == p.left && m.right == p.right)
+                .any(|m| m.left == p.left.trim() && m.right == p.right.trim())
         })
         .count();
     let all = correct == body.pairs.len();
-    (
-        round2(count(correct) / count(expected) * points),
-        Some(all),
-        if all {
-            "Correct".into()
-        } else {
-            format!("{correct}/{} pairs matched", body.pairs.len())
-        },
-    )
+    let score = round2(count(correct) / count(expected) * points);
+    if all {
+        Verdict::new(score, true, "correct", "Correct")
+    } else {
+        Verdict::ratio(
+            score,
+            false,
+            "pairs-matched",
+            (correct, body.pairs.len()),
+            format!("{correct}/{} pairs matched", body.pairs.len()),
+        )
+    }
 }
 
 fn correct_answer(body: &ItemBody) -> serde_json::Value {
@@ -133,7 +187,10 @@ fn correct_answer(body: &ItemBody) -> serde_json::Value {
                 .collect::<Vec<_>>()
         ),
         ItemBody::Matching(b) => serde_json::to_value(&b.pairs).unwrap_or_default(),
-        ItemBody::OpenText(_) | ItemBody::Form(_) | ItemBody::Code(_) => serde_json::Value::Null,
+        ItemBody::OpenText(_)
+        | ItemBody::Form(_)
+        | ItemBody::Code(_)
+        | ItemBody::MatchingLearner(_) => serde_json::Value::Null,
     }
 }
 
@@ -148,35 +205,34 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
     for (item, pts) in items.iter().zip(points) {
         let answer = answers.get(&item.id);
         let user_answer = serde_json::to_value(answer).unwrap_or_default();
-        let (score, correct, feedback, needs_manual_review) = match (&item.body, answer) {
+        let verdict = match (&item.body, answer) {
             (ItemBody::Choice(body), Some(ItemAnswer::Choice { selected })) => {
-                let (s, c, f) = grade_choice(body, selected, pts, policy);
-                (s, c, f, false)
+                Some(grade_choice(body, selected, pts, policy))
             }
-            (ItemBody::Choice(body), _) => {
-                let (s, c, f) = grade_choice(body, &[], pts, policy);
-                (s, c, f, false)
-            }
+            (ItemBody::Choice(body), _) => Some(grade_choice(body, &[], pts, policy)),
             (ItemBody::Matching(body), Some(ItemAnswer::Matching { matches })) => {
-                let (s, c, f) = grade_matching(body, matches, pts);
-                (s, c, f, false)
+                Some(grade_matching(body, matches, pts))
             }
-            (ItemBody::Matching(body), _) => {
-                let (s, c, f) = grade_matching(body, &[], pts);
-                (s, c, f, false)
-            }
+            (ItemBody::Matching(body), _) => Some(grade_matching(body, &[], pts)),
             // Open text, forms (and a stray code item) need a human.
-            _ => (0.0, None, String::new(), true),
+            _ => None,
         };
+        let needs_manual_review = verdict.is_none();
         manual |= needs_manual_review;
+        let score = verdict.as_ref().map_or(0.0, |v| v.score);
         total += score;
         graded.push(GradedItem {
             item_id: item.id,
             item_text: item.title.clone(),
             score,
             max_score: round2(pts),
-            correct,
-            feedback,
+            correct: verdict.as_ref().and_then(|v| v.correct),
+            feedback: verdict
+                .as_ref()
+                .map(|v| v.feedback.clone())
+                .unwrap_or_default(),
+            feedback_code: verdict.as_ref().map(|v| v.code.to_owned()),
+            feedback_params: verdict.and_then(|v| v.params),
             needs_manual_review,
             user_answer,
             correct_answer: correct_answer(&item.body),
@@ -236,6 +292,10 @@ pub fn grade_code(item: &Item, cases: &[CaseOutcome], answer: Option<&ItemAnswer
                 max_score: 100.0,
                 correct: Some(!cases.is_empty() && passed == cases.len()),
                 feedback: format!("{passed}/{} tests passed", cases.len()),
+                feedback_code: Some("tests-passed".into()),
+                feedback_params: Some(
+                    serde_json::json!({ "correct": passed, "total": cases.len() }),
+                ),
                 needs_manual_review: false,
                 user_answer: serde_json::to_value(answer).unwrap_or_default(),
                 correct_answer: serde_json::Value::Null,
@@ -354,6 +414,24 @@ mod tests {
         assert_eq!(grade.breakdown.items[1].score, 12.5);
         assert_eq!(grade.auto_score, 40.62);
         assert!(!grade.breakdown.needs_manual_review);
+        // The verdict travels as a code + params next to the English text.
+        assert_eq!(
+            grade.breakdown.items[0].feedback_code.as_deref(),
+            Some("partially-correct")
+        );
+        assert_eq!(
+            grade.breakdown.items[0].feedback_params,
+            Some(serde_json::json!({ "correct": 1, "total": 2 }))
+        );
+        assert_eq!(grade.breakdown.items[0].feedback, "Partially correct (1/2)");
+        assert_eq!(
+            grade.breakdown.items[1].feedback_code.as_deref(),
+            Some("pairs-matched")
+        );
+        assert_eq!(
+            grade.breakdown.items[1].feedback_params,
+            Some(serde_json::json!({ "correct": 1, "total": 2 }))
+        );
     }
 
     #[test]
@@ -391,6 +469,7 @@ mod tests {
         let grade = grade_quiz(&[q], &Answers::new(), POLICY);
         assert!(grade.breakdown.needs_manual_review);
         assert_eq!(grade.breakdown.items[0].correct, None);
+        assert_eq!(grade.breakdown.items[0].feedback_code, None);
         assert_eq!(grade.auto_score, 0.0);
     }
 

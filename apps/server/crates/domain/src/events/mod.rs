@@ -1,7 +1,8 @@
 //! Grading events for SSE clients, on Redis Streams.
 //!
-//! One stream per submission (`sse:grading:{submission}`, `MAXLEN ~ 1024`).
-//! Publishing is `XADD`; the stream id doubles as the SSE `id:` so
+//! One stream per submission (`sse:grading:{submission}`) and one per
+//! course (`sse:grading:course:{course}` — every grade change and hand-in
+//! on the course, for graders), both `MAXLEN ~ 1024`. Publishing is `XADD`; the stream id doubles as the SSE `id:` so
 //! `Last-Event-ID` resumes with a plain `XRANGE (id +` — no custom replay
 //! log like the legacy sorted set. Live delivery is `XREAD BLOCK` on a
 //! dedicated connection per subscriber (a blocking read must never sit on
@@ -17,7 +18,7 @@ use std::time::Duration;
 
 pub use ai::{AiEvents, AiStoredEvent, AiSubscriber};
 
-use ab_core::id::{SubmissionId, UserId};
+use ab_core::id::{CourseId, SubmissionId, UserId};
 use ab_core::{Error, Result};
 use redis::AsyncCommands;
 use redis::aio::ConnectionManager;
@@ -33,6 +34,41 @@ const SLOT_TTL_SECS: i64 = 3600;
 /// Streams die with the submission's relevance; refreshed on every publish.
 const STREAM_TTL_SECS: i64 = 7 * 24 * 3600;
 
+/// Which Redis stream an event lives on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Stream {
+    Submission(SubmissionId),
+    Course(CourseId),
+}
+
+impl From<SubmissionId> for Stream {
+    fn from(id: SubmissionId) -> Self {
+        Self::Submission(id)
+    }
+}
+
+impl From<CourseId> for Stream {
+    fn from(id: CourseId) -> Self {
+        Self::Course(id)
+    }
+}
+
+impl Stream {
+    fn key(self) -> String {
+        match self {
+            Self::Submission(id) => format!("sse:grading:{id}"),
+            Self::Course(id) => format!("sse:grading:course:{id}"),
+        }
+    }
+
+    const fn submission_id(self) -> Option<SubmissionId> {
+        match self {
+            Self::Submission(id) => Some(id),
+            Self::Course(_) => None,
+        }
+    }
+}
+
 /// One event as stored and as sent (`data:` is this, serialised).
 #[derive(Debug, Clone, Serialize)]
 pub struct StoredEvent {
@@ -40,7 +76,9 @@ pub struct StoredEvent {
     pub event_id: String,
     /// `grade.published`, `submission.returned`, `deadline.extended`, …
     pub event: String,
-    pub submission_id: SubmissionId,
+    /// Set on per-submission streams; course streams carry the ids in `payload`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub submission_id: Option<SubmissionId>,
     pub payload: serde_json::Value,
     pub sent_at: i64,
 }
@@ -78,12 +116,22 @@ fn now_unix() -> i64 {
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
 }
 
-fn stream_key(submission_id: SubmissionId) -> String {
-    format!("sse:grading:{submission_id}")
-}
-
 fn slot_key(user_id: UserId) -> String {
     format!("sse_conn:{user_id}")
+}
+
+/// A connection whose reads may block for the whole `XREAD BLOCK` window:
+/// the crate's default 500 ms response timeout would cut every idle
+/// stream off (the blocking read's own timeout bounds the wait).
+pub(crate) async fn subscriber_connection(
+    client: &redis::Client,
+) -> Result<redis::aio::MultiplexedConnection> {
+    client
+        .get_multiplexed_async_connection_with_config(
+            &redis::AsyncConnectionConfig::new().set_response_timeout(None),
+        )
+        .await
+        .map_err(|e| Error::internal("redis subscriber connection", e))
 }
 
 /// The per-user SSE connection counter, shared by every event stream.
@@ -111,14 +159,14 @@ pub(crate) async fn acquire_slot_with(
     }))
 }
 
-fn decode(submission_id: SubmissionId, id: &redis::streams::StreamId) -> Option<StoredEvent> {
+fn decode(stream: Stream, id: &redis::streams::StreamId) -> Option<StoredEvent> {
     let event: String = id.get("event")?;
     let payload: String = id.get("payload").unwrap_or_else(|| "{}".into());
     let sent_at: i64 = id.get("sent_at").unwrap_or(0);
     Some(StoredEvent {
         event_id: id.id.clone(),
         event,
-        submission_id,
+        submission_id: stream.submission_id(),
         payload: serde_json::from_str(&payload).unwrap_or(serde_json::Value::Null),
         sent_at,
     })
@@ -135,12 +183,12 @@ impl GradingEvents {
     /// Append an event; returns its stream id.
     pub async fn publish(
         &self,
-        submission_id: SubmissionId,
+        stream: impl Into<Stream>,
         event: &str,
         payload: &serde_json::Value,
     ) -> Result<String> {
         let mut redis = self.redis.clone();
-        let key = stream_key(submission_id);
+        let key = stream.into().key();
         let id: String = redis
             .xadd_maxlen(
                 &key,
@@ -165,41 +213,39 @@ impl GradingEvents {
     /// that misses one refetches on reconnect.
     pub async fn publish_best_effort(
         &self,
-        submission_id: SubmissionId,
+        stream: impl Into<Stream>,
         event: &str,
         payload: serde_json::Value,
     ) {
-        if let Err(err) = self.publish(submission_id, event, &payload).await {
-            tracing::warn!(%submission_id, event, %err, "grading event not published");
+        let stream = stream.into();
+        if let Err(err) = self.publish(stream, event, &payload).await {
+            tracing::warn!(?stream, event, %err, "grading event not published");
         }
     }
 
     /// Events strictly after `after` (a stream id), oldest first.
     pub async fn replay(
         &self,
-        submission_id: SubmissionId,
+        stream: impl Into<Stream>,
         after: &str,
         limit: usize,
     ) -> Result<Vec<StoredEvent>> {
+        let stream = stream.into();
         let mut redis = self.redis.clone();
         let reply: StreamRangeReply = redis
-            .xrange_count(stream_key(submission_id), format!("({after}"), "+", limit)
+            .xrange_count(stream.key(), format!("({after}"), "+", limit)
             .await
             .map_err(|e| Error::internal("xrange grading events", e))?;
         Ok(reply
             .ids
             .iter()
-            .filter_map(|id| decode(submission_id, id))
+            .filter_map(|id| decode(stream, id))
             .collect())
     }
 
     /// A dedicated connection for one subscriber's blocking reads.
     pub async fn subscriber(&self) -> Result<Subscriber> {
-        let conn = self
-            .client
-            .get_multiplexed_async_connection()
-            .await
-            .map_err(|e| Error::internal("redis subscriber connection", e))?;
+        let conn = subscriber_connection(&self.client).await?;
         Ok(Subscriber { conn })
     }
 
@@ -229,24 +275,25 @@ impl Subscriber {
     /// An empty vector means the wait timed out.
     pub async fn read(
         &mut self,
-        submission_id: SubmissionId,
+        stream: impl Into<Stream>,
         after: &str,
         timeout: Duration,
         limit: usize,
     ) -> Result<Vec<StoredEvent>> {
+        let stream = stream.into();
         let options = StreamReadOptions::default()
             .block(usize::try_from(timeout.as_millis()).unwrap_or(usize::MAX))
             .count(limit);
         let reply: Option<StreamReadReply> = self
             .conn
-            .xread_options(&[stream_key(submission_id)], &[after], &options)
+            .xread_options(&[stream.key()], &[after], &options)
             .await
             .map_err(|e| Error::internal("xread grading events", e))?;
         Ok(reply
             .into_iter()
             .flat_map(|r| r.keys)
             .flat_map(|k| k.ids)
-            .filter_map(|id| decode(submission_id, &id))
+            .filter_map(|id| decode(stream, &id))
             .collect())
     }
 }

@@ -8,7 +8,9 @@
 use ab_core::id::{AssessmentId, BulkActionId, CourseId, SubmissionId};
 use ab_core::{Error, FieldError};
 use ab_domain::grading::bulk::DeadlineExtension;
-use ab_domain::grading::teacher::{GradeInput, ItemFeedbackView, ItemGrade, ReviewFilter};
+use ab_domain::grading::teacher::{
+    CsvLanguage, GradeInput, ItemFeedbackView, ItemGrade, ReviewFilter,
+};
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
@@ -303,7 +305,50 @@ pub async fn get_bulk_action(
     Ok(Json(state.grading.bulk_action(&actor, id).await?.into()))
 }
 
-/// Course gradebook: the latest submitted attempt per (learner, assessment).
+/// The gradebook matrix as CSV (graders).
+///
+/// UTF-8 with BOM; the header and status words follow `Accept-Language`
+/// (`ru` default, `kk`, `en`); one column per assessment and file
+/// submission, a scored cell is its number.
+#[utoipa::path(
+    get, path = "/courses/{id}/gradebook/export", tag = "grading",
+    params(
+        ("id" = CourseId, Path, description = "Course id"),
+        ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+    ),
+    responses(
+        (status = 200, description = "CSV", content_type = "text/csv", body = String),
+        (status = 403, description = "No grading access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn export_gradebook_csv(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+    headers: HeaderMap,
+) -> ApiResult<Response> {
+    let language = CsvLanguage::from_accept_language(
+        headers
+            .get(header::ACCEPT_LANGUAGE)
+            .and_then(|v| v.to_str().ok()),
+    );
+    let csv = state.grading.gradebook_csv(&actor, id, language).await?;
+    let mut response = (StatusCode::OK, csv).into_response();
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/csv; charset=utf-8"),
+    );
+    response.headers_mut().insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_str(&format!("attachment; filename=\"gradebook-{id}.csv\""))
+            .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
+    );
+    Ok(response)
+}
+
+/// Course gradebook: the latest submitted attempt per (learner, graded
+/// activity) — assessment submissions and file-submission attempts.
 #[utoipa::path(
     get, path = "/courses/{id}/gradebook", tag = "grading",
     params(("id" = CourseId, Path, description = "Course id"), GradebookQuery),

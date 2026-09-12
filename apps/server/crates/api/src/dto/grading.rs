@@ -7,7 +7,8 @@ use ab_core::assessments::{
     AssessmentKind, AutoSubmitReason, BulkActionStatus, BulkActionType, SubmissionStatus,
 };
 use ab_core::id::{
-    AssessmentId, AssessmentItemId, BulkActionId, GradingEntryId, SubmissionId, UserId,
+    ActivityId, AssessmentId, AssessmentItemId, BulkActionId, FileAttemptId, FileSubmissionId,
+    GradingEntryId, SubmissionId, UserId,
 };
 use ab_domain::grading::answers::ItemAnswer;
 use ab_domain::grading::breakdown::GradingBreakdown;
@@ -326,11 +327,19 @@ pub struct GradebookQuery {
     pub limit: Option<i64>,
 }
 
+/// One learner's latest non-draft attempt on one graded activity.
+///
+/// Exactly one id pair is set: `assessment_id` + `submission_id` for an
+/// assessment, `file_submission_id` + `attempt_id` for a file submission
+/// (whose `submitted` reads as `pending` here).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct GradebookCell {
     pub user_id: UserId,
-    pub assessment_id: AssessmentId,
-    pub submission_id: SubmissionId,
+    pub activity_id: ActivityId,
+    pub assessment_id: Option<AssessmentId>,
+    pub submission_id: Option<SubmissionId>,
+    pub file_submission_id: Option<FileSubmissionId>,
+    pub attempt_id: Option<FileAttemptId>,
     pub status: SubmissionStatus,
     pub attempt_number: i32,
     pub attempts: i64,
@@ -343,18 +352,30 @@ pub struct GradebookCell {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct GradebookAssessment {
     pub id: AssessmentId,
+    pub activity_id: ActivityId,
     pub title: String,
     pub kind: AssessmentKind,
     pub due_at_unix: Option<i64>,
     pub passing_score: f64,
 }
 
-/// Latest submitted attempt per (learner, assessment), keyset-paged.
+/// A file-submission activity as a gradebook column.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GradebookFileSubmission {
+    pub id: FileSubmissionId,
+    pub activity_id: ActivityId,
+    pub title: String,
+    pub due_at_unix: Option<i64>,
+}
+
+/// Latest submitted attempt per (learner, graded activity), keyset-paged;
+/// `assessments` and `file_submissions` are the columns.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct GradebookPage {
     pub cells: Vec<GradebookCell>,
     pub users: Vec<UserSummary>,
     pub assessments: Vec<GradebookAssessment>,
+    pub file_submissions: Vec<GradebookFileSubmission>,
     pub next_cursor: Option<String>,
 }
 
@@ -366,8 +387,11 @@ impl From<domain::GradebookPage> for GradebookPage {
                 .into_iter()
                 .map(|c| GradebookCell {
                     user_id: c.user_id,
+                    activity_id: c.activity_id,
                     assessment_id: c.assessment_id,
                     submission_id: c.submission_id,
+                    file_submission_id: c.file_submission_id,
+                    attempt_id: c.attempt_id,
                     status: c.status,
                     attempt_number: c.attempt_number,
                     attempts: c.attempts,
@@ -383,10 +407,21 @@ impl From<domain::GradebookPage> for GradebookPage {
                 .into_iter()
                 .map(|a| GradebookAssessment {
                     id: a.id,
+                    activity_id: a.activity_id,
                     title: a.title,
                     kind: a.kind,
                     due_at_unix: a.due_at,
                     passing_score: a.passing_score,
+                })
+                .collect(),
+            file_submissions: p
+                .file_submissions
+                .into_iter()
+                .map(|f| GradebookFileSubmission {
+                    id: f.id,
+                    activity_id: f.activity_id,
+                    title: f.title,
+                    due_at_unix: f.due_at,
                 })
                 .collect(),
             next_cursor: p.next_cursor,

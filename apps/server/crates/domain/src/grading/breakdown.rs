@@ -15,8 +15,16 @@ pub struct GradedItem {
     /// `None` = not auto-gradeable.
     #[serde(default)]
     pub correct: Option<bool>,
+    /// English text (compatibility); the auto-grader also sets a code.
     #[serde(default)]
     pub feedback: String,
+    /// Auto-grader verdict for the client to localize (`no-answer`,
+    /// `correct`, `partially-correct`, …); `None` for teacher prose.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feedback_code: Option<String>,
+    /// Placeholders for `feedback_code` (`{correct, total}`, …).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feedback_params: Option<serde_json::Value>,
     #[serde(default)]
     pub needs_manual_review: bool,
     #[serde(default)]
@@ -99,6 +107,8 @@ mod tests {
                 max_score: 2.0,
                 correct: Some(false),
                 feedback: String::new(),
+                feedback_code: None,
+                feedback_params: None,
                 needs_manual_review: false,
                 user_answer: serde_json::json!(["a"]),
                 correct_answer: serde_json::json!(["b"]),

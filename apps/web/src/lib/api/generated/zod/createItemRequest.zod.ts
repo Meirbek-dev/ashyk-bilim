@@ -110,9 +110,43 @@ export const CreateItemRequest = zod.object({
                 right: zod.string(),
               }),
             )
-            .optional(),
+            .describe(
+              "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`\/`right`, no pairs).",
+            ),
           prompt: zod.string().optional(),
         })
+        .and(
+          zod.object({
+            kind: zod.enum(['matching']),
+          }),
+        ),
+      zod
+        .object({
+          left: zod.array(
+            zod.object({
+              id: zod
+                .string()
+                .describe(
+                  'What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).',
+                ),
+              text: zod.string(),
+            }),
+          ),
+          prompt: zod.string().optional(),
+          right: zod.array(
+            zod.object({
+              id: zod
+                .string()
+                .describe(
+                  'What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).',
+                ),
+              text: zod.string(),
+            }),
+          ),
+        })
+        .describe(
+          'The learner read of a matching item: the two columns with the right\none shuffled (stable per viewer and item), never the pairing. Authors\nkeep [`MatchingBody::pairs`].',
+        )
         .and(
           zod.object({
             kind: zod.enum(['matching']),

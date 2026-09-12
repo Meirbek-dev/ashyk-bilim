@@ -9,6 +9,7 @@ import * as zod from 'zod'
 
 export const SessionInfo = zod
   .object({
+    mfa_enabled: zod.boolean().describe('TOTP enrolled on the account.'),
     permissions: zod.array(zod.string()),
     roles: zod.array(zod.string()),
     user_id: zod.uuid(),

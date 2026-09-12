@@ -189,3 +189,106 @@ async fn enrollment_activation_and_removal(pool: PgPool) {
     .unwrap();
     assert_eq!(events, vec!["mfa-enrolled", "mfa-removed"]);
 }
+
+// ── `mfa_enabled` on the wire (DECISIONS 2026-09-12, Q-7) ───────────────────
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn mfa_enabled_reflects_enrollment_on_session_and_profile(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("mfauser", "mfa@example.com", &["user"])
+        .await;
+    mock_session_ok(&app).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-mfauser/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(false)))
+        .mount(&app.zitadel)
+        .await;
+
+    // Password-only login: not enrolled.
+    let login = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw" }),
+        )
+        .await;
+    assert_eq!(login.status, StatusCode::OK);
+    assert_eq!(login.json()["mfa_enabled"], false);
+    let cookie = login.session_cookie().unwrap();
+    let session = ab_testkit::MintedSession {
+        user_id: ab_core::id::UserId(uuid::Uuid::nil()),
+        cookie,
+    };
+    assert_eq!(
+        app.get_as(&session, "/api/v2/users/me").await.json()["mfa_enabled"],
+        false
+    );
+
+    // Enroll + activate: the live session flips without re-login.
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-mfauser/totp"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": {}, "uri": "otpauth://totp/x", "secret": "SECRET"
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-mfauser/totp/verify"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    assert_eq!(
+        app.post_as(&session, "/api/v2/auth/mfa/totp", &serde_json::json!({}))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(
+        app.post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": "123456" })
+        )
+        .await
+        .status,
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        app.get_as(&session, "/api/v2/auth/session").await.json()["mfa_enabled"],
+        true
+    );
+    assert_eq!(
+        app.get_as(&session, "/api/v2/users/me").await.json()["mfa_enabled"],
+        true
+    );
+
+    // A one-shot login with a code is enrolled by definition.
+    let login = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw", "totp_code": "123456" }),
+        )
+        .await;
+    assert_eq!(login.status, StatusCode::OK);
+    assert_eq!(login.json()["mfa_enabled"], true);
+
+    // Removal flips it back.
+    Mock::given(method("DELETE"))
+        .and(path("/v2/users/z-mfauser/totp"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    assert_eq!(
+        app.delete_as(&session, "/api/v2/auth/mfa/totp")
+            .await
+            .status,
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        app.get_as(&session, "/api/v2/auth/session").await.json()["mfa_enabled"],
+        false
+    );
+}

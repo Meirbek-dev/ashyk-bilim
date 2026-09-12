@@ -16,6 +16,45 @@ pub struct LoginRequest {
     pub totp_code: Option<String>,
 }
 
+/// Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.
+/// Rules mirror the legacy `UserCreate`: unique username/email, password of
+/// at least 8 characters.
+#[derive(Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RegisterRequest {
+    /// 3–48 characters: letters, digits, `.`, `_`, `-`.
+    #[garde(length(min = 3, max = 48), pattern(r"^[A-Za-z0-9._-]+$"))]
+    pub username: String,
+    #[garde(email, length(max = 320))]
+    pub email: String,
+    #[garde(length(min = 8, max = 200))]
+    pub password: String,
+    #[garde(length(min = 1, max = 100))]
+    pub first_name: String,
+    #[garde(length(min = 1, max = 100))]
+    pub last_name: String,
+}
+
+/// Confirm the emailed verification code.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct VerifyEmailRequest {
+    #[garde(email, length(max = 320))]
+    pub email: String,
+    #[garde(length(min = 1, max = 32))]
+    pub code: String,
+}
+
+/// Password change; the current password is checked by Zitadel.
+#[derive(Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ChangePasswordRequest {
+    #[garde(length(min = 1, max = 200))]
+    pub current_password: String,
+    #[garde(length(min = 8, max = 200))]
+    pub new_password: String,
+}
+
 /// TOTP enrollment secrets — shown to the user exactly once.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TotpEnrollment {
@@ -39,6 +78,8 @@ pub struct SessionInfo {
     pub user_id: UserId,
     pub roles: Vec<String>,
     pub permissions: Vec<String>,
+    /// TOTP enrolled on the account.
+    pub mfa_enabled: bool,
 }
 
 /// One of the caller's live sessions. `handle` is a non-bearer identifier

@@ -569,7 +569,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
         .await
         .unwrap();
     let swept =
-        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), 10)
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
             .await
             .unwrap();
     assert_eq!(swept, 1);

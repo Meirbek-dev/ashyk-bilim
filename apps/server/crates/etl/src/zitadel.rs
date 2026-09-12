@@ -120,7 +120,11 @@ pub async fn run_import(
 
     if let Some(probe) = probe {
         match client
-            .create_password_session(&probe.login_name, &probe.password, None)
+            .create_password_session(
+                &ab_clients::zitadel::SessionUser::LoginName(&probe.login_name),
+                &probe.password,
+                None,
+            )
             .await?
         {
             PasswordSessionOutcome::Ok(session) => {

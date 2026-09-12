@@ -34,7 +34,10 @@ pub async fn create_usergroup(
             request.description.as_deref().unwrap_or(""),
         )
         .await?;
-    Ok((StatusCode::CREATED, Json(group.into())))
+    Ok((
+        StatusCode::CREATED,
+        Json(Usergroup::for_actor(group, &actor)),
+    ))
 }
 
 /// Newest-first listing (requires `usergroup:read:platform`).
@@ -56,7 +59,10 @@ pub async fn list_usergroups(
         .list(&actor, query.cursor, query.limit.unwrap_or(20))
         .await?;
     Ok(Json(UsergroupPage {
-        items: groups.into_iter().map(Into::into).collect(),
+        items: groups
+            .into_iter()
+            .map(|g| Usergroup::for_actor(g, &actor))
+            .collect(),
         next_cursor,
     }))
 }
@@ -76,7 +82,8 @@ pub async fn get_usergroup(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
 ) -> ApiResult<Json<Usergroup>> {
-    Ok(Json(state.usergroups.get(&actor, id).await?.into()))
+    let group = state.usergroups.get(&actor, id).await?;
+    Ok(Json(Usergroup::for_actor(group, &actor)))
 }
 
 /// Rename/redescribe (creator or `usergroup:manage:platform`).
@@ -105,7 +112,7 @@ pub async fn update_usergroup(
             request.description.as_deref(),
         )
         .await?;
-    Ok(Json(group.into()))
+    Ok(Json(Usergroup::for_actor(group, &actor)))
 }
 
 /// Delete a usergroup (membership/course links cascade).
@@ -248,5 +255,10 @@ pub async fn usergroups_for_course(
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Vec<Usergroup>>> {
     let groups = state.usergroups.for_course(&actor, id).await?;
-    Ok(Json(groups.into_iter().map(Into::into).collect()))
+    Ok(Json(
+        groups
+            .into_iter()
+            .map(|g| Usergroup::for_actor(g, &actor))
+            .collect(),
+    ))
 }

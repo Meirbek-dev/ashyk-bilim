@@ -34,13 +34,20 @@ impl UsergroupsService {
         Self { pool }
     }
 
+    /// The write rule, exposed on the wire as `Usergroup.can_write`:
+    /// `usergroup:manage:platform`, or the creator holding
+    /// `usergroup:create:platform`.
+    #[must_use]
+    pub fn can_write(actor: &Actor, group: &Usergroup) -> bool {
+        actor.has(perm(Action::Manage))
+            || (group.creator_id == Some(actor.user_id) && actor.has(perm(Action::Create)))
+    }
+
     async fn writable(&self, actor: &Actor, id: UsergroupId) -> Result<Usergroup> {
         let group = ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("usergroup"))?;
-        if actor.has(perm(Action::Manage))
-            || (group.creator_id == Some(actor.user_id) && actor.has(perm(Action::Create)))
-        {
+        if Self::can_write(actor, &group) {
             Ok(group)
         } else {
             Err(Error::forbidden("no write access to this usergroup"))

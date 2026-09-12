@@ -25,6 +25,7 @@ use crate::assessments::access::EffectivePolicy;
 use crate::assessments::items::ItemBody;
 use crate::assessments::service::{Assessment, AssessmentsService, Item};
 use crate::code::{CodeRunner, FinalRun, FinalTarget};
+use crate::events::GradingEvents;
 use crate::grading::answers::{
     self, Answers, ItemAnswer, ItemShape, answers_to_value, parse_answers,
 };
@@ -269,6 +270,8 @@ pub struct SubmissionsService {
     /// Runs code-challenge tests at submit time.
     runner: CodeRunner,
     projector: ProgressProjector,
+    /// Course-stream fan-out of hand-ins; `None` without Redis.
+    events: Option<GradingEvents>,
 }
 
 impl SubmissionsService {
@@ -285,7 +288,14 @@ impl SubmissionsService {
             assessments,
             limiter,
             runner,
+            events: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_events(mut self, events: Option<GradingEvents>) -> Self {
+        self.events = events;
+        self
     }
 
     // ── Reads ───────────────────────────────────────────────────────────
@@ -654,6 +664,7 @@ impl SubmissionsService {
         };
         let fresh = Self::finalize(
             &self.runner,
+            self.events.as_ref(),
             ctx,
             answers,
             FinalizeOptions {
@@ -678,6 +689,7 @@ impl SubmissionsService {
     )]
     async fn finalize(
         runner: &CodeRunner,
+        events: Option<&GradingEvents>,
         ctx: Context,
         answers: Answers,
         opts: FinalizeOptions,
@@ -789,6 +801,19 @@ impl SubmissionsService {
             fresh.status,
         )
         .await;
+        if let Some(events) = events {
+            events
+                .publish_best_effort(
+                    fresh.course_id,
+                    "submission.submitted",
+                    serde_json::json!({
+                        "submission_id": fresh.id, "activity_id": assessment.activity_id,
+                        "user_id": fresh.user_id, "status": fresh.status,
+                        "final_score": fresh.final_score,
+                    }),
+                )
+                .await;
+        }
         Ok((fresh, effective.time_limit_seconds, items.len()))
     }
 
@@ -936,12 +961,16 @@ impl SubmissionsService {
 
     /// Auto-submit every open timed draft past its deadline. Constraints
     /// are skipped (the deadline IS the reason); penalties still apply.
-    pub async fn sweep_expired_drafts(runner: &CodeRunner, limit: i64) -> Result<usize> {
+    pub async fn sweep_expired_drafts(
+        runner: &CodeRunner,
+        events: Option<&GradingEvents>,
+        limit: i64,
+    ) -> Result<usize> {
         let pool = runner.pool();
         let ids = ab_db::submissions::list_expired_drafts(pool, limit).await?;
         let mut done = 0;
         for id in ids {
-            match Self::auto_submit_one(runner, id).await {
+            match Self::auto_submit_one(runner, events, id).await {
                 Ok(()) => done += 1,
                 Err(err) => {
                     let attempts = ab_db::submissions::get_submission(pool, id)
@@ -956,7 +985,11 @@ impl SubmissionsService {
         Ok(done)
     }
 
-    async fn auto_submit_one(runner: &CodeRunner, id: SubmissionId) -> Result<()> {
+    async fn auto_submit_one(
+        runner: &CodeRunner,
+        events: Option<&GradingEvents>,
+        id: SubmissionId,
+    ) -> Result<()> {
         let pool = runner.pool();
         let submission = ab_db::submissions::get_submission(pool, id)
             .await?
@@ -991,6 +1024,7 @@ impl SubmissionsService {
         let (assessment_id, user_id) = (submission.assessment_id, submission.user_id);
         Self::finalize(
             runner,
+            events,
             Context {
                 submission,
                 assessment,

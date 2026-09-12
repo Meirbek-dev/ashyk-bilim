@@ -123,7 +123,7 @@ impl CertificationsService {
     ) -> Result<Course> {
         let course = self.courses.get(actor, course_id).await?;
         let allowed = actor.has(perm(action, Scope::Platform))
-            || (course.creator_id == Some(actor.user_id) && actor.has(perm(action, Scope::Own)));
+            || (course.is_author(actor.user_id) && actor.has(perm(action, Scope::Own)));
         if !allowed {
             return Err(Error::forbidden(format!(
                 "missing permission certificate:{}",

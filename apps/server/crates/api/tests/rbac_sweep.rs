@@ -12,11 +12,16 @@ use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
 
 /// No session required at all.
-const PUBLIC: &[(&str, &str)] = &[("POST", "/api/v2/auth/login")];
+const PUBLIC: &[(&str, &str)] = &[
+    ("POST", "/api/v2/auth/login"),
+    ("POST", "/api/v2/auth/register"),
+    ("POST", "/api/v2/auth/verify-email"),
+];
 
 /// Requires a live session, but no specific permission (self-service).
 const AUTH_ONLY: &[(&str, &str)] = &[
     ("POST", "/api/v2/auth/logout"),
+    ("POST", "/api/v2/auth/password"),
     ("DELETE", "/api/v2/auth/sessions/{handle}"),
     ("POST", "/api/v2/auth/mfa/totp"),
     ("POST", "/api/v2/auth/mfa/totp/verify"),
@@ -26,6 +31,8 @@ const AUTH_ONLY: &[(&str, &str)] = &[
     // Gamification self-service: streak touch and preferences.
     ("POST", "/api/v2/gamification/streaks/{kind}"),
     ("PATCH", "/api/v2/gamification/preferences"),
+    // Any signed-in user may apply on an open course (visibility → 404).
+    ("POST", "/api/v2/courses/{id}/contributors/apply"),
 ];
 
 /// Requires specific grants: a zero-grant session must NOT reach a 2xx.
@@ -38,6 +45,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/courses/{id}"),
     ("POST", "/api/v2/courses/{id}/lifecycle"),
     ("DELETE", "/api/v2/courses/{id}"),
+    // Contributor roster: creator / active maintainer / course:manage:platform.
+    ("POST", "/api/v2/courses/{id}/contributors"),
+    ("PATCH", "/api/v2/courses/{id}/contributors/{user_id}"),
+    ("DELETE", "/api/v2/courses/{id}/contributors/{user_id}"),
     // Curriculum authoring inherits course write access (creator+own or
     // platform update); zero-grant probes 404 on the unknown course.
     ("POST", "/api/v2/courses/{id}/chapters"),
@@ -59,6 +70,7 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/collections/{id}"),
     ("PATCH", "/api/v2/platform"),
     // Admin user management (platform:manage:platform).
+    ("POST", "/api/v2/users"),
     ("PATCH", "/api/v2/users/{user_id}/status"),
     // Usergroups (usergroup:create/manage:platform; creator-own writes).
     ("POST", "/api/v2/usergroups"),

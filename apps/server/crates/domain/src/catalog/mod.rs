@@ -2,9 +2,11 @@
 //! activities/blocks), collections, and the platform singleton.
 
 pub mod collections;
+pub mod contributors;
 pub mod courses;
 pub mod curriculum;
 pub mod platform;
+pub mod readiness;
 pub mod search;
 
 pub use collections::CollectionsService;

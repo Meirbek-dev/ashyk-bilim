@@ -23,11 +23,17 @@ pub async fn search_courses(
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                      AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
            WHERE search @@ websearch_to_tsquery('simple', $1)
-             AND (public OR $2 OR creator_id = $3)
+             AND (public OR $2 OR creator_id = $3
+                  OR EXISTS (SELECT 1 FROM resource_authors ra
+                             WHERE ra.course_id = courses.id AND ra.user_id = $3
+                               AND ra.status = 'active'))
            ORDER BY ts_rank_cd(search, websearch_to_tsquery('simple', $1)) DESC, id DESC
            LIMIT $4"#,
         query,

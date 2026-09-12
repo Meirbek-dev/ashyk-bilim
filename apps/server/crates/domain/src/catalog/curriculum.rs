@@ -2,8 +2,9 @@
 //! semantics — 1-based contiguous positions per parent, moves clamp the
 //! target position and renumber all siblings.
 
+use ab_core::assessments::FileSubmissionLifecycle;
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId};
-use ab_core::{Error, FieldError, Result};
+use ab_core::{Error, ErrorCode, FieldError, Result};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -252,7 +253,25 @@ impl CurriculumService {
         activity_id: ActivityId,
         changes: ActivityChanges<'_>,
     ) -> Result<ActivityDetail> {
-        self.writable_activity(actor, activity_id).await?;
+        let activity = self.writable_activity(actor, activity_id).await?;
+        // A file-submission activity goes live only through a published
+        // config (`POST /file-submissions/{id}/publish` flips both); the raw
+        // toggle refuses so learners never see an activity without one.
+        if changes.published == Some(true)
+            && !activity.published
+            && activity.activity_type == "file_submission"
+        {
+            let published =
+                ab_db::file_submissions::get_file_submission_by_activity(&self.pool, activity_id)
+                    .await?
+                    .is_some_and(|c| c.lifecycle == FileSubmissionLifecycle::Published);
+            if !published {
+                return Err(Error::app(
+                    ErrorCode::ActivityNotReady,
+                    "publish the file-submission config before the activity",
+                ));
+            }
+        }
         if let Some((activity_type, sub_type)) = changes.type_pair {
             if !valid_pair(activity_type, sub_type) {
                 return Err(Error::validation(vec![FieldError {

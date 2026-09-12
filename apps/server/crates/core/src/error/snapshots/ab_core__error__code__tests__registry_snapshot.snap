@@ -7,6 +7,10 @@ expression: registry
     403,
     "Account is disabled"
   ],
+  "activity-not-ready": [
+    409,
+    "Activity is not ready to publish"
+  ],
   "ai-budget-exhausted": [
     503,
     "AI token budget exhausted"
@@ -42,6 +46,10 @@ expression: registry
   "csrf-rejected": [
     403,
     "Cross-site request rejected"
+  ],
+  "email-taken": [
+    409,
+    "Email is already registered"
   ],
   "forbidden": [
     403,
@@ -98,6 +106,10 @@ expression: registry
   "unauthenticated": [
     401,
     "Authentication required"
+  ],
+  "username-taken": [
+    409,
+    "Username is already taken"
   ],
   "validation-failed": [
     422,

@@ -11,7 +11,7 @@ pub mod usergroups;
 pub mod users;
 
 pub use actor::Actor;
-pub use auth::{IdentityService, LoginInput, LoginOk};
+pub use auth::{IdentityService, LoginInput, LoginOk, NewAccount};
 pub use google::GoogleAuthService;
 pub use rbac_admin::RbacAdminService;
 pub use sessions::{NewSession, SessionRecord, SessionStore};

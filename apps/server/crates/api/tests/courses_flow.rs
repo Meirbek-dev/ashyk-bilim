@@ -341,3 +341,187 @@ async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
         "replaced thumbnail must re-enter the reaper's queue"
     );
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn mine_listing_filters_sorts_and_summarizes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let rival = instructor(&app, "rival").await;
+    let alpha = create_course(&app, &teacher, "Alpha").await;
+    let beta = create_course(&app, &teacher, "Beta").await;
+    let _draft = create_course(&app, &teacher, "Gamma draft").await;
+    for id in [&alpha, &beta] {
+        app.post_as(
+            &teacher,
+            &format!("/api/v2/courses/{id}/lifecycle"),
+            &serde_json::json!({ "action": "publish" }),
+        )
+        .await;
+    }
+    let other = create_course(&app, &rival, "Rival public").await;
+    app.post_as(
+        &rival,
+        &format!("/api/v2/courses/{other}/lifecycle"),
+        &serde_json::json!({ "action": "publish" }),
+    )
+    .await;
+
+    // Plain listing: everything visible (3 own + rival's public one).
+    let all = app.get_as(&teacher, "/api/v2/courses").await;
+    assert_eq!(all.json()["items"].as_array().unwrap().len(), 4);
+    assert!(all.json().get("summary").is_none());
+
+    // mine=true: own only, with the summary; both published courses have no
+    // live activity → attention.
+    let mine = app.get_as(&teacher, "/api/v2/courses?mine=true").await;
+    assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
+    let body = mine.json();
+    let names: Vec<_> = body["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap().to_owned())
+        .collect();
+    // Default sort: last updated first (publishing touched Alpha, then Beta).
+    assert_eq!(names, vec!["Beta", "Alpha", "Gamma draft"]);
+    assert_eq!(
+        body["summary"],
+        serde_json::json!({ "total": 3, "ready": 2, "private": 1, "attention": 2 })
+    );
+
+    let by_name = app
+        .get_as(&teacher, "/api/v2/courses?mine=true&sort=name&limit=2")
+        .await;
+    let page1: Vec<_> = by_name.json()["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(page1, vec!["Alpha", "Beta"]);
+    let cursor = by_name.json()["next_cursor"].as_str().unwrap().to_owned();
+    let page2 = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses?mine=true&sort=name&limit=2&cursor={cursor}"),
+        )
+        .await;
+    assert_eq!(page2.json()["items"][0]["name"], "Gamma draft");
+    assert!(page2.json()["next_cursor"].is_null());
+
+    let drafts = app
+        .get_as(&teacher, "/api/v2/courses?mine=true&preset=drafts")
+        .await;
+    assert_eq!(drafts.json()["items"].as_array().unwrap().len(), 1);
+    let attention = app
+        .get_as(&teacher, "/api/v2/courses?mine=true&preset=attention")
+        .await;
+    assert_eq!(attention.json()["items"].as_array().unwrap().len(), 2);
+    let searched = app
+        .get_as(&teacher, "/api/v2/courses?mine=true&q=ALPH")
+        .await;
+    assert_eq!(searched.json()["items"].as_array().unwrap().len(), 1);
+    assert_eq!(searched.json()["summary"]["total"], 3);
+
+    // A platform updater's `mine` is everything; a learner's is empty.
+    let staff = app
+        .mint_session(&["course:read:all", "course:update:platform"])
+        .await;
+    let staff_mine = app.get_as(&staff, "/api/v2/courses?mine=true").await;
+    assert_eq!(staff_mine.json()["items"].as_array().unwrap().len(), 4);
+    let learner = app.mint_session(&[]).await;
+    let learner_mine = app.get_as(&learner, "/api/v2/courses?mine=true").await;
+    assert!(learner_mine.json()["items"].as_array().unwrap().is_empty());
+    assert_eq!(learner_mine.json()["summary"]["total"], 0);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn readiness_reports_blockers_and_warnings(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let id = create_course(&app, &teacher, "Readiness").await;
+
+    // Strangers: 404; a visible-but-not-writable course: 403.
+    let stranger = instructor(&app, "stranger").await;
+    let hidden = app
+        .get_as(&stranger, &format!("/api/v2/courses/{id}/readiness"))
+        .await;
+    assert_eq!(hidden.status, StatusCode::NOT_FOUND);
+
+    let empty = app
+        .get_as(&teacher, &format!("/api/v2/courses/{id}/readiness"))
+        .await;
+    assert_eq!(empty.status, StatusCode::OK, "{}", empty.text());
+    assert_eq!(empty.json()["ready"], false);
+    assert_eq!(empty.json()["blockers"][0]["code"], "no-live-activity");
+
+    let chapter = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{id}/chapters"),
+            &serde_json::json!({ "name": "Week 1" }),
+        )
+        .await;
+    let chapter_id = chapter.json()["id"].as_str().unwrap().to_owned();
+    let activity = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/chapters/{chapter_id}/activities"),
+            &serde_json::json!({
+                "name": "Intro", "activity_type": "video", "activity_sub_type": "video_youtube"
+            }),
+        )
+        .await;
+    let activity_id = activity.json()["id"].as_str().unwrap().to_owned();
+
+    // Draft activity: still blocked, and the draft is a warning with a link.
+    let drafted = app
+        .get_as(&teacher, &format!("/api/v2/courses/{id}/readiness"))
+        .await;
+    assert_eq!(drafted.json()["ready"], false);
+    let warnings = drafted.json()["warnings"].clone();
+    let draft_warning = warnings
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|w| w["code"] == "activity-unpublished")
+        .unwrap()
+        .clone();
+    assert_eq!(draft_warning["activity_id"], activity_id);
+    assert_eq!(draft_warning["title"], "Intro");
+
+    app.patch_as(
+        &teacher,
+        &format!("/api/v2/activities/{activity_id}"),
+        &serde_json::json!({ "published": true }),
+    )
+    .await;
+    let ready = app
+        .get_as(&teacher, &format!("/api/v2/courses/{id}/readiness"))
+        .await;
+    assert_eq!(ready.json()["ready"], true);
+    assert!(ready.json()["blockers"].as_array().unwrap().is_empty());
+    let codes: Vec<_> = ready.json()["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|w| w["code"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(
+        codes,
+        vec!["thumbnail-missing", "certificate-not-configured"]
+    );
+
+    // Publishing makes the course visible to everyone, but readiness stays
+    // author-only.
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/courses/{id}/lifecycle"),
+        &serde_json::json!({ "action": "publish" }),
+    )
+    .await;
+    let forbidden = app
+        .get_as(&stranger, &format!("/api/v2/courses/{id}/readiness"))
+        .await;
+    assert_eq!(forbidden.status, StatusCode::FORBIDDEN);
+}

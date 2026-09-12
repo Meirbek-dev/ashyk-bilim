@@ -128,6 +128,20 @@ impl GoogleAuthService {
             ));
         }
         let (roles, permissions) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
+        // Google bypasses the password+TOTP check, but the security page
+        // still needs the enrollment state. Best-effort: a listing failure
+        // must not block a sign-in that already succeeded.
+        let mfa_enabled = match self
+            .zitadel
+            .list_auth_method_types(&user.zitadel_user_id)
+            .await
+        {
+            Ok(methods) => methods.iter().any(|m| m == super::auth::TOTP_METHOD),
+            Err(err) => {
+                tracing::warn!(%err, "auth methods listing failed after google login");
+                false
+            }
+        };
         let session_id = self
             .sessions
             .create(NewSession {
@@ -140,6 +154,7 @@ impl GoogleAuthService {
                 roles,
                 permissions,
                 rbac_version: user.rbac_version,
+                mfa_enabled,
                 ip: ip.clone(),
                 user_agent: user_agent.clone(),
             })

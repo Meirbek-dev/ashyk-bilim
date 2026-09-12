@@ -342,8 +342,23 @@ async fn serve(config: Config) -> anyhow::Result<()> {
             pat: zitadel_config.pat,
         },
     )?);
+    // Compose passes the key through even when unset (empty string):
+    // treat that as "not configured" rather than sending doomed requests.
+    let resend = config.resend.clone().filter(|r| {
+        !secrecy::ExposeSecret::expose_secret(&r.api_key)
+            .trim()
+            .is_empty()
+    });
+    if resend.is_none() {
+        tracing::info!("email delivery not configured (AB__RESEND__* unset)");
+    }
+    let mailer = resend
+        .map(ab_clients::resend::ResendClient::new)
+        .transpose()?
+        .map(std::sync::Arc::new);
     let identity =
-        ab_domain::identity::IdentityService::new(pool.clone(), sessions.clone(), zitadel.clone());
+        ab_domain::identity::IdentityService::new(pool.clone(), sessions.clone(), zitadel.clone())
+            .with_mailer(mailer, config.server.web_url.clone());
     let google = if let Some(g) = config.google.clone() {
         Some(ab_domain::identity::GoogleAuthService::new(
             pool.clone(),
@@ -511,7 +526,10 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         .register(ab_jobs::handlers::assessments::AssessmentPublisher::new(
             pool.clone(),
         ))?
-        .register(ab_jobs::handlers::submissions::AutoSubmitter::new(runner))?
+        .register(ab_jobs::handlers::submissions::AutoSubmitter::new(
+            runner,
+            events.clone(),
+        ))?
         .register(ab_jobs::handlers::submissions::IdempotencySweeper::new(
             pool.clone(),
         ))?

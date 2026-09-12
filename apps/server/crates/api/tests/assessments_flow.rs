@@ -566,3 +566,154 @@ async fn duplicate_copies_policy_and_items_as_a_fresh_draft(pool: PgPool) {
         .await;
     assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
+
+/// Q-2026-09-12-1: a learner reads a matching item as `MatchingLearnerBody`
+/// (two columns, right one shuffled, stable across reloads, no `pairs`);
+/// the answer names the column ids and the grader scores it against the
+/// author's pairs, reporting the verdict as a code (Q-2026-09-11-2).
+#[sqlx::test(migrations = "../../migrations")]
+async fn matching_items_have_a_learner_shape_and_grade_by_id(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/courses/{course_id}/lifecycle"),
+        &serde_json::json!({ "action": "publish" }),
+    )
+    .await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Capitals" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let pairs: Vec<serde_json::Value> =
+        ["Kazakhstan", "France", "Japan", "Peru", "Kenya", "Norway"]
+            .iter()
+            .zip(["Astana", "Paris", "Tokyo", "Lima", "Nairobi", "Oslo"])
+            .map(|(left, right)| serde_json::json!({ "left": left, "right": right }))
+            .collect();
+    let item = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &serde_json::json!({
+                "title": "Capitals", "max_score": 6,
+                "body": { "kind": "matching", "prompt": "Match", "pairs": pairs,
+                          "explanation": "Key" }
+            }),
+        )
+        .await;
+    assert_eq!(item.status, StatusCode::CREATED, "{}", item.text());
+    let item_id = item.json()["id"].as_str().unwrap().to_owned();
+    assert_eq!(item.json()["body"]["pairs"].as_array().unwrap().len(), 6);
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    let learner = {
+        let user = app
+            .create_user("alice", "alice@example.com", &["user"])
+            .await;
+        app.mint_session_for(
+            user,
+            &["assessment:read:assigned", "assessment:submit:assigned"],
+        )
+        .await
+    };
+    let read = app
+        .get_as(&learner, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(read.status, StatusCode::OK, "{}", read.text());
+    let body = read.json()["items"][0]["body"].clone();
+    assert_eq!(body["kind"], "matching");
+    assert!(body.get("pairs").is_none() && body.get("explanation").is_none());
+    assert_eq!(body["prompt"], "Match");
+    let column = |side: &str| -> Vec<String> {
+        body[side]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|o| {
+                assert_eq!(o["id"], o["text"]);
+                o["id"].as_str().unwrap().to_owned()
+            })
+            .collect()
+    };
+    assert_eq!(
+        column("left"),
+        ["Kazakhstan", "France", "Japan", "Peru", "Kenya", "Norway"]
+    );
+    let right = column("right");
+    let mut sorted = right.clone();
+    sorted.sort();
+    assert_eq!(
+        sorted,
+        ["Astana", "Lima", "Nairobi", "Oslo", "Paris", "Tokyo"]
+    );
+    assert_ne!(
+        right,
+        ["Astana", "Paris", "Tokyo", "Lima", "Nairobi", "Oslo"],
+        "the right column is shuffled"
+    );
+    let again = app
+        .get_as(&learner, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(again.json()["items"][0]["body"]["right"], body["right"]);
+    // Authors keep the pairs.
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+            .await
+            .json()["items"][0]["body"]["pairs"]
+            .as_array()
+            .unwrap()
+            .len(),
+        6
+    );
+
+    // Answer by column ids: 4 of 6 right → 66.67, verdict as a code.
+    let draft = app
+        .post_as(
+            &learner,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &learner,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { &item_id: { "kind": "matching", "matches": [
+                { "left": "Kazakhstan", "right": "Astana" },
+                { "left": "France", "right": "Paris" },
+                { "left": "Japan", "right": "Tokyo" },
+                { "left": "Peru", "right": "Lima" },
+                { "left": "Kenya", "right": "Oslo" },
+                { "left": "Norway", "right": "Nairobi" },
+            ] } } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let review = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{sub_id}/review"))
+        .await;
+    let graded = &review.json()["grading"]["items"][0];
+    assert_eq!(graded["score"], 66.67);
+    assert_eq!(graded["correct"], false);
+    assert_eq!(graded["feedback_code"], "pairs-matched");
+    assert_eq!(
+        graded["feedback_params"],
+        serde_json::json!({ "correct": 4, "total": 6 })
+    );
+    assert_eq!(graded["feedback"], "4/6 pairs matched");
+}

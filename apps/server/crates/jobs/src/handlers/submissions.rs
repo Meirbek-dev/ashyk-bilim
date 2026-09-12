@@ -11,6 +11,7 @@
 
 use ab_core::Result;
 use ab_domain::code::CodeRunner;
+use ab_domain::events::GradingEvents;
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use sqlx::PgPool;
@@ -26,12 +27,14 @@ const IDEMPOTENCY_TTL_SECS: f64 = 24.0 * 3600.0;
 
 pub struct AutoSubmitter {
     runner: CodeRunner,
+    /// Course-stream fan-out of the auto hand-ins; `None` without Redis.
+    events: Option<GradingEvents>,
 }
 
 impl AutoSubmitter {
     #[must_use]
-    pub const fn new(runner: CodeRunner) -> Self {
-        Self { runner }
+    pub const fn new(runner: CodeRunner, events: Option<GradingEvents>) -> Self {
+        Self { runner, events }
     }
 }
 
@@ -42,9 +45,11 @@ impl JobHandler for AutoSubmitter {
 
     fn handle(&self, _payload: serde_json::Value) -> BoxFuture<'static, Result<()>> {
         let runner = self.runner.clone();
+        let events = self.events.clone();
         async move {
             let submitted = ab_domain::grading::SubmissionsService::sweep_expired_drafts(
                 &runner,
+                events.as_ref(),
                 AUTO_SUBMIT_BATCH,
             )
             .await?;

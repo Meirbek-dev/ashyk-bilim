@@ -23,6 +23,15 @@ pub struct ZitadelClient {
     config: ZitadelConfig,
 }
 
+/// Which user a session check targets.
+#[derive(Debug, Clone, Copy)]
+pub enum SessionUser<'a> {
+    /// Zitadel user id (the app's login path: our row is resolved first).
+    Id(&'a str),
+    /// Zitadel login name (diagnostics / smoke checks).
+    LoginName(&'a str),
+}
+
 /// Outcome of a password session check — invalid credentials are a domain
 /// outcome, not an error (the caller decides rate limiting / lockout UX).
 #[derive(Debug)]
@@ -62,6 +71,16 @@ pub struct NewHumanUser {
     pub password: PasswordSpec,
 }
 
+/// `POST /v2/users/human` answer; `email_code` only when the email was
+/// created unverified with `returnCode`.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatedHumanUser {
+    pub user_id: String,
+    #[serde(default)]
+    pub email_code: Option<String>,
+}
+
 #[derive(Debug)]
 pub enum PasswordSpec {
     Plain(SecretString),
@@ -97,16 +116,23 @@ impl ZitadelClient {
         req.bearer_auth(self.config.pat.expose_secret())
     }
 
-    /// `POST /v2/sessions` with loginName + password (+ optional TOTP) checks.
+    /// `POST /v2/sessions` with a user check + password (+ optional TOTP).
+    /// The user check is by Zitadel user id — our `users` row is resolved
+    /// first, so a login typed as username *or* email works regardless of
+    /// which one Zitadel holds as the login name.
     pub async fn create_password_session(
         &self,
-        login_name: &str,
+        user: &SessionUser<'_>,
         password: &SecretString,
         totp_code: Option<&str>,
     ) -> Result<PasswordSessionOutcome> {
+        let user_check = match user {
+            SessionUser::Id(id) => serde_json::json!({ "userId": id }),
+            SessionUser::LoginName(name) => serde_json::json!({ "loginName": name }),
+        };
         let mut body = serde_json::json!({
             "checks": {
-                "user": { "loginName": login_name },
+                "user": user_check,
                 "password": { "password": password.expose_secret() },
             }
         });
@@ -357,13 +383,32 @@ impl ZitadelClient {
 
     /// `POST /v2/users/human`. Returns the Zitadel user id.
     pub async fn create_human_user(&self, user: &NewHumanUser) -> Result<String> {
+        Ok(self.create_human(user).await?.user_id)
+    }
+
+    /// `POST /v2/users/human` for an unverified email: Zitadel returns the
+    /// verification code (`returnCode`, captured live 2026-09-12:
+    /// `{userId, details, emailCode}`) and we deliver it ourselves.
+    pub async fn create_human_user_with_email_code(
+        &self,
+        user: &NewHumanUser,
+    ) -> Result<CreatedHumanUser> {
+        self.create_human(user).await
+    }
+
+    async fn create_human(&self, user: &NewHumanUser) -> Result<CreatedHumanUser> {
+        let email = if user.email_verified {
+            serde_json::json!({ "email": user.email, "isVerified": true })
+        } else {
+            serde_json::json!({ "email": user.email, "returnCode": {} })
+        };
         let mut body = serde_json::json!({
             "username": user.username,
             "profile": {
                 "givenName": user.given_name,
                 "familyName": user.family_name,
             },
-            "email": { "email": user.email, "isVerified": user.email_verified },
+            "email": email,
         });
         match &user.password {
             PasswordSpec::Plain(secret) => {
@@ -385,16 +430,11 @@ impl ZitadelClient {
             .map_err(|e| Error::internal("zitadel create user", e))?;
 
         if response.status().is_success() {
-            #[derive(Deserialize)]
-            #[serde(rename_all = "camelCase")]
-            struct Ok {
-                user_id: String,
-            }
-            let ok: Ok = response
+            let ok: CreatedHumanUser = response
                 .json()
                 .await
                 .map_err(|e| Error::internal("zitadel create user response shape", e))?;
-            return Result::Ok(ok.user_id);
+            return Result::Ok(ok);
         }
         let err: ZitadelErrorBody = response
             .json()
@@ -413,6 +453,115 @@ impl ZitadelClient {
                 "zitadel user creation failed: {} ({})",
                 err.message, err.code
             ),
+        ))
+    }
+
+    /// `POST /v2/users/{id}/email/verify` — confirm the address with the
+    /// code from [`Self::create_human_user_with_email_code`]. A wrong or
+    /// already-used code is code 3 ("Code is invalid", captured live).
+    pub async fn verify_email(&self, user_id: &str, code: &str) -> Result<()> {
+        let response = self
+            .auth(
+                self.http
+                    .post(self.url(&format!("/v2/users/{user_id}/email/verify"))),
+            )
+            .json(&serde_json::json!({ "verificationCode": code }))
+            .send()
+            .await
+            .map_err(|e| Error::internal("zitadel verify email", e))?;
+        if response.status().is_success() {
+            return Ok(());
+        }
+        let err: ZitadelErrorBody = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel error response shape", e))?;
+        if err.code == 3 {
+            return Err(Error::validation(vec![ab_core::FieldError {
+                field: "code".into(),
+                code: "invalid".into(),
+                message: "verification code is invalid or expired".into(),
+            }]));
+        }
+        Err(Error::app(
+            ErrorCode::ServiceUnavailable,
+            format!(
+                "zitadel verify email failed: {} ({})",
+                err.message, err.code
+            ),
+        ))
+    }
+
+    /// `POST /v2/users/{id}/password` with the current password as the
+    /// check. Captured live 2026-09-12: wrong current password → code 3 with
+    /// a `CredentialsCheckError` detail (`failedAttempts`); a new password
+    /// that fails the policy → code 3 with a plain detail ("Password is too
+    /// short").
+    pub async fn change_password(
+        &self,
+        user_id: &str,
+        current: &SecretString,
+        new: &SecretString,
+    ) -> Result<()> {
+        let response = self
+            .auth(
+                self.http
+                    .post(self.url(&format!("/v2/users/{user_id}/password"))),
+            )
+            .json(&serde_json::json!({
+                "newPassword": { "password": new.expose_secret(), "changeRequired": false },
+                "currentPassword": current.expose_secret(),
+            }))
+            .send()
+            .await
+            .map_err(|e| Error::internal("zitadel change password", e))?;
+        if response.status().is_success() {
+            return Ok(());
+        }
+        let err: ZitadelErrorBody = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel error response shape", e))?;
+        if err.code == 3 {
+            let credentials_check = err
+                .details
+                .iter()
+                .any(|d| d.get("failedAttempts").is_some());
+            if credentials_check {
+                return Err(Error::app(
+                    ErrorCode::InvalidCredentials,
+                    "current password is invalid",
+                ));
+            }
+            return Err(Error::validation(vec![ab_core::FieldError {
+                field: "new_password".into(),
+                code: "invalid".into(),
+                message: err.message,
+            }]));
+        }
+        Err(Error::app(
+            ErrorCode::ServiceUnavailable,
+            format!(
+                "zitadel change password failed: {} ({})",
+                err.message, err.code
+            ),
+        ))
+    }
+
+    /// `DELETE /v2/users/{id}` — compensation when our side of an account
+    /// creation fails after Zitadel's succeeded. Idempotent.
+    pub async fn delete_user(&self, user_id: &str) -> Result<()> {
+        let response = self
+            .auth(self.http.delete(self.url(&format!("/v2/users/{user_id}"))))
+            .send()
+            .await
+            .map_err(|e| Error::internal("zitadel delete user", e))?;
+        if response.status().is_success() || response.status() == reqwest::StatusCode::NOT_FOUND {
+            return Ok(());
+        }
+        Err(Error::app(
+            ErrorCode::ServiceUnavailable,
+            format!("zitadel user delete failed: {}", response.status()),
         ))
     }
 

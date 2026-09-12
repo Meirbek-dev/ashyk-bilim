@@ -41,6 +41,11 @@ services:
       AB__SERVER__HOST: 0.0.0.0
       AB__SERVER__PORT: 8000
       AB__SERVER__CORS_ORIGINS: '["https://${NGINX_SERVER_NAME:?}"]'
+      # Browser-facing redirects and email links are absolute to the web origin.
+      AB__SERVER__WEB_URL: https://${NGINX_SERVER_NAME:?}
+      # Registration verification emails; unset = codes only in the server log.
+      AB__RESEND__API_KEY: ${AB__RESEND__API_KEY:-}
+      AB__RESEND__FROM: ${AB__RESEND__FROM:-Ashyq Bilim <noreply@${NGINX_SERVER_NAME:?}>}
       AB__DATABASE__URL: ${AB__DATABASE__URL:?Set the new ashyq database URL}
       AB__REDIS__URL: redis://redis:6379/2
       AB__ZITADEL__BASE_URL: http://zitadel:8080

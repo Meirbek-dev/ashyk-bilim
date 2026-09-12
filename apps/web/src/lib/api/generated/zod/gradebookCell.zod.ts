@@ -7,18 +7,25 @@
  */
 import * as zod from 'zod'
 
-export const GradebookCell = zod.object({
-  assessment_id: zod.uuid(),
-  attempt_number: zod.int(),
-  attempts: zod.int(),
-  final_score: zod.number().nullish(),
-  graded_at_unix: zod.int().nullish(),
-  is_late: zod.boolean(),
-  status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
-  submission_id: zod.uuid(),
-  submitted_at_unix: zod.int().nullish(),
-  user_id: zod.uuid(),
-})
+export const GradebookCell = zod
+  .object({
+    activity_id: zod.uuid(),
+    assessment_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    attempt_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    attempt_number: zod.int(),
+    attempts: zod.int(),
+    file_submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    final_score: zod.number().nullish(),
+    graded_at_unix: zod.int().nullish(),
+    is_late: zod.boolean(),
+    status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
+    submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    submitted_at_unix: zod.int().nullish(),
+    user_id: zod.uuid(),
+  })
+  .describe(
+    "One learner's latest non-draft attempt on one graded activity.\n\nExactly one id pair is set: `assessment_id` + `submission_id` for an\nassessment, `file_submission_id` + `attempt_id` for a file submission\n(whose `submitted` reads as `pending` here).",
+  )
 
 export type GradebookCell = zod.input<typeof GradebookCell>
 export type GradebookCellOutput = zod.output<typeof GradebookCell>

@@ -588,7 +588,7 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
 
     // The sweep submits what was saved; a second sweep finds nothing.
     let swept =
-        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), 10)
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
             .await
             .unwrap();
     assert_eq!(swept, 1);
@@ -608,7 +608,7 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
     assert_eq!(reason.as_deref(), Some("time_expired"));
     assert!(auto_submitted);
     let again =
-        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), 10)
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
             .await
             .unwrap();
     assert_eq!(again, 0);

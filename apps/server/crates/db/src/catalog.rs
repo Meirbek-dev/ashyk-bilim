@@ -18,8 +18,19 @@ pub struct CourseRow {
     /// Storage key of the `course-thumbnail` upload (`/content/<key>`).
     pub thumbnail_key: Option<String>,
     pub creator_id: Option<UserId>,
+    /// Active `resource_authors` rows — co-authors who edit like the creator.
+    pub contributor_ids: Vec<UserId>,
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+impl CourseRow {
+    /// The ONE authoring predicate: the creator, or an active contributor
+    /// (legacy `is_owner` — any active `resource_authors` row counted).
+    #[must_use]
+    pub fn is_author(&self, user_id: UserId) -> bool {
+        self.creator_id == Some(user_id) || self.contributor_ids.contains(&user_id)
+    }
 }
 
 pub async fn insert_course(
@@ -51,6 +62,9 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                      AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses WHERE id = $1"#,
@@ -61,13 +75,134 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
     Ok(row)
 }
 
-/// Newest-first page of courses visible to `viewer`: public ones, their
-/// own, and courses reached through a linked usergroup (cohort access).
-/// `cursor` = id of the last row from the previous page.
+/// Listing filters for `list_courses` (`GET /courses`).
+#[derive(Debug, Default, Clone)]
+pub struct CourseFilter<'a> {
+    pub viewer: Option<UserId>,
+    /// Platform-wide managers: see private courses and, with `mine`, every course.
+    pub see_all: bool,
+    /// Only courses the viewer may edit (creator / active contributor / `see_all`).
+    pub mine: bool,
+    /// Case-insensitive substring over name + description.
+    pub q: Option<&'a str>,
+    /// `name` (ascending) or anything else = `updated_at` descending.
+    pub sort: &'a str,
+    /// `drafts` | `published` | `recent` | `attention` | anything else = all.
+    pub preset: &'a str,
+}
+
+/// One page of the catalogue as `viewer` sees it.
+///
+/// Visible: public courses, their own, courses they actively co-author, and
+/// courses reached through a linked usergroup (cohort access). `cursor` = id
+/// of the last row from the previous page; the keyset is `(updated_at, id)`
+/// or `(name, id)` depending on `sort`, resolved from that id so the cursor
+/// stays a plain course id.
 pub async fn list_courses(
     pool: &PgPool,
-    viewer: Option<UserId>,
+    filter: &CourseFilter<'_>,
+    cursor: Option<CourseId>,
+    limit: i64,
+) -> Result<Vec<CourseRow>> {
+    let by_name = filter.sort == "name";
+    let rows = sqlx::query_as!(
+        CourseRow,
+        r#"SELECT id AS "id: CourseId", name, description, about, tags,
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  creator_id AS "creator_id: UserId",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                      AS "contributor_ids!: Vec<UserId>",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM courses
+           WHERE (public OR $1 OR creator_id = $2
+                  OR EXISTS (SELECT 1 FROM resource_authors ra
+                             WHERE ra.course_id = courses.id AND ra.user_id = $2
+                               AND ra.status = 'active')
+                  OR EXISTS (SELECT 1 FROM usergroup_courses uc
+                             JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
+                             WHERE uc.course_id = courses.id AND m.user_id = $2))
+             AND (NOT $5 OR $1 OR creator_id = $2
+                  OR EXISTS (SELECT 1 FROM resource_authors ra
+                             WHERE ra.course_id = courses.id AND ra.user_id = $2
+                               AND ra.status = 'active'))
+             AND ($6::text IS NULL OR name ILIKE '%' || $6 || '%'
+                  OR description ILIKE '%' || $6 || '%')
+             AND CASE $7::text
+                   WHEN 'drafts' THEN NOT public
+                   WHEN 'published' THEN public
+                   WHEN 'recent' THEN updated_at > now() - interval '7 days'
+                   WHEN 'attention' THEN
+                     (public AND NOT EXISTS (SELECT 1 FROM activities a
+                                             WHERE a.course_id = courses.id AND a.published))
+                     OR (NOT public AND created_at < now() - interval '30 days')
+                   ELSE true
+                 END
+             AND ($3::uuid IS NULL OR CASE WHEN $8::bool
+                   THEN (name, id) > (SELECT c.name, c.id FROM courses c WHERE c.id = $3)
+                   ELSE (updated_at, id) < (SELECT c.updated_at, c.id FROM courses c WHERE c.id = $3)
+                 END)
+           ORDER BY CASE WHEN $8 THEN name END ASC,
+                    CASE WHEN $8 THEN id END ASC,
+                    CASE WHEN NOT $8 THEN updated_at END DESC,
+                    id DESC
+           LIMIT $4"#,
+        filter.see_all,
+        filter.viewer.map(|v| v.0),
+        cursor.map(|c| c.0),
+        limit,
+        filter.mine,
+        filter.q,
+        filter.preset,
+        by_name
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Counts over the editable set (`mine`), ignoring `q`/`preset`/paging.
+pub struct CourseSummaryRow {
+    pub total: i64,
+    pub ready: i64,
+    pub private: i64,
+    pub attention: i64,
+}
+
+pub async fn summarize_courses(
+    pool: &PgPool,
+    viewer: UserId,
     see_all: bool,
+) -> Result<CourseSummaryRow> {
+    let row = sqlx::query_as!(
+        CourseSummaryRow,
+        r#"SELECT count(*) AS "total!",
+                  count(*) FILTER (WHERE public) AS "ready!",
+                  count(*) FILTER (WHERE NOT public) AS "private!",
+                  count(*) FILTER (WHERE
+                     (public AND NOT EXISTS (SELECT 1 FROM activities a
+                                             WHERE a.course_id = courses.id AND a.published))
+                     OR (NOT public AND created_at < now() - interval '30 days')) AS "attention!"
+           FROM courses
+           WHERE $1 OR creator_id = $2
+              OR EXISTS (SELECT 1 FROM resource_authors ra
+                         WHERE ra.course_id = courses.id AND ra.user_id = $2
+                           AND ra.status = 'active')"#,
+        see_all,
+        viewer.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(row)
+}
+
+/// Newest-first page of courses `user` created or actively co-authors;
+/// private ones only when `include_private`.
+pub async fn list_user_courses(
+    pool: &PgPool,
+    user: UserId,
+    include_private: bool,
     cursor: Option<CourseId>,
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
@@ -76,18 +211,22 @@ pub async fn list_courses(
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                      AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
-           WHERE (public OR $1 OR creator_id = $2
-                  OR EXISTS (SELECT 1 FROM usergroup_courses uc
-                             JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
-                             WHERE uc.course_id = courses.id AND m.user_id = $2))
+           WHERE (creator_id = $1
+                  OR EXISTS (SELECT 1 FROM resource_authors ra
+                             WHERE ra.course_id = courses.id AND ra.user_id = $1
+                               AND ra.status = 'active'))
+             AND (public OR $2)
              AND ($3::uuid IS NULL OR id < $3)
            ORDER BY id DESC
            LIMIT $4"#,
-        see_all,
-        viewer.map(|v| v.0),
+        user.0,
+        include_private,
         cursor.map(|c| c.0),
         limit
     )
@@ -123,6 +262,9 @@ pub async fn update_course(
            RETURNING id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                      AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!""#,
         id.0,
@@ -624,5 +766,132 @@ pub async fn delete_course_update(pool: &PgPool, id: CourseUpdateId) -> Result<b
     let deleted = sqlx::query!("DELETE FROM course_updates WHERE id = $1", id.0)
         .execute(pool)
         .await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
+// ── Contributors (`resource_authors`, course target) ────────────────────────
+
+/// One roster row joined with the user. The creator is not stored — the
+/// service synthesizes it from `courses.creator_id`.
+#[derive(Debug, Clone)]
+pub struct ContributorRow {
+    pub user_id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_key: Option<String>,
+    pub role: String,
+    pub status: String,
+    pub created_at: i64,
+}
+
+pub async fn list_contributors(pool: &PgPool, course_id: CourseId) -> Result<Vec<ContributorRow>> {
+    let rows = sqlx::query_as!(
+        ContributorRow,
+        r#"SELECT ra.user_id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
+                  ra.authorship AS role, ra.status,
+                  (extract(epoch FROM ra.created_at))::bigint AS "created_at!"
+           FROM resource_authors ra JOIN users u ON u.id = ra.user_id
+           WHERE ra.course_id = $1 AND ra.authorship <> 'creator'
+           ORDER BY ra.created_at, ra.user_id"#,
+        course_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// The creator synthesized as a `creator/active` roster row (`None` when the
+/// creator account is gone).
+pub async fn creator_row(pool: &PgPool, course_id: CourseId) -> Result<Option<ContributorRow>> {
+    let row = sqlx::query_as!(
+        ContributorRow,
+        r#"SELECT u.id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
+                  'creator' AS "role!", 'active' AS "status!",
+                  (extract(epoch FROM c.created_at))::bigint AS "created_at!"
+           FROM courses c JOIN users u ON u.id = c.creator_id
+           WHERE c.id = $1"#,
+        course_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+pub async fn get_contributor(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<Option<ContributorRow>> {
+    let row = sqlx::query_as!(
+        ContributorRow,
+        r#"SELECT ra.user_id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
+                  ra.authorship AS role, ra.status,
+                  (extract(epoch FROM ra.created_at))::bigint AS "created_at!"
+           FROM resource_authors ra JOIN users u ON u.id = ra.user_id
+           WHERE ra.course_id = $1 AND ra.user_id = $2"#,
+        course_id.0,
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// Insert; `false` when the user already has a row on this course.
+pub async fn insert_contributor(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+    role: &str,
+    status: &str,
+) -> Result<bool> {
+    let inserted = sqlx::query!(
+        r#"INSERT INTO resource_authors (course_id, user_id, authorship, status)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (course_id, collection_id, user_id) DO NOTHING"#,
+        course_id.0,
+        user_id.0,
+        role,
+        status
+    )
+    .execute(pool)
+    .await?;
+    Ok(inserted.rows_affected() == 1)
+}
+
+pub async fn update_contributor(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+    role: Option<&str>,
+    status: Option<&str>,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE resource_authors SET
+               authorship = COALESCE($3, authorship),
+               status = COALESCE($4, status)
+           WHERE course_id = $1 AND user_id = $2"#,
+        course_id.0,
+        user_id.0,
+        role,
+        status
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+pub async fn delete_contributor(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
+    let deleted = sqlx::query!(
+        "DELETE FROM resource_authors WHERE course_id = $1 AND user_id = $2",
+        course_id.0,
+        user_id.0
+    )
+    .execute(pool)
+    .await?;
     Ok(deleted.rows_affected() == 1)
 }

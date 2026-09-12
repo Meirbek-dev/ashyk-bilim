@@ -200,3 +200,39 @@ async fn absolute_callback_urls_are_rejected(pool: PgPool) {
         );
     }
 }
+
+/// `AB__SERVER__WEB_URL` anchors both browser-facing redirects (the API may
+/// live on another origin than the web app) — DECISIONS 2026-09-12.
+#[sqlx::test(migrations = "../../migrations")]
+async fn web_url_makes_browser_redirects_absolute(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.server.web_url = Some("https://app.example/".into());
+    })
+    .await;
+
+    // Error path.
+    let res = app
+        .get("/api/v2/auth/google/callback?code=c&state=forged")
+        .await;
+    assert_eq!(res.status, StatusCode::SEE_OTHER);
+    assert_eq!(
+        res.headers.get("location").unwrap().to_str().unwrap(),
+        "https://app.example/auth/login?error=google-oauth-expired"
+    );
+
+    // Success path: the relative callback lands on the web origin.
+    mock_zitadel_user_create(&app, 1).await;
+    mock_google_token(&app, "g-sub-9", "abs@gmail.com").await;
+    let state = start_and_get_state(&app, "/courses").await;
+    let res = app
+        .get(&format!(
+            "/api/v2/auth/google/callback?code=authcode&state={state}"
+        ))
+        .await;
+    assert_eq!(res.status, StatusCode::SEE_OTHER);
+    assert_eq!(
+        res.headers.get("location").unwrap().to_str().unwrap(),
+        "https://app.example/courses"
+    );
+    assert!(res.session_cookie().is_some());
+}

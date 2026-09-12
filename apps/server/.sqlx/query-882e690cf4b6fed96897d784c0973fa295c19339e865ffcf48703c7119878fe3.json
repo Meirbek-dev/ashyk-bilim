@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE resource_authors SET\n               authorship = COALESCE($3, authorship),\n               status = COALESCE($4, status)\n           WHERE course_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "882e690cf4b6fed96897d784c0973fa295c19339e865ffcf48703c7119878fe3"
+}

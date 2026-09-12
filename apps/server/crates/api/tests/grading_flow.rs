@@ -712,3 +712,238 @@ async fn deadline_extension_is_a_queued_bulk_action(pool: PgPool) {
         StatusCode::FORBIDDEN
     );
 }
+
+/// The browser's part of an upload: create, PUT to storage, finalize.
+async fn finalized_upload(app: &TestApp, session: &MintedSession, payload: &[u8]) -> String {
+    let created = app
+        .post_as(
+            session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "file-submission", "mime": "application/pdf",
+                                  "size_bytes": payload.len() }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
+    let put = reqwest::Client::new()
+        .put(&put_url)
+        .body(payload.to_vec())
+        .send()
+        .await
+        .unwrap();
+    assert!(put.status().is_success(), "presigned PUT: {}", put.status());
+    let finalized = app
+        .post_as(
+            session,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
+    id
+}
+
+fn with_if_match(
+    session: &MintedSession,
+    method: &str,
+    uri: String,
+    version: &str,
+    body: &serde_json::Value,
+) -> Request<Body> {
+    Request::builder()
+        .method(method)
+        .uri(uri)
+        .header(header::CONTENT_TYPE, "application/json")
+        .header(header::COOKIE, &session.cookie)
+        .header(header::IF_MATCH, version)
+        .body(Body::from(body.to_string()))
+        .unwrap()
+}
+
+/// Q-2026-09-12-2 #1 / #3: the gradebook carries file-submission attempts in
+/// the same cell shape as assessment submissions (keyset on
+/// `(user, activity)`), and `GET /courses/{id}/gradebook/export` is the
+/// matrix as CSV with the header in the `Accept-Language` language.
+#[sqlx::test(migrations = "../../migrations")]
+async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (quiz_id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = {
+        let user = app
+            .create_user("alice", "alice@example.com", &["user"])
+            .await;
+        app.mint_session_for(
+            user,
+            &[
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+                "file:create:own",
+            ],
+        )
+        .await
+    };
+    let sub_id = submit_attempt(&app, &alice, &quiz_id, &choice_id, &essay_id).await;
+    let graded = app
+        .send(grade(
+            &teacher,
+            &sub_id,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 95 }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+
+    // A published file-submission activity with one graded attempt.
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({ "chapter_id": chapter_id, "title": "Project Upload",
+                                  "instructions": "Upload the project." }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let file_submission_id = created.json()["id"].as_str().unwrap().to_owned();
+    let file_activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{file_submission_id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let upload = finalized_upload(&app, &alice, b"%PDF-1.4 project").await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{file_submission_id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": upload, "display_name": "project.pdf" }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let version = submitted.json()["version"].as_i64().unwrap().to_string();
+    let file_grade = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            &version,
+            &serde_json::json!({ "action": "publish", "final_score": 77 }),
+        ))
+        .await;
+    assert_eq!(file_grade.status, StatusCode::OK, "{}", file_grade.text());
+
+    // Both attempts are cells; the file one is keyed by its own id pair.
+    let gradebook = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook"))
+        .await;
+    assert_eq!(gradebook.status, StatusCode::OK, "{}", gradebook.text());
+    let cells = gradebook.json()["cells"].as_array().unwrap().clone();
+    assert_eq!(cells.len(), 2);
+    let file_cell = cells
+        .iter()
+        .find(|c| c["activity_id"] == file_activity_id.as_str())
+        .unwrap();
+    assert_eq!(file_cell["file_submission_id"], file_submission_id.as_str());
+    assert_eq!(file_cell["attempt_id"], attempt_id.as_str());
+    assert!(file_cell["assessment_id"].is_null() && file_cell["submission_id"].is_null());
+    assert_eq!(file_cell["status"], "published");
+    assert_eq!(file_cell["final_score"], 77.0);
+    assert_eq!(file_cell["attempts"], 1);
+    let quiz_cell = cells
+        .iter()
+        .find(|c| c["assessment_id"] == quiz_id.as_str())
+        .unwrap();
+    assert_eq!(quiz_cell["submission_id"], sub_id.as_str());
+    assert!(quiz_cell["attempt_id"].is_null());
+    assert_eq!(gradebook.json()["assessments"][0]["id"], quiz_id.as_str());
+    assert_eq!(
+        gradebook.json()["file_submissions"][0]["id"],
+        file_submission_id.as_str()
+    );
+    assert_eq!(
+        gradebook.json()["file_submissions"][0]["activity_id"],
+        file_activity_id.as_str()
+    );
+    assert_eq!(
+        gradebook.json()["file_submissions"][0]["title"],
+        "Project Upload"
+    );
+    // The keyset walks (user, activity) across both kinds.
+    let page1 = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/gradebook?limit=1"),
+        )
+        .await;
+    let cursor = page1.json()["next_cursor"].as_str().unwrap().to_owned();
+    assert_eq!(
+        cursor,
+        format!(
+            "{}:{}",
+            page1.json()["cells"][0]["user_id"].as_str().unwrap(),
+            page1.json()["cells"][0]["activity_id"].as_str().unwrap()
+        )
+    );
+    let page2 = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/gradebook?limit=1&cursor={cursor}"),
+        )
+        .await;
+    assert_eq!(page2.json()["cells"].as_array().unwrap().len(), 1);
+    assert_ne!(
+        page2.json()["cells"][0]["activity_id"],
+        page1.json()["cells"][0]["activity_id"]
+    );
+    assert!(page2.json()["next_cursor"].is_null());
+
+    // CSV: BOM + Russian header by default, English on request; graders only.
+    let csv = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/gradebook/export"),
+        )
+        .await;
+    assert_eq!(csv.status, StatusCode::OK, "{}", csv.text());
+    assert!(csv.content_type().starts_with("text/csv"));
+    assert!(
+        csv.headers[header::CONTENT_DISPOSITION]
+            .to_str()
+            .unwrap()
+            .contains("gradebook-")
+    );
+    let text = csv.text();
+    assert!(text.starts_with('\u{feff}'), "BOM first");
+    let lines: Vec<&str> = text.trim_start_matches('\u{feff}').lines().collect();
+    assert_eq!(lines[0], "Студент,Email,Quiz,Project Upload");
+    assert_eq!(lines[1], "alice,alice@example.com,95,77");
+    assert_eq!(lines.len(), 2);
+    let english = app
+        .send(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/v2/courses/{course_id}/gradebook/export"))
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert!(english.text().contains("Learner,Email,Quiz,Project Upload"));
+    assert_eq!(
+        app.get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/gradebook/export")
+        )
+        .await
+        .status,
+        StatusCode::FORBIDDEN
+    );
+}

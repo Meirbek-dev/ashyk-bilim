@@ -459,6 +459,26 @@ pub async fn list_users(
     Ok(rows)
 }
 
+/// One admin listing row (after creation).
+pub async fn get_admin_user(pool: &PgPool, user_id: UserId) -> Result<Option<AdminUserRow>> {
+    let row = sqlx::query_as!(
+        AdminUserRow,
+        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.status,
+                  COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
+                           FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
+                  (extract(epoch FROM u.created_at))::bigint AS "created_at!"
+           FROM users u
+           LEFT JOIN user_roles ur ON ur.user_id = u.id
+           LEFT JOIN roles r ON r.id = ur.role_id
+           WHERE u.id = $1
+           GROUP BY u.id"#,
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
 /// Flip active/disabled; bumps `rbac_version` so stale state cannot linger.
 pub async fn set_user_status(pool: &PgPool, user_id: UserId, status: &str) -> Result<bool> {
     let updated = sqlx::query!(
@@ -512,4 +532,15 @@ pub async fn list_user_summaries(pool: &PgPool, ids: &[UserId]) -> Result<Vec<Us
     .fetch_all(pool)
     .await?;
     Ok(rows)
+}
+
+/// Id of the user with this username (case-insensitive), if any.
+pub async fn find_user_id_by_username(pool: &PgPool, username: &str) -> Result<Option<UserId>> {
+    let id = sqlx::query_scalar!(
+        r#"SELECT id AS "id: UserId" FROM users WHERE lower(username) = lower($1)"#,
+        username
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(id)
 }

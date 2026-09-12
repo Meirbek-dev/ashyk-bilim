@@ -11,7 +11,7 @@ use ab_core::assessments::{
     AccessMode, AssessmentKind, CompletionRule, GradeReleaseMode, GradingMode, GradingType,
     ItemKind, LatePolicyKind, Lifecycle, ReviewVisibility,
 };
-use ab_core::id::{ActivityId, AssessmentId, AssessmentItemId, ChapterId, CourseId};
+use ab_core::id::{ActivityId, AssessmentId, AssessmentItemId, ChapterId, CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, FieldError, Result};
 use ab_db::assessments::{ItemMetadata, NewAssessment, PolicyValues};
@@ -30,6 +30,14 @@ fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
+}
+
+/// The viewer and item ids folded into 64 bits: enough for a per-learner
+/// column order that survives reloads.
+#[allow(clippy::cast_possible_truncation, reason = "a seed, not a value")]
+const fn shuffle_seed(user_id: UserId, item_id: AssessmentItemId) -> u64 {
+    let mix = user_id.0.as_u128() ^ item_id.0.as_u128().rotate_left(64);
+    (mix ^ (mix >> 64)) as u64
 }
 
 pub(crate) const fn perm(action: Action, scope: Scope) -> Permission {
@@ -441,7 +449,7 @@ impl AssessmentsService {
         if actor.has(perm(action, Scope::Platform)) {
             return Ok(());
         }
-        if course.creator_id == Some(actor.user_id) && actor.has(perm(action, Scope::Own)) {
+        if course.is_author(actor.user_id) && actor.has(perm(action, Scope::Own)) {
             return Ok(());
         }
         Err(Error::forbidden(format!(
@@ -615,7 +623,9 @@ impl AssessmentsService {
         let mut detail = self.detail(id).await?;
         if !author {
             for item in &mut detail.items {
-                item.body.redact_for_learner();
+                // Stable per (viewer, item): a reload keeps the column order.
+                item.body
+                    .redact_for_learner(shuffle_seed(actor.user_id, item.id));
             }
         }
         Ok(detail)
@@ -778,6 +788,12 @@ impl AssessmentsService {
 
     pub async fn readiness(&self, actor: &Actor, id: AssessmentId) -> Result<Readiness> {
         self.load_for_author(actor, id).await?;
+        self.readiness_of(id).await
+    }
+
+    /// Readiness without an access gate — for callers that already hold
+    /// course write access (course readiness).
+    pub(crate) async fn readiness_of(&self, id: AssessmentId) -> Result<Readiness> {
         let detail = self.detail(id).await?;
         Ok(Self::build_readiness(
             &detail.assessment,

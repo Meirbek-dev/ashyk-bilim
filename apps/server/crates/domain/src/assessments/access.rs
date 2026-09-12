@@ -115,7 +115,7 @@ impl AssessmentsService {
         course: &Course,
         user_id: UserId,
     ) -> Result<bool> {
-        if course.public || course.creator_id == Some(user_id) {
+        if course.public || course.is_author(user_id) {
             return Ok(true);
         }
         ab_db::usergroups::user_in_course_group(&self.pool, course.id, user_id).await

@@ -24,14 +24,18 @@ import type {
 } from '@tanstack/react-query'
 
 import {
+  ChangePasswordRequest,
   GoogleCallbackParams,
   GoogleStartParams,
   LoginRequest,
   Problem,
+  RegisterRequest,
   SessionInfo,
   SessionSummary,
   TotpEnrollment,
   TotpVerifyRequest,
+  UserProfile,
+  VerifyEmailRequest,
 } from '../zod'
 
 import { orvalMutator, arrayParser, stringifyQueryParam, unknownParser, voidParser } from '../../orval-mutator'
@@ -744,6 +748,164 @@ export const useTotpVerify = <TError = ErrorType<Problem>, TContext = unknown>(
 ): UseMutationResult<Awaited<ReturnType<typeof totpVerify>>, TError, TotpVerifyMutationVariables, TContext> => {
   return useMutation(getTotpVerifyMutationOptions(options), queryClient)
 }
+export const getChangePasswordUrl = () => {
+  return `/api/v2/auth/password`
+}
+
+/**
+ * @summary Change the caller's password (current password checked by Zitadel).
+Every other session of the caller is revoked.
+ */
+export const changePassword = async (
+  changePasswordRequest: ChangePasswordRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Array.isArray(h)) return Object.fromEntries(h)
+    return h
+  }
+  return orvalMutator<void>(
+    getChangePasswordUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(changePasswordRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getChangePasswordMutationKey = () => ['changePassword'] as const
+
+export const getChangePasswordMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof changePassword>>,
+    TError,
+    ChangePasswordMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof changePassword>>,
+  TError,
+  ChangePasswordMutationVariables,
+  TContext
+> => {
+  const mutationKey = getChangePasswordMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof changePassword>>,
+    ChangePasswordMutationVariables
+  > = props => {
+    const { data } = props ?? {}
+
+    return changePassword(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changePassword>>>
+export type ChangePasswordMutationBody = BodyType<ChangePasswordRequest>
+export type ChangePasswordMutationError = ErrorType<Problem>
+export type ChangePasswordMutationVariables = { data: BodyType<ChangePasswordRequest> }
+
+/**
+ * @summary Change the caller's password (current password checked by Zitadel).
+Every other session of the caller is revoked.
+ */
+export const useChangePassword = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof changePassword>>,
+      TError,
+      ChangePasswordMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof changePassword>>, TError, ChangePasswordMutationVariables, TContext> => {
+  return useMutation(getChangePasswordMutationOptions(options), queryClient)
+}
+export const getRegisterUrl = () => {
+  return `/api/v2/auth/register`
+}
+
+/**
+ * @summary Self-registration: creates the account (default `user` role) and emails
+a verification code. No session is opened — the client logs in next.
+ */
+export const register = async (
+  registerRequest: RegisterRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<UserProfile> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Array.isArray(h)) return Object.fromEntries(h)
+    return h
+  }
+  return orvalMutator<UserProfile>(
+    getRegisterUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(registerRequest),
+    },
+    UserProfile,
+  )
+}
+
+export const getRegisterMutationKey = () => ['register'] as const
+
+export const getRegisterMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof register>>, TError, RegisterMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof register>>, TError, RegisterMutationVariables, TContext> => {
+  const mutationKey = getRegisterMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof register>>, RegisterMutationVariables> = props => {
+    const { data } = props ?? {}
+
+    return register(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type RegisterMutationResult = NonNullable<Awaited<ReturnType<typeof register>>>
+export type RegisterMutationBody = BodyType<RegisterRequest>
+export type RegisterMutationError = ErrorType<Problem>
+export type RegisterMutationVariables = { data: BodyType<RegisterRequest> }
+
+/**
+ * @summary Self-registration: creates the account (default `user` role) and emails
+a verification code. No session is opened — the client logs in next.
+ */
+export const useRegister = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof register>>, TError, RegisterMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof register>>, TError, RegisterMutationVariables, TContext> => {
+  return useMutation(getRegisterMutationOptions(options), queryClient)
+}
 export const getCurrentSessionUrl = () => {
   return `/api/v2/auth/session`
 }
@@ -1161,4 +1323,77 @@ export const useRevokeSession = <TError = ErrorType<Problem>, TContext = unknown
   queryClient?: QueryClient,
 ): UseMutationResult<Awaited<ReturnType<typeof revokeSession>>, TError, RevokeSessionMutationVariables, TContext> => {
   return useMutation(getRevokeSessionMutationOptions(options), queryClient)
+}
+export const getVerifyEmailUrl = () => {
+  return `/api/v2/auth/verify-email`
+}
+
+/**
+ * @summary Confirm the email address with the emailed code (public).
+ */
+export const verifyEmail = async (
+  verifyEmailRequest: VerifyEmailRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Array.isArray(h)) return Object.fromEntries(h)
+    return h
+  }
+  return orvalMutator<void>(
+    getVerifyEmailUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(verifyEmailRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getVerifyEmailMutationKey = () => ['verifyEmail'] as const
+
+export const getVerifyEmailMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof verifyEmail>>, TError, VerifyEmailMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof verifyEmail>>, TError, VerifyEmailMutationVariables, TContext> => {
+  const mutationKey = getVerifyEmailMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyEmail>>, VerifyEmailMutationVariables> = props => {
+    const { data } = props ?? {}
+
+    return verifyEmail(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type VerifyEmailMutationResult = NonNullable<Awaited<ReturnType<typeof verifyEmail>>>
+export type VerifyEmailMutationBody = BodyType<VerifyEmailRequest>
+export type VerifyEmailMutationError = ErrorType<Problem>
+export type VerifyEmailMutationVariables = { data: BodyType<VerifyEmailRequest> }
+
+/**
+ * @summary Confirm the email address with the emailed code (public).
+ */
+export const useVerifyEmail = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof verifyEmail>>,
+      TError,
+      VerifyEmailMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof verifyEmail>>, TError, VerifyEmailMutationVariables, TContext> => {
+  return useMutation(getVerifyEmailMutationOptions(options), queryClient)
 }

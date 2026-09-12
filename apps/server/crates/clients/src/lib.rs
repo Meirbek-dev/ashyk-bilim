@@ -5,7 +5,7 @@
 //!   arrive with 1.5/10.3
 //! - `storage` — `object_store` against RustFS (slice 2.2)
 //! - `judge0`  — code execution with circuit breaker (slice 4.4)
-//! - `resend`  — transactional email (slice 1.x)
+//! - `resend`  — transactional email (registration verification codes)
 //! - `llm`     — the `LlmClient` facade over OpenAI-compatible chat
 //!   completions (primary + fallback chain, streaming, structured output,
 //!   token estimates); provider wire types never leave that module (slice 8.1)
@@ -16,5 +16,6 @@
 pub mod google;
 pub mod judge0;
 pub mod llm;
+pub mod resend;
 pub mod storage;
 pub mod zitadel;

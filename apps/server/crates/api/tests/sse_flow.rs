@@ -275,3 +275,85 @@ async fn concurrent_streams_are_capped_per_user(pool: PgPool) {
     assert_eq!(problem["details"]["limit"], 5);
     drop(held);
 }
+
+/// Q-2026-09-12-2 #2: graders follow every grade change on a course over
+/// `GET /courses/{id}/grading/events`; learners get 403.
+#[sqlx::test(migrations = "../../migrations")]
+async fn course_stream_fans_out_grade_changes_to_graders(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let (sub_id, essay_id) = pending_submission(&app, &teacher, &alice).await;
+    let course_id: String =
+        sqlx::query_scalar("SELECT course_id::text FROM submissions WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    let base = app.serve().await;
+    let client = reqwest::Client::new();
+    let url = format!("{base}/api/v2/courses/{course_id}/grading/events");
+
+    let denied = client
+        .get(&url)
+        .header("cookie", &alice.cookie)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(denied.status(), StatusCode::FORBIDDEN);
+
+    let mut stream = client
+        .get(&url)
+        .header("cookie", &teacher.cookie)
+        .header("accept", "text/event-stream")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(stream.status(), StatusCode::OK);
+    let mut buffer = String::new();
+    read_until(&mut stream, &mut buffer, "event: connected").await;
+    assert!(buffer.contains(&format!("\"course_id\":\"{course_id}\"")));
+
+    let graded = app
+        .send(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{sub_id}/grade"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::IF_MATCH, "1")
+                .body(Body::from(
+                    serde_json::json!({ "action": "save",
+                        "item_grades": [{ "item_id": &essay_id, "score": 9 }] })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    read_until(&mut stream, &mut buffer, "event: grade.saved").await;
+    read_until(&mut stream, &mut buffer, "\n\n").await;
+    let block = buffer
+        .split("\n\n")
+        .find(|b| b.contains("event: grade.saved"))
+        .unwrap()
+        .to_owned();
+    let data: serde_json::Value = serde_json::from_str(
+        block
+            .lines()
+            .find_map(|l| l.strip_prefix("data: "))
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(data["event"], "grade.saved");
+    assert!(
+        data.get("submission_id").is_none(),
+        "ids live in the payload"
+    );
+    assert_eq!(data["payload"]["submission_id"], sub_id.as_str());
+    assert_eq!(data["payload"]["user_id"], alice.user_id.to_string());
+    assert_eq!(data["payload"]["status"], "graded");
+    assert_eq!(data["payload"]["final_score"], 90.0);
+    assert!(data["payload"]["activity_id"].is_string());
+    drop(stream);
+}

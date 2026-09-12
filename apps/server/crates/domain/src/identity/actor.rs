@@ -21,6 +21,7 @@ pub struct Actor {
     /// (mirrors the legacy `Session.permissions: string[]` contract).
     pub permission_strings: Vec<String>,
     pub rbac_version: i64,
+    pub mfa_enabled: bool,
 }
 
 impl Actor {
@@ -35,6 +36,7 @@ impl Actor {
             permissions: PermissionSet::parse(record.permissions.iter().map(String::as_str))?,
             permission_strings: record.permissions.clone(),
             rbac_version: record.rbac_version,
+            mfa_enabled: record.mfa_enabled,
         })
     }
 
@@ -52,6 +54,7 @@ impl Actor {
             permissions: ab_core::permission::PermissionSet::default(),
             permission_strings: Vec::new(),
             rbac_version: 0,
+            mfa_enabled: false,
         }
     }
 
@@ -98,6 +101,7 @@ mod tests {
             roles: vec!["instructor".into()],
             permissions: perms.iter().map(ToString::to_string).collect(),
             rbac_version: 1,
+            mfa_enabled: false,
             created_at_unix: 0,
             last_seen_unix: 0,
             ip: None,

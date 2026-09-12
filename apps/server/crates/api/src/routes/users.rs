@@ -1,14 +1,19 @@
-use ab_core::id::UserId;
+use ab_core::id::{CourseId, UserId};
+use ab_domain::identity::NewAccount;
 use ab_domain::identity::users::ProfileChanges;
 use axum::Json;
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
+use secrecy::SecretString;
 
+use crate::dto::courses::CoursePage;
 use crate::dto::users::{
-    AdminUserListQuery, AdminUserPage, SetUserStatusRequest, UpdateProfileRequest, UserProfile,
+    AdminUser, AdminUserListQuery, AdminUserPage, CreateUserRequest, SetUserStatusRequest,
+    UpdateProfileRequest, UserCoursesQuery, UserProfile,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, ValidJson};
+use crate::routes::auth::{client_ip, user_agent};
 use crate::state::AppState;
 
 /// The caller's own profile.
@@ -27,7 +32,7 @@ pub async fn my_profile(
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<Json<UserProfile>> {
     let profile = state.users.my_profile(&actor).await?;
-    Ok(Json(profile.into()))
+    Ok(Json(UserProfile::from_profile(profile, actor.mfa_enabled)))
 }
 
 /// Update the caller's own profile (requires `user:update:own`).
@@ -61,7 +66,50 @@ pub async fn update_my_profile(
             },
         )
         .await?;
-    Ok(Json(profile.into()))
+    Ok(Json(UserProfile::from_profile(profile, actor.mfa_enabled)))
+}
+
+/// Admin account creation (requires `platform:manage:platform`): Zitadel
+/// human with a verified email + `users` row with `user` plus `roles`.
+/// Without `password` the account signs in with Google only.
+#[utoipa::path(
+    post,
+    path = "/users",
+    tag = "users",
+    request_body = CreateUserRequest,
+    responses(
+        (status = 201, description = "Created", body = AdminUser),
+        (status = 403, description = "Missing permission", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "`username-taken` / `email-taken`", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Validation failed (unknown role, weak password)",
+         body = Problem, content_type = "application/problem+json"),
+    )
+)]
+pub async fn create_user(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
+    ValidJson(request): ValidJson<CreateUserRequest>,
+) -> ApiResult<(StatusCode, Json<AdminUser>)> {
+    let user = state
+        .identity
+        .admin_create_user(
+            &actor,
+            NewAccount {
+                username: request.username,
+                email: request.email,
+                password: request.password.map(SecretString::from),
+                first_name: request.first_name,
+                last_name: request.last_name,
+                ip: client_ip(&headers),
+                user_agent: user_agent(&headers),
+            },
+            request.roles.as_deref().unwrap_or_default(),
+        )
+        .await?;
+    Ok((StatusCode::CREATED, Json(user.into())))
 }
 
 /// Admin listing of all users with roles (requires `platform:read:platform`).
@@ -127,4 +175,42 @@ pub async fn set_user_status(
         .set_user_status(&actor, user_id, request.disabled)
         .await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Courses a user created or actively co-authors, newest first (public
+/// profile). Private ones are included only for the user themself and
+/// platform course managers.
+#[utoipa::path(
+    get,
+    path = "/users/{username}/courses",
+    tag = "users",
+    params(
+        ("username" = String, Path, description = "Username (case-insensitive)"),
+        ("cursor" = Option<CourseId>, Query, description = "next_cursor from the previous page"),
+        ("limit" = Option<i64>, Query, description = "Page size, 1..=100 (default 20)"),
+    ),
+    responses(
+        (status = 200, description = "Page of courses", body = CoursePage),
+        (status = 404, description = "Unknown user", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn user_courses(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(username): Path<String>,
+    Query(query): Query<UserCoursesQuery>,
+) -> ApiResult<Json<CoursePage>> {
+    let user = ab_db::identity::find_user_id_by_username(&state.pool, &username)
+        .await?
+        .ok_or_else(|| ab_core::Error::not_found("user"))?;
+    let (courses, next_cursor) = state
+        .courses
+        .list_by_user(&actor, user, query.cursor, query.limit.unwrap_or(20))
+        .await?;
+    Ok(Json(CoursePage {
+        items: courses.into_iter().map(Into::into).collect(),
+        next_cursor,
+        summary: None,
+    }))
 }

@@ -1,23 +1,29 @@
 //! Course CRUD + visibility lifecycle.
 //!
-//! Access semantics ported from the legacy service: read = public OR creator
-//! OR `course:read:all`; write = creator with `course:update:own` OR
-//! `course:update:platform`.
+//! Access semantics ported from the legacy service: read = public OR author
+//! OR cohort member OR platform manager; write = author with
+//! `course:update:own` OR `course:update:platform`. "Author" is
+//! `Course::is_author` — the creator or an active contributor
+//! (`resource_authors`, see `contributors.rs`) — the one predicate every
+//! authoring gate in the workspace (curriculum, assessments, files, grading,
+//! AI, certificates) goes through.
 
-use ab_core::id::CourseId;
+use ab_core::id::{CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
 use sqlx::PgPool;
 
 use ab_core::id::CourseUpdateId;
-pub use ab_db::catalog::{CourseRow as Course, CourseUpdateRow as CourseUpdate};
+pub use ab_db::catalog::{
+    CourseRow as Course, CourseSummaryRow as CourseSummary, CourseUpdateRow as CourseUpdate,
+};
 use uuid::Uuid;
 
 use crate::catalog::sees_private;
 use crate::files::uploads::{UNREFERENCED_GRACE, claim_upload};
 use crate::identity::Actor;
 
-const fn perm(action: Action, scope: Scope) -> Permission {
+pub(crate) const fn perm(action: Action, scope: Scope) -> Permission {
     Permission {
         resource: ResourceType::Course,
         action,
@@ -37,9 +43,18 @@ pub struct CourseChanges {
     pub thumbnail_upload_id: Option<Uuid>,
 }
 
+/// `GET /courses` filters (see `ab_db::catalog::CourseFilter`).
+#[derive(Debug, Default, Clone)]
+pub struct ListParams<'a> {
+    pub mine: bool,
+    pub q: Option<&'a str>,
+    pub sort: &'a str,
+    pub preset: &'a str,
+}
+
 #[derive(Clone)]
 pub struct CoursesService {
-    pool: PgPool,
+    pub(crate) pool: PgPool,
 }
 
 impl CoursesService {
@@ -48,23 +63,24 @@ impl CoursesService {
         Self { pool }
     }
 
-    /// Write access: platform-wide updaters, or the creator with `own` scope.
+    /// Write access: platform-wide updaters, or an author with `own` scope.
     /// Shared with the curriculum service (chapters/activities inherit it).
     pub(crate) fn require_write(actor: &Actor, course: &Course) -> Result<()> {
         if actor.has(perm(Action::Update, Scope::Platform)) {
             return Ok(());
         }
-        if course.creator_id == Some(actor.user_id) && actor.has(perm(Action::Update, Scope::Own)) {
+        if course.is_author(actor.user_id) && actor.has(perm(Action::Update, Scope::Own)) {
             return Ok(());
         }
         Err(Error::forbidden("no write access to this course"))
     }
 
-    /// Visibility: public, creator, `course:read:all`, or membership of a
-    /// usergroup linked to the course (cohort access). Invisible = 404.
-    async fn require_read(&self, actor: &Actor, course: &Course) -> Result<()> {
+    /// Visibility: public, author (creator / active contributor), platform
+    /// manager, or membership of a usergroup linked to the course (cohort
+    /// access). Invisible = 404.
+    pub(crate) async fn require_read(&self, actor: &Actor, course: &Course) -> Result<()> {
         if course.public
-            || course.creator_id == Some(actor.user_id)
+            || course.is_author(actor.user_id)
             || sees_private(actor, ResourceType::Course)
             || ab_db::usergroups::user_in_course_group(&self.pool, course.id, actor.user_id).await?
         {
@@ -105,23 +121,59 @@ impl CoursesService {
         Ok(course)
     }
 
-    /// Newest-first page; returns (courses, next_cursor).
+    /// One page of the catalogue; returns (courses, next_cursor). With
+    /// `mine`, only courses the caller may edit (author, or platform
+    /// updater/manager who sees everything).
     pub async fn list(
         &self,
         actor: &Actor,
+        params: &ListParams<'_>,
         cursor: Option<CourseId>,
         limit: i64,
     ) -> Result<(Vec<Course>, Option<CourseId>)> {
         let limit = limit.clamp(1, 100);
-        let see_all = sees_private(actor, ResourceType::Course);
-        let mut rows = ab_db::catalog::list_courses(
+        let filter = ab_db::catalog::CourseFilter {
+            viewer: Some(actor.user_id),
+            see_all: sees_private(actor, ResourceType::Course),
+            mine: params.mine,
+            q: params.q.map(str::trim).filter(|q| !q.is_empty()),
+            sort: params.sort,
+            preset: params.preset,
+        };
+        let mut rows = ab_db::catalog::list_courses(&self.pool, &filter, cursor, limit + 1).await?;
+        let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
+            rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+            rows.last().map(|c| c.id)
+        } else {
+            None
+        };
+        Ok((rows, next))
+    }
+
+    /// Counts over the caller's editable set (the `mine=true` summary block).
+    pub async fn summary(&self, actor: &Actor) -> Result<CourseSummary> {
+        ab_db::catalog::summarize_courses(
             &self.pool,
-            Some(actor.user_id),
-            see_all,
-            cursor,
-            limit + 1,
+            actor.user_id,
+            sees_private(actor, ResourceType::Course),
         )
-        .await?;
+        .await
+    }
+
+    /// Courses `user` created or actively co-authors, newest first. Private
+    /// ones only for the user themself or platform managers.
+    pub async fn list_by_user(
+        &self,
+        actor: &Actor,
+        user: UserId,
+        cursor: Option<CourseId>,
+        limit: i64,
+    ) -> Result<(Vec<Course>, Option<CourseId>)> {
+        let limit = limit.clamp(1, 100);
+        let include_private = actor.user_id == user || sees_private(actor, ResourceType::Course);
+        let mut rows =
+            ab_db::catalog::list_user_courses(&self.pool, user, include_private, cursor, limit + 1)
+                .await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             rows.last().map(|c| c.id)

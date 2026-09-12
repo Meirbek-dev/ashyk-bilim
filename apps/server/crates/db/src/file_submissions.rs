@@ -216,6 +216,34 @@ pub async fn set_file_submission_lifecycle(
     Ok(updated.rows_affected() == 1)
 }
 
+/// A file-submission activity as a gradebook column.
+#[derive(Debug, Clone)]
+pub struct GradebookFileSubmissionRow {
+    pub id: FileSubmissionId,
+    pub activity_id: ActivityId,
+    pub title: String,
+    pub due_at: Option<i64>,
+}
+
+/// Every file-submission activity of a course (any lifecycle), curriculum order.
+pub async fn list_for_course(
+    pool: &PgPool,
+    course_id: CourseId,
+) -> Result<Vec<GradebookFileSubmissionRow>> {
+    let rows = sqlx::query_as!(
+        GradebookFileSubmissionRow,
+        r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
+                  a.name AS title, (extract(epoch FROM f.due_at))::bigint AS "due_at?"
+           FROM file_submissions f JOIN activities a ON a.id = f.activity_id
+           WHERE f.course_id = $1
+           ORDER BY a.position, f.id"#,
+        course_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 // ── Attempts ────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]

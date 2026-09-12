@@ -12,6 +12,11 @@ export const Collection = zod.object({
     .array(
       zod.object({
         about: zod.string(),
+        contributor_ids: zod
+          .array(zod.uuid())
+          .describe(
+            'Active co-authors (`GET \/courses\/{id}\/contributors`, status `active`);\nthey edit the course like the creator. Lets the client resolve its\nown `:own`-scoped grants the way the server does.',
+          ),
         created_at_unix: zod.int(),
         creator_id: zod.union([zod.null(), zod.uuid()]).optional(),
         description: zod.string(),

@@ -6,6 +6,13 @@
 //! (`choice.options_missing`, …): stable machine keys the frontend
 //! translates.
 
+// SAFETY-style justification: `ItemBody::MatchingLearner` deliberately
+// shares the `matching` tag with `ItemBody::Matching` (write-only learner
+// shape, see the enum docs); serde's derived deserializer therefore has an
+// unreachable match arm. `skip_deserializing` would fix that but drops the
+// variant from the utoipa schema, which the web contract needs.
+#![allow(unreachable_patterns)]
+
 use std::collections::{BTreeMap, HashSet};
 
 use ab_core::assessments::ItemKind;
@@ -183,13 +190,39 @@ pub struct MatchingPair {
 pub struct MatchingBody {
     #[serde(default)]
     pub prompt: String,
+    /// Required on the wire so a client's untagged union can tell this
+    /// author shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).
     #[serde(default)]
+    #[schema(required)]
     pub pairs: Vec<MatchingPair>,
     #[serde(default)]
     pub explanation: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MatchingOption {
+    /// What the answer carries: the option text (unique per column, since
+    /// the readiness rules forbid duplicates).
+    pub id: String,
+    pub text: String,
+}
+
+/// The learner read of a matching item: the two columns with the right
+/// one shuffled (stable per viewer and item), never the pairing. Authors
+/// keep [`MatchingBody::pairs`].
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MatchingLearnerBody {
+    #[serde(default)]
+    pub prompt: String,
+    pub left: Vec<MatchingOption>,
+    pub right: Vec<MatchingOption>,
+}
+
 /// Internally tagged on `kind` — the wire and storage shape.
+///
+/// `MatchingLearner` shares the `matching` tag but is only ever written
+/// (the learner read); an incoming `matching` body always parses as the
+/// author [`MatchingBody`].
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ItemBody {
@@ -198,13 +231,34 @@ pub enum ItemBody {
     Form(FormBody),
     Code(CodeBody),
     Matching(MatchingBody),
+    #[serde(rename = "matching")]
+    MatchingLearner(MatchingLearnerBody),
+}
+
+/// splitmix64: a deterministic shuffle seed needs no crate.
+const fn next_random(state: &mut u64) -> u64 {
+    *state = state.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    let mut z = *state;
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^ (z >> 31)
+}
+
+/// Fisher-Yates with a fixed seed: the same seed gives the same order.
+fn shuffle<T>(items: &mut [T], seed: u64) {
+    let mut state = seed;
+    for i in (1..items.len()).rev() {
+        let j = usize::try_from(next_random(&mut state) % (i as u64 + 1)).unwrap_or(0);
+        items.swap(i, j);
+    }
 }
 
 impl ItemBody {
     /// Strip everything a learner must not see while attempting: the answer
     /// key on choices, rubrics and explanations, reference solutions and
-    /// hidden tests. Authors read the full body; learners read this.
-    pub fn redact_for_learner(&mut self) {
+    /// hidden tests; a matching item becomes its two columns with the right
+    /// one shuffled by `seed`. Authors read the full body; learners read this.
+    pub fn redact_for_learner(&mut self, seed: u64) {
         match self {
             Self::Choice(body) => {
                 for option in &mut body.options {
@@ -217,10 +271,21 @@ impl ItemBody {
                 body.reference_solutions.clear();
                 body.tests.retain(|test| test.is_visible);
             }
-            // The learner UI builds both columns from `pairs`; the pairing
-            // itself is the key and needs a separate wire shape (ledger).
-            Self::Matching(body) => body.explanation = None,
-            Self::Form(_) => {}
+            Self::Matching(body) => {
+                let option = |text: &str| MatchingOption {
+                    id: text.to_owned(),
+                    text: text.to_owned(),
+                };
+                let mut right: Vec<MatchingOption> =
+                    body.pairs.iter().map(|p| option(&p.right)).collect();
+                shuffle(&mut right, seed);
+                *self = Self::MatchingLearner(MatchingLearnerBody {
+                    prompt: std::mem::take(&mut body.prompt),
+                    left: body.pairs.iter().map(|p| option(&p.left)).collect(),
+                    right,
+                });
+            }
+            Self::Form(_) | Self::MatchingLearner(_) => {}
         }
     }
 
@@ -231,7 +296,7 @@ impl ItemBody {
             Self::OpenText(_) => ItemKind::OpenText,
             Self::Form(_) => ItemKind::Form,
             Self::Code(_) => ItemKind::Code,
-            Self::Matching(_) => ItemKind::Matching,
+            Self::Matching(_) | Self::MatchingLearner(_) => ItemKind::Matching,
         }
     }
 
@@ -482,6 +547,7 @@ impl ItemBody {
             Self::Form(body) => body.readiness(),
             Self::Code(body) => body.readiness(title),
             Self::Matching(body) => body.readiness(),
+            Self::MatchingLearner(_) => Vec::new(),
         }
     }
 }
@@ -614,6 +680,57 @@ mod tests {
             code_titled.readiness_issues("")[0].code,
             "code.prompt_missing"
         );
+    }
+
+    #[test]
+    fn learner_matching_body_hides_the_pairing_and_shuffles_stably() {
+        let pairs: Vec<MatchingPair> = ["1", "2", "3", "4", "5", "6"]
+            .iter()
+            .map(|n| MatchingPair {
+                left: (*n).to_owned(),
+                right: format!("r{n}"),
+            })
+            .collect();
+        let body = ItemBody::Matching(MatchingBody {
+            prompt: "match".into(),
+            pairs,
+            explanation: Some("key".into()),
+        });
+        let mut first = body.clone();
+        first.redact_for_learner(7);
+        let mut again = body.clone();
+        again.redact_for_learner(7);
+        let mut other = body;
+        other.redact_for_learner(8);
+        let ItemBody::MatchingLearner(learner) = &first else {
+            panic!("learner shape")
+        };
+        assert_eq!(first.kind(), ItemKind::Matching);
+        let wire = serde_json::to_value(&first).unwrap();
+        assert_eq!(wire["kind"], "matching");
+        assert!(wire.get("pairs").is_none() && wire.get("explanation").is_none());
+        assert_eq!(
+            learner
+                .left
+                .iter()
+                .map(|o| o.id.as_str())
+                .collect::<Vec<_>>(),
+            ["1", "2", "3", "4", "5", "6"]
+        );
+        let mut rights: Vec<&str> = learner.right.iter().map(|o| o.id.as_str()).collect();
+        assert_ne!(
+            rights,
+            ["r1", "r2", "r3", "r4", "r5", "r6"],
+            "right column is shuffled"
+        );
+        rights.sort_unstable();
+        assert_eq!(rights, ["r1", "r2", "r3", "r4", "r5", "r6"]);
+        assert_eq!(
+            serde_json::to_value(&again).unwrap(),
+            wire,
+            "same seed, same order"
+        );
+        assert_ne!(serde_json::to_value(&other).unwrap(), wire);
     }
 
     #[test]

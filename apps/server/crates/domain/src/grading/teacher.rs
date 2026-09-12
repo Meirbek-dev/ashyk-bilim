@@ -12,7 +12,10 @@
 use std::collections::{BTreeMap, HashMap};
 
 use ab_core::assessments::{AssessmentKind, AutoSubmitReason, ItemKind, SubmissionStatus};
-use ab_core::id::{AssessmentId, AssessmentItemId, CourseId, GradingEntryId, SubmissionId, UserId};
+use ab_core::id::{
+    ActivityId, AssessmentId, AssessmentItemId, CourseId, FileAttemptId, FileSubmissionId,
+    GradingEntryId, SubmissionId, UserId,
+};
 use ab_core::permission::Action;
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::submissions::{NewGradingEntry, NewItemFeedback, SubmissionRow};
@@ -223,11 +226,17 @@ pub struct PublishSummary {
     pub already_published_count: i64,
 }
 
+/// One graded activity of a learner: an assessment submission
+/// (`assessment_id` + `submission_id`) or a file-submission attempt
+/// (`file_submission_id` + `attempt_id`).
 #[derive(Debug, Clone)]
 pub struct GradebookCell {
     pub user_id: UserId,
-    pub assessment_id: AssessmentId,
-    pub submission_id: SubmissionId,
+    pub activity_id: ActivityId,
+    pub assessment_id: Option<AssessmentId>,
+    pub submission_id: Option<SubmissionId>,
+    pub file_submission_id: Option<FileSubmissionId>,
+    pub attempt_id: Option<FileAttemptId>,
     pub status: SubmissionStatus,
     pub attempt_number: i32,
     pub attempts: i64,
@@ -240,6 +249,7 @@ pub struct GradebookCell {
 #[derive(Debug, Clone)]
 pub struct GradebookAssessment {
     pub id: AssessmentId,
+    pub activity_id: ActivityId,
     pub title: String,
     pub kind: AssessmentKind,
     pub due_at: Option<i64>,
@@ -247,11 +257,71 @@ pub struct GradebookAssessment {
 }
 
 #[derive(Debug, Clone)]
+pub struct GradebookFileSubmission {
+    pub id: FileSubmissionId,
+    pub activity_id: ActivityId,
+    pub title: String,
+    pub due_at: Option<i64>,
+}
+
+#[derive(Debug, Clone)]
 pub struct GradebookPage {
     pub cells: Vec<GradebookCell>,
     pub users: Vec<UserSummary>,
     pub assessments: Vec<GradebookAssessment>,
+    pub file_submissions: Vec<GradebookFileSubmission>,
     pub next_cursor: Option<String>,
+}
+
+/// Header + status words of the gradebook CSV, by `Accept-Language`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CsvLanguage {
+    Ru,
+    Kk,
+    En,
+}
+
+impl CsvLanguage {
+    /// First supported tag in an `Accept-Language` value (order of listing
+    /// stands in for q-weights); Russian when nothing matches.
+    #[must_use]
+    pub fn from_accept_language(header: Option<&str>) -> Self {
+        header
+            .unwrap_or_default()
+            .split(',')
+            .filter_map(|part| part.split(';').next())
+            .map(str::trim)
+            .find_map(|tag| match tag.split('-').next().unwrap_or_default() {
+                "ru" => Some(Self::Ru),
+                "kk" => Some(Self::Kk),
+                "en" => Some(Self::En),
+                _ => None,
+            })
+            .unwrap_or(Self::Ru)
+    }
+
+    const fn learner(self) -> &'static str {
+        match self {
+            Self::Ru => "Студент",
+            Self::Kk => "Білім алушы",
+            Self::En => "Learner",
+        }
+    }
+
+    /// A cell without a score: the status word (a scored cell is its number).
+    const fn status(self, status: Option<SubmissionStatus>) -> &'static str {
+        match (self, status) {
+            (Self::Ru, None) => "Не начато",
+            (Self::Kk, None) => "Басталмаған",
+            (Self::En, None) => "Not started",
+            (Self::Ru, Some(SubmissionStatus::Returned)) => "Возвращено",
+            (Self::Kk, Some(SubmissionStatus::Returned)) => "Қайтарылған",
+            (Self::En, Some(SubmissionStatus::Returned)) => "Returned",
+            (Self::Ru, Some(_)) => "На проверке",
+            (Self::Kk, Some(_)) => "Тексеру керек",
+            (Self::En, Some(_)) => "Needs grading",
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -371,6 +441,36 @@ impl GradingService {
                 .publish_best_effort(submission_id, event, payload)
                 .await;
         }
+    }
+
+    /// The course-wide grader stream: `grade.saved`, `grade.published`,
+    /// `submission.returned` for an assessment submission.
+    async fn emit_course(
+        &self,
+        row: &SubmissionRow,
+        activity_id: ActivityId,
+        target: SubmissionStatus,
+        final_score: f64,
+    ) {
+        if let Some(events) = &self.events {
+            events
+                .publish_best_effort(
+                    row.course_id,
+                    course_event_name(target),
+                    serde_json::json!({
+                        "submission_id": row.id, "activity_id": activity_id,
+                        "user_id": row.user_id, "status": target, "final_score": final_score,
+                    }),
+                )
+                .await;
+        }
+    }
+
+    /// Who may follow a course's grading stream: its graders (404 for an
+    /// invisible course, 403 without the grant).
+    pub async fn course_stream_access(&self, actor: &Actor, course_id: CourseId) -> Result<()> {
+        let course = self.assessments.courses.get(actor, course_id).await?;
+        AssessmentsService::require_scoped(actor, &course, Action::Grade, "grading stream")
     }
 
     /// Visible course (404 otherwise) + grading grant.
@@ -892,6 +992,8 @@ impl GradingService {
             }
             _ => {}
         }
+        self.emit_course(&row, assessment.activity_id, target, final_score)
+            .await;
         let fresh = self.load_submission(id).await?;
         ProgressProjector::new(self.pool.clone())
             .after_submission(fresh.assessment_id, fresh.user_id)
@@ -977,7 +1079,7 @@ impl GradingService {
         actor: &Actor,
         assessment_id: AssessmentId,
     ) -> Result<PublishSummary> {
-        self.grader_context(actor, assessment_id).await?;
+        let (assessment, _) = self.grader_context(actor, assessment_id).await?;
         let rows = ab_db::submissions::list_releasable(&self.pool, assessment_id).await?;
         let mut published = 0;
         let mut already = 0;
@@ -1044,6 +1146,13 @@ impl GradingService {
                 serde_json::json!({ "final_score": final_score, "published_at": now_unix() }),
             )
             .await;
+            self.emit_course(
+                &row,
+                assessment.activity_id,
+                SubmissionStatus::Published,
+                final_score,
+            )
+            .await;
         }
         if published > 0 {
             ab_db::assessments::insert_audit_event(
@@ -1063,8 +1172,9 @@ impl GradingService {
 
     // ── Course gradebook ────────────────────────────────────────────────
 
-    /// Latest non-draft submission per (learner, assessment) of a course,
-    /// keyset on that pair. Progress projections replace this in P6.
+    /// Latest non-draft attempt per (learner, activity) of a course —
+    /// assessment submissions and file-submission attempts alike — keyset
+    /// on that pair.
     pub async fn gradebook(
         &self,
         actor: &Actor,
@@ -1082,7 +1192,7 @@ impl GradingService {
         let next_cursor = if rows.len() > page {
             rows.truncate(page);
             rows.last()
-                .map(|r| format!("{}:{}", r.user_id, r.assessment_id))
+                .map(|r| format!("{}:{}", r.user_id, r.activity_id))
         } else {
             None
         };
@@ -1099,10 +1209,21 @@ impl GradingService {
             .into_iter()
             .map(|a| GradebookAssessment {
                 id: a.id,
+                activity_id: a.activity_id,
                 title: a.title,
                 kind: a.kind,
                 due_at: a.due_at,
                 passing_score: a.passing_score,
+            })
+            .collect();
+        let file_submissions = ab_db::file_submissions::list_for_course(&self.pool, course_id)
+            .await?
+            .into_iter()
+            .map(|f| GradebookFileSubmission {
+                id: f.id,
+                activity_id: f.activity_id,
+                title: f.title,
+                due_at: f.due_at,
             })
             .collect();
         Ok(GradebookPage {
@@ -1110,8 +1231,11 @@ impl GradingService {
                 .into_iter()
                 .map(|r| GradebookCell {
                     user_id: r.user_id,
+                    activity_id: r.activity_id,
                     assessment_id: r.assessment_id,
                     submission_id: r.submission_id,
+                    file_submission_id: r.file_submission_id,
+                    attempt_id: r.attempt_id,
                     status: r.status,
                     attempt_number: r.attempt_number,
                     attempts: r.attempts,
@@ -1123,8 +1247,84 @@ impl GradingService {
                 .collect(),
             users,
             assessments,
+            file_submissions,
             next_cursor,
         })
+    }
+
+    /// The whole gradebook matrix as CSV: learner, email, one column per
+    /// graded activity (score, or the localized status word).
+    pub async fn gradebook_csv(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+        language: CsvLanguage,
+    ) -> Result<String> {
+        let mut cells = Vec::new();
+        let mut cursor: Option<String> = None;
+        let first = self
+            .gradebook(actor, course_id, None, MAX_GRADEBOOK_PAGE)
+            .await?;
+        let (mut users, assessments, file_submissions) =
+            (first.users, first.assessments, first.file_submissions);
+        cells.extend(first.cells);
+        cursor.clone_from(&first.next_cursor);
+        while let Some(next) = cursor.take() {
+            let page = self
+                .gradebook(actor, course_id, Some(&next), MAX_GRADEBOOK_PAGE)
+                .await?;
+            cells.extend(page.cells);
+            users.extend(page.users);
+            cursor = page.next_cursor;
+        }
+        users.sort_by(|a, b| (&a.display_name, a.id).cmp(&(&b.display_name, b.id)));
+        users.dedup_by_key(|u| u.id);
+        let columns: Vec<(ActivityId, String)> = assessments
+            .into_iter()
+            .map(|a| (a.activity_id, a.title))
+            .chain(
+                file_submissions
+                    .into_iter()
+                    .map(|f| (f.activity_id, f.title)),
+            )
+            .collect();
+        let by_key: HashMap<(UserId, ActivityId), &GradebookCell> = cells
+            .iter()
+            .map(|c| ((c.user_id, c.activity_id), c))
+            .collect();
+        let mut header = vec![language.learner().to_owned(), "Email".to_owned()];
+        header.extend(columns.iter().map(|(_, title)| title.clone()));
+        let mut out = String::from("\u{feff}");
+        out.push_str(&csv_row(&header));
+        for user in &users {
+            let mut fields = vec![
+                if user.display_name.is_empty() {
+                    user.username.clone()
+                } else {
+                    user.display_name.clone()
+                },
+                user.email.clone(),
+            ];
+            fields.extend(columns.iter().map(|(activity_id, _)| {
+                let cell = by_key.get(&(user.id, *activity_id));
+                cell.and_then(|c| c.final_score).map_or_else(
+                    || language.status(cell.map(|c| c.status)).to_owned(),
+                    |score| score.to_string(),
+                )
+            }));
+            out.push_str(&csv_row(&fields));
+        }
+        Ok(out)
+    }
+}
+
+/// Course-stream event name for a grade landing in `target`.
+pub(crate) const fn course_event_name(target: SubmissionStatus) -> &'static str {
+    match target {
+        SubmissionStatus::Published => "grade.published",
+        SubmissionStatus::Returned => "submission.returned",
+        SubmissionStatus::Pending => "submission.submitted",
+        SubmissionStatus::Graded | SubmissionStatus::Draft => "grade.saved",
     }
 }
 
@@ -1145,19 +1345,19 @@ fn stale_version(expected: i64, actual: i64) -> Error {
     )
 }
 
-/// `"<user_id>:<assessment_id>"`.
-fn parse_gradebook_cursor(cursor: &str) -> Result<(UserId, AssessmentId)> {
+/// `"<user_id>:<activity_id>"`.
+fn parse_gradebook_cursor(cursor: &str) -> Result<(UserId, ActivityId)> {
     let invalid = || {
         Error::validation(vec![FieldError {
             field: "cursor".into(),
             code: "invalid".into(),
-            message: "cursor must be <user_id>:<assessment_id>".into(),
+            message: "cursor must be <user_id>:<activity_id>".into(),
         }])
     };
-    let (user, assessment) = cursor.split_once(':').ok_or_else(invalid)?;
+    let (user, activity) = cursor.split_once(':').ok_or_else(invalid)?;
     Ok((
         UserId(uuid::Uuid::parse_str(user).map_err(|_| invalid())?),
-        AssessmentId(uuid::Uuid::parse_str(assessment).map_err(|_| invalid())?),
+        ActivityId(uuid::Uuid::parse_str(activity).map_err(|_| invalid())?),
     ))
 }
 
@@ -1189,7 +1389,10 @@ fn merge_item_grades(
                 existing.needs_manual_review = false;
             }
             if !grade.feedback.trim().is_empty() {
+                // Teacher prose replaces the auto-grader verdict, code included.
                 grade.feedback.trim().clone_into(&mut existing.feedback);
+                existing.feedback_code = None;
+                existing.feedback_params = None;
             }
             continue;
         }
@@ -1200,6 +1403,8 @@ fn merge_item_grades(
             max_score: item.map_or(0.0, |i| i.max_score),
             correct: None,
             feedback: grade.feedback.trim().to_owned(),
+            feedback_code: None,
+            feedback_params: None,
             needs_manual_review: false,
             user_answer: answers
                 .get(&grade.item_id)
@@ -1228,6 +1433,23 @@ mod tests {
         assert!(!transition_allowed(S::Published, S::Graded));
         assert!(!transition_allowed(S::Draft, S::Graded));
         assert!(!transition_allowed(S::Draft, S::Draft));
+    }
+
+    #[test]
+    fn csv_language_follows_accept_language() {
+        assert_eq!(CsvLanguage::from_accept_language(None), CsvLanguage::Ru);
+        assert_eq!(
+            CsvLanguage::from_accept_language(Some("kk-KZ,ru;q=0.8")),
+            CsvLanguage::Kk
+        );
+        assert_eq!(
+            CsvLanguage::from_accept_language(Some("fr, en-US;q=0.9")),
+            CsvLanguage::En
+        );
+        assert_eq!(
+            CsvLanguage::from_accept_language(Some("de")),
+            CsvLanguage::Ru
+        );
     }
 
     #[test]

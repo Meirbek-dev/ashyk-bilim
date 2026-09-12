@@ -73,7 +73,7 @@ impl Problem {
             detail,
             field_errors,
             details,
-            request_id: None,
+            request_id: crate::middleware::current_request_id(),
         }
     }
 }

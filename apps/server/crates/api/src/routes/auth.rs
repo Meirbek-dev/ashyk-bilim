@@ -1,5 +1,5 @@
 use ab_core::{Error, ErrorCode};
-use ab_domain::identity::LoginInput;
+use ab_domain::identity::{LoginInput, NewAccount};
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
@@ -9,13 +9,17 @@ use axum_extra::extract::cookie::{Cookie, SameSite};
 use secrecy::SecretString;
 use serde::Deserialize;
 
-use crate::dto::auth::{LoginRequest, SessionInfo, SessionSummary};
+use crate::dto::auth::{
+    ChangePasswordRequest, LoginRequest, RegisterRequest, SessionInfo, SessionSummary,
+    VerifyEmailRequest,
+};
+use crate::dto::users::UserProfile;
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, SESSION_COOKIE, ValidJson};
 use crate::state::AppState;
 
 /// Best-effort client IP behind nginx (`X-Forwarded-For` first hop).
-fn client_ip(headers: &HeaderMap) -> Option<String> {
+pub(crate) fn client_ip(headers: &HeaderMap) -> Option<String> {
     headers
         .get("x-forwarded-for")
         .and_then(|v| v.to_str().ok())
@@ -29,7 +33,7 @@ fn client_ip(headers: &HeaderMap) -> Option<String> {
         })
 }
 
-fn user_agent(headers: &HeaderMap) -> Option<String> {
+pub(crate) fn user_agent(headers: &HeaderMap) -> Option<String> {
     headers
         .get(header::USER_AGENT)
         .and_then(|v| v.to_str().ok())
@@ -91,8 +95,107 @@ pub async fn login(
             user_id: ok.user_id,
             roles: ok.roles,
             permissions: ok.permissions,
+            mfa_enabled: ok.mfa_enabled,
         }),
     ))
+}
+
+/// Self-registration: creates the account (default `user` role) and emails
+/// a verification code. No session is opened — the client logs in next.
+#[utoipa::path(
+    post,
+    path = "/auth/register",
+    tag = "auth",
+    request_body = RegisterRequest,
+    responses(
+        (status = 201, description = "Account created; verification code sent", body = UserProfile),
+        (status = 409, description = "`username-taken` / `email-taken`", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Validation failed", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 429, description = "Too many attempts", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn register(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ValidJson(request): ValidJson<RegisterRequest>,
+) -> ApiResult<(StatusCode, Json<UserProfile>)> {
+    let profile = state
+        .identity
+        .register(NewAccount {
+            username: request.username,
+            email: request.email,
+            password: Some(SecretString::from(request.password)),
+            first_name: request.first_name,
+            last_name: request.last_name,
+            ip: client_ip(&headers),
+            user_agent: user_agent(&headers),
+        })
+        .await?;
+    Ok((StatusCode::CREATED, Json(profile.into())))
+}
+
+/// Confirm the email address with the emailed code (public).
+#[utoipa::path(
+    post,
+    path = "/auth/verify-email",
+    tag = "auth",
+    request_body = VerifyEmailRequest,
+    responses(
+        (status = 204, description = "Email verified"),
+        (status = 422, description = "Invalid or expired code (`field_errors[].field == \"code\"`)",
+         body = Problem, content_type = "application/problem+json"),
+        (status = 429, description = "Too many attempts", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn verify_email(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ValidJson(request): ValidJson<VerifyEmailRequest>,
+) -> ApiResult<StatusCode> {
+    state
+        .identity
+        .verify_email(
+            &request.email,
+            &request.code,
+            client_ip(&headers).as_deref(),
+        )
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Change the caller's password (current password checked by Zitadel).
+/// Every other session of the caller is revoked.
+#[utoipa::path(
+    post,
+    path = "/auth/password",
+    tag = "auth",
+    request_body = ChangePasswordRequest,
+    responses(
+        (status = 204, description = "Password changed"),
+        (status = 401, description = "`invalid-credentials`: current password wrong", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "New password rejected by policy", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn change_password(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    ValidJson(request): ValidJson<ChangePasswordRequest>,
+) -> ApiResult<StatusCode> {
+    state
+        .identity
+        .change_password(
+            &actor,
+            &SecretString::from(request.current_password),
+            &SecretString::from(request.new_password),
+        )
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// Logout: revoke the current session and clear the cookie. Idempotent.
@@ -131,6 +234,7 @@ pub async fn current_session(CurrentActor(actor): CurrentActor) -> Json<SessionI
         user_id: actor.user_id,
         roles: actor.roles,
         permissions: actor.permission_strings,
+        mfa_enabled: actor.mfa_enabled,
     })
 }
 
@@ -229,8 +333,15 @@ pub struct GoogleCallbackQuery {
     pub error: Option<String>,
 }
 
-fn login_error_redirect(code: &str) -> Redirect {
-    Redirect::to(&format!("/auth/login?error={code}"))
+/// Browser-facing redirects are absolute to `AB__SERVER__WEB_URL` when set
+/// (the API may live on another origin than the web app).
+fn login_error_redirect(state: &AppState, code: &str) -> Redirect {
+    Redirect::to(
+        &state
+            .config
+            .server
+            .web_href(&format!("/auth/login?error={code}")),
+    )
 }
 
 /// Start Google sign-in: 303 to Google's consent screen.
@@ -246,14 +357,14 @@ pub async fn google_start(
     Query(query): Query<GoogleStartQuery>,
 ) -> Redirect {
     let Some(google) = &state.google else {
-        return login_error_redirect("service-unavailable");
+        return login_error_redirect(&state, "service-unavailable");
     };
     let callback = query.callback.as_deref().unwrap_or("/");
     match google.start(callback).await {
         Ok(url) => Redirect::to(&url),
         Err(err) => {
             tracing::warn!(error = %err, "google start failed");
-            login_error_redirect(err.code().as_str())
+            login_error_redirect(&state, err.code().as_str())
         }
     }
 }
@@ -278,14 +389,14 @@ pub async fn google_callback(
     Query(query): Query<GoogleCallbackQuery>,
 ) -> (CookieJar, Redirect) {
     let Some(google) = &state.google else {
-        return (jar, login_error_redirect("service-unavailable"));
+        return (jar, login_error_redirect(&state, "service-unavailable"));
     };
     if query.error.is_some() {
         // User cancelled at Google's screen.
-        return (jar, login_error_redirect("google-cancelled"));
+        return (jar, login_error_redirect(&state, "google-cancelled"));
     }
     let (Some(code), Some(oauth_state)) = (query.code.as_deref(), query.state.as_deref()) else {
-        return (jar, login_error_redirect("google-oauth-expired"));
+        return (jar, login_error_redirect(&state, "google-oauth-expired"));
     };
     match google
         .callback(code, oauth_state, client_ip(&headers), user_agent(&headers))
@@ -293,11 +404,14 @@ pub async fn google_callback(
     {
         Ok(ok) => {
             let jar = jar.add(session_cookie(&state, ok.session_id));
-            (jar, Redirect::to(&ok.callback))
+            (
+                jar,
+                Redirect::to(&state.config.server.web_href(&ok.callback)),
+            )
         }
         Err(err) => {
             tracing::warn!(error = %err, "google callback failed");
-            (jar, login_error_redirect(err.code().as_str()))
+            (jar, login_error_redirect(&state, err.code().as_str()))
         }
     }
 }

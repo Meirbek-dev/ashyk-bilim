@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO resource_authors (course_id, user_id, authorship, status)\n           VALUES ($1, $2, $3, $4)\n           ON CONFLICT (course_id, collection_id, user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "13f68c6d546909b6405470ad8820ae009de7d0b19c0530384e947d81a1ef15a9"
+}

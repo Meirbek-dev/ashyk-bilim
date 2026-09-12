@@ -38,6 +38,9 @@ pub struct Config {
     pub zitadel: Option<ZitadelConfig>,
     /// Google login is optional (password login works without it).
     pub google: Option<GoogleOauthConfig>,
+    /// Transactional email (registration verification codes). Unset =
+    /// codes are logged at `warn` and accounts still work.
+    pub resend: Option<ResendConfig>,
     /// Required by `serve`/`worker` (uploads, media); optional elsewhere.
     pub storage: Option<StorageSettings>,
     /// Code execution. Unset = code runs answer 503 `code-runner-degraded`
@@ -332,6 +335,23 @@ pub struct ServerConfig {
     pub port: u16,
     /// Exact allowed CORS origins. Wildcards are rejected in production.
     pub cors_origins: Vec<String>,
+    /// Public origin of the web app, no trailing slash
+    /// (`https://ashyq.example`). When set, browser-facing redirects
+    /// (Google sign-in) and links in emails are absolute to it; otherwise
+    /// they are host-relative.
+    #[serde(default)]
+    pub web_url: Option<String>,
+}
+
+impl ServerConfig {
+    /// `path` (leading slash) anchored at `web_url` when configured.
+    #[must_use]
+    pub fn web_href(&self, path: &str) -> String {
+        match &self.web_url {
+            Some(base) => format!("{}{path}", base.trim_end_matches('/')),
+            None => path.to_owned(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -372,6 +392,23 @@ pub struct GoogleOauthConfig {
     pub client_secret: SecretString,
     /// Our callback URL as registered in the Google console.
     pub redirect_uri: String,
+}
+
+/// Resend transactional email (`AB__RESEND__API_KEY`, `AB__RESEND__FROM`).
+#[derive(Debug, Clone, Deserialize)]
+pub struct ResendConfig {
+    pub api_key: SecretString,
+    /// Sender, e.g. `Ashyq Bilim <noreply@ashyq.example>`.
+    pub from: String,
+    /// Origin only; tests point it at a wiremock fake.
+    #[serde(default = "ResendConfig::default_base_url")]
+    pub base_url: String,
+}
+
+impl ResendConfig {
+    fn default_base_url() -> String {
+        "https://api.resend.com".into()
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -436,7 +473,13 @@ impl Config {
                 "host": self.server.host,
                 "port": self.server.port,
                 "cors_origins": self.server.cors_origins,
+                "web_url": self.server.web_url,
             },
+            "resend": self.resend.as_ref().map(|r| serde_json::json!({
+                "api_key": "[redacted]",
+                "from": r.from,
+                "base_url": r.base_url,
+            })),
             "database": {
                 "url": "[redacted]",
                 "max_connections": self.database.max_connections,
@@ -479,6 +522,7 @@ mod tests {
                 host: "127.0.0.1".into(),
                 port: 8000,
                 cors_origins: vec![],
+                web_url: None,
             },
             database: DatabaseConfig {
                 url: SecretString::from("postgres://x"),
@@ -488,6 +532,7 @@ mod tests {
             redis: RedisConfig { url: None },
             zitadel: None,
             google: None,
+            resend: None,
             storage: None,
             judge0: None,
             ai: AiConfig::default(),
@@ -509,6 +554,17 @@ mod tests {
         let redacted = ai.redacted().to_string();
         assert!(!redacted.contains("sk-secret-value"));
         assert!(redacted.contains("[redacted]"));
+    }
+
+    #[test]
+    fn web_href_anchors_paths_when_configured() {
+        let mut cfg = base();
+        assert_eq!(cfg.server.web_href("/auth/login"), "/auth/login");
+        cfg.server.web_url = Some("https://app.example/".into());
+        assert_eq!(
+            cfg.server.web_href("/auth/login?error=x"),
+            "https://app.example/auth/login?error=x"
+        );
     }
 
     #[test]

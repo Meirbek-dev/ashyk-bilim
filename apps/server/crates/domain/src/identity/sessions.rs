@@ -53,6 +53,10 @@ pub struct SessionRecord {
     pub roles: Vec<String>,
     pub permissions: Vec<String>,
     pub rbac_version: i64,
+    /// TOTP enrolled on the Zitadel account (as of login / last enrollment
+    /// change) — `mfa_enabled` on the wire.
+    #[serde(default)]
+    pub mfa_enabled: bool,
     pub created_at_unix: i64,
     pub last_seen_unix: i64,
     pub ip: Option<String>,
@@ -69,6 +73,7 @@ pub struct NewSession {
     pub roles: Vec<String>,
     pub permissions: Vec<String>,
     pub rbac_version: i64,
+    pub mfa_enabled: bool,
     pub ip: Option<String>,
     pub user_agent: Option<String>,
 }
@@ -120,6 +125,7 @@ impl SessionStore {
             roles: new.roles,
             permissions: new.permissions,
             rbac_version: new.rbac_version,
+            mfa_enabled: new.mfa_enabled,
             created_at_unix: now,
             last_seen_unix: now,
             ip: new.ip,
@@ -242,6 +248,26 @@ impl SessionStore {
         permissions: &[String],
         rbac_version: i64,
     ) -> Result<u32> {
+        self.update_user_sessions(user_id, |record| {
+            record.roles = roles.to_vec();
+            record.permissions = permissions.to_vec();
+            record.rbac_version = rbac_version;
+        })
+        .await
+    }
+
+    /// TOTP enrolled/removed: every live session reflects it immediately.
+    pub async fn set_mfa_enabled(&self, user_id: UserId, mfa_enabled: bool) -> Result<u32> {
+        self.update_user_sessions(user_id, |record| record.mfa_enabled = mfa_enabled)
+            .await
+    }
+
+    /// Apply `edit` to every live session of the user, keeping each idle TTL.
+    async fn update_user_sessions(
+        &self,
+        user_id: UserId,
+        mut edit: impl FnMut(&mut SessionRecord),
+    ) -> Result<u32> {
         let mut conn = self.redis.clone();
         let mut updated = 0;
         for id in self.list(user_id).await? {
@@ -252,9 +278,7 @@ impl SessionStore {
             let Some(raw) = raw else { continue };
             let mut record: SessionRecord = serde_json::from_str(&raw)
                 .map_err(|e| Error::internal("corrupt session record", e))?;
-            record.roles = roles.to_vec();
-            record.permissions = permissions.to_vec();
-            record.rbac_version = rbac_version;
+            edit(&mut record);
             let payload = serde_json::to_string(&record)
                 .map_err(|e| Error::internal("serializing session", e))?;
             // KEEPTTL: don't extend idle expiry just because roles changed.

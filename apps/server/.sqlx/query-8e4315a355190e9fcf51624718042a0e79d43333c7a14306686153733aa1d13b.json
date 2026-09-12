@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE search @@ websearch_to_tsquery('simple', $1)\n             AND (public OR $2 OR creator_id = $3)\n           ORDER BY ts_rank_cd(search, websearch_to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
+  "query": "SELECT c.id AS \"id: CourseId\", c.name, c.description, c.about, c.tags,\n                  c.public, c.open_to_contributors,\n                  c.thumbnail_image_key AS thumbnail_key,\n                  c.creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = c.id AND ra.status = 'active')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM c.updated_at))::bigint AS \"updated_at!\"\n           FROM collection_courses cc\n           JOIN courses c ON c.id = cc.course_id\n           WHERE cc.collection_id = $1\n             AND (c.public OR $2 OR c.creator_id = $3\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = c.id AND ra.user_id = $3\n                               AND ra.status = 'active'))\n           ORDER BY cc.position, c.id",
   "describe": {
     "columns": [
       {
@@ -104,12 +104,18 @@
       },
       {
         "ordinal": 9,
+        "name": "contributor_ids!: Vec<UserId>",
+        "type_info": "UuidArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -117,10 +123,9 @@
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Bool",
         "Uuid",
-        "Int8"
+        "Bool",
+        "Uuid"
       ]
     },
     "nullable": [
@@ -134,8 +139,9 @@
       true,
       true,
       null,
+      null,
       null
     ]
   },
-  "hash": "9d7ad15679a491e207e65b11729b6ffad130d1d21e59b892b22524ab7deb74fd"
+  "hash": "8e4315a355190e9fcf51624718042a0e79d43333c7a14306686153733aa1d13b"
 }

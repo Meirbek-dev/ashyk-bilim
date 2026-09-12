@@ -24,11 +24,15 @@ import type {
 } from '@tanstack/react-query'
 
 import {
+  AdminUser,
   AdminUserPage,
+  CoursePage,
+  CreateUserRequest,
   ListUsersParams,
   Problem,
   SetUserStatusRequest,
   UpdateProfileRequest,
+  UserCoursesParams,
   UserId,
   UserProfile,
 } from '../zod'
@@ -241,6 +245,78 @@ export function useListUsersSuspense<TData = Awaited<ReturnType<typeof listUsers
   return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getCreateUserUrl = () => {
+  return `/api/v2/users`
+}
+
+/**
+ * @summary Admin account creation (requires `platform:manage:platform`): Zitadel
+human with a verified email + `users` row with `user` plus `roles`.
+Without `password` the account signs in with Google only.
+ */
+export const createUser = async (
+  createUserRequest: CreateUserRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AdminUser> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Array.isArray(h)) return Object.fromEntries(h)
+    return h
+  }
+  return orvalMutator<AdminUser>(
+    getCreateUserUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(createUserRequest),
+    },
+    AdminUser,
+  )
+}
+
+export const getCreateUserMutationKey = () => ['createUser'] as const
+
+export const getCreateUserMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError, CreateUserMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError, CreateUserMutationVariables, TContext> => {
+  const mutationKey = getCreateUserMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof createUser>>, CreateUserMutationVariables> = props => {
+    const { data } = props ?? {}
+
+    return createUser(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CreateUserMutationResult = NonNullable<Awaited<ReturnType<typeof createUser>>>
+export type CreateUserMutationBody = BodyType<CreateUserRequest>
+export type CreateUserMutationError = ErrorType<Problem>
+export type CreateUserMutationVariables = { data: BodyType<CreateUserRequest> }
+
+/**
+ * @summary Admin account creation (requires `platform:manage:platform`): Zitadel
+human with a verified email + `users` row with `user` plus `roles`.
+Without `password` the account signs in with Google only.
+ */
+export const useCreateUser = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError, CreateUserMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof createUser>>, TError, CreateUserMutationVariables, TContext> => {
+  return useMutation(getCreateUserMutationOptions(options), queryClient)
+}
 export const getMyProfileUrl = () => {
   return `/api/v2/users/me`
 }
@@ -579,4 +655,220 @@ export const useSetUserStatus = <TError = ErrorType<Problem>, TContext = unknown
   queryClient?: QueryClient,
 ): UseMutationResult<Awaited<ReturnType<typeof setUserStatus>>, TError, SetUserStatusMutationVariables, TContext> => {
   return useMutation(getSetUserStatusMutationOptions(options), queryClient)
+}
+export const getUserCoursesUrl = (username: string, params?: UserCoursesParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/users/${username}/courses?${stringifiedParams}`
+    : `/api/v2/users/${username}/courses`
+}
+
+/**
+ * @summary Courses a user created or actively co-authors, newest first (public
+profile). Private ones are included only for the user themself and
+platform course managers.
+ */
+export const userCourses = async (
+  username: string,
+  params?: UserCoursesParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<CoursePage> => {
+  return orvalMutator<CoursePage>(
+    getUserCoursesUrl(username, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    CoursePage,
+  )
+}
+
+export const getUserCoursesQueryKey = (username: string, params?: UserCoursesParams) => {
+  return [`/api/v2/users/${username}/courses`, ...(params ? [params] : [])] as const
+}
+
+export const getUserCoursesQueryOptions = <
+  TData = Awaited<ReturnType<typeof userCourses>>,
+  TError = ErrorType<Problem>,
+>(
+  username: string,
+  params?: UserCoursesParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getUserCoursesQueryKey(username, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof userCourses>>> = ({ signal }) =>
+    userCourses(username, params, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: username !== null && username !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type UserCoursesQueryResult = NonNullable<Awaited<ReturnType<typeof userCourses>>>
+export type UserCoursesQueryError = ErrorType<Problem>
+
+export function useUserCourses<TData = Awaited<ReturnType<typeof userCourses>>, TError = ErrorType<Problem>>(
+  username: string,
+  params: undefined | UserCoursesParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userCourses>>,
+          TError,
+          Awaited<ReturnType<typeof userCourses>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserCourses<TData = Awaited<ReturnType<typeof userCourses>>, TError = ErrorType<Problem>>(
+  username: string,
+  params?: UserCoursesParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userCourses>>,
+          TError,
+          Awaited<ReturnType<typeof userCourses>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserCourses<TData = Awaited<ReturnType<typeof userCourses>>, TError = ErrorType<Problem>>(
+  username: string,
+  params?: UserCoursesParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Courses a user created or actively co-authors, newest first (public
+profile). Private ones are included only for the user themself and
+platform course managers.
+ */
+
+export function useUserCourses<TData = Awaited<ReturnType<typeof userCourses>>, TError = ErrorType<Problem>>(
+  username: string,
+  params?: UserCoursesParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getUserCoursesQueryOptions(username, params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUserCoursesSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof userCourses>>,
+  TError = ErrorType<Problem>,
+>(
+  username: string,
+  params?: UserCoursesParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getUserCoursesQueryKey(username, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof userCourses>>> = ({ signal }) =>
+    userCourses(username, params, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof userCourses>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type UserCoursesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof userCourses>>>
+export type UserCoursesSuspenseQueryError = ErrorType<Problem>
+
+export function useUserCoursesSuspense<TData = Awaited<ReturnType<typeof userCourses>>, TError = ErrorType<Problem>>(
+  username: string,
+  params: undefined | UserCoursesParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserCoursesSuspense<TData = Awaited<ReturnType<typeof userCourses>>, TError = ErrorType<Problem>>(
+  username: string,
+  params?: UserCoursesParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserCoursesSuspense<TData = Awaited<ReturnType<typeof userCourses>>, TError = ErrorType<Problem>>(
+  username: string,
+  params?: UserCoursesParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Courses a user created or actively co-authors, newest first (public
+profile). Private ones are included only for the user themself and
+platform course managers.
+ */
+
+export function useUserCoursesSuspense<TData = Awaited<ReturnType<typeof userCourses>>, TError = ErrorType<Problem>>(
+  username: string,
+  params?: UserCoursesParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getUserCoursesSuspenseQueryOptions(username, params, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
 }

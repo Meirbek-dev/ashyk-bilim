@@ -11,10 +11,13 @@ pub struct UserProfile {
     pub bio: String,
     pub avatar_key: Option<String>,
     pub locale: String,
+    /// TOTP enrolled on the account (`false` where no session is involved,
+    /// e.g. the registration answer).
+    pub mfa_enabled: bool,
 }
 
-impl From<ab_domain::identity::users::Profile> for UserProfile {
-    fn from(p: ab_domain::identity::users::Profile) -> Self {
+impl UserProfile {
+    pub(crate) fn from_profile(p: ab_domain::identity::users::Profile, mfa_enabled: bool) -> Self {
         Self {
             id: p.id,
             username: p.username,
@@ -23,8 +26,35 @@ impl From<ab_domain::identity::users::Profile> for UserProfile {
             bio: p.bio,
             avatar_key: p.avatar_key,
             locale: p.locale,
+            mfa_enabled,
         }
     }
+}
+
+impl From<ab_domain::identity::users::Profile> for UserProfile {
+    fn from(p: ab_domain::identity::users::Profile) -> Self {
+        Self::from_profile(p, false)
+    }
+}
+
+/// Admin account creation (`POST /users`). No `Debug` — may carry a
+/// password. Without one the account is IdP-only (Google sign-in).
+#[derive(Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CreateUserRequest {
+    #[garde(length(min = 3, max = 48), pattern(r"^[A-Za-z0-9._-]+$"))]
+    pub username: String,
+    #[garde(email, length(max = 320))]
+    pub email: String,
+    #[garde(inner(length(min = 8, max = 200)))]
+    pub password: Option<String>,
+    #[garde(length(min = 1, max = 100))]
+    pub first_name: String,
+    #[garde(length(min = 1, max = 100))]
+    pub last_name: String,
+    /// Extra role slugs on top of the default `user`.
+    #[garde(inner(length(max = 10)))]
+    pub roles: Option<Vec<String>>,
 }
 
 /// Partial update; omitted fields are unchanged.
@@ -82,6 +112,13 @@ pub struct AdminUserListQuery {
     /// Substring filter over username/display name/email.
     pub q: Option<String>,
     pub cursor: Option<UserId>,
+    /// 1..=100, default 20.
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UserCoursesQuery {
+    pub cursor: Option<ab_core::id::CourseId>,
     /// 1..=100, default 20.
     pub limit: Option<i64>,
 }

@@ -19,6 +19,7 @@ fn new_session(user_id: UserId, perms: &[&str]) -> NewSession {
         roles: vec!["user".into()],
         permissions: perms.iter().map(ToString::to_string).collect(),
         rbac_version: 1,
+        mfa_enabled: false,
         ip: Some("127.0.0.1".into()),
         user_agent: Some("test".into()),
     }

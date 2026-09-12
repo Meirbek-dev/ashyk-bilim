@@ -27,14 +27,17 @@ import {
   Activity,
   ActivityDetail,
   ActivityId,
+  AddContributorRequest,
   Block,
   BlockId,
   Chapter,
   ChapterId,
+  Contributor,
   Course,
   CourseId,
   CourseLifecycleRequest,
   CoursePage,
+  CourseReadiness,
   CourseUpdate,
   CourseUpdateId,
   CreateActivityRequest,
@@ -50,7 +53,9 @@ import {
   Problem,
   UpdateActivityRequest,
   UpdateChapterRequest,
+  UpdateContributorRequest,
   UpdateCourseRequest,
+  UserId,
 } from '../zod'
 
 import { orvalMutator, arrayParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
@@ -1497,8 +1502,11 @@ export const getListCoursesUrl = (params?: ListCoursesParams) => {
 }
 
 /**
- * @summary Newest-first course listing: public courses plus the caller's own
-(readers with `course:read:all` see everything).
+ * Public courses plus the caller's own and co-authored ones (platform
+ * updaters/managers see everything). `mine=true` narrows to courses the
+ * caller may edit and adds the `summary` block; `q`, `sort` and `preset`
+ * filter/sort (see `CourseListQuery`).
+ * @summary Course listing.
  */
 export const listCourses = async (
   params?: ListCoursesParams,
@@ -1586,8 +1594,7 @@ export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, 
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Newest-first course listing: public courses plus the caller's own
-(readers with `course:read:all` see everything).
+ * @summary Course listing.
  */
 
 export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
@@ -1659,8 +1666,7 @@ export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCou
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Newest-first course listing: public courses plus the caller's own
-(readers with `course:read:all` see everything).
+ * @summary Course listing.
  */
 
 export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
@@ -2170,6 +2176,564 @@ export const useCreateChapter = <TError = ErrorType<Problem>, TContext = unknown
 ): UseMutationResult<Awaited<ReturnType<typeof createChapter>>, TError, CreateChapterMutationVariables, TContext> => {
   return useMutation(getCreateChapterMutationOptions(options), queryClient)
 }
+export const getListContributorsUrl = (id: CourseId) => {
+  return `/api/v2/courses/${id}/contributors`
+}
+
+/**
+ * @summary Roster, creator first (course visibility; 404 otherwise).
+ */
+export const listContributors = async (
+  id: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Contributor[]> => {
+  return orvalMutator<Contributor[]>(
+    getListContributorsUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(Contributor),
+  )
+}
+
+export const getListContributorsQueryKey = (id: CourseId) => {
+  return [`/api/v2/courses/${id}/contributors`] as const
+}
+
+export const getListContributorsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listContributors>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListContributorsQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listContributors>>> = ({ signal }) =>
+    listContributors(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listContributors>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListContributorsQueryResult = NonNullable<Awaited<ReturnType<typeof listContributors>>>
+export type ListContributorsQueryError = ErrorType<Problem>
+
+export function useListContributors<TData = Awaited<ReturnType<typeof listContributors>>, TError = ErrorType<Problem>>(
+  id: CourseId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listContributors>>,
+          TError,
+          Awaited<ReturnType<typeof listContributors>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListContributors<TData = Awaited<ReturnType<typeof listContributors>>, TError = ErrorType<Problem>>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listContributors>>,
+          TError,
+          Awaited<ReturnType<typeof listContributors>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListContributors<TData = Awaited<ReturnType<typeof listContributors>>, TError = ErrorType<Problem>>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Roster, creator first (course visibility; 404 otherwise).
+ */
+
+export function useListContributors<TData = Awaited<ReturnType<typeof listContributors>>, TError = ErrorType<Problem>>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListContributorsQueryOptions(id, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListContributorsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listContributors>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListContributorsQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listContributors>>> = ({ signal }) =>
+    listContributors(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof listContributors>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListContributorsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listContributors>>>
+export type ListContributorsSuspenseQueryError = ErrorType<Problem>
+
+export function useListContributorsSuspense<
+  TData = Awaited<ReturnType<typeof listContributors>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListContributorsSuspense<
+  TData = Awaited<ReturnType<typeof listContributors>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListContributorsSuspense<
+  TData = Awaited<ReturnType<typeof listContributors>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Roster, creator first (course visibility; 404 otherwise).
+ */
+
+export function useListContributorsSuspense<
+  TData = Awaited<ReturnType<typeof listContributors>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listContributors>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListContributorsSuspenseQueryOptions(id, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getAddContributorUrl = (id: CourseId) => {
+  return `/api/v2/courses/${id}/contributors`
+}
+
+/**
+ * @summary Add an active contributor by `user_id` or `username` (creator, active
+maintainer, or `course:manage:platform`). 409 `conflict` when the user
+is already on the roster (or is the creator).
+ */
+export const addContributor = async (
+  id: CourseId,
+  addContributorRequest: AddContributorRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Contributor> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Array.isArray(h)) return Object.fromEntries(h)
+    return h
+  }
+  return orvalMutator<Contributor>(
+    getAddContributorUrl(id),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(addContributorRequest),
+    },
+    Contributor,
+  )
+}
+
+export const getAddContributorMutationKey = () => ['addContributor'] as const
+
+export const getAddContributorMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addContributor>>,
+    TError,
+    AddContributorMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addContributor>>,
+  TError,
+  AddContributorMutationVariables,
+  TContext
+> => {
+  const mutationKey = getAddContributorMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addContributor>>,
+    AddContributorMutationVariables
+  > = props => {
+    const { id, data } = props ?? {}
+
+    return addContributor(id, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type AddContributorMutationResult = NonNullable<Awaited<ReturnType<typeof addContributor>>>
+export type AddContributorMutationBody = BodyType<AddContributorRequest>
+export type AddContributorMutationError = ErrorType<Problem>
+export type AddContributorMutationVariables = { id: CourseId; data: BodyType<AddContributorRequest> }
+
+/**
+ * @summary Add an active contributor by `user_id` or `username` (creator, active
+maintainer, or `course:manage:platform`). 409 `conflict` when the user
+is already on the roster (or is the creator).
+ */
+export const useAddContributor = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof addContributor>>,
+      TError,
+      AddContributorMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof addContributor>>, TError, AddContributorMutationVariables, TContext> => {
+  return useMutation(getAddContributorMutationOptions(options), queryClient)
+}
+export const getApplyContributorUrl = (id: CourseId) => {
+  return `/api/v2/courses/${id}/contributors/apply`
+}
+
+/**
+ * @summary Apply to contribute (any signed-in user on an `open_to_contributors`
+course): creates a `contributor/pending` entry. 409 `conflict` when the
+course is closed or the caller already has a role.
+ */
+export const applyContributor = async (
+  id: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Contributor> => {
+  return orvalMutator<Contributor>(
+    getApplyContributorUrl(id),
+    {
+      ...options,
+      method: 'POST',
+    },
+    Contributor,
+  )
+}
+
+export const getApplyContributorMutationKey = () => ['applyContributor'] as const
+
+export const getApplyContributorMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof applyContributor>>,
+    TError,
+    ApplyContributorMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof applyContributor>>,
+  TError,
+  ApplyContributorMutationVariables,
+  TContext
+> => {
+  const mutationKey = getApplyContributorMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof applyContributor>>,
+    ApplyContributorMutationVariables
+  > = props => {
+    const { id } = props ?? {}
+
+    return applyContributor(id, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ApplyContributorMutationResult = NonNullable<Awaited<ReturnType<typeof applyContributor>>>
+
+export type ApplyContributorMutationError = ErrorType<Problem>
+export type ApplyContributorMutationVariables = { id: CourseId }
+
+/**
+ * @summary Apply to contribute (any signed-in user on an `open_to_contributors`
+course): creates a `contributor/pending` entry. 409 `conflict` when the
+course is closed or the caller already has a role.
+ */
+export const useApplyContributor = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof applyContributor>>,
+      TError,
+      ApplyContributorMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof applyContributor>>,
+  TError,
+  ApplyContributorMutationVariables,
+  TContext
+> => {
+  return useMutation(getApplyContributorMutationOptions(options), queryClient)
+}
+export const getRemoveContributorUrl = (id: CourseId, userId: UserId) => {
+  return `/api/v2/courses/${id}/contributors/${userId}`
+}
+
+/**
+ * @summary Remove a contributor (reject an application, or drop an active one).
+ */
+export const removeContributor = async (
+  id: CourseId,
+  userId: UserId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  return orvalMutator<void>(
+    getRemoveContributorUrl(id, userId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
+}
+
+export const getRemoveContributorMutationKey = () => ['removeContributor'] as const
+
+export const getRemoveContributorMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeContributor>>,
+    TError,
+    RemoveContributorMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeContributor>>,
+  TError,
+  RemoveContributorMutationVariables,
+  TContext
+> => {
+  const mutationKey = getRemoveContributorMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeContributor>>,
+    RemoveContributorMutationVariables
+  > = props => {
+    const { id, userId } = props ?? {}
+
+    return removeContributor(id, userId, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type RemoveContributorMutationResult = NonNullable<Awaited<ReturnType<typeof removeContributor>>>
+
+export type RemoveContributorMutationError = ErrorType<Problem>
+export type RemoveContributorMutationVariables = { id: CourseId; userId: UserId }
+
+/**
+ * @summary Remove a contributor (reject an application, or drop an active one).
+ */
+export const useRemoveContributor = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof removeContributor>>,
+      TError,
+      RemoveContributorMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof removeContributor>>,
+  TError,
+  RemoveContributorMutationVariables,
+  TContext
+> => {
+  return useMutation(getRemoveContributorMutationOptions(options), queryClient)
+}
+export const getUpdateContributorUrl = (id: CourseId, userId: UserId) => {
+  return `/api/v2/courses/${id}/contributors/${userId}`
+}
+
+/**
+ * @summary Change a contributor's role and/or status (`status: active` approves a
+pending application; the creator cannot be changed → 409).
+ */
+export const updateContributor = async (
+  id: CourseId,
+  userId: UserId,
+  updateContributorRequest: UpdateContributorRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Contributor> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Array.isArray(h)) return Object.fromEntries(h)
+    return h
+  }
+  return orvalMutator<Contributor>(
+    getUpdateContributorUrl(id, userId),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(updateContributorRequest),
+    },
+    Contributor,
+  )
+}
+
+export const getUpdateContributorMutationKey = () => ['updateContributor'] as const
+
+export const getUpdateContributorMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateContributor>>,
+    TError,
+    UpdateContributorMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateContributor>>,
+  TError,
+  UpdateContributorMutationVariables,
+  TContext
+> => {
+  const mutationKey = getUpdateContributorMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateContributor>>,
+    UpdateContributorMutationVariables
+  > = props => {
+    const { id, userId, data } = props ?? {}
+
+    return updateContributor(id, userId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type UpdateContributorMutationResult = NonNullable<Awaited<ReturnType<typeof updateContributor>>>
+export type UpdateContributorMutationBody = BodyType<UpdateContributorRequest>
+export type UpdateContributorMutationError = ErrorType<Problem>
+export type UpdateContributorMutationVariables = {
+  id: CourseId
+  userId: UserId
+  data: BodyType<UpdateContributorRequest>
+}
+
+/**
+ * @summary Change a contributor's role and/or status (`status: active` approves a
+pending application; the creator cannot be changed → 409).
+ */
+export const useUpdateContributor = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateContributor>>,
+      TError,
+      UpdateContributorMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updateContributor>>,
+  TError,
+  UpdateContributorMutationVariables,
+  TContext
+> => {
+  return useMutation(getUpdateContributorMutationOptions(options), queryClient)
+}
 export const getGetCurriculumUrl = (id: CourseId) => {
   return `/api/v2/courses/${id}/curriculum`
 }
@@ -2459,6 +3023,206 @@ export const useCourseLifecycle = <TError = ErrorType<Problem>, TContext = unkno
 > => {
   return useMutation(getCourseLifecycleMutationOptions(options), queryClient)
 }
+export const getCourseReadinessUrl = (id: CourseId) => {
+  return `/api/v2/courses/${id}/readiness`
+}
+
+/**
+ * @summary Publish readiness: blockers and warnings with stable codes (course write
+access; 404 for invisible courses).
+ */
+export const courseReadiness = async (
+  id: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<CourseReadiness> => {
+  return orvalMutator<CourseReadiness>(
+    getCourseReadinessUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    CourseReadiness,
+  )
+}
+
+export const getCourseReadinessQueryKey = (id: CourseId) => {
+  return [`/api/v2/courses/${id}/readiness`] as const
+}
+
+export const getCourseReadinessQueryOptions = <
+  TData = Awaited<ReturnType<typeof courseReadiness>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCourseReadinessQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof courseReadiness>>> = ({ signal }) =>
+    courseReadiness(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof courseReadiness>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CourseReadinessQueryResult = NonNullable<Awaited<ReturnType<typeof courseReadiness>>>
+export type CourseReadinessQueryError = ErrorType<Problem>
+
+export function useCourseReadiness<TData = Awaited<ReturnType<typeof courseReadiness>>, TError = ErrorType<Problem>>(
+  id: CourseId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof courseReadiness>>,
+          TError,
+          Awaited<ReturnType<typeof courseReadiness>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseReadiness<TData = Awaited<ReturnType<typeof courseReadiness>>, TError = ErrorType<Problem>>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof courseReadiness>>,
+          TError,
+          Awaited<ReturnType<typeof courseReadiness>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseReadiness<TData = Awaited<ReturnType<typeof courseReadiness>>, TError = ErrorType<Problem>>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Publish readiness: blockers and warnings with stable codes (course write
+access; 404 for invisible courses).
+ */
+
+export function useCourseReadiness<TData = Awaited<ReturnType<typeof courseReadiness>>, TError = ErrorType<Problem>>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCourseReadinessQueryOptions(id, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCourseReadinessSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof courseReadiness>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCourseReadinessQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof courseReadiness>>> = ({ signal }) =>
+    courseReadiness(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof courseReadiness>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CourseReadinessSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof courseReadiness>>>
+export type CourseReadinessSuspenseQueryError = ErrorType<Problem>
+
+export function useCourseReadinessSuspense<
+  TData = Awaited<ReturnType<typeof courseReadiness>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseReadinessSuspense<
+  TData = Awaited<ReturnType<typeof courseReadiness>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseReadinessSuspense<
+  TData = Awaited<ReturnType<typeof courseReadiness>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Publish readiness: blockers and warnings with stable codes (course write
+access; 404 for invisible courses).
+ */
+
+export function useCourseReadinessSuspense<
+  TData = Awaited<ReturnType<typeof courseReadiness>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseReadiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCourseReadinessSuspenseQueryOptions(id, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getListCourseUpdatesUrl = (id: CourseId) => {
   return `/api/v2/courses/${id}/updates`
 }

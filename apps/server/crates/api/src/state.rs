@@ -104,12 +104,14 @@ impl AppState {
                 assessments.clone(),
                 RateLimiter::new(sessions.redis()),
                 runner.clone(),
-            ),
+            )
+            .with_events(Some(events.clone())),
             file_submissions: FileSubmissionsService::new(
                 pool.clone(),
                 assessments.clone(),
                 Arc::clone(&storage),
-            ),
+            )
+            .with_events(Some(events.clone())),
             trail: TrailService::new(pool.clone(), courses.clone(), assessments.clone()),
             learner_state: LearnerStateService::new(
                 pool.clone(),

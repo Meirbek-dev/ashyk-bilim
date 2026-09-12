@@ -54,6 +54,8 @@ error_codes! {
     PreconditionFailed => ("precondition-failed", 412, "Precondition failed"),
     RateLimited => ("rate-limited", 429, "Too many requests"),
     PayloadTooLarge => ("payload-too-large", 413, "Payload too large"),
+    // Catalog
+    ActivityNotReady => ("activity-not-ready", 409, "Activity is not ready to publish"),
     ServiceUnavailable => ("service-unavailable", 503, "Service temporarily unavailable"),
     // Auth
     InvalidCredentials => ("invalid-credentials", 401, "Invalid credentials"),
@@ -63,6 +65,8 @@ error_codes! {
     AccountDisabled => ("account-disabled", 403, "Account is disabled"),
     GoogleOauthExpired => ("google-oauth-expired", 400, "Google sign-in expired or invalid"),
     InvalidTotpCode => ("invalid-totp-code", 400, "Invalid one-time code"),
+    UsernameTaken => ("username-taken", 409, "Username is already taken"),
+    EmailTaken => ("email-taken", 409, "Email is already registered"),
     // Code execution
     CodeRunnerDegraded => ("code-runner-degraded", 503, "Code runner temporarily unavailable"),
     CompileError => ("compile-error", 422, "Source code does not compile"),

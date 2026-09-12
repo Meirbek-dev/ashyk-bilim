@@ -35,6 +35,14 @@ async fn lifecycle_membership_and_course_links(pool: PgPool) {
     assert_eq!(created.status, StatusCode::CREATED);
     let id = created.json()["id"].as_str().unwrap().to_owned();
     assert_eq!(created.json()["member_count"], 0);
+    // `can_write` mirrors the server rule: creator with create, or manage.
+    assert_eq!(created.json()["can_write"], true);
+    let reader = app.mint_session(&["usergroup:read:platform"]).await;
+    let seen = app
+        .get_as(&reader, &format!("/api/v2/usergroups/{id}"))
+        .await;
+    assert_eq!(seen.status, StatusCode::OK);
+    assert_eq!(seen.json()["can_write"], false);
 
     // Members: batch add (dupes ignored), list, remove.
     let alice = app.create_user("alice", "a@example.com", &["user"]).await;
