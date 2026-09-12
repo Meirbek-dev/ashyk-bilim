@@ -65,7 +65,7 @@ testAsTeacher('teacher can analyze a submission and generate a remediation gate'
   await page.goto(`/en/dash/courses/${courseUuid()}/activity/${activityId()}/review?submission=${submissionUuid()}`)
   await page.getByRole('button', { name: 'Analyze', exact: true }).click()
 
-  await expect(page.getByText('1 knowledge gaps')).toBeVisible()
+  await expect(page.getByText('Knowledge gaps: 1')).toBeVisible()
   await expect(page.getByText('Loop condition')).toBeVisible()
   await page.getByRole('button', { name: 'Generate remediation gate' }).click()
   await expect(page.getByText('Trace the loop exit')).toBeVisible()
