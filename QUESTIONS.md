@@ -206,3 +206,33 @@ If those are stale, the new names go in `AB__AI__OPENAI_MODEL` /
 still the intended production cap? Default if unanswered: keys stay unset
 (every AI route answers 503 `ai-disabled` / draft artifacts) and the smoke
 run moves to the cutover checklist.
+
+### Q-2026-09-12-2 — Contract gaps surfaced by the pass-6 sweep (none blocking; each has a client-side interim)
+
+1. **Gradebook has no file-submission cells.** `GET /courses/{id}/gradebook` carries
+   assessment attempts only; the web renders file-submission activities as «н/д»
+   columns. Interim: `gradebookFromWire` (f101e80).
+2. **No course-wide grading stream.** Only `GET /submissions/{id}/events` exists; the
+   gradebook polls every 15 s while visible. A `courses/{id}/grading/events` stream
+   would make F27 real-time.
+3. **No gradebook export route.** CSV is built client-side from the loaded matrix.
+4. **Analytics prose in English.** `AlertItem.body`, `ForecastItem.prediction`,
+   `AnomalyItem.title`, `insights[].title` are server-composed English; the client
+   rebuilds every rendered sentence from `kind` + structured fields and ignores the
+   prose. `grading_slo` bodies lose the course name / oldest age. Either localize
+   server-side by locale header or drop the prose fields.
+5. **No certificate download/PDF route** (`/certificates/{code}`, `/courses/{id}/certificates/me`,
+   `/me/certificates` only). The trail control reads «Просмотреть сертификат».
+6. **No per-user course list.** `UserProfile`/`UserHit` carry none; the profile derives
+   authored courses from the catalogue (`courses?limit=100`, capped).
+7. **No AI analysis/remediation for file-submission attempts** (`SubmissionId` only).
+8. **`Usergroup` has `creator_id` but no `can_write`**; the client mirrors the server
+   rule (`usergroup:manage:platform` or creator + `usergroup:create:platform`).
+9. **Publishing a file-submission activity does not require a published config**; the
+   learner gets a 404 that the client renders as «Задание ещё не настроено».
+10. **Google sign-in error redirect** is host-relative (`/auth/login?error=…`); correct
+    behind the production nginx (same origin), but from a separate API origin it lands
+    on the API. Local-only unless the API is ever served cross-origin.
+11. **Kazakh dates in Chromium builds without kk ICU data** render as «2026 M09 12»
+    (Playwright's Chromium and the embedded pane; Firefox and Node format correctly).
+    Not an app defect; worth knowing when a kk user reports it.
