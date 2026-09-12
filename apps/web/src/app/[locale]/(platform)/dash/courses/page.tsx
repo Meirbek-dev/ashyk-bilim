@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { General } = getStaticMetadataMessages(locale)
 
   return {
-    title: `${General.courses} - ${APP_NAME}`,
+    title: General.courses,
     description: APP_DESCRIPTION,
     keywords: `${APP_NAME}, ${APP_DESCRIPTION}, ${General.courses}, ${General.learning}, ${General.education}, ${General.onlineLearning}, edu, ${General.onlineCourses}, ${APP_NAME} ${General.courses}`,
     robots: {
@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       },
     },
     openGraph: {
-      title: `${General.courses} - ${APP_NAME}`,
+      title: General.courses,
       description: APP_DESCRIPTION,
       type: 'website',
     },
