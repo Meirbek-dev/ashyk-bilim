@@ -841,40 +841,23 @@
     }
   },
   "Auth": {
-    "Layout": {
-      "accessFromOrg": "Please access this page from an organization",
-      "orgNotSpecified": "Organization not specified"
-    },
     "Login": {
       "email": "Email",
-      "emailAddress": "Email address",
       "emailPlaceholder": "Enter your email",
-      "signInToAcme": "Sign in to Acme",
-      "welcomeBack": "Welcome back! Please enter your details.",
-      "resetPassword": "Reset password",
-      "rememberMe": "Remember me",
       "signIn": "Sign In",
-      "sso": "Single sign-on (SSO)",
-      "newToAcme": "New to Acme?",
-      "forgotPassword": "Forgot Password?",
       "hidePassword": "Hide password",
       "loading": "Loading...",
       "login": "Login",
-      "loginTo": "Login to",
       "or": "OR",
       "password": "Password",
       "passwordPlaceholder": "Enter your password",
       "showPassword": "Show password",
       "signInWithGoogle": "Sign in with Google",
       "signup": "Sign up",
-      "title": "Login",
-      "sessionExpired": "Your session expired. Please sign in again.",
-      "sessionRevoked": "Your session was revoked. Please sign in again.",
-      "sessionRecoveryFailed": "We could not recover your session. Please sign in again.",
+      "title": "Login - Ashyk Bilim",
       "wrongCredentials": "Wrong email or password",
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
       "rateLimited": "Too many attempts. Please try again later.",
-      "loginTitle": "Login",
       "noAccount": "No account yet?",
       "loginIdentifier": "Email or username",
       "loginIdentifierPlaceholder": "Enter your email or username",
@@ -885,8 +868,7 @@
       "backToPassword": "Back to login",
       "accountDisabled": "This account is disabled. Contact an administrator.",
       "invalidTotpCode": "Invalid one-time code.",
-      "googleCancelled": "Google sign-in was cancelled.",
-      "noAccountHint": "Accounts are created by the platform administrator. Sign in with Google if your address is already registered."
+      "googleCancelled": "Google sign-in was cancelled."
     },
     "hidePassword": "Hide password",
     "password": "Password",
@@ -910,7 +892,7 @@
       "submit": "Sign up",
       "submitting": "Creating your account...",
       "success": "Account created",
-      "successDescription": "We sent a verification code to your email. You can sign in now.",
+      "successDescription": "Your account is ready to use — you can sign in right away. An email verification code has been sent to your address.",
       "failed": "Could not create the account. Please try again.",
       "haveAccount": "Already have an account?",
       "login": "Sign in"
@@ -2839,6 +2821,12 @@
       "voteFailed": "Could not save your vote",
       "deleteFailed": "Could not delete the message",
       "updateFailed": "Could not save the changes"
+    },
+    "toasts": {
+      "posted": "Message posted",
+      "replied": "Reply sent",
+      "edited": "Changes saved",
+      "deleted": "Message deleted"
     }
   },
   "Courses": {
@@ -6280,7 +6268,10 @@
           "newPasswordRejected": "The new password does not meet the requirements.",
           "required": "This field is required.",
           "passwordTooShort": "The password must be at least 8 characters.",
-          "passwordsDoNotMatch": "The passwords do not match."
+          "passwordsDoNotMatch": "The passwords do not match.",
+          "revokeConfirmTitle": "End this session?",
+          "revokeConfirmDescription": "The device will be signed out and asked to log in again on its next action.",
+          "revokeCancel": "Cancel"
         }
       },
       "gamification": "Gamification Settings",
@@ -6697,7 +6688,9 @@
         "title": "Manage UserGroups & Users",
         "userGroupDeletedSuccess": "Deleted usergroup",
         "userGroupHeader": "UserGroup",
-        "loading": "Loading groups…"
+        "loading": "Loading groups…",
+        "editUserGroupModalTitle": "Edit UserGroup",
+        "editUserGroupModalDescription": "Change the name and description of this UserGroup"
       },
       "usergroupsTitle": "UserGroups",
       "users": "Users",
@@ -6762,6 +6755,10 @@
     "activityUnavailableMessage": "This activity is not published yet. Go back to the course to continue.",
     "courseNotFound": "Course Not Found",
     "courseNotFoundMessage": "The course you are looking for does not exist or has been removed.",
+    "collectionNotFound": "Collection not found",
+    "collectionNotFoundMessage": "The collection you are looking for does not exist or has been removed.",
+    "userNotFound": "User not found",
+    "userNotFoundMessage": "There is no user with that name, or the profile has been removed.",
     "backToCourse": "Back to Course",
     "backToDashboard": "Back to Dashboard",
     "courseLoadErrorTitle": "Course failed to load",
@@ -7645,7 +7642,7 @@
       "emptyMessage": "No at-risk learners are visible for the current filters.",
       "interventionLogged": "Intervention logged",
       "interventionLogFailed": "Failed to log intervention",
-      "gradeSubmissions": "Grade {count, plural, one {# pending submission} other {# pending submissions}} →",
+      "gradeSubmissions": "Grade {count, plural, one {# pending submission} other {# pending submissions}}",
       "riskComponents": {
         "inactivity": "Inactivity",
         "progress": "Progress gap",
@@ -8516,7 +8513,9 @@
           "selectMatch": "Select match",
           "matchForLabel": "Match for: {term}",
           "removePair": "Remove pair",
-          "addPair": "Add pair"
+          "addPair": "Add pair",
+          "correct": "Correct",
+          "noAnswer": "No answer"
         },
         "OpenText": {
           "title": "Open text item",
@@ -10073,7 +10072,7 @@
     "stepsProgress": "{completed} / {total, plural, one {# step} other {# steps}}",
     "viewCertificate": "View Certificate",
     "quitCourseConfirmTitle": "Quit “{course}”?",
-    "quitCourseConfirmDescription": "All your progress in this course will be removed. This cannot be undone.",
+    "quitCourseConfirmDescription": "Lesson completion marks will be reset; submitted work and grades are kept. This cannot be undone.",
     "quitCourseCancel": "Stay",
     "quitCourseDone": "You left “{course}”",
     "quitCourseFailed": "Could not quit the course. Please try again later."
@@ -10426,7 +10425,13 @@
     "publishSuccess": "File submission published",
     "publishError": "Unable to publish file submission",
     "fixInstructionsBeforeSaving": "Fix the instruction content before saving",
-    "fixInstructionsBeforePublishing": "Fix the instruction content before publishing"
+    "fixInstructionsBeforePublishing": "Fix the instruction content before publishing",
+    "published": "Published",
+    "lifecycle": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    }
   },
   "AIConfidenceMeter": {
     "high": "High confidence",
@@ -10505,7 +10510,8 @@
     "resultShell": {
       "modelRecorded": "Model: {name}",
       "modelNotRecorded": "Model: not recorded",
-      "citationsCount": "Citations: {count}"
+      "citationsCount": "Citations: {count}",
+      "draftModeModel": "draft mode (no model)"
     },
     "states": {
       "labels": {
@@ -10633,7 +10639,8 @@
       "cancelPublish": "Keep reviewing",
       "confirmPublish": "Publish reviewed score",
       "contentChanged": "Course content changed since this review",
-      "previousScore": "Previous review score: {score}"
+      "previousScore": "Previous review score: {score}",
+      "draftModeModel": "draft mode (no model)"
     },
     "submissionAIEntry": {
       "title": "AI submission insight",
@@ -10645,7 +10652,7 @@
       "emptyDescription": "Run an analysis to see knowledge gaps and evidence for this submission."
     },
     "submissionAnalysisResultShell": {
-      "title": "{count} knowledge gaps",
+      "title": "Knowledge gaps: {count}",
       "defaultDescription": "Submission analysis is ready.",
       "severities": {
         "low": "Low",

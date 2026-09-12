@@ -8,8 +8,8 @@ import type {
   AdminUser,
   AdminUserPage,
   CoursePage,
-  SearchResults,
   UpdateProfileRequest,
+  UserHit,
   UserProfile as UserProfileType,
 } from '@/lib/api/generated/zod'
 import { uploadFile } from '@/services/media/uploads'
@@ -45,7 +45,7 @@ export interface PublicUser {
   username: string
 }
 
-function toPublicUser(user: SearchResults['users'][number] | AdminUser): PublicUser {
+function toPublicUser(user: UserHit | AdminUser): PublicUser {
   return {
     id: user.id,
     username: user.username,
@@ -60,11 +60,9 @@ function toPublicUser(user: SearchResults['users'][number] | AdminUser): PublicU
   }
 }
 
+/** `GET /users/{username}`: the public card (404 → rejects like any API error). */
 export async function getUserByUsername(username: string): Promise<PublicUser> {
-  const results = await apiJson<SearchResults>(`search?q=${encodeURIComponent(username)}&limit=20`)
-  const user = results.users.find(candidate => candidate.username.toLowerCase() === username.toLowerCase())
-  if (!user) throw new Error(`User ${username} was not found`)
-  return toPublicUser(user)
+  return toPublicUser(await apiJson<UserHit>(`users/${encodeURIComponent(username)}`))
 }
 
 export async function getUserById(userId: string): Promise<PublicUser> {

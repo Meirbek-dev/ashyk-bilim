@@ -65,7 +65,6 @@ export async function createFileActivity(
       ...(data.details ? { details: data.details } : {}),
     },
     chapterId,
-    data.course_uuid ? { courseUuid: data.course_uuid } : undefined,
   )
 
   await apiJson(

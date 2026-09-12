@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { apiJson, apiResult } from '@/lib/api-client'
+import { APIError } from '@/lib/api/assertSuccess'
 import { getUserByUsername } from '@/services/users/users'
 import { linkResourcesToUserGroup, linkUserToUserGroup, unLinkUserToUserGroup } from '@/services/usergroups/usergroups'
 import { createCertification, getCertificateByCode, updateCertification } from '@/services/courses/certifications'
@@ -33,15 +34,16 @@ const runQuery = <T>(options: { queryFn?: unknown }) => (options.queryFn as () =
 beforeEach(() => vi.resetAllMocks())
 
 describe('users (v2)', () => {
-  it('resolves a public profile through GET /search with a UUID id', async () => {
-    vi.mocked(apiJson).mockResolvedValue({
-      courses: [],
-      collections: [],
-      users: [{ id: user, username: 'teacher', display_name: 'Daniyar Teacher', avatar_key: 'a/b.png' }],
-    })
+  it('resolves a public profile through GET /users/{username} (anonymous-readable card)', async () => {
+    vi.mocked(apiJson).mockResolvedValue({ id: user, username: 'teacher', display_name: 'Daniyar Teacher', avatar_key: 'a/b.png' })
     const profile = await getUserByUsername('Teacher')
-    expect(apiJson).toHaveBeenCalledWith('search?q=Teacher&limit=20')
+    expect(apiJson).toHaveBeenCalledWith('users/Teacher')
     expect(profile).toMatchObject({ id: user, username: 'teacher', first_name: 'Daniyar Teacher', avatar_key: 'a/b.png' })
+  })
+
+  it('maps an unknown username (404) to null, not a load failure', async () => {
+    vi.mocked(apiJson).mockRejectedValue(new APIError({ code: 'not-found', message: 'user', status: 404 }))
+    await expect(getUserByUsername('nobody')).resolves.toBeNull()
   })
 })
 

@@ -158,17 +158,10 @@ function UserGroups() {
             dialogTitle={t('manageUsersModalTitle')}
             dialogDescription={t('manageUsersModalDescription')}
             dialogTrigger={
-              <span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleOpenModal('manage', row.original)}
-                  type="button"
-                >
-                  <Users className="size-3.5" />
-                  {t('manageUsersButton')}
-                </Button>
-              </span>
+              <Button variant="outline" size="sm" onClick={() => handleOpenModal('manage', row.original)} type="button">
+                <Users className="size-3.5" />
+                {t('manageUsersButton')}
+              </Button>
             }
           />
         ) : (
@@ -188,20 +181,15 @@ function UserGroups() {
                 if (!isOpen) handleCloseModal('edit')
               }}
               dialogTrigger={
-                <span>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleOpenModal('edit', row.original)}
-                    type="button"
-                  >
-                    <Pencil className="size-3.5" />
-                    {t('editButton')}
-                  </Button>
-                </span>
+                <Button variant="secondary" size="sm" onClick={() => handleOpenModal('edit', row.original)} type="button">
+                  <Pencil className="size-3.5" />
+                  {t('editButton')}
+                </Button>
               }
               minHeight="sm"
               minWidth="sm"
+              dialogTitle={t('editUserGroupModalTitle')}
+              dialogDescription={t('editUserGroupModalDescription')}
               dialogContent={
                 selectedUserGroup ? (
                   <EditUserGroup
@@ -210,6 +198,7 @@ function UserGroups() {
                       name: selectedUserGroup.name ?? '',
                       description: selectedUserGroup.description ?? '',
                     }}
+                    onSaved={() => handleCloseModal('edit')}
                   />
                 ) : null
               }
@@ -240,12 +229,10 @@ function UserGroups() {
                 dialogTitle={t('createUserGroupModalTitle')}
                 dialogDescription={t('createUserGroupModalDescription')}
                 dialogTrigger={
-                  <span>
-                    <Button size="sm">
-                      <SquareUserRound className="size-3.5" />
-                      {t('createUserGroupButton')}
-                    </Button>
-                  </span>
+                  <Button size="sm" type="button">
+                    <SquareUserRound className="size-3.5" />
+                    {t('createUserGroupButton')}
+                  </Button>
                 }
               />
             </CardAction>

@@ -155,7 +155,7 @@ function LeaderboardRow({
       {/* Avatar */}
       <GamifiedUserAvatar
         size="md"
-        {...(entry.avatar_url ? { avatar_url: entry.avatar_url } : {})}
+        avatar_url={entry.avatar_url}
         {...(entry.username ? { username: entry.username } : {})}
         userId={entry.user_id}
         showProfilePopup

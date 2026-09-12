@@ -45,11 +45,16 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
-  const isStarted =
+  const hasTrailRun = Boolean(
     trailData?.runs?.find((activeRun: AppTrailRun) => {
       const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
-    }) ?? false
+    }),
+  )
+  // The wire decides: `learner-state.enrolled` also counts a learner who left
+  // but keeps submissions (leaving only resets lesson completions), so the
+  // landing must not offer «Начать курс» to someone the server calls enrolled.
+  const isStarted = learnerState?.enrolled ?? hasTrailRun
 
   const handleCourseAction = async () => {
     if (!currentUser) {
@@ -59,6 +64,12 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
 
     // If already started, navigate to first unfinished activity
     if (isStarted) {
+      // Enrolled on the wire but no trail run (left with submissions): bring
+      // the run back so `/trail` lists the course again.
+      if (!hasTrailRun) {
+        await startCourse(`course_${courseuuid}`).catch(() => undefined)
+        await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+      }
       const { completedIds } = learnerCourseProgress(learnerState)
 
       // Find first unfinished activity

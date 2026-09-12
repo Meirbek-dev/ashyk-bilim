@@ -61,4 +61,34 @@ describe('buildDashboardWorkQueue', () => {
     const admin = queue.sections.find(section => section.audience === 'admin')
     expect(admin?.items.map(item => item.id)).toContain('user-access-audit')
   })
+
+  // Critic 9: a quiz draft with no due date was tagged «Скоро срок».
+  it('tags an in-progress item «due soon» only when it has a due date', () => {
+    const base = {
+      kind: 'in_progress',
+      status: 'draft',
+      priority: 'normal' as const,
+      title: 'Столицы',
+      description: '',
+      href: '/x',
+      primary_action: 'go',
+    }
+    const queue = buildDashboardWorkQueue({
+      access: { hasCoursesAccess: false, hasAnalyticsAccess: false, hasUsersAccess: false, hasAdminAccess: false },
+      courseSummary: null,
+      teacherSignal: null,
+      adminSignal: null,
+      learnerSignal: {
+        signalAvailable: true,
+        items: [
+          { ...base, id: 'no-due', due_at: null },
+          { ...base, id: 'due', due_at: '2026-09-13T00:00:00.000Z' },
+          { ...base, id: 'overdue', kind: 'overdue', due_at: '2026-09-10T00:00:00.000Z' },
+        ],
+      },
+      t,
+    })
+    const labels = Object.fromEntries(queue.sections[0]!.items.map(item => [item.id, item.groupLabel]))
+    expect(labels).toEqual({ 'no-due': undefined, due: 't:groups.dueSoon', overdue: 't:groups.today' })
+  })
 })

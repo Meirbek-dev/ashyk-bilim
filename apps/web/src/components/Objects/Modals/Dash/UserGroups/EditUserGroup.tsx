@@ -18,6 +18,8 @@ interface EditUserGroupProps {
     name: string
     description: string
   }
+  /** Called after a successful save — the dialog closes like the create one. */
+  onSaved: () => void
 }
 
 const createValidationSchema = (t: (key: string) => string) =>
@@ -45,10 +47,11 @@ function EditUserGroup(props: EditUserGroupProps) {
   const handleSubmit = async (values: UserGroupFormValues) => {
     try {
       await updateUserGroup(props.usergroup.id, values)
-      toast.success(t('toastSuccess'))
       await queryClient.invalidateQueries({
         queryKey: queryKeys.userGroups.all(),
       })
+      props.onSaved()
+      toast.success(t('toastSuccess'))
     } catch {
       toast.error(t('toastError'))
     }

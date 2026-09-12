@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 
 import { ChoiceItemAttempt } from '@/features/assessments/items/choice'
 import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice'
+import { MatchingItemAttempt } from '@/features/assessments/items/matching'
+import type { MatchingAnswer, MatchingBody } from '@/features/assessments/items/matching'
 import { MarkdownContent } from '@/features/content-markdown'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { Button } from '@components/ui/button'
@@ -39,21 +41,31 @@ function getAnswerOptionId(option: QuestionData['answer_options'][number], visua
   return typeof option.option_id === 'string' || typeof option.option_id === 'number' ? option.option_id : visualIndex
 }
 
-function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
-  if (question.question_type === 'MATCHING') {
-    return {
-      id: question.id,
-      kind: 'MATCHING',
-      prompt: question.question_text,
-      points: question.points,
-      pairs: question.answer_options.map((option, index) => ({
-        id: option.option_id ?? index,
-        left: option.left ?? '',
-        right: option.right ?? '',
-      })),
-    }
+// The learner's matching item: rows are the left column, options the right
+// one (server order); ids equal texts on the learner read. The exam keeps the
+// answer as `{ left: right }`, the item module as `{ matches }`.
+function toMatchingBody(question: QuestionData): MatchingBody {
+  const option = (text: string) => ({ id: text, text })
+  return {
+    kind: 'MATCHING',
+    prompt: '',
+    pairs: [],
+    left: question.answer_options.map(o => option(o.left ?? '')),
+    right: question.answer_options.map(o => option(o.right ?? '')),
   }
+}
 
+function toMatchingAnswer(answer: unknown): MatchingAnswer | null {
+  if (!answer || typeof answer !== 'object' || Array.isArray(answer)) return null
+  return {
+    kind: 'MATCHING',
+    matches: Object.entries(answer as Record<string, string>)
+      .filter(([, right]) => typeof right === 'string' && right.length > 0)
+      .map(([left, right]) => ({ left, right })),
+  }
+}
+
+function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
   return {
     id: question.id,
     kind:
@@ -129,11 +141,21 @@ export default function ExamQuestionCard({
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <ChoiceItemAttempt
-          item={toChoiceItem(question)}
-          answer={answer[questionId] as ChoiceAnswer}
-          onAnswerChange={nextAnswer => onAnswerChange(questionId, nextAnswer)}
-        />
+        {question.question_type === 'MATCHING' ? (
+          <MatchingItemAttempt
+            item={toMatchingBody(question)}
+            answer={toMatchingAnswer(answer[questionId])}
+            onAnswerChange={next =>
+              onAnswerChange(questionId, Object.fromEntries((next?.matches ?? []).map(m => [m.left, m.right])))
+            }
+          />
+        ) : (
+          <ChoiceItemAttempt
+            item={toChoiceItem(question)}
+            answer={answer[questionId] as ChoiceAnswer}
+            onAnswerChange={nextAnswer => onAnswerChange(questionId, nextAnswer)}
+          />
+        )}
       </CardContent>
     </Card>
   )

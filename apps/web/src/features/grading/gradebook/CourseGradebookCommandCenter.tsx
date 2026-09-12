@@ -165,6 +165,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
         data={data}
         filters={filters}
         activityTypes={activityTypes}
+        visibleStudentCount={visibleStudents.length}
         onFiltersChange={handleFiltersChange}
         onExport={() => {
           void downloadGradebookCsv(courseUuid, locale)

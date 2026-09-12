@@ -45,8 +45,11 @@ function Header({ action }: { action?: React.ReactNode }) {
     <CardHeader>
       <CardTitle>{title}</CardTitle>
       {description ? <CardDescription>{description}</CardDescription> : null}
-      <CardAction className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">{t(state)}</Badge>
+      <CardAction className="flex max-w-full flex-wrap items-center justify-end gap-2">
+        {/* «Требует проверки преподавателем» must wrap in the narrow dock column, not clip. */}
+        <Badge variant="secondary" className="h-auto text-right whitespace-normal">
+          {t(state)}
+        </Badge>
         <AIConfidenceMeter confidence={confidence} />
         {action}
       </CardAction>
@@ -72,10 +75,23 @@ function AuditMetadata() {
   const t = useTranslations('AiExperience.resultShell')
   return (
     <CardContent className="text-muted-foreground flex flex-wrap gap-2 text-xs">
-      <span>{modelName ? t('modelRecorded', { name: modelName }) : t('modelNotRecorded')}</span>
+      <span>{modelLabel(t, modelName)}</span>
       <span>{t('citationsCount', { count: citations?.length ?? 0 })}</span>
     </CardContent>
   )
+}
+
+/**
+ * `Модель: …` — the server records `draft-mode` (`DRAFT_MODEL`, no LLM
+ * configured) as the model name; that is a state, not a model, and reads
+ * as its localized label.
+ */
+export function modelLabel(
+  t: (key: string, values?: Record<string, string>) => string,
+  modelName: string | null | undefined,
+): string {
+  if (!modelName) return t('modelNotRecorded')
+  return t('modelRecorded', { name: modelName === 'draft-mode' ? t('draftModeModel') : modelName })
 }
 
 export const AIResultShell = {

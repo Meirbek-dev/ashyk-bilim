@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { formatPercent } from '@/features/assessments/domain/score'
+import { localizeItemFeedback } from '@/features/grading/domain/status'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import type { LearnerCourseState } from '@/features/learner-course/api'
 
@@ -40,8 +40,13 @@ export default function AttemptResultCard({
   onStartRevision,
 }: AttemptResultCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
+  const tGrading = useTranslations('Features.Grading')
   const format = useFormatter()
   const [breakdownOpen, setBreakdownOpen] = useState(false)
+  // One number format on the card: the breakdown already goes through
+  // `format.number`, so the headline percent must too («66,67%», not «66.67%»).
+  const formatPercent = (percent: number | null) =>
+    percent === null ? '--' : `${format.number(percent, { maximumFractionDigits: 2 })}%`
 
   const { isResultVisible, score, isReturnedForRevision, canStartRevision, canSubmit } = vm
   const latestPct = score.percent
@@ -135,11 +140,31 @@ export default function AttemptResultCard({
             <div className="border-border divide-border divide-y border-t text-sm">
               {vm.items.map((item, i) => {
                 const graded = vm.itemScores[item.id]
-                const maxScore = graded?.maxScore ?? item.max_score
+                const maxScore = graded?.max_score ?? item.max_score
+                // The auto-grader's verdict (localized from `feedback_code`) or
+                // the teacher's prose — the same text the teacher review shows.
+                const verdict = graded ? localizeItemFeedback(graded, tGrading) : ''
                 return (
                   <div key={item.id} className="flex items-center justify-between px-4 py-2">
-                    <span className="text-muted-foreground line-clamp-2 flex-1 pr-4">
-                      {i + 1}. {item.title}
+                    <span className="min-w-0 flex-1 pr-4">
+                      <span className="text-muted-foreground line-clamp-2">
+                        {i + 1}. {item.title}
+                      </span>
+                      {verdict ? (
+                        <span
+                          className={cn(
+                            'mt-0.5 block text-xs',
+                            graded?.correct === true
+                              ? 'text-primary'
+                              : graded?.correct === false
+                                ? 'text-destructive'
+                                : 'text-muted-foreground',
+                          )}
+                          data-testid={`item-verdict-${item.id}`}
+                        >
+                          {verdict}
+                        </span>
+                      ) : null}
                     </span>
                     <span
                       className="text-muted-foreground shrink-0 text-xs tabular-nums"

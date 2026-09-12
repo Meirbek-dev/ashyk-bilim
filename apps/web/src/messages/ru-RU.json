@@ -841,38 +841,23 @@
     }
   },
   "Auth": {
-    "Layout": {
-      "accessFromOrg": "Получите доступ к этой странице",
-      "orgNotSpecified": "Ошибка"
-    },
     "Login": {
       "email": "Электронная почта",
-      "emailAddress": "Адрес электронной почты",
       "emailPlaceholder": "Введите ваш email",
-      "forgotPassword": "Забыли пароль?",
       "hidePassword": "Скрыть пароль",
       "loading": "Загрузка...",
       "login": "Войти",
-      "loginTo": "Войти в",
       "or": "ИЛИ",
       "password": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
-      "rememberMe": "Запомнить меня",
-      "resetPassword": "Сбросить пароль",
       "showPassword": "Показать пароль",
       "signIn": "Войти",
       "signInWithGoogle": "Войти с помощью Google",
       "signup": "Зарегистрироваться",
-      "sso": "Единый вход (SSO)",
       "title": "Вход - Ashyk Bilim",
-      "welcomeBack": "С возвращением! Пожалуйста, введите ваши данные.",
-      "sessionExpired": "Сеанс истек. Пожалуйста, войдите снова.",
-      "sessionRevoked": "Ваш сеанс был отозван. Пожалуйста, войдите снова.",
-      "sessionRecoveryFailed": "Не удалось восстановить сеанс. Пожалуйста, войдите снова.",
       "wrongCredentials": "Неверный адрес электронной почты или пароль",
       "serviceUnavailable": "Сервис временно недоступен. Пожалуйста, попробуйте ещё раз.",
       "rateLimited": "Слишком много попыток. Пожалуйста, попробуйте позже.",
-      "loginTitle": "Войти",
       "noAccount": "Нет аккаунта?",
       "loginIdentifier": "Электронная почта или имя пользователя",
       "loginIdentifierPlaceholder": "Введите почту или имя пользователя",
@@ -883,8 +868,7 @@
       "backToPassword": "Назад ко входу",
       "accountDisabled": "Учётная запись отключена. Обратитесь к администратору.",
       "invalidTotpCode": "Неверный одноразовый код.",
-      "googleCancelled": "Вход через Google отменён.",
-      "noAccountHint": "Учётные записи создаёт администратор платформы. Войдите через Google, если ваш адрес уже зарегистрирован."
+      "googleCancelled": "Вход через Google отменён."
     },
     "hidePassword": "Скрыть пароль",
     "password": "Пароль",
@@ -908,7 +892,7 @@
       "submit": "Зарегистрироваться",
       "submitting": "Создаём аккаунт...",
       "success": "Аккаунт создан",
-      "successDescription": "Мы отправили код подтверждения на вашу почту. Теперь можно войти.",
+      "successDescription": "Аккаунт готов к использованию — можно войти прямо сейчас. Код для подтверждения почты отправлен на ваш адрес.",
       "failed": "Не удалось создать аккаунт. Попробуйте ещё раз.",
       "haveAccount": "Уже есть аккаунт?",
       "login": "Войти"
@@ -2835,6 +2819,12 @@
       "voteFailed": "Не удалось сохранить голос",
       "deleteFailed": "Не удалось удалить сообщение",
       "updateFailed": "Не удалось сохранить изменения"
+    },
+    "toasts": {
+      "posted": "Сообщение опубликовано",
+      "replied": "Ответ отправлен",
+      "edited": "Изменения сохранены",
+      "deleted": "Сообщение удалено"
     }
   },
   "Courses": {
@@ -6278,7 +6268,10 @@
           "newPasswordRejected": "Новый пароль не соответствует требованиям.",
           "required": "Обязательное поле.",
           "passwordTooShort": "Пароль должен содержать не менее 8 символов.",
-          "passwordsDoNotMatch": "Пароли не совпадают."
+          "passwordsDoNotMatch": "Пароли не совпадают.",
+          "revokeConfirmTitle": "Завершить сессию?",
+          "revokeConfirmDescription": "Устройство будет выведено из аккаунта и при следующем действии попросит войти снова.",
+          "revokeCancel": "Отмена"
         }
       },
       "gamification": "Настройки геймификации",
@@ -6695,7 +6688,9 @@
         "title": "Управление группами пользователей",
         "userGroupDeletedSuccess": "Группа пользователей удалена",
         "userGroupHeader": "Группа пользователей",
-        "loading": "Загрузка групп…"
+        "loading": "Загрузка групп…",
+        "editUserGroupModalTitle": "Редактировать группу пользователей",
+        "editUserGroupModalDescription": "Изменить название и описание группы"
       },
       "usergroupsTitle": "Группы пользователей",
       "users": "Пользователи",
@@ -6760,6 +6755,10 @@
     "activityUnavailableMessage": "Эта активность ещё не опубликована. Вернитесь к курсу, чтобы продолжить.",
     "courseNotFound": "Курс не найден",
     "courseNotFoundMessage": "Запрашиваемый курс не существует или был удален.",
+    "collectionNotFound": "Коллекция не найдена",
+    "collectionNotFoundMessage": "Запрашиваемая коллекция не существует или была удалена.",
+    "userNotFound": "Пользователь не найден",
+    "userNotFoundMessage": "Пользователя с таким именем нет или профиль был удалён.",
     "backToCourse": "Вернуться к курсу",
     "backToDashboard": "В панель управления",
     "courseLoadErrorTitle": "Не удалось загрузить курс",
@@ -7658,7 +7657,7 @@
       "emptyMessage": "Нет учащихся в зоне риска для текущих фильтров.",
       "interventionLogged": "Мера поддержки зафиксирована",
       "interventionLogFailed": "Не удалось зафиксировать меру поддержки",
-      "gradeSubmissions": "Проверить {count, plural, one {# работу} few {# работы} other {# работ}} →",
+      "gradeSubmissions": "Проверить {count, plural, one {# работу} few {# работы} other {# работ}}",
       "riskComponents": {
         "inactivity": "Неактивность",
         "progress": "Отставание",
@@ -9137,7 +9136,9 @@
           "selectMatch": "Выберите соответствие",
           "matchForLabel": "Соответствие для: {term}",
           "removePair": "Удалить пару",
-          "addPair": "Добавить пару"
+          "addPair": "Добавить пару",
+          "correct": "Верно",
+          "noAnswer": "Ответ не дан"
         },
         "OpenText": {
           "title": "Элемент с открытым ответом",
@@ -10085,7 +10086,7 @@
     "stepsProgress": "{completed} / {total, plural, one {# шаг} few {# шага} other {# шагов}}",
     "viewCertificate": "Просмотреть сертификат",
     "quitCourseConfirmTitle": "Покинуть курс «{course}»?",
-    "quitCourseConfirmDescription": "Весь прогресс по этому курсу будет удалён. Это действие нельзя отменить.",
+    "quitCourseConfirmDescription": "Отметки о прохождении уроков будут сброшены; отправленные работы и оценки сохранятся. Это действие нельзя отменить.",
     "quitCourseCancel": "Остаться",
     "quitCourseDone": "Вы покинули курс «{course}»",
     "quitCourseFailed": "Не удалось покинуть курс. Пожалуйста, повторите попытку позже."
@@ -10438,7 +10439,13 @@
     "publishSuccess": "Отправка файлов опубликована",
     "publishError": "Не удалось опубликовать отправку файлов",
     "fixInstructionsBeforeSaving": "Исправьте инструкции перед сохранением",
-    "fixInstructionsBeforePublishing": "Исправьте инструкции перед публикацией"
+    "fixInstructionsBeforePublishing": "Исправьте инструкции перед публикацией",
+    "published": "Опубликовано",
+    "lifecycle": {
+      "draft": "Черновик",
+      "published": "Опубликовано",
+      "archived": "В архиве"
+    }
   },
   "AIConfidenceMeter": {
     "high": "Высокая уверенность",
@@ -10517,7 +10524,8 @@
     "resultShell": {
       "modelRecorded": "Модель: {name}",
       "modelNotRecorded": "Модель: не записана",
-      "citationsCount": "Цитаты: {count}"
+      "citationsCount": "Цитаты: {count}",
+      "draftModeModel": "черновой режим (без модели)"
     },
     "states": {
       "labels": {
@@ -10645,7 +10653,8 @@
       "cancelPublish": "Продолжить проверку",
       "confirmPublish": "Опубликовать оценку",
       "contentChanged": "Материалы курса изменились после этой проверки",
-      "previousScore": "Оценка предыдущей проверки: {score}"
+      "previousScore": "Оценка предыдущей проверки: {score}",
+      "draftModeModel": "черновой режим (без модели)"
     },
     "submissionAIEntry": {
       "title": "ИИ-анализ отправки",
@@ -10657,7 +10666,7 @@
       "emptyDescription": "Запустите анализ, чтобы увидеть пробелы в знаниях и подтверждения по этой работе."
     },
     "submissionAnalysisResultShell": {
-      "title": "пробелов в знаниях: {count}",
+      "title": "Пробелов в знаниях: {count}",
       "defaultDescription": "Анализ работы готов.",
       "severities": {
         "low": "Низкая",

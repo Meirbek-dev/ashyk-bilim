@@ -9,6 +9,7 @@ import { startCourse } from '@services/courses/activity'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import type { LearnerCourseState } from '@/features/learner-course/api'
 
 import { Button } from '@/components/ui/button'
 import UserAvatar from '../../UserAvatar'
@@ -53,6 +54,7 @@ interface CourseActionsMobileProps {
   courseuuid: string
   course: Course
   trailData?: AppTrailData | null | undefined
+  learnerState?: LearnerCourseState | null | undefined
 }
 
 // Component for displaying multiple authors
@@ -133,7 +135,7 @@ function MultipleAuthors({ authors }: { authors: Author[] }) {
   )
 }
 
-function CourseActionsMobile({ courseuuid, course, trailData }: CourseActionsMobileProps) {
+function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: CourseActionsMobileProps) {
   const t = useTranslations('Courses.CourseActionsMobile')
   const router = useRouter()
   const { user: currentUser } = useSession()
@@ -143,11 +145,14 @@ function CourseActionsMobile({ courseuuid, course, trailData }: CourseActionsMob
   // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
-  const isStarted =
+  const hasTrailRun = Boolean(
     trailData?.runs?.find((run: AppTrailRun) => {
       const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
-    }) ?? false
+    }),
+  )
+  // Same rule as CoursesActions: the wire's `enrolled` wins over the trail run.
+  const isStarted = learnerState?.enrolled ?? hasTrailRun
 
   const handleCourseAction = async () => {
     if (!currentUser) {
@@ -157,6 +162,10 @@ function CourseActionsMobile({ courseuuid, course, trailData }: CourseActionsMob
 
     // If already started, navigate to first unfinished activity
     if (isStarted) {
+      if (!hasTrailRun) {
+        await startCourse(`course_${courseuuid}`).catch(() => undefined)
+        await revalidateTags(['courses'])
+      }
       const run = trailData?.runs?.find((r: AppTrailRun) => {
         const cleanRunCourseUuid = r.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid

@@ -8,6 +8,8 @@ import AppLink from '@/components/ui/AppLink'
 import { Layers } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Badge } from '@/components/ui/badge'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
+import { isApiError } from '@/lib/api/assertSuccess'
 
 interface MetadataProps {
   params: Promise<{ locale: string; collectionid: string }>
@@ -16,7 +18,16 @@ interface MetadataProps {
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params
   const t = await getTranslations({ locale: params.locale, namespace: 'General' })
-  const col = await getCollectionById(params.collectionid)
+  let col
+  try {
+    col = await getCollectionById(params.collectionid)
+  } catch (error) {
+    if (isApiError(error) && error.status === 404) {
+      const tErrors = await getTranslations({ locale: params.locale, namespace: 'Errors' })
+      return { title: `${tErrors('collectionNotFound')} - ${APP_NAME}`, robots: { index: false } }
+    }
+    throw error
+  }
 
   return {
     title: `${t('collection')}: ${col.name} - ${APP_NAME}`,
@@ -43,7 +54,14 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
   const t = await getTranslations('General')
   const tCol = await getTranslations('Components.CollectionThumbnail')
   const { collectionid } = await props.params
-  const col = await getCollectionById(collectionid)
+  let col
+  try {
+    col = await getCollectionById(collectionid)
+  } catch (error) {
+    // A plain not-found is a page state, not an error boundary.
+    if (isApiError(error) && error.status === 404) return <ResourceNotFound type="collection" />
+    throw error
+  }
   const courses = (col.courses ?? []).filter(
     (course): course is AppCourse => typeof course === 'object' && course !== null,
   )

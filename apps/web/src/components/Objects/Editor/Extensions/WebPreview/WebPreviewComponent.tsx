@@ -71,6 +71,15 @@ export function previewHostname(url: string): string {
   }
 }
 
+/** Only an http(s) URL becomes an anchor; a rejected value («not a url») stays plain text. */
+export function isHttpUrl(url: string | null | undefined): url is string {
+  try {
+    return Boolean(url) && /^https?:$/.test(new URL(url ?? '').protocol)
+  } catch {
+    return false
+  }
+}
+
 /** The node's attributes for a server preview (`GET utils/link-preview`); `og_*` names are the stored schema. */
 export function previewToAttrs(url: string, preview: LinkPreview | null): Partial<WebPreviewAttrs> {
   return {
@@ -83,6 +92,24 @@ export function previewToAttrs(url: string, preview: LinkPreview | null): Partia
     og_url: preview?.url ?? null,
     site_name: preview?.site_name ?? null,
   }
+}
+
+/** The card body: an anchor for a real http(s) link, a plain block otherwise. */
+function CardLink({ href, children }: { href: string | undefined; children: React.ReactNode }) {
+  const className = 'no-underline hover:no-underline focus:no-underline active:no-underline'
+  const style = { textDecoration: 'none', borderBottom: 'none' } as const
+  if (!isHttpUrl(href)) {
+    return (
+      <div className={className} style={style}>
+        {children}
+      </div>
+    )
+  }
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className} style={style}>
+      {children}
+    </a>
+  )
 }
 
 const getAlignmentClass = (alignment: string) => {
@@ -176,7 +203,10 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
   const [openInPopup, setOpenInPopup] = useState(node.attrs.openInPopup)
   const [popupOpen, setPopupOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(!node.attrs.url)
-  const shouldAutoFetchPreview = Boolean(node.attrs.url && !hasPreview)
+  // One lookup per URL: a failed confirm stores the URL without metadata,
+  // which must not re-trigger the auto-fetch (double 422 + double toast).
+  const attemptedUrls = useRef(new Set<string>())
+  const shouldAutoFetchPreview = Boolean(node.attrs.url && !hasPreview && !attemptedUrls.current.has(node.attrs.url))
   const previewQuery = useQuery({
     ...urlPreviewQueryOptions(node.attrs.url || ''),
     enabled: shouldAutoFetchPreview,
@@ -216,7 +246,10 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
   )
 
   const fetchPreviewMutation = useMutation({
-    mutationFn: async (url: string) => queryClient.fetchQuery(urlPreviewQueryOptions(url)),
+    mutationFn: async (url: string) => {
+      attemptedUrls.current.add(url)
+      return queryClient.fetchQuery(urlPreviewQueryOptions(url))
+    },
     onSuccess: (data, url) => {
       applyPreviewData(url, data)
     },
@@ -239,6 +272,7 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
     }
 
     if (previewQuery.error && url) {
+      attemptedUrls.current.add(url)
       queueMicrotask(() => {
         applyPreviewFailure(url, previewQuery.error)
       })
@@ -292,7 +326,9 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
   const handleSaveEdit = () => {
     if (inputUrl && inputUrl !== node.attrs.url) {
       setError(null)
-      void fetchPreviewMutation.mutateAsync(inputUrl)
+      // `mutate`, not `mutateAsync`: the failure is handled in `onError`,
+      // nothing may reach `window.onerror` as an unhandled rejection.
+      fetchPreviewMutation.mutate(inputUrl)
     } else {
       setEditing(false)
       setModalOpen(false)
@@ -504,13 +540,7 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
           {/* Only show preview card when not editing */}
           {showCard ? (
             <>
-              <a
-                href={previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="no-underline hover:no-underline focus:no-underline active:no-underline"
-                style={{ textDecoration: 'none', borderBottom: 'none' }}
-              >
+              <CardLink href={previewUrl}>
                 {previewData.og_image ? <PreviewImage src={previewData.og_image} alt={t('previewImageAlt')} /> : null}
                 {hasPreview ? (
                   <div className="pt-4 pb-2">
@@ -534,17 +564,19 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
                       {previewHostname(previewUrl ?? '')}
                     </span>
                     <span className="mb-1 block text-sm font-medium text-gray-700">{t('previewUnavailable')}</span>
-                    <span className="mb-3 block text-xs leading-snug text-gray-500">{t('previewUnavailableHint')}</span>
+                    {isHttpUrl(previewUrl) ? (
+                      <span className="mb-3 block text-xs leading-snug text-gray-500">{t('previewUnavailableHint')}</span>
+                    ) : null}
                   </div>
                 )}
-              </a>
+              </CardLink>
               <FaviconDisplay
                 {...(previewData.favicon ? { favicon: previewData.favicon } : {})}
                 siteName={previewData.site_name}
                 url={previewUrl ?? ''}
                 faviconAlt={t('faviconAlt')}
               />
-              {showButton && previewData.url ? (
+              {showButton && isHttpUrl(previewData.url) ? (
                 openInPopup ? (
                   <button
                     type="button"

@@ -268,6 +268,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
 
   return (
     <ExamTakingContent
+      key={submissionState.draft.submission_uuid}
       title={vm.title}
       questions={questions}
       submissionState={submissionState}
@@ -313,6 +314,10 @@ function ExamTakingContent({
   const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false)
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false)
   const [recoveredAnswers, setRecoveredAnswers] = useState<Record<string, ItemAnswer> | null>(null)
+  // "Draft restored" means answers existed BEFORE this attempt was opened; the
+  // draft query refetches after every autosave, so `answered_count` alone would
+  // flip the banner on ~2 s into a brand-new attempt.
+  const [resumedDraft] = useState(() => attempt.answered_count > 0)
   const [flaggedIndexes, setFlaggedIndexes] = useState<Set<number>>(new Set())
   const violationCountRef = useRef(0)
 
@@ -635,7 +640,7 @@ function ExamTakingContent({
 
   return (
     <div className="space-y-6">
-      {attempt.answered_count > 0 ? (
+      {resumedDraft ? (
         <Alert>
           <RotateCcw className="size-4" />
           <AlertTitle>{t('resumedDraft')}</AlertTitle>

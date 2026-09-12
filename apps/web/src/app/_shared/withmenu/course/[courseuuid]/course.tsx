@@ -205,7 +205,12 @@ function CourseClient(props: CourseClientProps) {
               {/* Main content */}
               <div className="w-full min-w-0 space-y-10 md:w-3/4">
                 {isMobile && (
-                  <CourseActionsMobile courseuuid={courseuuid} course={course as never} trailData={trailData} />
+                  <CourseActionsMobile
+                    courseuuid={courseuuid}
+                    course={course as never}
+                    trailData={trailData}
+                    learnerState={learnerState}
+                  />
                 )}
 
                 {/* Thumbnail */}

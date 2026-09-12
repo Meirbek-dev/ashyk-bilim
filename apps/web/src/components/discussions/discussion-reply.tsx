@@ -106,6 +106,7 @@ export default function DiscussionReply({
                       setEditing(true)
                       setEditContent(reply.replyMessage)
                     }}
+                    aria-label={t('edit')}
                     className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
                   >
                     <Edit size={12} />
@@ -116,6 +117,7 @@ export default function DiscussionReply({
                   variant="ghost"
                   size="sm"
                   onClick={() => onDeleteReply(postId, reply.id)}
+                  aria-label={t('delete')}
                   className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-7 w-7 p-0"
                 >
                   <Trash2 size={12} />
@@ -166,6 +168,8 @@ export default function DiscussionReply({
                     variant="ghost"
                     size="sm"
                     onClick={() => onVoteReply(postId, reply.id, 'up')}
+                    aria-pressed={reply.userVote === 'up'}
+                    aria-label={t('upvote')}
                     className={cn(
                       'h-8 rounded-none border-border border-r px-3 transition-all',
                       reply.userVote === 'up'
@@ -181,6 +185,8 @@ export default function DiscussionReply({
                     variant="ghost"
                     size="sm"
                     onClick={() => onVoteReply(postId, reply.id, 'down')}
+                    aria-pressed={reply.userVote === 'down'}
+                    aria-label={t('downvote')}
                     className={cn(
                       'h-8 rounded-none px-3 transition-all',
                       reply.userVote === 'down'

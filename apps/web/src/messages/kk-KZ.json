@@ -164,7 +164,7 @@
         "cancel": "Болдырмау",
         "description": "Оқу әрекеті сипаттамасы",
         "descriptionHint": "Markdown пішімдеуін қолдайды",
-        "descriptionPlaceholder": "Оқу әрекетіны, шектеулерді және мысалдарды сипаттаңыз...",
+        "descriptionPlaceholder": "Оқу әрекетін, шектеулерді және мысалдарды сипаттаңыз...",
         "difficulty": "Қиындық",
         "enableHints": "Кеңестерді қосу",
         "enableHintsDescription": "Студенттерге штрафпен кеңес сұрауға рұқсат беру",
@@ -182,7 +182,7 @@
         "noLanguagesFound": "Тілдер табылмады",
         "penalty": "Штраф",
         "points": "Ұпайлар",
-        "save": "Оқу әрекетіны сақтау",
+        "save": "Оқу әрекетін сақтау",
         "saving": "Сақталуда...",
         "searchLanguages": "Тілдерді іздеу...",
         "selectDifficulty": "Қиындықты таңдаңыз",
@@ -256,7 +256,7 @@
       "runningLabel": "Орындалуда...",
       "runningTests": "Тесттер орындалуда...",
       "saveConfig": "Параметрлерді сақтау",
-      "saveFailed": "Оқу әрекетіны сақтау сәтсіз аяқталды",
+      "saveFailed": "Оқу әрекетін сақтау сәтсіз аяқталды",
       "savingConfig": "Параметрлер сақталуда...",
       "searchLanguage": "Тілді іздеу...",
       "searchLanguages": "Тілдерді іздеу...",
@@ -597,7 +597,7 @@
       "instruction5": "Көшіру және қою функциялары өшірілген",
       "instructions": "Нұсқаулар",
       "invalidAnswer": "Жарамсыз жауап",
-      "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - оқу әрекетіны растау, ? - бұл хабарды көрсету",
+      "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - оқу әрекетін растау, ? - бұл хабарды көрсету",
       "manageExam": "Емтихан сұрақтары мен параметрлерін басқару",
       "manageQuestions": "Сұрақтарды басқару",
       "minutes": "{count, plural, =1 {# минут} other {# минут}}",
@@ -637,7 +637,7 @@
       },
       "questions": "Сұрақтар",
       "readyToStart": "Бастауға дайын",
-      "readyToStartSubtitle": "Толық ақпаратты қарап шығыңыз және дайын болғанда емтиханды бастаңыз.",
+      "readyToStartSubtitle": "Толық ақпаратты қарап шығыңыз және дайын болғанда тестті бастаңыз.",
       "recoverAnswers": "Жауаптарды қалпына келтіріңіз",
       "recoverPreviousAnswers": "Алдыңғы жауаптарды қалпына келтіру керек пе?",
       "recoverPreviousAnswersDescription": "Біз {time} сақталған жауаптарды таптық. Оларды қалпына келтіргіңіз келе ме, әлде басынан бастағыңыз келе ме?",
@@ -772,7 +772,7 @@
     "openAssessment": "Бағалауды ашу",
     "status": "Күйі",
     "statusComplete": "Аяқталды",
-    "submitErrorToast": "Оқу әрекетіны тексеруге жіберу мүмкін болмады",
+    "submitErrorToast": "Оқу әрекетін тексеруге жіберу мүмкін болмады",
     "submitSuccessToast": "Оқу әрекеті тексеруге сәтті жіберілді",
     "unknownGradingType": "Белгісіз бағалау түрі",
     "unmarkActivity": "Аяқтау белгісін алып тастау",
@@ -840,38 +840,23 @@
     }
   },
   "Auth": {
-    "Layout": {
-      "accessFromOrg": "Бұл бетке ұйым арқылы кіріңіз",
-      "orgNotSpecified": "Ұйым көрсетілмеген"
-    },
     "Login": {
       "email": "Электронды пошта",
-      "emailAddress": "Электрондық пошта",
       "emailPlaceholder": "Электронды поштаңызды енгізіңіз",
-      "forgotPassword": "Құпия сөзді ұмыттыңыз ба?",
       "hidePassword": "Құпия сөзді жасыру",
       "loading": "Жүктелуде...",
       "login": "Кіру",
-      "loginTo": "Кіру",
       "or": "НЕМЕСЕ",
       "password": "Құпия сөз",
       "passwordPlaceholder": "Құпия сөзіңізді енгізіңіз",
-      "rememberMe": "Мені есте сақтау",
-      "resetPassword": "Құпия сөзді қалпына келтіру",
       "showPassword": "Құпия сөзді көрсету",
       "signIn": "Кіру",
       "signInWithGoogle": "Google арқылы кіру",
       "signup": "Тіркелу",
-      "sso": "Бір реттік жүйеге кіру (SSO)",
-      "title": "Кіру",
-      "welcomeBack": "Қайтып келуіңізбен! Тіркелгі деректеріңізді енгізіңіз.",
-      "sessionExpired": "Сеансыңыз аяқталды. Қайта кіріңіз.",
-      "sessionRevoked": "Сеансыңыз кері қайтарылды. Қайта кіріңіз.",
-      "sessionRecoveryFailed": "Сеансты қалпына келтіру мүмкін болмады. Қайта кіріңіз.",
+      "title": "Кіру - Ashyk Bilim",
       "wrongCredentials": "Қате электронды пошта немесе құпия сөз",
       "serviceUnavailable": "Қызмет уақытша қолжетімсіз. Қайталап көріңіз.",
       "rateLimited": "Тым көп әрекет жасалды. Кейінірек қайталап көріңіз.",
-      "loginTitle": "Кіру",
       "noAccount": "Аккаунтыңыз жоқ па?",
       "loginIdentifier": "Электрондық пошта немесе пайдаланушы аты",
       "loginIdentifierPlaceholder": "Поштаны немесе пайдаланушы атын енгізіңіз",
@@ -882,8 +867,7 @@
       "backToPassword": "Кіруге оралу",
       "accountDisabled": "Есептік жазба өшірілген. Әкімшіге хабарласыңыз.",
       "invalidTotpCode": "Бір реттік код қате.",
-      "googleCancelled": "Google арқылы кіру тоқтатылды.",
-      "noAccountHint": "Есептік жазбаларды платформа әкімшісі жасайды. Мекенжайыңыз тіркелген болса, Google арқылы кіріңіз."
+      "googleCancelled": "Google арқылы кіру тоқтатылды."
     },
     "hidePassword": "Құпия сөзді жасыру",
     "password": "Пароль",
@@ -907,7 +891,7 @@
       "submit": "Тіркелу",
       "submitting": "Аккаунт жасалуда...",
       "success": "Аккаунт жасалды",
-      "successDescription": "Растау кодын поштаңызға жібердік. Енді кіруге болады.",
+      "successDescription": "Тіркелгі пайдалануға дайын — қазір-ақ кіруге болады. Поштаны растау коды мекенжайыңызға жіберілді.",
       "failed": "Аккаунт жасалмады. Қайталап көріңіз.",
       "haveAccount": "Аккаунтыңыз бар ма?",
       "login": "Кіру"
@@ -1395,7 +1379,7 @@
           "medium": "Орташа",
           "low": "Төмен"
         },
-        "freshness": "Шалқару:",
+        "freshness": "Деректердің жаңалығы:",
         "previewAttemptsExcluded": "Алдын ала қарау талпыныстары шығарылды:",
         "teacherAttemptsExcluded": "Мұғалім талпыныстары шығарылды:",
         "thinCourses": "Деректері жеткіліксіз курстар:",
@@ -2091,7 +2075,7 @@
       "expected": "Күтілген:",
       "fillBlanksError": "Жібермес бұрын кем дегенде бір бос орынды толтырыңыз.",
       "fillInTheBlanks": "Бос орындарды толтырыңыз",
-      "gradeError": "Оқу әрекетіны бағалау кезінде қате кетті, кейінірек қайталап көріңіз.",
+      "gradeError": "Оқу әрекетін бағалау кезінде қате кетті, кейінірек қайталап көріңіз.",
       "gradedSuccessfully": "Оқу әрекеті сәтті бағаланды: {finalGrade} балл ({correctAnswers}/{totalBlanks} дұрыс)",
       "hint": "Нұсқау (міндетті емес)",
       "hintIcon": "💡",
@@ -2108,7 +2092,7 @@
       "removeBlank": "Бос орынды жою",
       "removeBlankError": "Соңғы бос орынды жою мүмкін емес. Кем дегенде бір бос орын болуы керек.",
       "removeQuestion": "Сұрақты жою",
-      "saveError": "Оқу әрекетіны сақтау кезінде қате кетті, кейінірек қайталап көріңіз.",
+      "saveError": "Оқу әрекетін сақтау кезінде қате кетті, кейінірек қайталап көріңіз.",
       "savedSuccessfully": "Оқу әрекеті сәтті сақталды",
       "submissionSummary": "Орындау қорытындысы",
       "submitError": "Форманы жіберу кезінде қате кетті, кейінірек қайталап көріңіз.",
@@ -2744,7 +2728,7 @@
     "editButton": "Өңдеу",
     "noActivities": "Белсенділіктер әлі жоқ",
     "deleteChapterConfirmationBreakdown": "Бұл тарауды және оның {count, plural, =0 {0 сабақты} one {# сабақты} other {# сабақты}} ({published} жарияланған, {drafts} жоба) біржола жояды.",
-    "noActivitiesHint": "Төменде бірінші оқу әрекетіны қосыңыз",
+    "noActivitiesHint": "Төменде бірінші оқу әрекетін қосыңыз",
     "save": "Сақтау",
     "cancel": "Болдырмау",
     "dragChapter": "Тарауды қайта реттеу үшін сүйреңіз"
@@ -2811,10 +2795,10 @@
     "statusComplete": "Аяқталды",
     "statusGraded": "Бағаланды",
     "statusGradingInProgress": "Бағалау үрдісі",
-    "submitButton": "Оқу әрекетіны жіберу",
-    "submitConfirmationMessage": "Оқу әрекетіны тексеруге жібергіңіз келетініне сенімдісіз бе? Жібергеннен кейін өзгерістер енгізу мүмкін болмайды.",
-    "submitConfirmationTitle": "Оқу әрекетіны тексеруге жіберу",
-    "submitErrorToast": "Оқу әрекетіны тексеруге жіберу сәтсіз болды",
+    "submitButton": "Оқу әрекетін жіберу",
+    "submitConfirmationMessage": "Оқу әрекетін тексеруге жібергіңіз келетініне сенімдісіз бе? Жібергеннен кейін өзгерістер енгізу мүмкін болмайды.",
+    "submitConfirmationTitle": "Оқу әрекетін тексеруге жіберу",
+    "submitErrorToast": "Оқу әрекетін тексеруге жіберу сәтсіз болды",
     "submitSuccessToast": "Оқу әрекеті тексеруге жіберілді",
     "submitTrigger": "Тексеруге жіберу",
     "thumbnailTypeImage": "Сурет",
@@ -2836,6 +2820,12 @@
       "voteFailed": "Дауысты сақтау мүмкін болмады",
       "deleteFailed": "Хабарламаны жою мүмкін болмады",
       "updateFailed": "Өзгерістерді сақтау мүмкін болмады"
+    },
+    "toasts": {
+      "posted": "Хабарлама жарияланды",
+      "replied": "Жауап жіберілді",
+      "edited": "Өзгерістер сақталды",
+      "deleted": "Хабарлама жойылды"
     }
   },
   "Courses": {
@@ -3590,7 +3580,7 @@
           },
           "total": {
             "detail": "Жұмыс кеңістіктегі барлық курстар",
-            "label": "Барлықты курстар"
+            "label": "Барлық курстар"
           }
         },
         "table": {
@@ -5182,7 +5172,7 @@
         "saving": "Сақтау ...",
         "showOnLeaderboard": "Мені көшбасшыға көрсет",
         "showOnLeaderboardDescription": "Ұйымның көшбасшы тақтасында прогресті көрсетіңіз",
-        "title": "Гамификация параметрлері",
+        "title": "Геймификация параметрлері",
         "xpGainNotifications": "XP хабарландырулар",
         "xpGainNotificationsDescription": "Тәжірибе ұпайларын тапқан кезде хабарландыруларды көрсету"
       },
@@ -5194,7 +5184,7 @@
     },
     "Metrics": {
       "desktopOnlyMessage1": "Бұл бет тек жұмыс үстелі құрылғысында қолжетімді.",
-      "desktopOnlyMessage2": "Оқу әрекетіны көру және басқару үшін жұмыс үстелі құрылғысына өтіңіз.",
+      "desktopOnlyMessage2": "Оқу әрекетін көру және басқару үшін жұмыс үстелі құрылғысына өтіңіз.",
       "desktopOnlyTitle": "Тек жұмыс үстелі",
       "generalDescription": "Метрикалар",
       "generalTitle": "Метрикалар",
@@ -5948,7 +5938,7 @@
           "totalXp": "{total} ТӨ",
           "xpProgress": "{current} / {required} ТӨ",
           "xpToLevel": "{level}-деңгейге дейінгі ТӨ",
-          "xpToNext": "Келесісіне дейінгі ТӨ",
+          "xpToNext": "ТӨ келесі деңгейге дейін",
           "xpToNextLevel": "Келесі деңгейге дейін {xp}"
         },
         "levelUpNotification": {
@@ -6104,7 +6094,7 @@
             "active": "{count} күн қатарынан! 🔥",
             "atRisk": "Серияны үзбеңіз! {action} бүгін орындаңыз.",
             "broken": "Бүгін өзіңіздің {type} серияңызды бастаңыз!",
-            "completeAction": "Оқу әрекетіны орындау",
+            "completeAction": "Оқу әрекетін орындау",
             "learning": "оқу",
             "login": "кіру",
             "loginAction": "Кіру"
@@ -6293,10 +6283,13 @@
           "newPasswordRejected": "Жаңа құпиясөз талаптарға сай емес.",
           "required": "Міндетті өріс.",
           "passwordTooShort": "Құпиясөз кемінде 8 таңбадан тұруы керек.",
-          "passwordsDoNotMatch": "Құпиясөздер сәйкес келмейді."
+          "passwordsDoNotMatch": "Құпиясөздер сәйкес келмейді.",
+          "revokeConfirmTitle": "Сессияны аяқтау керек пе?",
+          "revokeConfirmDescription": "Құрылғы аккаунттан шығарылады және келесі әрекетте қайта кіруді сұрайды.",
+          "revokeCancel": "Болдырмау"
         }
       },
-      "gamification": "Гамификация параметрлері",
+      "gamification": "Геймификация параметрлері",
       "general": "Жалпы",
       "generalSection": {
         "addAcademicInfo": "Академиялық ақпарат қосу",
@@ -6710,7 +6703,9 @@
         "title": "Пайдаланушы топтарын басқару",
         "userGroupDeletedSuccess": "Пайдаланушылар тобы жойылды",
         "userGroupHeader": "Пайдаланушылар тобы",
-        "loading": "Топтар жүктелуде…"
+        "loading": "Топтар жүктелуде…",
+        "editUserGroupModalTitle": "Пайдаланушылар тобын өңдеу",
+        "editUserGroupModalDescription": "Топтың атауы мен сипаттамасын өзгерту"
       },
       "usergroupsTitle": "Пайдаланушылар тобы",
       "users": "Пайдаланушылар",
@@ -6775,6 +6770,10 @@
     "activityUnavailableMessage": "Бұл белсенділік әлі жарияланбаған. Жалғастыру үшін курсқа оралыңыз.",
     "courseNotFound": "Курс табылмады",
     "courseNotFoundMessage": "Сіз іздеген курс жоқ немесе жойылған.",
+    "collectionNotFound": "Жинақ табылмады",
+    "collectionNotFoundMessage": "Сіз іздеген жинақ жоқ немесе жойылған.",
+    "userNotFound": "Пайдаланушы табылмады",
+    "userNotFoundMessage": "Мұндай атпен пайдаланушы жоқ немесе профиль жойылған.",
     "backToCourse": "Курсқа оралу",
     "backToDashboard": "Басқару тақтасына",
     "courseLoadErrorTitle": "Курс жүктелмеді",
@@ -7647,8 +7646,8 @@
       "viewAssessment": "Бағалауды қарау {title}",
       "healthy": "Жақсы",
       "searchPlaceholder": "Бағалаулар бойынша іздеу...",
-      "emptyMessage": "Ағымдағы аумаққа сәйкес бағалау ауытқулары жоқ.",
-      "rowCount": "{count} бағалау ауытқулары"
+      "emptyMessage": "Осы сүзгі бойынша проблемалы тапсырмалар жоқ.",
+      "rowCount": "Проблемалы тапсырмалар: {count}"
     },
     "atRisk": {
       "interventionsCount": "{count} қолдау шарасы тіркелді",
@@ -7673,7 +7672,7 @@
       "emptyMessage": "Ағымдағы фильтрлер үшін тәуекелдегі оқушылар жоқ.",
       "interventionLogged": "Қолдау әрекеті тіркелді",
       "interventionLogFailed": "Қолдау әрекетін тіркеу мүмкін болмады",
-      "gradeSubmissions": "Күтілудегі {count} жұмысты бағалау →",
+      "gradeSubmissions": "Күтілудегі {count} жұмысты бағалау",
       "riskComponents": {
         "inactivity": "Белсенсіздік",
         "progress": "Прогресс олқылығы",
@@ -9231,7 +9230,7 @@
           "instruction5": "Көшіру және қою функциялары өшірілген",
           "instructions": "Нұсқаулар",
           "invalidAnswer": "Жарамсыз жауап",
-          "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - оқу әрекетіны растау, ? - бұл хабарды көрсету",
+          "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - оқу әрекетін растау, ? - бұл хабарды көрсету",
           "manageExam": "Емтихан сұрақтары мен параметрлерін басқару",
           "manageQuestions": "Сұрақтарды басқару",
           "minutes": "{count, plural, =1 {# минут} other {# минут}}",
@@ -9271,7 +9270,7 @@
           },
           "questions": "Сұрақтар",
           "readyToStart": "Бастауға дайын",
-          "readyToStartSubtitle": "Толық ақпаратты қарап шығыңыз және дайын болғанда емтиханды бастаңыз.",
+          "readyToStartSubtitle": "Толық ақпаратты қарап шығыңыз және дайын болғанда тестті бастаңыз.",
           "recoverAnswers": "Жауаптарды қалпына келтіріңіз",
           "recoverPreviousAnswers": "Алдыңғы жауаптарды қалпына келтіру керек пе?",
           "recoverPreviousAnswersDescription": "Біз {time} сақталған жауаптарды таптық. Оларды қалпына келтіргіңіз келе ме, әлде басынан бастағыңыз келе ме?",
@@ -9399,7 +9398,7 @@
             "cancel": "Болдырмау",
             "description": "Оқу әрекеті сипаттамасы",
             "descriptionHint": "Markdown пішімдеуін қолдайды",
-            "descriptionPlaceholder": "Оқу әрекетіны, шектеулерді және мысалдарды сипаттаңыз...",
+            "descriptionPlaceholder": "Оқу әрекетін, шектеулерді және мысалдарды сипаттаңыз...",
             "difficulty": "Қиындық",
             "enableHints": "Кеңестерді қосу",
             "enableHintsDescription": "Студенттерге штрафпен кеңес сұрауға рұқсат беру",
@@ -9417,7 +9416,7 @@
             "noLanguagesFound": "Тілдер табылмады",
             "penalty": "Штраф",
             "points": "Ұпайлар",
-            "save": "Оқу әрекетіны сақтау",
+            "save": "Оқу әрекетін сақтау",
             "saving": "Сақталуда...",
             "searchLanguages": "Тілдерді іздеу...",
             "selectDifficulty": "Қиындықты таңдаңыз",
@@ -9487,7 +9486,7 @@
           "runTests": "Тесттерді орындау",
           "runningTests": "Тесттер орындалуда...",
           "saveConfig": "Параметрлерді сақтау",
-          "saveFailed": "Оқу әрекетіны сақтау сәтсіз аяқталды",
+          "saveFailed": "Оқу әрекетін сақтау сәтсіз аяқталды",
           "savingConfig": "Параметрлер сақталуда...",
           "searchLanguage": "Тілді іздеу...",
           "searchLanguages": "Тілдерді іздеу...",
@@ -9781,14 +9780,14 @@
     "ActivityWorkspace": {
       "questions": "Сұрақтар",
       "readyToStart": "Бастауға дайын",
-      "readyToStartSubtitle": "Толық ақпаратты қарап шығыңыз және дайын болғанда емтиханды бастаңыз.",
+      "readyToStartSubtitle": "Толық ақпаратты қарап шығыңыз және дайын болғанда тестті бастаңыз.",
       "timeLimit": "Уақыт шегі",
       "unlimited": "Шексіз",
       "attempts": "Әрекеттер",
       "dueDate": "Тапсыру мерзімі",
       "assessmentBlocked": "Бұл оқу әрекеті қазір сізге қолжетімді емес.",
       "waitingForRelease": "Жұмысыңыз қабылданды. Оқытушы бағаны жариялағаннан кейін нәтижені көресіз.",
-      "startAssessment": "Оқу әрекетіны бастау",
+      "startAssessment": "Оқу әрекетін бастау",
       "startRevision": "Қайта тапсыруды бастау",
       "revision": "Қайта тапсыру",
       "returnedForRevision": "Түзетуге қайтарылды",
@@ -10257,7 +10256,7 @@
     "stepsProgress": "{completed} / {total} қадам",
     "viewCertificate": "Сертификатты қарау",
     "quitCourseConfirmTitle": "«{course}» курсынан шығасыз ба?",
-    "quitCourseConfirmDescription": "Бұл курс бойынша барлық прогресс жойылады. Бұл әрекетті кері қайтару мүмкін емес.",
+    "quitCourseConfirmDescription": "Сабақтарды өту белгілері қалпына келтіріледі; жіберілген жұмыстар мен бағалар сақталады. Бұл әрекетті кері қайтару мүмкін емес.",
     "quitCourseCancel": "Қалу",
     "quitCourseDone": "Сіз «{course}» курсынан шықтыңыз",
     "quitCourseFailed": "Курстан шығу мүмкін болмады. Кейінірек қайталап көріңіз."
@@ -10269,7 +10268,7 @@
     "noCoursesInProgress": "Жүріп жатқан курстар жоқ",
     "startACourseToSeeYourProgress": "Прогрессіңізді осында көру үшін курс бастаңыз",
     "startExploring": "Курстарды зерттеуді бастаңыз!",
-    "title": "Прогресс"
+    "title": "Үлгерім"
   },
   "UnauthorizedPage": {
     "button": "Басты бетке оралу",
@@ -10369,7 +10368,7 @@
   "appLogo": "Ashyk Bilim логотипі",
   "previous": "Алдыңғы",
   "seconds": "Секунд",
-  "selectDeadline": "Оқу әрекетіны аяқтау үшін мерзімді таңдаңыз",
+  "selectDeadline": "Оқу әрекетін аяқтау үшін мерзімді таңдаңыз",
   "touUniversity": "Торайғыров университеті",
   "webPreview": "Веб алдын ала қарау",
   "AttemptActions": {
@@ -10610,7 +10609,13 @@
     "publishSuccess": "Файл тапсыру жарияланды",
     "publishError": "Файл тапсыруды жариялау мүмкін болмады",
     "fixInstructionsBeforeSaving": "Сақтамас бұрын нұсқаулықты түзетіңіз",
-    "fixInstructionsBeforePublishing": "Жарияламас бұрын нұсқаулықты түзетіңіз"
+    "fixInstructionsBeforePublishing": "Жарияламас бұрын нұсқаулықты түзетіңіз",
+    "published": "Жарияланды",
+    "lifecycle": {
+      "draft": "Жоба",
+      "published": "Жарияланды",
+      "archived": "Мұрағатта"
+    }
   },
   "AIConfidenceMeter": {
     "high": "Жоғары сенімділік",
@@ -10689,7 +10694,8 @@
     "resultShell": {
       "modelRecorded": "Модель: {name}",
       "modelNotRecorded": "Модель: жазылмаған",
-      "citationsCount": "Дәйексөздер: {count}"
+      "citationsCount": "Дәйексөздер: {count}",
+      "draftModeModel": "жоба режимі (модельсіз)"
     },
     "states": {
       "labels": {
@@ -10817,7 +10823,8 @@
       "cancelPublish": "Тексеруді жалғастыру",
       "confirmPublish": "Ұпайды жариялау",
       "contentChanged": "Осы тексерістен кейін курс материалдары өзгерді",
-      "previousScore": "Алдыңғы тексеріс ұпайы: {score}"
+      "previousScore": "Алдыңғы тексеріс ұпайы: {score}",
+      "draftModeModel": "жоба режимі (модельсіз)"
     },
     "submissionAIEntry": {
       "title": "Тапсырманы ЖИ талдауы",
@@ -10829,7 +10836,7 @@
       "emptyDescription": "Осы жұмыс бойынша білім олқылықтары мен дәлелдерді көру үшін талдауды іске қосыңыз."
     },
     "submissionAnalysisResultShell": {
-      "title": "{count} білім олқылықтары",
+      "title": "Білім олқылықтары: {count}",
       "defaultDescription": "Жұмысты талдау дайын.",
       "severities": {
         "low": "Төмен",

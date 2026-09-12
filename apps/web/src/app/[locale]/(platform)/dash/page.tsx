@@ -64,22 +64,19 @@ export default async function PlatformDashHomePage() {
   const can = (resource: Resource, action: Action, scope: Scope): boolean =>
     sessionCan(session, resource, action, scope, permsSet)
 
+  // Authorship is the `:own` scope: a `user`-role co-author has no course
+  // grant, so the editable summary is probed for everyone and a non-empty
+  // `mine` set opens the courses area.
+  const courseSummaryResult = await getSafeEditableCourseSummary()
   const access = {
-    hasCoursesAccess: canSeeCourses(can),
+    hasCoursesAccess: canSeeCourses(can) || (courseSummaryResult.data?.total ?? 0) > 0,
     hasAnalyticsAccess: canSeeAnalytics(can),
     hasUsersAccess: canSeeUsers(can),
     hasAdminAccess: canSeeAdmin(can),
   } satisfies DashboardAccess
 
-  const [
-    courseSummaryResult,
-    teacherOverviewResult,
-    adminOverviewResult,
-    aiUsageResult,
-    learnerWorkResult,
-    teacherWorkResult,
-  ] = await Promise.all([
-    access.hasCoursesAccess ? getSafeEditableCourseSummary() : Promise.resolve({ data: null, error: null }),
+  const [teacherOverviewResult, adminOverviewResult, aiUsageResult, learnerWorkResult, teacherWorkResult] =
+    await Promise.all([
     access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve({ data: null, error: null }),
     access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve({ data: null, error: null }),
     access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve({ data: null, error: null }),
@@ -89,7 +86,7 @@ export default async function PlatformDashHomePage() {
       : Promise.resolve({ data: null, error: null }),
   ])
 
-  const courseSummary = courseSummaryResult.data
+  const courseSummary = access.hasCoursesAccess ? courseSummaryResult.data : null
   const teacherOverview = teacherOverviewResult.data
   const adminOverview = adminOverviewResult.data
   const aiUsage = aiUsageResult.data
@@ -105,7 +102,6 @@ export default async function PlatformDashHomePage() {
           title: tQueue('items.returned.title', { activity }),
           description: tQueue('items.returned.description', { course }),
           primary_action: tQueue('items.returned.action'),
-          groupLabel: tQueue('groups.returned'),
         }
       }
       case 'waiting_for_grade': {
@@ -114,7 +110,6 @@ export default async function PlatformDashHomePage() {
           title: tQueue('items.waiting.title', { activity }),
           description: tQueue('items.waiting.description', { course }),
           primary_action: tQueue('items.waiting.action'),
-          groupLabel: tQueue('groups.waiting'),
         }
       }
       case 'feedback_released': {
@@ -123,7 +118,6 @@ export default async function PlatformDashHomePage() {
           title: tQueue('items.feedback.title', { activity }),
           description: tQueue('items.feedback.description', { course }),
           primary_action: tQueue('items.feedback.action'),
-          groupLabel: tQueue('groups.released'),
         }
       }
       case 'overdue':
@@ -135,7 +129,6 @@ export default async function PlatformDashHomePage() {
             course,
           }),
           primary_action: tQueue('items.inProgress.action'),
-          groupLabel: tQueue(item.kind === 'overdue' ? 'groups.today' : 'groups.dueSoon'),
         }
       }
       case 'awaiting_release': {

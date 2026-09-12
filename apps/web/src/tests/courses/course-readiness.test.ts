@@ -33,13 +33,19 @@ describe('getCourseReadiness', () => {
     })
   })
 
-  it('reads the server verdict and links activity-scoped issues to the studio', async () => {
+  it('reads the server verdict and links issues to the studio or the workspace stage', async () => {
     const readiness = await getCourseReadiness(`course_${courseId}`)
 
     expect(mocks.apiJson.mock.calls[0]?.[0]).toBe(`courses/${courseId}/readiness`)
     expect(readiness.ready).toBe(false)
     expect(readiness.issues).toEqual([
-      { code: 'no-live-activity', severity: 'blocker', activity_id: null, title: null, path: null },
+      {
+        code: 'no-live-activity',
+        severity: 'blocker',
+        activity_id: null,
+        title: null,
+        path: `/dash/courses/${courseId}/curriculum`,
+      },
       {
         code: 'file-submission-unpublished',
         severity: 'blocker',
@@ -47,7 +53,13 @@ describe('getCourseReadiness', () => {
         title: 'Essay',
         path: `/dash/courses/${courseId}/activity/${activityId}/studio`,
       },
-      { code: 'thumbnail-missing', severity: 'warning', activity_id: null, title: null, path: null },
+      {
+        code: 'thumbnail-missing',
+        severity: 'warning',
+        activity_id: null,
+        title: null,
+        path: `/dash/courses/${courseId}/details`,
+      },
     ])
     // No curriculum walk any more.
     expect(mocks.apiJson.mock.calls.some(call => String(call[0]).includes('curriculum'))).toBe(false)

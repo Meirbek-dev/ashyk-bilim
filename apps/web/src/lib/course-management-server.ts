@@ -28,12 +28,12 @@ function can(session: AuthSession, permsSet: Set<string>, resource: Resource, ac
 }
 
 /**
- * An `:own`-scoped grant (`course:update:own`, `chapter:update:own`, …) only
- * covers courses the session user authors (creator or active contributor —
- * `isCourseAuthor`); a `:platform`-scoped grant covers every course. Mirrors
- * the scope resolution in `apps/server/crates/core/src/permission.rs`
- * (`Grant::grants`) — scopes are matched exactly, the caller ORs `platform`
- * with authorship+`own` itself.
+ * Authorship IS the `:own` scope: the creator and every active maintainer /
+ * contributor (`isCourseAuthor`, `contributor_ids` on the wire) write on the
+ * course without any role grant — a plain `user`-role co-author edits like
+ * the creator; a `:platform`-scoped grant covers every course. Mirrors
+ * `CoursesService::require_write` / `AssessmentsService::require_scoped` in
+ * `apps/server/crates/domain`.
  */
 function canOwnOrPlatform(
   session: AuthSession,
@@ -42,7 +42,7 @@ function canOwnOrPlatform(
   resource: Resource,
   action: Action,
 ) {
-  return can(session, permsSet, resource, action, Scopes.APP) || (isAuthor && can(session, permsSet, resource, action, Scopes.OWN))
+  return isAuthor || can(session, permsSet, resource, action, Scopes.APP)
 }
 
 function hasCreateCoursePermission(session: AuthSession, permsSet: Set<string>) {
@@ -65,7 +65,7 @@ export function deriveCourseWorkspaceCapabilities(session: AuthSession, course: 
   // the mutations for plain contributors).
   const canManageCollaboration = canManage || isAuthor
   const canManageSettings = canManageAccess || canManageCollaboration
-  const canManageCertificate = can(session, permsSet, Resources.CERTIFICATE, Actions.CREATE, Scopes.APP)
+  const canManageCertificate = canOwnOrPlatform(session, permsSet, isAuthor, Resources.CERTIFICATE, Actions.CREATE)
   // Delete stays creator-only on the server.
   const canDeleteCourse = canOwnOrPlatform(session, permsSet, isCreator, Resources.COURSE, Actions.DELETE)
   const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canManageCertificate

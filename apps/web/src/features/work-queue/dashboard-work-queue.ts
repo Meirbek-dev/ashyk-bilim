@@ -129,21 +129,24 @@ function buildLearnerSection(signal: LearnerDashboardSignal | null, t: WorkQueue
     emptyDescription: t('sections.learner.emptyDescription'),
     items: signal?.signalAvailable
       ? sortWorkQueueItems(
-          signal.items.map(item => ({
-            id: item.id,
-            audience: 'learner',
-            title: item.title,
-            description: item.description,
-            href: item.href,
-            primaryActionLabel: item.primary_action,
-            source: 'learner-learning',
-            sourceLabel: t('sourceLabels.learning'),
-            status: learnerQueueStatus(item.kind, item.status),
-            priority: item.priority,
-            ...(item.due_at ? { dueAt: item.due_at } : {}),
-            ...(item.created_at ? { createdAt: item.created_at } : {}),
-            ...(item.groupLabel ? { groupLabel: item.groupLabel } : {}),
-          })),
+          signal.items.map(item => {
+            const groupLabel = learnerGroupLabel(item, t)
+            return {
+              id: item.id,
+              audience: 'learner',
+              title: item.title,
+              description: item.description,
+              href: item.href,
+              primaryActionLabel: item.primary_action,
+              source: 'learner-learning',
+              sourceLabel: t('sourceLabels.learning'),
+              status: learnerQueueStatus(item.kind, item.status),
+              priority: item.priority,
+              ...(item.due_at ? { dueAt: item.due_at } : {}),
+              ...(item.created_at ? { createdAt: item.created_at } : {}),
+              ...(groupLabel ? { groupLabel } : {}),
+            }
+          }),
         )
       : [
           {
@@ -159,6 +162,24 @@ function buildLearnerSection(signal: LearnerDashboardSignal | null, t: WorkQueue
             priority: 'normal',
           },
         ],
+  }
+}
+
+/** «Скоро срок» only when there is a due date; a draft without one is just «in progress». */
+function learnerGroupLabel(item: LearnerDashboardSignal['items'][number], t: WorkQueueTranslate) {
+  switch (item.kind) {
+    case 'returned_for_revision':
+      return t('groups.returned')
+    case 'waiting_for_grade':
+      return t('groups.waiting')
+    case 'feedback_released':
+      return t('groups.released')
+    case 'overdue':
+      return t('groups.today')
+    case 'in_progress':
+      return item.due_at ? t('groups.dueSoon') : undefined
+    default:
+      return undefined
   }
 }
 

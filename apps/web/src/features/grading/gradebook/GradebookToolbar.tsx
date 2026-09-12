@@ -14,6 +14,7 @@ export default function GradebookToolbar({
   data,
   filters,
   activityTypes,
+  visibleStudentCount,
   onFiltersChange,
   onExport,
   onRefresh,
@@ -21,11 +22,14 @@ export default function GradebookToolbar({
   data: CourseGradebookResponse
   filters: GradebookFilters
   activityTypes: string[]
+  /** Rows the table shows after the filters; the learners tile counts those. */
+  visibleStudentCount: number
   onFiltersChange: (filters: GradebookFilters) => void
   onExport: () => void
   onRefresh: () => void
 }) {
   const t = useTranslations('Features.Grading.Gradebook')
+  const filtered = filters.savedFilter !== 'all' || filters.activityType !== 'all' || filters.search.trim() !== ''
 
   return (
     <div className="space-y-5">
@@ -34,10 +38,10 @@ export default function GradebookToolbar({
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
           <p className="text-muted-foreground text-sm">{data.course_name}</p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="flex flex-wrap gap-2">
           <SummaryTile
             label={t('summary.learners')}
-            value={data.page_info?.total_students ?? data.summary.student_count}
+            value={filtered ? visibleStudentCount : (data.page_info?.total_students ?? data.summary.student_count)}
           />
           <SummaryTile
             label={t('summary.activities')}
@@ -59,8 +63,8 @@ export default function GradebookToolbar({
       </div>
 
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-3 xl:grid-cols-5">
-          <div className="relative md:col-span-2 xl:col-span-1">
+        <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+          <div className="relative min-w-60 flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               value={filters.search}
@@ -113,7 +117,7 @@ function SummaryTile({
   return (
     <div
       className={cn(
-        'border-border rounded-md border px-3 py-2',
+        'border-border min-w-28 rounded-md border px-3 py-2 whitespace-nowrap',
         tone === 'amber' && 'border-amber-200 bg-amber-50/60',
         tone === 'rose' && 'border-rose-200 bg-rose-50/60',
       )}

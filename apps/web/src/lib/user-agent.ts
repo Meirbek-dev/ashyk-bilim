@@ -5,7 +5,8 @@ const BROWSERS: [RegExp, string][] = [
   [/\bOPR\/|\bOpera\b/u, 'Opera'],
   [/\bYaBrowser\//u, 'Yandex Browser'],
   [/\bFirefox\/|\bFxiOS\//u, 'Firefox'],
-  [/\bChrome\/|\bCriOS\//u, 'Chrome'],
+  // No leading `\b`: `HeadlessChrome/…` is Chrome too.
+  [/Chrome\/|\bCriOS\//u, 'Chrome'],
   [/\bSafari\//u, 'Safari'],
 ]
 const SYSTEMS: [RegExp, string][] = [

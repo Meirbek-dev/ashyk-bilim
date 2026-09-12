@@ -34,7 +34,10 @@ vi.mock('@/hooks/mutations/useActivityMutations', () => ({
 vi.mock('@/components/Objects/Elements/Tooltip/Tooltip', () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
-vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (path: string) => path }))
+vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (path: string) => path, getSiteUrl: () => '' }))
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ prefetch: _prefetch, ...props }: React.ComponentProps<'a'> & { prefetch?: boolean }) => <a {...props} />,
+}))
 vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: vi.fn() }) }))
 
 import ActivityElement from '@/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ActivityElement'
@@ -70,6 +73,16 @@ describe('ActivityElement capabilities (v2 grants)', () => {
 
   it('an active contributor authors like the creator (`contributor_ids`)', () => {
     harness.permissions = new Set(['activity:update:own', 'activity:delete:own'])
+    harness.creatorId = 'someone-else'
+    harness.contributorIds = ['teacher-1']
+    renderRow()
+    expect(screen.getByRole('button', { name: 'publish' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'deleteButton' })).toBeInTheDocument()
+    harness.contributorIds = []
+  })
+
+  it('a `user`-role co-author (no grants at all) authors like the creator', () => {
+    harness.permissions = new Set()
     harness.creatorId = 'someone-else'
     harness.contributorIds = ['teacher-1']
     renderRow()

@@ -13,6 +13,7 @@ import {
   Send,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
@@ -37,6 +38,7 @@ import type {
   FileSubmissionAttemptFile,
 } from '@/features/file-submissions/services/file-submissions'
 import { fromUnix } from '@/lib/api/contract'
+import { refreshLearnerCourseState } from '@/features/learner-course/api'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import FileUploadSlot from './FileUploadSlot'
 import type { PendingFileSlot } from './FileUploadSlot'
@@ -123,6 +125,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
   const canEditCourse =
     can(Resources.COURSE, Actions.UPDATE, Scopes.OWN) || can(Resources.COURSE, Actions.UPDATE, Scopes.APP)
   const queryClient = useQueryClient()
+  const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [slots, setSlots] = useState<PendingFileSlot[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -235,6 +238,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       setIsUploading(false)
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
       toast.success(submit ? t('submittedToast') : t('draftSavedToast'))
+      if (submit) await refreshLearnerCourseState(queryClient, router)
     },
     onError: err => {
       setIsUploading(false)

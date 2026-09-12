@@ -66,7 +66,6 @@ describe('createFileActivity (v2)', () => {
         details,
       },
       CHAPTER_ID,
-      { courseUuid: 'course-1' },
     )
     const [path, init] = mocks.apiJson.mock.calls[0]! as [
       string,

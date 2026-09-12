@@ -19,6 +19,7 @@ import type { AssessmentSubmissionRead } from '../domain/submission-wire'
 import { isApiError } from '@/lib/api/assertSuccess'
 import { cloneJsonValue } from '@/lib/json-clone'
 import { queryKeys } from '@/lib/react-query/queryKeys'
+import { refreshLearnerCourseState } from '@/features/learner-course/api'
 import { reportClientError } from '@/services/telemetry/client'
 import type { ItemAnswer } from '../domain/items'
 
@@ -294,10 +295,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (assessmentUuid) {
         await invalidateAssessmentState()
       }
-      // The outline sidebar, header badge and course progress read the
-      // learner-state projection (server-rendered runtime + client query).
-      await queryClient.invalidateQueries({ queryKey: ['learner-course'] })
-      router.refresh()
+      await refreshLearnerCourseState(queryClient, router)
     },
     onError: async (error: unknown) => {
       if (isApiError(error) && error.status === 409) {

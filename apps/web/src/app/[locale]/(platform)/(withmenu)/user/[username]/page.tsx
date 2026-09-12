@@ -1,5 +1,6 @@
 import { getUserByUsername } from '@/lib/users/server'
 import { getTranslations } from 'next-intl/server'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { APP_NAME } from '@/lib/constants'
@@ -17,6 +18,10 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
 
   try {
     const userData = await getUserByUsername(resolvedParams.username)
+    if (!userData) {
+      const tErrors = await getTranslations({ locale: resolvedParams.locale, namespace: 'Errors' })
+      return { title: `${tErrors('userNotFound')} - ${APP_NAME}`, robots: { index: false } }
+    }
 
     return {
       title: `${t('metaTitle', {
@@ -48,6 +53,7 @@ async function UserProfile({ params }: UserPageProps) {
 
   try {
     userData = await getUserByUsername(username)
+    if (!userData) return <ResourceNotFound type="user" />
     profile = userData.profile
       ? typeof userData.profile === 'string'
         ? JSON.parse(userData.profile)

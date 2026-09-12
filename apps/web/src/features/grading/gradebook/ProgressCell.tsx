@@ -27,7 +27,12 @@ export default function ProgressCell({
   onOpen,
 }: ProgressCellProps) {
   const canOpen = Boolean(cell.latest_submission_uuid)
-  const submissionStatus = isSubmissionStatus(cell.latest_submission_status) ? cell.latest_submission_status : null
+  // The submission badge adds nothing when it names the same state as the
+  // progress badge («Оценено Оценено» on a graded exam).
+  const submissionStatus =
+    isSubmissionStatus(cell.latest_submission_status) && cell.latest_submission_status !== cell.state
+      ? cell.latest_submission_status
+      : null
 
   return (
     <div

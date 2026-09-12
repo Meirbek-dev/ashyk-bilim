@@ -51,21 +51,14 @@ export type ChoiceAuthorValue =
       pairs: MatchingPair[]
     }
 
-export type ChoiceAttemptItem =
-  | {
-      id: string | number
-      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE'
-      prompt: string
-      points?: number
-      options: ChoiceOption[]
-    }
-  | {
-      id: string | number
-      kind: 'MATCHING'
-      prompt: string
-      points?: number
-      pairs: MatchingPair[]
-    }
+/** Matching is attempted through `items/matching` — one learner renderer. */
+export interface ChoiceAttemptItem {
+  id: string | number
+  kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE'
+  prompt: string
+  points?: number
+  options: ChoiceOption[]
+}
 
 export type ChoiceAnswer = string | number | (string | number)[] | Record<string, string> | null | undefined
 
@@ -79,41 +72,6 @@ export function ChoiceItemAttempt({
   disabled,
   onAnswerChange,
 }: ItemAttemptProps<ChoiceAttemptItem, ChoiceAnswer>) {
-  const t = useTranslations('Features.Assessments.Items.Choice')
-
-  if (item.kind === 'MATCHING') {
-    const current = answer && typeof answer === 'object' && !Array.isArray(answer) ? answer : {}
-    const rightOptions = item.pairs.map(pair => pair.right)
-
-    return (
-      <div className="space-y-3">
-        {item.pairs.map(pair => (
-          <div
-            key={pair.id}
-            className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
-          >
-            <span className="min-w-0 flex-1 text-sm font-medium">{pair.left}</span>
-            <NativeSelect
-              value={current[pair.left] ?? ''}
-              disabled={disabled}
-              onChange={event => onAnswerChange({ ...current, [pair.left]: event.target.value })}
-              aria-label={t('matching.matchLabel', { term: pair.left })}
-            >
-              <NativeSelectOption value="" disabled hidden>
-                {t('selectMatch')}
-              </NativeSelectOption>
-              {rightOptions.map(right => (
-                <NativeSelectOption key={right} value={right}>
-                  {right}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
   if (item.kind === 'CHOICE_MULTIPLE') {
     const selected = Array.isArray(answer) ? answer : []
     return (
@@ -536,7 +494,6 @@ const CHOICE_KIND_LABEL_KEYS: Record<ChoiceAttemptItem['kind'], string> = {
   CHOICE_SINGLE: 'single',
   CHOICE_MULTIPLE: 'multiple',
   TRUE_FALSE: 'trueFalse',
-  MATCHING: 'matching',
 }
 
 export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
@@ -549,7 +506,6 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
   const current = toChoiceSelectionKey(answer) ?? ''
 
   const answerLabel = (() => {
-    if (item.kind === 'MATCHING') return JSON.stringify(answer ?? {}, null, 2)
     if (item.kind === 'CHOICE_MULTIPLE') {
       const ids = Array.isArray(answer) ? answer : []
       return item.options
@@ -572,7 +528,7 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
         ) : null}
       </div>
       <MarkdownContent mode="compactRichText" content={item.prompt} compact />
-      <pre className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}>
+      <pre className="mt-2 font-sans text-sm whitespace-pre-wrap">
         {answerLabel}
       </pre>
     </div>
@@ -580,7 +536,7 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
 }
 
 export const choiceModules: ItemKindModule[] = (
-  ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE', 'MATCHING'] as const
+  ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE'] as const
 ).map(
   kind =>
     ({

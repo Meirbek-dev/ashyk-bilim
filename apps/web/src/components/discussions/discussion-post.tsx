@@ -120,6 +120,7 @@ export default function DiscussionPost({
                           setEditContent(post.postMessage)
                         }}
                         disabled={!canUpdate}
+                        aria-label={t('edit')}
                         className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
                       >
                         <Edit size={12} />
@@ -131,6 +132,7 @@ export default function DiscussionPost({
                         size="sm"
                         onClick={() => onDeletePost(post.id)}
                         disabled={!canDelete}
+                        aria-label={t('delete')}
                         className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-7 w-7 p-0"
                       >
                         <Trash2 size={12} />
@@ -178,6 +180,8 @@ export default function DiscussionPost({
                       variant="ghost"
                       size="sm"
                       onClick={() => onVotePost(post.id, 'up')}
+                      aria-pressed={post.userVote === 'up'}
+                      aria-label={t('upvote')}
                       className={cn(
                         'h-8 rounded-none border-border border-r px-3 transition-all',
                         post.userVote === 'up'
@@ -193,6 +197,8 @@ export default function DiscussionPost({
                       variant="ghost"
                       size="sm"
                       onClick={() => onVotePost(post.id, 'down')}
+                      aria-pressed={post.userVote === 'down'}
+                      aria-label={t('downvote')}
                       className={cn(
                         'h-8 rounded-none px-3 transition-all',
                         post.userVote === 'down'

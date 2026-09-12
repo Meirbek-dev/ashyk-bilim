@@ -2,7 +2,6 @@
 
 import { useActionState } from 'react'
 import { useTranslations } from 'next-intl'
-import { useSearchParams } from 'next/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { toast } from 'sonner'
 import * as v from 'valibot'
@@ -22,16 +21,22 @@ interface VerifyState {
 
 const INITIAL_STATE: VerifyState = { error: null, fieldErrors: {} }
 
+interface VerifyEmailClientProps {
+  /** `?email=` from the email link (prefill only). */
+  email: string
+  /** `?code=` from the email link (prefill only). */
+  code: string
+}
+
 /**
  * Confirms the emailed verification code (`POST /auth/verify-email`). The
  * email link lands here with `?email=&code=` prefilled; the form is also
  * usable by hand.
  */
-function VerifyEmailClient() {
+function VerifyEmailClient({ email, code }: VerifyEmailClientProps) {
   const t = useTranslations('Auth.VerifyEmail')
   const validationT = useTranslations('Validation')
   const errorsT = useTranslations('Errors')
-  const searchParams = useSearchParams()
   const router = useRouter()
 
   const schema = v.object({
@@ -83,7 +88,7 @@ function VerifyEmailClient() {
             <Input
               name="email"
               type="email"
-              defaultValue={searchParams.get('email') ?? ''}
+              defaultValue={email}
               autoComplete="email"
               className="w-full"
             />
@@ -95,7 +100,7 @@ function VerifyEmailClient() {
           <FieldContent>
             <Input
               name="code"
-              defaultValue={searchParams.get('code') ?? ''}
+              defaultValue={code}
               autoComplete="one-time-code"
               autoCapitalize="characters"
               className="w-full"

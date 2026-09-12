@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query'
+import { queryOptions, type QueryClient } from '@tanstack/react-query'
 
 import { apiJson } from '@/lib/api-client'
 import { LearnerCourseState } from '@/lib/api/generated/zod'
@@ -12,6 +12,16 @@ export const learnerCourseStateQueryOptions = (courseUuid: string, enabled = tru
     enabled: enabled && Boolean(courseUuid),
     staleTime: 15_000,
   })
+
+/**
+ * After a hand-in (quiz submit, file submit, …): the outline sidebar, header
+ * badge, footer CTA and course progress read the learner-state projection —
+ * the client query here plus the server-rendered activity runtime.
+ */
+export async function refreshLearnerCourseState(queryClient: QueryClient, router: { refresh: () => void }) {
+  await queryClient.invalidateQueries({ queryKey: ['learner-course'] })
+  router.refresh()
+}
 
 /**
  * The one progress source for the course page: the learner-state outline

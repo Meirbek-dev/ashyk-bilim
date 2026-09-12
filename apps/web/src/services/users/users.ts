@@ -1,11 +1,12 @@
 'use server'
 import { apiJson } from '@/lib/api-client'
-import type { AdminUserPage, SearchResults, UserHit } from '@/lib/api/generated/zod'
+import { isApiError } from '@/lib/api/assertSuccess'
+import type { AdminUserPage, UserHit } from '@/lib/api/generated/zod'
 
 /**
  * Public profile projection (server side). v2 has no `GET /users/{id}`:
- * other users are reachable through `GET /search` (public hit) or the
- * admin listing `GET /users`. `first_name`/`last_name`/`bio`/`profile` are
+ * other users are reachable through `GET /users/{username}` (public card,
+ * readable anonymously) or the admin listing `GET /users`. `first_name`/`last_name`/`bio`/`profile` are
  * kept for the profile page which still renders the legacy shape.
  */
 export interface AppUserProfileData {
@@ -41,10 +42,13 @@ export async function getUser(user_id: string): Promise<AppUserProfileData> {
   return toProfile(user)
 }
 
-export async function getUserByUsername(username: string): Promise<AppUserProfileData> {
-  const results = await apiJson<SearchResults>(`search?q=${encodeURIComponent(username)}&limit=20`)
-  const user = results.users.find(candidate => candidate.username.toLowerCase() === username.toLowerCase())
-  if (!user) throw new Error(`User ${username} was not found`)
-  return toProfile(user)
+/** `null` when no user has that username (a page state, not a load failure). */
+export async function getUserByUsername(username: string): Promise<AppUserProfileData | null> {
+  try {
+    return toProfile(await apiJson<UserHit>(`users/${encodeURIComponent(username)}`))
+  } catch (error) {
+    if (isApiError(error) && error.status === 404) return null
+    throw error
+  }
 }
 

@@ -71,7 +71,11 @@ function UserAvatar(props: UserAvatarProps) {
     imageProps,
   } = props
 
-  const { data: userData } = useUserByUsername(username)
+  // The username lookup is a `GET search?q=` per avatar: only worth it when
+  // the caller left the picture unknown (or needs an id for the popup) — a
+  // leaderboard row already carries `avatar_url` + `user_id`.
+  const lookupNeeded = !user && (avatar_url === undefined || (Boolean(showProfilePopup) && !userId))
+  const { data: userData } = useUserByUsername(username, { enabled: lookupNeeded })
 
   const resolvedUser = useMemo<AvatarUser | null>(() => {
     if (user) return user

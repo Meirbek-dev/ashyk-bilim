@@ -9,7 +9,7 @@ import { getPostAuthRedirect, normalizeReturnTo } from '@/lib/auth/redirect'
 import PasswordInput from '@components/ui/custom/password-input'
 import { SiGoogle } from '@icons-pack/react-simple-icons'
 import { Separator } from '@components/ui/separator'
-import { useActionState, useTransition } from 'react'
+import { useActionState, useState, useTransition } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@components/ui/button'
@@ -63,6 +63,9 @@ function LoginClient() {
   const searchParams = useSearchParams()
   const locale = useLocale()
   const [isPendingGoogle, startGoogleTransition] = useTransition()
+  // Controlled: the form action resets uncontrolled fields, and swapping a
+  // `defaultValue` after mount trips Base UI's uncontrolled-field warning.
+  const [login, setLogin] = useState('')
 
   const messageForCode = (code: string | null | undefined): string | null => {
     if (!code) return null
@@ -228,7 +231,8 @@ function LoginClient() {
                 <Input
                   name="login"
                   type="text"
-                  defaultValue={state.login}
+                  value={login}
+                  onChange={event => setLogin(event.target.value)}
                   placeholder={t('loginIdentifierPlaceholder')}
                   autoComplete="username"
                   className="w-full"

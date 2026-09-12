@@ -129,6 +129,31 @@ describe('getCourseWorkspaceCapabilitiesForCourse', () => {
     expect(mocks.redirect).not.toHaveBeenCalled()
   })
 
+  it('a `user`-role active co-author edits the course like the creator (authorship is the :own scope)', async () => {
+    const learnerId = '01a08bd6-a04f-70cc-bfc8-e6216333d3d4'
+    mocks.requireSession.mockResolvedValue(session(learnerId, learnerPermissions))
+    mocks.getCourseMetadata.mockResolvedValue({
+      course_uuid: courseId,
+      creator_id: teacherId,
+      contributor_ids: [learnerId],
+    })
+
+    const caps = await getCourseWorkspaceCapabilitiesForCourse(courseId)
+
+    expect(caps).toMatchObject({
+      canViewWorkspace: true,
+      canCreateCourse: false,
+      canEditDetails: true,
+      canEditCurriculum: true,
+      canManageAccess: true,
+      canManageCollaboration: true,
+      canManageCertificate: true,
+      canReviewCourse: true,
+      canDeleteCourse: false,
+    })
+    expect(mocks.redirect).not.toHaveBeenCalled()
+  })
+
   it('sends a learner to /unauthorized with canViewWorkspace === false', async () => {
     mocks.requireSession.mockResolvedValue(session('01a08bd6-a04f-70cc-bfc8-e6216333d3d4', learnerPermissions))
     mocks.getCourseMetadata.mockResolvedValue({ course_uuid: courseId, creator_id: teacherId })

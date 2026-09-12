@@ -32,6 +32,9 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
   const isBlocked = recommendedAction === 'blocked'
   const isWaiting = recommendedAction === 'waitForRelease'
   const isRevision = recommendedAction === 'startRevision'
+  // Unlimited attempts + batch release: the learner may start again, but the
+  // last hand-in is still awaiting the teacher — say so instead of «Готовы начать».
+  const isAwaitingRelease = vm.releaseState === 'AWAITING_RELEASE'
 
   const questionCount = items.length
   const { timeLimitSeconds } = policy
@@ -147,8 +150,12 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
               </>
             ) : (
               <>
-                <div className="text-sm font-semibold">{isRevision ? t('revision') : t('readyToStart')}</div>
-                <p className="text-muted-foreground mt-1 text-sm">{t('readyToStartSubtitle')}</p>
+                <div className="text-sm font-semibold">
+                  {isRevision ? t('revision') : isAwaitingRelease ? t('pendingGrade') : t('readyToStart')}
+                </div>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {isAwaitingRelease ? t('waitingForRelease') : t('readyToStartSubtitle')}
+                </p>
               </>
             )}
           </div>

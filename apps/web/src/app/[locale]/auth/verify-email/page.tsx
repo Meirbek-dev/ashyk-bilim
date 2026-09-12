@@ -11,11 +11,22 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: t('title', { platformName: APP_NAME }) }
 }
 
-// `useSearchParams` needs a Suspense boundary for the static shell.
-export default function VerifyEmail() {
+type VerifyEmailProps = {
+  searchParams: Promise<{ email?: string | string[]; code?: string | string[] }>
+}
+
+// The `?email=&code=` prefill is request-bound: read it inside Suspense so
+// the route streams instead of blocking on URL data.
+export default function VerifyEmail(props: VerifyEmailProps) {
   return (
     <Suspense>
-      <VerifyEmailClient />
+      <VerifyEmailPrefill searchParams={props.searchParams} />
     </Suspense>
   )
+}
+
+async function VerifyEmailPrefill({ searchParams }: VerifyEmailProps) {
+  const { email, code } = await searchParams
+  const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? ''
+  return <VerifyEmailClient email={first(email)} code={first(code)} />
 }

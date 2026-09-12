@@ -12,6 +12,7 @@ import type { ReleaseState } from './release'
 import type { NormalizedScore } from './score'
 import type { PolicyView } from './policy'
 import type { AssessmentItem } from './items'
+import type { GradedItem } from '@/lib/api/generated/zod'
 
 /** The three product surfaces every assessment kind must support. */
 export type AssessmentSurface = 'STUDIO' | 'REVIEW' | 'ATTEMPT'
@@ -84,8 +85,8 @@ export interface AttemptViewModel {
   score: NormalizedScore
   policy: PolicyView
   items: AssessmentItem[]
-  /** Released per-item grades keyed by item id (`GradedItem.score` / `max_score`); empty until released. */
-  itemScores: Record<string, { score: number; maxScore: number }>
+  /** Released per-item grades keyed by item id (the wire `GradedItem`: score, verdict code, teacher prose); empty until released. */
+  itemScores: Record<string, GradedItem>
   /** Student may edit answers. */
   canEdit: boolean
   /** Student may save a draft. */

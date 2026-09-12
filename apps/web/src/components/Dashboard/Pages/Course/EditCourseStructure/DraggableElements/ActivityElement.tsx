@@ -40,6 +40,7 @@ import { useCourse } from '@components/Contexts/CourseContext'
 import { useSession } from '@/hooks/useSession'
 import { useApiError } from '@/hooks/useApiError'
 import { getAbsoluteUrl } from '@services/config/config'
+import AppLink from '@/components/ui/AppLink'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
@@ -141,14 +142,14 @@ function ActivityElement({
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingActivity, setIsDeletingActivity] = useState(false)
 
-  // v2 activities carry no `can_*` flags: derive them from the session grants
-  // the way the course workspace does (`<resource>:<action>:platform`, or
-  // `:own` when the caller created the course).
+  // v2 activities carry no `can_*` flags: derive them the way the course
+  // workspace does — authorship (creator / active co-author) is the `:own`
+  // scope, `<resource>:<action>:platform` covers every course.
   const { can, session } = useSession()
   const { courseStructure } = useCourse()
   const isAuthor = isCourseAuthor(courseStructure, session?.userId)
-  const canUpdate = can('activity', 'update', 'platform') || (isAuthor && can('activity', 'update', 'own'))
-  const canDelete = can('activity', 'delete', 'platform') || (isAuthor && can('activity', 'delete', 'own'))
+  const canUpdate = isAuthor || can('activity', 'update', 'platform')
+  const canDelete = isAuthor || can('activity', 'delete', 'platform')
 
   const handleStartEdit = () => {
     setEditedName(activity.name)
@@ -420,7 +421,7 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
   const course = useCourse()
 
   if (activity.activity_type === 'TYPE_DYNAMIC') {
-    const editUrl = `${getAbsoluteUrl('')}/editor/course/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/edit`
+    const editUrl = `/editor/course/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/edit`
     return (
       <ToolTip content={t('editPageButton')} side="top">
         <Button
@@ -429,10 +430,10 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
           className={ACTION_ICON_BUTTON_CLASS}
           nativeButton={false}
           render={
-            <a href={editUrl} target="_blank" rel="noopener noreferrer">
+            <AppLink href={editUrl}>
               <FilePenLine className="h-4 w-4" />
               <span className="sr-only">{t('openEditPage')}</span>
-            </a>
+            </AppLink>
           }
         />
       </ToolTip>
@@ -445,7 +446,9 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
     activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
     activity.activity_type === 'TYPE_FILE_SUBMISSION'
   ) {
-    const editUrl = `${getAbsoluteUrl('')}/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`
+    // In-app editor: locale-prefixed, same tab (an `<a target=_blank>` lost
+    // the locale and opened a second copy of the workspace).
+    const editUrl = `/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`
     return (
       <ToolTip content={t('configureButton')} side="top">
         <Button
@@ -454,10 +457,10 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
           className={ACTION_ICON_BUTTON_CLASS}
           nativeButton={false}
           render={
-            <a href={editUrl} target="_blank" rel="noopener noreferrer">
+            <AppLink href={editUrl}>
               <FilePenLine className="h-4 w-4" />
               <span className="sr-only">{t('openEditPage')}</span>
-            </a>
+            </AppLink>
           }
         />
       </ToolTip>

@@ -67,15 +67,17 @@ function renderBlock(nodeAttrs: WebPreviewAttrs) {
   const updateAttributes = vi.fn()
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   // Only the node, the attribute setter and delete are read by the view.
-  const props = { node: { attrs: nodeAttrs }, updateAttributes, deleteNode: vi.fn() } as unknown as Parameters<
-    typeof WebPreviewComponent
-  >[0]
-  render(
+  const props = (attrsNow: WebPreviewAttrs) =>
+    ({ node: { attrs: attrsNow }, updateAttributes, deleteNode: vi.fn() }) as unknown as Parameters<
+      typeof WebPreviewComponent
+    >[0]
+  const tree = (attrsNow: WebPreviewAttrs) => (
     <QueryClientProvider client={client}>
-      <WebPreviewComponent {...props} />
-    </QueryClientProvider>,
+      <WebPreviewComponent {...props(attrsNow)} />
+    </QueryClientProvider>
   )
-  return updateAttributes
+  const { rerender } = render(tree(nodeAttrs))
+  return Object.assign(updateAttributes, { rerenderWith: (next: WebPreviewAttrs) => rerender(tree(next)) })
 }
 
 describe('editor link block on `GET utils/link-preview`', () => {
@@ -137,6 +139,29 @@ describe('editor link block on `GET utils/link-preview`', () => {
 
     await waitFor(() => expect(updateAttributes).toHaveBeenCalledWith(previewToAttrs('http://10.0.0.1/secret', null)))
     expect(String(mocks.toastError.mock.calls[0]?.[0])).toBe('Errors.fields.unsafe')
+  })
+
+  it('looks a rejected URL up once, then shows a fallback card that is not a link', async () => {
+    mocks.linkPreview.mockRejectedValue(
+      new APIError({
+        code: 'validation-failed',
+        message: 'Validation failed',
+        status: 422,
+        fieldErrors: [{ field: 'url', code: 'unsafe', message: 'not a url' }],
+      }),
+    )
+
+    const updateAttributes = renderBlock(attrs({ url: 'not a url' }))
+
+    await waitFor(() => expect(updateAttributes).toHaveBeenCalledWith(previewToAttrs('not a url', null)))
+    // The stored link without metadata comes back through the node attrs —
+    // no second lookup, no second toast.
+    updateAttributes.rerenderWith(attrs(previewToAttrs('not a url', null)))
+    await waitFor(() => expect(screen.getByTestId('web-preview-fallback')).toBeInTheDocument())
+    expect(mocks.linkPreview).toHaveBeenCalledTimes(1)
+    expect(mocks.toastError).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('web-preview-fallback').closest('a')).toBeNull()
+    expect(screen.queryByText('Components.WebPreview.previewUnavailableHint')).not.toBeInTheDocument()
   })
 
   it('renders the stored card with the site name without refetching', () => {

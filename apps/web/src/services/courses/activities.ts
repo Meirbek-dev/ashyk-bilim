@@ -1,29 +1,20 @@
-'use server'
-
+// Plain isomorphic functions, NOT server actions: the curriculum page calls
+// them from client components and `APIError.code` (`activity-not-ready`, …)
+// does not survive the Next server-action boundary (GAUNTLET BUG-035).
+// Nothing reads the `courses` / `activities` cache tags (no `cacheTag()`
+// consumer), so there is nothing to revalidate here.
 import { apiJson } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
 import { Activity as ActivitySchema, ActivityDetail } from '@/lib/api/generated/zod'
 import { stripEntityPrefix, toAppActivity, toWireActivityType } from '@/hooks/courses/courseKeys'
 import { getAPIUrl } from '@services/config/config'
-import { courseTag, tags } from '@/lib/cacheTags'
 import type { Activity } from '@/components/Contexts/CourseContext'
-
-interface ActivityInvalidationOptions {
-  courseUuid?: string
-}
 
 const json = (method: 'POST' | 'PATCH', body: unknown) => ({
   method,
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(body),
 })
-
-async function invalidateActivityCache(courseUuid?: string) {
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.activities, 'max')
-  revalidateTag(tags.courses, 'max')
-  if (courseUuid) revalidateTag(courseTag.detail(stripEntityPrefix(courseUuid)), 'max')
-}
 
 /** Closed v2 `UpdateActivityRequest` (`additionalProperties: false`), with `TYPE_*` tokens mapped to the wire. */
 function toUpdateActivityRequest(data: Record<string, unknown>) {
@@ -42,11 +33,7 @@ function toUpdateActivityRequest(data: Record<string, unknown>) {
  * `POST chapters/{id}/activities` takes only `{name, activity_type, activity_sub_type}`;
  * any `content` / `details` / `published` in the payload goes in a follow-up PATCH.
  */
-export async function createActivity(
-  data: AppPayload,
-  chapter_id: string | number,
-  options?: ActivityInvalidationOptions,
-) {
+export async function createActivity(data: AppPayload, chapter_id: string | number) {
   if (!data || typeof data !== 'object') {
     throw clientApiError('INVALID_CLIENT_REQUEST', 'Activity payload is required', {
       path: 'chapters/{id}/activities',
@@ -69,8 +56,6 @@ export async function createActivity(
     created = await apiJson(`activities/${created.id}`, json('PATCH', patch), ActivitySchema.parse)
   }
 
-  await invalidateActivityCache(options?.courseUuid)
-
   return toAppActivity(created)
 }
 
@@ -79,7 +64,6 @@ export async function createExternalVideoActivity(
   data: Record<string, unknown>,
   activity: Record<string, unknown>,
   chapter_id: string | number,
-  options?: ActivityInvalidationOptions,
 ) {
   const defaultDetails = {
     startTime: 0,
@@ -109,7 +93,6 @@ export async function createExternalVideoActivity(
       details: videoDetails,
     } as AppPayload,
     chapter_id,
-    options,
   )
 }
 
@@ -124,10 +107,6 @@ export async function getActivity(activity_uuid: string, _next?: unknown): Promi
 
 export async function deleteActivity(activity_uuid: string) {
   await apiJson(`activities/${stripEntityPrefix(activity_uuid)}`, { method: 'DELETE' })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.activities, 'max')
-  revalidateTag(tags.courses, 'max')
 }
 
 export async function updateActivity(data: Record<string, unknown>, activity_uuid: string) {
@@ -136,9 +115,5 @@ export async function updateActivity(data: Record<string, unknown>, activity_uui
     json('PATCH', toUpdateActivityRequest(data)),
     ActivitySchema.parse,
   )
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.activities, 'max')
-
   return toAppActivity(activity)
 }

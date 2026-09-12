@@ -8,7 +8,7 @@ import { Button } from '@components/ui/button'
 interface ResourceNotFoundProps {
   courseuuid?: string
   session?: unknown
-  type?: 'activity' | 'activity-unavailable' | 'course' | 'generic'
+  type?: 'activity' | 'activity-unavailable' | 'course' | 'collection' | 'user' | 'generic'
 }
 
 export default function ResourceNotFound({ courseuuid, session, type = 'generic' }: ResourceNotFoundProps) {
@@ -20,13 +20,21 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
       ? tErrors('activityNotFound')
       : type === 'activity-unavailable'
         ? tErrors('activityUnavailable')
-        : tErrors('courseNotFound')
+        : type === 'collection'
+          ? tErrors('collectionNotFound')
+          : type === 'user'
+            ? tErrors('userNotFound')
+            : tErrors('courseNotFound')
   const message =
     type === 'activity'
       ? tErrors('activityNotFoundMessage')
       : type === 'activity-unavailable'
         ? tErrors('activityUnavailableMessage')
-        : tErrors('courseNotFoundMessage')
+        : type === 'collection'
+          ? tErrors('collectionNotFoundMessage')
+          : type === 'user'
+            ? tErrors('userNotFoundMessage')
+            : tErrors('courseNotFoundMessage')
 
   const handleBackToCourse = () => {
     if (!courseuuid) return

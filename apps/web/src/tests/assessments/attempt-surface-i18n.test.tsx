@@ -37,6 +37,14 @@ describe('attempt surface i18n (UX-010)', () => {
     expect(screen.getByText('50 мин')).toBeInTheDocument()
   })
 
+  // Critic 9: with unlimited attempts and a batch-release hand-in pending the
+  // entry card said «Готовы начать» — the receipt line must show instead.
+  it('tells the learner the last hand-in awaits the teacher when a retake is offered', () => {
+    renderRu(<AttemptEntryCard vm={{ ...vm, releaseState: 'AWAITING_RELEASE' } as AttemptViewModel} />)
+    expect(screen.getByText(/Ваша работа получена/)).toBeInTheDocument()
+    expect(screen.queryByText('Готовы начать')).toBeNull()
+  })
+
   it('renders the answered counter with a Russian plural in the action bar', () => {
     const navigation = {
       current: 1,

@@ -1,10 +1,10 @@
-'use server'
-
+// Plain isomorphic functions, NOT server actions — problem+json codes must
+// reach the client `toastApiError` (GAUNTLET BUG-035). Nothing reads the
+// `courses` cache tags (no `cacheTag()` consumer), so nothing is revalidated.
 import { apiJson } from '@/lib/api-client'
 import { Chapter } from '@/lib/api/generated/zod'
 import type { CourseOrderPayload } from '@/schemas/chapterSchemas'
 import { stripEntityPrefix, toAppChapter } from '@/hooks/courses/courseKeys'
-import { courseTag, tags } from '@/lib/cacheTags'
 
 /*
  This file includes only POST, PATCH, DELETE requests
@@ -16,11 +16,6 @@ const json = (method: 'POST' | 'PATCH', body: unknown) => ({
   body: JSON.stringify(body),
 })
 
-async function revalidateCourses() {
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-}
-
 /** `thumbnail_image` is not in the v2 `UpdateChapterRequest` and is dropped. */
 export async function updateChapter(chapterUuid: string, data: AppPayload): Promise<AppChapter> {
   const chapter = await apiJson(
@@ -31,7 +26,6 @@ export async function updateChapter(chapterUuid: string, data: AppPayload): Prom
     }),
     Chapter.parse,
   )
-  await revalidateCourses()
   return toAppChapter(chapter)
 }
 
@@ -40,7 +34,7 @@ export async function updateChapter(chapterUuid: string, data: AppPayload): Prom
  * `POST activities/{id}/move` (1-based positions; the server clamps and renumbers).
  * ponytail: N+M sequential requests per drag; diff against the previous order if it gets slow.
  */
-export async function updateCourseOrderStructure(course_uuid: string, data: CourseOrderPayload) {
+export async function updateCourseOrderStructure(_course_uuid: string, data: CourseOrderPayload) {
   for (const [chapterIndex, chapter] of data.chapter_order_by_uuids.entries()) {
     const chapterId = stripEntityPrefix(chapter.chapter_uuid)
     await apiJson(`chapters/${chapterId}/move`, json('POST', { position: chapterIndex + 1 }))
@@ -51,10 +45,6 @@ export async function updateCourseOrderStructure(course_uuid: string, data: Cour
       )
     }
   }
-
-  await revalidateCourses()
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(courseTag.detail(stripEntityPrefix(course_uuid)), 'max')
 }
 
 export async function createChapter(data: AppPayload & { course_uuid: string }): Promise<AppChapter> {
@@ -63,11 +53,9 @@ export async function createChapter(data: AppPayload & { course_uuid: string }):
     json('POST', { name: data.name, description: data.description ?? null }),
     Chapter.parse,
   )
-  await revalidateCourses()
   return { ...toAppChapter(chapter), activities: [] }
 }
 
 export async function deleteChapter(chapterUuid: string) {
   await apiJson(`chapters/${stripEntityPrefix(chapterUuid)}`, { method: 'DELETE' })
-  await revalidateCourses()
 }

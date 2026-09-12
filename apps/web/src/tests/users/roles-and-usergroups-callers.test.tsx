@@ -81,7 +81,8 @@ describe('EditUserGroup success detection (v2)', () => {
     const { toast } = await import('sonner')
     const { default: EditUserGroup } = await import('@/components/Objects/Modals/Dash/UserGroups/EditUserGroup')
 
-    render(<EditUserGroup usergroup={{ id: 'group-1', name: 'Team', description: '' }} />)
+    const onSaved = vi.fn()
+    render(<EditUserGroup usergroup={{ id: 'group-1', name: 'Team', description: '' }} onSaved={onSaved} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
 
@@ -92,5 +93,23 @@ describe('EditUserGroup success detection (v2)', () => {
       expect(toast.success).toHaveBeenCalledWith('toastSuccess')
     })
     expect(toast.error).not.toHaveBeenCalled()
+    // The dialog closes on success, like the create dialog.
+    expect(onSaved).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the dialog open when the PATCH fails', async () => {
+    updateUserGroup.mockReset().mockRejectedValue(new Error('boom'))
+    const { toast } = await import('sonner')
+    vi.mocked(toast.error).mockClear()
+    const { default: EditUserGroup } = await import('@/components/Objects/Modals/Dash/UserGroups/EditUserGroup')
+
+    const onSaved = vi.fn()
+    render(<EditUserGroup usergroup={{ id: 'group-1', name: 'Team', description: '' }} onSaved={onSaved} />)
+    fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
+
+    await vi.waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('toastError')
+    })
+    expect(onSaved).not.toHaveBeenCalled()
   })
 })

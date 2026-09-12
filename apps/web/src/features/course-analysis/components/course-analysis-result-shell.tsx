@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AIConfidenceMeter, AIEvidencePanel } from '@/features/ai-experience'
+import { AIConfidenceMeter, AIEvidencePanel, modelLabel } from '@/features/ai-experience'
 import type { AICitation } from '@/features/ai-experience'
 import { useApiError } from '@/hooks/useApiError'
 import { fromUnix } from '@/lib/api/contract'
@@ -102,7 +102,7 @@ export function CourseAnalysisResultShell({
           </p>
           <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
             <span>
-              {analysis.model_name ? t('modelRecorded', { name: analysis.model_name }) : t('modelNotRecorded')}
+              {modelLabel(t, analysis.model_name)}
             </span>
             <span>{t('citationsCount', { count: citations.length })}</span>
             {createdAt ? <span>{format.dateTime(createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</span> : null}

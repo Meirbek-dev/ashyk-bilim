@@ -7,6 +7,16 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { KeyRound, Loader2, LockKeyhole, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react'
 import { Button } from '@components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@components/ui/input'
 import PasswordInput from '@components/ui/custom/password-input'
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@components/ui/field'
@@ -62,6 +72,7 @@ function SessionsSection({ t }: { t: Translator }) {
     retryDelay: 1_000,
   })
 
+  const [revokeCandidate, setRevokeCandidate] = useState<string | null>(null)
   const revokeMutation = useMutation({
     mutationFn: (handle: string) => revokeSession(handle),
     onSuccess: async () => {
@@ -120,7 +131,7 @@ function SessionsSection({ t }: { t: Translator }) {
                   variant="outline"
                   size="sm"
                   disabled={revokeMutation.isPending}
-                  onClick={() => revokeMutation.mutate(session.handle)}
+                  onClick={() => setRevokeCandidate(session.handle)}
                 >
                   <Trash2 size={14} aria-hidden="true" />
                   {t('revoke')}
@@ -130,6 +141,26 @@ function SessionsSection({ t }: { t: Translator }) {
           ))}
         </ul>
       ) : null}
+      <AlertDialog open={revokeCandidate !== null} onOpenChange={open => !open && setRevokeCandidate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('revokeConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('revokeConfirmDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('revokeCancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={revokeMutation.isPending}
+              onClick={() => {
+                if (revokeCandidate) revokeMutation.mutate(revokeCandidate, { onSettled: () => setRevokeCandidate(null) })
+              }}
+            >
+              {t('revoke')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

@@ -9,7 +9,18 @@ import {
 } from '@services/courses/discussions'
 import type { Discussion } from '@services/courses/discussions'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import DiscussionPost from './discussion-post'
 import DiscussionForm from './discussion-form'
 import { Badge } from '@/components/ui/badge'
@@ -93,6 +104,8 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
     return []
   })
   const postsRafRef = useRef<number | null>(null)
+  // Delete confirmation: one dialog for posts and replies.
+  const [pendingDelete, setPendingDelete] = useState<{ postId: string; replyId?: string } | null>(null)
 
   // Update posts when initialPosts changes
   useEffect(() => {
@@ -129,6 +142,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       const newPost = transformDiscussionToPost(newDiscussion, anonymousLabel)
 
       setPosts([newPost, ...posts])
+      toast.success(t('toasts.posted'))
 
       // Refresh data from server
       if (onMutate) {
@@ -167,6 +181,8 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           post.id === postId ? { ...post, replies: [...(post.replies || []), transformedReply] } : post,
         ),
       )
+
+      toast.success(t('toasts.replied'))
 
       // Refresh data from server to ensure consistency
       if (onMutate) {
@@ -279,6 +295,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
     try {
       await deleteDiscussion(courseUuid, post.discussion_uuid)
       setPosts(posts.filter(currentPost => currentPost.id !== postId))
+      toast.success(t('toasts.deleted'))
 
       // Refresh data from server
       if (onMutate) {
@@ -318,6 +335,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
             : currentPost,
         ),
       )
+      toast.success(t('toasts.deleted'))
 
       // Refresh data from server
       if (onMutate) {
@@ -347,6 +365,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
             : currentPost,
         ),
       )
+      toast.success(t('toasts.edited'))
 
       // Refresh data from server
       if (onMutate) {
@@ -394,6 +413,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
             : currentPost,
         ),
       )
+      toast.success(t('toasts.edited'))
 
       // Refresh data from server
       if (onMutate) {
@@ -423,8 +443,8 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
             currentUser={discussionUser}
             onVotePost={handleVotePost}
             onVoteReply={handleVoteReply}
-            onDeletePost={handleDeletePost}
-            onDeleteReply={handleDeleteReply}
+            onDeletePost={postId => setPendingDelete({ postId })}
+            onDeleteReply={(postId, replyId) => setPendingDelete({ postId, replyId })}
             onEditPost={handleEditPost}
             onEditReply={handleEditReply}
             onSubmitReply={handleSubmitReply}
@@ -441,6 +461,31 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           </Card>
         )}
       </div>
+
+      <AlertDialog open={pendingDelete !== null} onOpenChange={open => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('delete')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete?.replyId ? t('confirmDeleteReply') : t('confirmDeletePost')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (!pendingDelete) return
+                const { postId, replyId } = pendingDelete
+                setPendingDelete(null)
+                void (replyId ? handleDeleteReply(postId, replyId) : handleDeletePost(postId))
+              }}
+            >
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
