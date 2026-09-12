@@ -745,3 +745,18 @@ and `PATCH /courses/{id}` accepts `thumbnail_upload_id`, claiming a
 finalized upload the caller owns and releasing the replaced key to the
 reaper — the same shape platform branding and avatars use. Video
 thumbnails are gone (no v2 field; nothing rendered them).
+
+## Leaving a course resets its lesson completions (2026-09-12)
+
+`DELETE /trail/courses/{id}` dropped the trail run but kept the progress
+projection, so a learner who "left" a course was still enrolled at 25 % and
+`can_enroll` was false. The legacy `remove_course_from_trail` deleted the
+`TrailStep`s too — the explicit lesson completions. v2 now resets those rows
+(`unmark_complete` for every non-pipeline activity) and recalculates the
+course; assessment and file-submission rows are pipeline-owned and stay,
+because the submissions still exist. Enrolment is derived from a run or any
+row past `not_started`, not from the mere existence of projection rows.
+
+Operational note: projector rule changes (this one and the unreleased-grade
+hiding above) need `ashyq admin progress-backfill` after deploy — persisted
+rows are only rewritten on the next write.

@@ -257,7 +257,9 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
     assert_eq!(back.json()["progress"]["progress_pct"], 50.0);
     assert_eq!(activity(&back.json(), &a2)["state"], "not_started");
 
-    // Drop the course from the trail: runs gone, projection kept.
+    // Drop the course from the trail: runs and steps gone, the lesson
+    // completions they stood for reset (legacy `remove_course_from_trail`),
+    // so the learner is no longer enrolled and starts from zero.
     let dropped = app
         .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
         .await;
@@ -268,8 +270,9 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
             &format!("/api/v2/courses/{course_id}/learner-state"),
         )
         .await;
-    assert_eq!(still.json()["enrolled"], true);
-    assert_eq!(still.json()["progress"]["progress_pct"], 50.0);
+    assert_eq!(still.json()["enrolled"], false);
+    assert_eq!(still.json()["progress"]["progress_pct"], 0.0);
+    assert_eq!(activity(&still.json(), &a1)["state"], "not_started");
 
     // Gates: a private course is invisible; zero grants cannot write.
     let private = app

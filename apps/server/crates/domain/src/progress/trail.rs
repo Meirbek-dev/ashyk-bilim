@@ -168,13 +168,21 @@ impl TrailService {
         self.hydrate(trail).await
     }
 
-    /// Drop the run and every step in it.
+    /// Drop the run and every step in it, and reset the explicit lesson
+    /// completions those steps stood for (legacy `remove_course_from_trail`
+    /// deleted the `TrailStep`s). Assessment and file-submission rows are
+    /// pipeline-owned and stay — the submissions still exist.
     pub async fn remove_course(&self, actor: &Actor, course_id: CourseId) -> Result<Trail> {
         Self::require_write(actor)?;
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("trail"))?;
         ab_db::progress::delete_trail_run(&self.pool, trail.id, course_id).await?;
+        for activity in ab_db::catalog::list_activities(&self.pool, course_id).await? {
+            self.projector
+                .unmark_complete(&activity, actor.user_id)
+                .await?;
+        }
         self.hydrate(trail).await
     }
 
