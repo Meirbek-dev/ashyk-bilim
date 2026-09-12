@@ -735,3 +735,13 @@ the platform-wide bypass is reserved for holders of `course:update:platform`
 or `course:manage:platform` (maintainers, admins), and the same rule applies
 to collections. Zitadel's `AlreadyExists` on TOTP enrolment maps to the
 contract's 409 alongside `AlreadyReady`.
+
+## Course thumbnails ride the upload pipeline (2026-09-12)
+
+The legacy `PUT /courses/{id}/thumbnail` multipart route was never ported;
+the `course-thumbnail` upload purpose and `courses.thumbnail_image_key`
+existed with nothing to claim them. `Course` now exposes `thumbnail_key`
+and `PATCH /courses/{id}` accepts `thumbnail_upload_id`, claiming a
+finalized upload the caller owns and releasing the replaced key to the
+reaper — the same shape platform branding and avatars use. Video
+thumbnails are gone (no v2 field; nothing rendered them).
