@@ -15,10 +15,10 @@ export class LoginPage {
 
   public constructor(page: Page) {
     this.page = page
-    this.emailInput = page.locator('input[name="login"]')
-    this.passwordInput = page.locator('input[name="password"]')
+    this.emailInput = page.locator('form:visible input[name=\"login\"]')
+    this.passwordInput = page.locator('form:visible input[name=\"password\"]')
     // The login button is the only submit-type button in the auth form
-    this.submitButton = page.locator('form button[type="submit"]')
+    this.submitButton = page.locator('form:visible button[type="submit"]')
     this.errorBanner = page.locator('[role="alert"]').first()
   }
 

@@ -284,7 +284,7 @@ function LoginClient() {
 
       <p className="text-muted-foreground mt-5 text-center text-sm">
         {t('noAccount')}{' '}
-        <Link href={getAbsoluteUrl('/signup')} className="text-primary underline">
+        <Link href={'/auth/signup'} className="text-primary underline">
           {t('signup')}
         </Link>
       </p>

@@ -77,7 +77,7 @@ describe('/auth/signup', () => {
         confirmPassword: 'correct horse',
       }),
     )
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/login'))
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/auth/login'))
   })
 
   it('maps username-taken / email-taken onto their fields and keeps the values', async () => {

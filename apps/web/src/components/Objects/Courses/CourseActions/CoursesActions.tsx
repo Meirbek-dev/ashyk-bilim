@@ -53,7 +53,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
 
   const handleCourseAction = async () => {
     if (!currentUser) {
-      router.push(getAbsoluteUrl('/signup'))
+      router.push('/auth/signup')
       return
     }
 
@@ -125,7 +125,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
 
   const handleApplyToContribute = async () => {
     if (!currentUser) {
-      router.push(getAbsoluteUrl('/signup'))
+      router.push('/auth/signup')
       return
     }
 
@@ -173,7 +173,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
       return (
         <Button
           variant="outline"
-          onClick={() => router.push(getAbsoluteUrl('/signup'))}
+          onClick={() => router.push('/auth/signup')}
           aria-label={t('aria.signupToApply')}
           className="h-12 w-full gap-2 text-base"
         >

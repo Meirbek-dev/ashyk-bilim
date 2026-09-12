@@ -151,7 +151,7 @@ function CourseActionsMobile({ courseuuid, course, trailData }: CourseActionsMob
 
   const handleCourseAction = async () => {
     if (!currentUser) {
-      router.push(getAbsoluteUrl('/signup'))
+      router.push('/auth/signup')
       return
     }
 

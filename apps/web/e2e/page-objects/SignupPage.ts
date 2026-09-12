@@ -18,13 +18,13 @@ export class SignupPage {
 
   public constructor(page: Page) {
     this.page = page
-    this.firstNameInput = page.locator('input[name="firstName"]')
-    this.lastNameInput = page.locator('input[name="lastName"]')
-    this.usernameInput = page.locator('input[name="username"]')
-    this.emailInput = page.locator('input[name="email"]')
-    this.passwordInput = page.locator('input[name="password"]')
-    this.confirmPasswordInput = page.locator('input[name="confirmPassword"]')
-    this.submitButton = page.locator('form button[type="submit"]')
+    this.firstNameInput = page.locator('form:visible input[name=\"firstName\"]')
+    this.lastNameInput = page.locator('form:visible input[name=\"lastName\"]')
+    this.usernameInput = page.locator('form:visible input[name=\"username\"]')
+    this.emailInput = page.locator('form:visible input[name=\"email\"]')
+    this.passwordInput = page.locator('form:visible input[name=\"password\"]')
+    this.confirmPasswordInput = page.locator('form:visible input[name=\"confirmPassword\"]')
+    this.submitButton = page.locator('form:visible button[type="submit"]')
     this.errorBanner = page.locator('[role="alert"]').first()
   }
 

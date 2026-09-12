@@ -104,7 +104,7 @@ export function SessionProvider({ children, initialSession = null }: SessionProv
   const handleBroadcastLogout = useCallback(() => {
     setSession(null)
     queryClient.clear()
-    router.push('/login')
+    router.push('/auth/login')
   }, [queryClient, router])
 
   const handleBroadcastRefresh = useCallback(() => {

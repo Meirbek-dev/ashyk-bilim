@@ -113,7 +113,7 @@ function SignupClient() {
     }
 
     toast.success(t('success'), { description: t('successDescription') })
-    router.push('/login')
+    router.push('/auth/login')
     return INITIAL_STATE
   }, INITIAL_STATE)
 

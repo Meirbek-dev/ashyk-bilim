@@ -64,7 +64,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     for await (const chunk of stream) chunks.push(Buffer.from(chunk))
     const text = Buffer.concat(chunks).toString('utf8')
     expect(text.startsWith('\uFEFF')).toBe(true)
-    expect(text.split(/\r?\n/)[0]).toMatch(/^Learner,Email,/)
+    expect(text.replace(/^\uFEFF/, '').split(/\r?\n/)[0]).toMatch(/^Learner,Email,/)
   })
 
   // ── 2. Grade file submission ──────────────────────────────────────────────

@@ -58,7 +58,7 @@ function VerifyEmailClient() {
       return { error: errorsT.has(key) ? errorsT(key) : t('failed'), fieldErrors: {} }
     }
     toast.success(t('success'))
-    router.push('/login')
+    router.push('/auth/login')
     return INITIAL_STATE
   }, INITIAL_STATE)
 

@@ -99,9 +99,13 @@ export class CoursePlayerPage {
     await this.gotoTrail()
     const card = this.trailCourseCard(courseUuid)
     await expect(card).toBeVisible({ timeout: 15_000 })
-    await expect(card.getByRole('link', { name: /download certificate|certificate/i })).toBeVisible({
-      timeout: 20_000,
-    })
+    // v2 offers «Download PDF» (a button) next to the «View certificate» link.
+    await expect(
+      card
+        .getByRole('link', { name: /view certificate|download certificate|certificate/i })
+        .or(card.getByRole('button', { name: /download pdf|certificate/i }))
+        .first(),
+    ).toBeVisible({ timeout: 20_000 })
   }
 
   /** Assert the course's trail card offers no certificate yet */
@@ -109,6 +113,7 @@ export class CoursePlayerPage {
     await this.gotoTrail()
     const card = this.trailCourseCard(courseUuid)
     await expect(card).toBeVisible({ timeout: 15_000 })
-    await expect(card.getByRole('link', { name: /download certificate|certificate/i })).toHaveCount(0)
+    await expect(card.getByRole('link', { name: /view certificate|download certificate|certificate/i })).toHaveCount(0)
+    await expect(card.getByRole('button', { name: /download pdf/i })).toHaveCount(0)
   }
 }
