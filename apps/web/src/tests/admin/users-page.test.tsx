@@ -21,10 +21,12 @@ vi.mock('@/hooks/useSession', () => ({
 const listUsers = vi.fn()
 const listRoles = vi.fn()
 const assignRoleToUser = vi.fn()
+const createUser = vi.fn()
 vi.mock('@/services/rbac', () => ({
   listUsers: (...args: unknown[]) => listUsers(...args),
   listRoles: () => listRoles(),
   assignRoleToUser: (...args: unknown[]) => assignRoleToUser(...args),
+  createUser: (...args: unknown[]) => createUser(...args),
   removeRoleFromUser: vi.fn(),
   setUserStatus: vi.fn(),
 }))
@@ -89,6 +91,34 @@ describe('/dash/admin/users (v2 AdminUserPage wire)', () => {
     await user.click(within(dialog).getByRole('button', { name: 'assignRole' }))
 
     await waitFor(() => expect(assignRoleToUser).toHaveBeenCalledWith('teacher-id', 'custom-x'))
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users', 'admin'] }))
+  })
+
+  it('creating a user POSTs the wire body (optional password omitted) and refreshes the listing', async () => {
+    createUser.mockResolvedValue({ id: 'new-id', username: 'newbie', display_name: 'New Bie' })
+    const user = userEvent.setup()
+    const { invalidate } = renderPage()
+    await screen.findByText('teacher@ashyq.local')
+    await user.click(screen.getByRole('button', { name: 'createUser' }))
+    const dialog = await screen.findByRole('dialog')
+    const input = (name: string) => dialog.querySelector<HTMLInputElement>(`#create-user-${name}`)!
+    await user.type(input('firstName'), 'New')
+    await user.type(input('lastName'), 'Bie')
+    await user.type(input('username'), 'newbie')
+    await user.type(input('email'), 'newbie@ashyq.local')
+    await user.click(within(dialog).getByRole('combobox'))
+    await user.click(await screen.findByRole('option', { name: 'Teacher' }))
+    await user.click(within(dialog).getByRole('button', { name: 'createUserSubmit' }))
+
+    await waitFor(() =>
+      expect(createUser).toHaveBeenCalledWith({
+        username: 'newbie',
+        email: 'newbie@ashyq.local',
+        first_name: 'New',
+        last_name: 'Bie',
+        roles: ['instructor'],
+      }),
+    )
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users', 'admin'] }))
   })
 })

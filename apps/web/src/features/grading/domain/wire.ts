@@ -1,5 +1,4 @@
-import { Assessment, Course, Curriculum, GradebookPage, ReviewItem, Stats, TeacherSubmission } from '@/lib/api/generated/zod'
-import type { FileReviewItem, FileSubmission } from '@/lib/api/generated/zod'
+import { Course, Curriculum, GradebookPage, ReviewItem, Stats, TeacherSubmission } from '@/lib/api/generated/zod'
 import { unixToIso } from '@/lib/api/contract'
 import type { ActivityProgressCell, CourseGradebookResponse, Submission, SubmissionStatus } from './types'
 import { normalizeSubmission } from './types'
@@ -43,75 +42,47 @@ export function statsFromWire(value: unknown) {
   return { ...stats, needs_grading_count: stats.needs_grading, avg_score: stats.avg_score ?? null, pass_rate: stats.pass_rate ?? null }
 }
 
-/** One file-submission activity's grading data: its config plus the review queue (newest attempt first). */
-export interface FileGradebookSource {
-  config: FileSubmission
-  items: FileReviewItem[]
-}
-
-const fileStates: Record<FileReviewItem['status'], ActivityProgressCell['state']> = {
-  draft: 'IN_PROGRESS', submitted: 'NEEDS_GRADING', graded: 'GRADED', published: 'COMPLETED', returned: 'RETURNED',
-}
-const fileStatuses: Record<FileReviewItem['status'], SubmissionStatus> = {
-  draft: 'DRAFT', submitted: 'PENDING', graded: 'GRADED', published: 'PUBLISHED', returned: 'RETURNED',
+const cellStates: Record<SubmissionStatus, ActivityProgressCell['state']> = {
+  DRAFT: 'IN_PROGRESS', PENDING: 'NEEDS_GRADING', GRADED: 'GRADED', RETURNED: 'RETURNED', PUBLISHED: 'COMPLETED',
 }
 
 /**
- * `GET courses/{id}/gradebook` carries assessment attempts only (contract gap),
- * so file-submission cells come from each activity's review queue: the newest
- * non-draft attempt per learner becomes the cell.
+ * `GET courses/{id}/gradebook` carries the latest non-draft attempt per
+ * (learner, graded activity) — assessment submissions and file-submission
+ * attempts in one cell shape — plus both column lists.
  */
-function fileCellsFromWire(source: FileGradebookSource): ActivityProgressCell[] {
-  const seen = new Set<string>()
-  const cells: ActivityProgressCell[] = []
-  for (const item of source.items) {
-    if (seen.has(item.user.id)) continue
-    seen.add(item.user.id)
-    cells.push({
-      activity_id: source.config.activity_id, user_id: item.user.id, attempt_count: item.attempt_number,
-      latest_submission_uuid: item.id, latest_submission_status: fileStatuses[item.status],
-      state: fileStates[item.status], score: item.final_score ?? null, passed: null,
-      due_at: unixToIso(source.config.due_at_unix), is_late: item.is_late,
-      teacher_action_required: item.status === 'submitted' || item.status === 'graded',
-    })
-  }
-  return cells
-}
-
-export function gradebookFromWire(
-  pages: GradebookPage[],
-  course: Course,
-  assessments: Assessment[],
-  curriculum?: Curriculum,
-  fileSources: FileGradebookSource[] = [],
-): CourseGradebookResponse {
-  const assessmentMap = new Map(assessments.map(a => [a.id, a]))
+export function gradebookFromWire(pages: GradebookPage[], course: Course, curriculum?: Curriculum): CourseGradebookResponse {
+  const assessmentMap = new Map(pages.flatMap(p => p.assessments).map(a => [a.id, a]))
+  const fileMap = new Map(pages.flatMap(p => p.file_submissions).map(f => [f.id, f]))
   // Columns are activities, so they carry the activity's name, not the assessment title.
   const activityNames = new Map(curriculum?.chapters.flatMap(ch => ch.activities.map(a => [a.id, a.name] as const)))
   const users = new Map(pages.flatMap(p => p.users).map(u => [u.id, { ...u, first_name: u.display_name }]))
-  const assessmentCells: ActivityProgressCell[] = pages.flatMap(p => p.cells).map(c => {
-    const assessment = assessmentMap.get(c.assessment_id)
-    if (!assessment) throw new Error('Gradebook assessment is missing from the course')
-    const passed = c.final_score == null ? null : c.final_score >= assessment.policy.passing_score
-    const states: Record<SubmissionStatus, ActivityProgressCell['state']> = {
-      DRAFT: 'IN_PROGRESS', PENDING: 'NEEDS_GRADING', GRADED: 'GRADED', RETURNED: 'RETURNED',
-      PUBLISHED: passed === false ? 'FAILED' : passed === true ? 'PASSED' : 'SUBMITTED',
-    }
+  const cells: ActivityProgressCell[] = pages.flatMap(p => p.cells).map(c => {
+    const status = statuses[c.status]
+    const assessment = c.assessment_id ? assessmentMap.get(c.assessment_id) : undefined
+    const file = c.file_submission_id ? fileMap.get(c.file_submission_id) : undefined
+    if (!assessment && !file) throw new Error('Gradebook cell points at an unknown column')
+    const passed = assessment && c.final_score != null ? c.final_score >= assessment.passing_score : null
+    const state: ActivityProgressCell['state'] =
+      status === 'PUBLISHED' && assessment ? (passed === false ? 'FAILED' : passed === true ? 'PASSED' : 'SUBMITTED') : cellStates[status]
     return {
-      activity_id: assessment.activity_id, user_id: c.user_id, attempt_count: c.attempts,
-      latest_submission_uuid: c.submission_id, latest_submission_status: statuses[c.status],
-      state: states[statuses[c.status]], score: c.final_score ?? null, passed,
-      due_at: unixToIso(assessment.policy.due_at_unix), is_late: c.is_late,
+      activity_id: c.activity_id, user_id: c.user_id, attempt_count: c.attempts,
+      latest_submission_uuid: c.submission_id ?? c.attempt_id ?? null, latest_submission_status: status,
+      state, score: c.final_score ?? null, passed,
+      due_at: unixToIso(assessment?.due_at_unix ?? file?.due_at_unix), is_late: c.is_late,
       // `graded` = scored but unreleased (batch release mode): the teacher still owes a publish.
       teacher_action_required: c.status === 'pending' || c.status === 'graded',
     }
   })
-  const cells = [...assessmentCells, ...fileSources.flatMap(fileCellsFromWire)]
-  const graded = assessments.map(a => ({ id: a.activity_id, activity_uuid: a.activity_id, name: activityNames.get(a.activity_id) ?? a.title, activity_type: `TYPE_${a.kind.toUpperCase()}`, assessment_type: a.kind }))
-  // File-submission columns come from the curriculum; their cells from `fileSources`.
-  const files = (curriculum?.chapters ?? []).flatMap(ch => ch.activities)
-    .filter(a => a.activity_type === 'file_submission')
-    .map(a => ({ id: a.id, activity_uuid: a.id, name: a.name, activity_type: 'TYPE_FILE_SUBMISSION', assessment_type: 'file_submission' }))
+  const columnName = (activityId: string, fallback: string) => activityNames.get(activityId) ?? fallback
+  const graded = [...assessmentMap.values()].map(a => ({
+    id: a.activity_id, activity_uuid: a.activity_id, name: columnName(a.activity_id, a.title),
+    activity_type: `TYPE_${a.kind.toUpperCase()}`, assessment_type: a.kind,
+  }))
+  const files = [...fileMap.values()].map(f => ({
+    id: f.activity_id, activity_uuid: f.activity_id, name: columnName(f.activity_id, f.title),
+    activity_type: 'TYPE_FILE_SUBMISSION', assessment_type: 'file_submission',
+  }))
   const activities = [...graded, ...files]
   const now = Date.now()
   return {

@@ -875,7 +875,7 @@
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
       "rateLimited": "Too many attempts. Please try again later.",
       "loginTitle": "Login",
-      "noAccount": "Don't have an account?",
+      "noAccount": "No account yet?",
       "loginIdentifier": "Email or username",
       "loginIdentifierPlaceholder": "Enter your email or username",
       "totpCode": "Verification code",
@@ -891,7 +891,44 @@
     "hidePassword": "Hide password",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
-    "showPassword": "Show password"
+    "showPassword": "Show password",
+    "Signup": {
+      "title": "Sign up - Ashyk Bilim",
+      "heading": "Create an account",
+      "subtitle": "Fill in the form to start learning.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "username": "Username",
+      "usernamePlaceholder": "e.g. aigerim.k",
+      "usernameRule": "3–48 characters: Latin letters, digits, dot, hyphen and underscore.",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Choose a password",
+      "passwordRule": "At least 8 characters.",
+      "confirmPassword": "Confirm password",
+      "submit": "Sign up",
+      "submitting": "Creating your account...",
+      "success": "Account created",
+      "successDescription": "We sent a verification code to your email. You can sign in now.",
+      "failed": "Could not create the account. Please try again.",
+      "haveAccount": "Already have an account?",
+      "login": "Sign in"
+    },
+    "VerifyEmail": {
+      "title": "Verify email - Ashyk Bilim",
+      "heading": "Verify your email address",
+      "subtitle": "Enter the code from the email we sent when you signed up.",
+      "email": "Email",
+      "code": "Verification code",
+      "codeHint": "The 6-character code from the email.",
+      "submit": "Verify",
+      "submitting": "Checking...",
+      "success": "Email address verified",
+      "invalidCode": "The code is invalid or has expired.",
+      "failed": "Could not verify the address. Please try again.",
+      "backToLogin": "Go to sign in"
+    }
   },
   "Certificates": {
     "ActivityIndicators": {
@@ -1892,7 +1929,24 @@
       "permissionsAria": "Permissions of role {roleName}",
       "slugTaken": "A role with this slug already exists",
       "lastAdminConflict": "The admin role cannot be removed from the last administrator",
-      "selfDisableConflict": "You cannot disable your own account"
+      "selfDisableConflict": "You cannot disable your own account",
+      "createUser": "Create user",
+      "createUserTitle": "New user",
+      "createUserDescription": "The account is created with a verified email. Without a password the user can only sign in with Google.",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "usernameLabel": "Username",
+      "emailLabel": "Email",
+      "passwordLabel": "Password (optional)",
+      "passwordHint": "At least 8 characters. Leave empty for Google-only sign-in.",
+      "extraRolesLabel": "Additional role",
+      "noExtraRole": "\"User\" only",
+      "createUserSubmit": "Create",
+      "userCreated": "User created",
+      "usernameInvalid": "3–48 characters: Latin letters, digits, dot, hyphen and underscore.",
+      "emailInvalid": "Invalid email address.",
+      "passwordTooShort": "The password must be at least 8 characters.",
+      "fieldRequired": "This field is required."
     },
     "PageLoading": {
       "loading": "Loading..."
@@ -2880,7 +2934,8 @@
       "startingCourse": "Starting course...",
       "submittingContributorApplication": "Submitting contributor application...",
       "youAreAContributor": "You are a contributor",
-      "youAreContributor": "You are a contributor"
+      "youAreContributor": "You are a contributor",
+      "contributorApplicationConflict": "The application cannot be sent: the course is closed to contributors or you already have a role in it."
     },
     "access": "Access",
     "content": "Content",
@@ -3663,13 +3718,15 @@
         "issues": {
           "noVisibleActivities": "Publish at least one learner-visible activity.",
           "requiredActivityUnpublished": "A required activity is still unpublished.",
-          "assessmentUnready": "A published assessment has unresolved readiness issues.",
-          "fileSubmissionUnready": "A file-submission activity is incomplete or unpublished.",
+          "assessmentUnready": "Assessment “{title}” is unpublished or not ready.",
+          "fileSubmissionUnready": "File submission “{title}” is incomplete or unpublished.",
           "thumbnailMissing": "Add a thumbnail to improve recognition. This does not block publishing.",
           "outcomesMissing": "Add learning outcomes. This does not block publishing.",
           "certificateMissing": "No certificate is configured. This does not block publishing.",
           "contributorMissing": "No active contributor is configured. This does not block publishing.",
-          "unknown": "A publication requirement still needs attention."
+          "unknown": "A publication requirement still needs attention.",
+          "activityUnpublished": "Activity “{title}” is still unpublished — learners cannot see it.",
+          "codeChallengeUnconfigured": "Code checking is not configured for “{title}”."
         },
         "sectionLabel": "Review & publish",
         "toasts": {
@@ -3888,7 +3945,8 @@
           "gradebook": "Gradebook",
           "overview": "Overview",
           "publish": "Review & Publish",
-          "settings": "Settings"
+          "settings": "Settings",
+          "collaboration": "Contributors"
         },
         "untitledCourse": "Untitled course",
         "unsavedDialogLeave": "Leave workspace",
@@ -4136,9 +4194,21 @@
       "contributorPolicyStagedTitle": "Contributor policy is staged until you save",
       "contributorPolicyStagedDescription": "The open or closed contribution policy stays local until you save this section.",
       "rosterActionsImmediateTitle": "Roster actions apply immediately",
-      "rosterUnavailableTitle": "Contributor management is not available in this version",
-      "rosterUnavailableDescription": "The contributor roster, invitations and roles are coming later. The \"Open to contributors\" setting above is saved.",
-      "rosterActionsImmediateDescription": "Search, add, remove, role changes, and status updates update the live contributor roster right away. Keep them separate from the policy draft above."
+      "rosterActionsImmediateDescription": "Search, add, remove, role changes, and status updates update the live contributor roster right away. Keep them separate from the policy draft above.",
+      "addButton": "Add",
+      "addedContributor": "@{username} added as a contributor",
+      "removedContributor": "@{username} removed from contributors",
+      "removeConfirmTitle": "Remove @{username} from the course?",
+      "removeConfirmMessage": "They will lose editing access to the course. You can add them again later.",
+      "removeButton": "Remove",
+      "approveButton": "Approve",
+      "activateButton": "Activate",
+      "deactivateButton": "Deactivate",
+      "actionsColumn": "Actions",
+      "updating": "Updating…",
+      "failedToLoadContributors": "Could not load the contributor roster.",
+      "rosterReadOnlyTitle": "The roster is read-only for you",
+      "rosterReadOnlyDescription": "The course creator, active maintainers and platform administrators can add, approve and remove contributors."
     },
     "Editor": {
       "BadgesExtension": {
@@ -6163,7 +6233,21 @@
           "totpAlreadyActive": "Two-factor authentication is already enabled.",
           "totpActivated": "Two-factor authentication enabled",
           "totpRemoved": "Two-factor authentication disabled",
-          "invalidCode": "Invalid code. Try again."
+          "invalidCode": "Invalid code. Try again.",
+          "passwordTitle": "Password",
+          "passwordDescription": "Change your sign-in password. Your other sessions will be signed out.",
+          "currentPassword": "Current password",
+          "newPassword": "New password",
+          "confirmPassword": "Confirm new password",
+          "passwordRule": "At least 8 characters.",
+          "changePassword": "Change password",
+          "passwordChanged": "Password changed",
+          "passwordChangedDescription": "Your other sessions were signed out.",
+          "currentPasswordWrong": "The current password is wrong.",
+          "newPasswordRejected": "The new password does not meet the requirements.",
+          "required": "This field is required.",
+          "passwordTooShort": "The password must be at least 8 characters.",
+          "passwordsDoNotMatch": "The passwords do not match."
         }
       },
       "gamification": "Gamification Settings",
@@ -6678,7 +6762,10 @@
       "ai-budget-exhausted": "The AI token budget is exhausted. Please try again later.",
       "ai-rate-limited": "Hourly AI request limit reached. Please try again later.",
       "ai-run-cancelled": "The AI run was cancelled.",
-      "ai-provider-unavailable": "The AI provider is unavailable. Please try again later."
+      "ai-provider-unavailable": "The AI provider is unavailable. Please try again later.",
+      "username-taken": "This username is already taken.",
+      "email-taken": "This email address is already registered.",
+      "activity-not-ready": "Publish the file-submission settings first, then the activity."
     },
     "fields": {
       "required": "This field is required.",
@@ -8193,6 +8280,16 @@
         "releaseStateAwaitingRelease": "Awaiting release",
         "releaseStateVisible": "Visible",
         "releaseStateReturned": "Returned"
+      },
+      "itemFeedback": {
+        "noAnswer": "No answer provided",
+        "noCorrectAnswer": "No correct answer defined",
+        "correct": "Correct",
+        "incorrect": "Incorrect",
+        "partiallyCorrectNoCredit": "Partially correct (no partial credit)",
+        "partiallyCorrect": "Partially correct ({correct}/{total})",
+        "pairsMatched": "{correct}/{total} pairs matched",
+        "testsPassed": "{correct}/{total} tests passed"
       }
     },
     "Assessments": {
@@ -10081,15 +10178,6 @@
     "overallFeedback": "Overall feedback",
     "itemScore": "Score",
     "itemFeedback": "Feedback",
-    "autoFeedback": {
-      "noAnswer": "No answer provided",
-      "noCorrectAnswer": "No correct answer defined",
-      "correct": "Correct",
-      "incorrect": "Incorrect",
-      "partialNoCredit": "Partially correct (no partial credit)",
-      "partial": "Partially correct ({hits}/{total})",
-      "pairsMatched": "{correct}/{total} pairs matched"
-    },
     "rubricCriterion": "Criterion",
     "rubricScore": "Score",
     "rubricMaxScore": "Max score",

@@ -109,29 +109,29 @@ export function activityProgressNeedsTeacherAction(cell: ActivityProgressCell): 
   return cell.teacher_action_required && Boolean(cell.latest_submission_uuid)
 }
 
-const AUTO_GRADER_FEEDBACK_KEYS: Record<string, string> = {
-  'No answer provided': 'noAnswer',
-  'No correct answer defined': 'noCorrectAnswer',
-  Correct: 'correct',
-  Incorrect: 'incorrect',
-  'Partially correct (no partial credit)': 'partialNoCredit',
+const ITEM_FEEDBACK_KEYS: Record<string, string> = {
+  'no-answer': 'noAnswer',
+  'no-correct-answer': 'noCorrectAnswer',
+  correct: 'correct',
+  incorrect: 'incorrect',
+  'partially-correct-no-credit': 'partiallyCorrectNoCredit',
+  'partially-correct': 'partiallyCorrect',
+  'pairs-matched': 'pairsMatched',
+  'tests-passed': 'testsPassed',
 }
 
 /**
- * The server auto-grader (`apps/server` grading/grader.rs) writes fixed English
- * feedback strings into `grading.items[].feedback`. Map them onto
- * `ItemGrading.autoFeedback.*`; teacher-written feedback passes through as-is.
- * Requires a translator scoped to 'ItemGrading'.
+ * The auto-grader's verdict on an item, localized from `feedback_code` +
+ * `feedback_params` (`Features.Grading.itemFeedback.*`); an unknown code
+ * falls back to the English `feedback`. Teacher prose has no code and
+ * passes through as-is. Requires a translator scoped to 'Features.Grading'.
  */
-export function localizeAutoGraderFeedback(
-  feedback: string | null | undefined,
+export function localizeItemFeedback(
+  item: { feedback?: string | null | undefined; feedback_code?: string | null | undefined; feedback_params?: unknown },
   t: (key: string, values?: Record<string, string | number>) => string,
 ): string {
-  if (!feedback) return ''
-  const partial = /^Partially correct \((\d+)\/(\d+)\)$/.exec(feedback)
-  if (partial) return t('autoFeedback.partial', { hits: partial[1]!, total: partial[2]! })
-  const pairs = /^(\d+)\/(\d+) pairs matched$/.exec(feedback)
-  if (pairs) return t('autoFeedback.pairsMatched', { correct: pairs[1]!, total: pairs[2]! })
-  const key = AUTO_GRADER_FEEDBACK_KEYS[feedback]
-  return key ? t(`autoFeedback.${key}`) : feedback
+  const key = item.feedback_code ? ITEM_FEEDBACK_KEYS[item.feedback_code] : undefined
+  if (!key) return item.feedback ?? ''
+  const params = item.feedback_params && typeof item.feedback_params === 'object' ? item.feedback_params : {}
+  return t(`itemFeedback.${key}`, params as Record<string, string | number>)
 }

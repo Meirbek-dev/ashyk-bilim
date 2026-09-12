@@ -22,10 +22,10 @@ export function userByUsernameQueryOptions(username: string) {
   })
 }
 
-export function userCoursesQueryOptions(userId: string) {
+export function userCoursesQueryOptions(username: string) {
   return queryOptions({
-    queryKey: userKeys.coursesByUser(userId),
-    queryFn: () => getCoursesByUser(userId),
+    queryKey: userKeys.coursesByUser(username),
+    queryFn: () => getCoursesByUser(username),
   })
 }
 

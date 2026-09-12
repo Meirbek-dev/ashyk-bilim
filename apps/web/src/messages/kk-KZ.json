@@ -890,7 +890,44 @@
     "hidePassword": "Құпия сөзді жасыру",
     "password": "Пароль",
     "passwordPlaceholder": "Құпия сөзді енгізіңіз",
-    "showPassword": "Құпия сөзді көрсету"
+    "showPassword": "Құпия сөзді көрсету",
+    "Signup": {
+      "title": "Тіркелу - Ashyk Bilim",
+      "heading": "Аккаунт жасау",
+      "subtitle": "Оқуды бастау үшін форманы толтырыңыз.",
+      "firstName": "Аты",
+      "lastName": "Тегі",
+      "username": "Пайдаланушы аты",
+      "usernamePlaceholder": "мысалы, aigerim.k",
+      "usernameRule": "3-тен 48 таңбаға дейін: латын әріптері, сандар, нүкте, сызықша және астыңғы сызық.",
+      "email": "Электрондық пошта",
+      "emailPlaceholder": "Электрондық поштаңызды енгізіңіз",
+      "password": "Құпиясөз",
+      "passwordPlaceholder": "Құпиясөз ойлап табыңыз",
+      "passwordRule": "Кемінде 8 таңба.",
+      "confirmPassword": "Құпиясөзді қайталаңыз",
+      "submit": "Тіркелу",
+      "submitting": "Аккаунт жасалуда...",
+      "success": "Аккаунт жасалды",
+      "successDescription": "Растау кодын поштаңызға жібердік. Енді кіруге болады.",
+      "failed": "Аккаунт жасалмады. Қайталап көріңіз.",
+      "haveAccount": "Аккаунтыңыз бар ма?",
+      "login": "Кіру"
+    },
+    "VerifyEmail": {
+      "title": "Поштаны растау - Ashyk Bilim",
+      "heading": "Электрондық пошта мекенжайын растаңыз",
+      "subtitle": "Тіркелу кезінде жіберілген хаттағы кодты енгізіңіз.",
+      "email": "Электрондық пошта",
+      "code": "Растау коды",
+      "codeHint": "Хаттағы код, 6 таңба.",
+      "submit": "Растау",
+      "submitting": "Тексерілуде...",
+      "success": "Электрондық пошта мекенжайы расталды",
+      "invalidCode": "Код қате немесе мерзімі өткен.",
+      "failed": "Мекенжайды растау мүмкін болмады. Қайталап көріңіз.",
+      "backToLogin": "Кіру бетіне өту"
+    }
   },
   "Certificates": {
     "ActivityIndicators": {
@@ -1875,7 +1912,24 @@
       "permissionsAria": "{roleName} рөлінің құқықтары",
       "slugTaken": "Мұндай слагы бар рөл бұрыннан бар",
       "lastAdminConflict": "Соңғы әкімшінің әкімші рөлін алып тастауға болмайды",
-      "selfDisableConflict": "Өз аккаунтыңызды өшіре алмайсыз"
+      "selfDisableConflict": "Өз аккаунтыңызды өшіре алмайсыз",
+      "createUser": "Пайдаланушы жасау",
+      "createUserTitle": "Жаңа пайдаланушы",
+      "createUserDescription": "Аккаунт расталған поштамен жасалады. Құпиясөзсіз пайдаланушы тек Google арқылы кіре алады.",
+      "firstNameLabel": "Аты",
+      "lastNameLabel": "Тегі",
+      "usernameLabel": "Пайдаланушы аты",
+      "emailLabel": "Электрондық пошта",
+      "passwordLabel": "Құпиясөз (міндетті емес)",
+      "passwordHint": "Кемінде 8 таңба. Тек Google арқылы кіру үшін бос қалдырыңыз.",
+      "extraRolesLabel": "Қосымша рөл",
+      "noExtraRole": "Тек «Пайдаланушы»",
+      "createUserSubmit": "Жасау",
+      "userCreated": "Пайдаланушы жасалды",
+      "usernameInvalid": "3-тен 48 таңбаға дейін: латын әріптері, сандар, нүкте, сызықша және астыңғы сызық.",
+      "emailInvalid": "Электрондық пошта мекенжайы жарамсыз.",
+      "passwordTooShort": "Құпиясөз кемінде 8 таңбадан тұруы керек.",
+      "fieldRequired": "Міндетті өріс."
     },
     "PageLoading": {
       "loading": "Жүктелуде..."
@@ -2894,7 +2948,8 @@
       "startingCourse": "Курс басталуда...",
       "submittingContributorApplication": "Қатысуға өтінім жіберілуде...",
       "youAreAContributor": "Сіз авторсыз",
-      "youAreContributor": "Сіз авторсыз"
+      "youAreContributor": "Сіз авторсыз",
+      "contributorApplicationConflict": "Өтінім жіберу мүмкін емес: курс авторлар үшін жабық немесе сізде бұл курста рөл бар."
     },
     "access": "Қолжетімділік",
     "content": "Мазмұны",
@@ -3678,13 +3733,15 @@
         "issues": {
           "noVisibleActivities": "Оқушыға көрінетін кемінде бір тапсырманы жариялаңыз.",
           "requiredActivityUnpublished": "Міндетті тапсырма әлі жарияланбаған.",
-          "assessmentUnready": "Жарияланған бағалауда шешілмеген дайындық мәселелері бар.",
-          "fileSubmissionUnready": "Файл тапсыру әрекеті толық емес немесе жарияланбаған.",
+          "assessmentUnready": "«{title}» бағалауы жарияланбаған немесе дайын емес.",
+          "fileSubmissionUnready": "«{title}» файл тапсыру тапсырмасы толтырылмаған немесе жарияланбаған.",
           "thumbnailMissing": "Курсты тануды жақсарту үшін мұқаба қосыңыз. Бұл жариялауды бұғаттамайды.",
           "outcomesMissing": "Оқу нәтижелерін қосыңыз. Бұл жариялауды бұғаттамайды.",
           "certificateMissing": "Сертификат бапталмаған. Бұл жариялауды бұғаттамайды.",
           "contributorMissing": "Белсенді автор бапталмаған. Бұл жариялауды бұғаттамайды.",
-          "unknown": "Жариялау талаптарының біріне назар аудару қажет."
+          "unknown": "Жариялау талаптарының біріне назар аудару қажет.",
+          "activityUnpublished": "«{title}» тапсырмасы әлі жарияланбаған — оқушылар оны көрмейді.",
+          "codeChallengeUnconfigured": "«{title}» тапсырмасы үшін код тексеру бапталмаған."
         },
         "sectionLabel": "Тексеру және жариялау",
         "toasts": {
@@ -3903,7 +3960,8 @@
           "publish": "Тексеру және жариялау",
           "settings": "Баптаулар",
           "gradebook": "Баға кітабы",
-          "overview": "Шолу"
+          "overview": "Шолу",
+          "collaboration": "Авторлар"
         },
         "untitledCourse": "Атаусыз курс",
         "unsavedDialogLeave": "Жұмыс кеңістігінен шығу",
@@ -4151,9 +4209,21 @@
       "contributorPolicyStagedTitle": "Қатысушылық саясаты Сақтау басқанша сақталмайды",
       "contributorPolicyStagedDescription": "Ашық немесе жабық қатысу саясаты бұл бөлімді сақтағанша дейін локалды болып қалады.",
       "rosterActionsImmediateTitle": "Қатысушылармен әрекеттер бірден қолданылады",
-      "rosterUnavailableTitle": "Бұл нұсқада бірлескен авторларды басқару қолжетімсіз",
-      "rosterUnavailableDescription": "Бірлескен авторлар тізімі, шақырулар мен рөлдер кейінірек қосылады. Жоғарыдағы «Бірлескен авторларға ашық» параметрі сақталады.",
-      "rosterActionsImmediateDescription": "Іздеу, қосу, жою, рөлдер мен мәртебелерді өзгерту қатысушылар тізімін бірден жаңартады. Оларды жоғарыдағы саясат жобасынан бөлек сақтаңыз."
+      "rosterActionsImmediateDescription": "Іздеу, қосу, жою, рөлдер мен мәртебелерді өзгерту қатысушылар тізімін бірден жаңартады. Оларды жоғарыдағы саясат жобасынан бөлек сақтаңыз.",
+      "addButton": "Қосу",
+      "addedContributor": "@{username} авторларға қосылды",
+      "removedContributor": "@{username} авторлардан шығарылды",
+      "removeConfirmTitle": "@{username} пайдаланушысын курстан шығару керек пе?",
+      "removeConfirmMessage": "Пайдаланушы курсты өңдеу мүмкіндігінен айырылады. Оны кейін қайта қосуға болады.",
+      "removeButton": "Шығару",
+      "approveButton": "Мақұлдау",
+      "activateButton": "Белсендіру",
+      "deactivateButton": "Өшіру",
+      "actionsColumn": "Әрекеттер",
+      "updating": "Жаңартылуда…",
+      "failedToLoadContributors": "Авторлар тізімін жүктеу мүмкін болмады.",
+      "rosterReadOnlyTitle": "Авторлар тізімі тек қарау үшін қолжетімді",
+      "rosterReadOnlyDescription": "Авторларды қосу, мақұлдау және шығару құқығы курс жасаушысында, белсенді модераторларда және платформа әкімшілерінде бар."
     },
     "Editor": {
       "BadgesExtension": {
@@ -6178,7 +6248,21 @@
           "totpAlreadyActive": "Екі факторлы аутентификация қосулы тұр.",
           "totpActivated": "Екі факторлы аутентификация қосылды",
           "totpRemoved": "Екі факторлы аутентификация өшірілді",
-          "invalidCode": "Код қате. Қайталап көріңіз."
+          "invalidCode": "Код қате. Қайталап көріңіз.",
+          "passwordTitle": "Құпиясөз",
+          "passwordDescription": "Кіру құпиясөзін өзгертіңіз. Басқа сессиялар аяқталады.",
+          "currentPassword": "Ағымдағы құпиясөз",
+          "newPassword": "Жаңа құпиясөз",
+          "confirmPassword": "Жаңа құпиясөзді қайталаңыз",
+          "passwordRule": "Кемінде 8 таңба.",
+          "changePassword": "Құпиясөзді өзгерту",
+          "passwordChanged": "Құпиясөз өзгертілді",
+          "passwordChangedDescription": "Басқа сессиялар аяқталды.",
+          "currentPasswordWrong": "Ағымдағы құпиясөз қате.",
+          "newPasswordRejected": "Жаңа құпиясөз талаптарға сай емес.",
+          "required": "Міндетті өріс.",
+          "passwordTooShort": "Құпиясөз кемінде 8 таңбадан тұруы керек.",
+          "passwordsDoNotMatch": "Құпиясөздер сәйкес келмейді."
         }
       },
       "gamification": "Гамификация параметрлері",
@@ -6693,7 +6777,10 @@
       "ai-budget-exhausted": "ЖИ токендер лимиті таусылды. Кейінірек қайталап көріңіз.",
       "ai-rate-limited": "ЖИ сұраныстарының сағаттық лимитіне жеттіңіз. Кейінірек қайталап көріңіз.",
       "ai-run-cancelled": "ЖИ іске қосуы тоқтатылды.",
-      "ai-provider-unavailable": "ЖИ провайдері қолжетімсіз. Кейінірек қайталап көріңіз."
+      "ai-provider-unavailable": "ЖИ провайдері қолжетімсіз. Кейінірек қайталап көріңіз.",
+      "username-taken": "Бұл пайдаланушы аты бос емес.",
+      "email-taken": "Бұл электрондық пошта мекенжайы тіркелген.",
+      "activity-not-ready": "Алдымен файл тапсыру тапсырмасының баптауларын, содан кейін тапсырманың өзін жариялаңыз."
     },
     "fields": {
       "required": "Міндетті өріс.",
@@ -8223,6 +8310,16 @@
         "releaseStateAwaitingRelease": "Жарияланым күтуде",
         "releaseStateVisible": "Студентке көрінеді",
         "releaseStateReturned": "Қайтарылды"
+      },
+      "itemFeedback": {
+        "noAnswer": "Жауап берілмеген",
+        "noCorrectAnswer": "Дұрыс жауап анықталмаған",
+        "correct": "Дұрыс",
+        "incorrect": "Қате",
+        "partiallyCorrectNoCredit": "Ішінара дұрыс (ішінара балл жоқ)",
+        "partiallyCorrect": "Ішінара дұрыс ({correct}/{total})",
+        "pairsMatched": "Сәйкес келген жұптар: {correct}/{total}",
+        "testsPassed": "Өткен тесттер: {correct}/{total}"
       }
     },
     "Assessments": {
@@ -10267,15 +10364,6 @@
     "overallFeedback": "Жалпы пікір",
     "itemScore": "Балл",
     "itemFeedback": "Пікір",
-    "autoFeedback": {
-      "noAnswer": "Жауап берілмеген",
-      "noCorrectAnswer": "Дұрыс жауап анықталмаған",
-      "correct": "Дұрыс",
-      "incorrect": "Қате",
-      "partialNoCredit": "Ішінара дұрыс (ішінара балл жоқ)",
-      "partial": "Ішінара дұрыс ({hits}/{total})",
-      "pairsMatched": "Сәйкес келген жұптар: {correct}/{total}"
-    },
     "rubricCriterion": "Критерий",
     "rubricScore": "Балл",
     "rubricMaxScore": "Макс. балл",

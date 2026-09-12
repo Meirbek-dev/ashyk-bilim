@@ -50,15 +50,11 @@ const fetchArrayResource = async <T>(path: string): Promise<CourseEditorResource
 
 export async function getCourseEditorBundle(courseUuid: string): Promise<CourseEditorBundle> {
   const id = stripEntityPrefix(courseUuid)
-  const [linkedUserGroups, certifications] = await Promise.all([
+  const [contributors, linkedUserGroups, certifications] = await Promise.all([
+    fetchArrayResource<AppCourseAuthor>(`courses/${id}/contributors`),
     fetchArrayResource<unknown>(`courses/${id}/usergroups`),
     fetchArrayResource<unknown>(`courses/${id}/certifications`),
   ])
 
-  return {
-    // No v2 contributor routes (QUESTIONS Q-2026-09-10-3): unavailable, never requested.
-    contributors: createResource<AppCourseAuthor[]>(null, 0, null, false),
-    linkedUserGroups,
-    certifications,
-  }
+  return { contributors, linkedUserGroups, certifications }
 }

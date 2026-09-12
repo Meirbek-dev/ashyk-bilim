@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
-import { getEditableCourses } from '@services/courses/editable'
+import { getEditableCourses, searchEditableCourses } from '@services/courses/editable'
 
 /**
- * v2 has no `courses/editable/...` route (404 "no such route" took the whole
- * teacher "my courses" page down). The editable list is now derived from
- * `GET /courses` + the session's RBAC grants and `creator_id`, with the legacy
- * query / sort / preset / page filters applied client-side.
+ * The teacher listing is `GET /courses?mine=true` with `q` / `sort` /
+ * `preset` on the server and the `summary` block on the page; the legacy
+ * page number is emulated by hopping cursors.
  */
 
 const mocks = vi.hoisted(() => ({
@@ -15,12 +14,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/api/generated/courses/courses', () => ({ listCourses: mocks.listCourses }))
 vi.mock('@/lib/auth/session', () => ({ getSession: mocks.getSession, requireSession: vi.fn() }))
-vi.mock('@services/courses/courses', () => ({ getCourseMetadata: vi.fn() }))
-vi.mock('@/i18n/navigation', () => ({ redirect: vi.fn() }))
-vi.mock('next-intl/server', () => ({ getLocale: vi.fn(async () => 'ru') }))
 
 const teacherId = '01a08bd6-a04f-76ac-92cd-4daaf9a31de7'
-const otherId = '01a08bd6-a04f-70cc-bfc8-e6216333d3d4'
 const NOW = Math.floor(Date.now() / 1000)
 
 const course = (n: number, overrides: Record<string, unknown> = {}) => ({
@@ -37,62 +32,45 @@ const course = (n: number, overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-const session = (permissions: string[]) => ({ userId: teacherId, roles: [], permissions, user: {} })
+const summary = { total: 7, ready: 4, private: 3, attention: 2 }
+const session = { userId: teacherId, roles: [], permissions: ['course:update:own'], user: {} }
 
 describe('getEditableCourses', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.getSession.mockResolvedValue(session)
   })
 
-  it('keeps only the creator’s courses for an :own-scoped teacher', async () => {
-    mocks.getSession.mockResolvedValue(session(['course:update:own']))
-    mocks.listCourses.mockResolvedValue({
-      items: [course(1), course(2, { creator_id: otherId }), course(3, { creator_id: null })],
-      next_cursor: null,
-    })
+  it('asks the server for the editable set and passes the summary through', async () => {
+    mocks.listCourses.mockResolvedValue({ items: [course(1), course(2)], next_cursor: null, summary })
 
-    const { courses, total, summary } = await getEditableCourses()
+    const result = await getEditableCourses(1, 24)
 
-    expect(courses.map(c => c.name)).toEqual(['Course 1'])
-    expect(total).toBe(1)
-    expect(summary).toEqual({ total: 1, ready: 1, private: 0, attention: 0 })
-    expect(mocks.listCourses).toHaveBeenCalledWith({ limit: 100 })
+    expect(mocks.listCourses).toHaveBeenCalledWith({ mine: true, limit: 24, sort: 'updated', preset: 'all' })
+    expect(result.courses.map(c => c.course_uuid)).toEqual([course(1).id, course(2).id])
+    expect(result.summary).toEqual(summary)
+    expect(result.total).toBe(7)
   })
 
-  it('lets the admin wildcard see every course across all pages', async () => {
-    mocks.getSession.mockResolvedValue({ ...session(['*:*:*']), userId: otherId })
+  it('maps the web filters onto q / sort / preset and hops cursors for page N', async () => {
     mocks.listCourses
-      .mockResolvedValueOnce({ items: [course(1)], next_cursor: 'c1' })
-      .mockResolvedValueOnce({ items: [course(2, { creator_id: null })], next_cursor: null })
+      .mockResolvedValueOnce({ items: [course(1)], next_cursor: 'c1', summary })
+      .mockResolvedValueOnce({ items: [course(2)], next_cursor: 'c2', summary })
 
-    const { courses } = await getEditableCourses()
+    const page2 = await getEditableCourses(2, 1, ' alpha ', 'name', 'private')
 
-    expect(courses).toHaveLength(2)
-    expect(mocks.listCourses).toHaveBeenLastCalledWith({ limit: 100, cursor: 'c1' })
-  })
-
-  it('applies the drafts preset, name sort and page slice client-side', async () => {
-    mocks.getSession.mockResolvedValue(session(['course:update:own']))
-    mocks.listCourses.mockResolvedValue({
-      items: [
-        course(1, { name: 'Zeta', public: false }),
-        course(2, { name: 'Alpha', public: false }),
-        course(3, { name: 'Mid', public: true }),
-        course(4, { name: 'Beta', public: false }),
-      ],
-      next_cursor: null,
+    expect(mocks.listCourses).toHaveBeenNthCalledWith(1, { mine: true, limit: 1, sort: 'name', preset: 'drafts', q: 'alpha' })
+    expect(mocks.listCourses).toHaveBeenNthCalledWith(2, {
+      mine: true,
+      limit: 1,
+      sort: 'name',
+      preset: 'drafts',
+      q: 'alpha',
+      cursor: 'c1',
     })
-
-    const drafts = await getEditableCourses(1, 2, '', 'name', 'drafts')
-    expect(drafts.courses.map(c => c.name)).toEqual(['Alpha', 'Beta'])
-    expect(drafts.total).toBe(3)
-    expect(drafts.summary).toEqual({ total: 4, ready: 1, private: 3, attention: 0 })
-
-    const page2 = await getEditableCourses(2, 2, '', 'name', 'drafts')
-    expect(page2.courses.map(c => c.name)).toEqual(['Zeta'])
-
-    const search = await getEditableCourses(1, 20, 'ALPHA')
-    expect(search.courses.map(c => c.name)).toEqual(['Alpha'])
+    expect(page2.courses.map(c => c.name)).toEqual(['Course 2'])
+    // Filtered: a lower bound that still signals a next page.
+    expect(page2.total).toBe(3)
   })
 
   it('returns nothing without a session', async () => {
@@ -103,5 +81,10 @@ describe('getEditableCourses', () => {
       summary: { total: 0, ready: 0, private: 0, attention: 0 },
     })
     expect(mocks.listCourses).not.toHaveBeenCalled()
+  })
+
+  it('searchEditableCourses swallows failures', async () => {
+    mocks.listCourses.mockRejectedValue(new Error('boom'))
+    await expect(searchEditableCourses('x')).resolves.toEqual([])
   })
 })

@@ -889,7 +889,44 @@
     "hidePassword": "Скрыть пароль",
     "password": "Пароль",
     "passwordPlaceholder": "Введите ваш пароль",
-    "showPassword": "Показать пароль"
+    "showPassword": "Показать пароль",
+    "Signup": {
+      "title": "Регистрация - Ashyk Bilim",
+      "heading": "Создать аккаунт",
+      "subtitle": "Заполните форму, чтобы начать обучение.",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "username": "Имя пользователя",
+      "usernamePlaceholder": "например, aigerim.k",
+      "usernameRule": "От 3 до 48 символов: латинские буквы, цифры, точка, дефис и подчёркивание.",
+      "email": "Электронная почта",
+      "emailPlaceholder": "Введите ваш email",
+      "password": "Пароль",
+      "passwordPlaceholder": "Придумайте пароль",
+      "passwordRule": "Не менее 8 символов.",
+      "confirmPassword": "Повторите пароль",
+      "submit": "Зарегистрироваться",
+      "submitting": "Создаём аккаунт...",
+      "success": "Аккаунт создан",
+      "successDescription": "Мы отправили код подтверждения на вашу почту. Теперь можно войти.",
+      "failed": "Не удалось создать аккаунт. Попробуйте ещё раз.",
+      "haveAccount": "Уже есть аккаунт?",
+      "login": "Войти"
+    },
+    "VerifyEmail": {
+      "title": "Подтверждение почты - Ashyk Bilim",
+      "heading": "Подтвердите адрес электронной почты",
+      "subtitle": "Введите код из письма, которое мы отправили при регистрации.",
+      "email": "Электронная почта",
+      "code": "Код подтверждения",
+      "codeHint": "Код из письма, 6 символов.",
+      "submit": "Подтвердить",
+      "submitting": "Проверяем...",
+      "success": "Адрес электронной почты подтверждён",
+      "invalidCode": "Неверный или устаревший код.",
+      "failed": "Не удалось подтвердить адрес. Попробуйте ещё раз.",
+      "backToLogin": "Перейти ко входу"
+    }
   },
   "Certificates": {
     "ActivityIndicators": {
@@ -1874,7 +1911,24 @@
       "permissionsAria": "Права роли {roleName}",
       "slugTaken": "Роль с таким слагом уже существует",
       "lastAdminConflict": "Нельзя снять роль администратора у последнего администратора",
-      "selfDisableConflict": "Нельзя отключить собственный аккаунт"
+      "selfDisableConflict": "Нельзя отключить собственный аккаунт",
+      "createUser": "Создать пользователя",
+      "createUserTitle": "Новый пользователь",
+      "createUserDescription": "Учётная запись создаётся с подтверждённой почтой. Без пароля пользователь сможет войти только через Google.",
+      "firstNameLabel": "Имя",
+      "lastNameLabel": "Фамилия",
+      "usernameLabel": "Имя пользователя",
+      "emailLabel": "Электронная почта",
+      "passwordLabel": "Пароль (необязательно)",
+      "passwordHint": "Не менее 8 символов. Оставьте пустым для входа только через Google.",
+      "extraRolesLabel": "Дополнительная роль",
+      "noExtraRole": "Только «Пользователь»",
+      "createUserSubmit": "Создать",
+      "userCreated": "Пользователь создан",
+      "usernameInvalid": "От 3 до 48 символов: латинские буквы, цифры, точка, дефис и подчёркивание.",
+      "emailInvalid": "Недействительный адрес электронной почты.",
+      "passwordTooShort": "Пароль должен содержать не менее 8 символов.",
+      "fieldRequired": "Обязательное поле."
     },
     "PageLoading": {
       "loading": "Загрузка..."
@@ -2890,7 +2944,8 @@
       "startingCourse": "Начинаем курс...",
       "submittingContributorApplication": "Отправка заявки на участие...",
       "youAreAContributor": "Вы являетесь автором",
-      "startError": "Не удалось начать курс. Попробуйте ещё раз."
+      "startError": "Не удалось начать курс. Попробуйте ещё раз.",
+      "contributorApplicationConflict": "Заявку отправить нельзя: курс закрыт для соавторов или у вас уже есть роль в этом курсе."
     },
     "access": "Доступ",
     "content": "Содержимое",
@@ -3673,13 +3728,15 @@
         "issues": {
           "noVisibleActivities": "Опубликуйте хотя бы одно задание, видимое учащимся.",
           "requiredActivityUnpublished": "Обязательное задание еще не опубликовано.",
-          "assessmentUnready": "В опубликованном оценивании остались проблемы готовности.",
-          "fileSubmissionUnready": "Задание с отправкой файла не завершено или не опубликовано.",
+          "assessmentUnready": "Оценивание «{title}» не опубликовано или не готово.",
+          "fileSubmissionUnready": "Задание с отправкой файла «{title}» не заполнено или не опубликовано.",
           "thumbnailMissing": "Добавьте обложку для узнаваемости. Это не блокирует публикацию.",
           "outcomesMissing": "Добавьте результаты обучения. Это не блокирует публикацию.",
           "certificateMissing": "Сертификат не настроен. Это не блокирует публикацию.",
           "contributorMissing": "Активный соавтор не настроен. Это не блокирует публикацию.",
-          "unknown": "Одно из требований к публикации требует внимания."
+          "unknown": "Одно из требований к публикации требует внимания.",
+          "activityUnpublished": "Задание «{title}» ещё не опубликовано — учащиеся его не видят.",
+          "codeChallengeUnconfigured": "Для задания «{title}» не настроена проверка кода."
         },
         "sectionLabel": "Проверка и публикация",
         "toasts": {
@@ -3898,7 +3955,8 @@
           "gradebook": "Журнал",
           "overview": "Обзор",
           "publish": "Проверка и публикация",
-          "settings": "Настройки"
+          "settings": "Настройки",
+          "collaboration": "Соавторы"
         },
         "untitledCourse": "Курс без названия",
         "unsavedDialogLeave": "Покинуть рабочее пространство",
@@ -4146,9 +4204,21 @@
       "contributorPolicyStagedTitle": "Политика соавторства не сохраняется до нажатия кнопки «Сохранить»",
       "contributorPolicyStagedDescription": "Политика открытого или закрытого доступа остаётся локальной до сохранения этого раздела.",
       "rosterActionsImmediateTitle": "Действия с участниками применяются немедленно",
-      "rosterUnavailableTitle": "Управление соавторами недоступно в этой версии",
-      "rosterUnavailableDescription": "Список соавторов, приглашения и роли появятся позже. Настройка «Открыт для соавторов» выше сохраняется.",
-      "rosterActionsImmediateDescription": "Поиск, добавление, удаление, изменение ролей и статусов обновляют список соавторов немедленно. Храните их отдельно от черновика политики выше."
+      "rosterActionsImmediateDescription": "Поиск, добавление, удаление, изменение ролей и статусов обновляют список соавторов немедленно. Храните их отдельно от черновика политики выше.",
+      "addButton": "Добавить",
+      "addedContributor": "@{username} добавлен в соавторы",
+      "removedContributor": "@{username} удалён из соавторов",
+      "removeConfirmTitle": "Удалить @{username} из курса?",
+      "removeConfirmMessage": "Пользователь потеряет доступ к редактированию курса. Его можно добавить снова позже.",
+      "removeButton": "Удалить",
+      "approveButton": "Одобрить",
+      "activateButton": "Активировать",
+      "deactivateButton": "Отключить",
+      "actionsColumn": "Действия",
+      "updating": "Обновление…",
+      "failedToLoadContributors": "Не удалось загрузить список соавторов.",
+      "rosterReadOnlyTitle": "Список соавторов доступен только для просмотра",
+      "rosterReadOnlyDescription": "Добавлять, одобрять и удалять соавторов могут создатель курса, активные модераторы и администраторы платформы."
     },
     "Editor": {
       "BadgesExtension": {
@@ -6161,7 +6231,21 @@
           "totpAlreadyActive": "Двухфакторная аутентификация уже включена.",
           "totpActivated": "Двухфакторная аутентификация включена",
           "totpRemoved": "Двухфакторная аутентификация отключена",
-          "invalidCode": "Неверный код. Попробуйте ещё раз."
+          "invalidCode": "Неверный код. Попробуйте ещё раз.",
+          "passwordTitle": "Пароль",
+          "passwordDescription": "Смените пароль для входа. Остальные сессии будут завершены.",
+          "currentPassword": "Текущий пароль",
+          "newPassword": "Новый пароль",
+          "confirmPassword": "Повторите новый пароль",
+          "passwordRule": "Не менее 8 символов.",
+          "changePassword": "Сменить пароль",
+          "passwordChanged": "Пароль изменён",
+          "passwordChangedDescription": "Остальные сессии завершены.",
+          "currentPasswordWrong": "Неверный текущий пароль.",
+          "newPasswordRejected": "Новый пароль не соответствует требованиям.",
+          "required": "Обязательное поле.",
+          "passwordTooShort": "Пароль должен содержать не менее 8 символов.",
+          "passwordsDoNotMatch": "Пароли не совпадают."
         }
       },
       "gamification": "Настройки геймификации",
@@ -6676,7 +6760,10 @@
       "ai-budget-exhausted": "Лимит токенов ИИ исчерпан. Попробуйте позже.",
       "ai-rate-limited": "Достигнут часовой лимит запросов к ИИ. Попробуйте позже.",
       "ai-run-cancelled": "Запуск ИИ был отменён.",
-      "ai-provider-unavailable": "Провайдер ИИ недоступен. Попробуйте позже."
+      "ai-provider-unavailable": "Провайдер ИИ недоступен. Попробуйте позже.",
+      "username-taken": "Это имя пользователя уже занято.",
+      "email-taken": "Этот адрес электронной почты уже зарегистрирован.",
+      "activity-not-ready": "Сначала опубликуйте настройки задания с отправкой файла, затем само задание."
     },
     "fields": {
       "required": "Обязательное поле.",
@@ -8206,6 +8293,16 @@
         "releaseStateAwaitingRelease": "Ожидает публикации",
         "releaseStateVisible": "Видно",
         "releaseStateReturned": "Возвращено"
+      },
+      "itemFeedback": {
+        "noAnswer": "Ответ не дан",
+        "noCorrectAnswer": "Правильный ответ не задан",
+        "correct": "Верно",
+        "incorrect": "Неверно",
+        "partiallyCorrectNoCredit": "Частично верно (без частичного балла)",
+        "partiallyCorrect": "Частично верно ({correct}/{total})",
+        "pairsMatched": "Совпало пар: {correct}/{total}",
+        "testsPassed": "Пройдено тестов: {correct}/{total}"
       }
     },
     "Assessments": {
@@ -10093,15 +10190,6 @@
     "overallFeedback": "Общий отзыв",
     "itemScore": "Балл",
     "itemFeedback": "Отзыв",
-    "autoFeedback": {
-      "noAnswer": "Ответ не дан",
-      "noCorrectAnswer": "Правильный ответ не задан",
-      "correct": "Верно",
-      "incorrect": "Неверно",
-      "partialNoCredit": "Частично верно (без частичного балла)",
-      "partial": "Частично верно ({hits}/{total})",
-      "pairsMatched": "Совпало пар: {correct}/{total}"
-    },
     "rubricCriterion": "Критерий",
     "rubricScore": "Балл",
     "rubricMaxScore": "Макс. балл",

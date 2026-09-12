@@ -13,9 +13,10 @@ import { SESSION_COOKIE_NAME } from '@/lib/auth/types'
  *
  * The browser never talks to the identity provider: `POST /auth/login` runs
  * the headless Zitadel password (+ TOTP) check and answers with the session
- * cookie, which the action copies onto the app origin. Registration and
- * password reset are not part of the v2 contract (accounts are provisioned
- * by an admin or created through Google sign-in) — see DECISIONS.md P9.
+ * cookie, which the action copies onto the app origin. `POST /auth/register`
+ * creates the account (no session — the user logs in next) and
+ * `POST /auth/verify-email` confirms the emailed code. Password reset is not
+ * part of the v2 contract (DECISIONS.md 2026-09-12).
  */
 
 interface LoginActionInput {
@@ -128,4 +129,73 @@ export async function logoutAction(redirectTo?: string | null): Promise<void> {
     // itself, and that must be allowed through.
     redirect(normalizeInternalPath(redirectTo))
   }
+}
+
+// ── Registration ───────────────────────────────────────────────────────────────
+
+interface RegisterActionInput {
+  username: string
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+}
+
+export interface RegisterActionResult {
+  ok: boolean
+  /** Contract error code (`username-taken`, `email-taken`, `rate-limited`, …). */
+  code?: string
+  /** Server-side field errors keyed by wire field name (`username`, `email`, …). */
+  fieldErrors?: Record<string, string>
+}
+
+async function problemResult(response: Response): Promise<RegisterActionResult> {
+  const problem = await readProblem(response)
+  const fieldErrors: Record<string, string> = {}
+  for (const fieldError of problem?.field_errors ?? []) {
+    fieldErrors[fieldError.field] ??= fieldError.code
+  }
+  return {
+    ok: false,
+    code: problem?.code ?? (response.status === 429 ? 'rate-limited' : 'service-unavailable'),
+    ...(Object.keys(fieldErrors).length > 0 ? { fieldErrors } : {}),
+  }
+}
+
+/** `POST /auth/register` — creates the account; the user then logs in. */
+export async function registerAction(input: RegisterActionInput): Promise<RegisterActionResult> {
+  let response: Response
+  try {
+    response = await postAuthJson(
+      'auth/register',
+      {
+        username: input.username.trim(),
+        email: input.email.trim(),
+        password: input.password,
+        first_name: input.firstName.trim(),
+        last_name: input.lastName.trim(),
+      },
+      { includeAuthCookies: false },
+    )
+  } catch {
+    return { ok: false, code: 'service-unavailable' }
+  }
+  if (!response.ok) return problemResult(response)
+  return { ok: true }
+}
+
+/** `POST /auth/verify-email` — confirms the emailed code. */
+export async function verifyEmailAction(input: { email: string; code: string }): Promise<RegisterActionResult> {
+  let response: Response
+  try {
+    response = await postAuthJson(
+      'auth/verify-email',
+      { email: input.email.trim(), code: input.code.trim().toUpperCase() },
+      { includeAuthCookies: false },
+    )
+  } catch {
+    return { ok: false, code: 'service-unavailable' }
+  }
+  if (!response.ok) return problemResult(response)
+  return { ok: true }
 }

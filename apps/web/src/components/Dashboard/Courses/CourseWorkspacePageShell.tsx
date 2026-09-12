@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   ShieldCheck,
+  Users,
 } from 'lucide-react'
 import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal'
 import { buildCourseWorkspacePath, prefixedCourseUuid } from '@/lib/course-management'
@@ -98,7 +99,13 @@ function CourseWorkspaceChrome({
       key: 'access',
       label: t('tabs.settings'),
       icon: Globe,
-      capability: 'canManageSettings',
+      capability: 'canManageAccess',
+    },
+    {
+      key: 'collaboration',
+      label: t('tabs.collaboration'),
+      icon: Users,
+      capability: 'canManageCollaboration',
     },
     {
       key: 'certificate',

@@ -21,6 +21,19 @@ export interface CourseChecklistItem {
   href?: CourseWorkspaceStage
 }
 
+/**
+ * Whether `userId` authors the course the way the server sees it
+ * (`Course::is_author`): the creator, or an active contributor
+ * (`contributor_ids` on the wire). `:own`-scoped grants apply to authors.
+ */
+export function isCourseAuthor(
+  course: { creator_id?: string | null | undefined; contributor_ids?: string[] | undefined },
+  userId: string | null | undefined,
+): boolean {
+  if (!userId) return false
+  return course.creator_id === userId || (course.contributor_ids ?? []).includes(userId)
+}
+
 export function cleanCourseUuid(courseUuid: string): string {
   return courseUuid.replace(/^course_/, '')
 }

@@ -2,9 +2,9 @@
 
 # This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
-**Keep this block, including in commits.** It is part of the project's agent setup, maintained by `next dev` for every agent that works here. If it appears as an uncommitted change, that is intentional — commit it as-is. Do not remove it to clean up a diff; it will be regenerated.
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
 
@@ -77,8 +77,12 @@ Python API (`apps/api`) is frozen reference material — never target it.
   owner (`avatar_upload_id`, block create, file-submission draft). Public
   objects are addressed by storage `key` and served at `/content/<key>`
   (`getContentUrl(key)` in `@/services/media/media`).
-- **SSE:** `GET /submissions/{id}/events` (grading), `POST /ai/runs/{id}/stream`
-  and `POST /ai/qa/{course}/chat` (AG-UI); `Last-Event-ID` resumes.
+- **SSE:** `GET /submissions/{id}/events` (one submission),
+  `GET /courses/{id}/grading/events` (every grade change and hand-in on a
+  course, graders only — `useCourseGradingEvents` invalidates
+  `queryKeys.grading.*`; polling is the fallback while it is down),
+  `POST /ai/runs/{id}/stream` and `POST /ai/qa/{course}/chat` (AG-UI);
+  `Last-Event-ID` resumes.
 - **Sessions:** one httponly `ab_session` cookie set by the BFF; no tokens, no
   refresh. `getSession()` (server) joins `GET /auth/session` (user id, role
   slugs, permission strings) with `GET /users/me`; `useSession()` exposes it
@@ -99,7 +103,8 @@ Python API (`apps/api`) is frozen reference material — never target it.
 
 ## Not in v2 (do not re-add without a contract change)
 
-Self-registration, password reset/change, refresh tokens, numeric ids,
+Password reset (self-registration `/signup`, email verification and
+password change came back 2026-09-12 — DECISIONS.md), refresh tokens, numeric ids,
 `*_uuid` strings, multipart uploads through the API, offset pagination,
 per-user server-side theme, `/members`, `/roles/{id}` numeric role ids,
 batch grading, bulk zip download of file submissions, `/trail/start`.

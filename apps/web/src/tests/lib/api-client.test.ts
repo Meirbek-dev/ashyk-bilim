@@ -134,6 +134,21 @@ describe('apiJson timeout', () => {
     vi.unstubAllGlobals()
   })
 
+  it('keeps the page on a 401 that only re-checks a credential (password change)', async () => {
+    const assign = vi.fn()
+    vi.stubGlobal('location', { pathname: '/dash/user-account/settings/security', search: '', assign })
+    ;(global.fetch as any).mockResolvedValue(
+      problem({ code: 'invalid-credentials', status: 401, title: 'Invalid credentials', type: 'x' }, { status: 401 }),
+    )
+
+    await expect(apiJson('auth/password', { method: 'POST', timeoutMs: false })).rejects.toMatchObject({
+      code: 'invalid-credentials',
+      status: 401,
+    })
+    expect(assign).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
   it('throws APIError with problem+json metadata for non-2xx responses', async () => {
     ;(global.fetch as any).mockResolvedValue(
       problem(

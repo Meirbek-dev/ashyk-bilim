@@ -3,7 +3,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useSession } from '@/hooks/useSession'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
-import { applyForContributor } from '@services/courses/courses'
+import { useContributorMutations } from '@/features/courses/hooks/useContributors'
+import { useApiError } from '@/hooks/useApiError'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import CourseProgress from '../CourseProgress/CourseProgress'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { startCourse } from '@services/courses/activity'
@@ -20,8 +22,6 @@ import { toast } from 'sonner'
 import { learnerCourseProgress } from '@/features/learner-course/api'
 import type { LearnerCourseState } from '@/features/learner-course/api'
 
-const CONTRIBUTORS_ENABLED = false
-
 interface CourseActionsProps {
   courseuuid: string
   course: AppCourse
@@ -36,7 +36,9 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   const { user: currentUser } = useSession()
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [isContributeLoading, setIsContributeLoading] = useState(false)
-  const { contributorStatus, refetch } = useContributorStatus(courseuuid)
+  const { contributorStatus, contributorRole, refetch } = useContributorStatus(courseuuid)
+  const { apply } = useContributorMutations(courseuuid)
+  const { toastApiError } = useApiError()
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   const t = useTranslations('Courses.CoursesActions')
 
@@ -131,17 +133,14 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     const loadingToast = toast.loading(t('submittingContributorApplication'))
 
     try {
-      const data = {
-        message: t('contributorApplicationMessage'),
-      }
-
-      await applyForContributor(`course_${courseuuid}`, data)
+      await apply()
       await revalidateTags(['courses'])
-      refetch()
+      await refetch()
       toast.success(t('contributorApplicationSuccess'), { id: loadingToast })
     } catch (error) {
-      console.error('Failed to apply as contributor:', error)
-      toast.error(t('contributorApplicationError'), { id: loadingToast })
+      // 409 `conflict`: the course closed meanwhile, or a role already exists.
+      if (hasErrorCode(error, 'conflict')) toast.error(t('contributorApplicationConflict'), { id: loadingToast })
+      else toastApiError(error, { toastId: loadingToast }, t('contributorApplicationError'))
     } finally {
       setIsContributeLoading(false)
     }
@@ -166,9 +165,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   }
 
   const renderContributorButton = () => {
-    // Blocked: no v2 contributor routes (QUESTIONS.md Q-2026-09-10-3) — the
-    // apply button would be a dead click, and `/signup` no longer exists.
-    if (contributorStatus === 'INACTIVE' || course.open_to_contributors !== true || !CONTRIBUTORS_ENABLED) {
+    if (contributorStatus === 'INACTIVE' || contributorRole === 'creator' || course.open_to_contributors !== true) {
       return null
     }
 

@@ -24,7 +24,7 @@ import {
   canTeacherEditGrade,
   getReleaseState,
   isScoreInputInvalid,
-  localizeAutoGraderFeedback,
+  localizeItemFeedback,
   sumScores,
   toItemScale,
 } from '@/features/grading/domain'
@@ -75,6 +75,7 @@ export default function GradeForm({
   const { annotationsByItem, clearAll: clearAnnotations } = useAnnotations()
   const t = useTranslations('Grading.Panel')
   const tItemGrading = useTranslations('ItemGrading')
+  const tGrading = useTranslations('Features.Grading')
   const [draft, setDraft] = useState<GradeDraft>({ score: '', feedback: '' })
   const [itemDrafts, setItemDrafts] = useState<Record<string, ItemDraftEntry>>({})
   const [overrideScore, setOverrideScore] = useState(false)
@@ -85,13 +86,25 @@ export default function GradeForm({
     local: GradeDraft
   } | null>(null)
 
-  // Items from grading breakdown — may be empty for manual-only assessments
+  // Items from grading breakdown — may be empty for manual-only assessments.
+  // An auto-grader verdict (`feedback_code`) is shown localized, read-only;
+  // the editor holds teacher prose only (empty until the teacher writes,
+  // which is what keeps the code on the server).
   const gradedItems: GradedItem[] = useMemo(() => {
     return (submission?.grading_json?.items ?? []).map(item => ({
       ...item,
-      feedback: localizeAutoGraderFeedback(item.feedback, tItemGrading),
+      feedback: item.feedback_code ? '' : item.feedback,
     }))
-  }, [submission?.grading_json?.items, tItemGrading])
+  }, [submission?.grading_json?.items])
+  const verdictByItem = useMemo(
+    () =>
+      new Map(
+        (submission?.grading_json?.items ?? [])
+          .filter(item => item.feedback_code)
+          .map(item => [item.item_id, localizeItemFeedback(item, tGrading)]),
+      ),
+    [submission?.grading_json?.items, tGrading],
+  )
 
   const hasItemGrading = gradedItems.length > 0 && Boolean(assessmentUuid)
   // The item definitions carry the scale the grade save expects (already
@@ -457,6 +470,11 @@ export default function GradeForm({
                       <span className="ml-auto text-xs text-amber-600">{t('needsReview')}</span>
                     )}
                   </div>
+                  {verdictByItem.has(item.item_id) ? (
+                    <p className="text-muted-foreground text-xs" data-testid={`item-verdict-${item.item_id}`}>
+                      {verdictByItem.get(item.item_id)}
+                    </p>
+                  ) : null}
                   {invalidItemIds.has(item.item_id) ? (
                     <p id={`item-score-error-${item.item_id}`} className="text-destructive text-xs" role="alert">
                       {tItemGrading('invalidItemScore', { max: item.max_score })}

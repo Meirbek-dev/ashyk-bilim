@@ -5,30 +5,41 @@ import { describeUserAgent } from '@/lib/user-agent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { KeyRound, Loader2, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react'
+import { KeyRound, Loader2, LockKeyhole, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
+import PasswordInput from '@components/ui/custom/password-input'
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@components/ui/field'
 import { useApiError } from '@/hooks/useApiError'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { fromUnix } from '@/lib/api/contract'
 import { hasErrorCode } from '@/lib/api/assertSuccess'
-import { listSessions, removeTotp, revokeSession, startTotpEnrollment, verifyTotpEnrollment } from '@services/auth/auth'
+import {
+  changePassword,
+  listSessions,
+  removeTotp,
+  revokeSession,
+  startTotpEnrollment,
+  verifyTotpEnrollment,
+} from '@services/auth/auth'
 import type { TotpEnrollment } from '@/lib/api/generated/zod'
 
 /**
  * Security settings against the v2 BFF: the list of live sessions with
- * per-session revoke (`/auth/sessions`) and TOTP enrollment
- * (`/auth/mfa/totp`). Passwords live in Zitadel and have no self-service
- * change endpoint in v2 (DECISIONS.md P9).
+ * per-session revoke (`/auth/sessions`), password change (`/auth/password`,
+ * checked by Zitadel) and TOTP enrollment (`/auth/mfa/totp`).
+ *
+ * `mfaEnabled` is the `UserProfile.mfa_enabled` of the current session; the
+ * 409 on enrol stays as a fallback for a session minted before the flag.
  */
-export default function UserSecuritySettings() {
+export default function UserSecuritySettings({ mfaEnabled = false }: { mfaEnabled?: boolean }) {
   const t = useTranslations('DashPage.UserAccountSettings.UserAccount.Security')
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-4 pb-10">
       <SessionsSection t={t} />
-      <TotpSection t={t} />
+      <PasswordSection t={t} />
+      <TotpSection t={t} initialActive={mfaEnabled} />
     </div>
   )
 }
@@ -123,12 +134,96 @@ function SessionsSection({ t }: { t: Translator }) {
   )
 }
 
-function TotpSection({ t }: { t: Translator }) {
+function PasswordSection({ t }: { t: Translator }) {
+  const { toastApiError } = useApiError()
+  const [values, setValues] = useState({ current: '', next: '', confirm: '' })
+  const [errors, setErrors] = useState<{ current?: string; next?: string; confirm?: string }>({})
+
+  const mutation = useMutation({
+    mutationFn: () => changePassword(values.current, values.next),
+    onSuccess: () => {
+      setValues({ current: '', next: '', confirm: '' })
+      setErrors({})
+      toast.success(t('passwordChanged'), { description: t('passwordChangedDescription') })
+    },
+    onError: error => {
+      if (hasErrorCode(error, 'invalid-credentials')) {
+        setErrors({ current: t('currentPasswordWrong') })
+        return
+      }
+      if (hasErrorCode(error, 'validation-failed')) {
+        setErrors({ next: t('newPasswordRejected') })
+        return
+      }
+      toastApiError(error)
+    },
+  })
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const next: typeof errors = {}
+    if (!values.current) next.current = t('required')
+    if (values.next.length < 8) next.next = t('passwordTooShort')
+    if (values.confirm !== values.next) next.confirm = t('passwordsDoNotMatch')
+    setErrors(next)
+    if (Object.keys(next).length > 0) return
+    mutation.mutate()
+  }
+
+  const bind = (name: keyof typeof values) => ({
+    value: values[name],
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => setValues(prev => ({ ...prev, [name]: event.target.value })),
+  })
+
+  return (
+    <section aria-labelledby="password-heading" className="flex flex-col gap-4">
+      <div>
+        <h2 id="password-heading" className="flex items-center gap-2 text-lg font-semibold">
+          <LockKeyhole size={18} aria-hidden="true" />
+          {t('passwordTitle')}
+        </h2>
+        <p className="text-muted-foreground text-sm">{t('passwordDescription')}</p>
+      </div>
+      <form onSubmit={submit} className="flex max-w-md flex-col gap-4" noValidate>
+        <Field>
+          <FieldLabel>{t('currentPassword')}</FieldLabel>
+          <FieldContent>
+            <PasswordInput name="currentPassword" autoComplete="current-password" {...bind('current')} />
+          </FieldContent>
+          <FieldError>{errors.current}</FieldError>
+        </Field>
+        <Field>
+          <FieldLabel>{t('newPassword')}</FieldLabel>
+          <FieldContent>
+            <PasswordInput name="newPassword" autoComplete="new-password" {...bind('next')} />
+          </FieldContent>
+          <FieldDescription>{t('passwordRule')}</FieldDescription>
+          <FieldError>{errors.next}</FieldError>
+        </Field>
+        <Field>
+          <FieldLabel>{t('confirmPassword')}</FieldLabel>
+          <FieldContent>
+            <PasswordInput name="confirmPassword" autoComplete="new-password" {...bind('confirm')} />
+          </FieldContent>
+          <FieldError>{errors.confirm}</FieldError>
+        </Field>
+        <div>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? <Loader2 className="animate-spin" size={16} aria-hidden="true" /> : null}
+            {t('changePassword')}
+          </Button>
+        </div>
+      </form>
+    </section>
+  )
+}
+
+function TotpSection({ t, initialActive }: { t: Translator; initialActive: boolean }) {
   const { toastApiError } = useApiError()
   const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null)
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
-  const [active, setActive] = useState(false)
+  const [active, setActive] = useState(initialActive)
 
   const enrollMutation = useMutation({
     mutationFn: startTotpEnrollment,

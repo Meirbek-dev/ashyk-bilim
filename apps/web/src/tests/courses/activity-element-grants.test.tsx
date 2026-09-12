@@ -13,6 +13,7 @@ const harness = vi.hoisted(() => ({
   permissions: new Set<string>(),
   userId: 'teacher-1',
   creatorId: 'teacher-1',
+  contributorIds: [] as string[],
 }))
 
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
@@ -23,7 +24,9 @@ vi.mock('@/hooks/useSession', () => ({
   }),
 }))
 vi.mock('@components/Contexts/CourseContext', () => ({
-  useCourse: () => ({ courseStructure: { course_uuid: 'course-1', creator_id: harness.creatorId } }),
+  useCourse: () => ({
+    courseStructure: { course_uuid: 'course-1', creator_id: harness.creatorId, contributor_ids: harness.contributorIds },
+  }),
 }))
 vi.mock('@/hooks/mutations/useActivityMutations', () => ({
   useActivityMutations: () => ({ deleteActivity: vi.fn(), updateActivity: vi.fn() }),
@@ -32,6 +35,7 @@ vi.mock('@/components/Objects/Elements/Tooltip/Tooltip', () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (path: string) => path }))
+vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: vi.fn() }) }))
 
 import ActivityElement from '@/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ActivityElement'
 
@@ -62,6 +66,16 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     expect(screen.queryByRole('button', { name: 'editButton' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'publish' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'deleteButton' })).toBeNull()
+  })
+
+  it('an active contributor authors like the creator (`contributor_ids`)', () => {
+    harness.permissions = new Set(['activity:update:own', 'activity:delete:own'])
+    harness.creatorId = 'someone-else'
+    harness.contributorIds = ['teacher-1']
+    renderRow()
+    expect(screen.getByRole('button', { name: 'publish' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'deleteButton' })).toBeInTheDocument()
+    harness.contributorIds = []
   })
 
   it('platform-scoped grants apply to any course', () => {

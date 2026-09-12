@@ -1,4 +1,5 @@
 import type { Action, Resource, Scope } from '@/types/permissions'
+import { isCourseAuthor } from '@/lib/course-management'
 import type { CourseWorkspaceStage } from '@/lib/course-management'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { getCourseMetadata } from '@services/courses/courses'
@@ -28,19 +29,20 @@ function can(session: AuthSession, permsSet: Set<string>, resource: Resource, ac
 
 /**
  * An `:own`-scoped grant (`course:update:own`, `chapter:update:own`, …) only
- * covers courses the session user created; a `:platform`-scoped grant covers
- * every course. Mirrors the scope resolution in
- * `apps/server/crates/core/src/permission.rs` (`Grant::grants`) — scopes are
- * matched exactly, the caller ORs `platform` with ownership+`own` itself.
+ * covers courses the session user authors (creator or active contributor —
+ * `isCourseAuthor`); a `:platform`-scoped grant covers every course. Mirrors
+ * the scope resolution in `apps/server/crates/core/src/permission.rs`
+ * (`Grant::grants`) — scopes are matched exactly, the caller ORs `platform`
+ * with authorship+`own` itself.
  */
 function canOwnOrPlatform(
   session: AuthSession,
   permsSet: Set<string>,
-  isCreator: boolean,
+  isAuthor: boolean,
   resource: Resource,
   action: Action,
 ) {
-  return can(session, permsSet, resource, action, Scopes.APP) || (isCreator && can(session, permsSet, resource, action, Scopes.OWN))
+  return can(session, permsSet, resource, action, Scopes.APP) || (isAuthor && can(session, permsSet, resource, action, Scopes.OWN))
 }
 
 function hasCreateCoursePermission(session: AuthSession, permsSet: Set<string>) {
@@ -50,16 +52,21 @@ function hasCreateCoursePermission(session: AuthSession, permsSet: Set<string>) 
 export function deriveCourseWorkspaceCapabilities(session: AuthSession, course: AppCourse): CourseWorkspaceCapabilities {
   const permsSet = new Set(session.permissions)
   const isCreator = typeof course.creator_id === 'string' && course.creator_id === session.userId
+  const isAuthor = isCourseAuthor(course, session.userId)
 
-  const canEditDetails = canOwnOrPlatform(session, permsSet, isCreator, Resources.COURSE, Actions.UPDATE)
+  const canEditDetails = canOwnOrPlatform(session, permsSet, isAuthor, Resources.COURSE, Actions.UPDATE)
   const canEditCurriculum =
-    canOwnOrPlatform(session, permsSet, isCreator, Resources.CHAPTER, Actions.UPDATE) ||
-    canOwnOrPlatform(session, permsSet, isCreator, Resources.ACTIVITY, Actions.UPDATE)
-  const canManage = canOwnOrPlatform(session, permsSet, isCreator, Resources.COURSE, Actions.MANAGE)
+    canOwnOrPlatform(session, permsSet, isAuthor, Resources.CHAPTER, Actions.UPDATE) ||
+    canOwnOrPlatform(session, permsSet, isAuthor, Resources.ACTIVITY, Actions.UPDATE)
+  const canManage = canOwnOrPlatform(session, permsSet, isAuthor, Resources.COURSE, Actions.MANAGE)
   const canManageAccess = canManage
-  const canManageCollaboration = canManage
+  // The roster is managed by the creator, an active maintainer or a platform
+  // manager; the page itself is readable by every author (the server 403s
+  // the mutations for plain contributors).
+  const canManageCollaboration = canManage || isAuthor
   const canManageSettings = canManageAccess || canManageCollaboration
   const canManageCertificate = can(session, permsSet, Resources.CERTIFICATE, Actions.CREATE, Scopes.APP)
+  // Delete stays creator-only on the server.
   const canDeleteCourse = canOwnOrPlatform(session, permsSet, isCreator, Resources.COURSE, Actions.DELETE)
   const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canManageCertificate
 

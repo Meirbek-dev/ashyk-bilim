@@ -1,12 +1,28 @@
+'use client'
+
+import { contributorOf, useContributors } from '@/features/courses/hooks/useContributors'
+import { useSession } from '@/hooks/useSession'
+
 export type ContributorStatus = 'NONE' | 'PENDING' | 'ACTIVE' | 'INACTIVE'
 
-// Blocked: v2 has no `courses/{id}/contributors` route (QUESTIONS.md
-// Q-2026-09-10-3). Until the contract lands nobody is a contributor; asking
-// the server only produced a 404 on every course page.
-export function useContributorStatus(_courseUuid: string) {
+/**
+ * The signed-in user's row on the course roster (`GET /courses/{id}/contributors`,
+ * creator included as `creator/active`). `NONE` when absent or signed out.
+ */
+export function useContributorStatus(courseUuid: string) {
+  const { session } = useSession()
+  const userId = session?.userId ?? null
+  const query = useContributors(courseUuid, { enabled: Boolean(userId) })
+  const row = contributorOf(query.data, userId)
+  const contributorStatus: ContributorStatus = row
+    ? (row.status.toUpperCase() as Exclude<ContributorStatus, 'NONE'>)
+    : 'NONE'
   return {
-    contributorStatus: 'NONE' as ContributorStatus,
-    isLoading: false,
-    refetch: async () => {},
+    contributorStatus,
+    contributorRole: row?.role ?? null,
+    isLoading: Boolean(userId) && query.isPending,
+    refetch: async () => {
+      await query.refetch()
+    },
   }
 }

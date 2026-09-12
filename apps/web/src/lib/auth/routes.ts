@@ -2,15 +2,16 @@ import { localePrefixes, locales } from '@/i18n/config'
 
 /**
  * Public auth aliases → internal app routes. v2 offers password + Google
- * login only (no self-registration, no password reset — DECISIONS.md P9), so
- * the legacy `/signup`, `/forgot` and `/reset` aliases are gone.
+ * login and self-registration (DECISIONS.md 2026-09-12); password reset is
+ * still out, so the legacy `/forgot` and `/reset` aliases stay gone.
  */
 const AUTH_ALIAS_TO_INTERNAL = {
   '/login': '/auth/login',
+  '/signup': '/auth/signup',
 } as const
 
 const AUTH_ALIAS_PREFIXES = Object.keys(AUTH_ALIAS_TO_INTERNAL)
-const INTERNAL_AUTH_PREFIXES = ['/auth/login'] as const
+const INTERNAL_AUTH_PREFIXES = ['/auth/login', '/auth/signup', '/auth/verify-email'] as const
 
 export const PROTECTED_ROUTE_PREFIXES = [
   '/dash',

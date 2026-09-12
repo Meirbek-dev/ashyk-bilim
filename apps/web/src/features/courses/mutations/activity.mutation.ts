@@ -11,6 +11,7 @@ import {
 import { createFileActivity } from '@services/courses/activity-uploads'
 import type { ActivityCreateValues, ActivityUpdateValues } from '@/schemas/activitySchemas'
 import { courseKeys } from '@/hooks/courses/courseKeys'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 export function updateActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
@@ -75,6 +76,9 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
         queryClient.invalidateQueries({
           queryKey: courseKeys.activity(variables.activityUuid),
         }),
+        // Publishing/unpublishing changes the course readiness verdict
+        // (`structureKey` = ['courses', 'structure', courseUuid, …]).
+        queryClient.invalidateQueries({ queryKey: queryKeys.courses.readiness(String(structureKey[2] ?? '')) }),
       ])
     },
   })

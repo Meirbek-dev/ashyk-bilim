@@ -162,6 +162,9 @@ declare global {
     thumbnail_video?: string | null
     chapters?: AppChapter[]
     authors?: AppCourseAuthor[]
+    creator_id?: string | null | undefined
+    /** Active co-authors (v2 `Course.contributor_ids`). */
+    contributor_ids?: string[] | undefined
     update_date?: string
     creation_date?: string
     created_at?: string

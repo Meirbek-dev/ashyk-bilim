@@ -1,4 +1,3 @@
-import EditCourseContributors from '@components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors'
 import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import { courseWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
@@ -30,10 +29,7 @@ async function PlatformCourseAccessContent({ params }: PlatformCourseAccessPageP
     activeStage: 'access',
     capabilities,
     children: (
-      <div className="space-y-8">
-        {capabilities.canManageAccess ? <EditCourseAccess /> : null}
-        {capabilities.canManageCollaboration ? <EditCourseContributors /> : null}
-      </div>
+<EditCourseAccess />
     ),
   })
 }

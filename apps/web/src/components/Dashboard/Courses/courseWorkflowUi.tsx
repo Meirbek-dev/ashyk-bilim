@@ -10,6 +10,8 @@ import { useTranslations } from 'next-intl'
 import { queryOptions } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { getCourseReadiness } from '@services/courses/courses'
+import type { CourseReadinessIssue } from '@services/courses/courses'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 /**
  * Server readiness (`GET courses/{id}/readiness`) — the single source for the
@@ -17,9 +19,38 @@ import { getCourseReadiness } from '@services/courses/courses'
  */
 export function courseReadinessQueryOptions(courseUuid: string) {
   return queryOptions({
-    queryKey: ['courses', courseUuid, 'readiness'] as const,
+    queryKey: queryKeys.courses.readiness(courseUuid),
     queryFn: () => getCourseReadiness(courseUuid),
   })
+}
+
+/**
+ * Localizes a readiness code (`DashPage.CourseManagement.Review.issues`);
+ * activity-scoped codes carry the activity name.
+ */
+export function useReadinessIssueMessage() {
+  const t = useTranslations('DashPage.CourseManagement.Review.issues')
+  return (issue: CourseReadinessIssue): string => {
+    const title = issue.title ?? ''
+    switch (issue.code) {
+      case 'no-live-activity':
+        return t('noVisibleActivities')
+      case 'activity-unpublished':
+        return t('activityUnpublished', { title })
+      case 'assessment-not-ready':
+        return t('assessmentUnready', { title })
+      case 'code-challenge-unconfigured':
+        return t('codeChallengeUnconfigured', { title })
+      case 'file-submission-unpublished':
+        return t('fileSubmissionUnready', { title })
+      case 'thumbnail-missing':
+        return t('thumbnailMissing')
+      case 'certificate-not-configured':
+        return t('certificateMissing')
+      default:
+        return t('unknown')
+    }
+  }
 }
 
 type CourseWorkflowBadgeTone = 'default' | 'info' | 'success' | 'warning' | 'danger'

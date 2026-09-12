@@ -33,6 +33,7 @@ import {
 import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import { MarkdownEditor } from '@/features/content-markdown'
 import { useApiError } from '@/hooks/useApiError'
+import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import {
   fileSubmissionExportUrl,
@@ -143,6 +144,8 @@ export default function FileSubmissionReviewWorkspace({
       enabled: Boolean(cleanActivityUuid),
     }),
   )
+  // Grades and hand-ins from elsewhere refresh the queue and the open attempt.
+  useCourseGradingEvents(config?.course_id)
 
   useEffect(() => {
     const next = new URLSearchParams(urlSearchParams.toString())

@@ -27,7 +27,7 @@ import { queryKeys } from '@/lib/react-query/queryKeys'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
-import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
+import { isAnswered as isItemAnswered, matchingColumns } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList'
@@ -843,12 +843,15 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
         question_type: 'MATCHING',
         points: item.max_score,
         ...(body.explanation === null || body.explanation === undefined ? {} : { explanation: body.explanation }),
-        answer_options: body.pairs.map((pair, index) => ({
-          text: '',
-          left: pair.left,
-          right: pair.right,
-          option_id: String(index),
-        })),
+        // Rows are the left column, the select's options the right one (server
+        // order — shuffled on the learner read); the pairing is never on the wire.
+        answer_options: (({ left, right }) =>
+          left.map((option, index) => ({
+            text: '',
+            left: option.id,
+            right: right[index]?.id ?? '',
+            option_id: String(index),
+          })))(matchingColumns(body)),
       })
     }
 

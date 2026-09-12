@@ -28,6 +28,12 @@ export interface MatchPair {
   right: string
 }
 
+/** One column entry of the learner's matching read; `id` is what the answer carries. */
+export interface MatchOption {
+  id: string
+  text: string
+}
+
 export interface FormField {
   id: string
   label: string
@@ -79,9 +85,29 @@ export type ItemBody =
   | {
       kind: 'MATCHING'
       prompt: string
+      /** The author's key; empty on the learner read. */
       pairs: MatchPair[]
+      /** The learner read (`MatchingLearnerBody`): both columns, right one shuffled. */
+      left?: MatchOption[]
+      right?: MatchOption[]
       explanation?: string | null
     }
+
+/**
+ * The columns a matching attempt renders: the learner read's (`left`/`right`,
+ * right shuffled by the server) or, for authors previewing, the pairs' texts.
+ */
+export function matchingColumns(body: {
+  pairs: MatchPair[]
+  left?: MatchOption[]
+  right?: MatchOption[]
+}): { left: MatchOption[]; right: MatchOption[] } {
+  if (body.left && body.right) return { left: body.left, right: body.right }
+  return {
+    left: body.pairs.map(p => ({ id: p.left, text: p.left })),
+    right: body.pairs.map(p => ({ id: p.right, text: p.right })),
+  }
+}
 
 export interface AssessmentItemMetadata {
   section_label?: string | null

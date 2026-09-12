@@ -38,6 +38,7 @@ export const queryKeys = {
   },
   courses: {
     contributors: (courseUuid: string) => ['courses', 'contributors', courseUuid] as const,
+    readiness: (courseUuid: string) => ['courses', courseUuid, 'readiness'] as const,
     learners: (courseUuid: string) => ['courses', 'learners', courseUuid] as const,
     usergroups: (courseUuid: string) => ['courses', 'usergroups', courseUuid] as const,
     metadata: (courseUuid: string) => ['courses', 'metadata', courseUuid] as const,

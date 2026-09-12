@@ -1,20 +1,16 @@
 'use server'
 
 import { listCourses } from '@/lib/api/generated/courses/courses'
-import { collectPages } from '@/lib/api/contract'
+import type { ListCoursesParams } from '@/lib/api/generated/zod'
 import { toAppCourse } from '@/hooks/courses/courseKeys'
 import { getSession } from '@/lib/auth/session'
-import { getLocale } from 'next-intl/server'
-import { deriveCourseWorkspaceCapabilities } from '@/lib/course-management-server'
 
 /*
- v2 has no server-side "editable" listing (and adding one is a contract change):
- `GET /courses` already returns public courses plus the caller's own, so the
- editable set is derived here from the session's RBAC grants + `creator_id`
- (QUESTIONS.md Q-2026-09-10-2). Query / sort / preset / paging are applied
- client-side over the full walk.
- ponytail: full listing walk per request (≤ 20 pages of 100); revisit if a
- platform grows past ~2k courses.
+ `GET /courses?mine=true` returns the courses the caller may edit (creator,
+ active contributor, or platform updater/manager) plus the `summary` block;
+ `q` / `sort` / `preset` are applied on the server (DECISIONS "Teacher course
+ listing is server-side"). The legacy page-numbered URL is kept by hopping
+ `page - 1` cursors — one request per hop.
 */
 
 export interface EditableCoursesSummary {
@@ -24,38 +20,13 @@ export interface EditableCoursesSummary {
   attention: number
 }
 
-const RECENT_WINDOW_SECONDS = 7 * 24 * 60 * 60
+const EMPTY_SUMMARY: EditableCoursesSummary = { total: 0, ready: 0, private: 0, attention: 0 }
 
-type EditableCourse = ReturnType<typeof toAppCourse>
-
-const matchesQuery = (course: EditableCourse, query: string) =>
-  !query || course.name.toLowerCase().includes(query) || course.description.toLowerCase().includes(query)
-
-const matchesPreset = (course: EditableCourse, preset: string, nowUnix: number) => {
-  switch (preset) {
-    case 'drafts':
-    case 'private':
-      return !course.public
-    case 'published':
-      return course.public
-    case 'recent':
-      return nowUnix - course.updated_at_unix <= RECENT_WINDOW_SECONDS
-    case 'attention':
-      // ponytail: no readiness signal on the listing yet; empty until one exists.
-      return false
-    default:
-      return true
-  }
-}
-
-async function loadEditableCourses(): Promise<EditableCourse[]> {
-  const session = await getSession()
-  if (!session) return []
-  const courses = await collectPages(cursor => listCourses({ limit: 100, ...(cursor ? { cursor } : {}) }))
-  return courses.map(toAppCourse).filter(course => {
-    const capabilities = deriveCourseWorkspaceCapabilities(session, course)
-    return capabilities.canEditDetails || capabilities.canManageAccess
-  })
+/** The web's `private` chip is the server's `drafts` preset. */
+const toServerPreset = (preset: string): ListCoursesParams['preset'] => {
+  const trimmed = preset.trim()
+  if (trimmed === 'private') return 'drafts'
+  return trimmed === '' ? 'all' : trimmed
 }
 
 export async function getEditableCourses(
@@ -65,27 +36,30 @@ export async function getEditableCourses(
   sortBy = 'updated',
   preset = '',
 ): Promise<{ courses: AppCourse[]; total: number; summary: EditableCoursesSummary }> {
-  const [all, locale] = await Promise.all([loadEditableCourses(), getLocale()])
-  // Collation follows the viewer's locale (ru puts Cyrillic first), not the
-  // server process locale.
-  const collator = new Intl.Collator(locale, { sensitivity: 'base' })
-  const summary = {
-    total: all.length,
-    ready: all.filter(course => course.public).length,
-    private: all.filter(course => !course.public).length,
-    attention: 0,
+  const session = await getSession()
+  if (!session) return { courses: [], total: 0, summary: EMPTY_SUMMARY }
+
+  const base: ListCoursesParams = {
+    mine: true,
+    limit,
+    sort: sortBy === 'name' ? 'name' : 'updated',
+    preset: toServerPreset(preset),
+    ...(query.trim() ? { q: query.trim() } : {}),
+  }
+  let cursor: string | null | undefined
+  let result = await listCourses(base)
+  for (let hop = 2; hop <= page && result.next_cursor; hop += 1) {
+    cursor = result.next_cursor
+    result = await listCourses({ ...base, cursor })
   }
 
-  const needle = query.trim().toLowerCase()
-  const nowUnix = Math.floor(Date.now() / 1000)
-  const filtered = all
-    .filter(course => matchesQuery(course, needle) && matchesPreset(course, preset.trim(), nowUnix))
-    .sort((a, b) =>
-      sortBy === 'name' ? collator.compare(a.name, b.name) : b.updated_at_unix - a.updated_at_unix,
-    )
-
-  const start = (page - 1) * limit
-  return { courses: filtered.slice(start, start + limit), total: filtered.length, summary }
+  const courses = result.items.map(toAppCourse)
+  const summary = result.summary ?? EMPTY_SUMMARY
+  const unfiltered = base.preset === 'all' && !base.q
+  // Exact when nothing filters the editable set; otherwise a lower bound that
+  // still tells the pager whether a next page exists.
+  const total = unfiltered ? summary.total : (page - 1) * limit + courses.length + (result.next_cursor ? 1 : 0)
+  return { courses, total, summary }
 }
 
 /** Editable courses for the outline template combobox; `[]` on failure. */

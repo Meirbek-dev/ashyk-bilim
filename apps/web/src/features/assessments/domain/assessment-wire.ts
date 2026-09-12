@@ -70,12 +70,12 @@ export function itemFromWire(item: AssessmentDetail['items'][number]): Assessmen
       break
     }
     case 'matching': {
-      body = {
-        kind: 'MATCHING',
-        prompt: raw.prompt ?? '',
-        pairs: raw.pairs ?? [],
-        explanation: raw.explanation ?? null,
-      }
+      // Authors get `pairs`; learners get `MatchingLearnerBody` (`left`/`right`, pairing withheld).
+      const learner = raw as Extract<typeof raw, { left?: unknown }>
+      const author = raw as Extract<typeof raw, { pairs?: unknown }>
+      body = learner.left
+        ? { kind: 'MATCHING', prompt: raw.prompt ?? '', pairs: [], left: learner.left, right: learner.right ?? [] }
+        : { kind: 'MATCHING', prompt: raw.prompt ?? '', pairs: author.pairs ?? [], explanation: author.explanation ?? null }
       break
     }
     case 'code': {

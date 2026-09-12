@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { render, screen, waitFor, cleanup } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import UserSecuritySettings from '@/components/Dashboard/Pages/UserAccount/UserSecuritySettings/UserSecuritySettings'
 
@@ -18,7 +19,9 @@ vi.mock('@/hooks/useApiError', () => ({
 }))
 
 const mockListSessions = vi.fn()
+const mockChangePassword = vi.fn()
 vi.mock('@services/auth/auth', () => ({
+  changePassword: (...args: unknown[]) => mockChangePassword(...args),
   listSessions: (...args: unknown[]) => mockListSessions(...args),
   removeTotp: vi.fn(),
   revokeSession: vi.fn(),
@@ -74,5 +77,54 @@ describe('UserSecuritySettings', () => {
 
     expect(await screen.findByText('enableTotp')).toBeDefined()
     expect(screen.queryByText('disableTotp')).toBeNull()
+  })
+
+  // DECISIONS 2026-09-12 (Q-7): `mfa_enabled` arrives with the profile, so
+  // an enrolled account renders the disable control on first paint instead
+  // of after a 409 from a probing enrol call.
+  it('renders the enrolled state from mfa_enabled without probing the API', async () => {
+    mockListSessions.mockResolvedValue([])
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings mfaEnabled />
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByText('disableTotp')).toBeDefined()
+    expect(screen.queryByText('enableTotp')).toBeNull()
+  })
+
+  it('changes the password through the BFF and maps invalid-credentials onto the current field', async () => {
+    mockListSessions.mockResolvedValue([])
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    mockChangePassword.mockRejectedValueOnce(
+      new APIError({ code: 'invalid-credentials', message: 'nope', status: 401 }),
+    )
+    mockChangePassword.mockResolvedValueOnce(undefined)
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings />
+      </QueryClientProvider>,
+    )
+    const input = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]`)!
+
+    // Local validation first: nothing leaves the browser.
+    await user.click(screen.getByRole('button', { name: 'changePassword' }))
+    expect(await screen.findByText('passwordTooShort')).toBeDefined()
+    expect(mockChangePassword).not.toHaveBeenCalled()
+
+    await user.type(input('currentPassword'), 'old horse')
+    await user.type(input('newPassword'), 'new horse battery')
+    await user.type(input('confirmPassword'), 'new horse battery')
+    await user.click(screen.getByRole('button', { name: 'changePassword' }))
+    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledWith('old horse', 'new horse battery'))
+    expect(await screen.findByText('currentPasswordWrong')).toBeDefined()
+
+    await user.click(screen.getByRole('button', { name: 'changePassword' }))
+    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledTimes(2))
+    // Success clears the form.
+    await waitFor(() => expect(input('currentPassword').value).toBe(''))
   })
 })

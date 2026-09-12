@@ -11,6 +11,7 @@ import {
   courseReadinessQueryOptions,
   courseWorkflowCardClass,
   courseWorkflowSummaryCardClass,
+  useReadinessIssueMessage,
 } from './courseWorkflowUi'
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
@@ -147,8 +148,6 @@ export default function CourseReviewPublish({
             <CourseStatusBadge status={isPublic ? 'live' : 'private'} />
           </div>
           <dl className="mt-4 grid gap-3 text-sm">
-            <ImpactRow label={t('activeContent')} value={String(readiness?.active_content_count ?? 0)} />
-            <ImpactRow label={t('scheduledContent')} value={String(readiness?.scheduled_content_count ?? 0)} />
             <ImpactRow label={t('openBlockers')} value={String(blockers.length)} />
             <ImpactRow label={t('warnings')} value={String(warnings.length)} />
           </dl>
@@ -160,19 +159,7 @@ export default function CourseReviewPublish({
 
 function ReadinessIssues({ readiness }: { readiness: CourseReadiness }) {
   const t = useTranslations('DashPage.CourseManagement.Review')
-  const issueMessage = (code: string): string => {
-    const messages: Record<string, string> = {
-      COURSE_NO_LEARNER_VISIBLE_ACTIVITIES: t('issues.noVisibleActivities'),
-      COURSE_REQUIRED_ACTIVITY_UNPUBLISHED: t('issues.requiredActivityUnpublished'),
-      COURSE_ASSESSMENT_UNREADY: t('issues.assessmentUnready'),
-      COURSE_FILE_SUBMISSION_UNREADY: t('issues.fileSubmissionUnready'),
-      COURSE_THUMBNAIL_MISSING: t('issues.thumbnailMissing'),
-      COURSE_OUTCOMES_MISSING: t('issues.outcomesMissing'),
-      COURSE_CERTIFICATE_NOT_CONFIGURED: t('issues.certificateMissing'),
-      COURSE_CONTRIBUTOR_NOT_CONFIGURED: t('issues.contributorMissing'),
-    }
-    return messages[code] ?? t('issues.unknown')
-  }
+  const issueMessage = useReadinessIssueMessage()
   if (readiness.issues.length === 0) {
     return (
       <Alert className="mt-4">
@@ -187,13 +174,13 @@ function ReadinessIssues({ readiness }: { readiness: CourseReadiness }) {
     <div className="mt-4 flex flex-col gap-3">
       {readiness.issues.map(issue => (
         <Alert
-          key={`${issue.code}-${issue.activity_uuid ?? issue.scope}`}
+          key={`${issue.code}-${issue.activity_id ?? 'course'}`}
           variant={issue.severity === 'blocker' ? 'destructive' : 'default'}
         >
           {issue.severity === 'blocker' ? <AlertTriangle aria-hidden /> : <CheckCircle2 aria-hidden />}
           <AlertTitle>{issue.severity === 'blocker' ? t('blockerLabel') : t('warningLabel')}</AlertTitle>
           <AlertDescription className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span>{issueMessage(issue.code)}</span>
+            <span>{issueMessage(issue)}</span>
             {issue.path ? (
               <Button variant="outline" size="sm" nativeButton={false} render={<AppLink href={issue.path} />}>
                 {t('resolveIssue')}

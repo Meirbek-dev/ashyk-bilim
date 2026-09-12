@@ -389,11 +389,30 @@ export async function apiFetchRaw(path: string, init: ApiFetchInit = {}): Promis
   const isServer = typeof globalThis.window === 'undefined'
   const response = await rawTransportFetch(path, init)
 
-  if (!isServer && response.status === 401) {
+  if (!isServer && response.status === 401 && (await isSessionGone(response))) {
     handleBrowserUnauthenticated()
   }
 
   return response
+}
+
+/**
+ * A 401 that re-checks a credential while signed in (`POST /auth/password`
+ * with the wrong current password) is a form error, not a lost session.
+ */
+const CREDENTIAL_CHECK_CODES = new Set(['invalid-credentials', 'mfa-required', 'invalid-totp-code'])
+
+export function isCredentialCheckCode(code: unknown): boolean {
+  return typeof code === 'string' && CREDENTIAL_CHECK_CODES.has(code)
+}
+
+async function isSessionGone(response: Response): Promise<boolean> {
+  try {
+    const body = (await response.clone().json()) as { code?: unknown }
+    return !isCredentialCheckCode(body?.code)
+  } catch {
+    return true
+  }
 }
 
 export async function apiBody<T = unknown, R extends ResponseType = 'json'>(

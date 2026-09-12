@@ -29,7 +29,7 @@ import {
 } from '@/features/courses/editor/components/CourseEditorSection'
 import LinkToUserGroup from '@components/Objects/Modals/Dash/EditCourseAccess/LinkToUserGroup'
 import { AlertTriangle, Globe, Loader2, SquareUserRound, Users, X } from 'lucide-react'
-import { CourseChoiceCard } from '@components/Dashboard/Courses/courseWorkflowUi'
+import { CourseChoiceCard, courseReadinessQueryOptions, useReadinessIssueMessage } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { unLinkResourcesToUserGroup } from '@services/usergroups/usergroups'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourseSectionDraft } from '@/features/courses/editor/hooks/useCourseSectionDraft'
@@ -41,8 +41,8 @@ import { Button } from '@/components/ui/button'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { queryOptions, useQuery } from '@tanstack/react-query'
-import { getCourseReadiness } from '@services/courses/courses'
+import { useQuery } from '@tanstack/react-query'
+import type { getCourseReadiness } from '@services/courses/courses'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Link } from '@/i18n/navigation'
 import type { Usergroup } from '@/lib/api/generated/zod'
@@ -52,13 +52,10 @@ function EditCourseAccess() {
   const { courseStructure, editorData } = course
   const t = useTranslations('DashPage.Courses.Access')
   const { updateAccess } = useCoursesMutations(courseStructure?.course_uuid ?? '')
-  const readinessQuery = useQuery(
-    queryOptions({
-      queryKey: ['courses', courseStructure?.course_uuid ?? 'pending', 'readiness'],
-      queryFn: () => getCourseReadiness(courseStructure.course_uuid),
-      enabled: Boolean(courseStructure?.course_uuid),
-    }),
-  )
+  const readinessQuery = useQuery({
+    ...courseReadinessQueryOptions(courseStructure?.course_uuid ?? 'pending'),
+    enabled: Boolean(courseStructure?.course_uuid),
+  })
   const linkedUserGroupsResource = editorData.linkedUserGroups
   const usergroups = (
     Array.isArray(linkedUserGroupsResource.data) ? linkedUserGroupsResource.data : []
@@ -165,19 +162,9 @@ function EditCourseAccess() {
 
 function CourseReadinessSummary({ readiness }: { readiness: Awaited<ReturnType<typeof getCourseReadiness>> }) {
   const t = useTranslations('DashPage.Courses.Access')
-  const issueT = useTranslations('DashPage.CourseManagement.Review.issues')
+  const issueMessage = useReadinessIssueMessage()
   const blockers = readiness.issues.filter(issue => issue.severity === 'blocker')
   const warnings = readiness.issues.filter(issue => issue.severity === 'warning')
-  const issueMessages: Record<string, string> = {
-    COURSE_NO_LEARNER_VISIBLE_ACTIVITIES: issueT('noVisibleActivities'),
-    COURSE_REQUIRED_ACTIVITY_UNPUBLISHED: issueT('requiredActivityUnpublished'),
-    COURSE_ASSESSMENT_UNREADY: issueT('assessmentUnready'),
-    COURSE_FILE_SUBMISSION_UNREADY: issueT('fileSubmissionUnready'),
-    COURSE_THUMBNAIL_MISSING: issueT('thumbnailMissing'),
-    COURSE_OUTCOMES_MISSING: issueT('outcomesMissing'),
-    COURSE_CERTIFICATE_NOT_CONFIGURED: issueT('certificateMissing'),
-    COURSE_CONTRIBUTOR_NOT_CONFIGURED: issueT('contributorMissing'),
-  }
 
   if (readiness.ready && warnings.length === 0) {
     return (
@@ -200,13 +187,13 @@ function CourseReadinessSummary({ readiness }: { readiness: Awaited<ReturnType<t
       <AlertDescription>
         <ul className="mt-2 flex list-disc flex-col gap-1 ps-5">
           {[...blockers, ...warnings].map(issue => (
-            <li key={`${issue.code}-${issue.activity_uuid ?? issue.scope}`}>
+            <li key={`${issue.code}-${issue.activity_id ?? 'course'}`}>
               {issue.path ? (
                 <Link href={issue.path} className="underline underline-offset-4">
-                  {issueMessages[issue.code] ?? issueT('unknown')}
+                  {issueMessage(issue)}
                 </Link>
               ) : (
-                (issueMessages[issue.code] ?? issueT('unknown'))
+                issueMessage(issue)
               )}
             </li>
           ))}

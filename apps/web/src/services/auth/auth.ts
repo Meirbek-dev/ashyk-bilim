@@ -25,6 +25,20 @@ export async function revokeSession(handle: string): Promise<void> {
   await apiJson(`auth/sessions/${encodeURIComponent(handle)}`, { method: 'DELETE' })
 }
 
+// ── Password (self-service) ────────────────────────────────────────────────────
+
+/**
+ * `POST /auth/password` — Zitadel checks the current password
+ * (401 `invalid-credentials`); every other session of the caller is revoked.
+ */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiJson('auth/password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  })
+}
+
 // ── TOTP multi-factor (self-service) ───────────────────────────────────────────
 
 /** Start TOTP enrollment; the secrets are shown exactly once. */

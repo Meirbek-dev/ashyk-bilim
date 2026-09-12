@@ -3,7 +3,7 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
-import { AlertTriangle, Plus, Search, X } from 'lucide-react'
+import { AlertTriangle, Plus, Search, UserPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -38,6 +38,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import PasswordInput from '@/components/ui/custom/password-input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -47,9 +48,9 @@ import { useRoleLabels } from '@/features/users/hooks/useRoleLabels'
 import { useApiError } from '@/hooks/useApiError'
 import { useSession } from '@/hooks/useSession'
 import { hasErrorCode } from '@/lib/api/assertSuccess'
-import type { AdminUser, Role } from '@/lib/api/generated/zod'
+import type { AdminUser, CreateUserBody, Role } from '@/lib/api/generated/zod'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import { assignRoleToUser, removeRoleFromUser, setUserStatus } from '@/services/rbac'
+import { assignRoleToUser, createUser, removeRoleFromUser, setUserStatus } from '@/services/rbac'
 
 export default function UserRolesClient() {
   const t = useTranslations('Components.Roles')
@@ -67,6 +68,7 @@ export default function UserRolesClient() {
   const { roleName } = useRoleLabels(roles)
 
   const [addOpen, setAddOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [roleToRemove, setRoleToRemove] = useState<{ user: AdminUser; slug: string } | null>(null)
   const [userToDisable, setUserToDisable] = useState<AdminUser | null>(null)
 
@@ -90,6 +92,14 @@ export default function UserRolesClient() {
     // The only 409 this endpoint answers is the last-admin guard; the generic `conflict` copy talks about stale data.
     onError: error => (hasErrorCode(error, 'conflict') ? toast.error(t('lastAdminConflict')) : toastApiError(error)),
   })
+  const create = useMutation({
+    mutationFn: (body: CreateUserBody) => createUser(body),
+    onSuccess: async created => {
+      toast.success(t('userCreated'), { description: `${created.display_name} (@${created.username})` })
+      setCreateOpen(false)
+      await invalidateUsers()
+    },
+  })
   const status = useMutation({
     mutationFn: ({ userId, disabled }: { userId: string; disabled: boolean }) => setUserStatus(userId, { disabled }),
     onSuccess: async () => {
@@ -106,6 +116,31 @@ export default function UserRolesClient() {
           <h1 className="text-3xl font-bold tracking-tight">{t('userRolesTitle')}</h1>
           <p className="text-muted-foreground">{t('userRolesDescription')}</p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        {canManageStatus && (
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger
+              render={
+                <Button variant="outline">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  {t('createUser')}
+                </Button>
+              }
+            />
+            <DialogContent className="sm:max-w-lg">
+              {createOpen && (
+                <CreateUserForm
+                  roles={roles}
+                  roleName={roleName}
+                  pending={create.isPending}
+                  error={create.error}
+                  onCancel={() => setCreateOpen(false)}
+                  onSubmit={body => create.mutate(body)}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
         {canManageRoles && (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger
@@ -129,6 +164,7 @@ export default function UserRolesClient() {
             </DialogContent>
           </Dialog>
         )}
+        </div>
       </div>
 
       <Card className="space-y-4 p-4">
@@ -366,5 +402,143 @@ function AssignRoleForm({
         </Button>
       </DialogFooter>
     </>
+  )
+}
+
+const USERNAME_RE = /^[A-Za-z0-9._-]{3,48}$/u
+
+/**
+ * `POST /users` — the admin vouches for the email (created verified). The
+ * only role picker is one optional extra role; `user` is always granted.
+ */
+function CreateUserForm({
+  roles,
+  roleName,
+  pending,
+  error,
+  onCancel,
+  onSubmit,
+}: {
+  roles: Role[]
+  roleName: (role: Role) => string
+  pending: boolean
+  error: unknown
+  onCancel: () => void
+  onSubmit: (body: CreateUserBody) => void
+}) {
+  const t = useTranslations('Components.Roles')
+  const { handleApiError } = useApiError()
+  const [values, setValues] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' })
+  const [role, setRole] = useState<Role | null>(null)
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof values, string>>>({})
+  const extraRoles = roles.filter(item => item.slug !== 'user')
+
+  // Contract codes land on the field they concern; anything else is a banner.
+  const serverError = error
+    ? hasErrorCode(error, 'username-taken') || hasErrorCode(error, 'email-taken')
+      ? null
+      : handleApiError(error).message
+    : null
+  const usernameTaken = hasErrorCode(error, 'username-taken') ? handleApiError(error).message : null
+  const emailTaken = hasErrorCode(error, 'email-taken') ? handleApiError(error).message : null
+
+  const bind = (name: keyof typeof values) => ({
+    value: values[name],
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => setValues(prev => ({ ...prev, [name]: event.target.value })),
+  })
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const next: typeof errors = {}
+    if (!values.firstName.trim()) next.firstName = t('fieldRequired')
+    if (!values.lastName.trim()) next.lastName = t('fieldRequired')
+    if (!USERNAME_RE.test(values.username.trim())) next.username = t('usernameInvalid')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(values.email.trim())) next.email = t('emailInvalid')
+    if (values.password && values.password.length < 8) next.password = t('passwordTooShort')
+    setErrors(next)
+    if (Object.keys(next).length > 0) return
+    onSubmit({
+      username: values.username.trim(),
+      email: values.email.trim(),
+      first_name: values.firstName.trim(),
+      last_name: values.lastName.trim(),
+      ...(values.password ? { password: values.password } : {}),
+      ...(role ? { roles: [role.slug] } : {}),
+    })
+  }
+
+  const field = (name: keyof typeof values, label: string, input: React.ReactNode, hint?: string) => (
+    <div className="grid gap-2">
+      <Label htmlFor={`create-user-${name}`}>{label}</Label>
+      {input}
+      {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
+      {errors[name] ? (
+        <p role="alert" className="text-destructive text-xs">
+          {errors[name]}
+        </p>
+      ) : null}
+    </div>
+  )
+
+  return (
+    <form onSubmit={submit} noValidate>
+      <DialogHeader>
+        <DialogTitle>{t('createUserTitle')}</DialogTitle>
+        <DialogDescription>{t('createUserDescription')}</DialogDescription>
+      </DialogHeader>
+      {serverError ? (
+        <p role="alert" className="text-destructive mt-2 text-sm">
+          {serverError}
+        </p>
+      ) : null}
+      <div className="grid gap-4 py-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {field('firstName', t('firstNameLabel'), <Input id="create-user-firstName" autoComplete="off" {...bind('firstName')} />)}
+          {field('lastName', t('lastNameLabel'), <Input id="create-user-lastName" autoComplete="off" {...bind('lastName')} />)}
+        </div>
+        {field(
+          'username',
+          t('usernameLabel'),
+          <Input id="create-user-username" autoComplete="off" aria-invalid={Boolean(usernameTaken)} {...bind('username')} />,
+          usernameTaken ?? undefined,
+        )}
+        {field(
+          'email',
+          t('emailLabel'),
+          <Input id="create-user-email" type="email" autoComplete="off" aria-invalid={Boolean(emailTaken)} {...bind('email')} />,
+          emailTaken ?? undefined,
+        )}
+        {field(
+          'password',
+          t('passwordLabel'),
+          <PasswordInput id="create-user-password" autoComplete="new-password" placeholder=" " {...bind('password')} />,
+          t('passwordHint'),
+        )}
+        <div className="grid gap-2">
+          <Label htmlFor="create-user-role">{t('extraRolesLabel')}</Label>
+          <Combobox items={extraRoles} itemToStringLabel={roleName} value={role} onValueChange={setRole}>
+            <ComboboxInput id="create-user-role" placeholder={t('noExtraRole')} className="w-full" />
+            <ComboboxContent>
+              <ComboboxEmpty>{t('noMatches')}</ComboboxEmpty>
+              <ComboboxList>
+                {(item: Role) => (
+                  <ComboboxItem key={item.slug} value={item}>
+                    {roleName(item)}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {t('cancel')}
+        </Button>
+        <Button type="submit" disabled={pending}>
+          {t('createUserSubmit')}
+        </Button>
+      </DialogFooter>
+    </form>
   )
 }

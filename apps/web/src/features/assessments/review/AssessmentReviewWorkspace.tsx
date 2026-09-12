@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { assessmentTypeToKind } from '@/features/assessments/domain/view-models'
 import { loadKindModule } from '@/features/assessments/registry'
+import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
 import type { KindModule } from '@/features/assessments/registry'
 import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace'
 import { reportClientError } from '@/services/telemetry/client'
@@ -29,6 +30,7 @@ interface AssessmentReviewWorkspaceProps {
 
 interface AssessmentReviewDetail {
   assessment_uuid: string
+  course_id: string
   kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ'
   review_projection?: {
     assessment_uuid: string
@@ -43,6 +45,7 @@ function reviewDetailFromWire(assessment: AssessmentDetail): AssessmentReviewDet
   const kind = KIND_FROM_WIRE[assessment.kind]
   return {
     assessment_uuid: assessment.id,
+    course_id: assessment.course_id,
     kind,
     review_projection: {
       assessment_uuid: assessment.id,
@@ -72,6 +75,9 @@ export default function AssessmentReviewWorkspace({
       enabled: Boolean(cleanUuid),
     }),
   )
+
+  // Grades and hand-ins from elsewhere refresh the queue and the open submission.
+  useCourseGradingEvents(assessment?.course_id)
 
   useEffect(() => {
     const reviewProjection = assessment?.review_projection

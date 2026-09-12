@@ -1,7 +1,8 @@
 'use server'
 
 import { apiJson, apiResult } from '@/lib/api-client'
-import { Course, CoursePage, Curriculum } from '@/lib/api/generated/zod'
+import { Contributor, Course, CoursePage, CourseReadiness as CourseReadinessSchema, Curriculum } from '@/lib/api/generated/zod'
+import type { AddContributorRequest, ReadinessItem, UpdateContributorRequest } from '@/lib/api/generated/zod'
 import { emptyPage } from '@/lib/api/contract'
 import type { Page } from '@/lib/api/contract'
 import { stripEntityPrefix, toAppChapter, toAppCourse } from '@/hooks/courses/courseKeys'
@@ -128,47 +129,39 @@ export async function updateCourseAccess(course_uuid: string, data: AppPayload, 
   return patchCourse(course_uuid, toUpdateCourseRequest(data))
 }
 
-export interface CourseReadiness {
-  ready: boolean
-  issues: {
-    code: string
-    severity: 'blocker' | 'warning' | 'advice'
-    message: string
-    scope: string
-    activity_uuid?: string | null
-    path?: string | null
-  }[]
-  active_content_count: number
-  scheduled_content_count: number
+export interface CourseReadinessIssue {
+  /** Server code (`no-live-activity`, `assessment-not-ready`, …), localized by the web. */
+  code: string
+  severity: 'blocker' | 'warning'
+  activity_id: string | null
+  /** The activity's name when the issue points at one. */
+  title: string | null
+  /** Studio link for activity-scoped issues. */
+  path: string | null
 }
 
-/**
- * v2 has no `courses/{id}/readiness`; the legacy check was derived from the
- * curriculum, so the first (and only hard) rule is derived here the same way:
- * a course with no learner-visible activity cannot be published. The legacy
- * per-assessment / file-submission readiness rules are not replicated —
- * the studio already blocks publishing an unready assessment
- * (QUESTIONS.md Q-2026-09-11-1).
- */
+export interface CourseReadiness {
+  ready: boolean
+  issues: CourseReadinessIssue[]
+}
+
+/** `GET courses/{id}/readiness` (server-side rule set; codes documented on the route). */
 export async function getCourseReadiness(courseUuid: string): Promise<CourseReadiness> {
   const id = stripEntityPrefix(courseUuid)
-  const curriculum = await apiJson(`courses/${id}/curriculum`, serverGet(), Curriculum.parse)
-  const activeContentCount = curriculum.chapters.reduce(
-    (count, chapter) => count + chapter.activities.filter(activity => activity.published).length,
-    0,
-  )
-  const issues: CourseReadiness['issues'] =
-    activeContentCount === 0
-      ? [
-          {
-            code: 'COURSE_NO_LEARNER_VISIBLE_ACTIVITIES',
-            severity: 'blocker',
-            message: 'COURSE_NO_LEARNER_VISIBLE_ACTIVITIES',
-            scope: 'course',
-          },
-        ]
-      : []
-  return { ready: issues.length === 0, issues, active_content_count: activeContentCount, scheduled_content_count: 0 }
+  const readiness = await apiJson(`courses/${id}/readiness`, serverGet(), CourseReadinessSchema.parse)
+  const issue =
+    (severity: CourseReadinessIssue['severity']) =>
+    (item: ReadinessItem): CourseReadinessIssue => ({
+      code: item.code,
+      severity,
+      activity_id: item.activity_id ?? null,
+      title: item.title ?? null,
+      path: item.activity_id ? `/dash/courses/${id}/activity/${item.activity_id}/studio` : null,
+    })
+  return {
+    ready: readiness.ready,
+    issues: [...readiness.blockers.map(issue('blocker')), ...readiness.warnings.map(issue('warning'))],
+  }
 }
 
 export async function updateCourseLifecycle(courseUuid: string, makePublic: boolean, _options?: CourseWriteOptions) {
@@ -227,73 +220,55 @@ export async function deleteCourseFromBackend(
   return data
 }
 
-/* Contributors — blocked: no v2 routes for contributors / apply-contributor / bulk-*-contributors. */
+/* Contributors — `courses/{id}/contributors` (roles creator|maintainer|contributor|reporter, statuses pending|active|inactive). */
+
+async function revalidateContributors(course_uuid: string) {
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(courseTag.contributors(course_uuid), 'max')
+  revalidateTag(courseTag.detail(course_uuid), 'max')
+}
+
+export async function getContributors(course_uuid: string): Promise<Contributor[]> {
+  const id = stripEntityPrefix(course_uuid)
+  return apiJson(`courses/${id}/contributors`, serverGet(), data => Contributor.array().parse(data))
+}
+
+export async function addContributor(course_uuid: string, body: AddContributorRequest): Promise<Contributor> {
+  const id = stripEntityPrefix(course_uuid)
+  const result = await apiJson(
+    `courses/${id}/contributors`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+    Contributor.parse,
+  )
+  await revalidateContributors(id)
+  return result
+}
 
 export async function editContributor(
   course_uuid: string,
-  contributor_id: number,
-  authorship: string | undefined,
-  authorship_status: string | undefined,
-  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
-) {
-  const metadata = await apiResult(
-    `courses/${course_uuid}/contributors/${contributor_id}?authorship=${authorship}&authorship_status=${authorship_status}`,
-    { method: 'PUT' },
+  user_id: string,
+  body: UpdateContributorRequest,
+): Promise<Contributor> {
+  const id = stripEntityPrefix(course_uuid)
+  const result = await apiJson(
+    `courses/${id}/contributors/${user_id}`,
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+    Contributor.parse,
   )
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(courseTag.contributors(course_uuid), 'max')
-  revalidateTag(courseTag.detail(course_uuid), 'max')
-
-  return metadata
+  await revalidateContributors(id)
+  return result
 }
 
-export async function applyForContributor(course_uuid: string, data: AppPayload) {
-  const metadata = await apiResult(`courses/${course_uuid}/apply-contributor`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(courseTag.contributors(course_uuid), 'max')
-  revalidateTag(courseTag.detail(course_uuid), 'max')
-
-  return metadata
+export async function removeContributor(course_uuid: string, user_id: string): Promise<void> {
+  const id = stripEntityPrefix(course_uuid)
+  await apiJson(`courses/${id}/contributors/${user_id}`, { method: 'DELETE' })
+  await revalidateContributors(id)
 }
 
-export async function bulkAddContributors(
-  course_uuid: string,
-  data: string[],
-  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
-) {
-  const metadata = await apiResult(`courses/${course_uuid}/bulk-add-contributors`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(courseTag.contributors(course_uuid), 'max')
-  revalidateTag(courseTag.detail(course_uuid), 'max')
-
-  return metadata
-}
-
-export async function bulkRemoveContributors(
-  course_uuid: string,
-  data: string[],
-  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
-) {
-  const metadata = await apiResult(`courses/${course_uuid}/bulk-remove-contributors`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(courseTag.contributors(course_uuid), 'max')
-  revalidateTag(courseTag.detail(course_uuid), 'max')
-
-  return metadata
+/** `POST courses/{id}/contributors/apply` → `contributor/pending`; 409 `conflict` when already on the roster or the course is closed. */
+export async function applyForContributor(course_uuid: string): Promise<Contributor> {
+  const id = stripEntityPrefix(course_uuid)
+  const result = await apiJson(`courses/${id}/contributors/apply`, { method: 'POST' }, Contributor.parse)
+  await revalidateContributors(id)
+  return result
 }

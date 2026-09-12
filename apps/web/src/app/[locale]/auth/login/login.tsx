@@ -282,7 +282,12 @@ function LoginClient() {
         )}
       </form>
 
-      <p className="text-muted-foreground mt-5 text-center text-xs">{t('noAccountHint')}</p>
+      <p className="text-muted-foreground mt-5 text-center text-sm">
+        {t('noAccount')}{' '}
+        <Link href={getAbsoluteUrl('/signup')} className="text-primary underline">
+          {t('signup')}
+        </Link>
+      </p>
     </AuthCard>
   )
 }

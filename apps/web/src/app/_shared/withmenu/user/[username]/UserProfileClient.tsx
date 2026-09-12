@@ -38,6 +38,7 @@ interface UserProfileData {
   id: string
   last_name?: string
   middle_name?: string | null
+  username: string
 }
 
 interface ProfileDetail {
@@ -157,8 +158,8 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
     url: string
     caption?: string
   } | null>(null)
-  const userCoursesQuery = useUserCourses(userData.id, {
-    enabled: Boolean(userData.id),
+  const userCoursesQuery = useUserCourses(userData.username, {
+    enabled: Boolean(userData.username),
   })
   const userCourses = userCoursesQuery.isSuccess ? userCoursesQuery.data : []
 

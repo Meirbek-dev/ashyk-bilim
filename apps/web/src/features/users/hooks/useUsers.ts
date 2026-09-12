@@ -44,12 +44,12 @@ function userByUsernameHookOptions(username: string | null | undefined, enabled 
   })
 }
 
-function userCoursesHookOptions(userId: string | null | undefined, enabled = true) {
-  const normalizedUserId = userId ?? '__disabled__'
+function userCoursesHookOptions(username: string | null | undefined, enabled = true) {
+  const normalized = username?.trim() ?? ''
 
   return queryOptions({
-    ...userCoursesQueryOptions(normalizedUserId),
-    enabled: enabled && userId !== null && userId !== undefined,
+    ...userCoursesQueryOptions(normalized || '__disabled__'),
+    enabled: enabled && normalized.length > 0,
   })
 }
 
@@ -73,8 +73,8 @@ export function useRoles() {
   return useQuery(rolesQueryOptions())
 }
 
-export function useUserCourses(userId: string | null | undefined, options?: { enabled?: boolean }) {
-  return useQuery(userCoursesHookOptions(userId, options?.enabled ?? true))
+export function useUserCourses(username: string | null | undefined, options?: { enabled?: boolean }) {
+  return useQuery(userCoursesHookOptions(username, options?.enabled ?? true))
 }
 
 export function useUserByIdQuery(userId: string | null | undefined, options?: { enabled?: boolean }) {

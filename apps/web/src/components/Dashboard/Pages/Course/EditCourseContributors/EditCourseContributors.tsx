@@ -1,9 +1,5 @@
 'use client'
-import {
-  CourseChoiceCard,
-  courseWorkflowMutedPanelClass,
-  getCourseWorkflowToneClass,
-} from '@components/Dashboard/Courses/courseWorkflowUi'
+import { CourseChoiceCard, getCourseWorkflowToneClass } from '@components/Dashboard/Courses/courseWorkflowUi'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +22,9 @@ import {
 } from '@/features/courses/editor/components/CourseEditorSection'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourseSectionDraft } from '@/features/courses/editor/hooks/useCourseSectionDraft'
-
-import { Check, ChevronDown, Search, UserPen, Users } from 'lucide-react'
+import { useContributorMutations, useContributors } from '@/features/courses/hooks/useContributors'
+import type { ContributorRole, ContributorStatus } from '@/features/courses/hooks/useContributors'
+import { Check, ChevronDown, Loader2, Search, Trash2, UserPen, Users } from 'lucide-react'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { InlineError } from '@/components/ui/error-state'
@@ -36,178 +33,45 @@ import { RadioGroup } from '@/components/ui/radio-group'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useSaveSection } from '@/hooks/useSaveSection'
 import { useDebouncedValue } from '@/hooks/useDebounce'
-import { useCourseEditorStore } from '@/stores/courses'
 import { useSearchContent } from '@/features/search/hooks/useSearch'
+import { useApiError } from '@/hooks/useApiError'
+import { useSession } from '@/hooks/useSession'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import { useLocale, useTranslations } from 'next-intl'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { Contributor } from '@/lib/api/generated/zod'
 import type { Locale } from '@/i18n/config'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 
-type ContributorRole = 'CREATOR' | 'CONTRIBUTOR' | 'MAINTAINER' | 'REPORTER'
-type ContributorStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING'
+const ASSIGNABLE_ROLES: Exclude<ContributorRole, 'creator'>[] = ['contributor', 'maintainer', 'reporter']
 
-interface SearchUser {
-  username: string
-  first_name: string
-  middle_name?: string
-  last_name: string
-  email: string
-  avatar_image: string
-  avatar_url?: string
-  id: string
-  user_uuid: string
-}
+const formatDate = (unix: number, locale: Locale) =>
+  new Date(unix * 1000).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
 
-interface Contributor {
-  id: number
-  user_id: number
-  authorship: ContributorRole
-  authorship_status: ContributorStatus
-  creation_date: string
-  user: {
-    username: string
-    first_name: string
-    middle_name?: string
-    last_name: string
-    email: string
-    avatar_image: string
-    user_uuid: string
-  }
-}
-
-interface BulkAddResponse {
-  successful: { username: string; user_id: number }[]
-  failed: { username: string; reason: string }[]
-}
-
-interface ContributorSearchResponse {
-  users?: SearchUser[]
-}
-
-type UpdateContributorHandler = (
-  contributorId: number,
-  data: { authorship?: ContributorRole; authorship_status?: ContributorStatus },
-) => Promise<void>
-
-const formatDate = (dateString: string, locale: Locale) => {
-  return new Date(dateString).toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-function RoleDropdown({
-  contributor,
-  updateContributor,
-  t,
-}: {
-  contributor: Contributor
-  updateContributor: UpdateContributorHandler
-  t: AppTranslator
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="outline"
-            className="w-[200px] justify-between"
-            disabled={contributor.authorship === 'CREATOR' || contributor.authorship_status !== 'ACTIVE'}
-          />
-        }
-      >
-        {t(contributor.authorship.toLowerCase()) || contributor.authorship}
-        <ChevronDown className="text-muted-foreground ml-2 h-4 w-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px]">
-        {(['CONTRIBUTOR', 'MAINTAINER', 'REPORTER'] as ContributorRole[]).map(role => (
-          <DropdownMenuItem
-            key={role}
-            onClick={() => updateContributor(contributor.user_id, { authorship: role })}
-            className="justify-between"
-          >
-            {t(role.toLowerCase())}
-            {contributor.authorship === role && <Check className="ml-2 h-4 w-4" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-function StatusDropdown({
-  contributor,
-  updateContributor,
-  t,
-  getStatusStyle,
-}: {
-  contributor: Contributor
-  updateContributor: UpdateContributorHandler
-  t: AppTranslator
-  getStatusStyle: (s: ContributorStatus) => string
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="outline"
-            className={`w-[200px] justify-between ${getStatusStyle(contributor.authorship_status)}`}
-            disabled={contributor.authorship === 'CREATOR'}
-          />
-        }
-      >
-        {t(contributor.authorship_status.toLowerCase()) || contributor.authorship_status}
-        <ChevronDown className="ml-2 h-4 w-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px]">
-        {(['ACTIVE', 'INACTIVE', 'PENDING'] as ContributorStatus[]).map(status => (
-          <DropdownMenuItem
-            key={status}
-            onClick={() =>
-              updateContributor(contributor.user_id, {
-                authorship_status: status,
-              })
-            }
-            className="justify-between"
-          >
-            {t(status.toLowerCase())}
-            {contributor.authorship_status === status && <Check className="ml-2 h-4 w-4" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-const sortContributors = (list: Contributor[]) => {
-  const creator = list.find(c => c.authorship === 'CREATOR')
-  const others = list.filter(c => c.authorship !== 'CREATOR')
-  return creator ? [creator, ...others] : others
-}
+const statusTone = (status: string) =>
+  status === 'active' ? 'success' : status === 'pending' ? 'warning' : 'info'
 
 function EditCourseContributors() {
   const t = useTranslations('DashPage.EditCourseContributors')
   const locale = useLocale() as Locale
   const course = useCourse()
-  const { courseStructure, editorData } = course
-  const contributorsResource = editorData.contributors
-  const contributors = (Array.isArray(contributorsResource.data)
-    ? contributorsResource.data
-    : []) as unknown as Contributor[]
-  const isContributorsLoading = course.isEditorDataLoading && editorData.contributors.data === null
-  const setConflict = useCourseEditorStore(state => state.setConflict)
-  const {
-    addContributors,
-    removeContributors,
-    updateAccess,
-    updateContributor: updateContributorMutation,
-  } = useCoursesMutations(courseStructure?.course_uuid ?? '')
+  const { courseStructure } = course
+  const courseUuid = courseStructure?.course_uuid ?? ''
+  const { session, can } = useSession()
+  const { toastApiError } = useApiError()
+  const { updateAccess } = useCoursesMutations(courseUuid)
+  const roster = useContributors(courseUuid)
+  const contributors = roster.data ?? []
+  const { add, update, remove, isAdding, busyUserId } = useContributorMutations(courseUuid)
+
+  // Roster management mirrors the server rule: creator, active maintainer
+  // or a platform course manager; everyone else gets a read-only roster.
+  const me = contributors.find(row => row.user_id === session?.userId)
+  const canManageRoster =
+    can('course', 'manage', 'platform') || me?.role === 'creator' || (me?.role === 'maintainer' && me.status === 'active')
 
   const initialOpenToContributors =
     typeof courseStructure?.open_to_contributors === 'boolean' ? courseStructure.open_to_contributors : undefined
@@ -217,246 +81,57 @@ function EditCourseContributors() {
     isDirty,
     discard,
     markClean,
-  } = useCourseSectionDraft({
-    section: 'contributors',
-    serverValue: initialOpenToContributors,
-  })
+  } = useCourseSectionDraft({ section: 'contributors', serverValue: initialOpenToContributors })
+  const { isSaving, save } = useSaveSection({ section: 'contributors' })
+
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
-  const [searchResultsOverride, setSearchResultsOverride] = useState<SearchUser[] | null>(null)
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
-  const [isAdding, setIsAdding] = useState(false)
-  const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<Contributor | null>(null)
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
-  const [selectedContributors, setSelectedContributors] = useState<number[]>([])
   const hasSearchQuery = debouncedSearch.trim().length > 0
-  const {
-    data: contributorSearchResponse,
-    error: contributorSearchError,
-    isError: isContributorSearchError,
-    isFetching: isSearching,
-  } = useSearchContent(debouncedSearch, {
-    limit: 5,
-    enabled: hasSearchQuery,
-  })
-  const contributorSearchData = contributorSearchResponse?.data as ContributorSearchResponse | undefined
-  const contributorSearchUsers = Array.isArray(contributorSearchData?.users) ? contributorSearchData.users : []
-  const fetchedSearchResults: SearchUser[] = contributorSearchUsers.map((user: SearchUser) =>
-    Object.assign(user, {
-      avatar_url: user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : ``,
-    }),
-  )
-  const searchResults: SearchUser[] = hasSearchQuery ? (searchResultsOverride ?? fetchedSearchResults) : []
+  const search = useSearchContent(debouncedSearch, { limit: 8, enabled: hasSearchQuery })
+  const searchResults = hasSearchQuery ? (search.data?.data.users ?? []) : []
+  const rosterIds = new Set(contributors.map(row => row.user_id))
 
-  const buildContributorUpdatePayload = (
-    contributor: Contributor,
-    data: { authorship?: ContributorRole; authorship_status?: ContributorStatus },
-  ) => ({
-    authorship: data.authorship ?? contributor.authorship,
-    authorship_status: data.authorship_status ?? contributor.authorship_status,
-  })
-
-  const { isSaving, save } = useSaveSection({
-    section: 'contributors',
-  })
-
-  const masterCheckboxChecked = (() => {
-    const nonCreatorContributors = contributors.filter(c => c.authorship !== 'CREATOR')
-    return nonCreatorContributors.length > 0 && selectedContributors.length === nonCreatorContributors.length
-  })()
-
-  const handleUserSelect = (username: string) => {
-    setSelectedUsers(prev => (prev.includes(username) ? prev.filter(u => u !== username) : [...prev, username]))
-  }
-
-  const raiseContributorConflict = (message: string | undefined, pendingSave: () => Promise<unknown>) => {
-    setConflict({
-      message: message || t('failedToUpdateContributor'),
-      pendingSave,
-    })
-  }
-
-  const handleAddContributors = async () => {
-    if (selectedUsers.length === 0 || isAdding) return
-
-    const selectedUserObjects = searchResults.filter(user => selectedUsers.includes(user.username))
-    setIsAdding(true)
+  const handleAdd = async (userId: string) => {
     try {
-      const response = await addContributors(selectedUsers, selectedUserObjects, {
-        lastKnownUpdateDate: courseStructure.update_date,
-      })
-      const result = response.data as BulkAddResponse
-
-      if (result.successful.length > 0) {
-        toast.success(t('successfullyAddedContributors', { count: result.successful.length }))
-      }
-
-      for (const failure of result.failed) {
-        toast.error(
-          t('failedToAddContributor', {
-            username: failure.username,
-            reason: failure.reason,
-          }),
-        )
-      }
-
-      const failedUsernames = new Set(result.failed.map(failure => failure.username))
-      setSelectedUsers(result.failed.map(failure => failure.username))
-      setSearchQuery(result.failed.length > 0 ? searchQuery : '')
-      setSearchOpen(result.failed.length > 0)
-      setSearchResultsOverride(searchResults.filter(user => failedUsernames.has(user.username)))
-    } catch (error: unknown) {
-      const apiError = error as AppApiError
-      if (apiError.status === 409) {
-        raiseContributorConflict(String(apiError.detail || apiError.message || ''), async () => {
-          await addContributors(selectedUsers, selectedUserObjects, {
-            lastKnownUpdateDate: courseStructure.update_date,
-          })
-        })
-        return
-      }
-      console.error(t('errorAddingContributors'), error)
-      toast.error(t('failedToAddContributorsGeneral'))
-    } finally {
-      setIsAdding(false)
+      const added = await add({ user_id: userId, role: 'contributor' })
+      toast.success(t('addedContributor', { username: added.username }))
+      setSearchQuery('')
+      setSearchOpen(false)
+    } catch (error) {
+      if (hasErrorCode(error, 'conflict')) toast.error(t('alreadyContributorMessage'))
+      else toastApiError(error, undefined, t('failedToAddContributorsGeneral'))
     }
   }
 
-  const updateContributor = async (
-    contributorId: number,
-    data: { authorship?: ContributorRole; authorship_status?: ContributorStatus },
-  ) => {
+  const handleUpdate = async (row: Contributor, body: { role?: ContributorRole; status?: ContributorStatus }) => {
     try {
-      const currentContributor = contributors.find(c => c.user_id === contributorId)
-      if (!currentContributor) return
-      if (currentContributor.authorship === 'CREATOR') {
-        toast.error(t('cannotModifyCreator'))
-        return
-      }
-      const updatedData = buildContributorUpdatePayload(currentContributor, data)
-      const res = await updateContributorMutation(contributorId, updatedData, {
-        lastKnownUpdateDate: courseStructure.update_date,
-      })
-
-      const responseData = res.data as { detail?: unknown; status?: string } | null
-      if (res.status === 200 && responseData?.status === 'success') {
-        toast.success(String(responseData.detail || t('successfullyUpdatedContributor')))
-      } else {
-        toast.error(String(responseData?.detail || t('failedToUpdateContributor')))
-      }
-    } catch (error: unknown) {
-      const apiError = error as AppApiError
-      if (apiError.status === 409) {
-        raiseContributorConflict(String(apiError.detail || apiError.message || ''), async () => {
-          const retryContributor = contributors.find(contributor => contributor.user_id === contributorId)
-          if (!retryContributor) return
-
-          await updateContributorMutation(contributorId, buildContributorUpdatePayload(retryContributor, data), {
-            lastKnownUpdateDate: courseStructure.update_date,
-          })
-        })
-        return
-      }
-      toast.error(t('errorUpdatingContributor'))
+      await update(row.user_id, body)
+      toast.success(t('successfullyUpdatedContributor'))
+    } catch (error) {
+      toastApiError(error, undefined, t('failedToUpdateContributor'))
     }
   }
 
-  const getStatusStyle = (status: ContributorStatus): string => {
-    switch (status) {
-      case 'ACTIVE': {
-        return `${getCourseWorkflowToneClass('success')} hover:bg-muted`
-      }
-      case 'INACTIVE': {
-        return `${getCourseWorkflowToneClass('info')} hover:bg-muted`
-      }
-      case 'PENDING': {
-        return `${getCourseWorkflowToneClass('warning')} hover:bg-accent`
-      }
-      default: {
-        return `${getCourseWorkflowToneClass('info')} hover:bg-muted`
-      }
-    }
-  }
-
-  const handleContributorSelect = (userId: number) => {
-    setSelectedContributors(prev => (prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]))
-  }
-
-  const handleBulkRemove = async () => {
-    if (selectedContributors.length === 0) return
-
+  const handleRemove = async () => {
+    const target = removeTarget
+    setRemoveTarget(null)
+    if (!target) return
     try {
-      const selectedContributorRows = contributors.filter(c => selectedContributors.includes(c.user_id))
-      const selectedUsernames = selectedContributorRows.map(c => c.user.username)
-      const selectedUserIds = selectedContributorRows
-        .filter(c => selectedContributors.includes(c.user_id))
-        .map(c => c.user_id)
-      const response = await removeContributors(selectedUsernames, selectedUserIds, {
-        lastKnownUpdateDate: courseStructure.update_date,
-      })
-      const result = response.data as BulkAddResponse
-
-      if (result.successful.length > 0) {
-        toast.success(
-          t('successfullyRemovedContributors', {
-            count: result.successful.length,
-          }),
-        )
-      }
-
-      for (const failure of result.failed) {
-        toast.error(
-          t('failedToRemoveContributor', {
-            username: failure.username,
-            reason: failure.reason,
-          }),
-        )
-      }
-
-      const failedUsernames = new Set(result.failed.map(failure => failure.username))
-      setSelectedContributors(
-        contributors
-          .filter(contributor => failedUsernames.has(contributor.user.username))
-          .map(contributor => contributor.user_id),
-      )
-    } catch (error: unknown) {
-      const apiError = error as AppApiError
-      if (apiError.status === 409) {
-        raiseContributorConflict(String(apiError.detail || apiError.message || ''), async () => {
-          const retryRows = contributors.filter(contributor => selectedContributors.includes(contributor.user_id))
-          await removeContributors(
-            retryRows.map(contributor => contributor.user.username),
-            retryRows.map(contributor => contributor.user_id),
-            {
-              lastKnownUpdateDate: courseStructure.update_date,
-            },
-          )
-        })
-        return
-      }
-      console.error(t('errorRemovingContributors'), error)
-      toast.error(t('failedToRemoveContributorsGeneral'))
+      await remove(target.user_id)
+      toast.success(t('removedContributor', { username: target.username }))
+    } catch (error) {
+      toastApiError(error, undefined, t('failedToRemoveContributorsGeneral'))
     }
-  }
-
-  const handleConfirmBulkRemove = async () => {
-    setIsRemoveConfirmOpen(false)
-    await handleBulkRemove()
   }
 
   const handleContributorAccessSave = async () => {
     if (isOpenToContributors === undefined || !isDirty) return
     await save(
       async () =>
-        updateAccess(
-          { open_to_contributors: isOpenToContributors },
-          {
-            lastKnownUpdateDate: courseStructure.update_date,
-          },
-        ),
-      {
-        onSuccess: () => markClean(isOpenToContributors),
-      },
+        updateAccess({ open_to_contributors: isOpenToContributors }, { lastKnownUpdateDate: courseStructure.update_date }),
+      { onSuccess: () => markClean(isOpenToContributors) },
     )
   }
 
@@ -509,279 +184,226 @@ function EditCourseContributors() {
       </CourseEditorStagedSection>
 
       <CourseEditorSection title={t('manageContributorsTitle')} contentClassName="gap-4">
-        {contributorsResource.available ? (
-          <CourseEditorNotice
-            icon={Users}
-            title={t('rosterActionsImmediateTitle')}
-            description={t('rosterActionsImmediateDescription')}
-          />
-        ) : (
-          <CourseEditorNotice
-            icon={Users}
-            title={t('rosterUnavailableTitle')}
-            description={t('rosterUnavailableDescription')}
-          />
-        )}
+        <CourseEditorNotice
+          icon={Users}
+          title={canManageRoster ? t('rosterActionsImmediateTitle') : t('rosterReadOnlyTitle')}
+          description={canManageRoster ? t('rosterActionsImmediateDescription') : t('rosterReadOnlyDescription')}
+        />
 
-        {contributorsResource.error ? <InlineError description={contributorsResource.error} /> : null}
+        {roster.isError ? <InlineError description={t('failedToLoadContributors')} error={roster.error} /> : null}
 
-        {contributorsResource.available && !contributorsResource.error ? (
-          <div className="flex flex-col gap-3">
-            <Popover
-              open={searchOpen}
-              onOpenChange={(open, details) => {
-                if (!open && details?.reason === 'trigger-press') {
-                  return
+        {canManageRoster ? (
+          <Popover
+            open={searchOpen}
+            onOpenChange={(open, details) => {
+              if (!open && details?.reason === 'trigger-press') return
+              setSearchOpen(open)
+            }}
+          >
+            <div className="relative w-full">
+              <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+              <PopoverTrigger
+                render={
+                  <Input
+                    className="pl-8"
+                    placeholder={t('searchUsersPlaceholder')}
+                    aria-label={t('searchUsersPlaceholder')}
+                    value={searchQuery}
+                    onFocus={() => setSearchOpen(searchQuery.trim().length > 0)}
+                    onChange={e => {
+                      setSearchQuery(e.target.value)
+                      setSearchOpen(e.target.value.trim().length > 0)
+                    }}
+                    onKeyDown={e => e.stopPropagation()}
+                    onKeyUp={e => e.stopPropagation()}
+                  />
                 }
-                setSearchOpen(open)
-              }}
-            >
-              <div className="relative w-full">
-                <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                <PopoverTrigger
-                  render={
-                    <Input
-                      className="pl-8"
-                      placeholder={t('searchUsersPlaceholder')}
-                      value={searchQuery}
-                      onFocus={() => setSearchOpen(true)}
-                      onChange={e => {
-                        const nextQuery = e.target.value
-                        setSearchQuery(nextQuery)
-                        setSearchResultsOverride(null)
-                        if (nextQuery.trim()) setSearchOpen(true)
-                        else setSearchOpen(false)
-                      }}
-                      onKeyDown={e => e.stopPropagation()}
-                      onKeyUp={e => e.stopPropagation()}
+                nativeButton={false}
+              />
+            </div>
+            <PopoverContent className="w-(--anchor-width) p-0" align="start" initialFocus={false}>
+              <Command shouldFilter={false}>
+                <CommandList>
+                  {search.isFetching ? (
+                    <div className="text-muted-foreground p-4 text-center text-sm">{t('searchingMessage')}</div>
+                  ) : search.isError ? (
+                    <InlineError
+                      className="m-2"
+                      title={t('errorSearchingUsers')}
+                      description={t('noUsersFoundMessage')}
+                      error={search.error}
                     />
-                  }
-                  nativeButton={false}
-                />
-              </div>
-              <PopoverContent className="w-(--anchor-width) p-0" align="start" initialFocus={false}>
-                <Command shouldFilter={false}>
-                  <CommandList>
-                    {isSearching ? (
-                      <div className="text-muted-foreground p-4 text-center text-sm">{t('searchingMessage')}</div>
-                    ) : isContributorSearchError ? (
-                      <InlineError
-                        className="m-2"
-                        description={contributorSearchError?.message ?? t('errorSearchingUsers')}
-                        error={contributorSearchError}
-                        title={t('errorSearchingUsers')}
-                      />
-                    ) : (
-                      <>
-                        <CommandEmpty>{t('noUsersFoundMessage')}</CommandEmpty>
-                        <CommandGroup>
-                          {searchResults.map(user => {
-                            const isSelected = selectedUsers.includes(user.username)
-                            const isExisting = contributors.some(c => c.user.username === user.username)
-                            return (
-                              <CommandItem
-                                key={user.username}
-                                value={user.username}
-                                disabled={isExisting}
-                                onSelect={() => !isExisting && handleUserSelect(user.username)}
-                                className="flex items-center gap-3 py-3"
-                              >
-                                <Checkbox checked={isSelected} disabled={isExisting} className="shrink-0" />
-                                <UserAvatar
-                                  size="sm"
-                                  {...(user.avatar_url ? { avatar_url: user.avatar_url } : {})}
-                                  {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
-                                  userId={user.id}
-                                  showProfilePopup
-                                />
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-foreground truncate font-medium">
-                                    {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
-                                  </div>
-                                  <div className="text-muted-foreground text-xs">@{user.username}</div>
-                                </div>
-                                {isExisting && (
-                                  <span className="bg-muted text-muted-foreground shrink-0 rounded border px-2 py-0.5 text-xs">
-                                    {t('alreadyContributorMessage')}
-                                  </span>
-                                )}
-                              </CommandItem>
-                            )
-                          })}
-                        </CommandGroup>
-                      </>
-                    )}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-
-            {selectedUsers.length > 0 && (
-              <div className={courseWorkflowMutedPanelClass + ' flex items-center justify-between'}>
-                <span className="text-foreground text-sm">
-                  {t('usersSelectedMessage', { count: selectedUsers.length })}
-                </span>
-                <div className="flex gap-2">
-                  <Button onClick={() => setSelectedUsers([])} variant="outline" size="sm">
-                    {t('clearButton')}
-                  </Button>
-                  <Button onClick={handleAddContributors} size="sm" disabled={isAdding}>
-                    {t('addSelectedButton')}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+                  ) : (
+                    <>
+                      <CommandEmpty>{t('noUsersFoundMessage')}</CommandEmpty>
+                      <CommandGroup>
+                        {searchResults.map(user => {
+                          const isExisting = rosterIds.has(user.id)
+                          return (
+                            <CommandItem
+                              key={user.id}
+                              value={user.username}
+                              disabled={isExisting || isAdding}
+                              onSelect={() => !isExisting && void handleAdd(user.id)}
+                              className="flex items-center gap-3 py-3"
+                            >
+                              <UserAvatar
+                                size="sm"
+                                avatar_url={user.avatar_key ? getUserAvatarMediaDirectory(user.id, user.avatar_key) : ''}
+                                {...(user.avatar_key ? {} : { predefined_avatar: 'empty' })}
+                                userId={user.id}
+                                username={user.username}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="text-foreground truncate font-medium">{user.display_name || user.username}</div>
+                                <div className="text-muted-foreground text-xs">@{user.username}</div>
+                              </div>
+                              {isExisting ? (
+                                <span className="bg-muted text-muted-foreground shrink-0 rounded border px-2 py-0.5 text-xs">
+                                  {t('alreadyContributorMessage')}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground shrink-0 text-xs">{t('addButton')}</span>
+                              )}
+                            </CommandItem>
+                          )
+                        })}
+                      </CommandGroup>
+                    </>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         ) : null}
 
-        {contributorsResource.available && !contributorsResource.error ? (
-          <div className="bg-card rounded-xl border">
-            {selectedContributors.length > 0 && (
-              <div className="bg-muted/60 flex items-center justify-between rounded-t-xl border-b px-4 py-3">
-                <span className="text-foreground text-sm">
-                  {t('contributorsSelectedMessage', {
-                    count: selectedContributors.length,
-                  })}
-                </span>
-                <div className="flex gap-2">
-                  <Button onClick={() => setSelectedContributors([])} variant="outline" size="sm">
-                    {t('clearButton')}
-                  </Button>
-                  <Button onClick={() => setIsRemoveConfirmOpen(true)} variant="destructive" size="sm">
-                    {t('removeSelectedButton')}
-                  </Button>
-                </div>
-              </div>
-            )}
+        <div className="bg-card rounded-xl border">
+          <AlertDialog open={removeTarget !== null} onOpenChange={open => !open && setRemoveTarget(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogMedia className="bg-muted text-foreground">
+                  <Users className="size-8" />
+                </AlertDialogMedia>
+                <AlertDialogTitle>{t('removeConfirmTitle', { username: removeTarget?.username ?? '' })}</AlertDialogTitle>
+                <AlertDialogDescription>{t('removeConfirmMessage')}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel />
+                <AlertDialogAction variant="destructive" onClick={() => void handleRemove()}>
+                  {t('removeButton')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-            <AlertDialog open={isRemoveConfirmOpen} onOpenChange={setIsRemoveConfirmOpen}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogMedia className="bg-muted text-foreground">
-                    <Users className="size-8" />
-                  </AlertDialogMedia>
-                  <AlertDialogTitle>
-                    {t('removeSelectedConfirmTitle', {
-                      count: selectedContributors.length,
-                    })}
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t('removeSelectedConfirmMessage', {
-                      count: selectedContributors.length,
-                    })}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel />
-                  <AlertDialogAction variant="destructive" onClick={handleConfirmBulkRemove}>
-                    {t('removeSelectedButton')}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            {isContributorsLoading ? (
-              <div className="text-muted-foreground px-4 py-6 text-center text-sm">{t('loadingContributors')}</div>
-            ) : (
-              <ScrollArea className="max-h-[520px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[30px]">
-                        <Checkbox
-                          aria-label={t('contributorsSelectedMessage', {
-                            count: selectedContributors.length,
-                          })}
-                          checked={masterCheckboxChecked}
-                          onCheckedChange={checked => {
-                            if (checked) {
-                              setSelectedContributors(
-                                contributors.filter(c => c.authorship !== 'CREATOR').map(c => c.user_id),
-                              )
-                            } else {
-                              setSelectedContributors([])
-                            }
-                          }}
-                        />
-                      </TableHead>
-                      <TableHead className="w-[50px]" />
-                      <TableHead>{t('nameColumn')}</TableHead>
-                      <TableHead>{t('usernameColumn')}</TableHead>
-                      <TableHead>{t('emailColumn')}</TableHead>
-                      <TableHead>{t('roleColumn')}</TableHead>
-                      <TableHead>{t('statusColumn')}</TableHead>
-                      <TableHead>{t('addedOnColumn')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortContributors(contributors).map(contributor => (
-                      <TableRow
-                        key={`${contributor.user_id}-${contributor.id}`}
-                        className={cn(
-                          selectedContributors.includes(contributor.user_id) && 'bg-muted/60',
-                          contributor.authorship !== 'CREATOR' && 'cursor-pointer hover:bg-muted/50',
-                        )}
-                        onClick={e => {
-                          if (
-                            e.target instanceof HTMLElement &&
-                            (e.target.closest('button') || e.target.closest('input[type="checkbox"]'))
-                          ) {
-                            return
-                          }
-                          if (contributor.authorship !== 'CREATOR') {
-                            handleContributorSelect(contributor.user_id)
-                          }
-                        }}
-                      >
-                        <TableCell onClick={e => e.stopPropagation()}>
-                          <Checkbox
-                            aria-label={`@${contributor.user.username}`}
-                            checked={selectedContributors.includes(contributor.user_id)}
-                            onCheckedChange={() => handleContributorSelect(contributor.user_id)}
-                            disabled={contributor.authorship === 'CREATOR'}
-                          />
-                        </TableCell>
+          {roster.isPending ? (
+            <div className="text-muted-foreground px-4 py-6 text-center text-sm">{t('loadingContributors')}</div>
+          ) : (
+            <ScrollArea className="max-h-[520px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]" />
+                    <TableHead>{t('nameColumn')}</TableHead>
+                    <TableHead>{t('roleColumn')}</TableHead>
+                    <TableHead>{t('statusColumn')}</TableHead>
+                    <TableHead>{t('addedOnColumn')}</TableHead>
+                    {canManageRoster ? <TableHead className="w-[220px] text-right">{t('actionsColumn')}</TableHead> : null}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contributors.map(row => {
+                    const isCreator = row.role === 'creator'
+                    const busy = busyUserId === row.user_id
+                    return (
+                      <TableRow key={row.user_id} data-testid={`contributor-${row.username}`}>
                         <TableCell>
                           <UserAvatar
                             size="sm"
                             variant="outline"
-                            avatar_url={
-                              contributor.user.avatar_image
-                                ? getUserAvatarMediaDirectory(contributor.user.user_uuid, contributor.user.avatar_image)
-                                : ''
-                            }
-                            {...(contributor.user.avatar_image === '' ? { predefined_avatar: 'empty' } : {})}
+                            avatar_url={row.avatar_key ? getUserAvatarMediaDirectory(row.user_id, row.avatar_key) : ''}
+                            {...(row.avatar_key ? {} : { predefined_avatar: 'empty' })}
+                            userId={row.user_id}
+                            username={row.username}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {[contributor.user.first_name, contributor.user.middle_name, contributor.user.last_name]
-                            .filter(Boolean)
-                            .join(' ')}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">@{contributor.user.username}</TableCell>
-                        <TableCell className="text-muted-foreground">{contributor.user.email}</TableCell>
                         <TableCell>
-                          <RoleDropdown contributor={contributor} updateContributor={updateContributor} t={t} />
+                          <div className="font-medium">{row.display_name || row.username}</div>
+                          <div className="text-muted-foreground text-xs">@{row.username}</div>
                         </TableCell>
                         <TableCell>
-                          <StatusDropdown
-                            contributor={contributor}
-                            updateContributor={updateContributor}
-                            t={t}
-                            getStatusStyle={getStatusStyle}
-                          />
+                          {canManageRoster && !isCreator ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={<Button variant="outline" size="sm" className="justify-between" disabled={busy} />}
+                              >
+                                {t(row.role)}
+                                <ChevronDown className="text-muted-foreground ml-2 h-4 w-4" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                {ASSIGNABLE_ROLES.map(role => (
+                                  <DropdownMenuItem
+                                    key={role}
+                                    onClick={() => role !== row.role && void handleUpdate(row, { role })}
+                                    className="justify-between"
+                                  >
+                                    {t(role)}
+                                    {row.role === role && <Check className="ml-2 h-4 w-4" />}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <Badge variant="outline">{t(row.role)}</Badge>
+                          )}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {formatDate(contributor.creation_date, locale)}
+                        <TableCell>
+                          <Badge variant="outline" className={getCourseWorkflowToneClass(statusTone(row.status))}>
+                            {t(row.status)}
+                          </Badge>
                         </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{formatDate(row.created_at_unix, locale)}</TableCell>
+                        {canManageRoster ? (
+                          <TableCell className="text-right">
+                            {isCreator ? null : busy ? (
+                              <Loader2 className="text-muted-foreground ml-auto size-4 animate-spin" aria-label={t('updating')} />
+                            ) : (
+                              <div className="flex justify-end gap-2">
+                                {row.status === 'pending' ? (
+                                  <Button size="sm" onClick={() => void handleUpdate(row, { status: 'active' })}>
+                                    {t('approveButton')}
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      void handleUpdate(row, { status: row.status === 'active' ? 'inactive' : 'active' })
+                                    }
+                                  >
+                                    {row.status === 'active' ? t('deactivateButton') : t('activateButton')}
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={t('removeButton')}
+                                  onClick={() => setRemoveTarget(row)}
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                        ) : null}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            )}
-          </div>
-        ) : null}
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          )}
+        </div>
       </CourseEditorSection>
     </div>
   )

@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import CourseGradebookCommandCenter from '@/features/grading/gradebook/CourseGradebookCommandCenter'
@@ -12,6 +12,9 @@ const navigationMocks = vi.hoisted(() => ({
 }))
 const gradingQueryMocks = vi.hoisted(() => ({
   courseGradebookQueryOptions: vi.fn(() => ({ queryKey: ['gradebook'] })),
+  downloadGradebookCsv: vi.fn(),
+  live: false,
+  toastApiError: vi.fn(),
 }))
 const mobileMocks = vi.hoisted(() => ({ isMobile: false }))
 
@@ -30,6 +33,15 @@ vi.mock('@tanstack/react-query', () => ({
 
 vi.mock('@/features/grading/queries/grading.query', () => ({
   courseGradebookQueryOptions: gradingQueryMocks.courseGradebookQueryOptions,
+  downloadGradebookCsv: gradingQueryMocks.downloadGradebookCsv,
+}))
+
+vi.mock('@/features/grading/queries/use-grading-events', () => ({
+  useCourseGradingEvents: () => gradingQueryMocks.live,
+}))
+
+vi.mock('@/hooks/useApiError', () => ({
+  useApiError: () => ({ toastApiError: gradingQueryMocks.toastApiError }),
 }))
 
 vi.mock('@/features/assessments/registry', () => ({
@@ -55,6 +67,7 @@ vi.mock('@/features/grading/review/GradingReviewWorkspace', () => ({
 }))
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'ru-RU',
   useTranslations: () => (key: string, values?: Record<string, string | number>) =>
     values?.count === undefined ? key : `${key}:${values.count}`,
 }))
@@ -206,8 +219,8 @@ describe('CourseGradebookCommandCenter', () => {
   })
 
   // Gauntlet F26: file-submission columns render the same cells as
-  // assessments and the export is built from the loaded data.
-  it('renders file-submission columns as regular cells and exports the loaded matrix as CSV', () => {
+  // assessments; «Экспорт» downloads the server's CSV (Q-2026-09-12-2 #3).
+  it('renders file-submission columns as regular cells and downloads the server CSV', async () => {
     gradebook.activities.push({
       id: 'activity_upload',
       activity_uuid: 'activity_upload',
@@ -219,6 +232,8 @@ describe('CourseGradebookCommandCenter', () => {
     const revokeObjectURL = vi.fn()
     Object.assign(URL, { createObjectURL, revokeObjectURL })
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const csv = new Blob(['\uFEFFСтудент,Email,Project Upload'], { type: 'text/csv;charset=utf-8' })
+    gradingQueryMocks.downloadGradebookCsv.mockResolvedValue(csv)
     render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
     const table = screen.getByRole('table')
@@ -228,11 +243,23 @@ describe('CourseGradebookCommandCenter', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'export' }))
-    expect(click).toHaveBeenCalledTimes(1)
-    expect(createObjectURL).toHaveBeenCalledTimes(1)
-    expect(createObjectURL.mock.calls[0]![0].type).toContain('text/csv')
+    expect(gradingQueryMocks.downloadGradebookCsv).toHaveBeenCalledWith('course_gradebook', 'ru-RU')
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
+    expect(createObjectURL).toHaveBeenCalledWith(csv)
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:gradebook')
     click.mockRestore()
+  })
+
+  // Gauntlet F27: the course stream drives refreshes; polling stays as the fallback.
+  it('tells the gradebook query whether the grading stream is live', () => {
+    gradingQueryMocks.live = true
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+    expect(gradingQueryMocks.courseGradebookQueryOptions).toHaveBeenLastCalledWith(
+      'course_gradebook',
+      expect.objectContaining({ page: 1 }),
+      { live: true },
+    )
+    gradingQueryMocks.live = false
   })
 
   // Gauntlet: the implicit "needs grading" default showed an empty table
@@ -256,13 +283,17 @@ describe('CourseGradebookCommandCenter', () => {
 
     render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    expect(gradingQueryMocks.courseGradebookQueryOptions).toHaveBeenCalledWith('course_gradebook', {
-      activityType: 'TYPE_DYNAMIC',
-      page: 2,
-      pageSize: 25,
-      savedFilter: 'returned',
-      search: 'student',
-    })
+    expect(gradingQueryMocks.courseGradebookQueryOptions).toHaveBeenCalledWith(
+      'course_gradebook',
+      {
+        activityType: 'TYPE_DYNAMIC',
+        page: 2,
+        pageSize: 25,
+        savedFilter: 'returned',
+        search: 'student',
+      },
+      { live: false },
+    )
   })
 
   it('filters learners by saved progress filters', () => {

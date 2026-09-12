@@ -12,15 +12,22 @@ import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 
 import type { ItemAttemptProps, ItemAuthorProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
-import type { MatchPair } from '../../domain/items'
+import { matchingColumns } from '../../domain/items'
+import type { MatchOption, MatchPair } from '../../domain/items'
+export { matchingColumns }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface MatchingBody {
   kind: 'MATCHING'
   prompt: string
+  /** The author's key; empty on the learner read. */
   pairs: MatchPair[]
+  /** The learner read: both columns, right one shuffled by the server. */
+  left?: MatchOption[]
+  right?: MatchOption[]
 }
+
 
 export interface MatchingAnswer {
   kind: 'MATCHING'
@@ -121,33 +128,33 @@ export function MatchingItemAttempt({
     onAnswerChange(next)
   }
 
-  const rightOptions = item.pairs.map(p => p.right)
+  const { left, right } = matchingColumns(item)
 
   return (
     <div className="space-y-3">
       {item.prompt ? <MarkdownContent content={item.prompt} mode="prompt" /> : null}
       <div className="space-y-2">
-        {item.pairs.map((pair, index) => {
-          const selected = currentMatches[pair.left] ?? ''
+        {left.map(option => {
+          const selected = currentMatches[option.id] ?? ''
           return (
             <div
-              key={index}
+              key={option.id}
               className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
             >
-              <span className="min-w-0 flex-1 text-sm font-medium">{pair.left}</span>
+              <span className="min-w-0 flex-1 text-sm font-medium">{option.text}</span>
               <NativeSelect
                 value={selected}
                 disabled={disabled}
-                onChange={e => updateMatch(pair.left, e.target.value)}
-                aria-label={t('matchForLabel', { term: pair.left })}
+                onChange={e => updateMatch(option.id, e.target.value)}
+                aria-label={t('matchForLabel', { term: option.text })}
                 className={cn('sm:max-w-xs', !selected && 'text-muted-foreground')}
               >
                 <NativeSelectOption value="" disabled hidden>
                   {t('selectMatch')}
                 </NativeSelectOption>
-                {rightOptions.map(right => (
-                  <NativeSelectOption key={right} value={right}>
-                    {right}
+                {right.map(choice => (
+                  <NativeSelectOption key={choice.id} value={choice.id}>
+                    {choice.text}
                   </NativeSelectOption>
                 ))}
               </NativeSelect>

@@ -23,6 +23,7 @@ function wireCourse(extra: Record<string, unknown> = {}) {
     open_to_contributors: false,
     thumbnail_key: null,
     creator_id: null,
+    contributor_ids: [],
     created_at_unix: 1,
     updated_at_unix: 1,
     ...extra,

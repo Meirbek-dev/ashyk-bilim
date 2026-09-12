@@ -22,8 +22,6 @@ import { deleteUserGroup } from '@services/usergroups/usergroups'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { useUserGroups } from '@/features/users/hooks/useUsers'
-import { useSession } from '@/hooks/useSession'
-import { Actions, Resources, Scopes } from '@/types/permissions'
 import DataTable from '@components/ui/data-table'
 import type { DataTableColumnDef } from '@components/ui/data-table'
 import type { Usergroup } from '@/lib/api/generated/zod'
@@ -89,12 +87,9 @@ function UserGroups() {
   const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<string | null>(null)
   const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<string | null>(null)
   const queryClient = useQueryClient()
-  const { can, session } = useSession()
-  // Mirrors the server's write rule (`usergroup:manage:platform`, or the
+  // `can_write` is the server's verdict (`usergroup:manage:platform`, or the
   // creator holding `usergroup:create:platform`): no dead clicks into a 403.
-  const canWrite = (group: Usergroup) =>
-    can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP) ||
-    (group.creator_id === session?.userId && can(Resources.USERGROUP, Actions.CREATE, Scopes.APP))
+  const canWrite = (group: Usergroup) => group.can_write
 
   const { data: usergroups, error, isPending } = useUserGroups()
 

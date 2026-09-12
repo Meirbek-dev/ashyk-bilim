@@ -13,6 +13,8 @@ import type {
   UserProfile as UserProfileType,
 } from '@/lib/api/generated/zod'
 import { uploadFile } from '@/services/media/uploads'
+import { collectPages } from '@/lib/api/contract'
+import { toAppCourse } from '@/hooks/courses/courseKeys'
 
 /**
  * Self-service profile calls (`/users/me`, v2). Other users are only
@@ -24,7 +26,7 @@ export const userKeys = {
   me: () => queryKeys.users.me(),
   byId: (userId: string) => queryKeys.users.byId(userId),
   byUsername: (username: string) => queryKeys.users.byUsername(username),
-  coursesByUser: (userId: string) => ['users', 'courses', userId] as const,
+  coursesByUser: (username: string) => ['users', 'courses', username] as const,
 }
 
 export interface PublicUser {
@@ -72,16 +74,12 @@ export async function getUserById(userId: string): Promise<PublicUser> {
   return toPublicUser(user)
 }
 
-export async function getCoursesByUser(userId: string): Promise<AppCourse[]> {
-  const page = await apiJson<CoursePage>('courses?limit=100')
-  return page.items
-    .filter(course => course.creator_id === userId)
-    .map(course => ({
-      ...course,
-      course_uuid: course.id,
-      creation_date: new Date(course.created_at_unix * 1000).toISOString(),
-      update_date: new Date(course.updated_at_unix * 1000).toISOString(),
-    }))
+/** `GET /users/{username}/courses`: authored + actively co-authored courses (public ones for strangers). */
+export async function getCoursesByUser(username: string): Promise<AppCourse[]> {
+  const courses = await collectPages(cursor =>
+    apiJson<CoursePage>(`users/${encodeURIComponent(username)}/courses?limit=100${cursor ? `&cursor=${cursor}` : ''}`),
+  )
+  return courses.map(toAppCourse)
 }
 
 export async function getCurrentUserProfile(): Promise<UserProfileType> {

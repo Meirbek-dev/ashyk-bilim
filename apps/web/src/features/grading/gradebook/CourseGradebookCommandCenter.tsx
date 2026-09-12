@@ -3,17 +3,18 @@
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { courseGradebookQueryOptions } from '@/features/grading/queries/grading.query'
+import { courseGradebookQueryOptions, downloadGradebookCsv } from '@/features/grading/queries/grading.query'
+import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
+import { useApiError } from '@/hooks/useApiError'
 import {
   buildGradebookRollups,
   emptyGradebookCell,
   filterGradebookStudents,
   gradebookCellKey,
   gradebookLearnerName,
-  gradebookToCsv,
 } from '@/features/grading/domain'
 import type {
   ActivityProgressCell,
@@ -40,10 +41,14 @@ const PAGE_SIZE = 25
 
 export default function CourseGradebookCommandCenter({ courseUuid }: CourseGradebookCommandCenterProps) {
   const t = useTranslations('Features.Grading.Gradebook')
+  const locale = useLocale()
+  const { toastApiError } = useApiError()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const isMobile = useIsMobile()
+  // Grades landing elsewhere arrive over the course stream; polling is the fallback.
+  const live = useCourseGradingEvents(courseUuid)
   const [page, setPage] = useState(() => normalizePage(searchParams.get('page')))
   const [chosenFilters, setFilters] = useState<GradebookFilters>({
     savedFilter: normalizeSavedFilter(searchParams.get('filter')),
@@ -61,7 +66,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     }
   }, [chosenFilters.activityType, chosenFilters.savedFilter, chosenFilters.search, page])
   const { data, error, isError, isLoading, refetch } = useQuery(
-    courseGradebookQueryOptions(courseUuid, gradebookQueryParams),
+    courseGradebookQueryOptions(courseUuid, gradebookQueryParams, { live }),
   )
   // The implicit default ("needs grading", no `filter` in the URL) would show
   // an empty table when nothing needs review — fall back to "all" then.
@@ -162,18 +167,17 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
         activityTypes={activityTypes}
         onFiltersChange={handleFiltersChange}
         onExport={() => {
-          const csv = gradebookToCsv(data, visibleActivities, visibleStudents, {
-            learner: t('learner'),
-            email: t('email'),
-            state: state => t(progressStateLabelKey(state)),
-          })
-          const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }))
-          const link = document.createElement('a')
-          link.href = url
-          link.download = `gradebook-${courseUuid}.csv`
-          link.click()
-          URL.revokeObjectURL(url)
-          toast.success(t('exportDone', { count: visibleStudents.length }))
+          void downloadGradebookCsv(courseUuid, locale)
+            .then(blob => {
+              const url = URL.createObjectURL(blob)
+              const link = document.createElement('a')
+              link.href = url
+              link.download = `gradebook-${courseUuid}.csv`
+              link.click()
+              URL.revokeObjectURL(url)
+              toast.success(t('exportDone', { count: data.students.length }))
+            })
+            .catch(toastApiError)
         }}
         onRefresh={() => void refetch()}
       />

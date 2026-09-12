@@ -31,13 +31,14 @@ import {
 } from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
-import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
+import { cleanActivityUuid, cleanCourseUuid, isCourseAuthor } from '@/lib/course-management'
 import type { DraggableAttributes } from '@dnd-kit/core'
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useSession } from '@/hooks/useSession'
+import { useApiError } from '@/hooks/useApiError'
 import { getAbsoluteUrl } from '@services/config/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -131,6 +132,7 @@ function ActivityElement({
 }: ActivityElementProps) {
   const { deleteActivity, updateActivity } = useActivityMutations(course_uuid, true)
   const t = useTranslations('CourseEdit.ActivityElement')
+  const { toastApiError } = useApiError()
 
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(activity?.name ?? '')
@@ -144,9 +146,9 @@ function ActivityElement({
   // `:own` when the caller created the course).
   const { can, session } = useSession()
   const { courseStructure } = useCourse()
-  const isCreator = typeof courseStructure.creator_id === 'string' && courseStructure.creator_id === session?.userId
-  const canUpdate = can('activity', 'update', 'platform') || (isCreator && can('activity', 'update', 'own'))
-  const canDelete = can('activity', 'delete', 'platform') || (isCreator && can('activity', 'delete', 'own'))
+  const isAuthor = isCourseAuthor(courseStructure, session?.userId)
+  const canUpdate = can('activity', 'update', 'platform') || (isAuthor && can('activity', 'update', 'own'))
+  const canDelete = can('activity', 'delete', 'platform') || (isAuthor && can('activity', 'delete', 'own'))
 
   const handleStartEdit = () => {
     setEditedName(activity.name)
@@ -186,7 +188,9 @@ function ActivityElement({
       })
       toast.success(t('activityUpdateSuccess'))
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t('updateFailed'))
+      // `activity-not-ready` (file-submission config still a draft) and the
+      // rest are localized through the error-code catalog.
+      toastApiError(error, undefined, t('updateFailed'))
     } finally {
       toast.dismiss(toastId)
       setIsUpdatingPublish(false)

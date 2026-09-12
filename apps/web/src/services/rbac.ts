@@ -6,8 +6,10 @@
  */
 
 import type {
+  AdminUser,
   AdminUserPage,
   CreateRoleBody,
+  CreateUserBody,
   ListUsersParams,
   Role,
   SetUserStatusBody,
@@ -75,6 +77,14 @@ export function listUsers(params: ListUsersParams = {}): Promise<AdminUserPage> 
   if (params.limit) search.set('limit', String(params.limit))
   const query = search.toString()
   return request(`users${query ? `?${query}` : ''}`)
+}
+
+/**
+ * `POST users` — admin account creation; 409 `username-taken` / `email-taken`.
+ * Without `password` the account signs in with Google only.
+ */
+export function createUser(body: CreateUserBody): Promise<AdminUser> {
+  return request('users', { method: 'POST', body: JSON.stringify(body) })
 }
 
 /** `PATCH users/{id}/status` — 409 `conflict` on self-disable. */

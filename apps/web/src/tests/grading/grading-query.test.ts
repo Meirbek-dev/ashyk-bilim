@@ -2,23 +2,20 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 
 const mocks = vi.hoisted(() => ({
   apiJson: vi.fn(),
+  apiBody: vi.fn(),
   getCourse: vi.fn(),
   getCurriculum: vi.fn(),
-  listCourseAssessments: vi.fn(),
   gradebook: vi.fn(),
 }))
 
 vi.mock('@/lib/api-client', () => ({
   apiJson: mocks.apiJson,
+  apiBody: mocks.apiBody,
 }))
 
 vi.mock('@/lib/api/generated/courses/courses', () => ({
   getCourse: mocks.getCourse,
   getCurriculum: mocks.getCurriculum,
-}))
-
-vi.mock('@/lib/api/generated/assessments/assessments', () => ({
-  listCourseAssessments: mocks.listCourseAssessments,
 }))
 
 vi.mock('@/lib/api/generated/grading/grading', () => ({
@@ -28,6 +25,7 @@ vi.mock('@/lib/api/generated/grading/grading', () => ({
 import {
   GRADEBOOK_POLL_MS,
   courseGradebookQueryOptions,
+  downloadGradebookCsv,
   gradingDetailQueryOptions,
   submissionsQueryOptions,
 } from '@/features/grading/queries/grading.query'
@@ -84,32 +82,16 @@ describe('courseGradebookQueryOptions', () => {
     mocks.getCurriculum.mockResolvedValue({
       chapters: [{ activities: [{ id: 'activity_1', name: 'Week 3 · Exam' }] }],
     })
-    mocks.listCourseAssessments.mockResolvedValue([
-      {
-        id: ASM_ID,
-        activity_id: 'activity_1',
-        course_id: COURSE_ID,
-        kind: 'exam',
-        title: 'Exam',
-        description: '',
-        lifecycle: 'published',
-        weight: 1,
-        grading_type: 'numeric',
-        content_version: 1,
-        policy_version: 1,
-        policy: { passing_score: 60 },
-        access_mode: 'course',
-        created_at_unix: 0,
-        updated_at_unix: 0,
-      },
-    ])
     mocks.gradebook
       .mockResolvedValueOnce({
         cells: [
           {
             user_id: USER_ID,
+            activity_id: 'activity_1',
             assessment_id: ASM_ID,
             submission_id: SUB_ID,
+            file_submission_id: null,
+            attempt_id: null,
             status: 'published',
             attempt_number: 1,
             attempts: 1,
@@ -118,13 +100,15 @@ describe('courseGradebookQueryOptions', () => {
           },
         ],
         users: [{ id: USER_ID, username: 'student', display_name: 'Student', email: 'student@example.com' }],
-        assessments: [{ id: ASM_ID, title: 'Exam', kind: 'exam', passing_score: 60 }],
+        assessments: [{ id: ASM_ID, activity_id: 'activity_1', title: 'Exam', kind: 'exam', passing_score: 60 }],
+        file_submissions: [],
         next_cursor: 'cursor-2',
       })
       .mockResolvedValueOnce({
         cells: [],
         users: [],
         assessments: [],
+        file_submissions: [],
         next_cursor: null,
       })
 
@@ -142,12 +126,24 @@ describe('courseGradebookQueryOptions', () => {
     expect(result?.activities[0]?.activity_uuid).toBe('activity_1')
     expect(result?.activities[0]?.name).toBe('Week 3 · Exam')
   })
-  // Gauntlet F27: no course-wide grading stream in v2 — the gradebook polls
-  // while the tab is visible so a grade saved elsewhere shows without a reload.
-  it('polls while the tab is visible (no gradebook event stream in v2)', () => {
-    const options = courseGradebookQueryOptions(COURSE_ID)
-    expect(options.refetchInterval).toBe(GRADEBOOK_POLL_MS)
-    expect(options.refetchIntervalInBackground).toBe(false)
+  // Gauntlet F27: the course grading stream drives refreshes; polling is only
+  // the fallback while the stream is not connected.
+  it('polls only while the grading stream is not live', () => {
+    const fallback = courseGradebookQueryOptions(COURSE_ID)
+    expect(fallback.refetchInterval).toBe(GRADEBOOK_POLL_MS)
+    expect(fallback.refetchIntervalInBackground).toBe(false)
+    expect(courseGradebookQueryOptions(COURSE_ID, undefined, { live: true }).refetchInterval).toBe(false)
+  })
+
+  // Q-2026-09-12-2 #3: the export is the server's CSV, localized by Accept-Language.
+  it('downloads the server CSV with the current locale', async () => {
+    const blob = new Blob(['\uFEFFСтудент,Email'])
+    mocks.apiBody.mockResolvedValue(blob)
+    await expect(downloadGradebookCsv(COURSE_ID, 'kk-KZ')).resolves.toBe(blob)
+    expect(mocks.apiBody).toHaveBeenCalledWith(`courses/${COURSE_ID}/gradebook/export`, {
+      responseType: 'blob',
+      headers: { 'Accept-Language': 'kk-KZ' },
+    })
   })
 })
 
