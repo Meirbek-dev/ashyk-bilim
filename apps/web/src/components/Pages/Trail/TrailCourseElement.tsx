@@ -15,6 +15,7 @@ import {
 import { useApiError } from '@/hooks/useApiError'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
+import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
 import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { revalidateTags } from '@/lib/cache/revalidate'
@@ -66,7 +67,7 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
       className="border-border bg-card flex gap-4 rounded-xl border p-4 transition-shadow hover:shadow-md"
     >
       {/* Thumbnail */}
-      <Link href={getAbsoluteUrl(`/course/${courseid}`)} className="shrink-0">
+      <Link href={getAbsoluteUrl(`/course/${courseid}`)} className="shrink-0" aria-label={course.name ?? ''}>
         <div
           className="ring-border h-[76px] w-[108px] rounded-lg bg-cover bg-center ring-1 ring-inset"
           style={{
@@ -124,25 +125,33 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
 
         {/* Certificate */}
         {isCompleted && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             {isLoadingCertificate ? (
               <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 {t('loadingCertificate')}
               </span>
             ) : courseCertificate ? (
-              <Link
-                href={getAbsoluteUrl(
-                  `/certificates/${courseCertificate.certificate_user.user_certification_uuid}/verify`,
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="border-border text-foreground hover:bg-muted/60 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors"
-              >
-                <Award className="text-primary h-3.5 w-3.5" />
-                {t('viewCertificate')}
-                <ExternalLink className="text-muted-foreground h-3 w-3" />
-              </Link>
+              <>
+                <Link
+                  href={getAbsoluteUrl(
+                    `/certificates/${courseCertificate.certificate_user.user_certification_uuid}/verify`,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border-border text-foreground hover:bg-muted/60 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors"
+                >
+                  <Award className="text-primary h-3.5 w-3.5" />
+                  {t('viewCertificate')}
+                  <ExternalLink className="text-muted-foreground h-3 w-3" />
+                </Link>
+                <CertificatePdfDownloadButton
+                  verifyCode={courseCertificate.certificate_user.user_certification_uuid}
+                  size="sm"
+                  variant="outline"
+                  className="h-auto px-2.5 py-1 text-xs"
+                />
+              </>
             ) : (
               <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
                 <Award className="text-muted-foreground/40 h-3 w-3" />

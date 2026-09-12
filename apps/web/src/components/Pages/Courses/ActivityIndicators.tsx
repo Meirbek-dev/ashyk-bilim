@@ -228,6 +228,7 @@ function CertificationBadge({ courseid, isCompleted }: { courseid: string; isCom
           isCompleted ? 'opacity-100' : 'pointer-events-none opacity-30'
         }`}
         aria-disabled={!isCompleted}
+        aria-label={isCompleted ? t('viewCertificate') : t('earnCertificate')}
       >
         <div
           className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
@@ -337,6 +338,7 @@ function ActivityIndicators(props: Props) {
                   <Link
                     href={chapterLinkHref}
                     className="group flex shrink-0 items-center justify-center focus:outline-none"
+                    aria-label={`${t('chapter')} ${chapterIndex + 1}: ${chapter.name}`}
                   >
                     <div
                       className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-colors ${
@@ -379,6 +381,8 @@ function ActivityIndicators(props: Props) {
                       <Link
                         href={`${getAbsoluteUrl('')}/course/${courseid}/activity/${activity.cleanUuid}`}
                         className="group relative flex flex-1 py-1.5"
+                        aria-label={(activity as { name?: string }).name}
+                        aria-current={isCurrent ? 'step' : undefined}
                       >
                         <span
                           className={`block h-2 w-full rounded-full transition-colors duration-150 ${

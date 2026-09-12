@@ -39,9 +39,9 @@ const wire = {
   next_cursor: null,
 }
 const roles = [
-  { slug: 'instructor', display_name_key: 'roles.instructor.name', description_key: '', priority: 50, is_system: true, permissions: [] },
-  { slug: 'user', display_name_key: 'roles.user.name', description_key: '', priority: 10, is_system: true, permissions: [] },
-  { slug: 'custom-x', display_name_key: 'Custom X', description_key: '', priority: 5, is_system: false, permissions: [] },
+  { slug: 'instructor', display_name_key: 'roles.instructor.name', description_key: '', display_name: null, description: null, priority: 50, is_system: true, permissions: [] },
+  { slug: 'user', display_name_key: 'roles.user.name', description_key: '', display_name: null, description: null, priority: 10, is_system: true, permissions: [] },
+  { slug: 'custom-x', display_name_key: 'roles.custom-x.name', description_key: 'roles.custom-x.description', display_name: 'Custom X', description: null, priority: 5, is_system: false, permissions: [] },
 ]
 
 function renderPage() {

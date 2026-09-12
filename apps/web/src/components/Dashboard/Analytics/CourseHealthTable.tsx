@@ -1,6 +1,6 @@
 'use client'
 
-import { getAnalyticsAlertCopy } from '@/lib/analytics/labels'
+import { getAnalyticsMessage } from '@/lib/analytics/labels'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { TeacherCourseRow } from '@/types/analytics'
@@ -90,7 +90,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
                   : 'outline'
             }
           >
-            {getAnalyticsAlertCopy(t, row.original.top_alert).title}
+            {getAnalyticsMessage(t, row.original.top_alert).title}
           </Badge>
         ) : (
           t('courseHealth.noAlert')

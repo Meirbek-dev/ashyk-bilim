@@ -22,6 +22,7 @@ import { Actions, Resources, Scopes } from '@/components/Security'
 import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate'
 import { useSession } from '@/hooks/useSession'
 import { useAllMembers, useRoles } from '@/features/users/hooks/useUsers'
+import { useRoleLabels } from '@/features/users/hooks/useRoleLabels'
 import { hasErrorCode } from '@/lib/api/assertSuccess'
 import type { AdminUser } from '@/lib/api/generated/zod'
 import DataTable from '@/components/ui/data-table'
@@ -95,8 +96,6 @@ function Users() {
   const { session: sessionData, user: currentUser, can } = useSession()
   const t = useTranslations('DashPage.UserSettings.usersSection')
   const tErrors = useTranslations('Errors')
-  // Roles carry their label as an i18n key (`roles.<slug>.name`); the catalogs own the strings.
-  const tRoot = useTranslations()
   const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.APP)
   const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.APP)
 
@@ -106,13 +105,7 @@ function Users() {
       Math.max(0, ...(slugs ?? []).map(slug => roles?.find(role => role.slug === slug)?.priority ?? 0)),
     [roles],
   )
-  const roleLabel = React.useCallback(
-    (slug: string) => {
-      const key = roles?.find(role => role.slug === slug)?.display_name_key
-      return key && tRoot.has(key) ? tRoot(key) : slug
-    },
-    [roles, tRoot],
-  )
+  const { roleName: roleLabel } = useRoleLabels(roles)
   const currentUserPriority = rolePriority(sessionData?.roles)
   const isAdminUser = sessionData?.permissions.includes(AUTH_PERMISSION_WILDCARD) ?? false
 

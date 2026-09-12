@@ -9,7 +9,7 @@ import type { Metadata } from 'next'
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { redirect } from '@/i18n/navigation'
-import { getLocale, setRequestLocale } from 'next-intl/server'
+import { getLocale, setRequestLocale, getTranslations } from 'next-intl/server'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
@@ -68,9 +68,12 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   } catch (error: unknown) {
     const apiError = error as AppApiError
     if (apiError.status === 401 || apiError.status === 403) {
-      return {
-        title: `Access Denied - ${APP_NAME}`,
-      }
+      const tUnauthorized = await getTranslations('UnauthorizedPage')
+      return { title: `${tUnauthorized('title')} - ${APP_NAME}`, robots: { index: false } }
+    }
+    if (apiError.status === 404) {
+      const tErrors = await getTranslations('Errors')
+      return { title: `${tErrors('courseNotFound')} - ${APP_NAME}`, robots: { index: false } }
     }
     throw error
   }

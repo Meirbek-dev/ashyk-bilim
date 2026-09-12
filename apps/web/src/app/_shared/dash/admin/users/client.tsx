@@ -89,8 +89,7 @@ export default function UserRolesClient() {
       toast.success(t('removedRoleSuccess'))
       await invalidateUsers()
     },
-    // The only 409 this endpoint answers is the last-admin guard; the generic `conflict` copy talks about stale data.
-    onError: error => (hasErrorCode(error, 'conflict') ? toast.error(t('lastAdminConflict')) : toastApiError(error)),
+    onError: error => toastApiError(error),
   })
   const create = useMutation({
     mutationFn: (body: CreateUserBody) => createUser(body),
@@ -106,7 +105,7 @@ export default function UserRolesClient() {
       toast.success(t('statusUpdated'))
       await invalidateUsers()
     },
-    onError: error => (hasErrorCode(error, 'conflict') ? toast.error(t('selfDisableConflict')) : toastApiError(error)),
+    onError: error => toastApiError(error),
   })
 
   return (

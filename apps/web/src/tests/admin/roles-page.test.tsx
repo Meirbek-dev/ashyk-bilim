@@ -29,8 +29,8 @@ vi.mock('@/services/rbac', () => ({
 }))
 
 const roles = [
-  { slug: 'admin', display_name_key: 'roles.admin.name', description_key: 'roles.admin.description', priority: 100, is_system: true, permissions: ['*:*:*'] },
-  { slug: 'ta', display_name_key: 'Teaching assistant', description_key: 'helps out', priority: 20, is_system: false, permissions: ['course:read:all'] },
+  { slug: 'admin', display_name_key: 'roles.admin.name', description_key: 'roles.admin.description', display_name: null, description: null, priority: 100, is_system: true, permissions: ['*:*:*'] },
+  { slug: 'ta', display_name_key: 'roles.ta.name', description_key: 'roles.ta.description', display_name: 'Teaching assistant', description: 'helps out', priority: 20, is_system: false, permissions: ['course:read:all'] },
 ]
 
 function renderPage() {
@@ -58,7 +58,10 @@ describe('/dash/admin/roles (v2 Role wire)', () => {
     expect(within(adminRow).getByText('systemRoleReadOnly')).toBeInTheDocument()
     expect(within(adminRow).queryByRole('button')).toBeNull()
 
+    // Custom roles show their raw text, not the (uncatalogued) key.
     const taRow = screen.getByText('Teaching assistant').closest('tr')!
+    expect(within(taRow).getByText('helps out')).toBeInTheDocument()
+    expect(screen.queryByText('roles.ta.name')).toBeNull()
     expect(within(taRow).getByText('course:read:all')).toBeInTheDocument()
     expect(within(taRow).getByRole('button', { name: 'editRoleAria' })).toBeInTheDocument()
     expect(within(taRow).getByRole('button', { name: 'permissionsAria' })).toBeInTheDocument()

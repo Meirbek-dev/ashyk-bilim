@@ -1,4 +1,4 @@
-import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
+import { APP_NAME } from '@/lib/constants'
 import { getPlatformThumbnailImage } from '@services/media/media'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'
@@ -25,8 +25,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 
   return {
     title: `${t('courses')} - ${APP_NAME}`,
-    description: APP_DESCRIPTION,
-    keywords: `${APP_NAME}, ${APP_DESCRIPTION}, ${t('courses')}, ${t('learning')}, ${t('education')}, ${t('onlineLearning')}, ${t('edu')}, ${t('onlineCourses')}, ${APP_NAME} ${t('courses')}`,
+    description: t('appDescription'),
+    keywords: `${APP_NAME}, ${t('appDescription')}, ${t('courses')}, ${t('learning')}, ${t('education')}, ${t('onlineLearning')}, ${t('edu')}, ${t('onlineCourses')}, ${APP_NAME} ${t('courses')}`,
     robots: {
       index: true,
       follow: true,
@@ -39,7 +39,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     },
     openGraph: {
       title: `${t('courses')} - ${APP_NAME}`,
-      description: APP_DESCRIPTION,
+      description: t('appDescription'),
       type: 'website',
       images: [
         {

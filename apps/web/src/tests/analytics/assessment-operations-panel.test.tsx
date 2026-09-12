@@ -70,7 +70,7 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
         actor_display_name: 'Teacher Analytics',
         occurred_at_unix: 1777975200,
         status: 'completed',
-        summary: 'Release Grades for 8 learners',
+        final_score: null,
         affected_count: 8,
         submission_id: null,
       },
@@ -123,7 +123,8 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
         impacted_count: 4,
         impact_rate: 22.2,
         signal: 'critical',
-        note: 'Manual review is still pending for these learners.',
+        note: 'manual_review_pending',
+        accuracy_pct: null,
       },
       {
         item_key: 'q1',
@@ -133,7 +134,8 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
         impacted_count: 9,
         impact_rate: 50,
         signal: 'watch',
-        note: 'Accuracy 50.0%',
+        note: null,
+        accuracy_pct: 50,
       },
     ],
     ...overrides,
@@ -214,19 +216,19 @@ describe('AssessmentOperationsPanel', () => {
               actor_display_name: 'Teacher Analytics',
               occurred_at_unix: 1777975200,
               status: 'completed',
-              summary: 'Release Grades for 8 learners',
+              final_score: null,
               affected_count: 8,
               submission_id: null,
             },
             {
               id: 'grading-entry-1',
               source: 'grading_entry',
-              action: 'save_feedback',
+              action: 'save_grade',
               actor_user_id: '00000000-0000-4000-8000-000000000001',
               actor_display_name: 'Teacher Analytics',
               occurred_at_unix: 1777971600,
-              status: 'pending',
-              summary: 'Saved draft feedback for Dana',
+              status: 'draft_saved',
+              final_score: 87.5,
               affected_count: 1,
               submission_id: '00000000-0000-4000-8000-000000000004',
             },
@@ -239,7 +241,8 @@ describe('AssessmentOperationsPanel', () => {
       target: { value: 'draft' },
     })
 
-    expect(screen.getByText('codes.save_feedback')).toBeInTheDocument()
+    // The summary is rebuilt from `action` + `final_score`, never server prose.
+    expect(screen.getByText('codes.save_grade: 87.5%')).toBeInTheDocument()
     expect(screen.queryByText('pages.assessmentOpsAuditBulkSummary')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByText('pages.assessmentOpsAuditExport'))

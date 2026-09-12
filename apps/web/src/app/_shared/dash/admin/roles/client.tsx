@@ -37,7 +37,6 @@ import { useRoles } from '@/features/users/hooks/useUsers'
 import { useRoleLabels } from '@/features/users/hooks/useRoleLabels'
 import { useApiError } from '@/hooks/useApiError'
 import { useSession } from '@/hooks/useSession'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
 import type { Role } from '@/lib/api/generated/zod'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { createRole, deleteRole, setRolePermissions, updateRole } from '@/services/rbac'
@@ -46,25 +45,17 @@ import { GRANT_PATTERN, KNOWN_GRANTS } from '@/types/permissions'
 type RoleDraft = { slug: string; display_name: string; description: string; priority: number }
 
 /** Every role mutation: localized toast, dialogs closed, role list refetched; errors go through problem+json. */
-function useRoleMutation<TVars>(
-  mutationFn: (vars: TVars) => Promise<void>,
-  messages: { success: string; conflict?: string },
-  onDone: () => void,
-) {
+function useRoleMutation<TVars>(mutationFn: (vars: TVars) => Promise<void>, success: string, onDone: () => void) {
   const queryClient = useQueryClient()
   const { toastApiError } = useApiError()
   return useMutation({
     mutationFn,
     onSuccess: async () => {
-      toast.success(messages.success)
+      toast.success(success)
       onDone()
       await queryClient.invalidateQueries({ queryKey: queryKeys.users.roles() })
     },
-    onError: error => {
-      // The registry only has a generic `conflict`; the one 409 each endpoint can answer is known, so name it.
-      if (messages.conflict && hasErrorCode(error, 'conflict')) toast.error(messages.conflict)
-      else toastApiError(error)
-    },
+    onError: error => toastApiError(error),
   })
 }
 
@@ -87,20 +78,12 @@ export default function RBACAdminClient() {
     setGrantsFor(null)
   }
 
-  const create = useRoleMutation(
-    (draft: RoleDraft) => createRole(draft),
-    { success: t('createdRole'), conflict: t('slugTaken') },
-    closeDialogs,
-  )
-  const update = useRoleMutation(
-    ({ slug, ...body }: RoleDraft) => updateRole(slug, body),
-    { success: t('updatedRole') },
-    closeDialogs,
-  )
-  const remove = useRoleMutation((slug: string) => deleteRole(slug), { success: t('deletedRole') }, closeDialogs)
+  const create = useRoleMutation((draft: RoleDraft) => createRole(draft), t('createdRole'), closeDialogs)
+  const update = useRoleMutation(({ slug, ...body }: RoleDraft) => updateRole(slug, body), t('updatedRole'), closeDialogs)
+  const remove = useRoleMutation((slug: string) => deleteRole(slug), t('deletedRole'), closeDialogs)
   const saveGrants = useRoleMutation(
     ({ slug, permissions }: { slug: string; permissions: string[] }) => setRolePermissions(slug, permissions),
-    { success: t('permissionsSaved') },
+    t('permissionsSaved'),
     closeDialogs,
   )
 

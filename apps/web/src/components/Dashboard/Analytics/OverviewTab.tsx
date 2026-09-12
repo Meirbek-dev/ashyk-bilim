@@ -4,7 +4,7 @@ import { fromUnix } from '@/lib/api/contract'
 
 import { Suspense, lazy } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getAnalyticsAlertCopy, getAnalyticsSeverityLabel } from '@/lib/analytics/labels'
+import { getAnalyticsMessage, getAnalyticsSeverityLabel } from '@/lib/analytics/labels'
 import type { AnalyticsQuery, TeacherOverviewResponse } from '@/types/analytics'
 import { useLocale, useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
@@ -187,9 +187,9 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                         {getAnalyticsSeverityLabel(t, alert.severity)}
                       </Badge>
                       <div className="min-w-0 flex-1">
-                        <div className="text-foreground text-sm font-semibold">{getAnalyticsAlertCopy(t, alert).title}</div>
+                        <div className="text-foreground text-sm font-semibold">{getAnalyticsMessage(t, alert).title}</div>
                         <div className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                          {getAnalyticsAlertCopy(t, alert).body}
+                          {getAnalyticsMessage(t, alert).body}
                         </div>
                       </div>
                     </div>

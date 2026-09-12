@@ -14,6 +14,8 @@ export interface WebPreviewAttrs {
   favicon: string | null
   og_type: string | null
   og_url: string | null
+  /** `og:site_name` from the server preview (`GET utils/link-preview`). */
+  site_name: string | null
   alignment: WebPreviewAlignment
   buttonLabel: string
   showButton: boolean
@@ -42,6 +44,7 @@ const WebPreview = Node.create({
       favicon: { default: null },
       og_type: { default: null },
       og_url: { default: null },
+      site_name: { default: null },
       alignment: { default: 'left' },
       buttonLabel: { default: '' },
       showButton: { default: false },

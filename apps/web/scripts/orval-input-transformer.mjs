@@ -12,7 +12,14 @@
  *     `review_queue`, `export_csv`, `save_draft`) — Orval's tags-split index
  *     re-exports every tag file, so identical names collide. Duplicates are
  *     renamed `<tag>_<operationId>` for every occurrence (deterministic).
+ *  3. Binary responses (`application/pdf` — the certificate PDF) would make
+ *     Orval type the fetcher as `Blob`, which `orvalMutator` (JSON only)
+ *     cannot satisfy. They are re-declared as `text/plain` so the generated
+ *     fetcher types like the CSV exports; binaries are downloaded through
+ *     `apiBody(path, { responseType: 'blob' })`, never the generated call.
  */
+
+const BINARY_MEDIA_TYPES = ['application/pdf']
 
 const KNOWN_SCHEMAS = {
   ReviewStatus: {
@@ -72,8 +79,25 @@ function dedupeOperationIds(spec) {
   }
 }
 
+function stringifyBinaryResponses(spec) {
+  for (const methods of Object.values(spec.paths ?? {})) {
+    for (const operation of Object.values(methods)) {
+      for (const response of Object.values(operation?.responses ?? {})) {
+        const content = response?.content
+        if (!content) continue
+        for (const mediaType of BINARY_MEDIA_TYPES) {
+          if (!(mediaType in content)) continue
+          content['text/plain'] = { schema: { type: 'string' } }
+          delete content[mediaType]
+        }
+      }
+    }
+  }
+}
+
 export default function transformer(spec) {
   fillDanglingRefs(spec)
   dedupeOperationIds(spec)
+  stringifyBinaryResponses(spec)
   return spec
 }

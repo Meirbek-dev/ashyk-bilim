@@ -206,7 +206,7 @@ function CalendarDatePicker({
   id,
   value,
   onChange,
-  placeholder = 'Pick a date',
+  placeholder,
   className,
   buttonVariant = 'outline',
   disabled = false,
@@ -225,6 +225,7 @@ function CalendarDatePicker({
   minDate?: Date
   maxDate?: Date
 }) {
+  const t = useTranslations('Components.Calendar')
   const [open, setOpen] = React.useState(false)
   const selectedDate = parseDateOnly(value)
   const datePickerProps = {
@@ -260,7 +261,7 @@ function CalendarDatePicker({
         }
       >
         <CalendarIcon className="size-4" />
-        <span>{selectedDate ? formatDateOnly(selectedDate, locale) : placeholder}</span>
+        <span>{selectedDate ? formatDateOnly(selectedDate, locale) : (placeholder ?? t('pickDate'))}</span>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <Calendar {...datePickerProps} />
@@ -273,7 +274,7 @@ function CalendarDateTimePicker({
   id,
   value,
   onChange,
-  placeholder = 'Выберите дату и время',
+  placeholder,
   className,
   buttonVariant = 'outline',
   disabled = false,
@@ -345,7 +346,7 @@ function CalendarDateTimePicker({
         }
       >
         <CalendarClock className="size-4" />
-        <span>{parsedValue ? formatDateTimeDisplay(parsedValue, locale) : placeholder}</span>
+        <span>{parsedValue ? formatDateTimeDisplay(parsedValue, locale) : (placeholder ?? t('pickDateTime'))}</span>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-3">
         <div className="space-y-3">

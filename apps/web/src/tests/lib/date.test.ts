@@ -4,14 +4,14 @@ import { formatDate } from '@/lib/date'
 
 // BUG-024: the kz landing badge rendered the raw ICU skeleton "2026 M09 11".
 describe('formatDate', () => {
-  it('composes Kazakh dates from month names instead of the ICU skeleton', () => {
+  it('renders Kazakh dates in CLDR form, never the ICU skeleton', () => {
     const out = formatDate('2026-09-11T00:00:00Z', 'kk-KZ', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
       timeZone: 'UTC',
     })
-    expect(out).toBe('11 қыр. 2026 ж.')
+    expect(out).toBe('2026 ж. 11 қыр.')
     expect(out).not.toMatch(/M\d\d/)
   })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getAnalyticsAlertCopy, getAnalyticsCodeLabel, getAnalyticsStatusLabel } from '@/lib/analytics/labels'
+import { getAnalyticsCodeLabel, getAnalyticsMessage, getAnalyticsStatusLabel } from '@/lib/analytics/labels'
 
 // Gauntlet F31/F32/F33: wire codes (`active_learners`, `pct_of_enrolled`,
 // `too_hard`, `offer_targeted_help`, …) were rendered verbatim in ru/kk.
@@ -8,10 +8,6 @@ describe('getAnalyticsCodeLabel', () => {
     'codes.active_learners': 'Активные учащиеся',
     'codes.learner_contacted': 'С учащимся связались',
     'atRisk.na': 'н/д',
-    'codes.grading_queue_needs_attention': 'Очередь проверки требует внимания',
-    'alertBody.grading_backlog': 'Ожидают проверки: {value}',
-    'alertBody.grading_slo': 'В очереди: {value}',
-    'alertTitle.grading_slo_breached': '{name}: превышен срок проверки',
   }
   const t = Object.assign(
     (key: string, values?: Record<string, string | number>) =>
@@ -33,12 +29,16 @@ describe('getAnalyticsCodeLabel', () => {
   })
 })
 
-describe('getAnalyticsAlertCopy', () => {
+describe('getAnalyticsMessage', () => {
   const catalog: Record<string, string> = {
-    'codes.grading_queue_needs_attention': 'Очередь проверки требует внимания',
-    'alertBody.grading_backlog': 'Ожидают проверки: {value}',
-    'alertBody.grading_slo': 'В очереди: {value}',
-    'alertTitle.grading_slo_breached': '{name}: превышен срок проверки',
+    'messages.grading_backlog.title': 'Очередь проверки требует внимания',
+    'messages.grading_backlog.body': 'Ожидают проверки: {count}',
+    'messages.grading_slo_breached.title': '{assessment_title}: превышен срок проверки',
+    'messages.grading_slo_breached.body': '{breaches} в курсе «{course_name}», самая старая {oldest_hours} ч',
+    'messages.missing_event_sources.title': 'Нет данных',
+    'messages.missing_event_sources.body': 'Нет данных: {sources}',
+    'codes.exam_attempts': 'попытки экзаменов',
+    'codes.event_log': 'журнал событий',
   }
   const t = Object.assign(
     (key: string, values?: Record<string, string | number>) =>
@@ -46,25 +46,26 @@ describe('getAnalyticsAlertCopy', () => {
     { has: (key: string) => key in catalog },
   )
 
-  it('rebuilds code titles and numeric bodies from the catalog', () => {
-    expect(
-      getAnalyticsAlertCopy(t, {
-        kind: 'grading_backlog',
-        title: 'grading_queue_needs_attention',
-        body: '12 submissions are still awaiting review.',
-      }),
-    ).toEqual({ title: 'Очередь проверки требует внимания', body: 'Ожидают проверки: 12' })
+  it('renders code + params through the messages catalog', () => {
+    expect(getAnalyticsMessage(t, { code: 'grading_backlog', params: { count: 12 } })).toEqual({
+      title: 'Очередь проверки требует внимания',
+      body: 'Ожидают проверки: 12',
+    })
   })
 
-  it('keeps the assessment name out of the SLO title template and uses the queue count', () => {
+  it('keeps the grading SLO course name and oldest age (they were lost with the prose)', () => {
     expect(
-      getAnalyticsAlertCopy(t, {
-        kind: 'grading_slo',
-        title: 'Final Exam is outside the grading target',
-        body: '3 submissions in Course exceeded the 72-hour grading target; 5 remain queued.',
-        learner_count: 5,
+      getAnalyticsMessage(t, {
+        code: 'grading_slo_breached',
+        params: { assessment_title: 'Final Exam', course_name: 'Python', breaches: 3, awaiting: 5, oldest_hours: 80.5, target_hours: 72 },
       }),
-    ).toEqual({ title: 'Final Exam: превышен срок проверки', body: 'В очереди: 5' })
+    ).toEqual({ title: 'Final Exam: превышен срок проверки', body: '3 в курсе «Python», самая старая 80.5 ч' })
+  })
+
+  it('renders list params through codes.* before joining', () => {
+    expect(
+      getAnalyticsMessage(t, { code: 'missing_event_sources', params: { sources: ['exam_attempts', 'event_log'] } }).body,
+    ).toBe('Нет данных: попытки экзаменов, журнал событий')
   })
 })
 

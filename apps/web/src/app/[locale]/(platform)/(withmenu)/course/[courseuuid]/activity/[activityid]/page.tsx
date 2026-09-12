@@ -7,6 +7,7 @@ import { cache, Suspense } from 'react'
 import { getStudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { redirect } from '@/i18n/navigation'
 import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server'
+import { APP_NAME } from '@/lib/constants'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
@@ -73,9 +74,12 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   } catch (error: unknown) {
     const apiError = error as AppApiError
     if (apiError.status === 401 || apiError.status === 403) {
-      return {
-        title: `Access Denied`,
-      }
+      const tUnauthorized = await getTranslations('UnauthorizedPage')
+      return { title: `${tUnauthorized('title')} - ${APP_NAME}`, robots: { index: false } }
+    }
+    if (apiError.status === 404) {
+      const tErrors = await getTranslations('Errors')
+      return { title: `${tErrors('activityNotFound')} - ${APP_NAME}`, robots: { index: false } }
     }
     throw error
   }

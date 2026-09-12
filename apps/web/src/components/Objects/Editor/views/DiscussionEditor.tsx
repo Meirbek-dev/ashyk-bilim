@@ -23,7 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { SiYoutube } from '@icons-pack/react-simple-icons'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { EditorContent } from '@tiptap/react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -51,6 +51,7 @@ export function DiscussionEditor({
   minHeight = '150px',
 }: DiscussionEditorProps) {
   const t = useTranslations('RichTextEditor')
+  const tb = useTranslations('DashPage.Editor.Toolbar')
   const [linkUrl, setLinkUrl] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
@@ -58,6 +59,7 @@ export function DiscussionEditor({
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
   const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditorInstance({
     preset: 'discussion',
@@ -219,6 +221,8 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
+            aria-label={tb('bold')}
+            title={tb('bold')}
             className={cn('h-8 w-8 p-0', editor.isActive('bold') && 'bg-muted')}
           >
             <Bold size={16} />
@@ -228,6 +232,8 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleItalic().run()}
+            aria-label={tb('italic')}
+            title={tb('italic')}
             className={cn('h-8 w-8 p-0', editor.isActive('italic') && 'bg-muted')}
           >
             <Italic size={16} />
@@ -237,6 +243,8 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleCode().run()}
+            aria-label={tb('codeInline')}
+            title={tb('codeInline')}
             className={cn('h-8 w-8 p-0', editor.isActive('code') && 'bg-muted')}
           >
             <Code size={16} />
@@ -250,6 +258,8 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
+            aria-label={tb('bulletList')}
+            title={tb('bulletList')}
             className={cn('h-8 w-8 p-0', editor.isActive('bulletList') && 'bg-muted')}
           >
             <List size={16} />
@@ -259,6 +269,8 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            aria-label={tb('orderedList')}
+            title={tb('orderedList')}
             className={cn('h-8 w-8 p-0', editor.isActive('orderedList') && 'bg-muted')}
           >
             <ListOrdered size={16} />
@@ -268,6 +280,8 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            aria-label={t('quote')}
+            title={t('quote')}
             className={cn('h-8 w-8 p-0', editor.isActive('blockquote') && 'bg-muted')}
           >
             <Quote size={16} />
@@ -299,7 +313,9 @@ export function DiscussionEditor({
 
           {/* Media */}
           <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
+            <DialogTrigger
+              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t('addLink')} title={t('addLink')} />}
+            >
               <LinkIcon size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -328,7 +344,9 @@ export function DiscussionEditor({
           </Dialog>
 
           <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
+            <DialogTrigger
+              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t('addImage')} title={t('addImage')} />}
+            >
               <ImageIcon size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -357,7 +375,9 @@ export function DiscussionEditor({
           </Dialog>
 
           <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
-            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
+            <DialogTrigger
+              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t('addVideo')} title={t('addVideo')} />}
+            >
               <SiYoutube size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -386,26 +406,28 @@ export function DiscussionEditor({
           </Dialog>
 
           {/* File Upload */}
-          <div className="hover:bg-accent relative rounded-md">
-            <input
-              type="file"
-              id="file-upload"
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              onChange={handleFileUpload}
-              accept="image/*,video/*"
-              disabled={isUploading || isPending}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              disabled={isUploading || isPending}
-              title={t('uploadFile')}
-            >
-              <Upload size={16} />
-            </Button>
-          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="sr-only"
+            tabIndex={-1}
+            aria-label={t('uploadFile')}
+            onChange={handleFileUpload}
+            accept="image/*,video/*"
+            disabled={isUploading || isPending}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            disabled={isUploading || isPending}
+            aria-label={t('uploadFile')}
+            title={t('uploadFile')}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={16} />
+          </Button>
 
           <div className="bg-border mx-1 h-6 w-px" />
 
@@ -415,6 +437,8 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().undo().run()}
+            aria-label={tb('undo')}
+            title={tb('undo')}
             disabled={!editor.can().undo()}
             className="h-8 w-8 p-0"
           >
@@ -425,6 +449,8 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().redo().run()}
+            aria-label={tb('redo')}
+            title={tb('redo')}
             disabled={!editor.can().redo()}
             className="h-8 w-8 p-0"
           >

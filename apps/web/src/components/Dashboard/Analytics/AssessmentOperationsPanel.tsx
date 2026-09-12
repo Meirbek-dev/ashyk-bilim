@@ -158,6 +158,17 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
   const auditStatuses = [
     ...new Set(detail.audit_history.map(event => event.status).filter((status): status is string => Boolean(status))),
   ].toSorted((a, b) => a.localeCompare(b))
+  const auditSummary = (event: TeacherAssessmentDetailResponse['audit_history'][number]) => {
+    const action = getAnalyticsCodeLabel(t, event.action)
+    if (event.source === 'bulk_action') {
+      return t('pages.assessmentOpsAuditBulkSummary', { action, count: event.affected_count ?? 0 })
+    }
+    return event.final_score == null ? action : `${action}: ${event.final_score.toFixed(1)}%`
+  }
+  const itemNote = (item: TeacherAssessmentDetailResponse['item_analytics'][number]) =>
+    item.accuracy_pct != null
+      ? t('pages.assessmentItemAccuracy', { value: item.accuracy_pct.toFixed(1) })
+      : getAnalyticsCodeLabel(t, item.note ?? 'accuracy_unavailable')
   const normalizedAuditSearch = auditSearch.trim().toLowerCase()
   const filteredAuditHistory = detail.audit_history.filter(event => {
     if (auditSourceFilter !== 'all' && event.source !== auditSourceFilter) {
@@ -170,7 +181,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       return true
     }
 
-    return [event.action, event.source, event.status, event.summary, event.actor_display_name]
+    return [event.action, event.source, event.status, auditSummary(event), event.actor_display_name]
       .filter(Boolean)
       .some(value => String(value).toLowerCase().includes(normalizedAuditSearch))
   })
@@ -192,7 +203,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       event.action,
       event.actor_display_name ?? t('pages.assessmentOpsAuditSystem'),
       event.affected_count ?? '',
-      event.summary,
+      auditSummary(event),
     ])
     const csv = [headers.map(escapeCsvValue).join(','), ...rows.map(row => row.map(escapeCsvValue).join(','))].join(
       '\n',
@@ -207,19 +218,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
     URL.revokeObjectURL(url)
   }
 
-  // Server summaries are English templates over structured fields: rebuild them.
-  const auditSummary = (event: TeacherAssessmentDetailResponse['audit_history'][number]) => {
-    const action = getAnalyticsCodeLabel(t, event.action)
-    if (event.source === 'bulk_action') {
-      return t('pages.assessmentOpsAuditBulkSummary', { action, count: event.affected_count ?? 0 })
-    }
-    const score = /([\d.]+)%/.exec(event.summary)?.[1]
-    return score ? `${action}: ${score}%` : action
-  }
-  const itemNote = (note: string) => {
-    const accuracy = /^accuracy ([\d.]+)%$/.exec(note)?.[1]
-    return accuracy ? t('pages.assessmentItemAccuracy', { value: accuracy }) : getAnalyticsCodeLabel(t, note)
-  }
 
   const resetAuditFilters = () => {
     setAuditSearch('')
@@ -398,7 +396,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       {t('pages.assessmentItemRate')}: {formatRate(item.impact_rate, t('atRisk.na'))}
                     </span>
                   </div>
-                  <div className="text-muted-foreground mt-1 text-xs">{itemNote(item.note)}</div>
+                  <div className="text-muted-foreground mt-1 text-xs">{itemNote(item)}</div>
                 </div>
               ))}
             </div>

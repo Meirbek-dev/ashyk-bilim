@@ -7,6 +7,7 @@ import ruRUMessages from '@/messages/ru-RU.json'
 interface StaticMetadataMessages {
   General: {
     home: string
+    appDescription: string
     courses: string
     learning: string
     education: string

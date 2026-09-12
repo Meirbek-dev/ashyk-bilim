@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/pagination'
 import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import { MarkdownEditor } from '@/features/content-markdown'
+import { SubmissionAIEntry } from '@/features/submission-analysis'
 import { useApiError } from '@/hooks/useApiError'
 import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
@@ -733,6 +734,14 @@ function GradeEditor({
             {t('publishResult')}
           </Button>
         </div>
+        {/* The analyst and the remediation generator take a file attempt id (DECISIONS 2026-09-12). */}
+        <SubmissionAIEntry
+          submissionUuid={attempt.id}
+          onDraftFeedback={draft => {
+            setFeedback(draft)
+            onDirtyChange(true)
+          }}
+        />
       </div>
     </section>
   )

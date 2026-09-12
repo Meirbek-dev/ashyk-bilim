@@ -3,6 +3,7 @@
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, Shield, XCircle } from 'lucide-react'
 import { useCertificateByUuid } from '@/features/certifications/hooks/useCertifications'
+import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useLocale, useTranslations } from 'next-intl'
@@ -356,6 +357,13 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                     </div>
                   </div>
                 ) : null}
+
+                <CertificatePdfDownloadButton
+                  verifyCode={certificateData.certificate_user.user_certification_uuid}
+                  size="default"
+                  variant="default"
+                  className="w-full"
+                />
               </div>
             </div>
 

@@ -104,14 +104,14 @@
     "AiArtifacts": {
       "confidence": "{value}%",
       "titles": {
-        "authoring_patch": "Authoring patch",
-        "code_review_hint": "Code mentor hint",
-        "flashcard_set": "Flashcards",
-        "hint_ladder": "Hint ladder",
-        "rubric_feedback": "Rubric feedback",
-        "safety_refusal": "Safety response",
-        "teacher_intervention": "Teacher intervention",
-        "tutor_answer": "Tutor answer"
+        "authoring_patch": "Авторская правка",
+        "code_review_hint": "Подсказка код-наставника",
+        "flashcard_set": "Флеш-карточки",
+        "hint_ladder": "Лестница подсказок",
+        "rubric_feedback": "Отзыв по рубрике",
+        "safety_refusal": "Ответ о безопасности",
+        "teacher_intervention": "Вмешательство преподавателя",
+        "tutor_answer": "Ответ тьютора"
       }
     },
     "CodeChallenges": {
@@ -1180,6 +1180,12 @@
       "noCertificatesEarned": "Пока нет полученных сертификатов",
       "verifyCertificate": "Проверить",
       "viewCertificate": "Просмотреть сертификат"
+    },
+    "Pdf": {
+      "download": "Скачать PDF",
+      "preparing": "Готовим PDF…",
+      "downloaded": "Сертификат скачан",
+      "failed": "Не удалось скачать сертификат"
     }
   },
   "Common": {
@@ -1230,7 +1236,9 @@
     "saved": "Сохранено",
     "saving": "Сохранение...",
     "discard": "Сбросить",
-    "unsavedChanges": "Несохраненные изменения"
+    "unsavedChanges": "Несохраненные изменения",
+    "notifications": "Уведомления",
+    "unsavedChangesPrompt": "У вас есть несохранённые изменения. Вы уверены, что хотите покинуть страницу?"
   },
   "Components": {
     "WidgetErrorBoundary": {
@@ -1243,7 +1251,9 @@
       "scrollToStart": "Прокрутить в начало"
     },
     "Calendar": {
-      "set": "Установить"
+      "set": "Установить",
+      "pickDate": "Выберите дату",
+      "pickDateTime": "Выберите дату и время"
     },
     "SaveStateBadge": {
       "unsaved": "Не сохранено",
@@ -1327,7 +1337,7 @@
       "stopGeneration": "Остановить генерацию",
       "copyResponse": "Копировать ответ",
       "copied": "Скопировано",
-      "userName": "You"
+      "userName": "Вы"
     },
     "Spinner": {
       "loading": "Загрузка"
@@ -1836,7 +1846,7 @@
       "assignRoleDescription": "Выберите пользователя и роль, которую нужно назначить.",
       "userLabel": "Пользователь",
       "roleLabel": "Роль",
-      "selectUserPlaceholder": "Поиск по имени или email…",
+      "selectUserPlaceholder": "Поиск по имени или эл. почте…",
       "selectRolePlaceholder": "Выберите роль",
       "noMatches": "Ничего не найдено",
       "assignRole": "Назначить роль",
@@ -1848,10 +1858,10 @@
       "removeRoleConfirmTitle": "Снять роль",
       "removeRoleConfirmDescription": "Снять роль «{roleName}» у пользователя {name}?",
       "removeRoleConfirm": "Снять",
-      "searchUsers": "Поиск по имени, логину или email…",
+      "searchUsers": "Поиск по имени, логину или эл. почте…",
       "tableHead": {
         "user": "Пользователь",
-        "email": "Email",
+        "email": "Эл. почта",
         "status": "Статус",
         "roles": "Роли",
         "role": "Роль",
@@ -1909,9 +1919,6 @@
       "editRoleAria": "Изменить роль {roleName}",
       "deleteRoleAria": "Удалить роль {roleName}",
       "permissionsAria": "Права роли {roleName}",
-      "slugTaken": "Роль с таким слагом уже существует",
-      "lastAdminConflict": "Нельзя снять роль администратора у последнего администратора",
-      "selfDisableConflict": "Нельзя отключить собственный аккаунт",
       "createUser": "Создать пользователя",
       "createUserTitle": "Новый пользователь",
       "createUserDescription": "Учётная запись создаётся с подтверждённой почтой. Без пароля пользователь сможет войти только через Google.",
@@ -2110,9 +2117,6 @@
       "totalBlanks": "Всего пропусков",
       "userIdRequired": "Для оценивания требуется ID пользователя."
     },
-    "TypeOfContentTitle": {
-      "logoAlt": "Логотип {type}"
-    },
     "UnconfiguredPaymentsDisclaimer": {
       "configureButton": "Настроить платежи",
       "message": "Функция платежей требует настройки перед использованием.",
@@ -2283,7 +2287,9 @@
       "showButton": "Показать кнопку",
       "visitSite": "Посетить сайт",
       "websitePreview": "Предпросмотр веб-сайта",
-      "websiteUrl": "URL веб-сайта"
+      "websiteUrl": "URL веб-сайта",
+      "previewUnavailable": "Предпросмотр недоступен",
+      "previewUnavailableHint": "Не удалось получить данные страницы. Ссылка всё равно будет открываться."
     },
     "WhitelistManagement": {
       "accessModeSetToWhitelist": "Установлен WHITELIST режим доступа",
@@ -2300,6 +2306,10 @@
       "selectedCount": "{count} из {total} студентов выбрано",
       "whitelistDescription": "Выберите, какие студенты могут получить доступ к этому тесту",
       "whitelistUpdated": "Белый список успешно обновлен"
+    },
+    "VideoPlayer": {
+      "subtitles": "Субтитры",
+      "enableSubtitles": "Включить"
     }
   },
   "Contexts": {
@@ -2489,7 +2499,29 @@
       }
     },
     "editorAriaLabel": "Редактор: {label}",
-    "sourceAriaLabel": "Исходный Markdown: {label}"
+    "sourceAriaLabel": "Исходный Markdown: {label}",
+    "issues": {
+      "content": {
+        "empty": "Содержание не может быть пустым.",
+        "tooLong": "Превышен лимит символов. Удалите лишние символы: {overBy}.",
+        "nearLimit": "Длина текста приближается к установленному лимиту."
+      },
+      "html": {
+        "raw": "Прямая вставка HTML не поддерживается."
+      },
+      "link": {
+        "unsafe": "Одна или несколько ссылок используют небезопасный протокол."
+      },
+      "codeFence": {
+        "unclosed": "Похоже, в блоке кода пропущена закрывающая конструкция (```)."
+      },
+      "math": {
+        "unbalanced": "Похоже, в математическом выражении не сбалансирован разделитель $."
+      },
+      "table": {
+        "columnMismatch": "Похоже, в таблице есть строки с разным количеством колонок."
+      }
+    }
   },
   "CourseBreadcrumbs": {
     "courses": "Курсы"
@@ -4151,7 +4183,7 @@
       "currentContributorsDescription": "Управление текущими соавторами этого курса",
       "currentContributorsTitle": "Текущие соавторы",
       "description": "Выберите, хотите ли вы, чтобы ваш курс был открыт для соавторов, и управляйте существующими соавторами",
-      "emailColumn": "Email",
+      "emailColumn": "Эл. почта",
       "errorAddingContributors": "Ошибка при добавлении соавторов:",
       "errorRemovingContributors": "Ошибка при удалении соавторов:",
       "errorSearchingUsers": "Ошибка при поиске пользователей: ",
@@ -4194,7 +4226,7 @@
       "successfullyAddedContributors": "Успешно добавлено {count, plural, one {# соавтор} few {# соавтора} many {# соавторов} other {# соавторов}}",
       "successfullyRemovedContributors": "Успешно удалено {count, plural, one {# соавтор} few {# соавтора} many {# соавторов} other {# соавторов}}",
       "successfullyUpdatedContributor": "Соавтор успешно обновлен",
-      "tableHeaderEmail": "Email",
+      "tableHeaderEmail": "Эл. почта",
       "tableHeaderName": "Имя",
       "tableHeaderRole": "Роль",
       "tableHeaderStatus": "Статус",
@@ -4242,7 +4274,8 @@
         "mobileMessage2": "Пожалуйста, переключитесь на настольное устройство для просмотра.",
         "mobileTitle": "Только для настольных ПК",
         "preview": "Предварительный просмотр",
-        "save": "Сохранить"
+        "save": "Сохранить",
+        "placeholder": "Начните писать или введите `/` для команд…"
       },
       "EditorWrapper": {
         "detailedSaveError": "Ошибка {status}: {message}",
@@ -6687,7 +6720,7 @@
         "removeUserModalTitle": "Удалить {username}?",
         "removingUser": "Удаление...",
         "roleHeader": "Роль",
-        "searchPlaceholder": "Поиск по имени, логину или email...",
+        "searchPlaceholder": "Поиск по имени, логину или эл. почте...",
         "updateRoleModalDescription": "Обновить роль @{username}",
         "updateRoleModalTitle": "Обновить роль",
         "userHeader": "Пользователь",
@@ -6763,7 +6796,11 @@
       "ai-provider-unavailable": "Провайдер ИИ недоступен. Попробуйте позже.",
       "username-taken": "Это имя пользователя уже занято.",
       "email-taken": "Этот адрес электронной почты уже зарегистрирован.",
-      "activity-not-ready": "Сначала опубликуйте настройки задания с отправкой файла, затем само задание."
+      "role-slug-taken": "Роль с таким слагом уже существует.",
+      "last-admin": "На платформе должен остаться хотя бы один активный администратор.",
+      "self-disable": "Нельзя отключить собственный аккаунт.",
+      "activity-not-ready": "Сначала опубликуйте настройки задания с отправкой файла, затем само задание.",
+      "link-preview-failed": "Не удалось получить предпросмотр ссылки. Проверьте адрес и попробуйте позже."
     },
     "fields": {
       "required": "Обязательное поле.",
@@ -6771,7 +6808,8 @@
       "too-long": "Слишком длинное значение.",
       "too-short": "Слишком короткое значение.",
       "out-of-range": "Значение вне допустимого диапазона.",
-      "unknown-field": "Неизвестное поле."
+      "unknown-field": "Неизвестное поле.",
+      "unsafe": "Этот адрес нельзя использовать."
     }
   },
   "FixedActivitySecondaryBar": {
@@ -6884,7 +6922,8 @@
     "upload": "Загрузить",
     "users": "Пользователи",
     "warning": "Предупреждение",
-    "yes": "Да"
+    "yes": "Да",
+    "appDescription": "Образовательная платформа для онлайн-обучения"
   },
   "GradientDirections": {
     "bottom": "⬇️ Вниз",
@@ -7245,7 +7284,8 @@
     "url": "URL",
     "urlPlaceholder": "https://example.com",
     "videoPlaceholder": "https://youtube.com/watch?v=...",
-    "videoUrl": "URL видео"
+    "videoUrl": "URL видео",
+    "quote": "Цитата"
   },
   "SearchPage": {
     "collections": "Коллекции",
@@ -7830,7 +7870,6 @@
       "grading_queue_within_target": "Очередь проверки в пределах цели",
       "grading_queue_approaching_72h_target": "Очередь проверки приближается к цели 72 ч",
       "grading_queue_past_72h_target": "Очередь проверки превысила цель 72 ч",
-      "grading_queue_needs_attention": "Очередь проверки требует внимания",
       "integrity_signals_in_scope": "Есть сигналы нарушений",
       "attempts_without_score_in_scope": "Есть попытки без балла",
       "grading_latency_past_service_target": "Задержка проверки превышает норму",
@@ -7893,53 +7932,108 @@
       "remediation_draft_prepared": "Подготовлен план поддержки",
       "recovered_from_risk": "Вышел из зоны риска",
       "risk_resolved_after_review": "Риск снят после проверки преподавателем",
-      "active_learners_fell_sharply_vs_previous_period": "Активных учащихся стало заметно меньше, чем в предыдущем периоде",
-      "submission_volume_far_above_previous_period": "Объём отправок намного выше предыдущего периода",
-      "many_attempts_finished_near_minimum_observed_time": "Многие попытки завершены почти за минимальное наблюдаемое время",
-      "average_score_changed_after_last_content_update": "Средний балл изменился после последнего обновления контента",
-      "engagement_dropped": "Падение вовлечённости",
-      "content_may_be_stale": "Контент мог устареть",
-      "learner_risk_needs_intervention": "Учащимся в зоне риска нужна поддержка",
       "engagement_drop": "Падение вовлечённости",
       "submission_spike": "Всплеск отправок",
       "fast_quiz_completion": "Слишком быстрые прохождения",
       "score_distribution_shift": "Сдвиг распределения баллов"
     },
-    "units": {
-      "hours": "{value} ч",
-      "days": "{value} дн."
-    },
-    "forecast": {
+    "messages": {
+      "grading_backlog": {
+        "title": "Очередь проверки требует внимания",
+        "body": "{count, plural, one {# работа всё ещё ожидает} few {# работы всё ещё ожидают} other {# работ всё ещё ожидают}} проверки."
+      },
+      "engagement_dropped": {
+        "title": "Вовлечённость снизилась",
+        "body": "Активных учащихся стало меньше на {delta_pct}% по сравнению с предыдущим периодом."
+      },
+      "content_stale": {
+        "title": "Контент мог устареть",
+        "body": "Курс не обновлялся {days, plural, one {# день} few {# дня} other {# дней}}."
+      },
+      "risk_spike": {
+        "title": "Учащимся в зоне риска нужна поддержка",
+        "body": "{count, plural, one {# учащийся} few {# учащихся} other {# учащихся}} в охвате со средним или высоким риском."
+      },
+      "grading_slo_breached": {
+        "title": "{assessment_title}: превышен срок проверки",
+        "body": "{breaches, plural, one {# работа} few {# работы} other {# работ}} в курсе «{course_name}» превысили целевой срок проверки {target_hours} ч; в очереди ещё {awaiting}, самая старая отправлена {oldest_hours} ч назад."
+      },
+      "grading_slo_watch": {
+        "title": "{assessment_title}: срок проверки на исходе",
+        "body": "{awaiting, plural, one {# работа ожидает} few {# работы ожидают} other {# работ ожидают}} в курсе «{course_name}»; самая старая открыта уже {oldest_hours} ч при цели {target_hours} ч."
+      },
       "completion_target_miss": {
-        "title": "{course}: учащиеся рискуют не достичь цели по завершению",
-        "prediction": "{count, plural, one {# учащийся неактивен или ниже 70% прогресса} few {# учащихся неактивны или ниже 70% прогресса} other {# учащихся неактивны или ниже 70% прогресса}}."
+        "title": "{course_name}: учащиеся рискуют не достичь цели по завершению",
+        "body": "{count, plural, one {# учащийся неактивен или ниже 70% прогресса} few {# учащихся неактивны или ниже 70% прогресса} other {# учащихся неактивны или ниже 70% прогресса}}."
       },
       "course_completion_deadline": {
-        "title": "{course}: прогноз завершения на 14 дней",
-        "prediction": "Ожидаемая доля завершения — {value}% при текущем темпе."
+        "title": "{course_name}: прогноз завершения на 14 дней",
+        "body": "Ожидаемая доля завершения — {expected_pct}% при текущем темпе."
       },
       "grading_backlog_7d": {
         "title": "Ожидаемая очередь проверки через 7 дней",
-        "prediction": "Очередь может вырасти до {value} работ."
+        "body": "Очередь может вырасти до {count, plural, one {# работы} few {# работ} other {# работ}}."
       },
       "assessment_failure_risk": {
-        "title": "{assessment}: повышенный риск провала",
-        "prediction": "Ожидаемая доля провалов — {value}% до следующего дедлайна."
+        "title": "{assessment_title}: повышенный риск провала",
+        "body": "Ожидаемая доля провалов — {expected_pct}% до следующего дедлайна."
+      },
+      "sharp_engagement_drop": {
+        "title": "{course_name}: резкое падение вовлечённости",
+        "body": "Активных учащихся стало резко меньше по сравнению с предыдущим периодом."
+      },
+      "submission_spike": {
+        "title": "{course_name}: необычный всплеск отправок",
+        "body": "Объём отправок значительно выше, чем в предыдущем периоде."
+      },
+      "fast_quiz_completion": {
+        "title": "{assessment_title}: подозрительно быстрые прохождения",
+        "body": "Многие попытки завершены почти за минимальное наблюдаемое время."
+      },
+      "score_distribution_shift": {
+        "title": "{assessment_title}: распределение баллов изменилось после обновления контента",
+        "body": "Средний балл изменился после последнего обновления контента."
+      },
+      "new_at_risk_learners": {
+        "title": "{count, plural, one {# новый учащийся в зоне риска} few {# новых учащихся в зоне риска} other {# новых учащихся в зоне риска}} в курсе «{course_name}»",
+        "body": "Риск вырос относительно собственной базы каждого учащегося; просмотрите список наблюдения."
+      },
+      "low_pass_rate": {
+        "title": "Доля сдавших «{assessment_title}» — {pass_rate}%",
+        "body": "Низкая доля сдавших выделяет это оценивание."
+      },
+      "low_pass_rate_with_diagnostics": {
+        "title": "Доля сдавших «{assessment_title}» — {pass_rate}%",
+        "body": "Диагностика качества выделяет это оценивание."
+      },
+      "content_bottleneck": {
+        "title": "«{activity_name}» — узкое место контента",
+        "body": "{signal, select, high_time_low_completion {Много времени, низкое завершение.} exit_after_open {Учащиеся открывают и уходят, не завершив.} repeated_assessment_failures {Результаты оценивания падают вокруг этой учебной задачи.} stale_low_performance {Устаревший контент коррелирует с низкими результатами.} other {Учащиеся застревают на этой учебной задаче.}}"
+      },
+      "workload_backlog": {
+        "title": "{count, plural, one {# работа ожидает} few {# работы ожидают} other {# работ ожидают}} проверки",
+        "body": "{breaches} превысили целевой срок проверки {target_hours} ч; прогноз на 7 дней — {forecast_7d}."
+      },
+      "completion_improved": {
+        "title": "Завершение курса «{course_name}» выросло на {delta_pts} п.",
+        "body": "Эта когорта опережает исторический базовый уровень курса."
+      },
+      "missing_event_sources": {
+        "title": "Некоторые источники событий без данных",
+        "body": "Нет данных: {sources}"
+      },
+      "thin_course_data": {
+        "title": "В некоторых курсах слишком мало данных",
+        "body": "{count, plural, one {# курс} few {# курса} other {# курсов}} с менее чем 5 учащимися."
+      },
+      "stale_rollup": {
+        "title": "Агрегации старше 24 часов",
+        "body": "Обновите агрегации аналитики, прежде чем принимать по ним операционные решения."
       }
     },
-    "dataQuality": {
-      "missing-event-sources": {
-        "title": "Некоторые источники событий без данных",
-        "detail": "Нет данных: {sources}"
-      },
-      "thin-course-data": {
-        "title": "В некоторых курсах слишком мало данных",
-        "detail": "{count, plural, one {# курс} few {# курса} other {# курсов}} с менее чем 5 учащимися."
-      },
-      "stale-rollup": {
-        "title": "Агрегации старше 24 часов",
-        "detail": "Обновите агрегации аналитики, прежде чем принимать по ним операционные решения."
-      }
+    "units": {
+      "hours": "{value} ч",
+      "days": "{value} дн."
     },
     "intervention": {
       "manage": "Меры поддержки",
@@ -7956,23 +8050,6 @@
       "riskDescription": "{course} · риск {score} · {level}",
       "draftTemplate": "Цель: снизить риск для {learner} в курсе «{course}».\nПричины: {reasons}.\nДействие преподавателя: {action}.\nПлан поддержки: назначить короткую догоняющую задачу, написать учащемуся один конкретный следующий шаг и проверить прогресс после следующей учебной задачи.",
       "needsReview": "требуется проверка преподавателя"
-    },
-    "anomaly": {
-      "engagement_drop": "{name}: резкое падение вовлечённости",
-      "submission_spike": "{name}: необычный всплеск отправок",
-      "fast_quiz_completion": "{name}: подозрительно быстрые прохождения",
-      "score_distribution_shift": "{name}: распределение баллов изменилось после обновления контента"
-    },
-    "alertTitle": {
-      "grading_slo_breached": "{name}: превышен срок проверки",
-      "grading_slo_watch": "{name}: срок проверки на исходе"
-    },
-    "alertBody": {
-      "grading_backlog": "{value, plural, one {# работа всё ещё ожидает} few {# работы всё ещё ожидают} other {# работ всё ещё ожидают}} проверки.",
-      "engagement_drop": "Активных учащихся стало меньше на {value}% по сравнению с предыдущим периодом.",
-      "content_stale": "Курс не обновлялся {value, plural, one {# день} few {# дня} other {# дней}}.",
-      "risk_spike": "{value, plural, one {# учащийся} few {# учащихся} other {# учащихся}} в охвате со средним или высоким риском.",
-      "grading_slo": "В очереди на проверку: {value, plural, one {# работа} few {# работы} other {# работ}}."
     }
   },
   "Features": {
@@ -7998,7 +8075,7 @@
         "activityType": "Тип учебной задачи",
         "allActivityTypes": "Все типы учебных задач",
         "learner": "Студент",
-        "email": "Email",
+        "email": "Эл. почта",
         "selectCell": "Выбрать ячейку прогресса",
         "actionRequired": "Действие",
         "late": "Поздно",
@@ -9473,7 +9550,7 @@
           "activityType": "Тип учебной задачи",
           "allActivityTypes": "Все типы учебных задач",
           "learner": "Студент",
-          "email": "Email",
+          "email": "Эл. почта",
           "selectCell": "Выбрать ячейку прогресса",
           "actionRequired": "Действие",
           "late": "Поздно",
@@ -9961,7 +10038,7 @@
     },
     "shadcn-default": {
       "description": "Универсальная светлая тема с чистыми белыми и прохладными серыми оттенками.",
-      "name": "Classic"
+      "name": "Классическая"
     },
     "twitter-plus": {
       "description": "Свежая тема с фирменным голубым и ярким контрастом на белом фоне.",
@@ -10688,7 +10765,10 @@
       "source": "Источник: {source}",
       "empty": "Флаги функций ИИ не найдены",
       "lecture-authoring": "Создание лекций",
-      "semantic-memory": "Семантическая память"
+      "semantic-memory": "Семантическая память",
+      "sources": {
+        "environment": "переменные окружения сервера"
+      }
     },
     "evalDashboard": {
       "title": "Панель оценивания",

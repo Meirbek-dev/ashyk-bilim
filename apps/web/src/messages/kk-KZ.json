@@ -104,14 +104,14 @@
     "AiArtifacts": {
       "confidence": "{value}%",
       "titles": {
-        "authoring_patch": "Authoring patch",
-        "code_review_hint": "Code mentor hint",
-        "flashcard_set": "Flashcards",
-        "hint_ladder": "Hint ladder",
-        "rubric_feedback": "Rubric feedback",
-        "safety_refusal": "Safety response",
-        "teacher_intervention": "Teacher intervention",
-        "tutor_answer": "Tutor answer"
+        "authoring_patch": "Авторлық түзету",
+        "code_review_hint": "Код-тәлімгер кеңесі",
+        "flashcard_set": "Флэш-карталар",
+        "hint_ladder": "Кеңестер сатысы",
+        "rubric_feedback": "Рубрика бойынша пікір",
+        "safety_refusal": "Қауіпсіздік жауабы",
+        "teacher_intervention": "Мұғалімнің араласуы",
+        "tutor_answer": "Тьютор жауабы"
       }
     },
     "CodeChallenges": {
@@ -401,7 +401,7 @@
       "stepVerify": "4. Тексеру",
       "stepReview": "5. Жариялау",
       "referenceValidationFinished": "Эталондық шешімді тексеру аяқталды.",
-      "validationEndpointFailed": "Тексеру endpoint-і орындалмады.",
+      "validationEndpointFailed": "Тексеру сұрауы орындалмады.",
       "referenceValidationFailed": "Эталондық шешімдерді тексеру сәтсіз аяқталды.",
       "selectLanguagePrompt": "Шаблондарды баптау үшін бүйірлік панельден кем дегенде бір рұқсат етілген тілді таңдаңыз.",
       "starterTemplateCode": "Бастапқы код шаблоны",
@@ -726,7 +726,7 @@
       "fileSubmission": "Файл жіберу",
       "learningMaterial": "Оқу материалы",
       "video": "Бейне",
-      "codeChallenge": "Code challenge"
+      "codeChallenge": "Код-аймақ"
     },
     "chapter": "Тарау",
     "chapters": "Тараулар",
@@ -742,7 +742,7 @@
     "enterFocusMode": "Фокус режиміне өту",
     "exitFocusMode": "Фокус режимінен шығу",
     "focusMode": "Фокус режимі",
-    "aiAssistant": "AI Assistant",
+    "aiAssistant": "Ashyk AI",
     "keyboardShortcuts": "Пернелер тіркесімдері",
     "lastUpdated": "Соңғы жаңарту",
     "markAsComplete": "Аяқталды деп белгілеу",
@@ -782,15 +782,15 @@
     "unmarkDialogTitle": "Белсенділіктің аяқталу белгісін алып тастау керек пе?",
     "unpublishedActivity": "Бұл белсенділік әлі жарияланған жоқ",
     "viewAllActivities": "Барлық белсенділіктерді көру",
-    "assessmentUnavailable": "This assessment is not available yet.",
-    "backToCourse": "Back to course",
-    "courseComplete": "Course complete",
-    "fileSubmissionInlineAction": "Use the submission form",
-    "needsRevision": "Needs revision",
-    "noAction": "No action available",
-    "notStarted": "Not started",
-    "submitted": "Submitted",
-    "support": "Support",
+    "assessmentUnavailable": "Бұл тест әлі қолжетімді емес.",
+    "backToCourse": "Курсқа оралу",
+    "courseComplete": "Курс аяқталды",
+    "fileSubmissionInlineAction": "Жіберу пішінін пайдаланыңыз",
+    "needsRevision": "Түзету қажет",
+    "noAction": "Әрекеттер қолжетімді емес",
+    "notStarted": "Басталмаған",
+    "submitted": "Жіберілді",
+    "support": "Қолдау",
     "viewAssessment": "Оқу әрекетіға өту",
     "viewResult": "Нәтижені көру",
     "startActivity": "Бастау",
@@ -853,7 +853,6 @@
       "loading": "Жүктелуде...",
       "login": "Кіру",
       "loginTo": "Кіру",
-      "newToAcme": "Acme-ға жаңадан келгенсіз бе?",
       "or": "НЕМЕСЕ",
       "password": "Құпия сөз",
       "passwordPlaceholder": "Құпия сөзіңізді енгізіңіз",
@@ -861,7 +860,6 @@
       "resetPassword": "Құпия сөзді қалпына келтіру",
       "showPassword": "Құпия сөзді көрсету",
       "signIn": "Кіру",
-      "signInToAcme": "Acme жүйесіне кіріңіз",
       "signInWithGoogle": "Google арқылы кіру",
       "signup": "Тіркелу",
       "sso": "Бір реттік жүйеге кіру (SSO)",
@@ -1181,6 +1179,12 @@
       "noCertificatesEarned": "Сізде әлі сертификат жоқ",
       "verifyCertificate": "Тексеру",
       "viewCertificate": "Сертификатты көру"
+    },
+    "Pdf": {
+      "download": "PDF жүктеу",
+      "preparing": "PDF дайындалуда…",
+      "downloaded": "Сертификат жүктелді",
+      "failed": "Сертификатты жүктеу мүмкін болмады"
     }
   },
   "Common": {
@@ -1231,7 +1235,9 @@
     "saved": "Сақталды",
     "saving": "Сақталуда...",
     "discard": "Болдырмау",
-    "unsavedChanges": "Сақталмаған өзгерістер"
+    "unsavedChanges": "Сақталмаған өзгерістер",
+    "notifications": "Хабарландырулар",
+    "unsavedChangesPrompt": "Сақталмаған өзгерістер бар. Беттен шыққыңыз келетініне сенімдісіз бе?"
   },
   "Components": {
     "WidgetErrorBoundary": {
@@ -1244,7 +1250,9 @@
       "scrollToStart": "Басына дейін айналдыру"
     },
     "Calendar": {
-      "set": "Орнату"
+      "set": "Орнату",
+      "pickDate": "Күнді таңдаңыз",
+      "pickDateTime": "Күн мен уақытты таңдаңыз"
     },
     "SaveStateBadge": {
       "unsaved": "Сақталмады",
@@ -1328,7 +1336,7 @@
       "stopGeneration": "Генерацияны тоқтату",
       "copyResponse": "Жауапты көшіру",
       "copied": "Көшірілді",
-      "userName": "You"
+      "userName": "Сіз"
     },
     "Spinner": {
       "loading": "Жүктелуде"
@@ -1837,7 +1845,7 @@
       "assignRoleDescription": "Пайдаланушыны және тағайындалатын рөлді таңдаңыз.",
       "userLabel": "Пайдаланушы",
       "roleLabel": "Рөл",
-      "selectUserPlaceholder": "Аты немесе email бойынша іздеу…",
+      "selectUserPlaceholder": "Аты немесе эл. поштасы бойынша іздеу…",
       "selectRolePlaceholder": "Рөлді таңдаңыз",
       "noMatches": "Ештеңе табылмады",
       "assignRole": "Рөл тағайындау",
@@ -1849,10 +1857,10 @@
       "removeRoleConfirmTitle": "Рөлді алып тастау",
       "removeRoleConfirmDescription": "{name} пайдаланушысынан «{roleName}» рөлін алып тастау керек пе?",
       "removeRoleConfirm": "Алып тастау",
-      "searchUsers": "Аты, логині немесе email бойынша іздеу…",
+      "searchUsers": "Аты, логині немесе эл. поштасы бойынша іздеу…",
       "tableHead": {
         "user": "Пайдаланушы",
-        "email": "Email",
+        "email": "Эл. пошта",
         "status": "Күйі",
         "roles": "Рөлдер",
         "role": "Рөл",
@@ -1910,9 +1918,6 @@
       "editRoleAria": "{roleName} рөлін өзгерту",
       "deleteRoleAria": "{roleName} рөлін жою",
       "permissionsAria": "{roleName} рөлінің құқықтары",
-      "slugTaken": "Мұндай слагы бар рөл бұрыннан бар",
-      "lastAdminConflict": "Соңғы әкімшінің әкімші рөлін алып тастауға болмайды",
-      "selfDisableConflict": "Өз аккаунтыңызды өшіре алмайсыз",
       "createUser": "Пайдаланушы жасау",
       "createUserTitle": "Жаңа пайдаланушы",
       "createUserDescription": "Аккаунт расталған поштамен жасалады. Құпиясөзсіз пайдаланушы тек Google арқылы кіре алады.",
@@ -2112,9 +2117,6 @@
       "totalBlanks": "Барлық бос орындар",
       "userIdRequired": "Бағалау үшін пайдаланушы ID-і қажет."
     },
-    "TypeOfContentTitle": {
-      "logoAlt": "{type} логотипі"
-    },
     "UnconfiguredPaymentsDisclaimer": {
       "configureButton": "Төлемдерді баптау",
       "message": "Төлем функциясы пайдалану алдында баптауды қажет етеді.",
@@ -2285,7 +2287,9 @@
       "showButton": "Түймені көрсету",
       "visitSite": "Сайтқа кіру",
       "websitePreview": "Веб-сайтты алдын ала қарау",
-      "websiteUrl": "Веб-сайт URL мекенжайы"
+      "websiteUrl": "Веб-сайт URL мекенжайы",
+      "previewUnavailable": "Алдын ала қарау қолжетімсіз",
+      "previewUnavailableHint": "Бет деректерін алу мүмкін болмады. Сілтеме бәрібір ашылады."
     },
     "WhitelistManagement": {
       "accessModeSetToWhitelist": "Қол жетімділік режимі WHITELIST ретінде орнатылды, ақ тізім қолданылатын болады",
@@ -2302,6 +2306,10 @@
       "selectedCount": "{total} студенттен {count} таңдалды",
       "whitelistDescription": "Бұл емтиханға қол жеткізе алатын студенттерді таңдаңыз",
       "whitelistUpdated": "Ақ тізім сәтті жаңартылды"
+    },
+    "VideoPlayer": {
+      "subtitles": "Субтитрлер",
+      "enableSubtitles": "Қосу"
     }
   },
   "Contexts": {
@@ -2351,7 +2359,7 @@
       "empty": "Бос",
       "markdown": "Markdown",
       "unsaved": "Сақталмаған",
-      "saving": "Saving…",
+      "saving": "Сақталуда…",
       "saved": "Сақталды",
       "saveFailed": "Сақтау сәтсіз аяқталды",
       "issueToggle": "{count} қате",
@@ -2491,7 +2499,29 @@
       }
     },
     "editorAriaLabel": "Редактор: {label}",
-    "sourceAriaLabel": "Markdown бастапқы мәтіні: {label}"
+    "sourceAriaLabel": "Markdown бастапқы мәтіні: {label}",
+    "issues": {
+      "content": {
+        "empty": "Мазмұн бос болмауы керек.",
+        "tooLong": "Таңба шегі асып кетті. Артық таңбаларды жойыңыз: {overBy}.",
+        "nearLimit": "Мәтін ұзындығы белгіленген шекке жақындап қалды."
+      },
+      "html": {
+        "raw": "Тікелей HTML енгізуге қолдау көрсетілмейді."
+      },
+      "link": {
+        "unsafe": "Бір немесе бірнеше сілтеме қауіпсіз емес протокол қолданады."
+      },
+      "codeFence": {
+        "unclosed": "Код блогында жабушы құрылым (```) жоқ сияқты."
+      },
+      "math": {
+        "unbalanced": "Математикалық өрнекте $ бөлгіші теңгерілмеген сияқты."
+      },
+      "table": {
+        "columnMismatch": "Кестеде бағандар саны әртүрлі жолдар бар сияқты."
+      }
+    }
   },
   "CourseBreadcrumbs": {
     "courses": "Курстар"
@@ -2636,7 +2666,7 @@
         "uploading": "Жүктелуде..."
       },
       "thumbnailType": "Нобай түрі",
-      "title": "Редактировать курс: {courseName}Редактировать курс: {courseName}",
+      "title": "Курсты өңдеу: {courseName}",
       "video": "Бейне"
     },
     "NewActivityModal": {
@@ -3199,7 +3229,7 @@
         "live": "Тікелей",
         "metrics": {
           "activeSessions": "Белсенді сессиялар",
-          "activeUsers": "Белсенді пайдаlanушылар",
+          "activeUsers": "Белсенді пайдаланушылар",
           "lastHour": "соңғы сағатта",
           "recentActivity": "Соңғы белсенділік",
           "totalSessions": "Барлық сессиялар"
@@ -4156,7 +4186,7 @@
       "currentContributorsDescription": "Бұл курстың қазіргі қатысушыларын басқару",
       "currentContributorsTitle": "Қазіргі қатысушылар",
       "description": "Курсыңызды қатысушылар үшін ашық етіп, бар қатысушыларды басқаруды қалайтыныңызды таңдаңыз",
-      "emailColumn": "Email",
+      "emailColumn": "Эл. пошта",
       "errorAddingContributors": "Қатысушыларды қосу қатесі:",
       "errorRemovingContributors": "Қатысушыларды жою қатесі:",
       "errorSearchingUsers": "Пайдаланушыларды іздеу қатесі: ",
@@ -4199,7 +4229,7 @@
       "successfullyAddedContributors": "Сәтті қосылды {count, plural, one {# қатысушы} other {# қатысушы}}",
       "successfullyRemovedContributors": "Сәтті жойылды {count, plural, one {# қатысушы} other {# қатысушы}}",
       "successfullyUpdatedContributor": "Қатысушы сәтті жаңартылды",
-      "tableHeaderEmail": "Email",
+      "tableHeaderEmail": "Эл. пошта",
       "tableHeaderName": "Аты",
       "tableHeaderRole": "Рөл",
       "tableHeaderStatus": "Мәртебе",
@@ -4247,7 +4277,8 @@
         "mobileMessage2": "Көру үшін жұмыс үстелі құрылғысына ауысыңыз.",
         "mobileTitle": "Тек жұмыс үстеліне арналған",
         "preview": "Алдын ала қарау",
-        "save": "Сақтау"
+        "save": "Сақтау",
+        "placeholder": "Жаза бастаңыз немесе командалар үшін `/` енгізіңіз…"
       },
       "EditorWrapper": {
         "detailedSaveError": "{status} қатесі: {message}",
@@ -4597,15 +4628,15 @@
         "cancelButton": "Бас тарту",
         "editButton": "Өңдеу",
         "deleteButton": "Жою",
-        "editTitle": "Edit Embed",
-        "description": "Choose a trusted service, then paste a share or embed URL.",
-        "categoryLabel": "Embed categories",
-        "serviceLabel": "Embed services",
-        "searchPlaceholder": "Search services...",
+        "editTitle": "Кірістірілген нысанды өңдеу",
+        "description": "Сенімді сервисті таңдап, бөлісу немесе кірістіру сілтемесін қойыңыз.",
+        "categoryLabel": "Кірістіру санаттары",
+        "serviceLabel": "Кірістіру сервистері",
+        "searchPlaceholder": "Сервистерді іздеу…",
         "urlLabel": "URL",
         "urlForService": "{service} URL",
-        "selectServiceFirst": "Select a service to continue.",
-        "embedUrlHint": "Use the service embed/share URL for the most reliable result.",
+        "selectServiceFirst": "Жалғастыру үшін сервисті таңдаңыз.",
+        "embedUrlHint": "Ең сенімді нәтиже үшін сервис берген кірістіру немесе бөлісу сілтемесін пайдаланыңыз.",
         "errorSelectType": "Бағдарламаны таңдаңыз",
         "updateButton": "Жаңарту",
         "useExample": "Мысал сілтемені қолдану",
@@ -5379,7 +5410,7 @@
           "organizationLogoAlt": "Ұйым логотипі",
           "selectLogoFile": "Логотип файлын таңдаңыз",
           "selectPreviewFile": "Алдын-ала қарау файлын таңдаңыз",
-          "selectThumbnailFile": "Thumbnail файлын таңдаңыз",
+          "selectThumbnailFile": "Нобай файлын таңдаңыз",
           "uploadNewLogo": "Жаңа логотип жүктеу",
           "uploadNewThumbnail": "Жаңа нобай жүктеу",
           "platformThumbnailAlt": "Платформа нобайы",
@@ -6704,7 +6735,7 @@
         "removeUserModalTitle": "{username} жою?",
         "removingUser": "Жойылуда...",
         "roleHeader": "Рөл",
-        "searchPlaceholder": "Аты, логині немесе email бойынша іздеу...",
+        "searchPlaceholder": "Аты, логині немесе эл. поштасы бойынша іздеу…",
         "updateRoleModalDescription": "@{username} рөлін жаңарту",
         "updateRoleModalTitle": "Рөлді жаңарту",
         "userHeader": "Пайдаланушы",
@@ -6780,7 +6811,11 @@
       "ai-provider-unavailable": "ЖИ провайдері қолжетімсіз. Кейінірек қайталап көріңіз.",
       "username-taken": "Бұл пайдаланушы аты бос емес.",
       "email-taken": "Бұл электрондық пошта мекенжайы тіркелген.",
-      "activity-not-ready": "Алдымен файл тапсыру тапсырмасының баптауларын, содан кейін тапсырманың өзін жариялаңыз."
+      "role-slug-taken": "Мұндай слагы бар рөл бұрыннан бар.",
+      "last-admin": "Платформада кемінде бір белсенді әкімші қалуы керек.",
+      "self-disable": "Өз аккаунтыңызды өшіре алмайсыз.",
+      "activity-not-ready": "Алдымен файл тапсыру тапсырмасының баптауларын, содан кейін тапсырманың өзін жариялаңыз.",
+      "link-preview-failed": "Сілтеменің алдын ала қарауын алу мүмкін болмады. Мекенжайды тексеріп, кейінірек қайталап көріңіз."
     },
     "fields": {
       "required": "Міндетті өріс.",
@@ -6788,7 +6823,8 @@
       "too-long": "Мән тым ұзын.",
       "too-short": "Мән тым қысқа.",
       "out-of-range": "Мән рұқсат етілген ауқымнан тыс.",
-      "unknown-field": "Белгісіз өріс."
+      "unknown-field": "Белгісіз өріс.",
+      "unsafe": "Бұл мекенжайды пайдалануға болмайды."
     }
   },
   "FixedActivitySecondaryBar": {
@@ -6901,7 +6937,8 @@
     "upload": "Жүктеу",
     "users": "Пайдаланушылар",
     "warning": "Ескерту",
-    "yes": "Иә"
+    "yes": "Иә",
+    "appDescription": "Онлайн оқытуға арналған білім беру платформасы"
   },
   "GradientDirections": {
     "bottom": "⬇️ Төмен",
@@ -7262,7 +7299,8 @@
     "url": "URL",
     "urlPlaceholder": "https://example.com",
     "videoPlaceholder": "https://youtube.com/watch?v=...",
-    "videoUrl": "Бейне URL"
+    "videoUrl": "Бейне URL",
+    "quote": "Дәйексөз"
   },
   "SearchPage": {
     "collections": "Жинақтар",
@@ -7847,7 +7885,6 @@
       "grading_queue_within_target": "Тексеру кезегі мақсат шегінде",
       "grading_queue_approaching_72h_target": "Тексеру кезегі 72 сағ мақсатына жақындады",
       "grading_queue_past_72h_target": "Тексеру кезегі 72 сағ мақсатынан асты",
-      "grading_queue_needs_attention": "Тексеру кезегі назар аударуды қажет етеді",
       "integrity_signals_in_scope": "Бұзушылық сигналдары бар",
       "attempts_without_score_in_scope": "Ұпайсыз әрекеттер бар",
       "grading_latency_past_service_target": "Тексеру кешігуі нормадан асты",
@@ -7910,53 +7947,108 @@
       "remediation_draft_prepared": "Қолдау жоспары дайындалды",
       "recovered_from_risk": "Тәуекел аймағынан шықты",
       "risk_resolved_after_review": "Оқытушы тексергеннен кейін тәуекел алынды",
-      "active_learners_fell_sharply_vs_previous_period": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда күрт азайды",
-      "submission_volume_far_above_previous_period": "Жіберу көлемі алдыңғы кезеңнен әлдеқайда жоғары",
-      "many_attempts_finished_near_minimum_observed_time": "Көптеген әрекеттер байқалған ең аз уақытқа жуық аяқталды",
-      "average_score_changed_after_last_content_update": "Соңғы контент жаңартуынан кейін орташа ұпай өзгерді",
-      "engagement_dropped": "Белсенділік төмендеді",
-      "content_may_be_stale": "Контент ескірген болуы мүмкін",
-      "learner_risk_needs_intervention": "Тәуекел аймағындағы оқушыларға қолдау қажет",
       "engagement_drop": "Белсенділіктің төмендеуі",
       "submission_spike": "Жіберулердің өсуі",
       "fast_quiz_completion": "Тым жылдам аяқтаулар",
       "score_distribution_shift": "Ұпай таралымының өзгеруі"
     },
-    "units": {
-      "hours": "{value} сағ",
-      "days": "{value} күн"
-    },
-    "forecast": {
+    "messages": {
+      "grading_backlog": {
+        "title": "Тексеру кезегі назар талап етеді",
+        "body": "{count} жұмыс әлі тексеруді күтуде."
+      },
+      "engagement_dropped": {
+        "title": "Белсенділік төмендеді",
+        "body": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда {delta_pct}%-ға азайды."
+      },
+      "content_stale": {
+        "title": "Контент ескірген болуы мүмкін",
+        "body": "Курс {days} күн жаңартылмаған."
+      },
+      "risk_spike": {
+        "title": "Тәуекел аймағындағы оқушыларға қолдау қажет",
+        "body": "Қамтудағы {count} оқушы орташа немесе жоғары тәуекелде."
+      },
+      "grading_slo_breached": {
+        "title": "{assessment_title}: тексеру мерзімі асып кетті",
+        "body": "«{course_name}» курсындағы {breaches} жұмыс {target_hours} сағаттық тексеру мерзімінен асып кетті; кезекте әлі {awaiting} жұмыс, ең ескісі {oldest_hours} сағат бұрын жіберілген."
+      },
+      "grading_slo_watch": {
+        "title": "{assessment_title}: тексеру мерзімі таусылуда",
+        "body": "«{course_name}» курсында {awaiting} жұмыс күтуде; ең ескісі {target_hours} сағаттық мақсатқа қарсы {oldest_hours} сағат ашық тұр."
+      },
       "completion_target_miss": {
-        "title": "{course}: оқушылар аяқтау мақсатына жетпеуі мүмкін",
-        "prediction": "{count} оқушы белсенді емес немесе прогресі 70%-дан төмен."
+        "title": "{course_name}: оқушылар аяқтау мақсатына жетпеуі мүмкін",
+        "body": "{count} оқушы белсенді емес немесе прогресі 70%-дан төмен."
       },
       "course_completion_deadline": {
-        "title": "{course}: 14 күндік аяқтау болжамы",
-        "prediction": "Ағымдағы қарқында күтілетін аяқтау үлесі — {value}%."
+        "title": "{course_name}: 14 күндік аяқтау болжамы",
+        "body": "Ағымдағы қарқында күтілетін аяқтау үлесі — {expected_pct}%."
       },
       "grading_backlog_7d": {
         "title": "7 күннен кейінгі күтілетін тексеру кезегі",
-        "prediction": "Кезек {value} жұмысқа дейін өсуі мүмкін."
+        "body": "Кезек {count} жұмысқа дейін өсуі мүмкін."
       },
       "assessment_failure_risk": {
-        "title": "{assessment}: сәтсіздік тәуекелі жоғары",
-        "prediction": "Келесі мерзімге дейін күтілетін сәтсіздік үлесі — {value}%."
+        "title": "{assessment_title}: сәтсіздік тәуекелі жоғары",
+        "body": "Келесі мерзімге дейін күтілетін сәтсіздік үлесі — {expected_pct}%."
+      },
+      "sharp_engagement_drop": {
+        "title": "{course_name}: белсенділіктің күрт төмендеуі",
+        "body": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда күрт азайды."
+      },
+      "submission_spike": {
+        "title": "{course_name}: жіберулердің әдеттен тыс өсуі",
+        "body": "Жіберулер көлемі алдыңғы кезеңнен әлдеқайда жоғары."
+      },
+      "fast_quiz_completion": {
+        "title": "{assessment_title}: күдікті жылдам аяқталған әрекеттер",
+        "body": "Көптеген әрекеттер байқалған ең аз уақытқа жақын аяқталған."
+      },
+      "score_distribution_shift": {
+        "title": "{assessment_title}: контент жаңартылғаннан кейін ұпай таралымы өзгерді",
+        "body": "Соңғы контент жаңартуынан кейін орташа ұпай өзгерді."
+      },
+      "new_at_risk_learners": {
+        "title": "«{course_name}» курсында тәуекел аймағындағы {count} жаңа оқушы",
+        "body": "Тәуекел әр оқушының өз базалық деңгейіне қарағанда өсті; бақылау тізімін қараңыз."
+      },
+      "low_pass_rate": {
+        "title": "«{assessment_title}» тапсырғандар үлесі — {pass_rate}%",
+        "body": "Төмен тапсыру үлесі осы бағалауды ерекшелейді."
+      },
+      "low_pass_rate_with_diagnostics": {
+        "title": "«{assessment_title}» тапсырғандар үлесі — {pass_rate}%",
+        "body": "Сапа диагностикасы осы бағалауды ерекшелейді."
+      },
+      "content_bottleneck": {
+        "title": "«{activity_name}» — контенттің тар жері",
+        "body": "{signal, select, high_time_low_completion {Көп уақыт, төмен аяқтау.} exit_after_open {Оқушылар ашып, аяқтамай кетеді.} repeated_assessment_failures {Бағалау нәтижелері осы оқу тапсырмасының маңында төмендейді.} stale_low_performance {Ескірген контент төмен нәтижелермен байланысты.} other {Оқушылар осы оқу тапсырмасында тұрып қалады.}}"
+      },
+      "workload_backlog": {
+        "title": "{count} жұмыс тексеруді күтуде",
+        "body": "{breaches} жұмыс {target_hours} сағаттық тексеру мерзімінен асып кетті; 7 күндік болжам — {forecast_7d}."
+      },
+      "completion_improved": {
+        "title": "«{course_name}» курсын аяқтау {delta_pts} тармаққа өсті",
+        "body": "Бұл когорта курстың тарихи базалық деңгейінен озып тұр."
+      },
+      "missing_event_sources": {
+        "title": "Кейбір оқиға көздерінде дерек жоқ",
+        "body": "Дерек жоқ: {sources}"
+      },
+      "thin_course_data": {
+        "title": "Кейбір курстарда дерек тым аз",
+        "body": "{count} курста 5-тен аз оқушы бар."
+      },
+      "stale_rollup": {
+        "title": "Жинақтаулар 24 сағаттан ескі",
+        "body": "Операциялық шешім қабылдамас бұрын аналитика жинақтауларын жаңартыңыз."
       }
     },
-    "dataQuality": {
-      "missing-event-sources": {
-        "title": "Кейбір оқиға көздерінде дерек жоқ",
-        "detail": "Дерек жоқ: {sources}"
-      },
-      "thin-course-data": {
-        "title": "Кейбір курстарда дерек тым аз",
-        "detail": "{count} курста 5-тен аз оқушы бар."
-      },
-      "stale-rollup": {
-        "title": "Жинақтаулар 24 сағаттан ескі",
-        "detail": "Операциялық шешім қабылдамас бұрын аналитика жинақтауларын жаңартыңыз."
-      }
+    "units": {
+      "hours": "{value} сағ",
+      "days": "{value} күн"
     },
     "intervention": {
       "manage": "Қолдау шаралары",
@@ -7973,23 +8065,6 @@
       "riskDescription": "{course} · тәуекел {score} · {level}",
       "draftTemplate": "Мақсат: «{course}» курсында {learner} үшін тәуекелді төмендету.\nСебептер: {reasons}.\nОқытушының әрекеті: {action}.\nҚолдау жоспары: қысқа қуып жету тапсырмасын беру, оқушыға бір нақты келесі қадамды жазу және келесі оқу тапсырмасынан кейін прогресті тексеру.",
       "needsReview": "оқытушының тексеруі қажет"
-    },
-    "anomaly": {
-      "engagement_drop": "{name}: белсенділіктің күрт төмендеуі",
-      "submission_spike": "{name}: жіберулердің әдеттен тыс өсуі",
-      "fast_quiz_completion": "{name}: күдікті жылдам аяқталған әрекеттер",
-      "score_distribution_shift": "{name}: контент жаңартылғаннан кейін ұпай таралымы өзгерді"
-    },
-    "alertTitle": {
-      "grading_slo_breached": "{name}: тексеру мерзімі асып кетті",
-      "grading_slo_watch": "{name}: тексеру мерзімі таусылуда"
-    },
-    "alertBody": {
-      "grading_backlog": "{value} жұмыс әлі тексеруді күтуде.",
-      "engagement_drop": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда {value}%-ға азайды.",
-      "content_stale": "Курс {value} күн жаңартылмаған.",
-      "risk_spike": "Қамтудағы {value} оқушы орташа немесе жоғары тәуекелде.",
-      "grading_slo": "Тексеру кезегінде: {value} жұмыс."
     }
   },
   "Features": {
@@ -8015,7 +8090,7 @@
         "activityType": "Оқу әрекеті түрі",
         "allActivityTypes": "Барлық оқу әрекеті түрлері",
         "learner": "Білім алушы",
-        "email": "Email",
+        "email": "Эл. пошта",
         "selectCell": "Прогресс ұяшығын таңдау",
         "actionRequired": "Әрекет",
         "late": "Кеш",
@@ -9145,7 +9220,7 @@
           "enterFullscreen": "Толық экранға өту",
           "fullscreenNotSupported": "Толық экран режимі браузеріңізде қолдау көрсетілмейді",
           "fullscreenRecommended": "Бұл емтихан үшін толық экран режимі ұсынылады",
-          "dueLabel": "Due",
+          "dueLabel": "Мерзімі",
           "save": "Сақтау",
           "grade": "Баға {grade}",
           "incorrect": "Қате",
@@ -9649,7 +9724,7 @@
         "activityType": "Оқу әрекеті түрі",
         "allActivityTypes": "Барлық оқу әрекеті түрлері",
         "learner": "Білім алушы",
-        "email": "Email",
+        "email": "Эл. пошта",
         "selectCell": "Прогресс ұяшығын таңдау",
         "actionRequired": "Әрекет",
         "late": "Кеш",
@@ -10862,7 +10937,10 @@
       "source": "Дереккөз: {source}",
       "empty": "ЖИ мүмкіндік жалаушалары табылмады",
       "lecture-authoring": "Дәріс жасау",
-      "semantic-memory": "Семантикалық жад"
+      "semantic-memory": "Семантикалық жад",
+      "sources": {
+        "environment": "сервердің орта айнымалылары"
+      }
     },
     "evalDashboard": {
       "title": "Бағалау тақтасы",

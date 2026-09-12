@@ -1182,6 +1182,12 @@
       "noCertificatesEarned": "No certificates earned yet",
       "verifyCertificate": "Verify",
       "viewCertificate": "View Certificate"
+    },
+    "Pdf": {
+      "download": "Download PDF",
+      "preparing": "Preparing PDF…",
+      "downloaded": "Certificate downloaded",
+      "failed": "Could not download the certificate"
     }
   },
   "Common": {
@@ -1232,7 +1238,9 @@
     "saved": "Saved",
     "saving": "Saving...",
     "discard": "Discard",
-    "unsavedChanges": "Unsaved changes"
+    "unsavedChanges": "Unsaved changes",
+    "notifications": "Notifications",
+    "unsavedChangesPrompt": "You have unsaved changes. Are you sure you want to leave this page?"
   },
   "Components": {
     "WidgetErrorBoundary": {
@@ -1245,7 +1253,9 @@
       "scrollToStart": "Scroll to start"
     },
     "Calendar": {
-      "set": "Set"
+      "set": "Set",
+      "pickDate": "Pick a date",
+      "pickDateTime": "Pick a date and time"
     },
     "SaveStateBadge": {
       "unsaved": "Unsaved",
@@ -1927,9 +1937,6 @@
       "editRoleAria": "Edit role {roleName}",
       "deleteRoleAria": "Delete role {roleName}",
       "permissionsAria": "Permissions of role {roleName}",
-      "slugTaken": "A role with this slug already exists",
-      "lastAdminConflict": "The admin role cannot be removed from the last administrator",
-      "selfDisableConflict": "You cannot disable your own account",
       "createUser": "Create user",
       "createUserTitle": "New user",
       "createUserDescription": "The account is created with a verified email. Without a password the user can only sign in with Google.",
@@ -2113,9 +2120,6 @@
       "totalBlanks": "Total Blanks",
       "userIdRequired": "User ID is required for grading."
     },
-    "TypeOfContentTitle": {
-      "logoAlt": "{type} logo"
-    },
     "UnconfiguredPaymentsDisclaimer": {
       "configureButton": "Configure Payments",
       "message": "The payments feature requires configuration before it can be used.",
@@ -2286,7 +2290,9 @@
       "showButton": "Show button",
       "visitSite": "Visit Site",
       "websitePreview": "Website Preview",
-      "websiteUrl": "Website URL"
+      "websiteUrl": "Website URL",
+      "previewUnavailable": "Preview unavailable",
+      "previewUnavailableHint": "The page details could not be fetched. The link still opens."
     },
     "WhitelistManagement": {
       "accessModeSetToWhitelist": "Access mode set to WHITELIST so the whitelist will be enforced",
@@ -2303,6 +2309,10 @@
       "selectedCount": "{count} of {total} students selected",
       "whitelistDescription": "Select which students can access this exam",
       "whitelistUpdated": "Whitelist updated successfully"
+    },
+    "VideoPlayer": {
+      "subtitles": "Subtitles",
+      "enableSubtitles": "Enable"
     }
   },
   "Contexts": {
@@ -2492,7 +2502,29 @@
       }
     },
     "editorAriaLabel": "{label} editor",
-    "sourceAriaLabel": "{label} Markdown source"
+    "sourceAriaLabel": "{label} Markdown source",
+    "issues": {
+      "content": {
+        "empty": "Content cannot be empty.",
+        "tooLong": "Character limit exceeded. Remove {overBy} characters.",
+        "nearLimit": "The text is approaching the length limit."
+      },
+      "html": {
+        "raw": "Raw HTML is not supported."
+      },
+      "link": {
+        "unsafe": "One or more links use an unsafe protocol."
+      },
+      "codeFence": {
+        "unclosed": "A code block seems to be missing its closing fence (```)."
+      },
+      "math": {
+        "unbalanced": "A math expression seems to have an unbalanced $ delimiter."
+      },
+      "table": {
+        "columnMismatch": "A table seems to have rows with different column counts."
+      }
+    }
   },
   "CourseBreadcrumbs": {
     "courses": "Courses"
@@ -4232,7 +4264,8 @@
         "mobileMessage2": "Please switch to a desktop to view.",
         "mobileTitle": "Desktop Only",
         "preview": "Preview",
-        "save": "Save draft"
+        "save": "Save draft",
+        "placeholder": "Start writing or type `/` for commands…"
       },
       "EditorWrapper": {
         "detailedSaveError": "Error {status}: {message}",
@@ -6765,7 +6798,11 @@
       "ai-provider-unavailable": "The AI provider is unavailable. Please try again later.",
       "username-taken": "This username is already taken.",
       "email-taken": "This email address is already registered.",
-      "activity-not-ready": "Publish the file-submission settings first, then the activity."
+      "role-slug-taken": "A role with this slug already exists.",
+      "last-admin": "The platform must keep at least one active administrator.",
+      "self-disable": "You cannot disable your own account.",
+      "activity-not-ready": "Publish the file-submission settings first, then the activity.",
+      "link-preview-failed": "Could not fetch a preview for the link. Check the address and try again later."
     },
     "fields": {
       "required": "This field is required.",
@@ -6773,7 +6810,8 @@
       "too-long": "The value is too long.",
       "too-short": "The value is too short.",
       "out-of-range": "The value is out of range.",
-      "unknown-field": "Unknown field."
+      "unknown-field": "Unknown field.",
+      "unsafe": "This address cannot be used."
     }
   },
   "FixedActivitySecondaryBar": {
@@ -6886,7 +6924,8 @@
     "upload": "Upload",
     "users": "Users",
     "warning": "Warning",
-    "yes": "Yes"
+    "yes": "Yes",
+    "appDescription": "An educational platform for online learning"
   },
   "GradientDirections": {
     "bottom": "⬇️ Bottom",
@@ -7242,7 +7281,8 @@
     "url": "URL",
     "urlPlaceholder": "https://example.com",
     "videoPlaceholder": "https://youtube.com/watch?v=...",
-    "videoUrl": "Video URL"
+    "videoUrl": "Video URL",
+    "quote": "Quote"
   },
   "SearchPage": {
     "collections": "Collections",
@@ -7817,7 +7857,6 @@
       "grading_queue_within_target": "Grading queue within target",
       "grading_queue_approaching_72h_target": "Grading queue approaching the 72 h target",
       "grading_queue_past_72h_target": "Grading queue past the 72 h target",
-      "grading_queue_needs_attention": "Grading queue needs attention",
       "integrity_signals_in_scope": "Integrity signals in scope",
       "attempts_without_score_in_scope": "Attempts without a score",
       "grading_latency_past_service_target": "Grading latency past the service target",
@@ -7880,53 +7919,108 @@
       "remediation_draft_prepared": "Support plan prepared",
       "recovered_from_risk": "Recovered from risk",
       "risk_resolved_after_review": "Risk marked resolved after teacher review.",
-      "active_learners_fell_sharply_vs_previous_period": "Active learners fell sharply vs the previous period",
-      "submission_volume_far_above_previous_period": "Submission volume far above the previous period",
-      "many_attempts_finished_near_minimum_observed_time": "Many attempts finished near the minimum observed time",
-      "average_score_changed_after_last_content_update": "Average score changed after the last content update",
-      "engagement_dropped": "Engagement dropped",
-      "content_may_be_stale": "Content may be stale",
-      "learner_risk_needs_intervention": "At-risk learners need intervention",
       "engagement_drop": "Engagement drop",
       "submission_spike": "Submission spike",
       "fast_quiz_completion": "Fast quiz completion",
       "score_distribution_shift": "Score distribution shift"
     },
-    "units": {
-      "hours": "{value} h",
-      "days": "{value} d"
-    },
-    "forecast": {
+    "messages": {
+      "grading_backlog": {
+        "title": "Grading queue needs attention",
+        "body": "{count, plural, one {# submission is} other {# submissions are}} still awaiting review."
+      },
+      "engagement_dropped": {
+        "title": "Engagement dropped",
+        "body": "Active learners fell by {delta_pct}% compared with the previous period."
+      },
+      "content_stale": {
+        "title": "Content may be stale",
+        "body": "This course has not been updated for {days, plural, one {# day} other {# days}}."
+      },
+      "risk_spike": {
+        "title": "At-risk learners need intervention",
+        "body": "{count, plural, one {# learner} other {# learners}} in scope at medium or high risk."
+      },
+      "grading_slo_breached": {
+        "title": "{assessment_title}: outside the grading target",
+        "body": "{breaches, plural, one {# submission} other {# submissions}} in {course_name} exceeded the {target_hours} h grading target; {awaiting} still queued, the oldest submitted {oldest_hours} h ago."
+      },
+      "grading_slo_watch": {
+        "title": "{assessment_title}: approaching the grading target",
+        "body": "{awaiting, plural, one {# submission is} other {# submissions are}} waiting in {course_name}; the oldest has been open for {oldest_hours} h against a {target_hours} h target."
+      },
       "completion_target_miss": {
-        "title": "{course}: learners likely to miss the completion target",
-        "prediction": "{count, plural, one {# learner is} other {# learners are}} inactive or below 70% progress."
+        "title": "{course_name}: learners likely to miss the completion target",
+        "body": "{count, plural, one {# learner is} other {# learners are}} inactive or below 70% progress."
       },
       "course_completion_deadline": {
-        "title": "{course}: 14-day completion forecast",
-        "prediction": "Expected completion rate is {value}% if the current pace holds."
+        "title": "{course_name}: 14-day completion forecast",
+        "body": "Expected completion rate is {expected_pct}% if the current pace holds."
       },
       "grading_backlog_7d": {
         "title": "Expected grading backlog in 7 days",
-        "prediction": "The queue is projected to reach {value} submissions."
+        "body": "The queue is projected to reach {count, plural, one {# submission} other {# submissions}}."
       },
       "assessment_failure_risk": {
-        "title": "{assessment}: elevated failure risk",
-        "prediction": "Expected failure rate is {value}% before the next deadline."
+        "title": "{assessment_title}: elevated failure risk",
+        "body": "Expected failure rate is {expected_pct}% before the next deadline."
+      },
+      "sharp_engagement_drop": {
+        "title": "{course_name}: sharp engagement drop",
+        "body": "Active learners fell sharply compared with the previous period."
+      },
+      "submission_spike": {
+        "title": "{course_name}: unusual submission spike",
+        "body": "Submission volume is far above the previous period."
+      },
+      "fast_quiz_completion": {
+        "title": "{assessment_title}: suspiciously fast completions",
+        "body": "Many attempts finished near the minimum observed time."
+      },
+      "score_distribution_shift": {
+        "title": "{assessment_title}: score distribution shifted after a content update",
+        "body": "The average score changed after the last content update."
+      },
+      "new_at_risk_learners": {
+        "title": "{count, plural, one {# new at-risk learner} other {# new at-risk learners}} in {course_name}",
+        "body": "Risk rose against each learner's own baseline; review the watchlist."
+      },
+      "low_pass_rate": {
+        "title": "Pass rate for {assessment_title} is {pass_rate}%",
+        "body": "The low pass rate flags this assessment."
+      },
+      "low_pass_rate_with_diagnostics": {
+        "title": "Pass rate for {assessment_title} is {pass_rate}%",
+        "body": "The quality diagnostics flag this assessment."
+      },
+      "content_bottleneck": {
+        "title": "{activity_name} is a content bottleneck",
+        "body": "{signal, select, high_time_low_completion {High time spent, low completion.} exit_after_open {Learners open and leave without completing.} repeated_assessment_failures {Assessment results drop around this activity.} stale_low_performance {Stale content correlates with low performance.} other {Learners get stuck on this activity.}}"
+      },
+      "workload_backlog": {
+        "title": "{count, plural, one {# submission is} other {# submissions are}} awaiting review",
+        "body": "{breaches} breached the {target_hours} h grading target; the 7-day forecast is {forecast_7d}."
+      },
+      "completion_improved": {
+        "title": "Completion for {course_name} improved by {delta_pts} points",
+        "body": "This cohort outperforms the course's historical baseline."
+      },
+      "missing_event_sources": {
+        "title": "Some event sources have no data",
+        "body": "No data: {sources}"
+      },
+      "thin_course_data": {
+        "title": "Some courses have too little data",
+        "body": "{count, plural, one {# course has} other {# courses have}} fewer than 5 learners."
+      },
+      "stale_rollup": {
+        "title": "Rollups older than 24 hours",
+        "body": "Refresh the analytics rollups before using this view for operational decisions."
       }
     },
-    "dataQuality": {
-      "missing-event-sources": {
-        "title": "Some event sources have no data",
-        "detail": "No data: {sources}"
-      },
-      "thin-course-data": {
-        "title": "Some courses have too little data",
-        "detail": "{count, plural, one {# course has} other {# courses have}} fewer than 5 learners."
-      },
-      "stale-rollup": {
-        "title": "Rollups older than 24 hours",
-        "detail": "Refresh the analytics rollups before using this view for operational decisions."
-      }
+    "units": {
+      "hours": "{value} h",
+      "days": "{value} d"
     },
     "intervention": {
       "manage": "Manage intervention",
@@ -7943,23 +8037,6 @@
       "riskDescription": "{course} · risk {score} · {level}",
       "draftTemplate": "Goal: reduce the risk for {learner} in {course}.\nRisk drivers: {reasons}.\nTeacher action: {action}.\nSupport plan: assign a short catch-up task, message the learner with one concrete next step, and review progress after the next activity.",
       "needsReview": "needs teacher review"
-    },
-    "anomaly": {
-      "engagement_drop": "{name}: sharp engagement drop",
-      "submission_spike": "{name}: unusual submission spike",
-      "fast_quiz_completion": "{name}: suspiciously fast completions",
-      "score_distribution_shift": "{name}: score distribution shifted after content update"
-    },
-    "alertTitle": {
-      "grading_slo_breached": "{name} is outside the grading target",
-      "grading_slo_watch": "{name} is approaching the grading target"
-    },
-    "alertBody": {
-      "grading_backlog": "{value, plural, one {# submission is} other {# submissions are}} still awaiting review.",
-      "engagement_drop": "Active learners fell by {value}% compared with the previous period.",
-      "content_stale": "This course has not been updated for {value, plural, one {# day} other {# days}}.",
-      "risk_spike": "{value, plural, one {# learner} other {# learners}} in scope at medium or high risk.",
-      "grading_slo": "{value, plural, one {# submission} other {# submissions}} waiting in the grading queue."
     }
   },
   "Features": {
@@ -10676,7 +10753,10 @@
       "study-companion": "Study companion",
       "course-qa": "Course Q&A",
       "lecture-authoring": "Lecture authoring",
-      "semantic-memory": "Semantic memory"
+      "semantic-memory": "Semantic memory",
+      "sources": {
+        "environment": "server environment"
+      }
     },
     "evalDashboard": {
       "title": "Evaluation dashboard",

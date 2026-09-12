@@ -134,7 +134,10 @@ function LeaderboardRow({
       {/* Rank indicator */}
       <div className="flex w-7 shrink-0 items-center justify-center">
         {entry.rank === 1 ? (
-          <Crown className="text-foreground h-4 w-4" aria-label="1st" />
+          <>
+            <Crown className="text-foreground h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">#1</span>
+          </>
         ) : isTop3 ? (
           <span
             className={cn(

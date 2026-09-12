@@ -8,15 +8,6 @@ import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
 import type { Activity } from '@/components/Contexts/CourseContext'
 
-export interface UrlPreviewResponse {
-  title?: string | null
-  description?: string | null
-  og_image?: string | null
-  favicon?: string | null
-  og_type?: string | null
-  og_url?: string | null
-}
-
 interface ActivityInvalidationOptions {
   courseUuid?: string
 }
@@ -150,9 +141,4 @@ export async function updateActivity(data: Record<string, unknown>, activity_uui
   revalidateTag(tags.activities, 'max')
 
   return toAppActivity(activity)
-}
-
-/** Blocked: no v2 route for `utils/link-preview`. */
-export async function getUrlPreview(url: string): Promise<UrlPreviewResponse> {
-  return apiJson<UrlPreviewResponse>(`utils/link-preview?url=${url}`)
 }

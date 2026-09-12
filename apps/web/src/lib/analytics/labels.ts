@@ -159,24 +159,19 @@ export function getAnalyticsStatusLabel(t: Translator, status: string | null | u
 }
 
 /**
- * Alerts arrive as `title` codes plus English prose bodies templated per
- * `kind`; the numbers they interpolate are recoverable, the rest is ours.
+ * Server-composed analytics messages (alerts, forecasts, anomalies, insights,
+ * data-quality issues) arrive as an `AnalyticsCode` plus `params`; the copy is
+ * `TeacherAnalytics.messages.<code>.{title,body}`. Lists of wire codes (the
+ * missing event sources) are rendered through `codes.*` before joining.
  */
-export function getAnalyticsAlertCopy(
+export function getAnalyticsMessage(
   t: Translator,
-  alert: { kind: string; title: string; body: string; learner_count?: number | null | undefined },
+  item: { code: string; params: Record<string, unknown> },
 ): { title: string; body: string } {
-  const number = /-?\d+(?:\.\d+)?/.exec(alert.body)?.[0]
-  const value = number === undefined ? undefined : Number(number)
-  const key = `alertBody.${alert.kind}`
-  const known = t.has ? t.has(key) : /^[a-z_]+$/.test(alert.kind)
-  const title = /^[a-z0-9_]+$/.test(alert.title)
-    ? getAnalyticsCodeLabel(t, alert.title)
-    : alert.kind === 'grading_slo'
-      ? t(/outside/.test(alert.title) ? 'alertTitle.grading_slo_breached' : 'alertTitle.grading_slo_watch', {
-          name: alert.title.replace(/ is (outside|approaching) the grading target$/, ''),
-        })
-      : alert.title
-  const count = alert.kind === 'grading_slo' ? (alert.learner_count ?? value) : value
-  return { title, body: known && count !== undefined ? t(key, { value: count }) : alert.body }
+  const values: Record<string, string | number> = {}
+  for (const [key, value] of Object.entries(item.params)) {
+    if (Array.isArray(value)) values[key] = value.map(v => getAnalyticsCodeLabel(t, String(v))).join(', ')
+    else if (typeof value === 'number' || typeof value === 'string') values[key] = value
+  }
+  return { title: t(`messages.${item.code}.title`, values), body: t(`messages.${item.code}.body`, values) }
 }

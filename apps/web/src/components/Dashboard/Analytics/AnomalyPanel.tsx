@@ -1,9 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
-
-const ANOMALY_KINDS = new Set(['engagement_drop', 'submission_spike', 'fast_quiz_completion', 'score_distribution_shift'])
+import { getAnalyticsCodeLabel, getAnalyticsMessage } from '@/lib/analytics/labels'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AnomalyItem } from '@/types/analytics'
@@ -16,9 +14,6 @@ interface AnomalyPanelProps {
 export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
   const t = useTranslations('Components.AnomalyPanel')
   const tA = useTranslations('TeacherAnalytics')
-  // Server titles are `"{name}: <english>"` per kind; rebuild from the name.
-  const title = (item: AnomalyItem) =>
-    ANOMALY_KINDS.has(item.kind) ? tA(`anomaly.${item.kind}`, { name: item.title.replace(/: [^:]*$/, '') }) : item.title
 
   return (
     <Card className="shadow-sm">
@@ -44,8 +39,8 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
                 {getAnalyticsCodeLabel(tA, item.kind)}
               </span>
             </div>
-            <div className="text-foreground text-sm font-medium">{title(item)}</div>
-            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{getAnalyticsCodeLabel(tA, item.detail)}</div>
+            <div className="text-foreground text-sm font-medium">{getAnalyticsMessage(tA, item).title}</div>
+            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{getAnalyticsMessage(tA, item).body}</div>
           </div>
         ))}
         {!anomalies.length ? (

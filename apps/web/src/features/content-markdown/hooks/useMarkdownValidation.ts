@@ -4,8 +4,10 @@ import { findUnsafeMarkdownLinks, hasRawHtml, isMarkdownStructurallyEmpty } from
 
 export interface MarkdownValidationIssue {
   severity: 'error' | 'warning' | 'info'
+  /** Catalog key under `MarkdownEditor.issues.*`; `message` is the English fallback. */
   code: string
   message: string
+  params?: Record<string, number>
 }
 
 function hasUnbalancedMathDelimiters(markdown: string): boolean {
@@ -55,7 +57,7 @@ export function validateMarkdownContent(
     issues.push({
       severity: 'error',
       code: 'content.empty',
-      message: 'Содержание не может быть пустым.',
+      message: 'Content cannot be empty.',
     })
   }
 
@@ -65,13 +67,14 @@ export function validateMarkdownContent(
     issues.push({
       severity: 'error',
       code: 'content.tooLong',
-      message: `Превышен лимит символов. Удалите лишние символы: ${overBy}.`,
+      message: `Character limit exceeded by ${overBy}.`,
+      params: { overBy },
     })
   } else if (markdown.length > config.maxLength * 0.9) {
     issues.push({
       severity: 'warning',
       code: 'content.nearLimit',
-      message: `Длина текста приближается к установленному лимиту.`,
+      message: 'The text is approaching the length limit.',
     })
   }
 
@@ -80,7 +83,7 @@ export function validateMarkdownContent(
     issues.push({
       severity: 'error',
       code: 'html.raw',
-      message: 'Прямая вставка HTML (Raw HTML) не поддерживается.',
+      message: 'Raw HTML is not supported.',
     })
   }
 
@@ -89,7 +92,7 @@ export function validateMarkdownContent(
     issues.push({
       severity: 'error',
       code: 'link.unsafe',
-      message: 'Одна или несколько ссылок используют небезопасный протокол.',
+      message: 'One or more links use an unsafe protocol.',
     })
   }
 
@@ -102,7 +105,7 @@ export function validateMarkdownContent(
     issues.push({
       severity: 'warning',
       code: 'codeFence.unclosed',
-      message: 'Похоже, в блоке кода пропущена закрывающая конструкция (```).',
+      message: 'A code block seems to be missing its closing fence (```).',
     })
   }
 
@@ -112,7 +115,7 @@ export function validateMarkdownContent(
       issues.push({
         severity: 'warning',
         code: 'math.unbalanced',
-        message: 'Похоже, в математическом выражении не сбалансирован разделитель $.',
+        message: 'A math expression seems to have an unbalanced $ delimiter.',
       })
     }
   }
@@ -127,7 +130,7 @@ export function validateMarkdownContent(
         issues.push({
           severity: 'warning',
           code: 'table.columnMismatch',
-          message: 'Похоже, в таблице есть строки с разным количеством колонок.',
+          message: 'A table seems to have rows with different column counts.',
         })
         break
       }

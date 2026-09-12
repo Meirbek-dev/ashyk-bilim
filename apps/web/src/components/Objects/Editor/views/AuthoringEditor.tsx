@@ -33,6 +33,7 @@ interface EditorCoreProps {
 }
 
 function EditorCore({ activity, content, onUpdate }: EditorCoreProps) {
+  const t = useTranslations('DashPage.Editor.Editor')
   const closeEmbedPanel = useEmbedPanelStore(s => s.close)
 
   // Close the embed panel when EditorCore unmounts (Requirement 2.1 / design cleanup).
@@ -58,6 +59,7 @@ function EditorCore({ activity, content, onUpdate }: EditorCoreProps) {
     activity,
     content,
     onUpdate: stableOnUpdate,
+    placeholder: t('placeholder'),
   })
 
   // Render a loading placeholder while the editor is null (Requirement 1.2).

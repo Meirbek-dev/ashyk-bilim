@@ -1,8 +1,16 @@
+import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
 import { Suspense } from 'react'
 
 import UserGroups from '@/components/Dashboard/Pages/Users/UserGroups/UserGroups'
 import { requireAnyPermission } from '@/lib/auth/permissions'
 import { Actions, Resources, Scopes } from '@/types/permissions'
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'DashPage.UserSettings' })
+  return { title: t('usergroupsTitle') }
+}
 
 // Mirrors the server gate on `GET /usergroups` (`usergroup:read:platform`).
 async function Gate() {

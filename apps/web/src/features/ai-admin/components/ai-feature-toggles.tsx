@@ -32,7 +32,9 @@ export function AIFeatureToggles({ features }: { features: AIFeatureSetting[] })
                   {feature.enabled ? t('enabled') : t('disabled')}
                 </Badge>
               </div>
-              <FieldDescription>{t('source', { source: feature.source })}</FieldDescription>
+              <FieldDescription>
+                {t('source', { source: t.has(`sources.${feature.source}`) ? t(`sources.${feature.source}`) : feature.source })}
+              </FieldDescription>
             </FieldContent>
           </Field>
         )

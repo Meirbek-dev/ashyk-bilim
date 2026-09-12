@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import { Toaster as Sonner } from 'sonner'
 import type { ToasterProps } from 'sonner'
 import { useTheme } from '@/components/providers/theme-provider'
+import { useTranslations } from 'next-intl'
 
 const emptySubscribe = () => () => {}
 const getClientSnapshot = () => true
@@ -13,6 +14,7 @@ const getServerSnapshot = () => false
 
 function Toaster({ position = 'top-center', ...props }: ToasterProps) {
   const { resolvedTheme } = useTheme()
+  const t = useTranslations('Common')
   const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
 
   if (!mounted) return null
@@ -21,6 +23,7 @@ function Toaster({ position = 'top-center', ...props }: ToasterProps) {
     <Sonner
       position={position}
       theme={resolvedTheme}
+      containerAriaLabel={t('notifications')}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4 text-lime-600" />,

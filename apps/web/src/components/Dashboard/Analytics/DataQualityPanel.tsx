@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { AnalyticsDataQuality } from '@/types/analytics'
 import { Database, ShieldCheck } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
+import { getAnalyticsCodeLabel, getAnalyticsMessage } from '@/lib/analytics/labels'
 
 interface DataQualityPanelProps {
   quality: AnalyticsDataQuality
@@ -24,27 +24,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
       : freshnessSeconds < 3600
         ? tA('freshness.minutes', { minutes: Math.round(freshnessSeconds / 60) })
         : tA('freshness.hours', { hours: Math.round(freshnessSeconds / 3600) })
-  // The server sends stable issue ids with code titles; the copy is ours.
-  const issueCopy = (issue: AnalyticsDataQuality['issues'][number]) => {
-    if (issue.id === 'missing-event-sources') {
-      return {
-        title: tA('dataQuality.missing-event-sources.title'),
-        detail: tA('dataQuality.missing-event-sources.detail', {
-          sources: quality.missing_event_sources.map(source => getAnalyticsCodeLabel(tA, source)).join(', '),
-        }),
-      }
-    }
-    if (issue.id === 'thin-course-data') {
-      return {
-        title: tA('dataQuality.thin-course-data.title'),
-        detail: tA('dataQuality.thin-course-data.detail', { count: quality.courses_without_enough_data.length }),
-      }
-    }
-    if (issue.id === 'stale-rollup') {
-      return { title: tA('dataQuality.stale-rollup.title'), detail: tA('dataQuality.stale-rollup.detail') }
-    }
-    return { title: getAnalyticsCodeLabel(tA, issue.title), detail: issue.detail }
-  }
+  const issueCopy = (issue: AnalyticsDataQuality['issues'][number]) => getAnalyticsMessage(tA, issue)
 
   return (
     <Card className="shadow-sm">
@@ -128,7 +108,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
                   </Badge>
                   <span className="text-foreground text-sm font-semibold">{issueCopy(issue).title}</span>
                 </div>
-                <div className="text-muted-foreground text-xs leading-normal">{issueCopy(issue).detail}</div>
+                <div className="text-muted-foreground text-xs leading-normal">{issueCopy(issue).body}</div>
               </div>
             ))
           ) : (

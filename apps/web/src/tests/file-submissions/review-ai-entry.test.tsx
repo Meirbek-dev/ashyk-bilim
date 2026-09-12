@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   getAttempt: vi.fn(),
   grade: vi.fn(),
   replace: vi.fn(),
+  aiEntry: vi.fn(),
 }))
 
 vi.mock('next-intl', () => ({
@@ -37,8 +38,17 @@ vi.mock('@/features/content-markdown', () => ({
   ),
 }))
 
-/** The AI entry (mounted on the attempt) has its own tests; it is not what this file exercises. */
-vi.mock('@/features/submission-analysis', () => ({ SubmissionAIEntry: () => null }))
+/** The AI entry is exercised on its own wire in `tests/ai`; here only the mount contract matters. */
+vi.mock('@/features/submission-analysis', () => ({
+  SubmissionAIEntry: (props: { submissionUuid: string | null; onDraftFeedback?: (feedback: string) => void }) => {
+    mocks.aiEntry(props.submissionUuid)
+    return (
+      <button type="button" onClick={() => props.onDraftFeedback?.('AI draft for the feedback box')}>
+        ai-draft-feedback
+      </button>
+    )
+  },
+}))
 
 vi.mock('@/features/file-submissions/services/file-submissions', async importOriginal => {
   const actual = await importOriginal<typeof import('@/features/file-submissions/services/file-submissions')>()
@@ -52,51 +62,47 @@ vi.mock('@/features/file-submissions/services/file-submissions', async importOri
   }
 })
 
-function attempt(id: string, name: string, score: number, feedback: string): FileSubmissionAttempt {
+const ATTEMPT_ID = '01a0a2b0-1b1c-7c2d-8e3f-4a5b6c7d8e9f'
+
+function attempt(): FileSubmissionAttempt {
   return {
-    id,
-    status: 'graded',
+    id: ATTEMPT_ID,
+    status: 'submitted',
     attempt_number: 1,
     files: [],
     is_late: false,
     late_penalty_pct: 0,
-    final_score: score,
-    feedback,
+    final_score: null,
+    feedback: '',
     rubric_scores: {},
-    version: 1,
+    version: 3,
     submitted_at_unix: 1_783_933_200,
     created_at_unix: 1_783_929_600,
     updated_at_unix: 1_783_933_200,
     user: {
-      id: `user_${name.toLowerCase()}`,
-      username: name.toLowerCase(),
-      display_name: `${name} Learner`,
-      email: `${name.toLowerCase()}@example.test`,
+      id: 'user_aruzhan',
+      username: 'aruzhan',
+      display_name: 'Aruzhan Learner',
+      email: 'aruzhan@example.test',
     },
   }
 }
 
-/** The review queue carries summaries; the full attempt comes from `GET file-submission-attempts/{id}`. */
 function queueItem(full: FileSubmissionAttempt): FileSubmissionReviewItem {
   const { files, feedback: _feedback, rubric_scores: _rubric, ...rest } = full
   return { ...rest, user: full.user!, file_count: files.length }
 }
 
-describe('file submission review workspace', () => {
+describe('file-submission review: AI analysis on the attempt', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    const first = attempt('attempt_first', 'Aruzhan', 92, 'First learner feedback')
-    const second = attempt('attempt_second', 'Dias', 64, 'Second learner feedback')
-    mocks.getActivity.mockResolvedValue({
-      id: 'file_submission_1',
-      title: 'Portfolio',
-      rubric: {},
-    })
-    mocks.getQueue.mockResolvedValue({ items: [queueItem(first), queueItem(second)], next_cursor: null })
-    mocks.getAttempt.mockImplementation(async (id: string) => (id === first.id ? first : second))
+    const first = attempt()
+    mocks.getActivity.mockResolvedValue({ id: 'file_submission_1', title: 'Portfolio', rubric: {} })
+    mocks.getQueue.mockResolvedValue({ items: [queueItem(first)], next_cursor: null })
+    mocks.getAttempt.mockResolvedValue(first)
   })
 
-  it('recreates the grade editor from the newly selected attempt', async () => {
+  it('mounts the analyst on the attempt id and pastes its draft into the feedback box', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={queryClient}>
@@ -104,34 +110,12 @@ describe('file submission review workspace', () => {
       </QueryClientProvider>,
     )
 
-    expect(await screen.findByDisplayValue('92')).not.toBeNull()
-    expect(screen.getByDisplayValue('First learner feedback')).not.toBeNull()
+    // `ai/submission-analysis/{id}` takes the file attempt id (DECISIONS 2026-09-12).
+    await waitFor(() => expect(mocks.aiEntry).toHaveBeenCalledWith(ATTEMPT_ID))
 
-    fireEvent.click(screen.getByRole('button', { name: /Dias Learner/i }))
-
+    fireEvent.click(screen.getByText('ai-draft-feedback'))
     await waitFor(() => {
-      expect(screen.getByDisplayValue('64')).not.toBeNull()
-      expect(screen.getByDisplayValue('Second learner feedback')).not.toBeNull()
+      expect(screen.getByDisplayValue('AI draft for the feedback box')).not.toBeNull()
     })
-    expect(screen.queryByDisplayValue('First learner feedback')).toBeNull()
-  })
-
-  it('requires confirmation before discarding an edited learner draft', async () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    render(
-      <QueryClientProvider client={queryClient}>
-        <FileSubmissionReviewWorkspace activityUuid="activity_1" />
-      </QueryClientProvider>,
-    )
-
-    const feedback = await screen.findByDisplayValue('First learner feedback')
-    fireEvent.change(feedback, { target: { value: 'Unsaved feedback' } })
-    fireEvent.click(screen.getByRole('button', { name: /Dias Learner/i }))
-
-    expect(screen.getByRole('alertdialog')).not.toBeNull()
-    expect(screen.getByDisplayValue('92')).not.toBeNull()
-
-    fireEvent.click(screen.getByRole('button', { name: 'discardAndSwitch' }))
-    await waitFor(() => expect(screen.getByDisplayValue('64')).not.toBeNull())
   })
 })

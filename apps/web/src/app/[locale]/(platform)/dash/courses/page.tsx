@@ -1,4 +1,4 @@
-import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
+import { APP_NAME } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getEditableCourses } from '@services/courses/editable'
 import type { PageSearchParams } from '@/lib/search-params'
@@ -42,8 +42,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
   return {
     title: General.courses,
-    description: APP_DESCRIPTION,
-    keywords: `${APP_NAME}, ${APP_DESCRIPTION}, ${General.courses}, ${General.learning}, ${General.education}, ${General.onlineLearning}, edu, ${General.onlineCourses}, ${APP_NAME} ${General.courses}`,
+    description: General.appDescription,
+    keywords: `${APP_NAME}, ${General.appDescription}, ${General.courses}, ${General.learning}, ${General.education}, ${General.onlineLearning}, edu, ${General.onlineCourses}, ${APP_NAME} ${General.courses}`,
     robots: {
       index: true,
       follow: true,
@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     },
     openGraph: {
       title: General.courses,
-      description: APP_DESCRIPTION,
+      description: General.appDescription,
       type: 'website',
     },
   }

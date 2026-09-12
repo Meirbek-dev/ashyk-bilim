@@ -19,6 +19,8 @@ interface EditorStatusBarProps {
 
 export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveState, issues }: EditorStatusBarProps) {
   const t = useTranslations('MarkdownEditor')
+  const issueText = (issue: MarkdownValidationIssue) =>
+    t.has(`issues.${issue.code}`) ? t(`issues.${issue.code}`, issue.params ?? {}) : issue.message
   const format = useFormatter()
   const [showAllIssues, setShowAllIssues] = useState(false)
   const severity = getHighestMarkdownIssueSeverity(issues)
@@ -76,7 +78,7 @@ export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveSta
               aria-label={t('statusBar.issueToggle', { count: issues.length })}
             >
               {severity === 'error' ? <AlertTriangle className="size-3" /> : <Info className="size-3" />}
-              <span>{firstIssue.message}</span>
+              <span>{issueText(firstIssue)}</span>
               {issues.length > 1 && <span className="text-muted-foreground/60">+{issues.length - 1}</span>}
             </button>
 
@@ -93,7 +95,7 @@ export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveSta
                     )}
                   >
                     <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-                    <span>{issue.message}</span>
+                    <span>{issueText(issue)}</span>
                   </div>
                 ))}
               </div>

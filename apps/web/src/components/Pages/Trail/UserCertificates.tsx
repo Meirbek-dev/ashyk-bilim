@@ -4,6 +4,7 @@ import { Award, Building, Calendar, ExternalLink, Hash } from 'lucide-react'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useUserCertificates } from '@/features/certifications/hooks/useCertifications'
+import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
 import Link from '@components/ui/AppLink'
 import { useSyncExternalStore } from 'react'
 import type React from 'react'
@@ -128,21 +129,28 @@ const UserCertificates: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="border-border flex items-center justify-between border-t pt-2">
+                <div className="border-border flex flex-wrap items-center justify-between gap-2 border-t pt-2">
                   <div className="text-muted-foreground text-xs">
                     {tTypes.has(certificate.certification.config.certification_type)
                       ? tTypes(certificate.certification.config.certification_type)
                       : certificate.certification.config.certification_type}
                   </div>
-                  <Link
-                    href={verificationLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:text-primary/80 inline-flex items-center gap-1 text-xs font-medium"
-                  >
-                    <span>{t('verifyCertificate')}</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <CertificatePdfDownloadButton
+                      verifyCode={certificate.certificate_user.user_certification_uuid}
+                      size="sm"
+                      variant="outline"
+                    />
+                    <Link
+                      href={verificationLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/80 inline-flex items-center gap-1 text-xs font-medium"
+                    >
+                      <span>{t('verifyCertificate')}</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
-import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
+import { APP_NAME } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getPlatformThumbnailImage } from '@services/media/media'
 import type { Metadata } from 'next'
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
 
   return {
     title: `${General.home} - ${APP_NAME}`,
-    description: APP_DESCRIPTION,
+    description: General.appDescription,
     robots: {
       index: true,
       follow: true,
@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
     },
     openGraph: {
       title: `${General.home} - ${APP_NAME}`,
-      description: APP_DESCRIPTION,
+      description: General.appDescription,
       type: 'website',
       images: [
         {

@@ -14,18 +14,23 @@ vi.mock('@/features/content-markdown/lib/shiki', () => ({
 }))
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string, values?: Record<string, string | number>) => {
-    const labels: Record<string, string> = {
-      'toolbar.label': 'Markdown editor toolbar',
-      'toolbar.viewSource': 'Source',
-    }
-    if (key === 'statusBar.issueToggle') return `${values?.count ?? 0} issues`
-    if (key === 'statusBar.wordCount') return `${values?.count ?? 0} words`
-    if (key === 'editorAriaLabel') return `${values?.label} editor`
-    if (key === 'sourceAriaLabel') return `${values?.label} Markdown source`
-    if (labels[key]) return labels[key]
-    return key.split('.').at(-1) ?? key
-  },
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: Record<string, string | number>) => {
+        const labels: Record<string, string> = {
+          'toolbar.label': 'Markdown editor toolbar',
+          'toolbar.viewSource': 'Source',
+        }
+        if (key === 'statusBar.issueToggle') return `${values?.count ?? 0} issues`
+        if (key === 'statusBar.wordCount') return `${values?.count ?? 0} words`
+        if (key === 'editorAriaLabel') return `${values?.label} editor`
+        if (key === 'sourceAriaLabel') return `${values?.label} Markdown source`
+        if (labels[key]) return labels[key]
+        return key.split('.').at(-1) ?? key
+      },
+      // Validation issues resolve through `issues.<code>` when the catalog has them.
+      { has: (key: string) => key === 'issues.content.empty' },
+    ),
   useFormatter: () => ({ number: (value: number) => String(value) }),
 }))
 
@@ -135,7 +140,7 @@ describe('MarkdownEditor', () => {
     // Since it has been edited, it is dirty.
     // The empty validation issue should now be visually displayed.
     await waitFor(() => {
-      expect(screen.getByText('Содержание не может быть пустым.')).toBeInTheDocument()
+      expect(screen.getAllByText('empty').length).toBeGreaterThan(0)
     })
     expect(container.querySelector('.border-destructive\\/70')).not.toBeNull()
   })

@@ -227,6 +227,7 @@ const serializationCases: Array<{ title: string; doc: object }> = [
             favicon: null,
             og_type: 'website',
             og_url: 'https://example.com',
+            site_name: 'Example',
             alignment: 'left',
             buttonLabel: 'Visit',
             showButton: true,
