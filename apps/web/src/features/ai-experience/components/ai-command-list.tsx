@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 
-export type AICommandSurface = 'course' | 'activity' | 'submission' | 'analytics'
+export type AICommandSurface = 'course' | 'activity' | 'analytics'
 
 export interface AICommand {
   id: AICommandId
@@ -21,8 +21,6 @@ type AICommandId =
   | 'course-map'
   | 'course-practice'
   | 'course-sources'
-  | 'submission-remediate'
-  | 'submission-review'
 
 interface AICommandDefinition {
   id: AICommandId
@@ -42,10 +40,6 @@ const COMMANDS: Record<AICommandSurface, AICommandDefinition[]> = {
     { id: 'course-sources', surface: 'course' },
     { id: 'course-practice', surface: 'course' },
   ],
-  submission: [
-    { id: 'submission-review', surface: 'submission' },
-    { id: 'submission-remediate', surface: 'submission' },
-  ],
 }
 
 const COMMAND_ICONS = {
@@ -55,8 +49,6 @@ const COMMAND_ICONS = {
   'course-map': BookOpenCheck,
   'course-practice': FileQuestion,
   'course-sources': SearchCheck,
-  'submission-remediate': Route,
-  'submission-review': Lightbulb,
 } satisfies Record<AICommandId, AppIcon>
 
 export function AICommandList({

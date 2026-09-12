@@ -18,7 +18,12 @@ import { toast } from 'sonner'
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { ErrorState } from '@/components/ui/error-state'
+import Link from '@components/ui/AppLink'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { useSession } from '@/hooks/useSession'
+import { Actions, Resources, Scopes } from '@/types/permissions'
 import { cn } from '@/lib/utils'
 import {
   getFileSubmissionByActivity,
@@ -111,9 +116,12 @@ const LIFECYCLE_BADGE: Record<string, BadgeVariant> = {
  * Files go through the presigned upload pipeline (`uploadFile`), which reports
  * per-byte progress from the storage PUT.
  */
-export default function FileSubmissionWorkspace({ activity }: FileSubmissionWorkspaceProps) {
+export default function FileSubmissionWorkspace({ activity, course }: FileSubmissionWorkspaceProps) {
   const t = useTranslations('FileSubmission')
   const activityUuid = activity.activity_uuid?.replace(/^activity_/, '') ?? ''
+  const { can } = useSession()
+  const canEditCourse =
+    can(Resources.COURSE, Actions.UPDATE, Scopes.OWN) || can(Resources.COURSE, Actions.UPDATE, Scopes.APP)
   const queryClient = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
   const [slots, setSlots] = useState<PendingFileSlot[]>([])
@@ -249,6 +257,35 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
   })
 
   // ── Loading ───────────────────────────────────────────────────────────────
+
+  // A published activity whose submission config was never created: the
+  // contract answers 404, which is "not set up yet", not a failure.
+  if (isError && hasErrorCode(queryError, 'not-found')) {
+    return (
+      <Empty className="min-h-52 border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <FileArchive />
+          </EmptyMedia>
+          <EmptyTitle>{t('notConfiguredTitle')}</EmptyTitle>
+          <EmptyDescription>{t('notConfiguredDescription')}</EmptyDescription>
+        </EmptyHeader>
+        {canEditCourse ? (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <Link
+                href={`/dash/courses/${course.course_uuid.replace(/^course_/, '')}/activity/${activityUuid}/studio`}
+              />
+            }
+          >
+            {t('openStudio')}
+          </Button>
+        ) : null}
+      </Empty>
+    )
+  }
 
   if (isError) {
     const processed = handleApiError(queryError, { fallback: t('notAvailable') })
@@ -397,14 +434,16 @@ function Header({
 }) {
   const t = useTranslations('FileSubmission')
   const tMime = useTranslations('FileSubmission.mimeCategories')
+  const tLifecycle = useTranslations('Features.Assessments.Studio.lifecycle')
   const categories = useMemo(() => getMimeCategories(allowedMimes), [allowedMimes])
+  const lifecycleKey = lifecycle.toLowerCase()
 
   return (
     <div className="space-y-4">
       {/* ── Status strip ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <Badge variant={LIFECYCLE_BADGE[lifecycle] ?? 'secondary'} className="capitalize">
-          {lifecycle.toLowerCase()}
+        <Badge variant={LIFECYCLE_BADGE[lifecycleKey] ?? 'secondary'}>
+          {tLifecycle.has(lifecycleKey) ? tLifecycle(lifecycleKey) : lifecycleKey}
         </Badge>
         {attempt ? <StatusBadge status={attempt.status} /> : null}
         {attempt?.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}

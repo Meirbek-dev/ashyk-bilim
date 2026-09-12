@@ -635,19 +635,23 @@ function ExamTakingContent({
 
   return (
     <div className="space-y-6">
-      <Alert>
-        <RotateCcw className="size-4" />
-        <AlertTitle>{t('resumedDraft')}</AlertTitle>
-        <AlertDescription>
-          {t('resumedDraftDescription', {
-            time: formatDateTime(attempt.updated_at),
-          })}
-        </AlertDescription>
-      </Alert>
+      {attempt.answered_count > 0 ? (
+        <Alert>
+          <RotateCcw className="size-4" />
+          <AlertTitle>{t('resumedDraft')}</AlertTitle>
+          <AlertDescription>
+            {t('resumedDraftDescription', {
+              time: formatDateTime(attempt.updated_at),
+            })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
 
-      {latestCompletedSubmission ? (
+      {/* Mid-attempt only the returned-for-revision feedback matters; an older
+          attempt's score reads as this attempt's result. */}
+      {latestCompletedSubmission?.status === 'RETURNED' ? (
         <ExamSubmissionStatePanel
           submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
         />

@@ -1,55 +1,71 @@
 'use client'
 
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { linkUserToUserGroup, unLinkUserToUserGroup } from '@services/usergroups/usergroups'
-import { useAllMembers } from '@/features/users/hooks/useUsers'
 import { userGroupUsersQueryOptions } from '@/features/users/queries/users.query'
+import { useDebouncedValue } from '@/hooks/useDebounce'
 import { useApiError } from '@/hooks/useApiError'
+import { search } from '@/lib/api/generated/search/search'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import type { AdminUser } from '@/lib/api/generated/zod'
+import type { UsergroupMember } from '@/lib/api/generated/zod'
 import DataTable from '@components/ui/data-table'
 import type { DataTableColumnDef } from '@components/ui/data-table'
-import { Check, Plus, X } from 'lucide-react'
+import { Check, Loader2, Plus, Search, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 interface ManageUsersProps {
   usergroup_id: string
 }
 
+type PickerRow = Pick<UsergroupMember, 'id' | 'username' | 'display_name'>
+
+const MIN_QUERY = 2
+
+/**
+ * Rows = current members ∪ people matching the search. The admin directory
+ * (`GET /users`) needs `platform:read:platform`, which instructors lack; the
+ * platform search's people section is open to every signed-in caller.
+ */
 function ManageUsers(props: ManageUsersProps) {
   const t = useTranslations('Components.ManageUsers')
   const queryClient = useQueryClient()
   const { handleApiError } = useApiError()
-  const { data: users = [] } = useAllMembers()
+  const [term, setTerm] = useState('')
+  const query = useDebouncedValue(term.trim(), 300)
   const userGroupUsersKey = queryKeys.userGroups.users(props.usergroup_id)
   const { data: members = [] } = useQuery(userGroupUsersQueryOptions(props.usergroup_id))
+  const hits = useQuery({
+    queryKey: queryKeys.search.people(query),
+    queryFn: () => search({ q: query, limit: 50 }),
+    enabled: query.length >= MIN_QUERY,
+    select: results => results.users,
+  })
 
-  const isUserPartOfGroup = (user_id: string) => members.some(member => member.id === user_id)
+  const memberIds = useMemo(() => new Set(members.map(member => member.id)), [members])
+  const rows = useMemo<PickerRow[]>(() => {
+    const found = (hits.data ?? []).filter(user => !memberIds.has(user.id))
+    return [...members, ...found]
+  }, [hits.data, memberIds, members])
 
-  const handleLinkUser = async (user_id: string) => {
-    try {
-      await linkUserToUserGroup(props.usergroup_id, user_id)
-      toast.success(t('linkSuccess'))
+  const membership = useMutation({
+    mutationFn: ({ userId, link }: { userId: string; link: boolean }) =>
+      link ? linkUserToUserGroup(props.usergroup_id, userId) : unLinkUserToUserGroup(props.usergroup_id, userId),
+    onSuccess: async (_data, { link }) => {
+      toast.success(link ? t('linkSuccess') : t('unlinkSuccess'))
       await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
-    } catch (error) {
-      toast.error(t('linkError', { error: handleApiError(error, { fallback: t('unknownError') }).message }))
-    }
-  }
+    },
+    onError: (error, { link }) => {
+      const message = handleApiError(error, { fallback: t('unknownError') }).message
+      toast.error(link ? t('linkError', { error: message }) : t('unlinkError', { error: message }))
+    },
+  })
 
-  const handleUnlinkUser = async (user_id: string) => {
-    try {
-      await unLinkUserToUserGroup(props.usergroup_id, user_id)
-      toast.success(t('unlinkSuccess'))
-      await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
-    } catch (error) {
-      toast.error(t('unlinkError', { error: handleApiError(error, { fallback: t('unknownError') }).message }))
-    }
-  }
-
-  const columns: DataTableColumnDef<AdminUser>[] = [
+  const columns: DataTableColumnDef<PickerRow>[] = [
     {
       accessorFn: row => `${row.display_name} ${row.username}`,
       id: 'user',
@@ -64,11 +80,11 @@ function ManageUsers(props: ManageUsersProps) {
       ),
     },
     {
-      accessorFn: row => (isUserPartOfGroup(row.id) ? t('linkedStatus') : t('notLinkedStatus')),
+      accessorFn: row => (memberIds.has(row.id) ? t('linkedStatus') : t('notLinkedStatus')),
       id: 'linked',
       header: t('linkedHeader'),
       cell: ({ row }) =>
-        isUserPartOfGroup(row.original.id) ? (
+        memberIds.has(row.original.id) ? (
           <div className="flex w-fit items-center space-x-1 rounded-full bg-cyan-100 px-4 py-1 text-cyan-800">
             <Check size={16} />
             <span>{t('linkedStatus')}</span>
@@ -84,34 +100,52 @@ function ManageUsers(props: ManageUsersProps) {
       id: 'actions',
       header: t('actionsHeader'),
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex items-end space-x-2">
+      cell: ({ row }) => {
+        const isMember = memberIds.has(row.original.id)
+        const pending = membership.isPending && membership.variables?.userId === row.original.id
+        return isMember ? (
           <Button
             type="button"
-            onClick={() => handleLinkUser(row.original.id)}
-            variant="ghost"
-            className="flex items-center space-x-2 rounded-md bg-cyan-700 p-1 px-3 text-sm font-bold text-cyan-100 hover:cursor-pointer hover:bg-cyan-800"
+            variant="outline"
+            size="sm"
+            disabled={pending}
+            onClick={() => membership.mutate({ userId: row.original.id, link: false })}
           >
-            <Plus className="h-4 w-4" />
-            <span>{t('linkButton')}</span>
-          </Button>
-          <Button
-            type="button"
-            onClick={() => handleUnlinkUser(row.original.id)}
-            variant="ghost"
-            className="flex items-center space-x-2 rounded-md bg-gray-700 p-1 px-3 text-sm font-bold text-gray-100 hover:cursor-pointer hover:bg-gray-800"
-          >
-            <X className="h-4 w-4" />
+            {pending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
             <span>{t('unlinkButton')}</span>
           </Button>
-        </div>
-      ),
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending}
+            onClick={() => membership.mutate({ userId: row.original.id, link: true })}
+          >
+            {pending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            <span>{t('linkButton')}</span>
+          </Button>
+        )
+      },
     },
   ]
 
   return (
-    <div className="py-3">
-      <DataTable columns={columns} data={users} pageSize={8} storageKey={`usergroup-${props.usergroup_id}-users`} />
+    <div className="space-y-3 py-3">
+      <div className="relative">
+        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+        <Input
+          type="search"
+          className="pl-8"
+          value={term}
+          onChange={event => setTerm(event.target.value)}
+          placeholder={t('searchPlaceholder')}
+          aria-label={t('searchPlaceholder')}
+        />
+      </div>
+      <p className="text-muted-foreground text-xs">
+        {hits.isFetching ? t('searching') : query.length >= MIN_QUERY ? t('searchHint') : t('searchIdleHint')}
+      </p>
+      <DataTable columns={columns} data={rows} pageSize={8} storageKey={`usergroup-${props.usergroup_id}-users`} />
     </div>
   )
 }

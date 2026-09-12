@@ -1,5 +1,18 @@
 'use client'
-import { useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useApiError } from '@/hooks/useApiError'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
 import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
@@ -32,13 +45,20 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
   const certificateQuery = useUserCertificateByCourse(isCompleted ? course.course_uuid : null)
   const courseCertificate = certificateQuery.data?.data?.[0] ?? null
   const isLoadingCertificate = isCompleted && certificateQuery.isPending
+  const [confirmQuit, setConfirmQuit] = useState(false)
+  const { toastApiError } = useApiError()
 
-  async function quitCourse(course_uuid: string) {
-    await removeCourse(course_uuid)
-    await revalidateTags(['courses'])
-    router.refresh()
-    await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
-  }
+  const quitCourse = useMutation({
+    mutationFn: () => removeCourse(course.course_uuid),
+    onSuccess: async () => {
+      setConfirmQuit(false)
+      toast.success(t('quitCourseDone', { course: course.name ?? '' }))
+      await revalidateTags(['courses'])
+      router.refresh()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+    },
+    onError: error => toastApiError(error, { fallback: t('quitCourseFailed') }),
+  })
 
   return (
     <div
@@ -72,7 +92,8 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
             </Link>
           </div>
           <button
-            onClick={() => quitCourse(course.course_uuid)}
+            type="button"
+            onClick={() => setConfirmQuit(true)}
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
           >
             <X className="h-3 w-3" />
@@ -119,7 +140,7 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
                 className="border-border text-foreground hover:bg-muted/60 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors"
               >
                 <Award className="text-primary h-3.5 w-3.5" />
-                {t('downloadCertificate')}
+                {t('viewCertificate')}
                 <ExternalLink className="text-muted-foreground h-3 w-3" />
               </Link>
             ) : (
@@ -131,6 +152,25 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
           </div>
         )}
       </div>
+
+      <AlertDialog open={confirmQuit} onOpenChange={open => !open && setConfirmQuit(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('quitCourseConfirmTitle', { course: course.name ?? '' })}</AlertDialogTitle>
+            <AlertDialogDescription>{t('quitCourseConfirmDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('quitCourseCancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={quitCourse.isPending}
+              onClick={() => quitCourse.mutate()}
+            >
+              {t('quitCourseButton')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

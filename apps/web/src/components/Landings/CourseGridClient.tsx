@@ -95,7 +95,7 @@ export default function CourseGridClient({
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                href={currentPage <= 1 ? '#' : createPageUrl(currentPage - 1)}
+                {...(currentPage <= 1 ? { 'aria-disabled': true } : { href: createPageUrl(currentPage - 1) })}
                 onClick={e => {
                   e.preventDefault()
                   if (currentPage > 1) {
@@ -130,7 +130,7 @@ export default function CourseGridClient({
 
             <PaginationItem>
               <PaginationNext
-                href={currentPage >= totalPages ? '#' : createPageUrl(currentPage + 1)}
+                {...(currentPage >= totalPages ? { 'aria-disabled': true } : { href: createPageUrl(currentPage + 1) })}
                 onClick={e => {
                   e.preventDefault()
                   if (currentPage < totalPages) {

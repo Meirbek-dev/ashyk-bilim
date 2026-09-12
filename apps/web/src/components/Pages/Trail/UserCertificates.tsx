@@ -13,6 +13,7 @@ const emptySubscribe = () => () => {}
 const UserCertificates: React.FC = () => {
   const format = useFormatter()
   const t = useTranslations('Certificates.UserCertificates')
+  const tTypes = useTranslations('Certificates.CourseEndView.certificationTypes')
 
   const { data: certificates, error, isLoading } = useUserCertificates()
 
@@ -128,8 +129,10 @@ const UserCertificates: React.FC = () => {
                 </div>
 
                 <div className="border-border flex items-center justify-between border-t pt-2">
-                  <div className="text-muted-foreground text-xs capitalize">
-                    {certificate.certification.config.certification_type.replace('_', ' ')}
+                  <div className="text-muted-foreground text-xs">
+                    {tTypes.has(certificate.certification.config.certification_type)
+                      ? tTypes(certificate.certification.config.certification_type)
+                      : certificate.certification.config.certification_type}
                   </div>
                   <Link
                     href={verificationLink}

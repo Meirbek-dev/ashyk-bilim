@@ -454,7 +454,7 @@ export default function FileSubmissionReviewWorkspace({
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium">{file.filename}</p>
                             <p className="text-muted-foreground text-xs">
-                              {formatBytes(file.size_bytes ?? 0)} · {file.scan_status}
+                              {formatBytes(file.size_bytes ?? 0)} · {t(`scan_${file.scan_status}`)}
                             </p>
                           </div>
                         </div>
@@ -819,9 +819,19 @@ function FilePreviewPane({ url, filename }: { url: string; filename: string }) {
   )
 }
 
+const STATUS_LABEL_KEYS = {
+  draft: 'statusDraft',
+  submitted: 'statusSubmitted',
+  graded: 'statusGraded',
+  published: 'statusPublished',
+  returned: 'statusReturned',
+} as const
+
 function AttemptStatusBadge({ status }: { status: string }) {
+  const t = useTranslations('FileSubmissionReview')
   const variant = status === 'submitted' ? 'default' : status === 'returned' ? 'destructive' : 'secondary'
-  return <Badge variant={variant}>{status}</Badge>
+  const key = STATUS_LABEL_KEYS[status as keyof typeof STATUS_LABEL_KEYS]
+  return <Badge variant={variant}>{key ? t(key) : status}</Badge>
 }
 
 function formatDate(unix: number) {

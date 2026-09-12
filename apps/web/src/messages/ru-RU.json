@@ -1322,7 +1322,7 @@
       "teacherWorkloadPanel": {
         "title": "Нагрузка учителя",
         "description": "Просмотрите backlog, нарушение SLA, задержку обратной связи и прогноз нагрузки на ближайшее время.",
-        "backlog": "Backlog",
+        "backlog": "Очередь",
         "slaBreaches": "Нарушения SLA",
         "forecast7d": "Прогноз на 7д",
         "bucket0_24": "0-24ч:",
@@ -1342,7 +1342,7 @@
         "description": "Уверенность, происхождение, покрытие источников событий и исключения аналитики.",
         "mode": "Режим",
         "lastRollup": "Последняя агрегация",
-        "liveQuery": "live query",
+        "liveQuery": "живой запрос",
         "confidence": "Уверенность",
         "confidenceLevels": {
           "high": "Высокая",
@@ -1410,7 +1410,7 @@
         "metrics": {
           "active_learners": "Активные учащиеся",
           "completion_rate": "Процент завершения",
-          "backlog": "Backlog",
+          "backlog": "Очередь",
           "pass_rate": "Процент прохождения"
         },
         "rows": "{count, plural, one {# строка} few {# строки} other {# строк}}",
@@ -1639,6 +1639,10 @@
       "unlinkButton": "Отвязать",
       "unlinkError": "Ошибка отвязки пользователя: {error}",
       "unlinkSuccess": "Пользователь успешно отвязан",
+      "searchPlaceholder": "Поиск людей по имени или логину",
+      "searching": "Ищем…",
+      "searchHint": "Показаны участники группы и найденные пользователи.",
+      "searchIdleHint": "Введите минимум 2 символа, чтобы найти пользователей для добавления.",
       "userHeader": "Пользователь"
     },
     "Modal": {
@@ -2026,7 +2030,7 @@
       "expected": "Ожидалось:",
       "fillBlanksError": "Пожалуйста, заполните хотя бы один пропуск перед отправкой.",
       "fillInTheBlanks": "Заполните пропуски",
-      "gradeError": "Ошибка при оценивании учебные задачи, пожалуйста, попробуйте позже.",
+      "gradeError": "Ошибка при оценивании учебной задачи, пожалуйста, попробуйте позже.",
       "gradedSuccessfully": "Учебная задача успешно оценено на {finalGrade} баллов ({correctAnswers}/{totalBlanks} верно)",
       "hint": "Подсказка (необязательно)",
       "hintIcon": "💡",
@@ -2043,7 +2047,7 @@
       "removeBlank": "Удалить пропуск",
       "removeBlankError": "Нельзя удалить последний пропуск. Требуется как минимум один пропуск.",
       "removeQuestion": "Удалить вопрос",
-      "saveError": "Ошибка при сохранении учебные задачи, пожалуйста, попробуйте позже.",
+      "saveError": "Ошибка при сохранении учебной задачи, пожалуйста, попробуйте позже.",
       "savedSuccessfully": "Учебная задача успешно сохранено",
       "submissionSummary": "Итоги выполнения",
       "submitError": "Ошибка при отправке формы, пожалуйста, попробуйте позже.",
@@ -2600,6 +2604,7 @@
       "creatingChapter": "Создание...",
       "chapterNamePlaceholder": "Название главы",
       "saveOrderError": "Не удалось сохранить новый порядок контента",
+      "orderSaved": "Порядок сохранён",
       "savingOrder": "Применяются изменения учебного плана",
       "curriculumChangesApplyImmediately": "Изменения учебного плана применяются немедленно",
       "curriculumInlineFeedback": "Перетаскивание, изменение порядка и создание глав сохраняются по мере работы.",
@@ -2644,6 +2649,10 @@
     "deleteChapterConfirmation": "Вы уверены, что хотите удалить эту главу?",
     "deleteChapterConfirmationWithCount": "Это навсегда удалит главу и {count, plural, =0 {0 активностей} one {# активность} few {# активности} other {# активностей}}.",
     "deleteChapterTitle": "Удалить {name}?",
+    "chapterUpdatedSuccess": "Название главы обновлено",
+    "chapterUpdateFailed": "Не удалось обновить главу",
+    "chapterDeletedSuccess": "Глава удалена",
+    "chapterDeleteFailed": "Не удалось удалить главу",
     "deleting": "Удаление...",
     "edit": "Редактировать",
     "editButton": "Редактировать",
@@ -2700,8 +2709,8 @@
     "nextActivityTitle": "Далее: {name}",
     "noDiscussions": "Пока нет обсуждений",
     "noDiscussionsDesc": "Станьте первым, кто начнет разговор об этом курсе!",
-    "noNextActivity": "Следующего учебные задачи нет",
-    "noPrevActivity": "Предыдущего учебные задачи нет",
+    "noNextActivity": "Следующей учебной задачи нет",
+    "noPrevActivity": "Предыдущей учебной задачи нет",
     "noReplies": "Пока нет ответов",
     "page": "Страница",
     "postDiscussion": "Опубликовать",
@@ -3357,7 +3366,7 @@
         "title": "Настройки аккаунта"
       },
       "Courses": {
-        "description": "Создавайте и управляйте курсами, главами и учебные задачими",
+        "description": "Создавайте и управляйте курсами, главами и учебными задачамии",
         "errorOccurred": "Произошла ошибка",
         "title": "Курсы"
       },
@@ -3571,7 +3580,7 @@
           },
           "curriculum": {
             "label": "Создать учебный план",
-            "description": "Добавьте хотя бы одну главу и одно активность перед публикацией."
+            "description": "Добавьте хотя бы одну главу и одну активность перед публикацией."
           },
           "access": {
             "label": "Настроить доступ",
@@ -4137,6 +4146,8 @@
       "contributorPolicyStagedTitle": "Политика соавторства не сохраняется до нажатия кнопки «Сохранить»",
       "contributorPolicyStagedDescription": "Политика открытого или закрытого доступа остаётся локальной до сохранения этого раздела. Добавление, удаление и редактирование соавторов ниже применяется немедленно.",
       "rosterActionsImmediateTitle": "Действия с участниками применяются немедленно",
+      "rosterUnavailableTitle": "Управление соавторами недоступно в этой версии",
+      "rosterUnavailableDescription": "Список соавторов, приглашения и роли появятся позже. Настройка «Открыт для соавторов» выше сохраняется.",
       "rosterActionsImmediateDescription": "Поиск, добавление, удаление, изменение ролей и статусов обновляют список соавторов немедленно. Храните их отдельно от черновика политики выше."
     },
     "Editor": {
@@ -6563,6 +6574,7 @@
         "manageUsersModalDescription": "Управление группой пользователей",
         "manageUsersModalTitle": "Управление пользователями группы пользователей",
         "noUserGroupsFound": "Группы пользователей не найдены.",
+        "readOnlyGroup": "Только просмотр",
         "title": "Управление группами пользователей",
         "userGroupDeletedSuccess": "Группа пользователей удалена",
         "userGroupHeader": "Группа пользователей",
@@ -7293,7 +7305,12 @@
       "cohortSelect": "Выберите когорту",
       "timezoneSelect": "Выберите часовой пояс",
       "sortBySelect": "Выберите поле сортировки",
-      "sortOrderSelect": "Выберите порядок сортировки"
+      "sortOrderSelect": "Выберите порядок сортировки",
+      "windows": {
+        "7d": "7 дней",
+        "28d": "28 дней",
+        "90d": "90 дней"
+      }
     },
     "labels": {
       "bucket": {
@@ -7453,7 +7470,7 @@
     },
     "histogram": {
       "learners": "Учащиеся",
-      "emptyState": "Данные гистограммы недоступны для выбранного учебные задачи.",
+      "emptyState": "Данные гистограммы недоступны для выбранной учебной задачи.",
       "passLabel": "Проходной"
     },
     "courseHealth": {
@@ -7482,9 +7499,9 @@
       "colMedian": "Медиана",
       "colDifficulty": "Сложность",
       "colSignals": "Сигналы",
-      "viewAssessment": "Просмотр учебные задачи {title}",
+      "viewAssessment": "Просмотр учебной задачи {title}",
       "healthy": "В норме",
-      "searchPlaceholder": "Поиск по учебные задачим...",
+      "searchPlaceholder": "Поиск по учебными задачами...",
       "emptyMessage": "Нет проблемных учебных задач для текущего охвата.",
       "rowCount": "{count, plural, one {# проблемная учебная задача} few {# проблемные учебные задачи} other {# проблемных учебных задач}}"
     },
@@ -7584,9 +7601,9 @@
       "assessmentStatMedianScore": "Медиана баллов",
       "assessmentStatAvgAttempts": "Среднее количество попыток",
       "assessmentScoreDistTitle": "Распределение баллов",
-      "assessmentScoreDistDesc": "Гистограмма успеваемости учащихся по этому учебной задаче.",
+      "assessmentScoreDistDesc": "Гистограмма успеваемости учащихся по этой учебной задаче.",
       "assessmentAttemptDistTitle": "Распределение попыток",
-      "assessmentAttemptDistDesc": "Сколько раз учащиеся пытались выполнить учебная задача.",
+      "assessmentAttemptDistDesc": "Сколько раз учащиеся пытались выполнить учебную задачу.",
       "assessmentQuestionTitle": "Сложность вопросов",
       "assessmentQuestionDesc": "Низкая точность указывает на неясные или слишком сложные учебные задачи.",
       "assessmentCommonFailuresTitle": "Частые ошибки",
@@ -7614,13 +7631,13 @@
       "assessmentOpsSloTarget": "Цель",
       "assessmentOpsSloP50": "Медианная задержка проверки",
       "assessmentOpsSloP90": "P90 задержки проверки",
-      "assessmentOpsSloBacklog": "Backlog",
+      "assessmentOpsSloBacklog": "Очередь",
       "assessmentOpsSloOverdue": "Просрочено",
       "assessmentOpsMigrationTitle": "Статус миграции",
       "assessmentOpsMigrationCutoverReady": "Готово к cutover",
       "assessmentOpsMigrationCutoverBlocked": "Cutover заблокирован",
       "assessmentOpsMigrationCanonicalRows": "Канонические строки",
-      "assessmentOpsMigrationModeCanonical": "Canonical",
+      "assessmentOpsMigrationModeCanonical": "Каноничный",
       "assessmentOpsAuditTitle": "История аудита",
       "assessmentOpsAuditEmpty": "Для текущего scope нет операционных событий аудита.",
       "assessmentOpsAuditFilteredEmpty": "По текущим фильтрам события аудита не найдены.",
@@ -7675,7 +7692,197 @@
       "assessmentColSubmitted": "Отправлено",
       "assessmentColStatus": "Статус",
       "assessmentPassThresholdExam": "Проходной порог из настроек экзамена",
-      "assessmentPassThresholdDefault": "Проходной порог: 60%"
+      "assessmentPassThresholdDefault": "Проходной порог: 60%",
+      "assessmentStatGenerated": "Сформировано",
+      "assessmentOpsAuditBulkSummary": "{action} для {count, plural, one {# учащегося} few {# учащихся} other {# учащихся}}",
+      "assessmentItemAccuracy": "Точность {value}%"
+    },
+    "codes": {
+      "active_learners": "Активные учащиеся",
+      "returning_learners": "Вернувшиеся учащиеся",
+      "completion_rate": "Доля завершения",
+      "at_risk_learners": "Учащиеся в зоне риска",
+      "ungraded_submissions": "Непроверенные работы",
+      "negative_engagement_courses": "Курсы с падением вовлечённости",
+      "median_across_courses": "Медиана по курсам",
+      "pct_of_enrolled": "% от зачисленных",
+      "pct_of_courses": "% курсов",
+      "too_hard": "Слишком сложно",
+      "too_easy": "Слишком легко",
+      "low_variance": "Низкий разброс баллов",
+      "live": "Живой запрос",
+      "rollup": "Агрегация",
+      "progress_events": "события прогресса",
+      "quiz_submissions": "отправки тестов",
+      "exam_attempts": "попытки экзаменов",
+      "code_submissions": "отправки кода",
+      "event_log": "журнал событий",
+      "fewer_than_5_learners": "меньше 5 учащихся",
+      "enrolled": "Зачислены",
+      "active_7d": "Активны за 7 дней",
+      "active_in_window": "Активны за период",
+      "completed": "Завершено",
+      "days_since_course_or_activity_update": "Дней с последнего обновления курса или учебной задачи",
+      "average_progress_of_scoped_learners": "Средний прогресс учащихся в охвате",
+      "ungraded_submissions_delaying_feedback": "Непроверенные работы задерживают обратную связь",
+      "assessment_results_drop_around_this_activity": "Результаты оценивания падают вокруг этой учебной задачи",
+      "learners_open_and_leave_without_completing": "Учащиеся открывают и уходят, не завершив",
+      "high_time_spent_low_completion": "Много времени, низкое завершение",
+      "stale_content_correlates_with_low_performance": "Устаревший контент коррелирует с низкими результатами",
+      "repeated_assessment_failures": "Повторные провалы оценивания",
+      "exit_after_open": "Выход после открытия",
+      "high_time_low_completion": "Поглотитель времени",
+      "stale_low_performance": "Устаревший контент",
+      "canonical_submissions_and_grading_ledger": "Источник: отправки и журнал оценивания",
+      "no_teacher_grading_dependency": "Проверка преподавателем не требуется",
+      "support_diagnostics_within_operational_range": "Диагностика в рабочем диапазоне",
+      "support_follow_up_recommended": "Рекомендуется дополнительная проверка",
+      "grading_queue_within_target": "Очередь проверки в пределах цели",
+      "grading_queue_approaching_72h_target": "Очередь проверки приближается к цели 72 ч",
+      "grading_queue_past_72h_target": "Очередь проверки превысила цель 72 ч",
+      "grading_queue_needs_attention": "Очередь проверки требует внимания",
+      "integrity_signals_in_scope": "Есть сигналы нарушений",
+      "attempts_without_score_in_scope": "Есть попытки без балла",
+      "grading_latency_past_service_target": "Задержка проверки превышает норму",
+      "grading_latency_approaching_service_target": "Задержка проверки приближается к норме",
+      "suspicious_attempts": "Подозрительные попытки",
+      "missing_scores": "Отсутствуют баллы",
+      "grading_latency": "Задержка проверки",
+      "awaiting_teacher_grading": "Ожидают проверки преподавателем",
+      "awaiting_grading": "Ожидают проверки",
+      "returned_for_resubmission": "Возвращены на доработку",
+      "late_submissions": "Просроченные отправки",
+      "manual_review_pending": "Ожидается ручная проверка",
+      "resubmission_pending_after_feedback": "Ожидается повторная отправка после отзыва",
+      "late_work_may_need_deadline_or_policy_review": "Просроченные работы: стоит пересмотреть срок или политику",
+      "integrity_signals_recorded": "Зафиксированы сигналы нарушений",
+      "submission_without_score": "Отправка без балла",
+      "accuracy_unavailable": "Точность недоступна",
+      "workflow": "Процесс",
+      "question": "Вопрос",
+      "test": "Тест",
+      "grading_entry": "Запись оценивания",
+      "bulk_action": "Массовое действие",
+      "publish_grade": "Оценка опубликована",
+      "save_grade": "Оценка сохранена",
+      "published": "Опубликовано",
+      "draft_saved": "Черновик сохранён",
+      "extend_deadline": "Продление срока",
+      "release_grades": "Публикация оценок",
+      "return_all": "Возврат всех работ",
+      "override_score": "Переопределение балла",
+      "batch_grade": "Пакетное оценивание",
+      "pending": "В ожидании",
+      "running": "Выполняется",
+      "failed": "Ошибка",
+      "recent_assessment_failures": "Недавние провалы оценивания",
+      "missing_required_work": "Пропущены обязательные работы",
+      "inactivity_past_7_days": "Нет активности больше 7 дней",
+      "grading_block_blocks_progress": "Ожидание проверки блокирует прогресс",
+      "progress_behind_course_baseline": "Прогресс ниже базового уровня курса",
+      "multiple_risk_signals": "Несколько сигналов риска",
+      "offer_targeted_help": "Предложить адресную помощь",
+      "remind_missing_work": "Напомнить о пропущенных работах",
+      "contact_learner_this_week": "Связаться с учащимся на этой неделе",
+      "review_submissions_first": "Сначала проверить работы",
+      "schedule_pace_meeting": "Назначить встречу о темпе",
+      "send_personal_message": "Отправить личное сообщение",
+      "newly_at_risk": "Новый в зоне риска",
+      "worsening": "Ухудшается",
+      "improving": "Улучшается",
+      "recovered": "Восстановился",
+      "stable": "Стабильно",
+      "message_sent": "Сообщение отправлено",
+      "meeting_scheduled": "Встреча назначена",
+      "extension_granted": "План поддержки",
+      "learner_recovered": "Учащийся восстановился",
+      "planned": "Запланировано",
+      "resolved": "Решено",
+      "learner_contacted": "С учащимся связались",
+      "check_in_scheduled": "Назначена встреча с преподавателем",
+      "remediation_draft_prepared": "Подготовлен план поддержки",
+      "recovered_from_risk": "Вышел из зоны риска",
+      "risk_resolved_after_review": "Риск снят после проверки преподавателем",
+      "active_learners_fell_sharply_vs_previous_period": "Активных учащихся стало заметно меньше, чем в предыдущем периоде",
+      "submission_volume_far_above_previous_period": "Объём отправок намного выше предыдущего периода",
+      "many_attempts_finished_near_minimum_observed_time": "Многие попытки завершены почти за минимальное наблюдаемое время",
+      "average_score_changed_after_last_content_update": "Средний балл изменился после последнего обновления контента",
+      "engagement_dropped": "Падение вовлечённости",
+      "content_may_be_stale": "Контент мог устареть",
+      "learner_risk_needs_intervention": "Учащимся в зоне риска нужна поддержка",
+      "engagement_drop": "Падение вовлечённости",
+      "submission_spike": "Всплеск отправок",
+      "fast_quiz_completion": "Слишком быстрые прохождения",
+      "score_distribution_shift": "Сдвиг распределения баллов"
+    },
+    "units": {
+      "hours": "{value} ч",
+      "days": "{value} дн."
+    },
+    "forecast": {
+      "completion_target_miss": {
+        "title": "{course}: учащиеся рискуют не достичь цели по завершению",
+        "prediction": "{count, plural, one {# учащийся неактивен или ниже 70% прогресса} few {# учащихся неактивны или ниже 70% прогресса} other {# учащихся неактивны или ниже 70% прогресса}}."
+      },
+      "course_completion_deadline": {
+        "title": "{course}: прогноз завершения на 14 дней",
+        "prediction": "Ожидаемая доля завершения — {value}% при текущем темпе."
+      },
+      "grading_backlog_7d": {
+        "title": "Ожидаемая очередь проверки через 7 дней",
+        "prediction": "Очередь может вырасти до {value} работ."
+      },
+      "assessment_failure_risk": {
+        "title": "{assessment}: повышенный риск провала",
+        "prediction": "Ожидаемая доля провалов — {value}% до следующего дедлайна."
+      }
+    },
+    "dataQuality": {
+      "missing-event-sources": {
+        "title": "Некоторые источники событий без данных",
+        "detail": "Нет данных: {sources}"
+      },
+      "thin-course-data": {
+        "title": "В некоторых курсах слишком мало данных",
+        "detail": "{count, plural, one {# курс} few {# курса} other {# курсов}} с менее чем 5 учащимися."
+      },
+      "stale-rollup": {
+        "title": "Агрегации старше 24 часов",
+        "detail": "Обновите агрегации аналитики, прежде чем принимать по ним операционные решения."
+      }
+    },
+    "intervention": {
+      "manage": "Меры поддержки",
+      "recommendedAction": "Рекомендуемое действие",
+      "draftLabel": "План поддержки",
+      "saveDraft": "Сохранить план поддержки",
+      "auditLog": "Журнал мер",
+      "loadingAudit": "Загрузка мер поддержки…",
+      "emptyAudit": "Меры поддержки ещё не зафиксированы.",
+      "open": "Мера поддержки открыта",
+      "resolved": "Решено",
+      "improving": "Улучшается",
+      "none": "Без мер поддержки",
+      "riskDescription": "{course} · риск {score} · {level}",
+      "draftTemplate": "Цель: снизить риск для {learner} в курсе «{course}».\nПричины: {reasons}.\nДействие преподавателя: {action}.\nПлан поддержки: назначить короткую догоняющую задачу, написать учащемуся один конкретный следующий шаг и проверить прогресс после следующей учебной задачи.",
+      "needsReview": "требуется проверка преподавателя"
+    },
+    "anomaly": {
+      "engagement_drop": "{name}: резкое падение вовлечённости",
+      "submission_spike": "{name}: необычный всплеск отправок",
+      "fast_quiz_completion": "{name}: подозрительно быстрые прохождения",
+      "score_distribution_shift": "{name}: распределение баллов изменилось после обновления контента"
+    },
+    "alertTitle": {
+      "grading_slo_breached": "{name}: превышен срок проверки",
+      "grading_slo_watch": "{name}: срок проверки на исходе"
+    },
+    "alertBody": {
+      "grading_backlog": "{value, plural, one {# работа всё ещё ожидает} few {# работы всё ещё ожидают} other {# работ всё ещё ожидают}} проверки.",
+      "engagement_drop": "Активных учащихся стало меньше на {value}% по сравнению с предыдущим периодом.",
+      "content_stale": "Курс не обновлялся {value, plural, one {# день} few {# дня} other {# дней}}.",
+      "risk_spike": "{value, plural, one {# учащийся} few {# учащихся} other {# учащихся}} в охвате со средним или высоким риском.",
+      "grading_slo": "В очереди на проверку: {value, plural, one {# работа} few {# работы} other {# работ}}."
     }
   },
   "Features": {
@@ -7698,7 +7905,7 @@
         "backToGradebook": "Назад к журналу",
         "submissionReview": "Проверка работы",
         "searchLearner": "Поиск студента",
-        "activityType": "Тип учебные задачи",
+        "activityType": "Тип учебной задачи",
         "allActivityTypes": "Все типы учебных задач",
         "learner": "Студент",
         "email": "Email",
@@ -7736,11 +7943,12 @@
           "graded": "Оценено",
           "passed": "Сдано",
           "failed": "Не сдано",
-          "completed": "Завершено"
+          "completed": "Завершено",
+          "untracked": "н/д"
         },
         "rollups": {
           "title": "Сводки прогресса",
-          "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и учебные задачим.",
+          "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и учебными задачами.",
           "activity_category": "Группы",
           "cohort": "Когорты",
           "learner": "Студенты",
@@ -7896,7 +8104,7 @@
             "extendTitle": "Продлить сроки",
             "extendDescription": "Поставьте в очередь продление срока для выбранных студентов.",
             "releaseTitle": "Открыть скрытые оценки",
-            "releaseDescription": "Сделать скрытые проверенные работы видимыми для студентов по этому учебной задаче.",
+            "releaseDescription": "Сделать скрытые проверенные работы видимыми для студентов по этой учебной задаче.",
             "defaultTitle": "Массовое действие",
             "defaultDescription": "Подтвердите выбранное массовое действие."
           }
@@ -9162,7 +9370,7 @@
           "backToGradebook": "Назад к журналу",
           "submissionReview": "Проверка работы",
           "searchLearner": "Поиск студента",
-          "activityType": "Тип учебные задачи",
+          "activityType": "Тип учебной задачи",
           "allActivityTypes": "Все типы учебных задач",
           "learner": "Студент",
           "email": "Email",
@@ -9204,7 +9412,7 @@
           },
           "rollups": {
             "title": "Сводки прогресса",
-            "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и учебные задачим.",
+            "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и учебными задачами.",
             "activity_category": "Группы",
             "cohort": "Когорты",
             "learner": "Студенты",
@@ -9690,13 +9898,17 @@
   },
   "Trail": {
     "courseLabel": "Курс",
-    "downloadCertificate": "Скачать сертификат",
     "loadingCertificate": "Загрузка...",
     "noCertificateAvailable": "Сертификат недоступен",
     "quitCourseButton": "Покинуть курс",
     "stepsLabel": "шагов",
     "stepsProgress": "{completed} / {total, plural, one {# шаг} few {# шага} other {# шагов}}",
-    "viewCertificate": "Просмотреть сертификат"
+    "viewCertificate": "Просмотреть сертификат",
+    "quitCourseConfirmTitle": "Покинуть курс «{course}»?",
+    "quitCourseConfirmDescription": "Весь прогресс по этому курсу будет удалён. Это действие нельзя отменить.",
+    "quitCourseCancel": "Остаться",
+    "quitCourseDone": "Вы покинули курс «{course}»",
+    "quitCourseFailed": "Не удалось покинуть курс. Пожалуйста, повторите попытку позже."
   },
   "TrailPage": {
     "metaDescription": "Проверяйте свой прогресс с помощью трейла и легко перемещайтесь по вашим курсам.",
@@ -9720,6 +9932,7 @@
       "loadingCourses": "Загрузка курсов...",
       "noCoursesFound": "Курсы не найдены"
     },
+    "coursesTitle": "Курсы",
     "fetchError": "Не удалось получить данные пользователя: ",
     "generalInfo": "Общая информация",
     "in": "в",
@@ -9767,7 +9980,10 @@
     "passwordNeedsUppercase": "Пароль должен содержать хотя бы одну заглавную букву",
     "passwordNeedsNumber": "Пароль должен содержать хотя бы одну цифру",
     "titleTooLong": "Название не должно превышать 100 символов",
-    "descriptionTooLong": "Описание не должно превышать 8000 символов",
+    "descriptionTooLong": "Описание не должно превышать 5000 символов",
+    "aboutTooLong": "Подробное описание не должно превышать 20000 символов",
+    "tagTooLong": "Тег не должен превышать 64 символа",
+    "tooManyTags": "Не больше 20 тегов",
     "sourceCourseRequired": "Выберите исходный курс",
     "learningsInvalid": "Неверный формат результатов обучения"
   },
@@ -9918,6 +10134,9 @@
     "requirementMaxSize": "До {size} МБ каждый",
     "maxFilesAllowed": "{count, plural, one {Можно загрузить не больше # файла} few {Можно загрузить не больше # файлов} many {Можно загрузить не больше # файлов} other {Можно загрузить не больше # файла}}",
     "invalidFiles": "Некоторые файлы не соответствуют требованиям",
+    "notConfiguredTitle": "Задание ещё не настроено",
+    "notConfiguredDescription": "Преподаватель ещё не добавил условия загрузки файлов. Загляните позже.",
+    "openStudio": "Настроить в студии",
     "notAvailable": "Загрузка файлов недоступна",
     "uploadFailed": "Не удалось загрузить файл",
     "submittedToast": "Файлы отправлены",
@@ -10008,7 +10227,11 @@
     "unsavedDescription": "Изменения балла или отзыва ещё не сохранены. Выйти со страницы и удалить их?",
     "stayHere": "Остаться",
     "leaveWithoutSaving": "Выйти без сохранения",
-    "csv": "CSV"
+    "csv": "CSV",
+    "scan_pending": "проверка ожидается",
+    "scan_clean": "проверено",
+    "scan_flagged": "подозрительный файл",
+    "scan_error": "ошибка проверки"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Загрузка студии отправки файлов",
@@ -10075,14 +10298,6 @@
       "course-practice": {
         "label": "Создать практику",
         "prompt": "Составь короткий план практики на основе незавершённых заданий курса."
-      },
-      "submission-review": {
-        "label": "Разбор отзыва",
-        "prompt": "Объясни отзыв на эту работу и укажи, с какого шага начать доработку."
-      },
-      "submission-remediate": {
-        "label": "План доработки",
-        "prompt": "Составь план доработки на основе данных решения и укажи источник каждого пробела."
       }
     },
     "qaMessage": {
@@ -10211,6 +10426,8 @@
       "analyze": "Анализировать",
       "draftFeedback": "Подготовить отзыв",
       "defaultStatus": "Запустите анализ, чтобы подготовить отчет о качестве перед публикацией руководства.",
+      "publishedToast": "Оценка качества опубликована",
+      "publishFailed": "Не удалось опубликовать оценку",
       "emptyTitle": "Анализ еще не выполнялся"
     },
     "courseAnalysisResultShell": {
@@ -10225,6 +10442,11 @@
       "criticalBlockers": "Критические проблемы",
       "contentStrengths": "Сильные стороны материала",
       "findings": "Выводы",
+      "priorities": {
+        "low": "Низкий",
+        "medium": "Средний",
+        "high": "Высокий"
+      },
       "priority": "Приоритет",
       "finding": "Вывод",
       "recommendedFix": "Рекомендуемое исправление",
@@ -10255,13 +10477,19 @@
       "title": "ИИ-анализ отправки",
       "description": "Пробелы в знаниях, подтверждения и адаптивное исправление по выбору.",
       "analyze": "Анализировать",
+      "draftFeedback": "Подготовить отзыв",
       "generateGate": "Создать барьер исправления",
       "emptyTitle": "Анализ еще не выполнялся",
       "emptyDescription": "Запустите анализ, чтобы увидеть пробелы в знаниях и подтверждения по этой работе."
     },
     "submissionAnalysisResultShell": {
       "title": "пробелов в знаниях: {count}",
-      "defaultDescription": "Анализ работы готов."
+      "defaultDescription": "Анализ работы готов.",
+      "severities": {
+        "low": "Низкая",
+        "medium": "Средняя",
+        "high": "Высокая"
+      }
     },
     "studyCompanion": {
       "title": "Помощник в обучении",

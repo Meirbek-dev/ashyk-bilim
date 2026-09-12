@@ -23,8 +23,9 @@ interface PageProps {
 }
 
 export default async function PlatformTrailPage(props: PageProps) {
-  const { locale } = await props.params
-  const t = await getTranslations({ locale, namespace: 'PageLoading' })
+  // Request-scoped locale, not `params`: reading params outside the boundary
+  // logs the dev "URL data outside <Suspense>" notice on every visit.
+  const t = await getTranslations('PageLoading')
 
   return (
     <Suspense

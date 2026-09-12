@@ -1,6 +1,8 @@
 import { getUserByUsername } from '@/lib/users/server'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
+import { APP_NAME } from '@/lib/constants'
 
 import UserProfileClient from '@/app/_shared/withmenu/user/[username]/UserProfileClient'
 
@@ -17,10 +19,10 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
     const userData = await getUserByUsername(resolvedParams.username)
 
     return {
-      title: t('metaTitle', {
+      title: `${t('metaTitle', {
         firstName: userData.first_name ?? '',
         lastName: userData.last_name ?? '',
-      }),
+      })} - ${APP_NAME}`,
       description:
         userData.bio ||
         t('metaDescriptionFallback', {
@@ -30,12 +32,12 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
     }
   } catch {
     return {
-      title: t('metaTitleError'),
+      title: `${t('metaTitleError')} - ${APP_NAME}`,
     }
   }
 }
 
-export default async function PlatformUserPage({ params }: UserPageProps) {
+async function UserProfile({ params }: UserPageProps) {
   const t = await getTranslations('UserProfilePage')
   const resolvedParams = await params
   const { username } = resolvedParams
@@ -70,5 +72,15 @@ export default async function PlatformUserPage({ params }: UserPageProps) {
     <div>
       <UserProfileClient userData={userData} profile={profile} />
     </div>
+  )
+}
+
+// The profile lookup is dynamic; the boundary keeps the dev "uncached data
+// outside <Suspense>" notice (an error-level console entry) off the page.
+export default function PlatformUserPage(props: UserPageProps) {
+  return (
+    <Suspense fallback={null}>
+      <UserProfile {...props} />
+    </Suspense>
   )
 }

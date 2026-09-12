@@ -1,5 +1,5 @@
 'use server'
-import { apiJson, apiResult } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import type { AdminUserPage, SearchResults, UserHit } from '@/lib/api/generated/zod'
 
 /**
@@ -48,7 +48,3 @@ export async function getUserByUsername(username: string): Promise<AppUserProfil
   return toProfile(user)
 }
 
-// BLOCKED: no v2 route for "courses made or contributed by a user" (legacy GET /users/{id}/courses).
-export async function getCoursesByUser(user_id: number) {
-  return apiResult<AppCourse[]>(`users/${user_id}/courses`)
-}

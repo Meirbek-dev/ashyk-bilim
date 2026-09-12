@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AIEvidencePanel } from '@/features/ai-experience'
+import { AIConfidenceMeter, AIEvidencePanel } from '@/features/ai-experience'
 import type { AICitation } from '@/features/ai-experience'
 import { fromUnix } from '@/lib/api/contract'
 
@@ -84,9 +84,7 @@ export function CourseAnalysisResultShell({
               <ShieldCheckIcon data-icon="inline-start" aria-hidden="true" />
               {needsReview ? t('needsReview') : t('published')}
             </Badge>
-            {analysis.report.confidence ? (
-              <Badge variant="outline">{analysis.report.confidence}</Badge>
-            ) : null}
+            {analysis.report.confidence ? <AIConfidenceMeter confidence={analysis.report.confidence} /> : null}
           </div>
           <h3 className="text-lg leading-tight font-semibold">
             {t('title', { score: format.number(analysis.public_score) })}
@@ -126,9 +124,7 @@ export function CourseAnalysisResultShell({
             findings={findings}
             pending={findingReview.isPending}
             reviews={analysis.report.finding_reviews ?? {}}
-            onReview={(findingId, action) =>
-              findingReview.mutate({ action, analysisId: analysis.id, findingId })
-            }
+            onReview={(findingId, action) => findingReview.mutate({ action, analysisId: analysis.id, findingId })}
           />
           <ReportList empty={t('noStrengths')} icon="strength" items={strengths} title={t('contentStrengths')} />
         </div>
@@ -223,7 +219,9 @@ function FindingsTable({
             return (
               <TableRow key={finding.id}>
                 <TableCell className="align-top whitespace-normal">
-                  <Badge variant={finding.priority === 'high' ? 'destructive' : 'secondary'}>{finding.priority}</Badge>
+                  <Badge variant={finding.priority === 'high' ? 'destructive' : 'secondary'}>
+                    {t.has(`priorities.${finding.priority}`) ? t(`priorities.${finding.priority}`) : finding.priority}
+                  </Badge>
                 </TableCell>
                 <TableCell className="min-w-0 align-top whitespace-normal">
                   <div className="flex min-w-0 flex-col gap-1">

@@ -2,8 +2,10 @@
 
 import { BrainCircuit, RefreshCw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { useApiError } from '@/hooks/useApiError'
 import {
   AIArtifactLifecycle,
   AIEmptyState,
@@ -31,6 +33,7 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
     queue,
   })
   const publish = usePublishCourseAnalysis(courseUuid)
+  const { toastApiError } = useApiError()
   const analysis = latest.data ?? null
 
   return (
@@ -57,7 +60,12 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
           analysis={analysis}
           courseUuid={courseUuid}
           publishing={publish.isPending}
-          onPublish={() => publish.mutate(analysis.id)}
+          onPublish={() =>
+            publish.mutate(analysis.id, {
+              onSuccess: () => toast.success(t('publishedToast')),
+              onError: error => toastApiError(error, { fallback: t('publishFailed') }),
+            })
+          }
         />
       ) : latest.error ? (
         <AIErrorRecovery error={latest.error} onRetry={() => void latest.refetch()} />

@@ -9,10 +9,7 @@ import type { SubmissionAnalysisView } from '../api/use-submission-analysis'
 
 export function SubmissionAnalysisResultShell({ analysis }: { analysis: SubmissionAnalysisView }) {
   const t = useTranslations('AiExperience.submissionAnalysisResultShell')
-  const citations = useMemo(
-    () => (analysis.analysis.citations ?? []) as AICitation[],
-    [analysis.analysis.citations],
-  )
+  const citations = useMemo(() => (analysis.analysis.citations ?? []) as AICitation[], [analysis.analysis.citations])
 
   const contextValue = useMemo(
     () => ({
@@ -23,14 +20,7 @@ export function SubmissionAnalysisResultShell({ analysis }: { analysis: Submissi
       modelName: analysis.model_name,
       citations,
     }),
-    [
-      analysis.gap_count,
-      analysis.analysis.summary,
-      analysis.analysis.confidence,
-      analysis.model_name,
-      citations,
-      t,
-    ],
+    [analysis.gap_count, analysis.analysis.summary, analysis.analysis.confidence, analysis.model_name, citations, t],
   )
 
   return (
@@ -43,7 +33,9 @@ export function SubmissionAnalysisResultShell({ analysis }: { analysis: Submissi
               <div key={gap.concept} className="rounded-lg border p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{gap.concept}</p>
-                  <Badge variant="secondary">{gap.severity}</Badge>
+                  <Badge variant={gap.severity === 'high' ? 'destructive' : 'secondary'}>
+                    {t.has(`severities.${gap.severity}`) ? t(`severities.${gap.severity}`) : gap.severity}
+                  </Badge>
                 </div>
                 <p className="text-muted-foreground mt-1 text-sm">{gap.remediation_goal}</p>
               </div>

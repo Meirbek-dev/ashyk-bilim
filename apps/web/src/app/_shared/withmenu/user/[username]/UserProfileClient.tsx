@@ -11,13 +11,11 @@ import {
   Laptop2,
   Lightbulb,
   Link as LinkIcon,
-  Loader2,
   MapPin,
   Users,
   X,
 } from 'lucide-react'
 import { useUserCourses } from '@/features/users/hooks/useUsers'
-import { InlineError } from '@/components/ui/error-state'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import UserAvatar from '@components/Objects/UserAvatar'
@@ -163,7 +161,6 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
     enabled: Boolean(userData.id),
   })
   const userCourses = userCoursesQuery.isSuccess ? userCoursesQuery.data : []
-  const isLoadingCourses = userCoursesQuery.isPending
 
   return (
     <div className="text-foreground container mx-auto py-8">
@@ -245,6 +242,30 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                   <p className="text-muted-foreground italic">{t('noBiography')}</p>
                 )}
               </div>
+
+              {/* Courses authored by this user (catalog filtered by creator; v2 has no per-user list). */}
+              {userCourses.length > 0 ? (
+                <div className="mb-8">
+                  <h2 className="mb-4 text-xl font-semibold">{t('coursesTitle')}</h2>
+                  <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
+                    {userCourses.map(course => {
+                      const courseThumbnailData: CourseThumbnailData = {
+                        course_uuid: course.course_uuid,
+                        name: course.name ?? '',
+                        update_date: course.update_date ?? null,
+                        description: course.description ?? '',
+                        thumbnail_image: course.thumbnail_image ?? '',
+                      }
+
+                      return (
+                        <div key={course.id} className="mx-auto w-full max-w-[300px]">
+                          <CourseThumbnail course={courseThumbnailData} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
 
               {/* Profile sections from profile builder */}
               {profile.sections && profile.sections.length > 0 ? (
@@ -372,43 +393,6 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                               </div>
                             </div>
                           ))}
-                        </div>
-                      )}
-
-                      {section.type === 'courses' && (
-                        <div>
-                          {userCoursesQuery.isError ? (
-                            <InlineError
-                              description={t('courseSection.errorLoadingCourses')}
-                              error={userCoursesQuery.error}
-                            />
-                          ) : isLoadingCourses ? (
-                            <div className="flex items-center justify-center py-8">
-                              <Loader2 className="h-8 w-8 animate-spin" />
-                            </div>
-                          ) : userCourses.length > 0 ? (
-                            <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
-                              {userCourses.map(course => {
-                                const courseThumbnailData: CourseThumbnailData = {
-                                  course_uuid: course.course_uuid,
-                                  name: course.name ?? '',
-                                  update_date: course.update_date ?? null,
-                                  description: course.description ?? '',
-                                  thumbnail_image: course.thumbnail_image ?? '',
-                                }
-
-                                return (
-                                  <div key={course.id} className="mx-auto w-full max-w-[300px]">
-                                    <CourseThumbnail course={courseThumbnailData} />
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          ) : (
-                            <div className="text-muted-foreground py-8 text-center">
-                              {t('courseSection.noCoursesFound')}
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>

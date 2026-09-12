@@ -3,6 +3,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { createIdempotencyKey } from '@/lib/api/headers'
@@ -51,6 +52,7 @@ function isOfflineRecoverable(error: unknown): boolean {
 export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
   const t = useTranslations('Features.ActivityWorkspace')
   const queryClient = useQueryClient()
+  const router = useRouter()
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({})
   const [saveState, setSaveState] = useState<AssessmentSaveState>('idle')
   const [conflictState, setConflictState] = useState<ConflictState | null>(null)
@@ -88,10 +90,17 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         queryKey: queryKeys.assessments.draft(assessmentUuid),
         queryFn: async () => {
           if (!assessmentUuid) throw new Error('Assessment is not ready')
+          // A submit swaps the draft row for the submitted one before the
+          // observer re-renders with `enabled: false`; an invalidation in that
+          // window must not turn into a `submissions/draft` 404.
+          const known = queryClient.getQueryData<AssessmentSubmissionRead[]>(submissionsQueryKey)
+          if (known && !known.some(row => row.status === 'DRAFT')) {
+            return { assessment_uuid: assessmentUuid, submission: null } satisfies DraftRead
+          }
           return { assessment_uuid: assessmentUuid, submission: await getAssessmentDraft(assessmentUuid) }
         },
       }),
-    [assessmentUuid],
+    [assessmentUuid, queryClient, submissionsQueryKey],
   )
 
   const invalidateAssessmentState = useCallback(async () => {
@@ -111,11 +120,6 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     ])
   }, [assessmentUuid, draftQueryOptions.queryKey, normalizedActivityUuid, queryClient, submissionsQueryKey])
 
-  const draftQuery = useQuery({
-    ...draftQueryOptions,
-    enabled: Boolean(assessmentUuid),
-  })
-
   const submissionsQuery = useQuery({
     ...queryOptions({
       queryKey: submissionsQueryKey,
@@ -125,6 +129,14 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       },
       enabled: Boolean(assessmentUuid),
     }),
+  })
+
+  // `submissions/draft` answers 404 when no attempt is open; only ask once the
+  // attempt list says there is one (saves/starts seed the cache directly).
+  const hasOpenDraft = submissionsQuery.data?.some(row => row.status === 'DRAFT') === true
+  const draftQuery = useQuery({
+    ...draftQueryOptions,
+    enabled: Boolean(assessmentUuid) && hasOpenDraft,
   })
 
   const draft = draftQuery.data?.submission ?? null
@@ -282,6 +294,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (assessmentUuid) {
         await invalidateAssessmentState()
       }
+      // The outline sidebar, header badge and course progress read the
+      // learner-state projection (server-rendered runtime + client query).
+      await queryClient.invalidateQueries({ queryKey: ['learner-course'] })
+      router.refresh()
     },
     onError: async (error: unknown) => {
       if (isApiError(error) && error.status === 409) {

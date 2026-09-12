@@ -78,6 +78,7 @@ export const queryKeys = {
   },
   search: {
     content: (query: string, page: number, limit: number) => ['search', 'content', { query, page, limit }] as const,
+    people: (query: string) => ['search', 'people', query] as const,
   },
   studentActivity: {
     runtime: (courseUuid: string, activityUuid: string) =>

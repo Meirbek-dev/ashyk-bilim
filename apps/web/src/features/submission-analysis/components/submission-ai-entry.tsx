@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   AIArtifactLifecycle,
-  AICommandList,
   AIEmptyState,
   AIErrorRecovery,
   AIRunProgress,
@@ -74,7 +73,6 @@ export function SubmissionAIEntry({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <AICommandList surface="submission" disabled={run.pending} onCommand={() => void run.start('auto')} />
         <AIArtifactLifecycle state={run.state} artifact={run.latestArtifact} />
         <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
         {run.error ? <AIErrorRecovery error={run.error} onRetry={() => void run.start('auto')} /> : null}
@@ -114,6 +112,7 @@ export function SubmissionAIEntry({
   )
 }
 
+/** Summary + one bullet per knowledge gap, ready to paste into the feedback box. */
 function buildFeedbackDraft(analysis: SubmissionAnalysisView) {
   const lines = analysis.analysis.knowledge_gaps?.map(gap => `- **${gap.concept}**: ${gap.remediation_goal}`)
   return [analysis.analysis.summary, lines?.length ? lines.join('\n') : null].filter(Boolean).join('\n\n')

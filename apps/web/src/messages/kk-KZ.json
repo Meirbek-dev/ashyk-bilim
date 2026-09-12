@@ -1323,7 +1323,7 @@
       "teacherWorkloadPanel": {
         "title": "Мұғалім жүктемесі",
         "description": "Backlog, SLA бұзылуы, кері байланыс кешігуі және жақын арадағы жүктеме болжамын қараңыз.",
-        "backlog": "Backlog",
+        "backlog": "Кезек",
         "slaBreaches": "SLA бұзылулары",
         "forecast7d": "7 күндік болжам",
         "bucket0_24": "0-24с:",
@@ -1343,7 +1343,7 @@
         "description": "Сенімділік, шығу тегі, оқиға көзінің қамтуы және аналитикадан тыс қалулар.",
         "mode": "Режим",
         "lastRollup": "Соңғы жинақтау",
-        "liveQuery": "live query",
+        "liveQuery": "тікелей сұрау",
         "confidence": "Сенімділік",
         "confidenceLevels": {
           "high": "Жоғары",
@@ -1411,7 +1411,7 @@
         "metrics": {
           "active_learners": "Белсенді оқушылар",
           "completion_rate": "Аяқтау көрсеткіші",
-          "backlog": "Backlog",
+          "backlog": "Кезек",
           "pass_rate": "Өту көрсеткіші"
         },
         "rows": "{count, plural, one {# жол} few {# жол} other {# жол}}",
@@ -1640,6 +1640,10 @@
       "unlinkButton": "Байланысты үзу",
       "unlinkError": "Пайдаланушы байланысын үзу қатесі: {error}",
       "unlinkSuccess": "Пайдаланушы байланысы сәтті үзілді",
+      "searchPlaceholder": "Аты немесе логині бойынша іздеу",
+      "searching": "Іздеуде…",
+      "searchHint": "Топ мүшелері мен табылған пайдаланушылар көрсетілген.",
+      "searchIdleHint": "Қосу үшін пайдаланушыларды табуға кемінде 2 таңба енгізіңіз.",
       "userHeader": "Пайдаланушы"
     },
     "Modal": {
@@ -2601,6 +2605,7 @@
       "creatingChapter": "Жасалуда...",
       "chapterNamePlaceholder": "Тарау атауы",
       "saveOrderError": "Жаңа мазмұн ретін сақтау мүмкін болмады",
+      "orderSaved": "Реті сақталды",
       "savingOrder": "Оқу жоспары өзгертулері қолданылуда",
       "curriculumChangesApplyImmediately": "Оқу жоспары өзгертулері бірден қолданылады",
       "curriculumInlineFeedback": "Жылжыту, қайта реттеу және тарау жасау әрекеттері жұмыс барысында сақталады.",
@@ -2646,6 +2651,10 @@
     "deleteChapterConfirmation": "Бұл тарауды жойғыңыз келетініне сенімдісіз бе?",
     "deleteChapterConfirmationWithCount": "Бұл тарау және оның {count, plural, =0 {0 белсенділігі} one {# белсенділігі} other {# белсенділігі}} біржола жойылады.",
     "deleteChapterTitle": "{name} жою керек пе?",
+    "chapterUpdatedSuccess": "Тарау атауы жаңартылды",
+    "chapterUpdateFailed": "Тарауды жаңарту мүмкін болмады",
+    "chapterDeletedSuccess": "Тарау жойылды",
+    "chapterDeleteFailed": "Тарауды жою мүмкін болмады",
     "deleting": "Жойылуда...",
     "edit": "Өңдеу",
     "editButton": "Өңдеу",
@@ -4142,6 +4151,8 @@
       "contributorPolicyStagedTitle": "Қатысушылық саясаты Сақтау басқанша сақталмайды",
       "contributorPolicyStagedDescription": "Ашық немесе жабық қатысу саясаты бұл бөлімді сақтағанша дейін локалды болып қалады. Төменде қатысушыларды қосу, жою және өңдеу бірден қолданылады.",
       "rosterActionsImmediateTitle": "Қатысушылармен әрекеттер бірден қолданылады",
+      "rosterUnavailableTitle": "Бұл нұсқада бірлескен авторларды басқару қолжетімсіз",
+      "rosterUnavailableDescription": "Бірлескен авторлар тізімі, шақырулар мен рөлдер кейінірек қосылады. Жоғарыдағы «Бірлескен авторларға ашық» параметрі сақталады.",
       "rosterActionsImmediateDescription": "Іздеу, қосу, жою, рөлдер мен мәртебелерді өзгерту қатысушылар тізімін бірден жаңартады. Оларды жоғарыдағы саясат жобасынан бөлек сақтаңыз."
     },
     "Editor": {
@@ -6580,6 +6591,7 @@
         "manageUsersModalDescription": "Пайдаланушылар тобын басқару",
         "manageUsersModalTitle": "Пайдаланушылар тобының пайдаланушыларын басқару",
         "noUserGroupsFound": "Пайдаланушы топтары табылмады.",
+        "readOnlyGroup": "Тек қарау",
         "title": "Пайдаланушы топтарын басқару",
         "userGroupDeletedSuccess": "Пайдаланушылар тобы жойылды",
         "userGroupHeader": "Пайдаланушылар тобы",
@@ -7310,7 +7322,12 @@
       "cohortSelect": "Когортаны таңдаңыз",
       "timezoneSelect": "Уақыт белдеуін таңдаңыз",
       "sortBySelect": "Сұрыптау өрісін таңдаңыз",
-      "sortOrderSelect": "Сұрыптау тәртібін таңдаңыз"
+      "sortOrderSelect": "Сұрыптау тәртібін таңдаңыз",
+      "windows": {
+        "7d": "7 күн",
+        "28d": "28 күн",
+        "90d": "90 күн"
+      }
     },
     "labels": {
       "bucket": {
@@ -7631,13 +7648,13 @@
       "assessmentOpsSloTarget": "Мақсат",
       "assessmentOpsSloP50": "Медианалық тексеру кешігуі",
       "assessmentOpsSloP90": "P90 тексеру кешігуі",
-      "assessmentOpsSloBacklog": "Backlog",
+      "assessmentOpsSloBacklog": "Кезек",
       "assessmentOpsSloOverdue": "Мерзімі өткен",
       "assessmentOpsMigrationTitle": "Миграция күйі",
       "assessmentOpsMigrationCutoverReady": "Cutover дайын",
       "assessmentOpsMigrationCutoverBlocked": "Cutover бұғатталған",
       "assessmentOpsMigrationCanonicalRows": "Canonical жолдар",
-      "assessmentOpsMigrationModeCanonical": "Canonical",
+      "assessmentOpsMigrationModeCanonical": "Канондық",
       "assessmentOpsAuditTitle": "Аудит тарихы",
       "assessmentOpsAuditEmpty": "Ағымдағы scope үшін операциялық аудит оқиғалары жоқ.",
       "assessmentOpsAuditFilteredEmpty": "Ағымдағы сүзгілерге сәйкес аудит оқиғалары табылмады.",
@@ -7692,7 +7709,197 @@
       "assessmentColSubmitted": "Тапсырылды",
       "assessmentColStatus": "Күй",
       "assessmentPassThresholdExam": "Емтихан параметрлерінен өту шегі",
-      "assessmentPassThresholdDefault": "Өту шегі: 60%"
+      "assessmentPassThresholdDefault": "Өту шегі: 60%",
+      "assessmentStatGenerated": "Қалыптастырылды",
+      "assessmentOpsAuditBulkSummary": "{action}: {count} оқушы",
+      "assessmentItemAccuracy": "Дәлдік {value}%"
+    },
+    "codes": {
+      "active_learners": "Белсенді оқушылар",
+      "returning_learners": "Қайта оралған оқушылар",
+      "completion_rate": "Аяқтау үлесі",
+      "at_risk_learners": "Тәуекел аймағындағы оқушылар",
+      "ungraded_submissions": "Тексерілмеген жұмыстар",
+      "negative_engagement_courses": "Белсенділігі төмендеген курстар",
+      "median_across_courses": "Курстар бойынша медиана",
+      "pct_of_enrolled": "Тіркелгендердің %",
+      "pct_of_courses": "Курстардың %",
+      "too_hard": "Тым қиын",
+      "too_easy": "Тым оңай",
+      "low_variance": "Ұпайлардың төмен шашырауы",
+      "live": "Тікелей сұрау",
+      "rollup": "Жинақтау",
+      "progress_events": "прогресс оқиғалары",
+      "quiz_submissions": "тест жіберулері",
+      "exam_attempts": "емтихан әрекеттері",
+      "code_submissions": "код жіберулері",
+      "event_log": "оқиғалар журналы",
+      "fewer_than_5_learners": "5 оқушыдан аз",
+      "enrolled": "Тіркелген",
+      "active_7d": "7 күнде белсенді",
+      "active_in_window": "Кезеңде белсенді",
+      "completed": "Аяқталды",
+      "days_since_course_or_activity_update": "Курс немесе оқу тапсырмасы соңғы жаңартылғаннан бергі күндер",
+      "average_progress_of_scoped_learners": "Қамтудағы оқушылардың орташа прогресі",
+      "ungraded_submissions_delaying_feedback": "Тексерілмеген жұмыстар кері байланысты кешіктіреді",
+      "assessment_results_drop_around_this_activity": "Бағалау нәтижелері осы оқу тапсырмасының маңында төмендейді",
+      "learners_open_and_leave_without_completing": "Оқушылар ашып, аяқтамай кетеді",
+      "high_time_spent_low_completion": "Көп уақыт, төмен аяқтау",
+      "stale_content_correlates_with_low_performance": "Ескірген контент төмен нәтижелермен байланысты",
+      "repeated_assessment_failures": "Қайталанған бағалау сәтсіздіктері",
+      "exit_after_open": "Ашқаннан кейін шығу",
+      "high_time_low_completion": "Уақыт жұтқыш",
+      "stale_low_performance": "Ескірген контент",
+      "canonical_submissions_and_grading_ledger": "Дерек көзі: жіберулер және бағалау журналы",
+      "no_teacher_grading_dependency": "Оқытушының тексеруі қажет емес",
+      "support_diagnostics_within_operational_range": "Диагностика жұмыс ауқымында",
+      "support_follow_up_recommended": "Қосымша тексеру ұсынылады",
+      "grading_queue_within_target": "Тексеру кезегі мақсат шегінде",
+      "grading_queue_approaching_72h_target": "Тексеру кезегі 72 сағ мақсатына жақындады",
+      "grading_queue_past_72h_target": "Тексеру кезегі 72 сағ мақсатынан асты",
+      "grading_queue_needs_attention": "Тексеру кезегі назар аударуды қажет етеді",
+      "integrity_signals_in_scope": "Бұзушылық сигналдары бар",
+      "attempts_without_score_in_scope": "Ұпайсыз әрекеттер бар",
+      "grading_latency_past_service_target": "Тексеру кешігуі нормадан асты",
+      "grading_latency_approaching_service_target": "Тексеру кешігуі нормаға жақындады",
+      "suspicious_attempts": "Күдікті әрекеттер",
+      "missing_scores": "Ұпайлар жоқ",
+      "grading_latency": "Тексеру кешігуі",
+      "awaiting_teacher_grading": "Оқытушының тексеруін күтуде",
+      "awaiting_grading": "Тексеруді күтуде",
+      "returned_for_resubmission": "Қайта жіберуге қайтарылды",
+      "late_submissions": "Кешіктірілген жіберулер",
+      "manual_review_pending": "Қолмен тексеру күтілуде",
+      "resubmission_pending_after_feedback": "Кері байланыстан кейін қайта жіберу күтілуде",
+      "late_work_may_need_deadline_or_policy_review": "Кешіккен жұмыстар: мерзімді немесе саясатты қайта қарау керек",
+      "integrity_signals_recorded": "Бұзушылық сигналдары тіркелді",
+      "submission_without_score": "Ұпайсыз жіберу",
+      "accuracy_unavailable": "Дәлдік қолжетімсіз",
+      "workflow": "Процесс",
+      "question": "Сұрақ",
+      "test": "Тест",
+      "grading_entry": "Бағалау жазбасы",
+      "bulk_action": "Жаппай әрекет",
+      "publish_grade": "Баға жарияланды",
+      "save_grade": "Баға сақталды",
+      "published": "Жарияланды",
+      "draft_saved": "Жоба сақталды",
+      "extend_deadline": "Мерзімді ұзарту",
+      "release_grades": "Бағаларды жариялау",
+      "return_all": "Барлық жұмыстарды қайтару",
+      "override_score": "Ұпайды қайта анықтау",
+      "batch_grade": "Топтап бағалау",
+      "pending": "Күтуде",
+      "running": "Орындалуда",
+      "failed": "Қате",
+      "recent_assessment_failures": "Жақындағы бағалау сәтсіздіктері",
+      "missing_required_work": "Міндетті жұмыстар өткізіліп алынды",
+      "inactivity_past_7_days": "7 күннен астам белсенділік жоқ",
+      "grading_block_blocks_progress": "Тексеруді күту прогресті тоқтатады",
+      "progress_behind_course_baseline": "Прогресс курстың базалық деңгейінен төмен",
+      "multiple_risk_signals": "Бірнеше тәуекел сигналы",
+      "offer_targeted_help": "Мақсатты көмек ұсыну",
+      "remind_missing_work": "Өткізілген жұмыстар туралы еске салу",
+      "contact_learner_this_week": "Осы аптада оқушымен байланысу",
+      "review_submissions_first": "Алдымен жұмыстарды тексеру",
+      "schedule_pace_meeting": "Қарқын туралы кездесу тағайындау",
+      "send_personal_message": "Жеке хабарлама жіберу",
+      "newly_at_risk": "Тәуекел аймағында жаңа",
+      "worsening": "Нашарлауда",
+      "improving": "Жақсаруда",
+      "recovered": "Қалпына келді",
+      "stable": "Тұрақты",
+      "message_sent": "Хабарлама жіберілді",
+      "meeting_scheduled": "Кездесу тағайындалды",
+      "extension_granted": "Қолдау жоспары",
+      "learner_recovered": "Оқушы қалпына келді",
+      "planned": "Жоспарланды",
+      "resolved": "Шешілді",
+      "learner_contacted": "Оқушымен байланысты",
+      "check_in_scheduled": "Оқытушымен кездесу тағайындалды",
+      "remediation_draft_prepared": "Қолдау жоспары дайындалды",
+      "recovered_from_risk": "Тәуекел аймағынан шықты",
+      "risk_resolved_after_review": "Оқытушы тексергеннен кейін тәуекел алынды",
+      "active_learners_fell_sharply_vs_previous_period": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда күрт азайды",
+      "submission_volume_far_above_previous_period": "Жіберу көлемі алдыңғы кезеңнен әлдеқайда жоғары",
+      "many_attempts_finished_near_minimum_observed_time": "Көптеген әрекеттер байқалған ең аз уақытқа жуық аяқталды",
+      "average_score_changed_after_last_content_update": "Соңғы контент жаңартуынан кейін орташа ұпай өзгерді",
+      "engagement_dropped": "Белсенділік төмендеді",
+      "content_may_be_stale": "Контент ескірген болуы мүмкін",
+      "learner_risk_needs_intervention": "Тәуекел аймағындағы оқушыларға қолдау қажет",
+      "engagement_drop": "Белсенділіктің төмендеуі",
+      "submission_spike": "Жіберулердің өсуі",
+      "fast_quiz_completion": "Тым жылдам аяқтаулар",
+      "score_distribution_shift": "Ұпай таралымының өзгеруі"
+    },
+    "units": {
+      "hours": "{value} сағ",
+      "days": "{value} күн"
+    },
+    "forecast": {
+      "completion_target_miss": {
+        "title": "{course}: оқушылар аяқтау мақсатына жетпеуі мүмкін",
+        "prediction": "{count} оқушы белсенді емес немесе прогресі 70%-дан төмен."
+      },
+      "course_completion_deadline": {
+        "title": "{course}: 14 күндік аяқтау болжамы",
+        "prediction": "Ағымдағы қарқында күтілетін аяқтау үлесі — {value}%."
+      },
+      "grading_backlog_7d": {
+        "title": "7 күннен кейінгі күтілетін тексеру кезегі",
+        "prediction": "Кезек {value} жұмысқа дейін өсуі мүмкін."
+      },
+      "assessment_failure_risk": {
+        "title": "{assessment}: сәтсіздік тәуекелі жоғары",
+        "prediction": "Келесі мерзімге дейін күтілетін сәтсіздік үлесі — {value}%."
+      }
+    },
+    "dataQuality": {
+      "missing-event-sources": {
+        "title": "Кейбір оқиға көздерінде дерек жоқ",
+        "detail": "Дерек жоқ: {sources}"
+      },
+      "thin-course-data": {
+        "title": "Кейбір курстарда дерек тым аз",
+        "detail": "{count} курста 5-тен аз оқушы бар."
+      },
+      "stale-rollup": {
+        "title": "Жинақтаулар 24 сағаттан ескі",
+        "detail": "Операциялық шешім қабылдамас бұрын аналитика жинақтауларын жаңартыңыз."
+      }
+    },
+    "intervention": {
+      "manage": "Қолдау шаралары",
+      "recommendedAction": "Ұсынылатын әрекет",
+      "draftLabel": "Қолдау жоспары",
+      "saveDraft": "Қолдау жоспарын сақтау",
+      "auditLog": "Шаралар журналы",
+      "loadingAudit": "Қолдау шаралары жүктелуде…",
+      "emptyAudit": "Қолдау шаралары әлі тіркелмеген.",
+      "open": "Қолдау шарасы ашық",
+      "resolved": "Шешілді",
+      "improving": "Жақсаруда",
+      "none": "Қолдау шаралары жоқ",
+      "riskDescription": "{course} · тәуекел {score} · {level}",
+      "draftTemplate": "Мақсат: «{course}» курсында {learner} үшін тәуекелді төмендету.\nСебептер: {reasons}.\nОқытушының әрекеті: {action}.\nҚолдау жоспары: қысқа қуып жету тапсырмасын беру, оқушыға бір нақты келесі қадамды жазу және келесі оқу тапсырмасынан кейін прогресті тексеру.",
+      "needsReview": "оқытушының тексеруі қажет"
+    },
+    "anomaly": {
+      "engagement_drop": "{name}: белсенділіктің күрт төмендеуі",
+      "submission_spike": "{name}: жіберулердің әдеттен тыс өсуі",
+      "fast_quiz_completion": "{name}: күдікті жылдам аяқталған әрекеттер",
+      "score_distribution_shift": "{name}: контент жаңартылғаннан кейін ұпай таралымы өзгерді"
+    },
+    "alertTitle": {
+      "grading_slo_breached": "{name}: тексеру мерзімі асып кетті",
+      "grading_slo_watch": "{name}: тексеру мерзімі таусылуда"
+    },
+    "alertBody": {
+      "grading_backlog": "{value} жұмыс әлі тексеруді күтуде.",
+      "engagement_drop": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда {value}%-ға азайды.",
+      "content_stale": "Курс {value} күн жаңартылмаған.",
+      "risk_spike": "Қамтудағы {value} оқушы орташа немесе жоғары тәуекелде.",
+      "grading_slo": "Тексеру кезегінде: {value} жұмыс."
     }
   },
   "Features": {
@@ -7753,7 +7960,8 @@
           "graded": "Бағаланды",
           "passed": "Өтті",
           "failed": "Өтпеді",
-          "completed": "Аяқталды"
+          "completed": "Аяқталды",
+          "untracked": "қолжетімсіз"
         },
         "rollups": {
           "title": "Прогресс жиынтығы",
@@ -9864,13 +10072,17 @@
   },
   "Trail": {
     "courseLabel": "Курс",
-    "downloadCertificate": "Сертификатты жүктеу",
     "loadingCertificate": "Жүктелуде...",
     "noCertificateAvailable": "Сертификат қолжетімді емес",
     "quitCourseButton": "Курстан шығу",
     "stepsLabel": "қадам",
     "stepsProgress": "{completed} / {total} қадам",
-    "viewCertificate": "Сертификатты қарау"
+    "viewCertificate": "Сертификатты қарау",
+    "quitCourseConfirmTitle": "«{course}» курсынан шығасыз ба?",
+    "quitCourseConfirmDescription": "Бұл курс бойынша барлық прогресс жойылады. Бұл әрекетті кері қайтару мүмкін емес.",
+    "quitCourseCancel": "Қалу",
+    "quitCourseDone": "Сіз «{course}» курсынан шықтыңыз",
+    "quitCourseFailed": "Курстан шығу мүмкін болмады. Кейінірек қайталап көріңіз."
   },
   "TrailPage": {
     "metaDescription": "Трейл арқылы прогрессіңізді тексеріңіз және курстарыңызды оңай шарлаңыз.",
@@ -9894,6 +10106,7 @@
       "loadingCourses": "Курстар жүктелуде...",
       "noCoursesFound": "Курстар табылмады"
     },
+    "coursesTitle": "Курстар",
     "fetchError": "Пайдаланушы деректерін алу сәтсіз аяқталды: ",
     "generalInfo": "Жалпы ақпарат",
     "in": "ішінде",
@@ -9941,7 +10154,10 @@
     "passwordNeedsUppercase": "Құпиясөзде кем дегенде бір бас әріп болуы керек",
     "passwordNeedsNumber": "Құпиясөзде кем дегенде бір сан болуы керек",
     "titleTooLong": "Атау 100 таңбадан аспауы керек",
-    "descriptionTooLong": "Сипаттама 8000 таңбадан аспауы керек",
+    "descriptionTooLong": "Сипаттама 5000 таңбадан аспауы керек",
+    "aboutTooLong": "Толық сипаттама 20000 таңбадан аспауы керек",
+    "tagTooLong": "Тег 64 таңбадан аспауы керек",
+    "tooManyTags": "20 тегтен артық болмауы керек",
     "sourceCourseRequired": "Бастапқы курсты таңдаңыз",
     "learningsInvalid": "Оқу нәтижелерінің пішімі қате"
   },
@@ -10092,6 +10308,9 @@
     "requirementMaxSize": "Әр файл {size} МБ дейін",
     "maxFilesAllowed": "{count, plural, one {Ең көбі # файл} other {Ең көбі # файл}}",
     "invalidFiles": "Кейбір файлдар талаптарға сай емес",
+    "notConfiguredTitle": "Тапсырма әлі бапталмаған",
+    "notConfiguredDescription": "Оқытушы файл жүктеу шарттарын әлі қоспаған. Кейінірек қайта кіріңіз.",
+    "openStudio": "Студияда баптау",
     "notAvailable": "Файл тапсыру қолжетімді емес",
     "uploadFailed": "Файл жүктелмеді",
     "submittedToast": "Файлдар тапсырылды",
@@ -10182,7 +10401,11 @@
     "unsavedDescription": "Баға немесе кері байланыс өзгерістері әлі сақталмады. Беттен шығып, оларды жою керек пе?",
     "stayHere": "Осында қалу",
     "leaveWithoutSaving": "Сақтамай шығу",
-    "csv": "CSV"
+    "csv": "CSV",
+    "scan_pending": "тексеру күтілуде",
+    "scan_clean": "тексерілді",
+    "scan_flagged": "күдікті файл",
+    "scan_error": "тексеру қатесі"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Файл жіберу студиясын жүктеу",
@@ -10249,14 +10472,6 @@
       "course-practice": {
         "label": "Жаттығу жасау",
         "prompt": "Курстың орындалмаған келесі тапсырмалары негізінде қысқа жаттығу жоспарын жаса."
-      },
-      "submission-review": {
-        "label": "Кері байланысты талдау",
-        "prompt": "Осы жұмысқа берілген кері байланысты түсіндіріп, қайта өңдеуді қай қадамнан бастау керектігін көрсет."
-      },
-      "submission-remediate": {
-        "label": "Түзету жоспары",
-        "prompt": "Жұмыс дәлелдері негізінде түзету жоспарын жасап, әр кемшіліктің дереккөзін көрсет."
       }
     },
     "qaMessage": {
@@ -10385,6 +10600,8 @@
       "analyze": "Талдау",
       "draftFeedback": "Кері байланыс жобасы",
       "defaultStatus": "ЖИ-ге көрінетін нұсқаулықты жарияламас бұрын мұғалім тексерген сапа есебін дайындау үшін талдауды іске қосыңыз.",
+      "publishedToast": "Сапа бағасы жарияланды",
+      "publishFailed": "Бағаны жариялау мүмкін болмады",
       "emptyTitle": "Талдау әлі жүргізілмеген"
     },
     "courseAnalysisResultShell": {
@@ -10399,6 +10616,11 @@
       "criticalBlockers": "Маңызды кедергілер",
       "contentStrengths": "Материалдың мықты тұстары",
       "findings": "Қорытындылар",
+      "priorities": {
+        "low": "Төмен",
+        "medium": "Орташа",
+        "high": "Жоғары"
+      },
       "priority": "Басымдық",
       "finding": "Қорытынды",
       "recommendedFix": "Ұсынылған түзету",
@@ -10429,13 +10651,19 @@
       "title": "Тапсырманы ЖИ талдауы",
       "description": "Білімдегі олқылықтар, дәлелдер және міндетті емес бейімделген түзету жұмыстары.",
       "analyze": "Талдау",
+      "draftFeedback": "Кері байланыс жобасы",
       "generateGate": "Түзету шегін құру",
       "emptyTitle": "Талдау әлі жүргізілмеген",
       "emptyDescription": "Осы жұмыс бойынша білім олқылықтары мен дәлелдерді көру үшін талдауды іске қосыңыз."
     },
     "submissionAnalysisResultShell": {
       "title": "{count} білім олқылықтары",
-      "defaultDescription": "Жұмысты талдау дайын."
+      "defaultDescription": "Жұмысты талдау дайын.",
+      "severities": {
+        "low": "Төмен",
+        "medium": "Орташа",
+        "high": "Жоғары"
+      }
     },
     "studyCompanion": {
       "title": "Оқу серігі",

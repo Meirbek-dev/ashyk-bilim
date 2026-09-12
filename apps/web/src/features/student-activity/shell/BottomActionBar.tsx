@@ -45,6 +45,8 @@ export default function BottomActionBar({
 }: BottomActionBarProps) {
   const { mode, bottomBarAction } = useActivityLayout()
   const outlineProgress = useMemo(() => getOutlineProgress(runtime), [runtime])
+  // Once complete the primary CTA *is* "next" — a second next chevron beside it is a duplicate.
+  const nextIsPrimary = !bottomBarAction && runtime.primary_action.id === 'next_activity'
 
   // ACTIVE_ATTEMPT: the AssessmentLayout renders its own action controls
   if (mode === 'ACTIVE_ATTEMPT' || focusMode) return null
@@ -65,7 +67,7 @@ export default function BottomActionBar({
           )}
         </div>
 
-        <NavChevron courseUuid={courseUuid} item={runtime.next ?? null} side="next" />
+        {nextIsPrimary ? <div /> : <NavChevron courseUuid={courseUuid} item={runtime.next ?? null} side="next" />}
       </div>
     </div>
   )
@@ -126,7 +128,9 @@ function RuntimeCTA({
           )
         }
       >
-        <span className="min-w-0 truncate">{t('next')}</span>
+        <span className="min-w-0 truncate">
+          {runtime.next?.title ? t('nextActivityTooltip', { activityName: runtime.next.title }) : t('next')}
+        </span>
         <ChevronRight className="size-4" />
       </Button>
     )
