@@ -137,6 +137,7 @@ Regenerate this survey with `scratchpad/drift.py`.
 | pass | date | features probed | bugs found/fixed | gate | commit |
 |---|---|---|---|---|---|
 | 0 | 2026-09-10 | setup only: stack, accounts, ledger | — | — | e654349 |
+| 8 | 2026-09-12 | final critic load of the four pass-7 fails (F21 F26 F31 F32): all pass, zero console/page errors across 14 analytics loads and 5 studio loads; three wording nits fixed | 4 nits → fixed | `bun run test:e2e` **86 passed / 2 skipped** (third green run on the final tree); web typecheck 0, vitest 626/626, error-codes 25/25; server nextest 283/283, `just check` green | 2a03ccc |
 | 7 | 2026-09-12 | two critics re-drove the 19 pass-6 fails: 15 pass, 4 fail (F21 console error, F26 hollow file cells, F31/F32 kz copy) + 9 new gaps; server: leave-course resets completions (DECISIONS), stale projection rows repaired with `ashyq admin progress-backfill`, 5 locally corrupted grades re-graded through the API; two builders closed the 4 fails and the gaps | BUG-077..083 found, all fixed | web typecheck 0, vitest 626/626, error-codes 25/25, `bun run test:e2e` 86/2 skipped (see pass log below for the final run); server `just check` green, nextest 283/283 | 1b1a3ad |
 | 6 | 2026-09-12 | three critics swept ALL 40 rows with headless Playwright (learner F05–F18/F30/F35, teacher F19–F37, admin F01–F04/F38–F40): 21 pass, 18 fail, F14 blocked; server: private-course visibility regression (every learner saw every draft), TOTP 409, thumbnail upload contract, hidden unreleased grades, revision-attempt cap, item-score guard; three builders closed the 18 fails; QUESTIONS Q-2026-09-12-2 (11 contract gaps) | BUG-059..076 found, 17 fixed, 1 blocked | web typecheck 0, vitest 620/620, error-codes 25/25, `bun run test:e2e` **86 passed / 2 skipped** (twice: 85+3, 86+2); server `just check` green, nextest **283/283**, CI green (34660958702) | f95697b |
 | 5 | 2026-09-12 | Playwright suite brought onto v2 (00–08 all specs; 03→06 serial chain green except the Judge0-gated code test); builders: AI panels v2, learner/account batch, teacher course list, admin users/roles (F38), users-settings gating, authoring/exam/grading gaps from the chain; critic C1–C11 (8 pass, 3 fail → fixed) + 12 new gaps (10 fixed, 2 noted) | BUG-034..044 fixed; BUG-045..058 found, 12 fixed | web typecheck **0**, vitest 583/583, error-codes 25/25; e2e chromium 41/42 (+21 cross-browser smoke); server `just check` + deny/machete/sqlx-check green, nextest 281/281, CI green (34645681889) | 2fef2c8 |
@@ -147,7 +148,7 @@ Regenerate this survey with `scratchpad/drift.py`.
 
 ## Features
 
-Status: `pass` = verified by a critic from a fresh session; `pass*` = failed in pass 6, fixed, pass-7 re-verification pending (updated below when it lands); `blocked` = needs infrastructure the local stack lacks.
+Status: `pass` = verified by a critic from a fresh session after the last fix touching the row; `blocked` = needs infrastructure the local stack lacks.
 
 | id | area | route(s) | roles | status | last critic verdict |
 |---|---|---|---|---|---|
@@ -171,18 +172,18 @@ Status: `pass` = verified by a critic from a fresh session; `pass*` = failed in 
 | F18 | gamification | `/dash/user-account/settings/gamification` | learner | pass | pass 6 learner critic: toggles persist, units «ОП» everywhere |
 | F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 7 (teacher7): create → clean details → rename/description save → thumbnail via uploads (webp 200 on cards/landing) → publish → in catalogue |
 | F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 7: chapter/activity create/rename/publish/reorder/delete each toast and persist; exam dialog fires no request |
-| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass* | pass 7: text/image blocks persist, image via real click; FAIL only on a `flushSync` console error with image blocks → deferred `setContent` (1b1a3ad); needs one more critic load |
+| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 8 (teacher8): image via real click, 5 studio loads + learner view with ZERO console errors, autosave persists |
 | F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 7: block image and course thumbnail served 200 image/webp on studio, learner view, cards, landing |
 | F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | pass | pass 6 teacher critic: 4 item kinds, autosave, readiness, publish |
 | F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 6 teacher critic: restricted access + override CRUD persisted |
 | F25 | submission grading + item feedback | `/ru/dash/courses/[id]/activity/[id]/review` | teacher | pass | pass 7: 33.33/0/20 stored as entered, total 53.33/99.99, publish → learner sees 53.34 %; re-grade + re-publish; file chips Russian |
-| F26 | gradebook + bulk actions | `/ru/dash/courses/[id]/gradebook` | teacher | pass* | pass 7: file column, client CSV, no checkboxes; FAIL on hollow file cells + «FILE SUBMISSION» → file attempts projected client-side (1b1a3ad); needs one more critic load |
+| F26 | gradebook + bulk actions | `/ru/dash/courses/[id]/gradebook` | teacher | pass | pass 8: 77 % published file cell, CSV row `…,33.33,Не начато,77`, «Файл» label, summaries, cell → file review; export now toasts (a2f) |
 | F27 | grading SSE live updates | gradebook / review | teacher | pass | pass 7: API grade change in a second context → open gradebook cell updated at +11.8 s without reload (polling; no stream, Q-2026-09-12-2 #2) |
 | F28 | work queue | `/dash/courses/[uuid]/review` | teacher | pass | pass 6 teacher critic: queue item links to a real page; tool cards real |
 | F29 | course collaboration/access | `/dash/courses/[uuid]/collaboration` | teacher | pass | pass 7: collaboration → access, honest unavailable state, no request, no raw error; contradictory intro sentence dropped (1b1a3ad) |
 | F30 | search | `/ru/search?q=` | any | pass | pass 6 learner critic: facets, results, navigation |
-| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass* | pass 7: ru clean; kz tile definitions were English, «backlog» → fixed 1b1a3ad; kz hydration errors from Chromium ICU → suppressed on Intl leaves; needs one more critic load |
-| F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass* | pass 7: no raw keys; «cutover/backlog/published» → fixed 1b1a3ad; «Lectures &Content» is a two-line chart tick (chapter names), not a label; needs one more critic load |
+| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass | pass 8: ru+kz overview/performance/operations/courses/assessments/watchlist/at-risk — zero page errors, Kazakh tile definitions, no backlog/cutover, real titles |
+| F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 8: course + exam drilldowns ru/kz clean; status «Опубликовано/Жарияланды»; chart tick wrapping is content, not a label |
 | F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 7: dialog 768×539 in viewport, Russian/Kazakh throughout, action logged, row updated without reload |
 | F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 6 teacher critic: exports 200 text/csv with headers |
 | F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | pass | pass 6 learner critic: Q&A reaches a definite localized draft-mode state, delete toasts |
