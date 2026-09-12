@@ -1,6 +1,6 @@
 'use client'
 
-import { getAnalyticsAssessmentTypeLabel, getAnalyticsReasonCodeLabel } from '@/lib/analytics/labels'
+import { getAnalyticsAssessmentTypeLabel, getAnalyticsCodeLabel, getAnalyticsReasonCodeLabel } from '@/lib/analytics/labels'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AssessmentOutlierRow } from '@/types/analytics'
 import AnalyticsDataTable from './AnalyticsDataTable'
@@ -70,7 +70,7 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
             )}
             {assessment.suspicious_flag && (
               <Badge variant="warning" className="mt-1">
-                {assessment.suspicious_flag.replaceAll('_', ' ')}
+                {getAnalyticsCodeLabel(t, assessment.suspicious_flag)}
               </Badge>
             )}
           </div>

@@ -15,7 +15,7 @@ import {
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   canPublishGrade,
@@ -26,12 +26,14 @@ import {
   isScoreInputInvalid,
   localizeAutoGraderFeedback,
   sumScores,
+  toItemScale,
 } from '@/features/grading/domain'
 import type { GradedItem, GradingBreakdown, Submission, TeacherGradeInput } from '@/features/grading/domain'
 import { StaleGradeError } from '@/services/grading/errors'
 import { saveGradingDraft } from '@/services/assessments/assessment-actions'
 import type { ItemGradeEntry } from '@/services/assessments/assessment-actions'
 import { useGradingPanel } from '@/hooks/useGradingPanel'
+import { assessmentByActivityQueryOptions } from '@/features/assessments/queries'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { formatAnnotationsAsFeedback, useAnnotations } from '../AnnotationContext'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -58,11 +60,13 @@ interface ItemDraftEntry {
 export default function GradeForm({
   submissionUuid,
   assessmentUuid,
+  activityUuid,
   onSaved,
   navigation,
 }: {
   submissionUuid: string | null
   assessmentUuid?: string
+  activityUuid?: string
   onSaved: () => Promise<void>
   navigation: ReviewNavigationState
 }) {
@@ -90,6 +94,17 @@ export default function GradeForm({
   }, [submission?.grading_json?.items, tItemGrading])
 
   const hasItemGrading = gradedItems.length > 0 && Boolean(assessmentUuid)
+  // The item definitions carry the scale the grade save expects (already
+  // cached by the inspector, which renders the same assessment).
+  const { data: assessment } = useQuery({
+    ...assessmentByActivityQueryOptions(activityUuid ?? ''),
+    enabled: Boolean(activityUuid) && hasItemGrading,
+  })
+  const itemScaleById = useMemo(
+    () => new Map((assessment?.items ?? []).map(item => [item.id, item.max_score])),
+    [assessment],
+  )
+  const scaleReady = !hasItemGrading || Boolean(assessment)
 
   // Calculated total from item drafts (0 to sum of max_scores)
   const calculatedTotal = useMemo(() => {
@@ -162,7 +177,7 @@ export default function GradeForm({
   // New item-level save (via unified assessment API)
   const saveWithItemGrading = useCallback(
     (status: 'save' | 'publish' | 'return') => {
-      if (!submission || !assessmentUuid) return
+      if (!submission || !assessmentUuid || !scaleReady) return
       if (hasInvalidScore) {
         toast.error(t('invalidScore'))
         return
@@ -176,7 +191,11 @@ export default function GradeForm({
         const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? [])
         return {
           item_uuid: item.item_id,
-          score: Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
+          score: toItemScale(
+            Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
+            item.max_score,
+            itemScaleById.get(item.item_id),
+          ),
           feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
           is_manual: true,
         }
@@ -261,6 +280,8 @@ export default function GradeForm({
       clearAnnotations,
       calculatedTotal,
       queryClient,
+      itemScaleById,
+      scaleReady,
     ],
   )
 
@@ -277,7 +298,7 @@ export default function GradeForm({
   // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
   const handleCtrlEnter = useCallback(
     (event: KeyboardEvent) => {
-      if (!editable || isSaving || hasInvalidScore) return
+      if (!editable || isSaving || hasInvalidScore || !scaleReady) return
       const isCtrl = event.ctrlKey || event.metaKey
       if (!isCtrl || event.key !== 'Enter') return
       event.preventDefault()
@@ -287,7 +308,7 @@ export default function GradeForm({
         saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED')
       }
     },
-    [editable, isSaving, hasInvalidScore, hasItemGrading, saveWithItemGrading, saveOverallScore],
+    [editable, isSaving, hasInvalidScore, hasItemGrading, saveWithItemGrading, saveOverallScore, scaleReady],
   )
 
   useEffect(() => {
@@ -516,7 +537,7 @@ export default function GradeForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!editable || isSaving || !canSaveDraftNow || hasInvalidScore}
+              disabled={!editable || isSaving || !canSaveDraftNow || hasInvalidScore || !scaleReady}
               onClick={() => saveWithItemGrading('save')}
             >
               {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
@@ -524,7 +545,7 @@ export default function GradeForm({
             </Button>
             <Button
               type="button"
-              disabled={!editable || isSaving || !canPublishNow || hasInvalidScore}
+              disabled={!editable || isSaving || !canPublishNow || hasInvalidScore || !scaleReady}
               onClick={() => saveWithItemGrading('publish')}
             >
               <Send className="size-4" />
@@ -533,7 +554,7 @@ export default function GradeForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!editable || isSaving || !canReturnNow}
+              disabled={!editable || isSaving || !canReturnNow || !scaleReady}
               onClick={() => saveWithItemGrading('return')}
             >
               <RotateCcw className="size-4" />

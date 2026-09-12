@@ -179,7 +179,7 @@ export default function TeacherFilterBar({
             >
               {windows.map(windowValue => (
                 <NativeSelectOption key={windowValue} value={windowValue}>
-                  {t('filters.windowPrefix', { window: windowValue })}
+                  {t('filters.windowPrefix', { window: t(`filters.windows.${windowValue}`) })}
                 </NativeSelectOption>
               ))}
             </NativeSelect>

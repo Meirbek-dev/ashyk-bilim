@@ -68,7 +68,14 @@ export function gradebookFromWire(
       teacher_action_required: c.status === 'pending' || c.status === 'graded',
     }
   })
-  const activities = assessments.map(a => ({ id: a.activity_id, activity_uuid: a.activity_id, name: activityNames.get(a.activity_id) ?? a.title, activity_type: `TYPE_${a.kind.toUpperCase()}`, assessment_type: a.kind }))
+  const graded = assessments.map(a => ({ id: a.activity_id, activity_uuid: a.activity_id, name: activityNames.get(a.activity_id) ?? a.title, activity_type: `TYPE_${a.kind.toUpperCase()}`, assessment_type: a.kind }))
+  // File-submission activities are graded too, but `GET courses/{id}/gradebook`
+  // only carries assessment attempts (contract gap) — keep their column so the
+  // activity is not silently missing; `assessment_type: null` renders it as "n/a".
+  const untracked = (curriculum?.chapters ?? []).flatMap(ch => ch.activities)
+    .filter(a => a.activity_type === 'file_submission')
+    .map(a => ({ id: a.id, activity_uuid: a.id, name: a.name, activity_type: 'TYPE_FILE_SUBMISSION', assessment_type: null }))
+  const activities = [...graded, ...untracked]
   const now = Date.now()
   return {
     course_id: course.id, course_uuid: course.id, course_name: course.name,
@@ -77,7 +84,7 @@ export function gradebookFromWire(
       activity_count: activities.length, student_count: users.size,
       completed_count: cells.filter(c => c.state === 'PASSED').length,
       needs_grading_count: cells.filter(c => c.teacher_action_required).length,
-      not_started_count: users.size * activities.length - cells.length,
+      not_started_count: users.size * graded.length - cells.length,
       overdue_count: cells.filter(c => c.due_at && Date.parse(c.due_at) < now && c.state !== 'PASSED').length,
     },
     teacher_actions: cells.filter(c => c.teacher_action_required).map(c => ({

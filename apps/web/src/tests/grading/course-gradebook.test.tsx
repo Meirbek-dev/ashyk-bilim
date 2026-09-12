@@ -12,7 +12,6 @@ const navigationMocks = vi.hoisted(() => ({
 }))
 const gradingQueryMocks = vi.hoisted(() => ({
   courseGradebookQueryOptions: vi.fn(() => ({ queryKey: ['gradebook'] })),
-  courseGradebookExportUrl: vi.fn(() => '/api/grading/courses/course_gradebook/gradebook/export'),
 }))
 const mobileMocks = vi.hoisted(() => ({ isMobile: false }))
 
@@ -30,7 +29,6 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 vi.mock('@/features/grading/queries/grading.query', () => ({
-  courseGradebookExportUrl: gradingQueryMocks.courseGradebookExportUrl,
   courseGradebookQueryOptions: gradingQueryMocks.courseGradebookQueryOptions,
 }))
 
@@ -190,7 +188,6 @@ describe('CourseGradebookCommandCenter', () => {
     navigationMocks.replace.mockClear()
     navigationMocks.searchParams = new URLSearchParams()
     gradingQueryMocks.courseGradebookQueryOptions.mockClear()
-    gradingQueryMocks.courseGradebookExportUrl.mockClear()
     mobileMocks.isMobile = false
   })
 
@@ -206,6 +203,35 @@ describe('CourseGradebookCommandCenter', () => {
     expect(within(table).getByText('Quiz')).toBeInTheDocument()
     expect(within(table).getByText('states.passed')).toBeInTheDocument()
     expect(within(table).getByText('states.returned')).toBeInTheDocument()
+  })
+
+  // Gauntlet F26: file-submission activities have no gradebook wire; the
+  // column stays visible as "n/a" and the export is built from the loaded data.
+  it('keeps untracked activities as an n/a column and exports the loaded matrix as CSV', () => {
+    gradebook.activities.push({
+      id: 'activity_upload',
+      activity_uuid: 'activity_upload',
+      name: 'Project Upload',
+      activity_type: 'TYPE_FILE_SUBMISSION',
+      assessment_type: null,
+    })
+    const createObjectURL = vi.fn((_blob: Blob) => 'blob:gradebook')
+    const revokeObjectURL = vi.fn()
+    Object.assign(URL, { createObjectURL, revokeObjectURL })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    const table = screen.getByRole('table')
+    expect(within(table).getByText('Project Upload')).toBeInTheDocument()
+    expect(within(table).getAllByText('states.untracked').length).toBeGreaterThan(0)
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'export' }))
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(createObjectURL).toHaveBeenCalledTimes(1)
+    expect(createObjectURL.mock.calls[0]![0].type).toContain('text/csv')
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:gradebook')
+    click.mockRestore()
   })
 
   // Gauntlet: the implicit "needs grading" default showed an empty table

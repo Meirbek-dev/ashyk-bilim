@@ -5,13 +5,15 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { courseGradebookExportUrl, courseGradebookQueryOptions } from '@/features/grading/queries/grading.query'
+import { courseGradebookQueryOptions } from '@/features/grading/queries/grading.query'
 import {
   buildGradebookRollups,
   emptyGradebookCell,
   filterGradebookStudents,
   gradebookCellKey,
   gradebookLearnerName,
+  gradebookToCsv,
+  isGradebookActivityTracked,
 } from '@/features/grading/domain'
 import type {
   ActivityProgressCell,
@@ -72,8 +74,6 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
         : chosenFilters,
     [chosenFilters, data?.summary.needs_grading_count, searchParams],
   )
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
-
   const handleFiltersChange = useCallback(
     (newFilters: GradebookFilters) => {
       setFilters(newFilters)
@@ -115,24 +115,6 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     if (!data) return []
     return filterGradebookStudents(data, visibleActivities, cellMap, filters)
   }, [cellMap, data, filters, visibleActivities])
-
-  const visibleKeySet = useMemo(
-    () =>
-      new Set(
-        visibleStudents.flatMap(student =>
-          visibleActivities.map(activity => gradebookCellKey(student.id, activity.id)),
-        ),
-      ),
-    [visibleActivities, visibleStudents],
-  )
-  const selectedCells = useMemo(
-    () =>
-      [...selectedKeys]
-        .filter(key => visibleKeySet.has(key))
-        .map(key => cellMap.get(key))
-        .filter((cell): cell is ActivityProgressCell => Boolean(cell)),
-    [cellMap, selectedKeys, visibleKeySet],
-  )
 
   if (isLoading) return <div className="text-muted-foreground text-sm">{t('loading')}</div>
 
@@ -178,10 +160,20 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
         data={data}
         filters={filters}
         activityTypes={activityTypes}
-        selectedCount={selectedCells.length}
         onFiltersChange={handleFiltersChange}
         onExport={() => {
-          globalThis.location.assign(courseGradebookExportUrl(courseUuid))
+          const csv = gradebookToCsv(data, visibleActivities, visibleStudents, {
+            learner: t('learner'),
+            email: t('email'),
+            state: state => t(progressStateLabelKey(state)),
+            untracked: t('states.untracked'),
+          })
+          const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }))
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `gradebook-${courseUuid}.csv`
+          link.click()
+          URL.revokeObjectURL(url)
         }}
         onRefresh={() => void refetch()}
       />
@@ -236,29 +228,25 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
                   </TableCell>
                   {visibleActivities.map(activity => {
                     const key = gradebookCellKey(student.id, activity.id)
+                    if (!isGradebookActivityTracked(activity)) {
+                      return (
+                        <TableCell key={key} className="text-muted-foreground h-24 align-top text-xs">
+                          {t('states.untracked')}
+                        </TableCell>
+                      )
+                    }
                     const cell = cellMap.get(key) ?? emptyGradebookCell(student.id, activity.id)
-                    const selected = selectedKeys.has(key)
                     return (
                       <GradebookActivityCell
                         key={key}
                         cell={cell}
-                        selected={selected}
                         labels={{
                           actionRequired: t('actionRequired'),
                           attempts: t('attempts', { count: cell.attempt_count }),
                           late: t('late'),
-                          selectCell: t('selectCell'),
                           state: t(progressStateLabelKey(cell.state)),
                         }}
                         onOpen={() => openCell(cell)}
-                        onSelect={checked => {
-                          setSelectedKeys(current => {
-                            const next = new Set(current)
-                            if (checked) next.add(key)
-                            else next.delete(key)
-                            return next
-                          })
-                        }}
                       />
                     )
                   })}
@@ -334,7 +322,7 @@ function MobileGradebookList({
   return (
     <div className="flex flex-col gap-3">
       {students.map(student => {
-        const cells = activities.map(activity => ({
+        const cells = activities.filter(isGradebookActivityTracked).map(activity => ({
           activity,
           cell: cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity.id),
         }))

@@ -1,6 +1,30 @@
 import type { AssessmentType, Bucket, ComparePreset } from '@/types/analytics'
 
-type Translator = (key: string, values?: Record<string, string | number>) => string
+type Translator = ((key: string, values?: Record<string, string | number>) => string) & {
+  has?: (key: string) => boolean
+}
+
+/** Outcomes the previous client stored as English prose; shown through their codes. */
+const legacyOutcomeCodes: Record<string, string> = {
+  'Learner contacted': 'learner_contacted',
+  'Teacher check-in scheduled': 'check_in_scheduled',
+  'Remediation draft prepared': 'remediation_draft_prepared',
+  'Recovered from risk': 'recovered_from_risk',
+  'Risk marked resolved after teacher review.': 'risk_resolved_after_review',
+}
+
+/**
+ * Wire codes (`snake_case` enums, note/label codes, intervention types…)
+ * rendered through `TeacherAnalytics.codes.<code>`; unknown codes fall back
+ * to a humanised form instead of the raw key.
+ */
+export function getAnalyticsCodeLabel(t: Translator, code: string | null | undefined): string {
+  if (!code) return t('atRisk.na')
+  const normalized = legacyOutcomeCodes[code] ?? code
+  const key = `codes.${normalized}`
+  if (t.has ? t.has(key) : /^[a-z0-9_]+$/.test(normalized)) return t(key)
+  return code.replaceAll('_', ' ')
+}
 
 const assessmentTypeKeys: Record<string, string> = {
   manual_assessment: 'labels.assessmentType.manualAssessment',
@@ -129,4 +153,27 @@ export function getAnalyticsStatusLabel(t: Translator, status: string | null | u
     return t('atRisk.na')
   }
   return resolveLabel(t, statusKeys, status.toUpperCase(), status.replaceAll('_', ' '))
+}
+
+/**
+ * Alerts arrive as `title` codes plus English prose bodies templated per
+ * `kind`; the numbers they interpolate are recoverable, the rest is ours.
+ */
+export function getAnalyticsAlertCopy(
+  t: Translator,
+  alert: { kind: string; title: string; body: string; learner_count?: number | null | undefined },
+): { title: string; body: string } {
+  const number = /-?\d+(?:\.\d+)?/.exec(alert.body)?.[0]
+  const value = number === undefined ? undefined : Number(number)
+  const key = `alertBody.${alert.kind}`
+  const known = t.has ? t.has(key) : /^[a-z_]+$/.test(alert.kind)
+  const title = /^[a-z0-9_]+$/.test(alert.title)
+    ? getAnalyticsCodeLabel(t, alert.title)
+    : alert.kind === 'grading_slo'
+      ? t(/outside/.test(alert.title) ? 'alertTitle.grading_slo_breached' : 'alertTitle.grading_slo_watch', {
+          name: alert.title.replace(/ is (outside|approaching) the grading target$/, ''),
+        })
+      : alert.title
+  const count = alert.kind === 'grading_slo' ? (alert.learner_count ?? value) : value
+  return { title, body: known && count !== undefined ? t(key, { value: count }) : alert.body }
 }

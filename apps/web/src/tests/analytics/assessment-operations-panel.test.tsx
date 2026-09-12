@@ -156,7 +156,8 @@ describe('AssessmentOperationsPanel', () => {
     expect(screen.getByText('Alpha Cohort')).toBeInTheDocument()
     expect(screen.getByText('Awaiting teacher grading')).toBeInTheDocument()
     expect(screen.getByText('Question 1')).toBeInTheDocument()
-    expect(screen.getByText('Release Grades for 8 learners')).toBeInTheDocument()
+    // Bulk-action summaries are rebuilt from `action` + `affected_count` (F32).
+    expect(screen.getByText('pages.assessmentOpsAuditBulkSummary')).toBeInTheDocument()
     expect(screen.getByText('Teacher Analytics')).toBeInTheDocument()
     expect(screen.getByText('pages.assessmentOpsAuditRowCount')).toBeInTheDocument()
   })
@@ -238,8 +239,8 @@ describe('AssessmentOperationsPanel', () => {
       target: { value: 'draft' },
     })
 
-    expect(screen.getByText('Saved draft feedback for Dana')).toBeInTheDocument()
-    expect(screen.queryByText('Release Grades for 8 learners')).not.toBeInTheDocument()
+    expect(screen.getByText('codes.save_feedback')).toBeInTheDocument()
+    expect(screen.queryByText('pages.assessmentOpsAuditBulkSummary')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByText('pages.assessmentOpsAuditExport'))
 

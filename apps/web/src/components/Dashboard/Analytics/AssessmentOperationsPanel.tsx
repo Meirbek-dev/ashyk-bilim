@@ -1,5 +1,7 @@
 'use client'
 
+import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
+
 import { fromUnix } from '@/lib/api/contract'
 
 import { Badge } from '@/components/ui/badge'
@@ -205,6 +207,20 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
     URL.revokeObjectURL(url)
   }
 
+  // Server summaries are English templates over structured fields: rebuild them.
+  const auditSummary = (event: TeacherAssessmentDetailResponse['audit_history'][number]) => {
+    const action = getAnalyticsCodeLabel(t, event.action)
+    if (event.source === 'bulk_action') {
+      return t('pages.assessmentOpsAuditBulkSummary', { action, count: event.affected_count ?? 0 })
+    }
+    const score = /([\d.]+)%/.exec(event.summary)?.[1]
+    return score ? `${action}: ${score}%` : action
+  }
+  const itemNote = (note: string) => {
+    const accuracy = /^accuracy ([\d.]+)%$/.exec(note)?.[1]
+    return accuracy ? t('pages.assessmentItemAccuracy', { value: accuracy }) : getAnalyticsCodeLabel(t, note)
+  }
+
   const resetAuditFilters = () => {
     setAuditSearch('')
     setAuditSourceFilter('all')
@@ -231,7 +247,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       <Card>
         <CardHeader>
           <CardTitle>{t('pages.assessmentOpsDiagnosticsTitle')}</CardTitle>
-          {detail.diagnostics.note ? <p className="text-muted-foreground text-sm">{detail.diagnostics.note}</p> : null}
+          {detail.diagnostics.note ? (
+            <p className="text-muted-foreground text-sm">{getAnalyticsCodeLabel(t, detail.diagnostics.note)}</p>
+          ) : null}
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-border divide-y">
@@ -252,7 +270,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
         <Card>
           <CardHeader>
             <CardTitle>{t('pages.assessmentSupportTitle')}</CardTitle>
-            <p className="text-muted-foreground text-sm">{detail.support.note}</p>
+            <p className="text-muted-foreground text-sm">{getAnalyticsCodeLabel(t, detail.support.note)}</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="divide-border divide-y">
@@ -300,7 +318,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                 <div className="mt-2 flex flex-wrap gap-2">
                   {detail.support.alerts.map(alert => (
                     <Badge key={alert.code} variant={getSupportAlertBadgeVariant(alert.severity)}>
-                      {alert.summary}
+                      {getAnalyticsCodeLabel(t, alert.summary)}
                     </Badge>
                   ))}
                 </div>
@@ -317,7 +335,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
               <Badge variant={getSloBadgeVariant(detail.slo.status)}>{sloLabels[detail.slo.status]}</Badge>
             </div>
             <CardTitle>{t('pages.assessmentOpsSloTitle')}</CardTitle>
-            <p className="text-muted-foreground text-sm">{detail.slo.note}</p>
+            <p className="text-muted-foreground text-sm">{getAnalyticsCodeLabel(t, detail.slo.note)}</p>
           </CardHeader>
           <div className="divide-border divide-y">
             <div className="grid grid-cols-2">
@@ -366,7 +384,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                     <Badge variant="outline">{itemTypeLabels[item.item_type]}</Badge>
                     <Badge variant={getItemSignalBadgeVariant(item.signal)}>{signalLabels[item.signal]}</Badge>
                   </div>
-                  <div className="text-foreground mt-2 text-sm font-medium">{item.item_label}</div>
+                  <div className="text-foreground mt-2 text-sm font-medium">
+                    {item.item_type === 'workflow' ? getAnalyticsCodeLabel(t, item.item_label) : item.item_label}
+                  </div>
                   <div className="text-muted-foreground mt-1.5 grid gap-3 text-sm sm:grid-cols-3">
                     <span>
                       {t('pages.assessmentItemPopulation')}: {item.population_count}
@@ -378,7 +398,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       {t('pages.assessmentItemRate')}: {formatRate(item.impact_rate, t('atRisk.na'))}
                     </span>
                   </div>
-                  <div className="text-muted-foreground mt-1 text-xs">{item.note}</div>
+                  <div className="text-muted-foreground mt-1 text-xs">{itemNote(item.note)}</div>
                 </div>
               ))}
             </div>
@@ -475,7 +495,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       size="sm"
                       onClick={() => setAuditSourceFilter(source)}
                     >
-                      {source === 'all' ? t('pages.assessmentOpsAuditFilterAllSources') : source}
+                      {source === 'all' ? t('pages.assessmentOpsAuditFilterAllSources') : getAnalyticsCodeLabel(t, source)}
                     </Button>
                   ))}
                 </div>
@@ -496,7 +516,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       size="sm"
                       onClick={() => setAuditStatusFilter(status)}
                     >
-                      {status}
+                      {getAnalyticsCodeLabel(t, status)}
                     </Button>
                   ))}
                 </div>
@@ -507,10 +527,10 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                   {filteredAuditHistory.map(event => (
                     <div key={event.id} className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline">{event.source}</Badge>
-                        {event.status ? <Badge variant="secondary">{event.status}</Badge> : null}
+                        <Badge variant="outline">{getAnalyticsCodeLabel(t, event.source)}</Badge>
+                        {event.status ? <Badge variant="secondary">{getAnalyticsCodeLabel(t, event.status)}</Badge> : null}
                       </div>
-                      <div className="text-foreground mt-2 text-sm font-medium">{event.summary}</div>
+                      <div className="text-foreground mt-2 text-sm font-medium">{auditSummary(event)}</div>
                       <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
                         <span>{event.actor_display_name || t('pages.assessmentOpsAuditSystem')}</span>
                         <span>{fromUnix(event.occurred_at_unix).toLocaleString(locale)}</span>

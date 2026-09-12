@@ -6,7 +6,6 @@ import { ReviewPage } from '@/lib/api/generated/zod'
 import { gradebookFromWire, reviewItemFromWire, statsFromWire, teacherSubmissionFromWire } from '@/features/grading/domain/wire'
 import { queryOptions } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import { getAPIUrl } from '@services/config/config'
 import { getCourse, getCurriculum } from '@/lib/api/generated/courses/courses'
 import { listCourseAssessments } from '@/lib/api/generated/assessments/assessments'
 import { gradebook as fetchGradebookPage } from '@/lib/api/generated/grading/grading'
@@ -21,6 +20,8 @@ export interface SubmissionListQueryParams {
   sortDir: 'asc' | 'desc'
   status: SubmissionStatus | 'NEEDS_GRADING' | 'ALL'
 }
+
+export const GRADEBOOK_POLL_MS = 15_000
 
 export interface CourseGradebookQueryParams {
   page?: number
@@ -112,14 +113,11 @@ export function courseGradebookQueryOptions(courseUuid: string, params?: CourseG
       return gradebookFromWire(pages, course, assessments, curriculum)
     },
     staleTime: 5000,
+    // v2 has no course-wide grading event stream (only `GET submissions/{id}/events`
+    // per submission), so grades landing from another tab arrive by polling.
+    refetchInterval: GRADEBOOK_POLL_MS,
+    refetchIntervalInBackground: false,
   })
-}
-
-export function courseGradebookExportUrl(courseUuid: string) {
-  // BLOCKED: v2 has no course-level gradebook CSV export (only per-assessment
-  // `GET assessments/{id}/submissions/export`). Left pointed at the legacy
-  // path; see report under "Blocked".
-  return `${getAPIUrl()}grading/courses/${courseUuid}/gradebook/export`
 }
 
 export function submissionStatsQueryOptions(assessmentUuid: string) {

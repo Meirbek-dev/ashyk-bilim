@@ -26,6 +26,7 @@ vi.mock('@/lib/api/generated/grading/grading', () => ({
 }))
 
 import {
+  GRADEBOOK_POLL_MS,
   courseGradebookQueryOptions,
   gradingDetailQueryOptions,
   submissionsQueryOptions,
@@ -140,6 +141,13 @@ describe('courseGradebookQueryOptions', () => {
     expect(result?.cells[0]?.score).toBe(90)
     expect(result?.activities[0]?.activity_uuid).toBe('activity_1')
     expect(result?.activities[0]?.name).toBe('Week 3 · Exam')
+  })
+  // Gauntlet F27: no course-wide grading stream in v2 — the gradebook polls
+  // while the tab is visible so a grade saved elsewhere shows without a reload.
+  it('polls while the tab is visible (no gradebook event stream in v2)', () => {
+    const options = courseGradebookQueryOptions(COURSE_ID)
+    expect(options.refetchInterval).toBe(GRADEBOOK_POLL_MS)
+    expect(options.refetchIntervalInBackground).toBe(false)
   })
 })
 

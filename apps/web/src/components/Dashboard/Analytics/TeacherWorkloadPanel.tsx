@@ -15,8 +15,11 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
   const locale = useLocale()
   const numberFormatter = new Intl.NumberFormat(locale)
   const t = useTranslations('Components.DashboardAnalytics')
+  const tA = useTranslations('TeacherAnalytics')
   const hours = (value: number | null | undefined) =>
-    value === null || value === undefined ? t('teacherWorkloadPanel.na') : `${numberFormatter.format(value)}h`
+    value === null || value === undefined
+      ? t('teacherWorkloadPanel.na')
+      : tA('units.hours', { value: numberFormatter.format(value) })
 
   return (
     <Card className="shadow-sm">

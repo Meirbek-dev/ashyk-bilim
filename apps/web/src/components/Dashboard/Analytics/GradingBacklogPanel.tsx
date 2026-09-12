@@ -1,5 +1,7 @@
 'use client'
 
+import { getAnalyticsAlertCopy } from '@/lib/analytics/labels'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AlertItem } from '@/types/analytics'
 import { Badge } from '@/components/ui/badge'
@@ -29,7 +31,7 @@ export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBac
           {gradingAlerts.length ? (
             gradingAlerts.map(alert => (
               <Badge key={alert.id} variant={alert.severity === 'critical' ? 'destructive' : 'warning'}>
-                {alert.title}
+                {getAnalyticsAlertCopy(t, alert).title}
               </Badge>
             ))
           ) : (

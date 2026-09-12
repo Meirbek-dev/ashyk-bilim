@@ -52,7 +52,6 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{getAnalyticsAssessmentTypeLabel(t, detail.assessment_type)}</Badge>
-            <Badge variant="outline">{t('pages.assessmentDetailBadge', { id: detail.assessment_id })}</Badge>
           </div>
           <CardTitle className="mt-3 text-2xl">{detail.title}</CardTitle>
         </CardHeader>

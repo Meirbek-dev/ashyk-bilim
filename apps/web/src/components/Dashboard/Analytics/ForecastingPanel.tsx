@@ -5,6 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { ForecastItem } from '@/types/analytics'
 import { TrendingUp } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
+
+const FORECAST_KINDS = new Set([
+  'completion_target_miss',
+  'course_completion_deadline',
+  'grading_backlog_7d',
+  'assessment_failure_risk',
+])
 
 interface ForecastingPanelProps {
   forecasts: ForecastItem[]
@@ -12,6 +20,19 @@ interface ForecastingPanelProps {
 
 export default function ForecastingPanel({ forecasts }: ForecastingPanelProps) {
   const t = useTranslations('Components.DashboardAnalytics')
+  const tA = useTranslations('TeacherAnalytics')
+  // The server templates English prose per `kind`; every value it interpolates
+  // is also on the item, so the copy is rebuilt here from the catalog.
+  const copy = (item: ForecastItem) => {
+    if (!FORECAST_KINDS.has(item.kind)) return { title: getAnalyticsCodeLabel(tA, item.title), prediction: item.prediction }
+    const values = {
+      course: item.course_name ?? '',
+      assessment: item.title.replace(/: [^:]*$/, ''),
+      count: item.learner_count ?? 0,
+      value: item.expected_value ?? 0,
+    }
+    return { title: tA(`forecast.${item.kind}.title`, values), prediction: tA(`forecast.${item.kind}.prediction`, values) }
+  }
   const confidenceText = (level: string) =>
     t('forecastingPanel.confidenceLabel', {
       level: t(`forecastingPanel.confidenceLevels.${level}`),
@@ -39,8 +60,8 @@ export default function ForecastingPanel({ forecasts }: ForecastingPanelProps) {
               </Badge>
               <Badge variant="outline">{confidenceText(item.confidence_level)}</Badge>
             </div>
-            <div className="text-foreground text-sm font-medium">{item.title}</div>
-            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{item.prediction}</div>
+            <div className="text-foreground text-sm font-medium">{copy(item).title}</div>
+            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{copy(item).prediction}</div>
           </div>
         ))}
         {!forecasts.length ? (

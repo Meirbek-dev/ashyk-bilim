@@ -1,6 +1,6 @@
 import { getTeacherCourseDetailByUuid, normalizeAnalyticsQuery } from '@services/analytics/teacher'
 import AssessmentOutliersTable from '@components/Dashboard/Analytics/AssessmentOutliersTable'
-import { getAnalyticsSeverityLabel, getAnalyticsSignalLabel } from '@/lib/analytics/labels'
+import { getAnalyticsCodeLabel, getAnalyticsSeverityLabel, getAnalyticsSignalLabel } from '@/lib/analytics/labels'
 import CompletionFunnelChart from '@components/Dashboard/Analytics/CompletionFunnelChart'
 import ContentBottlenecksTable from '@components/Dashboard/Analytics/ContentBottlenecksTable'
 import EngagementAreaChart from '@components/Dashboard/Analytics/EngagementAreaChart'
@@ -79,7 +79,10 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
         <CompletionFunnelChart
           title={t('pages.courseFunnelTitle')}
           description={t('pages.courseFunnelDesc')}
-          data={detail.funnels.course_completion ?? []}
+          data={(detail.funnels.course_completion ?? []).map(step => ({
+            ...step,
+            label: getAnalyticsCodeLabel(t, step.label),
+          }))}
         />
       </div>
 
@@ -106,7 +109,7 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
                 </Badge>
                 <span className="text-foreground text-sm font-medium">{getAnalyticsSignalLabel(t, item.signal)}</span>
               </div>
-              <div className="text-muted-foreground mt-3 text-sm leading-6">{item.note}</div>
+              <div className="text-muted-foreground mt-3 text-sm leading-6">{getAnalyticsCodeLabel(t, item.note)}</div>
               {item.value !== null ? (
                 <div className="text-foreground mt-3 text-2xl font-semibold">{item.value}</div>
               ) : null}

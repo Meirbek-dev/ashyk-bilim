@@ -14,6 +14,15 @@ export function isScoreInputInvalid(value: string, maxScore = 100): boolean {
  * drift (`0.1 + 0.2`) never pushes an item total past its maximum; display the
  * result as-is — rounding it to one decimal is how `99.99` became `100.0`.
  */
+/**
+ * The grade save takes item scores on the item's own `max_score` scale, while
+ * the breakdown the grader edits keeps them as a share of 100 — convert on the
+ * way out (the server converts back). Unknown scale → send as typed.
+ */
+export function toItemScale(score: number, breakdownMax: number, itemMax: number | undefined): number {
+  return itemMax !== undefined && itemMax > 0 && breakdownMax > 0 ? (score / breakdownMax) * itemMax : score
+}
+
 export function sumScores(values: number[]): number {
   return values.reduce((sum, value) => sum + Math.round(value * 100), 0) / 100
 }

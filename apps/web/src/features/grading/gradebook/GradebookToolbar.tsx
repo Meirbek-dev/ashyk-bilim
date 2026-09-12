@@ -14,7 +14,6 @@ export default function GradebookToolbar({
   data,
   filters,
   activityTypes,
-  selectedCount,
   onFiltersChange,
   onExport,
   onRefresh,
@@ -22,7 +21,6 @@ export default function GradebookToolbar({
   data: CourseGradebookResponse
   filters: GradebookFilters
   activityTypes: string[]
-  selectedCount: number
   onFiltersChange: (filters: GradebookFilters) => void
   onExport: () => void
   onRefresh: () => void
@@ -36,7 +34,7 @@ export default function GradebookToolbar({
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
           <p className="text-muted-foreground text-sm">{data.course_name}</p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryTile
             label={t('summary.learners')}
             value={data.page_info?.total_students ?? data.summary.student_count}
@@ -47,7 +45,6 @@ export default function GradebookToolbar({
           />
           <SummaryTile label={t('summary.needsGrading')} value={data.summary.needs_grading_count} tone="amber" />
           <SummaryTile label={t('summary.overdue')} value={data.summary.overdue_count} tone="rose" />
-          <SummaryTile label={t('summary.selected')} value={selectedCount} />
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onRefresh}>

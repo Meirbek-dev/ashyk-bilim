@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Assessment, Course, Curriculum, GradebookPage } from '@/lib/api/generated/zod'
 import { gradebookFromWire } from '@/features/grading/domain/wire'
-import { localizeAutoGraderFeedback, matchesGradebookSavedFilter } from '@/features/grading/domain'
+import { gradebookToCsv, localizeAutoGraderFeedback, matchesGradebookSavedFilter } from '@/features/grading/domain'
 
 const COURSE_ID = '01a0910d-2963-7483-a97d-40dc56e9aa20'
 const EXAM_ID = '01a0917d-e89b-7b39-8060-bd90a28efa9f'
@@ -55,6 +55,34 @@ describe('gradebookFromWire (UX-013)', () => {
     expect(gradebookFromWire([page('published')], course, [exam], curriculum).activities[0]!.name).toBe('Final Exam')
     // Without a curriculum row (unlinked activity) the assessment title is the fallback.
     expect(gradebookFromWire([page('published')], course, [exam]).activities[0]!.name).toBe('Exam')
+  })
+
+  it('keeps file-submission activities as untracked columns', () => {
+    const curriculum = {
+      chapters: [
+        {
+          activities: [
+            { id: 'activity_exam', name: 'Final Exam', activity_type: 'assessment' },
+            { id: 'activity_upload', name: 'Project Upload', activity_type: 'file_submission' },
+          ],
+        },
+      ],
+    } as unknown as Curriculum
+    const data = gradebookFromWire([page('published')], course, [exam], curriculum)
+    expect(data.activities.map(a => [a.name, a.assessment_type])).toEqual([
+      ['Final Exam', 'exam'],
+      ['Project Upload', null],
+    ])
+    // Untracked columns count as columns but never as "not started" work.
+    expect(data.summary.activity_count).toBe(2)
+    expect(data.summary.not_started_count).toBe(0)
+    const csv = gradebookToCsv(data, data.activities, data.students, {
+      learner: 'Learner',
+      email: 'Email',
+      state: state => state,
+      untracked: 'n/a',
+    })
+    expect(csv).toBe('Learner,Email,Final Exam,Project Upload\r\nLearner,learner@example.com,80,n/a')
   })
 
   it('leaves published work out of the teacher queue', () => {

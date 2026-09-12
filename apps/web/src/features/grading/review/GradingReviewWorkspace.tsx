@@ -256,6 +256,7 @@ export default function GradingReviewWorkspace({
           onSaved={refresh}
           navigation={navigation}
           {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
+          {...(activityUuid !== undefined ? { activityUuid } : {})}
         />
       </ReviewLayout>
     </AnnotationProvider>

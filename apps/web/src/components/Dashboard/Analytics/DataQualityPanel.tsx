@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { AnalyticsDataQuality } from '@/types/analytics'
 import { Database, ShieldCheck } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
+import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
 
 interface DataQualityPanelProps {
   quality: AnalyticsDataQuality
@@ -15,13 +16,35 @@ interface DataQualityPanelProps {
 export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
   const locale = useLocale()
   const t = useTranslations('Components.DashboardAnalytics')
+  const tA = useTranslations('TeacherAnalytics')
   const freshnessSeconds = quality.freshness_seconds ?? 0
   const freshness =
     freshnessSeconds < 60
-      ? `${freshnessSeconds}s`
+      ? tA('freshness.seconds', { seconds: freshnessSeconds })
       : freshnessSeconds < 3600
-        ? `${Math.round(freshnessSeconds / 60)}m`
-        : `${Math.round(freshnessSeconds / 3600)}h`
+        ? tA('freshness.minutes', { minutes: Math.round(freshnessSeconds / 60) })
+        : tA('freshness.hours', { hours: Math.round(freshnessSeconds / 3600) })
+  // The server sends stable issue ids with code titles; the copy is ours.
+  const issueCopy = (issue: AnalyticsDataQuality['issues'][number]) => {
+    if (issue.id === 'missing-event-sources') {
+      return {
+        title: tA('dataQuality.missing-event-sources.title'),
+        detail: tA('dataQuality.missing-event-sources.detail', {
+          sources: quality.missing_event_sources.map(source => getAnalyticsCodeLabel(tA, source)).join(', '),
+        }),
+      }
+    }
+    if (issue.id === 'thin-course-data') {
+      return {
+        title: tA('dataQuality.thin-course-data.title'),
+        detail: tA('dataQuality.thin-course-data.detail', { count: quality.courses_without_enough_data.length }),
+      }
+    }
+    if (issue.id === 'stale-rollup') {
+      return { title: tA('dataQuality.stale-rollup.title'), detail: tA('dataQuality.stale-rollup.detail') }
+    }
+    return { title: getAnalyticsCodeLabel(tA, issue.title), detail: issue.detail }
+  }
 
   return (
     <Card className="shadow-sm">
@@ -38,7 +61,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
             <div className="text-muted-foreground text-xs tracking-wider uppercase">{t('dataQualityPanel.mode')}</div>
             <div className="mt-2 flex items-center gap-2 text-base font-semibold">
               <Database className="text-primary h-4 w-4" />
-              {quality.mode}
+              {getAnalyticsCodeLabel(tA, quality.mode)}
             </div>
           </div>
           <div className="border-border/40 flex flex-col gap-1.5 sm:border-l sm:px-4">
@@ -102,9 +125,9 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
                   >
                     {t(`dataQualityPanel.issueSeverity.${issue.severity}`)}
                   </Badge>
-                  <span className="text-foreground text-sm font-semibold">{issue.title}</span>
+                  <span className="text-foreground text-sm font-semibold">{issueCopy(issue).title}</span>
                 </div>
-                <div className="text-muted-foreground text-xs leading-normal">{issue.detail}</div>
+                <div className="text-muted-foreground text-xs leading-normal">{issueCopy(issue).detail}</div>
               </div>
             ))
           ) : (

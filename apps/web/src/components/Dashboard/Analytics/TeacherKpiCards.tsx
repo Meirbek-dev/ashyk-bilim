@@ -6,6 +6,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import type { MetricCard } from '@/types/analytics'
+import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
 
 interface TeacherKpiCardsProps {
   cards: { metric: MetricCard; sparkline: number[]; definition?: string }[]
@@ -93,12 +94,12 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
             <CardHeader className="flex-row items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                  {metric.label}
+                  {getAnalyticsCodeLabel(t, metric.label)}
                 </div>
                 <CardTitle className="text-foreground mt-3 text-3xl font-semibold">{displayValue}</CardTitle>
                 {metric.benchmark != null && metric.benchmark !== undefined && (
                   <div className="text-muted-foreground mt-1 text-xs">
-                    {metric.benchmark_label}:{' '}
+                    {getAnalyticsCodeLabel(t, metric.benchmark_label)}:{' '}
                     {metric.unit === '%'
                       ? `${numberFormatter.format(metric.benchmark)}%`
                       : numberFormatter.format(metric.benchmark)}

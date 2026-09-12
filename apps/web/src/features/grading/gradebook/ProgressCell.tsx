@@ -1,6 +1,5 @@
 'use client'
 
-import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
@@ -10,13 +9,10 @@ import { cn } from '@/lib/utils'
 
 interface ProgressCellProps {
   cell: ActivityProgressCell
-  selected: boolean
   actionRequiredLabel: string
   attemptsLabel: string
   lateLabel: string
-  selectLabel: string
   stateLabel: string
-  onSelect: (checked: boolean) => void
   onOpen: () => void
 }
 
@@ -24,13 +20,10 @@ const SUBMISSION_STATUSES = new Set(['DRAFT', 'PENDING', 'GRADED', 'PUBLISHED', 
 
 export default function ProgressCell({
   cell,
-  selected,
   actionRequiredLabel,
   attemptsLabel,
   lateLabel,
-  selectLabel,
   stateLabel,
-  onSelect,
   onOpen,
 }: ProgressCellProps) {
   const canOpen = Boolean(cell.latest_submission_uuid)
@@ -50,18 +43,13 @@ export default function ProgressCell({
         'h-full w-full rounded-md border p-2 text-left transition-colors',
         canOpen ? 'cursor-pointer hover:bg-muted/60' : 'cursor-default',
         'bg-card text-card-foreground',
-        selected && 'ring-ring ring-2',
       )}
     >
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <Checkbox
-          checked={selected}
-          onCheckedChange={checked => onSelect(checked)}
-          onClick={event => event.stopPropagation()}
-          aria-label={selectLabel}
-        />
-        {cell.teacher_action_required ? <Badge variant="warning">{actionRequiredLabel}</Badge> : null}
-      </div>
+      {cell.teacher_action_required ? (
+        <div className="mb-2 flex items-center justify-end">
+          <Badge variant="warning">{actionRequiredLabel}</Badge>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         {submissionStatus ? <SubmissionStatusBadge status={submissionStatus} /> : null}
         <LmsStatusBadge status={mapProgressStateToLmsStatus(cell.state)} label={stateLabel} />
