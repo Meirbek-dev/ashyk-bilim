@@ -8,8 +8,8 @@ use std::convert::Infallible;
 use std::time::Duration;
 
 use ab_core::id::{
-    AiCourseAnalysisId, AiLectureReviewId, AiRemediationSessionId, AiThreadId, CourseId,
-    SubmissionId, UserId,
+    AiCourseAnalysisId, AiLectureReviewId, AiRemediationSessionId, AiSubjectId, AiThreadId,
+    CourseId, UserId,
 };
 use ab_core::{Error, FieldError};
 use ab_domain::ai::{QaRequest, QaTurn};
@@ -291,7 +291,8 @@ pub async fn study_ask_queue(
 
 #[utoipa::path(
     post, path = "/ai/submission-analysis/{submission_id}/analyze", tag = "ai",
-    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
+    params(("submission_id" = AiSubjectId, Path,
+            description = "An assessment submission id or a file-submission attempt id")),
     request_body = LanguageRequest,
     responses(
         (status = 200, description = "The analysis", body = SubmissionAnalysis),
@@ -304,7 +305,7 @@ pub async fn study_ask_queue(
 pub async fn analyze_submission(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(submission_id): Path<SubmissionId>,
+    Path(submission_id): Path<AiSubjectId>,
     ValidJson(request): ValidJson<LanguageRequest>,
 ) -> ApiResult<Json<SubmissionAnalysis>> {
     Ok(Json(
@@ -318,14 +319,15 @@ pub async fn analyze_submission(
 
 #[utoipa::path(
     post, path = "/ai/submission-analysis/{submission_id}/analyze/queue", tag = "ai",
-    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
+    params(("submission_id" = AiSubjectId, Path,
+            description = "An assessment submission id or a file-submission attempt id")),
     request_body = LanguageRequest,
     responses((status = 202, description = "Queued run", body = RunStatus)),
 )]
 pub async fn queue_submission_analysis(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(submission_id): Path<SubmissionId>,
+    Path(submission_id): Path<AiSubjectId>,
     ValidJson(request): ValidJson<LanguageRequest>,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
     let run = state
@@ -338,13 +340,14 @@ pub async fn queue_submission_analysis(
 /// The newest analysis of a submission; `null` when none exists.
 #[utoipa::path(
     get, path = "/ai/submission-analysis/{submission_id}/latest", tag = "ai",
-    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
+    params(("submission_id" = AiSubjectId, Path,
+            description = "An assessment submission id or a file-submission attempt id")),
     responses((status = 200, description = "The latest analysis or null", body = Option<SubmissionAnalysis>)),
 )]
 pub async fn latest_submission_analysis(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(submission_id): Path<SubmissionId>,
+    Path(submission_id): Path<AiSubjectId>,
 ) -> ApiResult<Json<Option<SubmissionAnalysis>>> {
     let latest = state
         .ai
@@ -547,7 +550,8 @@ pub async fn dismiss_lecture_suggestion(
 
 #[utoipa::path(
     post, path = "/ai/remediation/{submission_id}/generate", tag = "ai",
-    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
+    params(("submission_id" = AiSubjectId, Path,
+            description = "An assessment submission id or a file-submission attempt id")),
     request_body = RemediationRequest,
     responses(
         (status = 200, description = "The remediation session", body = RemediationSession),
@@ -558,7 +562,7 @@ pub async fn dismiss_lecture_suggestion(
 pub async fn generate_remediation(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(submission_id): Path<SubmissionId>,
+    Path(submission_id): Path<AiSubjectId>,
     ValidJson(request): ValidJson<RemediationRequest>,
 ) -> ApiResult<Json<RemediationSession>> {
     Ok(Json(
@@ -572,14 +576,15 @@ pub async fn generate_remediation(
 
 #[utoipa::path(
     post, path = "/ai/remediation/{submission_id}/generate/queue", tag = "ai",
-    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
+    params(("submission_id" = AiSubjectId, Path,
+            description = "An assessment submission id or a file-submission attempt id")),
     request_body = RemediationRequest,
     responses((status = 202, description = "Queued run", body = RunStatus)),
 )]
 pub async fn queue_remediation(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(submission_id): Path<SubmissionId>,
+    Path(submission_id): Path<AiSubjectId>,
     ValidJson(request): ValidJson<RemediationRequest>,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
     let run = state

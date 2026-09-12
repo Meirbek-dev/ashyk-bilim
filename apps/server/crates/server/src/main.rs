@@ -470,7 +470,8 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         ab_clients::llm::LlmClient::from_ai_config(&config.ai)?.map(std::sync::Arc::new),
         ai_events,
         limiter,
-    );
+    )
+    .with_storage(std::sync::Arc::clone(&storage));
     let runner = ab_domain::code::CodeRunner::new(
         pool.clone(),
         build_judge0(&config)?,

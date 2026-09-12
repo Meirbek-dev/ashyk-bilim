@@ -4,7 +4,10 @@
 //! invoked. Schedule seeded at worker boot every six hours; the run is
 //! idempotent (the day's rows are replaced in one transaction), so the last
 //! run of the day is the nightly snapshot dashboards compare against.
-//! `ashyq admin analytics-rollup --from --to` backfills a range.
+//! `ashyq admin analytics-rollup --from --to` backfills a range. Each run
+//! ends by pruning `analytics_events` older than 400 days and daily rollup
+//! rows / risk snapshots older than 2 years (DECISIONS "Analytics
+//! retention (b)").
 
 use ab_core::Result;
 use futures::FutureExt;
@@ -39,7 +42,7 @@ impl JobHandler for AnalyticsRollup {
             .and_then(serde_json::Value::as_str)
             .map(str::to_owned);
         async move {
-            let counts = ab_domain::analytics::AnalyticsService::new(pool)
+            let counts = ab_domain::analytics::AnalyticsService::new(pool.clone())
                 .run_rollup(date.as_deref())
                 .await?;
             tracing::info!(
@@ -50,6 +53,13 @@ impl JobHandler for AnalyticsRollup {
                 assessments = counts.assessment_rows,
                 teachers = counts.teacher_rows,
                 "analytics rollup written"
+            );
+            let pruned = ab_db::analytics::prune_retention(&pool).await?;
+            tracing::info!(
+                events = pruned.events,
+                daily_rows = pruned.daily_rows,
+                risk_snapshots = pruned.risk_snapshots,
+                "analytics retention pruned"
             );
             Ok(())
         }

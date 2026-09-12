@@ -110,11 +110,48 @@ async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
             &serde_json::json!({
                 "slug": "teaching-assistant",
                 "display_name": "Teaching assistant",
+                "description": "Helps with grading",
                 "priority": 30,
             }),
         )
         .await;
     assert_eq!(created.status, StatusCode::NO_CONTENT);
+
+    // Custom roles carry raw text; seeded roles keep catalog keys and null text.
+    let listed = app.get_as(&admin, "/api/v2/rbac/roles").await;
+    let roles = listed.json();
+    let roles = roles.as_array().unwrap();
+    let custom = roles
+        .iter()
+        .find(|r| r["slug"] == "teaching-assistant")
+        .unwrap();
+    assert_eq!(custom["display_name"], "Teaching assistant");
+    assert_eq!(custom["description"], "Helps with grading");
+    assert_eq!(custom["display_name_key"], "roles.teaching-assistant.name");
+    let seeded = roles.iter().find(|r| r["slug"] == "admin").unwrap();
+    assert_eq!(seeded["display_name"], serde_json::Value::Null);
+    assert_eq!(seeded["display_name_key"], "roles.admin.name");
+
+    // Metadata updates land on the text fields.
+    let renamed = app
+        .patch_as(
+            &admin,
+            "/api/v2/rbac/roles/teaching-assistant",
+            &serde_json::json!({ "display_name": "TA", "description": "Grades" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::NO_CONTENT);
+    let listed = app.get_as(&admin, "/api/v2/rbac/roles").await;
+    let roles = listed.json();
+    let custom = roles
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["slug"] == "teaching-assistant")
+        .unwrap()
+        .clone();
+    assert_eq!(custom["display_name"], "TA");
+    assert_eq!(custom["description"], "Grades");
 
     // Slug collisions are conflicts; system roles refuse edits.
     let dup = app
@@ -126,6 +163,7 @@ async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
         )
         .await;
     assert_eq!(dup.status, StatusCode::CONFLICT);
+    assert_eq!(dup.json()["code"], "role-slug-taken");
     let sys = app
         .send(
             axum::http::Request::builder()
@@ -207,4 +245,28 @@ async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
             .any(|p| p == "course:read:all"),
         "deleting the role must revoke its grants from live sessions"
     );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn last_admin_role_cannot_be_removed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["role:manage:platform"]).await;
+
+    let refused = app
+        .delete_as(&admin, &format!("/api/v2/users/{boss}/roles/admin"))
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT);
+    assert_eq!(refused.json()["code"], "last-admin");
+
+    // A second active admin lifts the guard.
+    let other = app
+        .create_user("deputy", "deputy@example.com", &["admin"])
+        .await;
+    let removed = app
+        .delete_as(&admin, &format!("/api/v2/users/{other}/roles/admin"))
+        .await;
+    assert_eq!(removed.status, StatusCode::NO_CONTENT);
 }

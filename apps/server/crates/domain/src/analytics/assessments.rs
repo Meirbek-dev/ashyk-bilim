@@ -591,7 +591,8 @@ pub fn build_workflow_items(d: &AssessmentDiagnosticsSnapshot) -> Vec<Assessment
                     f64::from(i32::try_from(total).unwrap_or(i32::MAX)),
                 ),
                 signal,
-                note: note.to_owned(),
+                note: Some(note),
+                accuracy_pct: None,
             },
         )
         .collect()
@@ -917,11 +918,7 @@ pub fn build_audit_history(
                     }
                     .to_owned(),
                 ),
-                summary: format!(
-                    "{} {:.1}%",
-                    if published { "published" } else { "saved" },
-                    e.final_score
-                ),
+                final_score: Some(e.final_score),
                 affected_count: Some(1),
                 submission_id: Some(e.submission_id),
                 grading_entry_id: Some(e.id),
@@ -947,7 +944,7 @@ pub fn build_audit_history(
                 actor_display_name: a.performed_by.map(|u| ctx.display_name(u)),
                 occurred_at_unix: occurred,
                 status: Some(a.status.clone()),
-                summary: format!("{} for {} learners", a.action_type, a.affected_count),
+                final_score: None,
                 affected_count: Some(i64::from(a.affected_count)),
                 submission_id: None,
                 grading_entry_id: None,
@@ -1114,10 +1111,8 @@ pub fn build_detail(
             impacted_count: impacted,
             impact_rate: safe_pct(as_f64(impacted), as_f64(population)),
             signal,
-            note: q.accuracy_pct.map_or_else(
-                || "accuracy_unavailable".to_owned(),
-                |acc| format!("accuracy {acc:.1}%"),
-            ),
+            note: None,
+            accuracy_pct: q.accuracy_pct,
         });
     }
     item_analytics.sort_by(|x, y| {

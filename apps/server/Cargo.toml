@@ -91,6 +91,12 @@ reqwest = { version = "0.13.4", default-features = false, features = ["json", "f
 tiktoken-rs = "=0.12.0"
 regex = "=1.13.1"
 
+# Certificate PDF (no headless browser): typst's low-level writer and
+# subsetter, plus Google's skrifa for glyph lookup and advance widths.
+pdf-writer = "0.15.0"
+skrifa = { version = "0.42.1", default-features = false, features = ["std"] }
+subsetter = { version = "0.2.6", default-features = false }
+
 # Misc
 futures = "0.3.34"
 http = "1.5.0"

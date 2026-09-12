@@ -117,6 +117,9 @@ pub struct RoleRow {
     pub slug: String,
     pub display_name_key: String,
     pub description_key: String,
+    /// Raw text, custom roles only (seeded roles resolve the keys).
+    pub display_name: Option<String>,
+    pub description: Option<String>,
     pub priority: i32,
     pub is_system: bool,
 }
@@ -124,7 +127,8 @@ pub struct RoleRow {
 pub async fn list_roles(pool: &PgPool) -> Result<Vec<RoleRow>> {
     let rows = sqlx::query_as!(
         RoleRow,
-        r#"SELECT id, slug, display_name_key, description_key, priority, is_system
+        r#"SELECT id, slug, display_name_key, description_key, display_name, description,
+                  priority, is_system
            FROM roles ORDER BY priority DESC"#
     )
     .fetch_all(pool)
@@ -145,7 +149,8 @@ pub async fn role_grants(pool: &PgPool, role_id: uuid::Uuid) -> Result<Vec<Strin
 pub async fn find_role_by_slug(pool: &PgPool, slug: &str) -> Result<Option<RoleRow>> {
     let row = sqlx::query_as!(
         RoleRow,
-        r#"SELECT id, slug, display_name_key, description_key, priority, is_system
+        r#"SELECT id, slug, display_name_key, description_key, display_name, description,
+                  priority, is_system
            FROM roles WHERE slug = $1"#,
         slug
     )
@@ -313,22 +318,25 @@ pub async fn set_avatar_key(pool: &PgPool, user_id: UserId, key: &str) -> Result
 
 // ── Custom-role CRUD (system roles are seed-managed) ────────────────────────
 
-/// Returns `None` when the slug is taken.
+/// Returns `None` when the slug is taken. The key columns get the
+/// conventional `roles.<slug>.*` keys so the row shape matches seeded roles;
+/// the display text lives in `display_name`/`description`.
 pub async fn insert_role(
     pool: &PgPool,
     slug: &str,
-    display_name_key: &str,
-    description_key: &str,
+    display_name: &str,
+    description: Option<&str>,
     priority: i32,
 ) -> Result<Option<uuid::Uuid>> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO roles (slug, display_name_key, description_key, priority, is_system)
-           VALUES ($1, $2, $3, $4, false)
+        r#"INSERT INTO roles (slug, display_name_key, description_key, display_name, description,
+                              priority, is_system)
+           VALUES ($1, 'roles.' || $1 || '.name', 'roles.' || $1 || '.description', $2, $3, $4, false)
            ON CONFLICT (slug) DO NOTHING
            RETURNING id"#,
         slug,
-        display_name_key,
-        description_key,
+        display_name,
+        description,
         priority
     )
     .fetch_optional(pool)
@@ -340,19 +348,19 @@ pub async fn insert_role(
 pub async fn update_role(
     pool: &PgPool,
     slug: &str,
-    display_name_key: Option<&str>,
-    description_key: Option<&str>,
+    display_name: Option<&str>,
+    description: Option<&str>,
     priority: Option<i32>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE roles SET
-               display_name_key = COALESCE($2, display_name_key),
-               description_key = COALESCE($3, description_key),
+               display_name = COALESCE($2, display_name),
+               description = COALESCE($3, description),
                priority = COALESCE($4, priority)
            WHERE slug = $1 AND NOT is_system"#,
         slug,
-        display_name_key,
-        description_key,
+        display_name,
+        description,
         priority
     )
     .execute(pool)
@@ -498,11 +506,14 @@ pub async fn user_status(pool: &PgPool, user_id: UserId) -> Result<Option<String
     Ok(status)
 }
 
-/// How many users hold the role (last-admin guard).
+/// How many active users hold the role (last-admin guard: a disabled admin
+/// cannot sign in, so it does not count).
 pub async fn count_role_holders(pool: &PgPool, slug: &str) -> Result<i64> {
     let count = sqlx::query_scalar!(
         r#"SELECT count(*) AS "count!" FROM user_roles ur
-           JOIN roles r ON r.id = ur.role_id WHERE r.slug = $1"#,
+           JOIN roles r ON r.id = ur.role_id
+           JOIN users u ON u.id = ur.user_id
+           WHERE r.slug = $1 AND u.status = 'active'"#,
         slug
     )
     .fetch_one(pool)

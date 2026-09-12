@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, slug, display_name_key, description_key, priority, is_system\n           FROM roles ORDER BY priority DESC",
+  "query": "SELECT id, slug, display_name_key, description_key, display_name, description,\n                  priority, is_system\n           FROM roles WHERE slug = $1",
   "describe": {
     "columns": [
       {
@@ -49,6 +49,28 @@
       },
       {
         "ordinal": 4,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
         "name": "priority",
         "type_info": "Int4",
         "origin": {
@@ -59,7 +81,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 7,
         "name": "is_system",
         "type_info": "Bool",
         "origin": {
@@ -71,16 +93,20 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       false,
       false,
       false,
       false,
+      true,
+      true,
       false,
       false
     ]
   },
-  "hash": "de22356851116488e4008ff6cf0274de521e382e9663cd493fc41173d295409e"
+  "hash": "5ed3540b45a60b7090d622656c86741ea8a21456295e450f8cc0fc7a22ff5ab0"
 }

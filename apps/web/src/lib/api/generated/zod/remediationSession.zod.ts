@@ -11,6 +11,16 @@ export const RemediationSession = zod.object({
   activity_id: zod.uuid(),
   analysis_id: zod.union([zod.null(), zod.uuid()]).optional(),
   created_at_unix: zod.int(),
+  file_submission_attempt_id: zod
+    .union([
+      zod.null(),
+      zod
+        .uuid()
+        .describe(
+          'The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set.',
+        ),
+    ])
+    .optional(),
   gate_mode: zod.boolean(),
   id: zod.uuid(),
   language: zod.string(),
@@ -22,7 +32,9 @@ export const RemediationSession = zod.object({
     .enum(['assigned', 'in_progress', 'passed', 'failed'])
     .describe('Remediation session lifecycle (legacy string states).'),
   student_user_id: zod.uuid(),
-  submission_id: zod.uuid(),
+  submission_id: zod
+    .union([zod.null(), zod.uuid().describe('The remediated assessment submission — `null` for a file attempt.')])
+    .optional(),
   test: zod.looseObject({}),
   updated_at_unix: zod.int(),
 })

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO roles (slug, display_name_key, description_key, priority, is_system)\n           VALUES ($1, $2, $3, $4, false)\n           ON CONFLICT (slug) DO NOTHING\n           RETURNING id",
+  "query": "INSERT INTO roles (slug, display_name_key, description_key, display_name, description,\n                              priority, is_system)\n           VALUES ($1, 'roles.' || $1 || '.name', 'roles.' || $1 || '.description', $2, $3, $4, false)\n           ON CONFLICT (slug) DO NOTHING\n           RETURNING id",
   "describe": {
     "columns": [
       {
@@ -27,5 +27,5 @@
       false
     ]
   },
-  "hash": "9bb6749e73cfe43f10d29fb2138cba6ebc16fc06c33a9f37fec98b08183b07ab"
+  "hash": "f63dd819ca1dd060ffb75b9f14ad56a9ae47f99f0d967ae2a89bd23f715ff8ef"
 }

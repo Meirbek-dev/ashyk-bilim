@@ -187,7 +187,15 @@ impl AiConfig {
     /// Effective config with secrets redacted (admin settings + config-check).
     #[must_use]
     pub fn redacted(&self) -> serde_json::Value {
+        let status = if !self.ai_enabled {
+            "disabled: ai_enabled=false"
+        } else if !self.provider_ready() {
+            "disabled: no provider key"
+        } else {
+            "enabled"
+        };
         serde_json::json!({
+            "status": status,
             "openai_api_key": self.openai_api_key.as_ref().map(|_| "[redacted]"),
             "openai_model": self.openai_model,
             "openai_base_url": self.openai_base_url,
@@ -554,6 +562,12 @@ mod tests {
         let redacted = ai.redacted().to_string();
         assert!(!redacted.contains("sk-secret-value"));
         assert!(redacted.contains("[redacted]"));
+        assert_eq!(ai.redacted()["status"], "enabled");
+        assert_eq!(
+            AiConfig::default().redacted()["status"],
+            "disabled: no provider key"
+        );
+        assert_eq!(ai.openrouter_model, "deepseek/deepseek-v4-flash");
     }
 
     #[test]

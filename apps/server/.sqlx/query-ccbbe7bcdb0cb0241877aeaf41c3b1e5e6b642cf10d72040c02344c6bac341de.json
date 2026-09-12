@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO ai_submission_analyses (submission_id, run_id, triggered_by, language,\n                                               gap_count, analysis, evidence, model_name)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+  "query": "INSERT INTO ai_submission_analyses (submission_id, file_submission_attempt_id, run_id,\n                                               triggered_by, language, gap_count, analysis,\n                                               evidence, model_name)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
   "describe": {
     "columns": [
       {
@@ -20,6 +20,7 @@
         "Uuid",
         "Uuid",
         "Uuid",
+        "Uuid",
         "Text",
         "Int4",
         "Jsonb",
@@ -31,5 +32,5 @@
       false
     ]
   },
-  "hash": "a598d8810271bd1d2bf688bfedd758dd7539b041bedb8e170ce22d566f93bdd9"
+  "hash": "ccbbe7bcdb0cb0241877aeaf41c3b1e5e6b642cf10d72040c02344c6bac341de"
 }

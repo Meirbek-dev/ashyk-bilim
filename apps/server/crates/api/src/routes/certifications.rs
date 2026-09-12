@@ -2,9 +2,11 @@
 //! (learners), plus public verification by code.
 
 use ab_core::id::{CertificationId, CourseId};
+use ab_core::language::Language;
 use axum::Json;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::response::{IntoResponse, Response};
 
 use crate::dto::certifications::{
     Certification, CreateCertificationRequest, IssuedCertificate, UpdateCertificationRequest,
@@ -146,4 +148,57 @@ pub async fn verify_certificate(
     Path(code): Path<String>,
 ) -> ApiResult<Json<VerifiedCertificate>> {
     Ok(Json(state.certifications.verify(&code).await?.into()))
+}
+
+/// The certificate as an A4-landscape PDF — public by code, like verification.
+///
+/// Holder, course, certificate name/type, issue date, teacher, the
+/// verification code and the verify link (`AB__SERVER__WEB_URL` +
+/// `/certificates/{code}/verify`). The page language follows
+/// `Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.
+#[utoipa::path(
+    get, path = "/certificates/{code}/pdf", tag = "certifications",
+    params(
+        ("code" = String, Path, description = "Verification code"),
+        ("Accept-Language" = Option<String>, Header, description = "ru, kk or en (default: the holder's locale)"),
+    ),
+    responses(
+        (status = 200, description = "PDF", content_type = "application/pdf", body = String),
+        (status = 404, description = "Unknown code", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn certificate_pdf(
+    State(state): State<AppState>,
+    Path(code): Path<String>,
+    headers: HeaderMap,
+) -> ApiResult<Response> {
+    let language = Language::from_accept_language(
+        headers
+            .get(header::ACCEPT_LANGUAGE)
+            .and_then(|v| v.to_str().ok()),
+    );
+    let bytes = state
+        .certifications
+        .pdf(&code, language, |code| {
+            state
+                .config
+                .server
+                .web_href(&format!("/certificates/{code}/verify"))
+        })
+        .await?;
+    let mut response = (StatusCode::OK, bytes).into_response();
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/pdf"),
+    );
+    response.headers_mut().insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_str(&format!(
+            "attachment; filename=\"certificate-{}.pdf\"",
+            code.trim()
+        ))
+        .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
+    );
+    Ok(response)
 }

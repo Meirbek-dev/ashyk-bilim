@@ -24,6 +24,7 @@ use ab_domain::identity::{
     GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsergroupsService,
     UsersService,
 };
+use ab_domain::link_preview::LinkPreviewService;
 use ab_domain::progress::{LearnerStateService, ProgressProjector, TrailService, WorkQueueService};
 use sqlx::PgPool;
 
@@ -59,6 +60,7 @@ pub struct AppState {
     pub gamification: GamificationService,
     pub work_queue: WorkQueueService,
     pub analytics: AnalyticsService,
+    pub link_preview: LinkPreviewService,
     pub ai: AiService,
     /// The run event streams (`sse:ai:{run}`) the SSE tail reads.
     pub ai_events: AiEvents,
@@ -86,7 +88,8 @@ impl AppState {
             llm,
             Some(ai_events.clone()),
             Some(RateLimiter::new(sessions.redis())),
-        );
+        )
+        .with_storage(Arc::clone(&storage));
         let courses = CoursesService::new(pool.clone());
         let assessments = AssessmentsService::new(pool.clone(), courses.clone());
         let limits = config
@@ -99,6 +102,14 @@ impl AppState {
         Ok(Self {
             ai,
             ai_events,
+            // Loopback destinations only outside production (wiremock, the
+            // local web app); production rejects every non-public address.
+            link_preview: LinkPreviewService::new(
+                ab_clients::link_preview::LinkPreviewClient::new(
+                    !config.environment.is_production(),
+                ),
+                Some(sessions.redis()),
+            ),
             submissions: SubmissionsService::new(
                 pool.clone(),
                 assessments.clone(),

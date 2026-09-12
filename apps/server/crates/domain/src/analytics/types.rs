@@ -107,6 +107,56 @@ pub struct TimeSeriesPoint {
     pub value: f64,
 }
 
+/// Every server-composed analytics message. The client localises the code
+/// with the item's `params` (DECISIONS "Pass-6 contract gaps": codes +
+/// params on the wire, no prose). Param names per code:
+///
+/// - alerts: `grading_backlog {count}`, `engagement_dropped {delta_pct}`,
+///   `content_stale {days}`, `risk_spike {count}`, `grading_slo_breached`
+///   / `grading_slo_watch {assessment_title, course_name, breaches,
+///   awaiting, oldest_hours?, target_hours}`;
+/// - forecasts: `completion_target_miss {course_name, count}`,
+///   `course_completion_deadline {course_name, expected_pct}`,
+///   `grading_backlog_7d {count}`, `assessment_failure_risk
+///   {assessment_title, expected_pct}`;
+/// - anomalies: `sharp_engagement_drop` / `submission_spike {course_name}`,
+///   `fast_quiz_completion` / `score_distribution_shift {assessment_title}`;
+/// - insights: `new_at_risk_learners {course_name, count}`, `low_pass_rate`
+///   / `low_pass_rate_with_diagnostics {assessment_title, pass_rate}`,
+///   `content_bottleneck {activity_name, signal}`, `workload_backlog {count,
+///   breaches, forecast_7d, target_hours}`, `completion_improved
+///   {course_name, delta_pts}`;
+/// - data quality: `missing_event_sources {sources[]}`, `thin_course_data
+///   {count}`, `stale_rollup {}`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnalyticsCode {
+    GradingBacklog,
+    EngagementDropped,
+    ContentStale,
+    RiskSpike,
+    GradingSloBreached,
+    GradingSloWatch,
+    CompletionTargetMiss,
+    CourseCompletionDeadline,
+    #[serde(rename = "grading_backlog_7d")]
+    GradingBacklog7d,
+    AssessmentFailureRisk,
+    SharpEngagementDrop,
+    SubmissionSpike,
+    FastQuizCompletion,
+    ScoreDistributionShift,
+    NewAtRiskLearners,
+    LowPassRate,
+    LowPassRateWithDiagnostics,
+    ContentBottleneck,
+    WorkloadBacklog,
+    CompletionImproved,
+    MissingEventSources,
+    ThinCourseData,
+    StaleRollup,
+}
+
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AlertItem {
     pub id: String,
@@ -114,8 +164,9 @@ pub struct AlertItem {
     /// `assessment_outlier` | `content_stale`.
     pub kind: &'static str,
     pub severity: Severity,
-    pub title: String,
-    pub body: String,
+    pub code: AnalyticsCode,
+    #[schema(value_type = Object)]
+    pub params: serde_json::Value,
     pub href: Option<String>,
     pub course_id: Option<CourseId>,
     pub activity_id: Option<ActivityId>,
@@ -204,8 +255,9 @@ pub struct InsightFeedItem {
     pub category: &'static str,
     pub severity: Severity,
     pub priority: i64,
-    pub title: String,
-    pub body: String,
+    pub code: AnalyticsCode,
+    #[schema(value_type = Object)]
+    pub params: serde_json::Value,
     pub course_id: Option<CourseId>,
     pub activity_id: Option<ActivityId>,
     pub assessment_type: Option<AssessmentKind>,
@@ -255,8 +307,9 @@ pub struct DrillThroughResponse {
 pub struct DataQualityIssue {
     pub id: &'static str,
     pub severity: Severity,
-    pub title: &'static str,
-    pub detail: String,
+    pub code: AnalyticsCode,
+    #[schema(value_type = Object)]
+    pub params: serde_json::Value,
     pub course_id: Option<CourseId>,
     pub source: Option<&'static str>,
 }
@@ -290,8 +343,9 @@ pub struct ForecastItem {
     /// `course_completion_deadline` | `assessment_failure_risk`.
     pub kind: &'static str,
     pub severity: Severity,
-    pub title: String,
-    pub prediction: String,
+    pub code: AnalyticsCode,
+    #[schema(value_type = Object)]
+    pub params: serde_json::Value,
     pub confidence_level: Confidence,
     pub course_id: Option<CourseId>,
     pub course_name: Option<String>,
@@ -310,8 +364,9 @@ pub struct AnomalyItem {
     /// `score_distribution_shift`.
     pub kind: &'static str,
     pub severity: Severity,
-    pub title: String,
-    pub detail: &'static str,
+    pub code: AnalyticsCode,
+    #[schema(value_type = Object)]
+    pub params: serde_json::Value,
     pub observed_value: Option<f64>,
     pub baseline_value: Option<f64>,
     pub course_id: Option<CourseId>,
@@ -714,7 +769,8 @@ pub struct AssessmentAuditEventRow {
     pub actor_display_name: Option<String>,
     pub occurred_at_unix: i64,
     pub status: Option<String>,
-    pub summary: String,
+    /// The saved/published score of a grading entry; `None` for bulk actions.
+    pub final_score: Option<f64>,
     pub affected_count: Option<i64>,
     pub submission_id: Option<SubmissionId>,
     pub grading_entry_id: Option<GradingEntryId>,
@@ -778,7 +834,10 @@ pub struct AssessmentItemAnalyticsRow {
     pub impacted_count: i64,
     pub impact_rate: Option<f64>,
     pub signal: ItemSignal,
-    pub note: String,
+    /// Stable code for workflow rows (`manual_review_pending`, …); questions
+    /// and tests carry `accuracy_pct` instead.
+    pub note: Option<&'static str>,
+    pub accuracy_pct: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]

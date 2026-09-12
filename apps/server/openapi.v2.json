@@ -1388,10 +1388,10 @@
           {
             "name": "submission_id",
             "in": "path",
-            "description": "Submission id",
+            "description": "An assessment submission id or a file-submission attempt id",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/SubmissionId"
+              "$ref": "#/components/schemas/AiSubjectId"
             }
           }
         ],
@@ -1439,10 +1439,10 @@
           {
             "name": "submission_id",
             "in": "path",
-            "description": "Submission id",
+            "description": "An assessment submission id or a file-submission attempt id",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/SubmissionId"
+              "$ref": "#/components/schemas/AiSubjectId"
             }
           }
         ],
@@ -1789,10 +1789,10 @@
           {
             "name": "submission_id",
             "in": "path",
-            "description": "Submission id",
+            "description": "An assessment submission id or a file-submission attempt id",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/SubmissionId"
+              "$ref": "#/components/schemas/AiSubjectId"
             }
           }
         ],
@@ -1850,10 +1850,10 @@
           {
             "name": "submission_id",
             "in": "path",
-            "description": "Submission id",
+            "description": "An assessment submission id or a file-submission attempt id",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/SubmissionId"
+              "$ref": "#/components/schemas/AiSubjectId"
             }
           }
         ],
@@ -1892,10 +1892,10 @@
           {
             "name": "submission_id",
             "in": "path",
-            "description": "Submission id",
+            "description": "An assessment submission id or a file-submission attempt id",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/SubmissionId"
+              "$ref": "#/components/schemas/AiSubjectId"
             }
           }
         ],
@@ -6516,6 +6516,61 @@
         }
       }
     },
+    "/api/v2/certificates/{code}/pdf": {
+      "get": {
+        "tags": [
+          "certifications"
+        ],
+        "summary": "The certificate as an A4-landscape PDF — public by code, like verification.",
+        "description": "Holder, course, certificate name/type, issue date, teacher, the\nverification code and the verify link (`AB__SERVER__WEB_URL` +\n`/certificates/{code}/verify`). The page language follows\n`Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.",
+        "operationId": "certificate_pdf",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Verification code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "ru, kk or en (default: the holder's locale)",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown code",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/certifications": {
       "post": {
         "tags": [
@@ -9866,7 +9921,7 @@
             }
           },
           "409": {
-            "description": "Slug taken",
+            "description": "`role-slug-taken`",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11615,6 +11670,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "`last-admin`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         }
       }
@@ -11662,7 +11727,7 @@
             }
           },
           "409": {
-            "description": "Self-disable refused",
+            "description": "`self-disable` / `last-admin`",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11724,6 +11789,59 @@
           },
           "404": {
             "description": "Unknown user",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/utils/link-preview": {
+      "get": {
+        "tags": [
+          "utils"
+        ],
+        "summary": "OpenGraph preview of a public web page, for the editor's link block.",
+        "description": "Any signed-in session. `http(s)` only; the hostname must resolve to a\npublic address (loopback is accepted outside production only), 5 s\ndeadline, 1 MiB read cap, 24 h cache per URL. A page that cannot be\nread answers 502 `link-preview-failed`; a rejected URL 422 (`url`).",
+        "operationId": "link_preview",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "Page URL (http/https)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Rejected URL (scheme, credentials, private address)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The page could not be fetched or is not HTML",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12702,6 +12820,11 @@
           "aborted"
         ]
       },
+      "AiSubjectId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "The work an AI analysis or remediation is about: an assessment\nsubmission id *or* a file-submission attempt id (both UUIDv7, one\nroute parameter — the server looks the id up in both tables)."
+      },
       "AiSubmissionAnalysisId": {
         "type": "string",
         "format": "uuid"
@@ -12726,8 +12849,8 @@
           "id",
           "kind",
           "severity",
-          "title",
-          "body"
+          "code",
+          "params"
         ],
         "properties": {
           "activity_id": {
@@ -12750,8 +12873,8 @@
               }
             ]
           },
-          "body": {
-            "type": "string"
+          "code": {
+            "$ref": "#/components/schemas/AnalyticsCode"
           },
           "course_id": {
             "oneOf": [
@@ -12783,13 +12906,42 @@
             ],
             "format": "int64"
           },
+          "params": {
+            "type": "object"
+          },
           "severity": {
             "$ref": "#/components/schemas/Severity"
-          },
-          "title": {
-            "type": "string"
           }
         }
+      },
+      "AnalyticsCode": {
+        "type": "string",
+        "description": "Every server-composed analytics message. The client localises the code\nwith the item's `params` (DECISIONS \"Pass-6 contract gaps\": codes +\nparams on the wire, no prose). Param names per code:\n\n- alerts: `grading_backlog {count}`, `engagement_dropped {delta_pct}`,\n  `content_stale {days}`, `risk_spike {count}`, `grading_slo_breached`\n  / `grading_slo_watch {assessment_title, course_name, breaches,\n  awaiting, oldest_hours?, target_hours}`;\n- forecasts: `completion_target_miss {course_name, count}`,\n  `course_completion_deadline {course_name, expected_pct}`,\n  `grading_backlog_7d {count}`, `assessment_failure_risk\n  {assessment_title, expected_pct}`;\n- anomalies: `sharp_engagement_drop` / `submission_spike {course_name}`,\n  `fast_quiz_completion` / `score_distribution_shift {assessment_title}`;\n- insights: `new_at_risk_learners {course_name, count}`, `low_pass_rate`\n  / `low_pass_rate_with_diagnostics {assessment_title, pass_rate}`,\n  `content_bottleneck {activity_name, signal}`, `workload_backlog {count,\n  breaches, forecast_7d, target_hours}`, `completion_improved\n  {course_name, delta_pts}`;\n- data quality: `missing_event_sources {sources[]}`, `thin_course_data\n  {count}`, `stale_rollup {}`.",
+        "enum": [
+          "grading_backlog",
+          "engagement_dropped",
+          "content_stale",
+          "risk_spike",
+          "grading_slo_breached",
+          "grading_slo_watch",
+          "completion_target_miss",
+          "course_completion_deadline",
+          "grading_backlog_7d",
+          "assessment_failure_risk",
+          "sharp_engagement_drop",
+          "submission_spike",
+          "fast_quiz_completion",
+          "score_distribution_shift",
+          "new_at_risk_learners",
+          "low_pass_rate",
+          "low_pass_rate_with_diagnostics",
+          "content_bottleneck",
+          "workload_backlog",
+          "completion_improved",
+          "missing_event_sources",
+          "thin_course_data",
+          "stale_rollup"
+        ]
       },
       "AnalyticsDataQuality": {
         "type": "object",
@@ -12856,8 +13008,8 @@
           "id",
           "kind",
           "severity",
-          "title",
-          "detail"
+          "code",
+          "params"
         ],
         "properties": {
           "activity_id": {
@@ -12897,6 +13049,9 @@
             ],
             "format": "double"
           },
+          "code": {
+            "$ref": "#/components/schemas/AnalyticsCode"
+          },
           "course_id": {
             "oneOf": [
               {
@@ -12913,9 +13068,6 @@
               "null"
             ]
           },
-          "detail": {
-            "type": "string"
-          },
           "id": {
             "type": "string"
           },
@@ -12930,11 +13082,11 @@
             ],
             "format": "double"
           },
+          "params": {
+            "type": "object"
+          },
           "severity": {
             "$ref": "#/components/schemas/Severity"
-          },
-          "title": {
-            "type": "string"
           }
         }
       },
@@ -13047,8 +13199,7 @@
           "id",
           "source",
           "action",
-          "occurred_at_unix",
-          "summary"
+          "occurred_at_unix"
         ],
         "properties": {
           "action": {
@@ -13087,6 +13238,14 @@
               }
             ]
           },
+          "final_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "The saved/published score of a grading entry; `None` for bulk actions."
+          },
           "grading_entry_id": {
             "oneOf": [
               {
@@ -13123,9 +13282,6 @@
                 "$ref": "#/components/schemas/SubmissionId"
               }
             ]
-          },
-          "summary": {
-            "type": "string"
           }
         }
       },
@@ -13335,10 +13491,16 @@
           "item_type",
           "population_count",
           "impacted_count",
-          "signal",
-          "note"
+          "signal"
         ],
         "properties": {
+          "accuracy_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
           "impact_rate": {
             "type": [
               "number",
@@ -13361,7 +13523,11 @@
             "description": "`workflow` | `question` | `test`."
           },
           "note": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stable code for workflow rows (`manual_review_pending`, …); questions\nand tests carry `accuracy_pct` instead."
           },
           "population_count": {
             "type": "integer",
@@ -16228,10 +16394,13 @@
         "required": [
           "id",
           "severity",
-          "title",
-          "detail"
+          "code",
+          "params"
         ],
         "properties": {
+          "code": {
+            "$ref": "#/components/schemas/AnalyticsCode"
+          },
           "course_id": {
             "oneOf": [
               {
@@ -16242,11 +16411,11 @@
               }
             ]
           },
-          "detail": {
-            "type": "string"
-          },
           "id": {
             "type": "string"
+          },
+          "params": {
+            "type": "object"
           },
           "severity": {
             "$ref": "#/components/schemas/Severity"
@@ -16256,9 +16425,6 @@
               "string",
               "null"
             ]
-          },
-          "title": {
-            "type": "string"
           }
         }
       },
@@ -16663,6 +16829,10 @@
           "invalid-totp-code",
           "username-taken",
           "email-taken",
+          "role-slug-taken",
+          "last-admin",
+          "self-disable",
+          "link-preview-failed",
           "code-runner-degraded",
           "compile-error",
           "language-not-allowed",
@@ -17216,8 +17386,8 @@
           "id",
           "kind",
           "severity",
-          "title",
-          "prediction",
+          "code",
+          "params",
           "confidence_level"
         ],
         "properties": {
@@ -17240,6 +17410,9 @@
                 "$ref": "#/components/schemas/AssessmentKind"
               }
             ]
+          },
+          "code": {
+            "$ref": "#/components/schemas/AnalyticsCode"
           },
           "confidence_level": {
             "$ref": "#/components/schemas/Confidence"
@@ -17288,8 +17461,8 @@
             ],
             "format": "int64"
           },
-          "prediction": {
-            "type": "string"
+          "params": {
+            "type": "object"
           },
           "severity": {
             "$ref": "#/components/schemas/Severity"
@@ -17300,9 +17473,6 @@
               "null"
             ],
             "format": "double"
-          },
-          "title": {
-            "type": "string"
           }
         }
       },
@@ -17896,8 +18066,8 @@
           "category",
           "severity",
           "priority",
-          "title",
-          "body"
+          "code",
+          "params"
         ],
         "properties": {
           "activity_id": {
@@ -17930,12 +18100,12 @@
               }
             ]
           },
-          "body": {
-            "type": "string"
-          },
           "category": {
             "type": "string",
             "description": "`risk` | `assessment` | `content` | `workload` | `completion` | `intervention`."
+          },
+          "code": {
+            "$ref": "#/components/schemas/AnalyticsCode"
           },
           "course_id": {
             "oneOf": [
@@ -17963,15 +18133,15 @@
             ],
             "format": "int64"
           },
+          "params": {
+            "type": "object"
+          },
           "priority": {
             "type": "integer",
             "format": "int64"
           },
           "severity": {
             "$ref": "#/components/schemas/Severity"
-          },
-          "title": {
-            "type": "string"
           }
         }
       },
@@ -18887,6 +19057,44 @@
           }
         },
         "additionalProperties": false
+      },
+      "LinkPreview": {
+        "type": "object",
+        "description": "OpenGraph / `<title>` summary of a public web page.",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "image_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Absolute `http(s)` image URL, when the page declares one."
+          },
+          "site_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "The URL the page was read from (after redirects)."
+          }
+        }
       },
       "LoginRequest": {
         "type": "object",
@@ -20145,7 +20353,6 @@
         "type": "object",
         "required": [
           "id",
-          "submission_id",
           "activity_id",
           "student_user_id",
           "status",
@@ -20173,6 +20380,17 @@
           "created_at_unix": {
             "type": "integer",
             "format": "int64"
+          },
+          "file_submission_attempt_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FileAttemptId",
+                "description": "The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+              }
+            ]
           },
           "gate_mode": {
             "type": "boolean"
@@ -20217,7 +20435,15 @@
             "$ref": "#/components/schemas/UserId"
           },
           "submission_id": {
-            "$ref": "#/components/schemas/SubmissionId"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionId",
+                "description": "The remediated assessment submission — `null` for a file attempt."
+              }
+            ]
           },
           "test": {
             "type": "object"
@@ -20410,12 +20636,25 @@
           "permissions"
         ],
         "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "description_key": {
             "type": "string"
           },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Raw display text — custom roles only; `null` on seeded roles."
+          },
           "display_name_key": {
             "type": "string",
-            "description": "i18n key (frontend catalogs own the display strings)."
+            "description": "i18n key (frontend catalogs own the display strings of seeded roles)."
           },
           "is_system": {
             "type": "boolean"
@@ -21460,7 +21699,6 @@
         "type": "object",
         "required": [
           "id",
-          "submission_id",
           "status",
           "language",
           "gap_count",
@@ -21478,6 +21716,17 @@
           },
           "evidence": {
             "type": "object"
+          },
+          "file_submission_attempt_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FileAttemptId",
+                "description": "The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+              }
+            ]
           },
           "gap_count": {
             "type": "integer",
@@ -21509,7 +21758,15 @@
             "type": "string"
           },
           "submission_id": {
-            "$ref": "#/components/schemas/SubmissionId"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionId",
+                "description": "The analysed assessment submission — `null` for a file attempt."
+              }
+            ]
           },
           "triggered_by": {
             "oneOf": [
@@ -23800,6 +24057,10 @@
     {
       "name": "ai",
       "description": "AI agents, runs and event streams; admin operations views"
+    },
+    {
+      "name": "utils",
+      "description": "Authoring utilities: link previews"
     }
   ]
 }

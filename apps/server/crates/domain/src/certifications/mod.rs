@@ -6,7 +6,10 @@
 //! progress projector, and again on demand when the learner opens their
 //! certificates. Verification by code is public.
 
+pub mod pdf;
+
 use ab_core::id::{CertificationId, CourseId, UserId};
+use ab_core::language::Language;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, FieldError, Result};
 use ab_db::certifications::{CertificateRow, CertificationRow};
@@ -288,6 +291,60 @@ impl CertificationsService {
                 certification,
                 course,
             },
+        })
+    }
+
+    /// The certificate as a PDF (public by code, like `verify`). The page
+    /// language is `language` when given, else the holder's locale;
+    /// `verify_url` turns the canonical code into the public verify link.
+    pub async fn pdf(
+        &self,
+        verify_code: &str,
+        language: Option<Language>,
+        verify_url: impl FnOnce(&str) -> String,
+    ) -> Result<Vec<u8>> {
+        let verified = self.verify(verify_code).await?;
+        let holder =
+            ab_db::identity::get_profile(&self.pool, verified.issued.certificate.user_id).await?;
+        let language = language
+            .or_else(|| {
+                holder
+                    .as_ref()
+                    .and_then(|h| Language::from_locale(&h.locale))
+            })
+            .unwrap_or(Language::Ru);
+        let config = &verified.issued.certification.config;
+        let text = |key: &str| {
+            config
+                .get(key)
+                .and_then(serde_json::Value::as_str)
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+        };
+        let teacher_name = match text("certificate_instructor") {
+            Some(name) => Some(name),
+            None => match verified.issued.course.creator_id {
+                Some(creator) => ab_db::identity::list_user_summaries(&self.pool, &[creator])
+                    .await?
+                    .into_iter()
+                    .next()
+                    .map(|u| u.display_name),
+                None => None,
+            },
+        };
+        let code = verified.issued.certificate.verify_code.clone();
+        pdf::render(&pdf::CertificatePdf {
+            language,
+            holder_name: verified.holder_display_name,
+            certificate_name: text("certification_name")
+                .unwrap_or_else(|| verified.issued.course.name.clone()),
+            certificate_type: text("certification_type").unwrap_or_default(),
+            course_name: verified.issued.course.name,
+            issued_at_unix: verified.issued.certificate.created_at,
+            verify_url: verify_url(&code),
+            verify_code: code,
+            teacher_name,
         })
     }
 }

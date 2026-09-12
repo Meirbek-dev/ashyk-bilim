@@ -4,9 +4,12 @@ use utoipa::ToSchema;
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Role {
     pub slug: String,
-    /// i18n key (frontend catalogs own the display strings).
+    /// i18n key (frontend catalogs own the display strings of seeded roles).
     pub display_name_key: String,
     pub description_key: String,
+    /// Raw display text — custom roles only; `null` on seeded roles.
+    pub display_name: Option<String>,
+    pub description: Option<String>,
     pub priority: i32,
     pub is_system: bool,
     pub permissions: Vec<String>,
@@ -18,6 +21,8 @@ impl From<ab_domain::identity::rbac_admin::RoleWithGrants> for Role {
             slug: r.slug,
             display_name_key: r.display_name_key,
             description_key: r.description_key,
+            display_name: r.display_name,
+            description: r.description,
             priority: r.priority,
             is_system: r.is_system,
             permissions: r.permissions,

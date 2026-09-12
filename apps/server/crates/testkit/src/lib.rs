@@ -442,4 +442,10 @@ impl TestResponse {
     pub fn text(&self) -> String {
         String::from_utf8_lossy(&self.body).into_owned()
     }
+
+    /// Raw body bytes (binary responses: PDF, CSV with BOM).
+    #[must_use]
+    pub fn bytes(&self) -> &[u8] {
+        &self.body
+    }
 }

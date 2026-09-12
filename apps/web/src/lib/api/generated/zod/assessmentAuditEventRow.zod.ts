@@ -13,13 +13,16 @@ export const AssessmentAuditEventRow = zod.object({
   actor_user_id: zod.union([zod.null(), zod.uuid()]).optional(),
   affected_count: zod.int().nullish(),
   bulk_action_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  final_score: zod
+    .number()
+    .nullish()
+    .describe('The saved\/published score of a grading entry; `None` for bulk actions.'),
   grading_entry_id: zod.union([zod.null(), zod.uuid()]).optional(),
   id: zod.string(),
   occurred_at_unix: zod.int(),
   source: zod.string().describe('`grading_entry` | `bulk_action`.'),
   status: zod.string().nullish(),
   submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
-  summary: zod.string(),
 })
 
 export type AssessmentAuditEventRow = zod.input<typeof AssessmentAuditEventRow>

@@ -7,21 +7,21 @@
 
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole, RemediationStatus};
-use ab_core::id::{ActivityId, AiRemediationSessionId, SubmissionId, UserId};
+use ab_core::id::{ActivityId, AiRemediationSessionId, AiSubjectId, UserId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::ai::{NewRemediationSession, RemediationSessionRow, RunRow, SubmissionAnalysisRow};
-use ab_db::submissions::SubmissionRow;
 use tokio_util::sync::CancellationToken;
 
-use super::submission_analyst::merged;
-use super::{Execution, draft_citation, metadata_id, metadata_language, run_user};
+use super::submission_analyst::{merged, role_for};
+use super::{Execution, draft_citation, metadata_language, run_user};
 use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
-use crate::ai::context::{self, ContextBundle};
+use crate::ai::context::ContextBundle;
 use crate::ai::prompts::{Prompt, clipped, load_prompt};
 use crate::ai::redact;
 use crate::ai::runs::RunSpec;
 use crate::ai::schemas::{RemediationBundle, RemediationQuestion, SubmissionAnalysisReport};
+use crate::ai::subject::{Subject, run_subject};
 use crate::identity::Actor;
 
 const ARTIFACT_KIND: &str = "remediation";
@@ -57,38 +57,22 @@ pub fn draft_remediation(language: &str) -> RemediationBundle {
     }
 }
 
-fn role_for(actor_id: UserId, submission: &SubmissionRow) -> AiThreadRole {
-    if actor_id == submission.user_id {
-        AiThreadRole::Student
-    } else {
-        AiThreadRole::Teacher
-    }
-}
-
 impl AiService {
-    /// The activity behind a submission (via its assessment).
-    async fn submission_activity(&self, submission: &SubmissionRow) -> Result<ActivityId> {
-        ab_db::assessments::get_assessment(&self.pool, submission.assessment_id)
-            .await?
-            .map(|a| a.activity_id)
-            .ok_or_else(|| Error::not_found("assessment"))
-    }
-
     /// The newest analysis, or a fresh one produced now (own run).
     async fn analysis_for(
         &self,
         run: &RunRow,
         token: &CancellationToken,
-        submission: &SubmissionRow,
+        subject: &Subject,
         user_id: UserId,
         language: &str,
     ) -> Result<SubmissionAnalysisRow> {
         if let Some(existing) =
-            ab_db::ai::latest_submission_analysis(&self.pool, submission.id).await?
+            ab_db::ai::latest_submission_analysis(&self.pool, subject.id()).await?
         {
             return Ok(existing);
         }
-        let (bundle, metadata) = context::submission_bundle(&self.pool, submission).await?;
+        let (bundle, metadata) = self.subject_bundle(subject).await?;
         let rendered = bundle.render();
         let input_tokens = self.budget.assert_request(&self.pool, &rendered).await?;
         let analysis_run = self
@@ -96,15 +80,14 @@ impl AiService {
                 user_id,
                 RunSpec {
                     kind: AiRunKind::SubmissionAnalysis,
-                    role: role_for(user_id, submission),
+                    role: role_for(user_id, subject),
                     queued: false,
-                    course_id: Some(submission.course_id),
+                    course_id: Some(subject.course_id()),
                     activity_id: None,
                     metadata: merged(
-                        metadata,
+                        merged(metadata, subject.metadata()),
                         serde_json::json!({
-                            "submission_id": submission.id,
-                            "course_id": submission.course_id,
+                            "course_id": subject.course_id(),
                             "language": language,
                             "context_source_count": bundle.sources.len(),
                             "parent_run_id": run.id,
@@ -127,23 +110,23 @@ impl AiService {
         .await
     }
 
-    /// `POST /ai/remediation/{submission}/generate` — inline.
+    /// `POST /ai/remediation/{subject}/generate` — inline.
     pub async fn generate_remediation(
         &self,
         actor: &Actor,
-        submission_id: SubmissionId,
+        subject_id: AiSubjectId,
         gate_mode: bool,
         language: &str,
     ) -> Result<RemediationSessionRow> {
         self.require_feature(AiFeature::Remediation)?;
-        let (submission, _course) = self.accessible_submission(actor, submission_id).await?;
+        let subject = self.accessible_subject(actor, subject_id).await?;
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Remediation)
             .await?;
-        let (bundle, metadata) = context::submission_bundle(&self.pool, &submission).await?;
+        let (bundle, metadata) = self.subject_bundle(&subject).await?;
         let rendered = bundle.render();
         let input_tokens = self.budget.assert_request(&self.pool, &rendered).await?;
-        let activity_id = self.submission_activity(&submission).await?;
+        let activity_id = self.subject_activity(&subject).await?;
         let run = self
             .create_run(
                 actor.user_id,
@@ -151,13 +134,12 @@ impl AiService {
                     kind: AiRunKind::Remediation,
                     role: AiThreadRole::Teacher,
                     queued: false,
-                    course_id: Some(submission.course_id),
+                    course_id: Some(subject.course_id()),
                     activity_id: Some(activity_id),
                     metadata: merged(
-                        metadata,
+                        merged(metadata, subject.metadata()),
                         serde_json::json!({
-                            "submission_id": submission_id,
-                            "course_id": submission.course_id,
+                            "course_id": subject.course_id(),
                             "gate_mode": gate_mode,
                             "language": language,
                             "context_source_count": bundle.sources.len(),
@@ -172,7 +154,7 @@ impl AiService {
         Box::pin(self.remediation_execute(
             &run,
             &watch.token,
-            &submission,
+            &subject,
             &bundle,
             &rendered,
             input_tokens,
@@ -183,35 +165,37 @@ impl AiService {
         .await
     }
 
-    /// `POST /ai/remediation/{submission}/generate/queue`.
+    /// `POST /ai/remediation/{subject}/generate/queue`.
     pub async fn queue_remediation(
         &self,
         actor: &Actor,
-        submission_id: SubmissionId,
+        subject_id: AiSubjectId,
         gate_mode: bool,
         language: &str,
     ) -> Result<RunRow> {
         self.require_feature(AiFeature::Remediation)?;
-        let (submission, _course) = self.accessible_submission(actor, submission_id).await?;
+        let subject = self.accessible_subject(actor, subject_id).await?;
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Remediation)
             .await?;
-        let activity_id = self.submission_activity(&submission).await?;
+        let activity_id = self.subject_activity(&subject).await?;
         let run = self
             .create_run(
                 actor.user_id,
                 RunSpec {
                     kind: AiRunKind::Remediation,
-                    role: role_for(actor.user_id, &submission),
+                    role: role_for(actor.user_id, &subject),
                     queued: true,
-                    course_id: Some(submission.course_id),
+                    course_id: Some(subject.course_id()),
                     activity_id: Some(activity_id),
-                    metadata: serde_json::json!({
-                        "submission_id": submission_id,
-                        "course_id": submission.course_id,
-                        "gate_mode": gate_mode,
-                        "language": language,
-                    }),
+                    metadata: merged(
+                        subject.metadata(),
+                        serde_json::json!({
+                            "course_id": subject.course_id(),
+                            "gate_mode": gate_mode,
+                            "language": language,
+                        }),
+                    ),
                     thread: None,
                     title: None,
                 },
@@ -226,7 +210,6 @@ impl AiService {
         run: &RunRow,
         token: &CancellationToken,
     ) -> Result<()> {
-        let submission_id: SubmissionId = metadata_id(run, "submission_id")?;
         let gate_mode = run
             .metadata
             .get("gate_mode")
@@ -234,10 +217,8 @@ impl AiService {
             .unwrap_or(false);
         let language = metadata_language(run);
         let user_id = run_user(run)?;
-        let submission = ab_db::submissions::get_submission(&self.pool, submission_id)
-            .await?
-            .ok_or_else(|| Error::not_found("submission"))?;
-        let (bundle, metadata) = context::submission_bundle(&self.pool, &submission).await?;
+        let subject = self.load_subject_by(run_subject(run)?).await?;
+        let (bundle, metadata) = self.subject_bundle(&subject).await?;
         ab_db::ai::merge_run_metadata(&self.pool, run.id, &metadata).await?;
         let rendered = bundle.render();
         let input_tokens = self
@@ -251,7 +232,7 @@ impl AiService {
         Box::pin(self.remediation_execute(
             run,
             token,
-            &submission,
+            &subject,
             &bundle,
             &rendered,
             input_tokens,
@@ -271,7 +252,7 @@ impl AiService {
         &self,
         run: &RunRow,
         token: &CancellationToken,
-        submission: &SubmissionRow,
+        subject: &Subject,
         bundle: &ContextBundle,
         rendered: &str,
         input_tokens: i32,
@@ -281,7 +262,7 @@ impl AiService {
     ) -> Result<RemediationSessionRow> {
         Box::pin(self.settle(run.id, FAIL_CODE, async {
             let analysis = self
-                .analysis_for(run, token, submission, user_id, language)
+                .analysis_for(run, token, subject, user_id, language)
                 .await?;
             let report: SubmissionAnalysisReport =
                 serde_json::from_value(analysis.analysis.clone()).map_err(|e| {
@@ -323,13 +304,13 @@ impl AiService {
                 serde_json::to_value(&finished.value.practice_questions)
                     .map_err(|e| Error::internal("serialising practice questions", e))?,
             );
-            let activity_id = self.submission_activity(submission).await?;
+            let activity_id = self.subject_activity(subject).await?;
             let id = ab_db::ai::insert_remediation_session(
                 &self.pool,
                 NewRemediationSession {
-                    submission_id: submission.id,
+                    subject: subject.id(),
                     activity_id,
-                    student_user_id: submission.user_id,
+                    student_user_id: subject.user_id(),
                     analysis_id: Some(analysis.id),
                     run_id: run.id,
                     gate_mode,

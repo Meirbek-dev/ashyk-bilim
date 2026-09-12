@@ -1,5 +1,6 @@
 ---
 source: crates/core/src/error/code.rs
+assertion_line: 107
 expression: registry
 ---
 {
@@ -75,6 +76,14 @@ expression: registry
     422,
     "Programming language not allowed"
   ],
+  "last-admin": [
+    409,
+    "The platform must keep at least one active admin"
+  ],
+  "link-preview-failed": [
+    502,
+    "Could not fetch a preview for the link"
+  ],
   "mfa-required": [
     401,
     "Multi-factor authentication required"
@@ -94,6 +103,14 @@ expression: registry
   "rate-limited": [
     429,
     "Too many requests"
+  ],
+  "role-slug-taken": [
+    409,
+    "Role slug is already taken"
+  ],
+  "self-disable": [
+    409,
+    "You cannot disable your own account"
   ],
   "service-unavailable": [
     503,

@@ -11,13 +11,25 @@ export const SubmissionAnalysis = zod.object({
   analysis: zod.looseObject({}),
   created_at_unix: zod.int(),
   evidence: zod.looseObject({}),
+  file_submission_attempt_id: zod
+    .union([
+      zod.null(),
+      zod
+        .uuid()
+        .describe(
+          'The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set.',
+        ),
+    ])
+    .optional(),
   gap_count: zod.int(),
   id: zod.uuid(),
   language: zod.string(),
   model_name: zod.string().nullish(),
   run_id: zod.union([zod.null(), zod.uuid()]).optional(),
   status: zod.string(),
-  submission_id: zod.uuid(),
+  submission_id: zod
+    .union([zod.null(), zod.uuid().describe('The analysed assessment submission — `null` for a file attempt.')])
+    .optional(),
   triggered_by: zod.union([zod.null(), zod.uuid()]).optional(),
 })
 

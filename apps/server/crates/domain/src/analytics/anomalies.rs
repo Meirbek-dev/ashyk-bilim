@@ -10,7 +10,7 @@ use super::context::{
     submitted_at,
 };
 use super::filters::AnalyticsFilters;
-use super::types::{AnomalyItem, AssessmentOutlierRow, Severity, TeacherCourseRow};
+use super::types::{AnalyticsCode, AnomalyItem, AssessmentOutlierRow, Severity, TeacherCourseRow};
 
 /// Legacy `build_anomalies`, top 12 by severity then observed value.
 #[must_use]
@@ -54,8 +54,8 @@ pub fn build_anomalies(
                 } else {
                     Severity::Warning
                 },
-                title: format!("{}: sharp engagement drop", row.course_name),
-                detail: "active_learners_fell_sharply_vs_previous_period",
+                code: AnalyticsCode::SharpEngagementDrop,
+                params: serde_json::json!({ "course_name": row.course_name }),
                 observed_value: Some(count(current.len())),
                 baseline_value: Some(count(previous.len())),
                 course_id: Some(row.course_id),
@@ -90,8 +90,8 @@ pub fn build_anomalies(
                 id: format!("submission-spike-{course_id}"),
                 kind: "submission_spike",
                 severity: Severity::Warning,
-                title: format!("{name}: unusual submission spike"),
-                detail: "submission_volume_far_above_previous_period",
+                code: AnalyticsCode::SubmissionSpike,
+                params: serde_json::json!({ "course_name": name }),
                 observed_value: Some(current),
                 baseline_value: Some(previous),
                 course_id: Some(course_id),
@@ -139,8 +139,8 @@ pub fn build_anomalies(
                 id: format!("fast-quiz-{}", a.id),
                 kind: "fast_quiz_completion",
                 severity: Severity::Warning,
-                title: format!("{}: suspiciously fast completions", a.title),
-                detail: "many_attempts_finished_near_minimum_observed_time",
+                code: AnalyticsCode::FastQuizCompletion,
+                params: serde_json::json!({ "assessment_title": a.title }),
                 observed_value: Some(count(fast_count)),
                 baseline_value: Some(count(values.len())),
                 course_id: Some(a.course_id),
@@ -184,11 +184,8 @@ pub fn build_anomalies(
                     id: format!("score-shift-{}-{}", row.assessment_type, row.assessment_id),
                     kind: "score_distribution_shift",
                     severity: Severity::Warning,
-                    title: format!(
-                        "{}: score distribution shifted after content update",
-                        row.title
-                    ),
-                    detail: "average_score_changed_after_last_content_update",
+                    code: AnalyticsCode::ScoreDistributionShift,
+                    params: serde_json::json!({ "assessment_title": row.title }),
                     observed_value: Some(round1(after_avg)),
                     baseline_value: Some(round1(before_avg)),
                     course_id: Some(row.course_id),

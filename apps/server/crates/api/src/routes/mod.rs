@@ -25,4 +25,5 @@ pub mod submissions;
 pub mod uploads;
 pub mod usergroups;
 pub mod users;
+pub mod utils;
 pub mod work_queue;

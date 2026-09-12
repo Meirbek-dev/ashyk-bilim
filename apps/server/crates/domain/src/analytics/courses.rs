@@ -15,9 +15,9 @@ use super::context::{
 use super::filters::{AnalyticsFilters, DAY_SECS, SortOrder, Window};
 use super::risk::build_risk_rows;
 use super::types::{
-    ActivityDropoffRow, AlertItem, AssessmentOutlierRow, AtRiskLearnerRow, ContentHealthRow,
-    FunnelStep, Funnels, RiskLevel, Severity, TeacherCourseDetailSummary, TeacherCourseRow,
-    TimeSeriesPoint,
+    ActivityDropoffRow, AlertItem, AnalyticsCode, AssessmentOutlierRow, AtRiskLearnerRow,
+    ContentHealthRow, FunnelStep, Funnels, RiskLevel, Severity, TeacherCourseDetailSummary,
+    TeacherCourseRow, TimeSeriesPoint,
 };
 
 /// Everything the course rows need beyond the context.
@@ -67,8 +67,8 @@ pub fn course_top_alert(
             } else {
                 Severity::Critical
             },
-            title: "grading_queue_needs_attention".to_owned(),
-            body: format!("{ungraded} submissions are still awaiting review."),
+            code: AnalyticsCode::GradingBacklog,
+            params: serde_json::json!({ "count": ungraded }),
             href: None,
             course_id: Some(course_id),
             activity_id: None,
@@ -81,11 +81,8 @@ pub fn course_top_alert(
             id: format!("engagement-drop-{course_id}"),
             kind: "engagement_drop",
             severity: Severity::Warning,
-            title: "engagement_dropped".to_owned(),
-            body: format!(
-                "Active learners fell by {}% compared with the previous period.",
-                delta.abs()
-            ),
+            code: AnalyticsCode::EngagementDropped,
+            params: serde_json::json!({ "delta_pct": delta.abs() }),
             href: None,
             course_id: Some(course_id),
             activity_id: None,
@@ -102,8 +99,8 @@ pub fn course_top_alert(
             } else {
                 Severity::Warning
             },
-            title: "content_may_be_stale".to_owned(),
-            body: format!("This course has not been updated for {days} days."),
+            code: AnalyticsCode::ContentStale,
+            params: serde_json::json!({ "days": days }),
             href: None,
             course_id: Some(course_id),
             activity_id: None,

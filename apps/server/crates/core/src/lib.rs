@@ -9,6 +9,7 @@ pub mod assessments;
 pub mod config;
 pub mod error;
 pub mod id;
+pub mod language;
 pub mod permission;
 pub mod telemetry;
 pub mod time;

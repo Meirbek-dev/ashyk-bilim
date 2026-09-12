@@ -1,10 +1,7 @@
-use std::collections::HashMap;
-
 use ab_core::{Error, Result};
 use serde_json::{Map, Value};
 
 use crate::ctx::Ctx;
-use crate::transform::gamification::{LedgerInput, SourceCheck};
 use crate::{legacy, transform};
 
 pub async fn analytics(ctx: &mut Ctx) -> Result<()> {
@@ -48,90 +45,37 @@ pub async fn require_empty(ctx: &mut Ctx, tables: &[&str]) -> Result<()> {
     Ok(())
 }
 
+/// Gamification is zeroed at cutover (DECISIONS "Gamification is zeroed at
+/// cutover", Q-2026-09-06-1 c): no XP, levels, streaks or ledger rows are
+/// migrated. Every legacy profile becomes a fresh zeroed row that keeps only
+/// the user's preferences; the legacy ledger is counted and left behind.
 pub async fn gamification(ctx: &mut Ctx) -> Result<()> {
+    let ledger = legacy::count(&ctx.source, "xp_transactions").await?;
+    ctx.report
+        .source("xp_transactions", u64::try_from(ledger).unwrap_or_default());
+    ctx.wrote("xp_transactions", 0);
+    ctx.note(format!(
+        "gamification zeroed at cutover: {ledger} legacy XP transaction(s) not migrated"
+    ));
+
     let profiles = legacy::gamification_profiles(&ctx.source, ctx.limit).await?;
     ctx.source("gamification_profiles", profiles.len());
-    let by_user: HashMap<i32, legacy::GamificationProfile> = profiles
-        .into_iter()
-        .map(|profile| (profile.user_id, profile))
-        .collect();
-    let transactions = legacy::xp_transactions(&ctx.source, ctx.limit).await?;
-    ctx.source("xp_transactions", transactions.len());
-    let mut input = Vec::new();
-    for row in transactions {
-        let Some(user_id) = ctx.idmap.get("user", row.user_id) else {
-            ctx.drop_row("xp_transaction", row.id, "orphan user");
-            continue;
-        };
-        let Some(source) = transform::gamification::source(&row.source) else {
-            ctx.drop_row("xp_transaction", row.id, "unsupported source");
-            continue;
-        };
-        let created_at = row.created_at.unwrap_or_default();
-        let check = match source {
-            "login_bonus" => SourceCheck::Verified(transform::gamification::login_day(created_at)),
-            "admin_award" | "streak_bonus" => SourceCheck::Unkeyed,
-            "course_completion" => resolve_source(ctx, "course", row.source_id.as_deref()),
-            "activity_completion" => resolve_source(ctx, "activity", row.source_id.as_deref()),
-            "quiz_completion"
-            | "exam_completion"
-            | "code_challenge_completion"
-            | "code_challenge_perfect"
-            | "code_challenge_first_solve" => {
-                resolve_source(ctx, "assessment", row.source_id.as_deref())
-            }
-            _ => SourceCheck::Unverifiable("unknown source mapping".into()),
-        };
-        input.push(LedgerInput {
-            legacy_id: row.id,
-            user_id,
-            amount: row.amount,
-            source,
-            check,
-            reason: row.reason,
-            idempotency_key: row.idempotency_key,
-            created_at,
-        });
-    }
-    let recomputed = transform::gamification::recompute(input);
-    for (legacy_id, reason) in &recomputed.dropped {
-        ctx.drop_row("xp_transaction", legacy_id, reason);
-    }
-    for row in &recomputed.rows {
-        let id = ctx.idmap.mint(
-            "xp_transaction",
-            row.legacy_id,
-            None,
-            legacy::micros(Some(row.created_at)),
-        );
-        sqlx::query("INSERT INTO xp_transactions (id,user_id,amount,source,source_id,reason,previous_level,triggered_level_up,idempotency_key,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE(to_timestamp($10),now())) ON CONFLICT (id) DO NOTHING")
-            .bind(id).bind(row.user_id).bind(row.amount).bind(row.source).bind(&row.source_id)
-            .bind(&row.reason).bind(row.previous_level).bind(row.triggered_level_up)
-            .bind(&row.idempotency_key).bind(row.created_at).execute(&mut *ctx.tx).await?;
-    }
-    ctx.wrote("xp_transactions", recomputed.rows.len());
-
     let mut profile_written = 0;
-    for (legacy_user_id, profile) in by_user {
-        let Some(user_id) = ctx.idmap.get("user", legacy_user_id) else {
+    for profile in profiles {
+        let Some(user_id) = ctx.idmap.get("user", profile.user_id) else {
             ctx.drop_row("gamification_profile", profile.id, "orphan user");
             continue;
         };
-        let totals = recomputed.totals.get(&user_id).cloned().unwrap_or_default();
         let id = ctx.idmap.mint(
             "gamification_profile",
             profile.id,
             None,
             legacy::micros(profile.created_at),
         );
-        sqlx::query("INSERT INTO gamification_profiles (id,user_id,total_xp,level,daily_xp_earned,login_streak,learning_streak,longest_login_streak,longest_learning_streak,total_activities_completed,total_courses_completed,last_xp_award_at,last_login_at,last_learning_at,preferences,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,to_timestamp($12),to_timestamp($13),to_timestamp($14),$15,COALESCE(to_timestamp($16),now()),COALESCE(to_timestamp($17),now())) ON CONFLICT (user_id) DO UPDATE SET total_xp=EXCLUDED.total_xp,level=EXCLUDED.level,daily_xp_earned=EXCLUDED.daily_xp_earned,login_streak=EXCLUDED.login_streak,learning_streak=EXCLUDED.learning_streak,longest_login_streak=EXCLUDED.longest_login_streak,longest_learning_streak=EXCLUDED.longest_learning_streak,total_activities_completed=EXCLUDED.total_activities_completed,total_courses_completed=EXCLUDED.total_courses_completed,last_xp_award_at=EXCLUDED.last_xp_award_at,last_login_at=EXCLUDED.last_login_at,last_learning_at=EXCLUDED.last_learning_at,preferences=EXCLUDED.preferences,updated_at=EXCLUDED.updated_at")
-            .bind(id).bind(user_id).bind(totals.total_xp.max(0)).bind(totals.level.max(1))
-            .bind(profile.daily_xp_earned.max(0)).bind(profile.login_streak.max(0)).bind(profile.learning_streak.max(0))
-            .bind(profile.longest_login_streak.max(0)).bind(profile.longest_learning_streak.max(0))
-            .bind(totals.activities_completed.max(0)).bind(totals.courses_completed.max(0))
-            .bind(profile.last_xp_award_date).bind(profile.last_login_date).bind(profile.last_learning_date)
+        sqlx::query("INSERT INTO gamification_profiles (id,user_id,preferences,created_at) VALUES ($1,$2,$3,COALESCE(to_timestamp($4),now())) ON CONFLICT (user_id) DO UPDATE SET preferences=EXCLUDED.preferences")
+            .bind(id).bind(user_id)
             .bind(profile.preferences.unwrap_or_else(|| Value::Object(Map::new())))
-            .bind(profile.created_at).bind(profile.updated_at).execute(&mut *ctx.tx).await?;
+            .bind(profile.created_at).execute(&mut *ctx.tx).await?;
         profile_written += 1;
     }
     ctx.wrote("gamification_profiles", profile_written);
@@ -143,20 +87,6 @@ pub async fn gamification(ctx: &mut Ctx) -> Result<()> {
             .await?;
     }
     Ok(())
-}
-
-fn resolve_source(ctx: &Ctx, entity: &str, source_id: Option<&str>) -> SourceCheck {
-    let Some(source_id) = source_id else {
-        return SourceCheck::Unverifiable("missing source id".into());
-    };
-    let resolved = ctx
-        .idmap
-        .get(entity, source_id)
-        .or_else(|| ctx.idmap.get_by_uuid(entity, source_id));
-    resolved.map_or_else(
-        || SourceCheck::Unverifiable(format!("{entity} {source_id} not migrated")),
-        |id| SourceCheck::Verified(id.to_string()),
-    )
 }
 
 pub async fn trail(ctx: &mut Ctx) -> Result<()> {

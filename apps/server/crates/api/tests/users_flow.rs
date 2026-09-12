@@ -232,6 +232,7 @@ async fn admin_lists_users_and_disables_accounts(pool: PgPool) {
         )
         .await;
     assert_eq!(own.status, StatusCode::CONFLICT);
+    assert_eq!(own.json()["code"], "self-disable");
     let enabled = app
         .patch_as(
             &admin,
@@ -240,6 +241,37 @@ async fn admin_lists_users_and_disables_accounts(pool: PgPool) {
         )
         .await;
     assert_eq!(enabled.status, StatusCode::NO_CONTENT);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn disabling_the_last_admin_is_refused(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let operator = app.mint_session(&["platform:manage:platform"]).await;
+    let only_admin = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+
+    let refused = app
+        .patch_as(
+            &operator,
+            &format!("/api/v2/users/{only_admin}/status"),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT);
+    assert_eq!(refused.json()["code"], "last-admin");
+
+    // With a second active admin the first one can be disabled.
+    app.create_user("deputy", "deputy@example.com", &["admin"])
+        .await;
+    let disabled = app
+        .patch_as(
+            &operator,
+            &format!("/api/v2/users/{only_admin}/status"),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    assert_eq!(disabled.status, StatusCode::NO_CONTENT);
 }
 
 // ── Admin account creation (`POST /users`, DECISIONS 2026-09-12) ────────────

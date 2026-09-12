@@ -73,6 +73,8 @@ pub async fn assign_role(
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown user or role", body = Problem,
          content_type = "application/problem+json"),
+        (status = 409, description = "`last-admin`", body = Problem,
+         content_type = "application/problem+json"),
     )
 )]
 pub async fn unassign_role(
@@ -94,7 +96,7 @@ pub async fn unassign_role(
         (status = 204, description = "Created"),
         (status = 403, description = "Missing permission", body = Problem,
          content_type = "application/problem+json"),
-        (status = 409, description = "Slug taken", body = Problem,
+        (status = 409, description = "`role-slug-taken`", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
@@ -109,7 +111,7 @@ pub async fn create_role(
             &actor,
             &request.slug,
             &request.display_name,
-            request.description.as_deref().unwrap_or(""),
+            request.description.as_deref(),
             request.priority,
         )
         .await?;

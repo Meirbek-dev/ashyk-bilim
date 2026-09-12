@@ -16,7 +16,7 @@ use ab_core::ai::{
 use ab_core::id::{
     ActivityId, AiArtifactId, AiCourseAnalysisId, AiEvalResultId, AiEventId, AiEvidenceId,
     AiLectureReviewId, AiMessageId, AiRemediationSessionId, AiRunId, AiSubmissionAnalysisId,
-    AiThreadId, CourseId, SubmissionId, UserId,
+    AiThreadId, CourseId, FileAttemptId, SubmissionId, UserId,
 };
 use ab_domain::ai as domain;
 use serde::{Deserialize, Serialize};
@@ -401,7 +401,11 @@ impl StudyRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct SubmissionAnalysis {
     pub id: AiSubmissionAnalysisId,
-    pub submission_id: SubmissionId,
+    /// The analysed assessment submission — `null` for a file attempt.
+    pub submission_id: Option<SubmissionId>,
+    /// The analysed file-submission attempt — `null` for a submission.
+    /// Exactly one of the two ids is set.
+    pub file_submission_attempt_id: Option<FileAttemptId>,
     pub run_id: Option<AiRunId>,
     pub triggered_by: Option<UserId>,
     pub status: String,
@@ -417,9 +421,11 @@ pub struct SubmissionAnalysis {
 
 impl From<ab_db::ai::SubmissionAnalysisRow> for SubmissionAnalysis {
     fn from(a: ab_db::ai::SubmissionAnalysisRow) -> Self {
+        let (submission_id, file_submission_attempt_id) = subject_ids(a.subject);
         Self {
             id: a.id,
-            submission_id: a.submission_id,
+            submission_id,
+            file_submission_attempt_id,
             run_id: a.run_id,
             triggered_by: a.triggered_by,
             status: a.status,
@@ -523,7 +529,11 @@ impl From<ab_db::ai::LectureReviewRow> for LectureReview {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct RemediationSession {
     pub id: AiRemediationSessionId,
-    pub submission_id: SubmissionId,
+    /// The remediated assessment submission — `null` for a file attempt.
+    pub submission_id: Option<SubmissionId>,
+    /// The remediated file-submission attempt — `null` for a submission.
+    /// Exactly one of the two ids is set.
+    pub file_submission_attempt_id: Option<FileAttemptId>,
     pub activity_id: ActivityId,
     pub student_user_id: UserId,
     pub analysis_id: Option<AiSubmissionAnalysisId>,
@@ -543,9 +553,11 @@ pub struct RemediationSession {
 
 impl From<ab_db::ai::RemediationSessionRow> for RemediationSession {
     fn from(s: ab_db::ai::RemediationSessionRow) -> Self {
+        let (submission_id, file_submission_attempt_id) = subject_ids(s.subject);
         Self {
             id: s.id,
-            submission_id: s.submission_id,
+            submission_id,
+            file_submission_attempt_id,
             activity_id: s.activity_id,
             student_user_id: s.student_user_id,
             analysis_id: s.analysis_id,
@@ -560,6 +572,16 @@ impl From<ab_db::ai::RemediationSessionRow> for RemediationSession {
             created_at_unix: s.created_at,
             updated_at_unix: s.updated_at,
         }
+    }
+}
+
+/// `(submission_id, file_submission_attempt_id)` — exactly one is set.
+const fn subject_ids(
+    subject: ab_db::ai::AiSubject,
+) -> (Option<SubmissionId>, Option<FileAttemptId>) {
+    match subject {
+        ab_db::ai::AiSubject::Submission(id) => (Some(id), None),
+        ab_db::ai::AiSubject::FileAttempt(id) => (None, Some(id)),
     }
 }
 

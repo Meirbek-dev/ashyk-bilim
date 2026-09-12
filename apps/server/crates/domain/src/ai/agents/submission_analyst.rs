@@ -1,22 +1,24 @@
-//! Submission analyst (legacy `agents/submission_analyst.py` +
-//! `run_submission_analysis` / `queue_submission_analysis`). The learner
-//! who owns the submission or a teacher of its course.
+//! Submission analyst (legacy `agents/submission_analyst.py`).
+//!
+//! `run_submission_analysis` / `queue_submission_analysis`: the learner
+//! who owns the work or a teacher of its course; the work is an assessment
+//! submission or a file-submission attempt (`AiSubjectId`).
 
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole};
-use ab_core::id::{SubmissionId, UserId};
+use ab_core::id::{AiSubjectId, UserId};
 use ab_core::{Error, Result};
 use ab_db::ai::{NewSubmissionAnalysis, RunRow, SubmissionAnalysisRow};
-use ab_db::submissions::SubmissionRow;
 use tokio_util::sync::CancellationToken;
 
-use super::{Execution, draft_citation, evidence_json, metadata_id, metadata_language, run_user};
+use super::{Execution, draft_citation, evidence_json, metadata_language, run_user};
 use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
-use crate::ai::context::{self, ContextBundle};
+use crate::ai::context::ContextBundle;
 use crate::ai::prompts::{Prompt, clipped, load_prompt};
 use crate::ai::runs::RunSpec;
 use crate::ai::schemas::{KnowledgeGap, Level, SubmissionAnalysisReport};
+use crate::ai::subject::{Subject, run_subject};
 use crate::identity::Actor;
 
 const ARTIFACT_KIND: &str = "submission_analysis";
@@ -46,8 +48,8 @@ pub fn draft_submission_report(language: &str) -> SubmissionAnalysisReport {
 }
 
 /// Teacher when analysing someone else's work, student for one's own.
-fn role_for(actor_id: UserId, submission: &SubmissionRow) -> AiThreadRole {
-    if actor_id == submission.user_id {
+pub(crate) fn role_for(actor_id: UserId, subject: &Subject) -> AiThreadRole {
+    if actor_id == subject.user_id() {
         AiThreadRole::Student
     } else {
         AiThreadRole::Teacher
@@ -55,19 +57,19 @@ fn role_for(actor_id: UserId, submission: &SubmissionRow) -> AiThreadRole {
 }
 
 impl AiService {
-    /// `POST /ai/submission-analysis/{submission}/analyze` — inline.
+    /// `POST /ai/submission-analysis/{subject}/analyze` — inline.
     pub async fn analyze_submission(
         &self,
         actor: &Actor,
-        submission_id: SubmissionId,
+        subject_id: AiSubjectId,
         language: &str,
     ) -> Result<SubmissionAnalysisRow> {
         self.require_feature(AiFeature::SubmissionAnalysis)?;
-        let (submission, _course) = self.accessible_submission(actor, submission_id).await?;
+        let subject = self.accessible_subject(actor, subject_id).await?;
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
             .await?;
-        let (bundle, metadata) = context::submission_bundle(&self.pool, &submission).await?;
+        let (bundle, metadata) = self.subject_bundle(&subject).await?;
         let rendered = bundle.render();
         let input_tokens = self.budget.assert_request(&self.pool, &rendered).await?;
         let run = self
@@ -75,18 +77,17 @@ impl AiService {
                 actor.user_id,
                 RunSpec {
                     kind: AiRunKind::SubmissionAnalysis,
-                    role: role_for(actor.user_id, &submission),
+                    role: role_for(actor.user_id, &subject),
                     queued: false,
-                    course_id: Some(submission.course_id),
+                    course_id: Some(subject.course_id()),
                     activity_id: metadata
                         .get("activity_id")
                         .and_then(serde_json::Value::as_str)
                         .and_then(|s| s.parse().ok()),
                     metadata: merged(
-                        metadata,
+                        merged(metadata, subject.metadata()),
                         serde_json::json!({
-                            "submission_id": submission_id,
-                            "course_id": submission.course_id,
+                            "course_id": subject.course_id(),
                             "language": language,
                             "context_source_count": bundle.sources.len(),
                         }),
@@ -109,15 +110,15 @@ impl AiService {
         .await
     }
 
-    /// `POST /ai/submission-analysis/{submission}/analyze/queue`.
+    /// `POST /ai/submission-analysis/{subject}/analyze/queue`.
     pub async fn queue_submission_analysis(
         &self,
         actor: &Actor,
-        submission_id: SubmissionId,
+        subject_id: AiSubjectId,
         language: &str,
     ) -> Result<RunRow> {
         self.require_feature(AiFeature::SubmissionAnalysis)?;
-        let (submission, _course) = self.accessible_submission(actor, submission_id).await?;
+        let subject = self.accessible_subject(actor, subject_id).await?;
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
             .await?;
@@ -126,15 +127,17 @@ impl AiService {
                 actor.user_id,
                 RunSpec {
                     kind: AiRunKind::SubmissionAnalysis,
-                    role: role_for(actor.user_id, &submission),
+                    role: role_for(actor.user_id, &subject),
                     queued: true,
-                    course_id: Some(submission.course_id),
+                    course_id: Some(subject.course_id()),
                     activity_id: None,
-                    metadata: serde_json::json!({
-                        "submission_id": submission_id,
-                        "course_id": submission.course_id,
-                        "language": language,
-                    }),
+                    metadata: merged(
+                        subject.metadata(),
+                        serde_json::json!({
+                            "course_id": subject.course_id(),
+                            "language": language,
+                        }),
+                    ),
                     thread: None,
                     title: None,
                 },
@@ -149,13 +152,10 @@ impl AiService {
         run: &RunRow,
         token: &CancellationToken,
     ) -> Result<()> {
-        let submission_id: SubmissionId = metadata_id(run, "submission_id")?;
         let language = metadata_language(run);
         let user_id = run_user(run)?;
-        let submission = ab_db::submissions::get_submission(&self.pool, submission_id)
-            .await?
-            .ok_or_else(|| Error::not_found("submission"))?;
-        let (bundle, metadata) = context::submission_bundle(&self.pool, &submission).await?;
+        let subject = self.load_subject_by(run_subject(run)?).await?;
+        let (bundle, metadata) = self.subject_bundle(&subject).await?;
         ab_db::ai::merge_run_metadata(&self.pool, run.id, &metadata).await?;
         let rendered = bundle.render();
         let input_tokens = self
@@ -220,11 +220,10 @@ impl AiService {
                     || draft_submission_report(language),
                 )
                 .await?;
-            let submission_id: SubmissionId = metadata_id(run, "submission_id")?;
             let id = ab_db::ai::insert_submission_analysis(
                 &self.pool,
                 NewSubmissionAnalysis {
-                    submission_id,
+                    subject: run_subject(run)?,
                     run_id: run.id,
                     triggered_by: user_id,
                     language: &finished.value.language,
@@ -243,14 +242,14 @@ impl AiService {
         .await
     }
 
-    /// `GET /ai/submission-analysis/{submission}/latest`.
+    /// `GET /ai/submission-analysis/{subject}/latest`.
     pub async fn latest_submission_analysis(
         &self,
         actor: &Actor,
-        submission_id: SubmissionId,
+        subject_id: AiSubjectId,
     ) -> Result<Option<SubmissionAnalysisRow>> {
-        self.accessible_submission(actor, submission_id).await?;
-        ab_db::ai::latest_submission_analysis(&self.pool, submission_id).await
+        let subject = self.accessible_subject(actor, subject_id).await?;
+        ab_db::ai::latest_submission_analysis(&self.pool, subject.id()).await
     }
 }
 

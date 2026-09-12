@@ -6,7 +6,7 @@
 
 use ab_core::id::UserId;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, Result};
+use ab_core::{Error, ErrorCode, Result};
 use sqlx::PgPool;
 
 use crate::identity::Actor;
@@ -37,6 +37,8 @@ pub struct RoleWithGrants {
     pub slug: String,
     pub display_name_key: String,
     pub description_key: String,
+    pub display_name: Option<String>,
+    pub description: Option<String>,
     pub priority: i32,
     pub is_system: bool,
     pub permissions: Vec<String>,
@@ -67,6 +69,8 @@ impl RbacAdminService {
                 slug: role.slug,
                 display_name_key: role.display_name_key,
                 description_key: role.description_key,
+                display_name: role.display_name,
+                description: role.description,
                 priority: role.priority,
                 is_system: role.is_system,
                 permissions,
@@ -97,9 +101,12 @@ impl RbacAdminService {
 
     pub async fn unassign_role(&self, actor: &Actor, user_id: UserId, slug: &str) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
-        // Last-admin guard: the platform must always keep one admin.
+        // Last-admin guard: the platform must always keep one active admin.
         if slug == "admin" && ab_db::identity::count_role_holders(&self.pool, "admin").await? <= 1 {
-            return Err(Error::conflict("cannot remove the last admin"));
+            return Err(Error::app(
+                ErrorCode::LastAdmin,
+                "cannot remove the last admin",
+            ));
         }
         let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
             .await?
@@ -125,7 +132,7 @@ impl RbacAdminService {
         actor: &Actor,
         slug: &str,
         display_name: &str,
-        description: &str,
+        description: Option<&str>,
         priority: i32,
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
@@ -133,7 +140,7 @@ impl RbacAdminService {
             ab_db::identity::insert_role(&self.pool, slug, display_name, description, priority)
                 .await?;
         if created.is_none() {
-            return Err(Error::conflict("role slug is taken"));
+            return Err(Error::app(ErrorCode::RoleSlugTaken, "role slug is taken"));
         }
         ab_db::identity::insert_auth_audit(
             &self.pool,
@@ -259,7 +266,21 @@ impl RbacAdminService {
     ) -> Result<()> {
         actor.require(MANAGE_PLATFORM)?;
         if actor.user_id == user_id {
-            return Err(Error::conflict("cannot disable your own account"));
+            return Err(Error::app(
+                ErrorCode::SelfDisable,
+                "cannot disable your own account",
+            ));
+        }
+        if disabled {
+            let (roles, _) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
+            if roles.iter().any(|r| r == "admin")
+                && ab_db::identity::count_role_holders(&self.pool, "admin").await? <= 1
+            {
+                return Err(Error::app(
+                    ErrorCode::LastAdmin,
+                    "cannot disable the last admin",
+                ));
+            }
         }
         let status = if disabled { "disabled" } else { "active" };
         if !ab_db::identity::set_user_status(&self.pool, user_id, status).await? {

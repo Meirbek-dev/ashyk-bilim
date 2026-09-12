@@ -9,6 +9,7 @@
 use ab_core::Result;
 use ab_core::id::{ActivityId, CourseId};
 use ab_db::ai as db;
+use ab_db::file_submissions::{AttemptRow, FileRow};
 use ab_db::submissions::SubmissionRow;
 use sqlx::PgPool;
 
@@ -319,6 +320,115 @@ pub async fn submission_bundle(
         },
         metadata,
     ))
+}
+
+/// One file-submission attempt as context.
+///
+/// The activity, the teacher's instructions and rubric, the attempt's
+/// status/grade/feedback, and its files — `texts[i]` is the read-back
+/// content of `files[i]` when it is a text file (else the file is described
+/// by name, type and size).
+pub async fn attempt_bundle(
+    pool: &PgPool,
+    attempt: &AttemptRow,
+    files: &[FileRow],
+    texts: &[Option<String>],
+) -> Result<(ContextBundle, serde_json::Value)> {
+    let file_submission =
+        ab_db::file_submissions::get_file_submission(pool, attempt.file_submission_id).await?;
+    let activity = match &file_submission {
+        Some(f) => db::activity_context(pool, f.activity_id).await?,
+        None => None,
+    };
+    let activity_label = activity.as_ref().map_or_else(
+        || {
+            file_submission
+                .as_ref()
+                .map_or_else(|| "unknown".to_owned(), |f| f.activity_id.to_string())
+        },
+        |a| a.name.clone(),
+    );
+    let mut lines = vec![
+        format!("Activity: {activity_label}"),
+        format!("File submission attempt UUID: {}", attempt.id),
+        "Assessment type: file_submission".to_owned(),
+        format!("Attempt number: {}", attempt.attempt_number),
+        format!("Status: {}", attempt.status),
+        format!("Final score: {}", opt_num(attempt.final_score)),
+        format!("Late: {}", attempt.is_late),
+        format!("Teacher feedback: {}", attempt.feedback),
+        format!(
+            "Rubric scores: {}",
+            json_snippet(&attempt.rubric_scores, 1800)
+        ),
+    ];
+    if let Some(f) = &file_submission {
+        lines.push(format!("Instructions: {}", f.instructions));
+        lines.push(format!("Rubric: {}", json_snippet(&f.rubric, 1800)));
+    }
+    let mut sources = vec![source(
+        format!("file_submission_attempt:{}", attempt.id),
+        format!("File submission attempt {}", attempt.id),
+        "file_submission_attempt",
+        Some(attempt.id.to_string()),
+        &lines.join("\n"),
+        serde_json::json!({
+            "activity_id": activity.as_ref().map(|a| a.id),
+            "student_user_id": attempt.user_id,
+        }),
+    )];
+    if let Some(activity) = &activity {
+        sources.push(source(
+            format!("activity:{}", activity.id),
+            activity.name.clone(),
+            "activity",
+            Some(activity.id.to_string()),
+            &format!(
+                "Activity: {}\nContent: {}",
+                activity.name,
+                json_snippet(&activity.content, 1800)
+            ),
+            serde_json::json!({ "activity_id": activity.id, "course_id": attempt.course_id }),
+        ));
+    }
+    for (file, text) in files.iter().zip(texts) {
+        let line = file_line(file, text.as_deref());
+        lines.push(line.clone());
+        sources.push(source(
+            format!("file:{}", file.id),
+            file.display_name.clone(),
+            "file",
+            Some(file.id.to_string()),
+            &line,
+            serde_json::json!({ "attempt_id": attempt.id, "content_type": file.content_type }),
+        ));
+    }
+    let metadata = serde_json::json!({
+        "activity_id": activity.as_ref().map(|a| a.id),
+        "file_submission_id": attempt.file_submission_id,
+        "file_count": files.len(),
+    });
+    Ok((
+        ContextBundle {
+            text: lines.join("\n"),
+            sources,
+        },
+        metadata,
+    ))
+}
+
+fn file_line(file: &FileRow, text: Option<&str>) -> String {
+    let mut line = format!(
+        "File: {} ({}, {} bytes)",
+        file.display_name,
+        file.content_type,
+        file.size_bytes.unwrap_or(0)
+    );
+    if let Some(text) = text {
+        line.push_str("\nContent:\n");
+        line.push_str(text);
+    }
+    line
 }
 
 fn opt_num(value: Option<f64>) -> String {

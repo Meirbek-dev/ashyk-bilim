@@ -3,14 +3,14 @@
 //! Learners: a visible course (`CoursesService::get` → 404 otherwise).
 //! Teachers: course write access (creator with `course:update:own` or
 //! `course:update:platform`). Submissions: the owner, or a teacher of the
-//! course. Runs: the thread owner, or `platform:read:platform`.
+//! course (`ai::subject`, for assessment submissions and file attempts
+//! alike). Runs: the thread owner, or `platform:read:platform`.
 
 use ab_core::ai::AiThreadRole;
-use ab_core::id::{AiRemediationSessionId, SubmissionId};
+use ab_core::id::AiRemediationSessionId;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
 use ab_db::ai::{RemediationSessionRow, RunRow};
-use ab_db::submissions::SubmissionRow;
 
 use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
@@ -51,31 +51,8 @@ pub fn require_admin(actor: &Actor) -> Result<()> {
 }
 
 impl AiService {
-    /// The submission (404 when unknown) and its course, for the owner or a
-    /// teacher of the course (legacy `require_ai_submission_access`).
-    pub(crate) async fn accessible_submission(
-        &self,
-        actor: &Actor,
-        submission_id: SubmissionId,
-    ) -> Result<(SubmissionRow, Course)> {
-        let submission = ab_db::submissions::get_submission(&self.pool, submission_id)
-            .await?
-            .ok_or_else(|| Error::not_found("submission"))?;
-        let course = ab_db::catalog::get_course(&self.pool, submission.course_id)
-            .await?
-            .ok_or_else(|| Error::not_found("course"))?;
-        if submission.user_id != actor.user_id {
-            // Not the owner: must be able to see and update the course.
-            // Anything else is 404 (P4.7 rule: a submission id must not
-            // leak that it exists).
-            let visible = self.courses.get(actor, submission.course_id).await?;
-            require_course_update(actor, &visible).map_err(|_| Error::not_found("submission"))?;
-        }
-        Ok((submission, course))
-    }
-
     /// Legacy `require_ai_remediation_access`: the learner, or someone with
-    /// access to the underlying submission.
+    /// access to the underlying work (`subject::require_subject_access`).
     pub(crate) async fn accessible_remediation(
         &self,
         actor: &Actor,
@@ -85,8 +62,8 @@ impl AiService {
             .await?
             .ok_or_else(|| Error::not_found("remediation session"))?;
         if session.student_user_id != actor.user_id {
-            self.accessible_submission(actor, session.submission_id)
-                .await?;
+            let subject = self.load_subject_by(session.subject).await?;
+            self.require_subject_access(actor, &subject).await?;
         }
         Ok(session)
     }

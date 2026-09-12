@@ -576,6 +576,71 @@ pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: &str) 
     Ok(())
 }
 
+/// Rows removed by [`prune_retention`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PruneCounts {
+    pub events: u64,
+    pub daily_rows: u64,
+    pub risk_snapshots: u64,
+}
+
+/// Retention pruning (DECISIONS "Analytics retention (b)").
+///
+/// Removes `analytics_events` older than 400 days and every `daily_*` /
+/// `learner_risk_snapshots` row older than 2 years, in 5 000-row batches
+/// through the primary key so a first run over a large backlog never holds
+/// one long lock.
+pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
+    macro_rules! prune {
+        ($sql:literal) => {{
+            let mut total = 0_u64;
+            loop {
+                let n = sqlx::query!($sql).execute(pool).await?.rows_affected();
+                total += n;
+                if n < 5_000 {
+                    break total;
+                }
+            }
+        }};
+    }
+    let events = prune!(
+        "DELETE FROM analytics_events WHERE id IN (
+            SELECT id FROM analytics_events
+            WHERE occurred_at < now() - interval '400 days' LIMIT 5000)"
+    );
+    let daily_rows = prune!(
+        "DELETE FROM daily_teacher_metrics WHERE id IN (
+            SELECT id FROM daily_teacher_metrics
+            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+    ) + prune!(
+        "DELETE FROM daily_course_metrics WHERE id IN (
+            SELECT id FROM daily_course_metrics
+            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+    ) + prune!(
+        "DELETE FROM daily_course_engagement WHERE id IN (
+            SELECT id FROM daily_course_engagement
+            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+    ) + prune!(
+        "DELETE FROM daily_assessment_metrics WHERE id IN (
+            SELECT id FROM daily_assessment_metrics
+            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+    ) + prune!(
+        "DELETE FROM daily_user_course_progress WHERE id IN (
+            SELECT id FROM daily_user_course_progress
+            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+    );
+    let risk_snapshots = prune!(
+        "DELETE FROM learner_risk_snapshots WHERE id IN (
+            SELECT id FROM learner_risk_snapshots
+            WHERE snapshot_date < current_date - interval '2 years' LIMIT 5000)"
+    );
+    Ok(PruneCounts {
+        events,
+        daily_rows,
+        risk_snapshots,
+    })
+}
+
 #[derive(Debug, Clone)]
 pub struct TeacherMetricsWrite {
     pub teacher_user_id: Option<UserId>,

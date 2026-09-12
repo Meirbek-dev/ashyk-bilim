@@ -57,6 +57,13 @@ services:
       AB__STORAGE__PRIVATE_BUCKET: ab-private
       AB__TELEMETRY__JSON_LOGS: 'true'
       AB__JUDGE0__BASE_URL: http://judge0-server:2358
+      # AI providers (DECISIONS "AI models"): keys are owner-supplied at cutover;
+      # unset = AI routes answer 503 `ai-disabled` / draft artifacts. Models
+      # default to gpt-5.6-luna / deepseek/deepseek-v4-flash, 1 000 000 tokens/month.
+      AB__AI__OPENAI_API_KEY: ${AB__AI__OPENAI_API_KEY:-}
+      AB__AI__OPENROUTER_API_KEY: ${AB__AI__OPENROUTER_API_KEY:-}
+      AB__AI__OPENAI_MODEL: ${AB__AI__OPENAI_MODEL:-gpt-5.6-luna}
+      AB__AI__OPENROUTER_MODEL: ${AB__AI__OPENROUTER_MODEL:-deepseek/deepseek-v4-flash}
     # Liveness avoids a dependency cycle: storage uses the public nginx origin.
     # Full readiness is an explicit post-nginx cutover gate.
     healthcheck:

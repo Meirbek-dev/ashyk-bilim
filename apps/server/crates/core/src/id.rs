@@ -100,6 +100,12 @@ typed_id!(AiApprovalId);
 typed_id!(AiEvalResultId);
 typed_id!(AiMessageId);
 typed_id!(AiSubmissionAnalysisId);
+typed_id!(
+    /// The work an AI analysis or remediation is about: an assessment
+    /// submission id *or* a file-submission attempt id (both UUIDv7, one
+    /// route parameter — the server looks the id up in both tables).
+    AiSubjectId
+);
 typed_id!(AiCourseAnalysisId);
 typed_id!(AiLectureReviewId);
 typed_id!(AiRemediationSessionId);

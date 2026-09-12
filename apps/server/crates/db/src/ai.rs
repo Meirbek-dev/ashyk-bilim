@@ -12,7 +12,7 @@ use ab_core::ai::{
 use ab_core::id::{
     ActivityId, AiArtifactId, AiCourseAnalysisId, AiEvalResultId, AiEventId, AiEvidenceId,
     AiLectureReviewId, AiMessageId, AiRemediationSessionId, AiRunId, AiSubmissionAnalysisId,
-    AiThreadId, AssessmentId, ChapterId, CourseId, SubmissionId, UserId,
+    AiThreadId, AssessmentId, ChapterId, CourseId, FileAttemptId, SubmissionId, UserId,
 };
 use ab_core::{Error, Result};
 use sqlx::PgPool;
@@ -930,10 +930,40 @@ pub async fn find_assistant_reply(
 
 // ── Submission analyses ─────────────────────────────────────────────────────
 
+/// The work an analysis or remediation is about (exactly one of the two
+/// columns is set — `*_one_subject` CHECK).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AiSubject {
+    Submission(SubmissionId),
+    FileAttempt(FileAttemptId),
+}
+
+impl AiSubject {
+    /// The `(submission_id, file_submission_attempt_id)` column pair.
+    #[must_use]
+    pub const fn columns(self) -> (Option<uuid::Uuid>, Option<uuid::Uuid>) {
+        match self {
+            Self::Submission(id) => (Some(id.0), None),
+            Self::FileAttempt(id) => (None, Some(id.0)),
+        }
+    }
+
+    fn from_columns(
+        submission_id: Option<SubmissionId>,
+        attempt_id: Option<FileAttemptId>,
+    ) -> Result<Self> {
+        match (submission_id, attempt_id) {
+            (Some(id), None) => Ok(Self::Submission(id)),
+            (None, Some(id)) => Ok(Self::FileAttempt(id)),
+            _ => Err(Error::conflict("ai record has no single subject")),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SubmissionAnalysisRow {
     pub id: AiSubmissionAnalysisId,
-    pub submission_id: SubmissionId,
+    pub subject: AiSubject,
     pub run_id: Option<AiRunId>,
     pub triggered_by: Option<UserId>,
     pub status: String,
@@ -946,7 +976,7 @@ pub struct SubmissionAnalysisRow {
 }
 
 pub struct NewSubmissionAnalysis<'a> {
-    pub submission_id: SubmissionId,
+    pub subject: AiSubject,
     pub run_id: AiRunId,
     pub triggered_by: UserId,
     pub language: &'a str,
@@ -960,11 +990,14 @@ pub async fn insert_submission_analysis(
     pool: &PgPool,
     a: NewSubmissionAnalysis<'_>,
 ) -> Result<AiSubmissionAnalysisId> {
+    let (submission_id, attempt_id) = a.subject.columns();
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO ai_submission_analyses (submission_id, run_id, triggered_by, language,
-                                               gap_count, analysis, evidence, model_name)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"#,
-        a.submission_id.0,
+        r#"INSERT INTO ai_submission_analyses (submission_id, file_submission_attempt_id, run_id,
+                                               triggered_by, language, gap_count, analysis,
+                                               evidence, model_name)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id"#,
+        submission_id,
+        attempt_id,
         a.run_id.0,
         a.triggered_by.0,
         a.language,
@@ -978,13 +1011,49 @@ pub async fn insert_submission_analysis(
     Ok(AiSubmissionAnalysisId(id))
 }
 
+struct SubmissionAnalysisRaw {
+    id: AiSubmissionAnalysisId,
+    submission_id: Option<SubmissionId>,
+    file_submission_attempt_id: Option<FileAttemptId>,
+    run_id: Option<AiRunId>,
+    triggered_by: Option<UserId>,
+    status: String,
+    language: String,
+    gap_count: i32,
+    analysis: serde_json::Value,
+    evidence: serde_json::Value,
+    model_name: Option<String>,
+    created_at: i64,
+}
+
+impl TryFrom<SubmissionAnalysisRaw> for SubmissionAnalysisRow {
+    type Error = Error;
+
+    fn try_from(r: SubmissionAnalysisRaw) -> Result<Self> {
+        Ok(Self {
+            id: r.id,
+            subject: AiSubject::from_columns(r.submission_id, r.file_submission_attempt_id)?,
+            run_id: r.run_id,
+            triggered_by: r.triggered_by,
+            status: r.status,
+            language: r.language,
+            gap_count: r.gap_count,
+            analysis: r.analysis,
+            evidence: r.evidence,
+            model_name: r.model_name,
+            created_at: r.created_at,
+        })
+    }
+}
+
 pub async fn get_submission_analysis(
     pool: &PgPool,
     id: AiSubmissionAnalysisId,
 ) -> Result<Option<SubmissionAnalysisRow>> {
     let row = sqlx::query_as!(
-        SubmissionAnalysisRow,
+        SubmissionAnalysisRaw,
         r#"SELECT id AS "id: AiSubmissionAnalysisId", submission_id AS "submission_id: SubmissionId",
+                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId", status,
                   language, gap_count, analysis, evidence, model_name,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
@@ -993,26 +1062,32 @@ pub async fn get_submission_analysis(
     )
     .fetch_optional(pool)
     .await?;
-    Ok(row)
+    row.map(TryInto::try_into).transpose()
 }
 
+/// The newest analysis of a submission or file attempt.
 pub async fn latest_submission_analysis(
     pool: &PgPool,
-    submission_id: SubmissionId,
+    subject: AiSubject,
 ) -> Result<Option<SubmissionAnalysisRow>> {
+    let (submission_id, attempt_id) = subject.columns();
     let row = sqlx::query_as!(
-        SubmissionAnalysisRow,
+        SubmissionAnalysisRaw,
         r#"SELECT id AS "id: AiSubmissionAnalysisId", submission_id AS "submission_id: SubmissionId",
+                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId", status,
                   language, gap_count, analysis, evidence, model_name,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM ai_submission_analyses WHERE submission_id = $1
+           FROM ai_submission_analyses
+           WHERE ($1::uuid IS NOT NULL AND submission_id = $1)
+              OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2)
            ORDER BY created_at DESC, id DESC LIMIT 1"#,
-        submission_id.0
+        submission_id,
+        attempt_id
     )
     .fetch_optional(pool)
     .await?;
-    Ok(row)
+    row.map(TryInto::try_into).transpose()
 }
 
 // ── Course analyses ─────────────────────────────────────────────────────────
@@ -1255,7 +1330,7 @@ pub async fn dismiss_lecture_suggestion(
 #[derive(Debug, Clone)]
 pub struct RemediationSessionRow {
     pub id: AiRemediationSessionId,
-    pub submission_id: SubmissionId,
+    pub subject: AiSubject,
     pub activity_id: ActivityId,
     pub student_user_id: UserId,
     pub analysis_id: Option<AiSubmissionAnalysisId>,
@@ -1272,7 +1347,7 @@ pub struct RemediationSessionRow {
 }
 
 pub struct NewRemediationSession<'a> {
-    pub submission_id: SubmissionId,
+    pub subject: AiSubject,
     pub activity_id: ActivityId,
     pub student_user_id: UserId,
     pub analysis_id: Option<AiSubmissionAnalysisId>,
@@ -1287,12 +1362,14 @@ pub async fn insert_remediation_session(
     pool: &PgPool,
     s: NewRemediationSession<'_>,
 ) -> Result<AiRemediationSessionId> {
+    let (submission_id, attempt_id) = s.subject.columns();
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO ai_remediation_sessions (submission_id, activity_id, student_user_id,
-                                                analysis_id, run_id, gate_mode, language,
-                                                lecture, test)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id"#,
-        s.submission_id.0,
+        r#"INSERT INTO ai_remediation_sessions (submission_id, file_submission_attempt_id,
+                                                activity_id, student_user_id, analysis_id, run_id,
+                                                gate_mode, language, lecture, test)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id"#,
+        submission_id,
+        attempt_id,
         s.activity_id.0,
         s.student_user_id.0,
         s.analysis_id.map(|a| a.0),
@@ -1307,13 +1384,57 @@ pub async fn insert_remediation_session(
     Ok(AiRemediationSessionId(id))
 }
 
+struct RemediationSessionRaw {
+    id: AiRemediationSessionId,
+    submission_id: Option<SubmissionId>,
+    file_submission_attempt_id: Option<FileAttemptId>,
+    activity_id: ActivityId,
+    student_user_id: UserId,
+    analysis_id: Option<AiSubmissionAnalysisId>,
+    run_id: Option<AiRunId>,
+    status: RemediationStatus,
+    gate_mode: bool,
+    language: String,
+    lecture: serde_json::Value,
+    test: serde_json::Value,
+    score: Option<i32>,
+    passed_at: Option<i64>,
+    created_at: i64,
+    updated_at: i64,
+}
+
+impl TryFrom<RemediationSessionRaw> for RemediationSessionRow {
+    type Error = Error;
+
+    fn try_from(r: RemediationSessionRaw) -> Result<Self> {
+        Ok(Self {
+            id: r.id,
+            subject: AiSubject::from_columns(r.submission_id, r.file_submission_attempt_id)?,
+            activity_id: r.activity_id,
+            student_user_id: r.student_user_id,
+            analysis_id: r.analysis_id,
+            run_id: r.run_id,
+            status: r.status,
+            gate_mode: r.gate_mode,
+            language: r.language,
+            lecture: r.lecture,
+            test: r.test,
+            score: r.score,
+            passed_at: r.passed_at,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        })
+    }
+}
+
 pub async fn get_remediation_session(
     pool: &PgPool,
     id: AiRemediationSessionId,
 ) -> Result<Option<RemediationSessionRow>> {
     let row = sqlx::query_as!(
-        RemediationSessionRow,
+        RemediationSessionRaw,
         r#"SELECT id AS "id: AiRemediationSessionId", submission_id AS "submission_id: SubmissionId",
+                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
                   activity_id AS "activity_id: ActivityId",
                   student_user_id AS "student_user_id: UserId",
                   analysis_id AS "analysis_id: AiSubmissionAnalysisId", run_id AS "run_id: AiRunId",
@@ -1326,7 +1447,7 @@ pub async fn get_remediation_session(
     )
     .fetch_optional(pool)
     .await?;
-    Ok(row)
+    row.map(TryInto::try_into).transpose()
 }
 
 /// A learner's sessions, newest first.
@@ -1335,8 +1456,9 @@ pub async fn list_student_remediation_sessions(
     student_user_id: UserId,
 ) -> Result<Vec<RemediationSessionRow>> {
     let rows = sqlx::query_as!(
-        RemediationSessionRow,
+        RemediationSessionRaw,
         r#"SELECT id AS "id: AiRemediationSessionId", submission_id AS "submission_id: SubmissionId",
+                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
                   activity_id AS "activity_id: ActivityId",
                   student_user_id AS "student_user_id: UserId",
                   analysis_id AS "analysis_id: AiSubmissionAnalysisId", run_id AS "run_id: AiRunId",
@@ -1350,7 +1472,7 @@ pub async fn list_student_remediation_sessions(
     )
     .fetch_all(pool)
     .await?;
-    Ok(rows)
+    rows.into_iter().map(TryInto::try_into).collect()
 }
 
 /// Legacy `active_remediation_gate`: an unpassed gate-mode session blocks

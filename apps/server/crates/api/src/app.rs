@@ -35,7 +35,8 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
     ),
     // Enums that only appear as query parameters are not collected from the
     // route registrations; anything referenced by `IntoParams` goes here.
-    components(schemas(crate::dto::grading::ReviewStatus)),
+    // `AiSubjectId` only appears in path params, which utoipa does not collect.
+    components(schemas(crate::dto::grading::ReviewStatus, ab_core::id::AiSubjectId)),
     tags(
         (name = "health", description = "Liveness and readiness probes"),
         (name = "auth", description = "Sessions and authentication (BFF cookie)"),
@@ -59,6 +60,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "work-queue", description = "Unified inbox: ranked learner and teacher work items"),
         (name = "analytics", description = "Teacher and admin dashboards, at-risk learners, interventions, saved views, CSV exports"),
         (name = "ai", description = "AI agents, runs and event streams; admin operations views"),
+        (name = "utils", description = "Authoring utilities: link previews"),
     )
 )]
 struct ApiDoc;
@@ -78,6 +80,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(gamification_routes())
         .merge(work_queue_routes())
         .merge(analytics_routes())
+        .routes(routes!(routes::utils::link_preview))
 }
 
 fn analytics_routes() -> OpenApiRouter<AppState> {
@@ -182,6 +185,7 @@ fn certification_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::certifications::my_course_certificates))
         .routes(routes!(routes::certifications::my_certificates))
         .routes(routes!(routes::certifications::verify_certificate))
+        .routes(routes!(routes::certifications::certificate_pdf))
 }
 
 fn discussion_routes() -> OpenApiRouter<AppState> {

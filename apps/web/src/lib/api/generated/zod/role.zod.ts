@@ -8,8 +8,10 @@
 import * as zod from 'zod'
 
 export const Role = zod.object({
+  description: zod.string().nullish(),
   description_key: zod.string(),
-  display_name_key: zod.string().describe('i18n key (frontend catalogs own the display strings).'),
+  display_name: zod.string().nullish().describe('Raw display text — custom roles only; `null` on seeded roles.'),
+  display_name_key: zod.string().describe('i18n key (frontend catalogs own the display strings of seeded roles).'),
   is_system: zod.boolean(),
   permissions: zod.array(zod.string()),
   priority: zod.int(),

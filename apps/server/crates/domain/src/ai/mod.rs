@@ -18,10 +18,12 @@ pub mod prompts;
 pub mod redact;
 pub mod runs;
 pub mod schemas;
+pub(crate) mod subject;
 
 use std::sync::Arc;
 
 use ab_clients::llm::LlmClient;
+use ab_clients::storage::StorageClient;
 use ab_core::ai::AiFeature;
 use ab_core::config::AiConfig;
 use ab_core::id::UserId;
@@ -55,6 +57,9 @@ pub struct AiService {
     pub(crate) events: Option<AiEvents>,
     pub(crate) budget: TokenBudget,
     pub(crate) courses: CoursesService,
+    /// Reads submitted text files back for the file-attempt context;
+    /// `None` (no storage configured) leaves files described by name only.
+    pub(crate) storage: Option<Arc<StorageClient>>,
 }
 
 impl AiService {
@@ -77,7 +82,15 @@ impl AiService {
             config,
             llm,
             events,
+            storage: None,
         }
+    }
+
+    /// Object storage for reading submitted files into the AI context.
+    #[must_use]
+    pub fn with_storage(mut self, storage: Arc<StorageClient>) -> Self {
+        self.storage = Some(storage);
+        self
     }
 
     #[must_use]

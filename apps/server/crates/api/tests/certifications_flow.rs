@@ -222,6 +222,36 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         StatusCode::NOT_FOUND
     );
 
+    // The PDF, public by code: a real PDF with an embedded font, in the
+    // language of `Accept-Language`.
+    let pdf = app
+        .send(
+            axum::http::Request::builder()
+                .uri(format!("/api/v2/certificates/{code}/pdf"))
+                .header(axum::http::header::ACCEPT_LANGUAGE, "kk-KZ, ru;q=0.8")
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(pdf.status, StatusCode::OK, "{}", pdf.text());
+    assert_eq!(pdf.content_type(), "application/pdf");
+    assert_eq!(
+        pdf.headers[axum::http::header::CONTENT_DISPOSITION],
+        format!("attachment; filename=\"certificate-{code}.pdf\"")
+    );
+    let bytes = pdf.bytes();
+    assert!(bytes.starts_with(b"%PDF-"), "not a PDF");
+    assert!(bytes.len() > 4_000);
+    let text = String::from_utf8_lossy(bytes);
+    assert!(text.contains("/FontFile2"), "font not embedded");
+    assert!(text.contains(&format!("/certificates/{code}/verify")));
+    assert_eq!(
+        app.get("/api/v2/certificates/NOPE-NOPE-NOPE-NOPE/pdf")
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+
     // Template edits and deletion (cascades to issued certificates).
     let updated = app
         .patch_as(

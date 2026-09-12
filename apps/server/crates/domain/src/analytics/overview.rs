@@ -27,9 +27,10 @@ use super::quality::build_data_quality;
 use super::scope::TeacherScope;
 use super::types::{
     AdminAnalyticsResponse, AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow,
-    AlertItem, AtRiskLearnerRow, Direction, FilterOption, InterventionSummary, MetricCard,
-    RiskDistributionCounts, RiskLevel, Severity, TeacherOverviewResponse, TeacherOverviewScope,
-    TeacherOverviewSummary, TeacherOverviewTrends, TeacherWorkloadSummary, TimeSeriesPoint,
+    AlertItem, AnalyticsCode, AtRiskLearnerRow, Direction, FilterOption, InterventionSummary,
+    MetricCard, RiskDistributionCounts, RiskLevel, Severity, TeacherOverviewResponse,
+    TeacherOverviewScope, TeacherOverviewSummary, TeacherOverviewTrends, TeacherWorkloadSummary,
+    TimeSeriesPoint,
 };
 use super::workload::{GRADING_SLA_HOURS, build_teacher_workload, build_workload_for_courses};
 
@@ -109,17 +110,16 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
                 } else {
                     Severity::Warning
                 },
-                title: format!("{} is outside the grading target", row.title),
-                body: format!(
-                    "{} submissions in {} exceeded the {}-hour grading target; {} remain queued{}.",
-                    row.sla_breaches,
-                    row.course_name,
-                    GRADING_SLA_HOURS,
-                    row.awaiting_review,
-                    row.age_hours
-                        .map(|h| format!("; the oldest was submitted {h:.1}h ago"))
-                        .unwrap_or_default()
-                ),
+                code: AnalyticsCode::GradingSloBreached,
+                params: serde_json::json!({
+                    "assessment_title": row.title,
+                    "course_name": row.course_name,
+                    "breaches": row.sla_breaches,
+                    "awaiting": row.awaiting_review,
+                    // A breach is only counted from a known age, so this is set.
+                    "oldest_hours": row.age_hours.map_or(0.0, round1),
+                    "target_hours": GRADING_SLA_HOURS,
+                }),
                 href: Some(format!(
                     "/dash/analytics/assessments/{}/{}",
                     row.assessment_type, row.assessment_id
@@ -141,11 +141,15 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
         id: format!("grading-slo-watch-{}", leading.assessment_id),
         kind: "grading_slo",
         severity: Severity::Warning,
-        title: format!("{} is approaching the grading target", leading.title),
-        body: format!(
-            "{} submissions are waiting in {}; the oldest has been open for {age:.1}h against a {}h target.",
-            leading.awaiting_review, leading.course_name, GRADING_SLA_HOURS
-        ),
+        code: AnalyticsCode::GradingSloWatch,
+        params: serde_json::json!({
+            "assessment_title": leading.title,
+            "course_name": leading.course_name,
+            "breaches": 0,
+            "awaiting": leading.awaiting_review,
+            "oldest_hours": round1(age),
+            "target_hours": GRADING_SLA_HOURS,
+        }),
         href: Some(format!(
             "/dash/analytics/assessments/{}/{}",
             leading.assessment_type, leading.assessment_id
@@ -388,8 +392,8 @@ pub fn build_teacher_overview(
             } else {
                 Severity::Warning
             },
-            title: "learner_risk_needs_intervention".to_owned(),
-            body: format!("{at_risk} learners in scope are at medium or high risk."),
+            code: AnalyticsCode::RiskSpike,
+            params: serde_json::json!({ "count": at_risk }),
             href: None,
             course_id: None,
             activity_id: None,

@@ -40,6 +40,9 @@ assert set(services["nginx"]["depends_on"]) == {"web", "server", "rustfs"}
 assert not any(services[name].get("ports") for name in ("db", "redis", "judge0-server", "zitadel", "rustfs"))
 assert services["server"]["environment"]["AB__SERVER__CORS_ORIGINS"] == '["https://example.invalid"]'
 assert services["web"]["environment"]["INTERNAL_API_URL"] == "http://server:8000/api/v2/"
+# AI keys are owner-supplied at cutover (DECISIONS "AI models"); the merge must carry them.
+assert all(key in services["server"]["environment"] for key in ("AB__AI__OPENAI_API_KEY", "AB__AI__OPENROUTER_API_KEY"))
+assert services["worker"]["environment"] == services["server"]["environment"]
 assert services["web"]["build"]["args"]["NEXT_PUBLIC_API_URL"] == "https://example.invalid/api/v2/"
 for volume in services["nginx"]["volumes"]:
     if volume["type"] == "bind" and volume["target"].endswith((".template", ".conf")):

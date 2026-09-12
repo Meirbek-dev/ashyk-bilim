@@ -32,6 +32,7 @@ import {
   AiLectureReviewId,
   AiRemediationSessionId,
   AiRunId,
+  AiSubjectId,
   AiThreadId,
   CourseAnalysis,
   CourseId,
@@ -58,7 +59,6 @@ import {
   StudyAsk200,
   StudyRequest,
   SubmissionAnalysis,
-  SubmissionId,
   UsageSummary,
   UserId,
 } from '../zod'
@@ -3058,12 +3058,12 @@ export function useStudentRemediationSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getGenerateRemediationUrl = (submissionId: SubmissionId) => {
+export const getGenerateRemediationUrl = (submissionId: AiSubjectId) => {
   return `/api/v2/ai/remediation/${submissionId}/generate`
 }
 
 export const generateRemediation = async (
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   remediationRequest: RemediationRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<RemediationSession> => {
@@ -3123,7 +3123,7 @@ export const getGenerateRemediationMutationOptions = <TError = ErrorType<Problem
 export type GenerateRemediationMutationResult = NonNullable<Awaited<ReturnType<typeof generateRemediation>>>
 export type GenerateRemediationMutationBody = BodyType<RemediationRequest>
 export type GenerateRemediationMutationError = ErrorType<Problem>
-export type GenerateRemediationMutationVariables = { submissionId: SubmissionId; data: BodyType<RemediationRequest> }
+export type GenerateRemediationMutationVariables = { submissionId: AiSubjectId; data: BodyType<RemediationRequest> }
 
 export const useGenerateRemediation = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
@@ -3144,12 +3144,12 @@ export const useGenerateRemediation = <TError = ErrorType<Problem>, TContext = u
 > => {
   return useMutation(getGenerateRemediationMutationOptions(options), queryClient)
 }
-export const getQueueRemediationUrl = (submissionId: SubmissionId) => {
+export const getQueueRemediationUrl = (submissionId: AiSubjectId) => {
   return `/api/v2/ai/remediation/${submissionId}/generate/queue`
 }
 
 export const queueRemediation = async (
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   remediationRequest: RemediationRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<RunStatus> => {
@@ -3209,7 +3209,7 @@ export const getQueueRemediationMutationOptions = <TError = ErrorType<unknown>, 
 export type QueueRemediationMutationResult = NonNullable<Awaited<ReturnType<typeof queueRemediation>>>
 export type QueueRemediationMutationBody = BodyType<RemediationRequest>
 export type QueueRemediationMutationError = ErrorType<unknown>
-export type QueueRemediationMutationVariables = { submissionId: SubmissionId; data: BodyType<RemediationRequest> }
+export type QueueRemediationMutationVariables = { submissionId: AiSubjectId; data: BodyType<RemediationRequest> }
 
 export const useQueueRemediation = <TError = ErrorType<unknown>, TContext = unknown>(
   options?: {
@@ -4008,12 +4008,12 @@ export const useStudyAskQueue = <TError = ErrorType<unknown>, TContext = unknown
 ): UseMutationResult<Awaited<ReturnType<typeof studyAskQueue>>, TError, StudyAskQueueMutationVariables, TContext> => {
   return useMutation(getStudyAskQueueMutationOptions(options), queryClient)
 }
-export const getAnalyzeSubmissionUrl = (submissionId: SubmissionId) => {
+export const getAnalyzeSubmissionUrl = (submissionId: AiSubjectId) => {
   return `/api/v2/ai/submission-analysis/${submissionId}/analyze`
 }
 
 export const analyzeSubmission = async (
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   languageRequest: LanguageRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<SubmissionAnalysis> => {
@@ -4073,7 +4073,7 @@ export const getAnalyzeSubmissionMutationOptions = <TError = ErrorType<Problem>,
 export type AnalyzeSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeSubmission>>>
 export type AnalyzeSubmissionMutationBody = BodyType<LanguageRequest>
 export type AnalyzeSubmissionMutationError = ErrorType<Problem>
-export type AnalyzeSubmissionMutationVariables = { submissionId: SubmissionId; data: BodyType<LanguageRequest> }
+export type AnalyzeSubmissionMutationVariables = { submissionId: AiSubjectId; data: BodyType<LanguageRequest> }
 
 export const useAnalyzeSubmission = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
@@ -4094,12 +4094,12 @@ export const useAnalyzeSubmission = <TError = ErrorType<Problem>, TContext = unk
 > => {
   return useMutation(getAnalyzeSubmissionMutationOptions(options), queryClient)
 }
-export const getQueueSubmissionAnalysisUrl = (submissionId: SubmissionId) => {
+export const getQueueSubmissionAnalysisUrl = (submissionId: AiSubjectId) => {
   return `/api/v2/ai/submission-analysis/${submissionId}/analyze/queue`
 }
 
 export const queueSubmissionAnalysis = async (
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   languageRequest: LanguageRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<RunStatus> => {
@@ -4159,7 +4159,7 @@ export const getQueueSubmissionAnalysisMutationOptions = <TError = ErrorType<unk
 export type QueueSubmissionAnalysisMutationResult = NonNullable<Awaited<ReturnType<typeof queueSubmissionAnalysis>>>
 export type QueueSubmissionAnalysisMutationBody = BodyType<LanguageRequest>
 export type QueueSubmissionAnalysisMutationError = ErrorType<unknown>
-export type QueueSubmissionAnalysisMutationVariables = { submissionId: SubmissionId; data: BodyType<LanguageRequest> }
+export type QueueSubmissionAnalysisMutationVariables = { submissionId: AiSubjectId; data: BodyType<LanguageRequest> }
 
 export const useQueueSubmissionAnalysis = <TError = ErrorType<unknown>, TContext = unknown>(
   options?: {
@@ -4180,7 +4180,7 @@ export const useQueueSubmissionAnalysis = <TError = ErrorType<unknown>, TContext
 > => {
   return useMutation(getQueueSubmissionAnalysisMutationOptions(options), queryClient)
 }
-export const getLatestSubmissionAnalysisUrl = (submissionId: SubmissionId) => {
+export const getLatestSubmissionAnalysisUrl = (submissionId: AiSubjectId) => {
   return `/api/v2/ai/submission-analysis/${submissionId}/latest`
 }
 
@@ -4188,7 +4188,7 @@ export const getLatestSubmissionAnalysisUrl = (submissionId: SubmissionId) => {
  * @summary The newest analysis of a submission; `null` when none exists.
  */
 export const latestSubmissionAnalysis = async (
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<null | SubmissionAnalysis> => {
   return orvalMutator<null | SubmissionAnalysis>(
@@ -4201,7 +4201,7 @@ export const latestSubmissionAnalysis = async (
   )
 }
 
-export const getLatestSubmissionAnalysisQueryKey = (submissionId: SubmissionId) => {
+export const getLatestSubmissionAnalysisQueryKey = (submissionId: AiSubjectId) => {
   return [`/api/v2/ai/submission-analysis/${submissionId}/latest`] as const
 }
 
@@ -4209,7 +4209,7 @@ export const getLatestSubmissionAnalysisQueryOptions = <
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -4239,7 +4239,7 @@ export function useLatestSubmissionAnalysis<
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>> &
       Pick<
@@ -4258,7 +4258,7 @@ export function useLatestSubmissionAnalysis<
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>> &
       Pick<
@@ -4277,7 +4277,7 @@ export function useLatestSubmissionAnalysis<
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -4292,7 +4292,7 @@ export function useLatestSubmissionAnalysis<
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -4312,7 +4312,7 @@ export const getLatestSubmissionAnalysisSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -4341,7 +4341,7 @@ export function useLatestSubmissionAnalysisSuspense<
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -4352,7 +4352,7 @@ export function useLatestSubmissionAnalysisSuspense<
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -4363,7 +4363,7 @@ export function useLatestSubmissionAnalysisSuspense<
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -4378,7 +4378,7 @@ export function useLatestSubmissionAnalysisSuspense<
   TData = Awaited<ReturnType<typeof latestSubmissionAnalysis>>,
   TError = ErrorType<unknown>,
 >(
-  submissionId: SubmissionId,
+  submissionId: AiSubjectId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestSubmissionAnalysis>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>

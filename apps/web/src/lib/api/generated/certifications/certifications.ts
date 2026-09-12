@@ -34,7 +34,7 @@ import {
   VerifiedCertificate,
 } from '../zod'
 
-import { orvalMutator, arrayParser, voidParser } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringParser, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -255,6 +255,204 @@ export function useVerifyCertificateSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getVerifyCertificateSuspenseQueryOptions(code, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCertificatePdfUrl = (code: string) => {
+  return `/api/v2/certificates/${code}/pdf`
+}
+
+/**
+ * Holder, course, certificate name/type, issue date, teacher, the
+ * verification code and the verify link (`AB__SERVER__WEB_URL` +
+ * `/certificates/{code}/verify`). The page language follows
+ * `Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.
+ * @summary The certificate as an A4-landscape PDF — public by code, like verification.
+ */
+export const certificatePdf = async (code: string, options?: Parameters<typeof orvalMutator>[1]): Promise<string> => {
+  return orvalMutator<string>(
+    getCertificatePdfUrl(code),
+    {
+      ...options,
+      method: 'GET',
+    },
+    stringParser,
+  )
+}
+
+export const getCertificatePdfQueryKey = (code: string) => {
+  return [`/api/v2/certificates/${code}/pdf`] as const
+}
+
+export const getCertificatePdfQueryOptions = <
+  TData = Awaited<ReturnType<typeof certificatePdf>>,
+  TError = ErrorType<Problem>,
+>(
+  code: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCertificatePdfQueryKey(code)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof certificatePdf>>> = ({ signal }) =>
+    certificatePdf(code, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: code !== null && code !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof certificatePdf>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CertificatePdfQueryResult = NonNullable<Awaited<ReturnType<typeof certificatePdf>>>
+export type CertificatePdfQueryError = ErrorType<Problem>
+
+export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
+  code: string,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof certificatePdf>>,
+          TError,
+          Awaited<ReturnType<typeof certificatePdf>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
+  code: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof certificatePdf>>,
+          TError,
+          Awaited<ReturnType<typeof certificatePdf>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
+  code: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The certificate as an A4-landscape PDF — public by code, like verification.
+ */
+
+export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
+  code: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCertificatePdfQueryOptions(code, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCertificatePdfSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof certificatePdf>>,
+  TError = ErrorType<Problem>,
+>(
+  code: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCertificatePdfQueryKey(code)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof certificatePdf>>> = ({ signal }) =>
+    certificatePdf(code, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof certificatePdf>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CertificatePdfSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof certificatePdf>>>
+export type CertificatePdfSuspenseQueryError = ErrorType<Problem>
+
+export function useCertificatePdfSuspense<
+  TData = Awaited<ReturnType<typeof certificatePdf>>,
+  TError = ErrorType<Problem>,
+>(
+  code: string,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCertificatePdfSuspense<
+  TData = Awaited<ReturnType<typeof certificatePdf>>,
+  TError = ErrorType<Problem>,
+>(
+  code: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCertificatePdfSuspense<
+  TData = Awaited<ReturnType<typeof certificatePdf>>,
+  TError = ErrorType<Problem>,
+>(
+  code: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The certificate as an A4-landscape PDF — public by code, like verification.
+ */
+
+export function useCertificatePdfSuspense<
+  TData = Awaited<ReturnType<typeof certificatePdf>>,
+  TError = ErrorType<Problem>,
+>(
+  code: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCertificatePdfSuspenseQueryOptions(code, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

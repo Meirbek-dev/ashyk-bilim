@@ -26,13 +26,16 @@ export const TeacherAssessmentDetailResponse = zod.object({
       actor_user_id: zod.union([zod.null(), zod.uuid()]).optional(),
       affected_count: zod.int().nullish(),
       bulk_action_id: zod.union([zod.null(), zod.uuid()]).optional(),
+      final_score: zod
+        .number()
+        .nullish()
+        .describe('The saved\/published score of a grading entry; `None` for bulk actions.'),
       grading_entry_id: zod.union([zod.null(), zod.uuid()]).optional(),
       id: zod.string(),
       occurred_at_unix: zod.int(),
       source: zod.string().describe('`grading_entry` | `bulk_action`.'),
       status: zod.string().nullish(),
       submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
-      summary: zod.string(),
     }),
   ),
   cohort_analytics: zod.array(
@@ -75,12 +78,18 @@ export const TeacherAssessmentDetailResponse = zod.object({
   generated_at_unix: zod.int(),
   item_analytics: zod.array(
     zod.object({
+      accuracy_pct: zod.number().nullish(),
       impact_rate: zod.number().nullish(),
       impacted_count: zod.int(),
       item_key: zod.string(),
       item_label: zod.string(),
       item_type: zod.string().describe('`workflow` | `question` | `test`.'),
-      note: zod.string(),
+      note: zod
+        .string()
+        .nullish()
+        .describe(
+          'Stable code for workflow rows (`manual_review_pending`, …); questions\nand tests carry `accuracy_pct` instead.',
+        ),
       population_count: zod.int(),
       signal: zod.enum(['healthy', 'watch', 'critical']),
     }),

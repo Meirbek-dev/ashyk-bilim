@@ -6,9 +6,10 @@ use ab_core::id::CourseId;
 
 use super::context::count_i64;
 use super::types::{
-    AssessmentOutlierRow, AtRiskLearnerRow, ContentBottleneckRow, InsightFeedItem, RiskTrend,
-    Severity, TeacherCourseRow, TeacherWorkloadSummary,
+    AnalyticsCode, AssessmentOutlierRow, AtRiskLearnerRow, ContentBottleneckRow, InsightFeedItem,
+    RiskTrend, Severity, TeacherCourseRow, TeacherWorkloadSummary,
 };
+use super::workload::GRADING_SLA_HOURS;
 
 const fn as_i64(v: f64) -> i64 {
     #[allow(clippy::cast_possible_truncation)]
@@ -49,8 +50,8 @@ pub fn build_insight_feed(
                 Severity::Warning
             },
             priority: 95 + count_i64(n.min(20)),
-            title: format!("{n} new at-risk learners in {}.", learners[0].course_name),
-            body: "risk_rose_against_each_learner_baseline_review_watchlist".to_owned(),
+            code: AnalyticsCode::NewAtRiskLearners,
+            params: serde_json::json!({ "course_name": learners[0].course_name, "count": n }),
             course_id: Some(course_id),
             activity_id: None,
             assessment_type: None,
@@ -73,13 +74,12 @@ pub fn build_insight_feed(
                 Severity::Warning
             },
             priority: 80 + as_i64(65.0 - pass_rate),
-            title: format!("Pass rate for {} is {pass_rate}%.", a.title),
-            body: if a.discrimination_index.is_some() {
-                "quality_diagnostics_flag_this_assessment"
+            code: if a.discrimination_index.is_some() {
+                AnalyticsCode::LowPassRateWithDiagnostics
             } else {
-                "low_pass_rate_flags_this_assessment"
-            }
-            .to_owned(),
+                AnalyticsCode::LowPassRate
+            },
+            params: serde_json::json!({ "assessment_title": a.title, "pass_rate": pass_rate }),
             course_id: Some(a.course_id),
             activity_id: a.activity_id,
             assessment_type: Some(a.assessment_type),
@@ -104,8 +104,8 @@ pub fn build_insight_feed(
                     10
                 }
                 + b.exit_count.min(10),
-            title: format!("{} is a content bottleneck.", b.activity_name),
-            body: b.note.to_owned(),
+            code: AnalyticsCode::ContentBottleneck,
+            params: serde_json::json!({ "activity_name": b.activity_name, "signal": b.signal }),
             course_id: Some(b.course_id),
             activity_id: Some(b.activity_id),
             assessment_type: None,
@@ -128,14 +128,13 @@ pub fn build_insight_feed(
                 Severity::Warning
             },
             priority: 85 + workload.sla_breaches.min(25),
-            title: format!(
-                "{} submissions are awaiting review.",
-                workload.backlog_total
-            ),
-            body: format!(
-                "{} breached the 72-hour grading target; the 7-day forecast is {}.",
-                workload.sla_breaches, workload.forecast_backlog_7d
-            ),
+            code: AnalyticsCode::WorkloadBacklog,
+            params: serde_json::json!({
+                "count": workload.backlog_total,
+                "breaches": workload.sla_breaches,
+                "forecast_7d": workload.forecast_backlog_7d,
+                "target_hours": GRADING_SLA_HOURS,
+            }),
             course_id: None,
             activity_id: None,
             assessment_type: None,
@@ -156,11 +155,8 @@ pub fn build_insight_feed(
             category: "completion",
             severity: Severity::Info,
             priority: 45 + as_i64(delta),
-            title: format!(
-                "Completion for {} improved by {delta} points.",
-                row.course_name
-            ),
-            body: "cohort_outperforms_historical_course_baseline".to_owned(),
+            code: AnalyticsCode::CompletionImproved,
+            params: serde_json::json!({ "course_name": row.course_name, "delta_pts": delta }),
             course_id: Some(row.course_id),
             activity_id: None,
             assessment_type: None,

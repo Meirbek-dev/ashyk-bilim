@@ -779,3 +779,296 @@ async fn capabilities_follow_role_and_surface(pool: PgPool) {
     assert_eq!(unknown.json()["available"], false);
     assert_eq!(unknown.json()["reason"], "course_not_found");
 }
+
+// ── File-submission attempts as analysis subjects ───────────────────────────
+
+/// The browser's part of an upload: create, PUT to storage, finalize.
+async fn finalized_upload(
+    app: &TestApp,
+    session: &MintedSession,
+    mime: &str,
+    payload: &[u8],
+) -> String {
+    let created = app
+        .post_as(
+            session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "file-submission", "mime": mime,
+                                  "size_bytes": payload.len() }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
+    let put = reqwest::Client::new()
+        .put(&put_url)
+        .body(payload.to_vec())
+        .send()
+        .await
+        .unwrap();
+    assert!(put.status().is_success(), "presigned PUT: {}", put.status());
+    let finalized = app
+        .post_as(
+            session,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
+    id
+}
+
+/// A published file-submission activity in `course_id`, with one markdown
+/// essay submitted by `alice`; returns `(attempt_id, activity_id)`.
+async fn submitted_file_attempt(
+    app: &TestApp,
+    teacher: &MintedSession,
+    alice: &MintedSession,
+    course_id: &str,
+) -> (String, String) {
+    let chapter = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &serde_json::json!({ "name": "Week 2" }),
+        )
+        .await;
+    let chapter_id = chapter.json()["id"].as_str().unwrap().to_owned();
+    let created = app
+        .post_as(
+            teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({
+                "chapter_id": chapter_id, "title": "Essay",
+                "instructions": "Argue for monads in three paragraphs.",
+            }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let fs_id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    let published = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/file-submissions/{fs_id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let opened = app
+        .post_as(
+            alice,
+            &format!("/api/v2/file-submissions/{fs_id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(opened.status, StatusCode::CREATED, "{}", opened.text());
+    let attempt_id = opened.json()["id"].as_str().unwrap().to_owned();
+    let upload = finalized_upload(
+        app,
+        alice,
+        "text/markdown",
+        b"# Monads\n\nBecause. MONAD-ESSAY-MARKER",
+    )
+    .await;
+    let saved = app
+        .patch_as(
+            alice,
+            &format!("/api/v2/file-submissions/{fs_id}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": upload, "display_name": "essay.md" }] }),
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    let version = saved.json()["version"].as_i64().unwrap();
+    let submitted = app
+        .send(
+            axum::http::Request::builder()
+                .method("POST")
+                .uri(format!("/api/v2/file-submissions/{fs_id}/submit"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &alice.cookie)
+                .header(axum::http::header::IF_MATCH, version.to_string())
+                .body(axum::body::Body::from("{}"))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    (attempt_id, activity_id)
+}
+
+fn remediation_reply() -> serde_json::Value {
+    serde_json::json!({
+        "title": "Monads, again",
+        "learning_objectives": ["State the monad laws"],
+        "micro_lecture_markdown": "A monad is a monoid in the category of endofunctors.",
+        "practice_questions": [{
+            "prompt": "Which law is missing?", "choices": ["left identity", "commutativity"],
+            "answer": "left identity", "explanation": "Monads need not commute."
+        }],
+        "pass_threshold": 70,
+        "citations": [],
+        "language": "en"
+    })
+}
+
+/// A file-submission attempt is a first-class subject of the analyst and
+/// the remediation generator (DECISIONS 2026-09-12): the same routes take
+/// the attempt id, the context carries the submitted text, the records
+/// point at the attempt, the owner and the teacher may look, strangers 404,
+/// and the queued path re-derives the subject from the run.
+#[sqlx::test(migrations = "../../migrations")]
+async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice_user = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            alice_user,
+            &[
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+                "file:create:own",
+            ],
+        )
+        .await;
+    let course_id = published_course(&app, &teacher, "Files").await;
+    let (attempt_id, activity_id) =
+        submitted_file_attempt(&app, &teacher, &alice, &course_id).await;
+    mount_json_reply(&app.llm, &analysis_reply(&attempt_id)).await;
+
+    // Nothing yet, for the teacher; a stranger cannot even ask.
+    let none = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/ai/submission-analysis/{attempt_id}/latest"),
+        )
+        .await;
+    assert_eq!(none.status, StatusCode::OK, "{}", none.text());
+    assert!(none.json().is_null());
+    let bob = learner(&app, "bob").await;
+    assert_eq!(
+        app.get_as(
+            &bob,
+            &format!("/api/v2/ai/submission-analysis/{attempt_id}/latest")
+        )
+        .await
+        .status,
+        StatusCode::NOT_FOUND
+    );
+
+    // Inline analysis by the teacher: the record names the attempt, and
+    // the model saw the submitted markdown plus the instructions.
+    let analysed = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/submission-analysis/{attempt_id}/analyze"),
+            &serde_json::json!({ "language": "en" }),
+        )
+        .await;
+    assert_eq!(analysed.status, StatusCode::OK, "{}", analysed.text());
+    let analysed = analysed.json();
+    assert_eq!(analysed["file_submission_attempt_id"], attempt_id.as_str());
+    assert!(analysed["submission_id"].is_null());
+    assert_eq!(analysed["gap_count"], 1);
+    let requests = app.llm.received_requests().await.unwrap();
+    let prompt = String::from_utf8_lossy(&requests.last().unwrap().body).into_owned();
+    assert!(
+        prompt.contains("MONAD-ESSAY-MARKER"),
+        "file text missing: {prompt}"
+    );
+    assert!(prompt.contains("Argue for monads"), "instructions missing");
+    assert!(prompt.contains("essay.md"), "file name missing");
+    let latest = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/ai/submission-analysis/{attempt_id}/latest"),
+        )
+        .await;
+    assert_eq!(latest.status, StatusCode::OK, "{}", latest.text());
+    assert_eq!(latest.json()["id"], analysed["id"]);
+    let run_id = analysed["run_id"].as_str().unwrap().to_owned();
+    let run = app
+        .get_as(&teacher, &format!("/api/v2/ai/runs/{run_id}"))
+        .await;
+    assert_eq!(run.json()["status"], "succeeded", "{}", run.text());
+
+    // Remediation reuses the analysis; the session points at the attempt
+    // and its activity, and the learner can read it.
+    app.llm.reset().await;
+    mount_json_reply(&app.llm, &remediation_reply()).await;
+    let session = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/remediation/{attempt_id}/generate"),
+            &serde_json::json!({ "gate_mode": true, "language": "en" }),
+        )
+        .await;
+    assert_eq!(session.status, StatusCode::OK, "{}", session.text());
+    let session = session.json();
+    assert_eq!(session["file_submission_attempt_id"], attempt_id.as_str());
+    assert!(session["submission_id"].is_null());
+    assert_eq!(session["activity_id"], activity_id.as_str());
+    assert_eq!(session["analysis_id"], analysed["id"]);
+    assert_eq!(session["lecture"]["title"], "Monads, again");
+    let session_id = session["id"].as_str().unwrap().to_owned();
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}"),
+        )
+        .await;
+    assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
+    assert_eq!(
+        app.get_as(
+            &bob,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}")
+        )
+        .await
+        .status,
+        StatusCode::NOT_FOUND
+    );
+
+    // Queued analysis: the worker re-derives the attempt from the run.
+    app.llm.reset().await;
+    mount_json_reply(&app.llm, &analysis_reply(&attempt_id)).await;
+    let queued = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/submission-analysis/{attempt_id}/analyze/queue"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let queued_id = queued.json()["id"].as_str().unwrap().to_owned();
+    app.ai_service()
+        .execute_queued(AiRunId(uuid::Uuid::parse_str(&queued_id).unwrap()))
+        .await
+        .unwrap();
+    let done = app
+        .get_as(&alice, &format!("/api/v2/ai/runs/{queued_id}"))
+        .await;
+    assert_eq!(done.json()["status"], "succeeded", "{}", done.text());
+    let newest = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/ai/submission-analysis/{attempt_id}/latest"),
+        )
+        .await;
+    assert_eq!(newest.json()["run_id"], queued_id.as_str());
+
+    // An unknown id (neither table) is 404, not 500.
+    assert_eq!(
+        app.get_as(
+            &teacher,
+            &format!(
+                "/api/v2/ai/submission-analysis/{}/latest",
+                uuid::Uuid::now_v7()
+            )
+        )
+        .await
+        .status,
+        StatusCode::NOT_FOUND
+    );
+}

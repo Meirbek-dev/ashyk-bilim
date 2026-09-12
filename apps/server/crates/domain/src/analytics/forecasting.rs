@@ -10,8 +10,8 @@ use super::context::{
 };
 use super::filters::{AnalyticsFilters, DAY_SECS};
 use super::types::{
-    AssessmentOutlierRow, AtRiskLearnerRow, Confidence, ForecastItem, Severity, TeacherCourseRow,
-    TeacherWorkloadSummary,
+    AnalyticsCode, AssessmentOutlierRow, AtRiskLearnerRow, Confidence, ForecastItem, Severity,
+    TeacherCourseRow, TeacherWorkloadSummary,
 };
 
 /// Legacy `build_forecasts`, top 12 by severity then expected value.
@@ -61,11 +61,8 @@ pub fn build_forecasts(
                 } else {
                     Severity::Warning
                 },
-                title: format!(
-                    "{}: learners likely to miss the completion target",
-                    course.course_name
-                ),
-                prediction: format!("{unlikely} learners are inactive or below 70% progress."),
+                code: AnalyticsCode::CompletionTargetMiss,
+                params: serde_json::json!({ "course_name": course.course_name, "count": unlikely }),
                 confidence_level: if course_snapshots.len() >= 10 {
                     Confidence::Medium
                 } else {
@@ -106,10 +103,8 @@ pub fn build_forecasts(
                 } else {
                     Severity::Info
                 },
-                title: format!("{}: 14-day completion forecast", course.course_name),
-                prediction: format!(
-                    "Expected completion rate is {expected}% if the current pace holds."
-                ),
+                code: AnalyticsCode::CourseCompletionDeadline,
+                params: serde_json::json!({ "course_name": course.course_name, "expected_pct": expected }),
                 confidence_level: if completion_events >= 5 {
                     Confidence::Medium
                 } else {
@@ -137,11 +132,8 @@ pub fn build_forecasts(
         } else {
             Severity::Info
         },
-        title: "expected_grading_backlog_in_7_days".to_owned(),
-        prediction: format!(
-            "The queue is projected to reach {} submissions.",
-            workload.forecast_backlog_7d
-        ),
+        code: AnalyticsCode::GradingBacklog7d,
+        params: serde_json::json!({ "count": workload.forecast_backlog_7d }),
         confidence_level: Confidence::Medium,
         course_id: None,
         course_name: None,
@@ -172,11 +164,11 @@ pub fn build_forecasts(
             } else {
                 Severity::Warning
             },
-            title: format!("{}: elevated failure risk", a.title),
-            prediction: format!(
-                "Expected failure rate is {}% before the next deadline.",
-                round1(100.0 - pass_rate)
-            ),
+            code: AnalyticsCode::AssessmentFailureRisk,
+            params: serde_json::json!({
+                "assessment_title": a.title,
+                "expected_pct": round1(100.0 - pass_rate),
+            }),
             confidence_level: if a.submission_rate.is_some_and(|r| r >= 50.0) {
                 Confidence::High
             } else {

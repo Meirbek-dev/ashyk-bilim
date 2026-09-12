@@ -1480,24 +1480,6 @@ pub async fn gamification_profiles(
 }
 
 #[derive(Debug, Clone, FromRow)]
-pub struct XpTransaction {
-    pub id: i32,
-    pub user_id: i32,
-    pub amount: i32,
-    pub source: String,
-    pub source_id: Option<String>,
-    pub reason: Option<String>,
-    pub idempotency_key: Option<String>,
-    pub created_at: Option<f64>,
-}
-
-pub async fn xp_transactions(pool: &PgPool, limit: Option<i64>) -> Result<Vec<XpTransaction>> {
-    fetch(pool, "xp_transactions", concat!(
-        "SELECT id, user_id, amount, source::text AS source, source_id, reason, idempotency_key, ",
-        ts!("created_at"), " FROM xp_transactions ORDER BY created_at, id"), limit).await
-}
-
-#[derive(Debug, Clone, FromRow)]
 pub struct GamificationConfig {
     pub daily_xp_limit: Option<i32>,
     pub rewards: Option<serde_json::Value>,

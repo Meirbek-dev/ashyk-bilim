@@ -67,6 +67,12 @@ error_codes! {
     InvalidTotpCode => ("invalid-totp-code", 400, "Invalid one-time code"),
     UsernameTaken => ("username-taken", 409, "Username is already taken"),
     EmailTaken => ("email-taken", 409, "Email is already registered"),
+    // RBAC administration
+    RoleSlugTaken => ("role-slug-taken", 409, "Role slug is already taken"),
+    LastAdmin => ("last-admin", 409, "The platform must keep at least one active admin"),
+    SelfDisable => ("self-disable", 409, "You cannot disable your own account"),
+    // Utilities
+    LinkPreviewFailed => ("link-preview-failed", 502, "Could not fetch a preview for the link"),
     // Code execution
     CodeRunnerDegraded => ("code-runner-degraded", 503, "Code runner temporarily unavailable"),
     CompileError => ("compile-error", 422, "Source code does not compile"),

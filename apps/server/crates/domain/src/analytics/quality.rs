@@ -6,7 +6,9 @@ use ab_db::analytics::TeacherMetricsRow;
 use super::context::{AnalyticsContext, count_i64, progress_snapshots};
 use super::filters::AnalyticsFilters;
 use super::scope::TeacherScope;
-use super::types::{AnalyticsDataQuality, Confidence, CourseDataGap, DataQualityIssue, Severity};
+use super::types::{
+    AnalyticsCode, AnalyticsDataQuality, Confidence, CourseDataGap, DataQualityIssue, Severity,
+};
 
 /// Legacy `build_data_quality`. `teacher_rollup` is the newest teacher
 /// rollup when the filters allow rollup reads.
@@ -64,8 +66,8 @@ pub fn build_data_quality(
         issues.push(DataQualityIssue {
             id: "missing-event-sources",
             severity: Severity::Warning,
-            title: "some_event_sources_have_no_data",
-            detail: missing_sources.join(", "),
+            code: AnalyticsCode::MissingEventSources,
+            params: serde_json::json!({ "sources": missing_sources }),
             course_id: None,
             source: Some("events"),
         });
@@ -74,8 +76,8 @@ pub fn build_data_quality(
         issues.push(DataQualityIssue {
             id: "thin-course-data",
             severity: Severity::Warning,
-            title: "some_courses_have_too_little_data",
-            detail: format!("{} courses have fewer than 5 learners.", gaps.len()),
+            code: AnalyticsCode::ThinCourseData,
+            params: serde_json::json!({ "count": gaps.len() }),
             course_id: None,
             source: Some("enrollment"),
         });
@@ -84,10 +86,8 @@ pub fn build_data_quality(
         issues.push(DataQualityIssue {
             id: "stale-rollup",
             severity: Severity::Critical,
-            title: "rollups_older_than_24_hours",
-            detail:
-                "Refresh the analytics rollups before using this view for operational decisions."
-                    .to_owned(),
+            code: AnalyticsCode::StaleRollup,
+            params: serde_json::json!({}),
             course_id: None,
             source: Some("rollups"),
         });

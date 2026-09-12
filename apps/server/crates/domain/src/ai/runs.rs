@@ -100,6 +100,7 @@ const SAFE_CONTEXT_KEYS: &[&str] = &[
     "course_id",
     "kind",
     "submission_id",
+    "file_submission_attempt_id",
     "thread_id",
     "time_to_first_text_ms",
     "retry_count",

@@ -160,7 +160,7 @@ pub async fn list_users(
         (status = 204, description = "Status changed"),
         (status = 403, description = "Missing permission", body = Problem,
          content_type = "application/problem+json"),
-        (status = 409, description = "Self-disable refused", body = Problem,
+        (status = 409, description = "`self-disable` / `last-admin`", body = Problem,
          content_type = "application/problem+json"),
     )
 )]

@@ -392,6 +392,44 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .is_none()
     );
     assert_eq!(body["intervention_summary"]["total"], 0);
+    // Codes + params, no prose (DECISIONS "Pass-6 contract gaps"): every
+    // alert / forecast / anomaly / insight / data-quality issue carries a
+    // `code` from the `AnalyticsCode` enum and an object of `params`.
+    let backlog_forecast = find_row(&body["forecasts"], "kind", "grading_backlog_7d")
+        .expect("the 7-day backlog forecast is always emitted");
+    assert_eq!(backlog_forecast["code"], "grading_backlog_7d");
+    assert_eq!(
+        backlog_forecast["params"]["count"], 1,
+        "bob's pending submission"
+    );
+    for list in ["alerts", "forecasts", "anomalies", "insights"] {
+        for item in body[list].as_array().unwrap() {
+            assert!(item["code"].is_string(), "{list}: {item}");
+            assert!(item["params"].is_object(), "{list}: {item}");
+            for prose in ["title", "body", "prediction", "detail"] {
+                assert!(
+                    item.get(prose).is_none(),
+                    "{list} carries `{prose}`: {item}"
+                );
+            }
+        }
+    }
+    let issues = body["data_quality"]["issues"].as_array().unwrap();
+    let missing = find_row(
+        &body["data_quality"]["issues"],
+        "id",
+        "missing-event-sources",
+    )
+    .expect("exam/code sources have no data in this fixture");
+    assert_eq!(missing["code"], "missing_event_sources");
+    assert!(
+        missing["params"]["sources"]
+            .as_array()
+            .unwrap()
+            .contains(&serde_json::json!("exam_attempts")),
+        "{missing}"
+    );
+    assert!(issues.iter().all(|i| i.get("detail").is_none()));
 
     // ── Courses ─────────────────────────────────────────────────────────
     let courses = app
@@ -452,6 +490,18 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .await;
     assert_eq!(adetail.status, StatusCode::OK, "{}", adetail.text());
     assert_eq!(adetail.json()["learner_rows"].as_array().unwrap().len(), 2);
+    // Audit rows and item rows are structured, not English summaries.
+    for event in adetail.json()["audit_history"].as_array().unwrap() {
+        assert!(event.get("summary").is_none(), "{event}");
+        assert!(event["final_score"].is_number() || event["final_score"].is_null());
+    }
+    for item in adetail.json()["item_analytics"].as_array().unwrap() {
+        assert!(item["note"].is_null() || item["note"].is_string(), "{item}");
+        assert!(
+            item["accuracy_pct"].is_null() || item["accuracy_pct"].is_number(),
+            "{item}"
+        );
+    }
     let wrong_kind = app
         .get_as(
             &teacher,
