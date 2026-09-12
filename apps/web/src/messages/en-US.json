@@ -7949,7 +7949,8 @@
           "quiz": "Quiz",
           "form": "Form",
           "file": "File"
-        }
+        },
+        "exportDone": "CSV saved: {count} {count, plural, one {learner} other {learners}}"
       },
       "Review": {
         "layout": {

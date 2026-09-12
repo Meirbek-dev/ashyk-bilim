@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -172,6 +173,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
           link.download = `gradebook-${courseUuid}.csv`
           link.click()
           URL.revokeObjectURL(url)
+          toast.success(t('exportDone', { count: visibleStudents.length }))
         }}
         onRefresh={() => void refetch()}
       />

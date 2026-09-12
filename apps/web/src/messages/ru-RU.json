@@ -7962,7 +7962,8 @@
           "quiz": "Тест",
           "form": "Форма",
           "file": "Файл"
-        }
+        },
+        "exportDone": "CSV сохранён: {count} {count, plural, one {учащийся} few {учащихся} many {учащихся} other {учащихся}}"
       },
       "Review": {
         "layout": {
