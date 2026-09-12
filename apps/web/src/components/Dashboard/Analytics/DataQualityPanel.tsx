@@ -68,7 +68,8 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
             <div className="text-muted-foreground text-xs tracking-wider uppercase">
               {t('dataQualityPanel.lastRollup')}
             </div>
-            <div className="mt-2 text-sm font-medium">
+            {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+            <div className="mt-2 text-sm font-medium" suppressHydrationWarning>
               {quality.last_rollup_time_unix != null
                 ? fromUnix(quality.last_rollup_time_unix).toLocaleString(locale)
                 : t('dataQualityPanel.liveQuery')}

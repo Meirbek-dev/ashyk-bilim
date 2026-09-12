@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { AlertTriangleIcon, CheckCircle2Icon, ClipboardCheckIcon, FileTextIcon, ShieldCheckIcon } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 import {
   AlertDialog,
@@ -23,6 +24,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AIConfidenceMeter, AIEvidencePanel } from '@/features/ai-experience'
 import type { AICitation } from '@/features/ai-experience'
+import { useApiError } from '@/hooks/useApiError'
 import { fromUnix } from '@/lib/api/contract'
 
 import { useReviewCourseFinding } from '../api/use-course-analysis'
@@ -55,6 +57,7 @@ export function CourseAnalysisResultShell({
   const [reviewedEvidence, setReviewedEvidence] = useState(false)
   const [prevUuid, setPrevUuid] = useState(analysis.id)
   const findingReview = useReviewCourseFinding(courseUuid ?? '')
+  const { toastApiError } = useApiError()
 
   if (analysis.id !== prevUuid) {
     setPrevUuid(analysis.id)
@@ -124,7 +127,15 @@ export function CourseAnalysisResultShell({
             findings={findings}
             pending={findingReview.isPending}
             reviews={analysis.report.finding_reviews ?? {}}
-            onReview={(findingId, action) => findingReview.mutate({ action, analysisId: analysis.id, findingId })}
+            onReview={(findingId, action) =>
+              findingReview.mutate(
+                { action, analysisId: analysis.id, findingId },
+                {
+                  onSuccess: () => toast.success(t('findingReviewedToast')),
+                  onError: error => toastApiError(error, { fallback: t('findingReviewFailed') }),
+                },
+              )
+            }
           />
           <ReportList empty={t('noStrengths')} icon="strength" items={strengths} title={t('contentStrengths')} />
         </div>

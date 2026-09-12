@@ -13,6 +13,7 @@ interface TeacherWorkloadPanelProps {
 
 export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelProps) {
   const locale = useLocale()
+  // Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text.
   const numberFormatter = new Intl.NumberFormat(locale)
   const t = useTranslations('Components.DashboardAnalytics')
   const tA = useTranslations('TeacherAnalytics')
@@ -37,7 +38,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
               <Inbox className="text-primary h-3.5 w-3.5" />
               {t('teacherWorkloadPanel.backlog')}
             </div>
-            <div className="text-foreground text-3xl font-bold tracking-tight">
+            <div className="text-foreground text-3xl font-bold tracking-tight" suppressHydrationWarning>
               {numberFormatter.format(workload.backlog_total ?? 0)}
             </div>
           </div>
@@ -46,7 +47,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
               <Clock4 className="h-3.5 w-3.5 text-amber-500" />
               {t('teacherWorkloadPanel.slaBreaches')}
             </div>
-            <div className="text-foreground text-3xl font-bold tracking-tight">
+            <div className="text-foreground text-3xl font-bold tracking-tight" suppressHydrationWarning>
               {numberFormatter.format(workload.sla_breaches ?? 0)}
             </div>
           </div>
@@ -55,7 +56,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
               <TimerReset className="h-3.5 w-3.5 text-blue-500" />
               {t('teacherWorkloadPanel.forecast7d')}
             </div>
-            <div className="text-foreground text-3xl font-bold tracking-tight">
+            <div className="text-foreground text-3xl font-bold tracking-tight" suppressHydrationWarning>
               {numberFormatter.format(workload.forecast_backlog_7d ?? 0)}
             </div>
           </div>
@@ -74,7 +75,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
           <Badge variant={workload.aging_buckets.d7_plus ? 'destructive' : 'outline'}>
             {t('teacherWorkloadPanel.bucket7dPlus')} {workload.aging_buckets.d7_plus}
           </Badge>
-          <Badge variant="outline">
+          <Badge variant="outline" suppressHydrationWarning>
             {t('teacherWorkloadPanel.medianFeedback')} {hours(workload.median_feedback_latency_hours)}
           </Badge>
         </div>
@@ -94,7 +95,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
                 <TableCell className="max-w-[260px] font-medium whitespace-normal">{item.title}</TableCell>
                 <TableCell className="max-w-[220px] whitespace-normal">{item.course_name}</TableCell>
                 <TableCell>{item.awaiting_review}</TableCell>
-                <TableCell>{hours(item.age_hours)}</TableCell>
+                <TableCell suppressHydrationWarning>{hours(item.age_hours)}</TableCell>
               </TableRow>
             ))}
             {!workload.backlog_by_assessment.length ? (

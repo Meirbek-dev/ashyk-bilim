@@ -4,9 +4,12 @@ import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyS
 import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar'
 import { Card, CardContent } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
+import { analyticsPageMetadata } from '../_components/metadata'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { ChevronRight, LayoutDashboard } from 'lucide-react'
+
+export const generateMetadata = () => analyticsPageMetadata('pages.assessmentsTitle')
 
 export default function PlatformAnalyticsAssessmentsPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>

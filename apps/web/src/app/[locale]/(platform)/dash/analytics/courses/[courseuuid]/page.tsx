@@ -8,7 +8,16 @@ import AtRiskLearnersTable from '@components/Dashboard/Analytics/AtRiskLearnersT
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
+import { getCourseMetadata } from '@services/courses/courses'
+import type { Metadata } from 'next'
 import { Badge } from '@/components/ui/badge'
+import { analyticsPageMetadata } from '../../_components/metadata'
+
+export async function generateMetadata({ params }: { params: Promise<{ courseuuid: string }> }): Promise<Metadata> {
+  const { courseuuid } = await params
+  const course = await getCourseMetadata(courseuuid).catch(() => null)
+  return course?.name ? { title: course.name } : analyticsPageMetadata('tabs.courses')
+}
 
 export default function PlatformAnalyticsCourseDetailPage(props: {
   params: Promise<{ courseuuid: string }>

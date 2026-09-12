@@ -1306,7 +1306,7 @@
         "teacherWorkloadComparison": "Мұғалім жүктемесін салыстыру",
         "courseHealthRanking": "Курстың денсаулық рейтингі",
         "teacher": "Мұғалім",
-        "backlog": "Backlog",
+        "backlog": "Кезек",
         "atRisk": "Қауіп астында",
         "course": "Курс",
         "health": "Денсаулық",
@@ -1322,7 +1322,7 @@
       },
       "teacherWorkloadPanel": {
         "title": "Мұғалім жүктемесі",
-        "description": "Backlog, SLA бұзылуы, кері байланыс кешігуі және жақын арадағы жүктеме болжамын қараңыз.",
+        "description": "Тексеру кезегін, SLA бұзылуын, кері байланыс кешігуін және жақын арадағы жүктеме болжамын қараңыз.",
         "backlog": "Кезек",
         "slaBreaches": "SLA бұзылулары",
         "forecast7d": "7 күндік болжам",
@@ -4149,7 +4149,7 @@
       "usernameColumn": "Пайдаланушы аты",
       "usersSelectedMessage": "{count, plural, one {# пайдаланушы таңдалды} other {# пайдаланушы таңдалды}}",
       "contributorPolicyStagedTitle": "Қатысушылық саясаты Сақтау басқанша сақталмайды",
-      "contributorPolicyStagedDescription": "Ашық немесе жабық қатысу саясаты бұл бөлімді сақтағанша дейін локалды болып қалады. Төменде қатысушыларды қосу, жою және өңдеу бірден қолданылады.",
+      "contributorPolicyStagedDescription": "Ашық немесе жабық қатысу саясаты бұл бөлімді сақтағанша дейін локалды болып қалады.",
       "rosterActionsImmediateTitle": "Қатысушылармен әрекеттер бірден қолданылады",
       "rosterUnavailableTitle": "Бұл нұсқада бірлескен авторларды басқару қолжетімсіз",
       "rosterUnavailableDescription": "Бірлескен авторлар тізімі, шақырулар мен рөлдер кейінірек қосылады. Жоғарыдағы «Бірлескен авторларға ашық» параметрі сақталады.",
@@ -7392,7 +7392,10 @@
         "completed": "Аяқталды",
         "failed": "Қате",
         "processing": "Өңделуде",
-        "pendingJudge0": "Judge0 күтілуде"
+        "pendingJudge0": "Judge0 күтілуде",
+        "draft": "Жоба",
+        "published": "Жарияланды",
+        "returned": "Қайтарылды"
       }
     },
     "kpi": {
@@ -7401,12 +7404,12 @@
       "noComparison": "Бұл метрика үшін ағымдағы нұсқада салыстыру қол жетімді емес.",
       "changePeriod": "Алдыңғы кезеңмен салыстырғандағы өзгеріс: {delta}",
       "definitions": {
-        "activeLearners": "Unique learners who completed at least one activity in the selected window.",
-        "returningLearners": "Learners who were also active in the immediately preceding period of equal length.",
-        "completionRate": "Percentage of enrolled learners who have fully completed the course.",
-        "atRisk": "Learners scoring 40+ on the composite risk index (inactivity + progress gap + failures + missing assessments + grading blocks).",
-        "ungradedSubmissions": "Assessment task submissions currently awaiting teacher review and grading.",
-        "negativeCourses": "Courses where the active learner count has declined compared to the previous period."
+        "activeLearners": "Таңдалған кезеңде кемінде бір әрекет орындаған бірегей оқушылар.",
+        "returningLearners": "Алдыңғы дәл сондай ұзақтықтағы кезеңде де белсенді болған оқушылар.",
+        "completionRate": "Курсты толық аяқтаған тіркелген оқушылардың үлесі.",
+        "atRisk": "Құрама тәуекел индексі бойынша 40+ ұпай жинаған оқушылар (белсенділіктің болмауы + прогресс + сәтсіздіктер + тапсырылмаған оқу тапсырмалары + тексеруді күту).",
+        "ungradedSubmissions": "Оқытушының тексеруі мен бағалауын күтіп тұрған жұмыстар.",
+        "negativeCourses": "Алдыңғы кезеңмен салыстырғанда белсенді оқушылар саны азайған курстар."
       }
     },
     "kpiCharts": {
@@ -7626,7 +7629,7 @@
       "assessmentCommonFailuresTitle": "Жалпы қателіктер",
       "assessmentNoCommonFailures": "Ағымдағы деректерде жалпы қателік кластері табылмады.",
       "assessmentOpsTitle": "Операциялық дайындық",
-      "assessmentOpsDescription": "Осы бағалау үшін тексеру, жариялау, аудит және cutover сигналдары.",
+      "assessmentOpsDescription": "Осы бағалау үшін тексеру, жариялау, аудит және көшуге дайындық сигналдары.",
       "assessmentOpsDiagnosticsTitle": "Диагностика көрінісі",
       "assessmentOpsDiagnosticsManual": "Қолмен бағалау",
       "assessmentOpsDiagnosticsAuto": "Автоматты бағалау",
@@ -7637,7 +7640,7 @@
       "assessmentOpsReturned": "Қайта тапсыруға қайтарылды",
       "assessmentOpsReleased": "Жарияланған",
       "assessmentOpsLate": "Кеш тапсырылған",
-      "assessmentOpsBacklog": "Ескі backlog",
+      "assessmentOpsBacklog": "Ескірген кезек",
       "assessmentOpsSuspicious": "Күдікті әрекеттер",
       "assessmentOpsMissingScores": "Бағасы жоқ",
       "assessmentOpsSloTitle": "Қызмет деңгейі мақсаты",
@@ -7651,12 +7654,12 @@
       "assessmentOpsSloBacklog": "Кезек",
       "assessmentOpsSloOverdue": "Мерзімі өткен",
       "assessmentOpsMigrationTitle": "Миграция күйі",
-      "assessmentOpsMigrationCutoverReady": "Cutover дайын",
-      "assessmentOpsMigrationCutoverBlocked": "Cutover бұғатталған",
-      "assessmentOpsMigrationCanonicalRows": "Canonical жолдар",
+      "assessmentOpsMigrationCutoverReady": "Көшуге дайын",
+      "assessmentOpsMigrationCutoverBlocked": "Көшу бұғатталған",
+      "assessmentOpsMigrationCanonicalRows": "Канондық жолдар",
       "assessmentOpsMigrationModeCanonical": "Канондық",
       "assessmentOpsAuditTitle": "Аудит тарихы",
-      "assessmentOpsAuditEmpty": "Ағымдағы scope үшін операциялық аудит оқиғалары жоқ.",
+      "assessmentOpsAuditEmpty": "Ағымдағы қамту үшін операциялық аудит оқиғалары жоқ.",
       "assessmentOpsAuditFilteredEmpty": "Ағымдағы сүзгілерге сәйкес аудит оқиғалары табылмады.",
       "assessmentOpsAuditSearchPlaceholder": "Аудит оқиғаларын, әрекеттерді немесе орындаушыларды іздеу...",
       "assessmentOpsAuditExport": "CSV экспорттау",
@@ -7680,8 +7683,8 @@
       "assessmentSupportAuditEvents": "Көрінетін аудит оқиғалары",
       "assessmentSupportAlerts": "Белсенді ескертулер",
       "assessmentSupportAlertsEmpty": "Ағымдағы ауқым үшін қолдау ескертулері жоқ.",
-      "assessmentSupportBlockers": "Cutover кедергілері",
-      "assessmentSupportBlockersEmpty": "Белсенді cutover кедергілері жоқ.",
+      "assessmentSupportBlockers": "Көшу кедергілері",
+      "assessmentSupportBlockersEmpty": "Белсенді көшу кедергілері жоқ.",
       "assessmentSignalHealthy": "Қалыпты",
       "assessmentSignalWatch": "Бақылау",
       "assessmentSignalCritical": "Маңызды",
@@ -7960,8 +7963,7 @@
           "graded": "Бағаланды",
           "passed": "Өтті",
           "failed": "Өтпеді",
-          "completed": "Аяқталды",
-          "untracked": "қолжетімсіз"
+          "completed": "Аяқталды"
         },
         "rollups": {
           "title": "Прогресс жиынтығы",
@@ -9643,6 +9645,9 @@
       "noQuestionsSidebar": "Бұл тестте сұрақтар болмағандықтан, оны бастау мүмкін емес.",
       "teacherNoQuestionsSidebar": "Жарияламас бұрын сұрақтарды қосыңыз.",
       "startActivityFailed": "Бұл әрекетті бастау мүмкін болмады. Бетті жаңартып, қайтадан көріңіз.",
+      "notConfiguredTitle": "Тапсырма әлі бапталмаған",
+      "notConfiguredDescription": "Оқытушы бұл тапсырманың шарттарын әлі қоспаған. Кейінірек қайта кіріңіз.",
+      "openStudio": "Студияда баптау",
       "focusRestoredResume": "Фокус пен толық экран талаптары қалпына келтірілді. Емтихан жалғасады.",
       "fullscreenUnsupported": "Бұл браузерде толық экран режиміне қолдау жоқ.",
       "fullscreenRecommended": "Бұл әрекет үшін толық экран режимі ұсынылады.",
@@ -10287,7 +10292,8 @@
       "failed": "Бағалауды сақтау сәтсіз болды"
     },
     "invalidItemScore": "Балл 0 мен {max} аралығында болуы керек",
-    "republish": "Қайта жариялау"
+    "republish": "Қайта жариялау",
+    "shareOfTotal": "қорытындының үлесі"
   },
   "FileSubmission": {
     "mimeCategories": {
@@ -10577,7 +10583,7 @@
       "retry": "Қайталау",
       "dismiss": "Жабу",
       "unavailable": "ЖИ функциялары қазір қолжетімсіз. Кейінірек қайталап көріңіз.",
-      "threadDeleted": "Талқылау жойылды",
+      "threadDeleted": "Диалог жойылды",
       "courseContext": "Курс материалдары бойынша",
       "emptyTitleCourse": "Осы курс туралы сұраңыз",
       "emptyDescCourse": "Жауаптар курс материалдарына негізделген; жауапқа сүйенбес бұрын дереккөздерді тексеріңіз."
@@ -10631,6 +10637,8 @@
       "acceptFinding": "Қабылдау",
       "dismissFinding": "Қабылдамау",
       "createTask": "Тапсырма жасау",
+      "findingReviewedToast": "Табылған мәселе бойынша шешім сақталды",
+      "findingReviewFailed": "Табылған мәселе бойынша шешімді сақтау мүмкін болмады",
       "reviewActions": {
         "accepted": "Қабылданды",
         "dismissed": "Қабылданбады",

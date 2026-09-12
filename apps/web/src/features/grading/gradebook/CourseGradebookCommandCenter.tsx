@@ -13,7 +13,6 @@ import {
   gradebookCellKey,
   gradebookLearnerName,
   gradebookToCsv,
-  isGradebookActivityTracked,
 } from '@/features/grading/domain'
 import type {
   ActivityProgressCell,
@@ -166,7 +165,6 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
             learner: t('learner'),
             email: t('email'),
             state: state => t(progressStateLabelKey(state)),
-            untracked: t('states.untracked'),
           })
           const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }))
           const link = document.createElement('a')
@@ -228,13 +226,6 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
                   </TableCell>
                   {visibleActivities.map(activity => {
                     const key = gradebookCellKey(student.id, activity.id)
-                    if (!isGradebookActivityTracked(activity)) {
-                      return (
-                        <TableCell key={key} className="text-muted-foreground h-24 align-top text-xs">
-                          {t('states.untracked')}
-                        </TableCell>
-                      )
-                    }
                     const cell = cellMap.get(key) ?? emptyGradebookCell(student.id, activity.id)
                     return (
                       <GradebookActivityCell
@@ -322,7 +313,7 @@ function MobileGradebookList({
   return (
     <div className="flex flex-col gap-3">
       {students.map(student => {
-        const cells = activities.filter(isGradebookActivityTracked).map(activity => ({
+        const cells = activities.map(activity => ({
           activity,
           cell: cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity.id),
         }))

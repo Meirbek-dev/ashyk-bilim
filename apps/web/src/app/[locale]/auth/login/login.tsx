@@ -220,7 +220,9 @@ function LoginClient() {
       <form className="w-full space-y-4" action={action} onKeyDown={submitOnEnter}>
         {state.step === 'credentials' ? (
           <>
-            <Field>
+            {/* Keyed per step: React would otherwise reuse the login Field for the
+                TOTP code and Base UI complains about a changed default value. */}
+            <Field key="login">
               <FieldLabel>{t('loginIdentifier')}</FieldLabel>
               <FieldContent>
                 <Input
@@ -235,7 +237,7 @@ function LoginClient() {
               <FieldError>{state.fieldErrors.login}</FieldError>
             </Field>
 
-            <Field>
+            <Field key="password">
               <FieldLabel>{t('password')}</FieldLabel>
               <FieldContent>
                 <PasswordInput
@@ -252,7 +254,7 @@ function LoginClient() {
           </>
         ) : (
           <>
-            <Field>
+            <Field key="totpCode">
               <FieldLabel>{t('totpCode')}</FieldLabel>
               <FieldContent>
                 <Input

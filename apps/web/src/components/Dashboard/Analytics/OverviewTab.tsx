@@ -234,7 +234,8 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelGenerated')}
               </div>
-              <div className="text-foreground mt-2 truncate text-sm font-semibold">
+              {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+              <div className="text-foreground mt-2 truncate text-sm font-semibold" suppressHydrationWarning>
                 {fromUnix(data.generated_at_unix).toLocaleString(locale)}
               </div>
             </div>

@@ -55,12 +55,13 @@ export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTabl
                     {signalLabel(row.signal)}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+                <TableCell suppressHydrationWarning>
                   {row.completion_rate === null || row.completion_rate === undefined
                     ? t('contentBottlenecksTable.na')
                     : `${numberFormatter.format(row.completion_rate)}%`}
                 </TableCell>
-                <TableCell>{numberFormatter.format(row.exit_count ?? 0)}</TableCell>
+                <TableCell suppressHydrationWarning>{numberFormatter.format(row.exit_count ?? 0)}</TableCell>
                 <TableCell className="text-muted-foreground max-w-[360px] text-sm whitespace-normal">
                   {getAnalyticsCodeLabel(tA, row.note)}
                 </TableCell>

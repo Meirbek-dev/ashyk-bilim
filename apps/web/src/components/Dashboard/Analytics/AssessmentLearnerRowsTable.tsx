@@ -40,10 +40,14 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
     {
       accessorKey: 'submitted_at',
       header: t('pages.assessmentColSubmitted'),
-      cell: ({ row }) =>
-        row.original.submitted_at_unix
-          ? fromUnix(row.original.submitted_at_unix).toLocaleString(locale)
-          : t('atRisk.na'),
+      // Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text.
+      cell: ({ row }) => (
+        <span suppressHydrationWarning>
+          {row.original.submitted_at_unix
+            ? fromUnix(row.original.submitted_at_unix).toLocaleString(locale)
+            : t('atRisk.na')}
+        </span>
+      ),
     },
     {
       accessorFn: row => row.status || '',

@@ -49,6 +49,7 @@ import type {
   FileSubmissionReviewItem,
 } from '@/features/file-submissions/services/file-submissions'
 import { fromUnix } from '@/lib/api/contract'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
@@ -199,6 +200,8 @@ export default function FileSubmissionReviewWorkspace({
     onSuccess: async (_saved, { attempt }) => {
       await Promise.all([
         config ? queryClient.invalidateQueries({ queryKey: queueQueryKey(config.id) }) : null,
+        // The gradebook builds its file-submission cells from this queue.
+        config ? queryClient.invalidateQueries({ queryKey: queryKeys.grading.gradebook(config.course_id) }) : null,
         queryClient.invalidateQueries({ queryKey: attemptQueryKey(attempt.id) }),
       ])
       toast.success(t('submissionUpdated'))

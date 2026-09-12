@@ -89,6 +89,7 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                 ? t('kpi.noData')
                 : deltaLabel
 
+        // Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text.
         return (
           <Card key={metric.label}>
             <CardHeader className="flex-row items-start justify-between gap-4">
@@ -96,9 +97,11 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                 <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   {getAnalyticsCodeLabel(t, metric.label)}
                 </div>
-                <CardTitle className="text-foreground mt-3 text-3xl font-semibold">{displayValue}</CardTitle>
+                <CardTitle className="text-foreground mt-3 text-3xl font-semibold" suppressHydrationWarning>
+                  {displayValue}
+                </CardTitle>
                 {metric.benchmark != null && metric.benchmark !== undefined && (
-                  <div className="text-muted-foreground mt-1 text-xs">
+                  <div className="text-muted-foreground mt-1 text-xs" suppressHydrationWarning>
                     {getAnalyticsCodeLabel(t, metric.benchmark_label)}:{' '}
                     {metric.unit === '%'
                       ? `${numberFormatter.format(metric.benchmark)}%`
@@ -108,14 +111,14 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                 <Sparkline values={sparkline} positive={metric.is_higher_better ?? true} />
               </div>
               {metric.delta_value != null && (
-                <Badge variant={badgeVariant(metric.direction, metric.is_higher_better ?? true)}>
+                <Badge variant={badgeVariant(metric.direction, metric.is_higher_better ?? true)} suppressHydrationWarning>
                   {iconForDirection(metric.direction)}
                   {badgeLabel}
                 </Badge>
               )}
             </CardHeader>
             <CardContent className="space-y-1">
-              <div className="text-muted-foreground text-sm">
+              <div className="text-muted-foreground text-sm" suppressHydrationWarning>
                 {metric.delta_value == null
                   ? t('kpi.noComparison')
                   : t('kpi.changePeriod', {

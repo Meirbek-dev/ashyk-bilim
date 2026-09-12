@@ -4,6 +4,7 @@ import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderC
 import { getAssessmentByActivityUuid } from '@services/assessments/assessments'
 import { getActivity } from '@services/courses/activities'
 import { getCourseMetadata } from '@services/courses/courses'
+import { activityWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
 import EditorWrapper from '@/components/Objects/Editor/EditorWrapper'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { getSession } from '@/lib/auth/session'
@@ -17,15 +18,9 @@ interface PlatformAssessmentStudioPageProps {
   params: Promise<{ courseuuid: string; activityid: string }>
 }
 
-/** `<course name> · <activity name>`; both GETs are the ones the page renders from (memoized). */
 export async function generateMetadata({ params }: PlatformAssessmentStudioPageProps): Promise<Metadata> {
   const { courseuuid, activityid } = await params
-  const [course, activity] = await Promise.all([
-    getCourseMetadata(courseuuid, undefined, true).catch(() => null),
-    getActivity(activityid).catch(() => null),
-  ])
-  const title = [course?.name, activity?.name].filter(Boolean).join(' · ')
-  return title ? { title } : {}
+  return activityWorkspaceMetadata(courseuuid, activityid)
 }
 
 function StudioPageFallback() {

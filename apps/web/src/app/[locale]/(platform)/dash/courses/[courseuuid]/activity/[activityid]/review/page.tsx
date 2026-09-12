@@ -1,6 +1,7 @@
 import AssessmentReviewWorkspace from '@/features/assessments/review/AssessmentReviewWorkspace'
 import FileSubmissionReviewWorkspace from '@/features/file-submissions/review/FileSubmissionReviewWorkspace'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
+import { activityWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
 import { getAssessmentByActivityUuid } from '@services/assessments/assessments'
 import { getActivity } from '@services/courses/activities'
 import AccessDenied from '@/components/Errors/AccessDenied'
@@ -9,10 +10,16 @@ import { getSession } from '@/lib/auth/session'
 import { getLocale } from 'next-intl/server'
 import { redirect } from '@/i18n/navigation'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 
 interface PlatformAssessmentReviewPageProps {
   params: Promise<{ courseuuid: string; activityid: string }>
   searchParams: Promise<{ submission?: string }>
+}
+
+export async function generateMetadata({ params }: PlatformAssessmentReviewPageProps): Promise<Metadata> {
+  const { courseuuid, activityid } = await params
+  return activityWorkspaceMetadata(courseuuid, activityid)
 }
 
 export default function PlatformAssessmentReviewPage(props: PlatformAssessmentReviewPageProps) {

@@ -62,8 +62,9 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
               {data.course_health_ranking.slice(0, 5).map(row => (
                 <TableRow key={row.course_id}>
                   <TableCell className="max-w-[260px] truncate">{row.course_name}</TableCell>
-                  <TableCell>{numberFormatter.format(row.health_score)}</TableCell>
-                  <TableCell>{formatPercent(row.completion_rate)}</TableCell>
+                  {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+                  <TableCell suppressHydrationWarning>{numberFormatter.format(row.health_score)}</TableCell>
+                  <TableCell suppressHydrationWarning>{formatPercent(row.completion_rate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -83,7 +84,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
               {data.cohort_retention.slice(0, 5).map(row => (
                 <TableRow key={row.cohort_id}>
                   <TableCell className="max-w-[220px] truncate">{row.cohort_name}</TableCell>
-                  <TableCell>
+                  <TableCell suppressHydrationWarning>
                     {row.retention_rate === null || row.retention_rate === undefined
                       ? t('adminAnalyticsPanel.noData')
                       : formatPercent(row.retention_rate)}
@@ -108,12 +109,12 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
               {data.content_roi.slice(0, 5).map(row => (
                 <TableRow key={row.course_id}>
                   <TableCell className="max-w-[260px] truncate">{row.course_name}</TableCell>
-                  <TableCell>
+                  <TableCell suppressHydrationWarning>
                     {row.content_roi_score === null || row.content_roi_score === undefined
                       ? t('adminAnalyticsPanel.noData')
                       : numberFormatter.format(row.content_roi_score)}
                   </TableCell>
-                  <TableCell>{formatPercent(row.completion_rate)}</TableCell>
+                  <TableCell suppressHydrationWarning>{formatPercent(row.completion_rate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

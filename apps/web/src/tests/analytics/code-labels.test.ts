@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getAnalyticsAlertCopy, getAnalyticsCodeLabel } from '@/lib/analytics/labels'
+import { getAnalyticsAlertCopy, getAnalyticsCodeLabel, getAnalyticsStatusLabel } from '@/lib/analytics/labels'
 
 // Gauntlet F31/F32/F33: wire codes (`active_learners`, `pct_of_enrolled`,
 // `too_hard`, `offer_targeted_help`, …) were rendered verbatim in ru/kk.
@@ -65,5 +65,17 @@ describe('getAnalyticsAlertCopy', () => {
         learner_count: 5,
       }),
     ).toEqual({ title: 'Final Exam: превышен срок проверки', body: 'В очереди: 5' })
+  })
+})
+
+// Gauntlet F32: the assessment learner table showed the raw submission status
+// (`published`) — v2 statuses are draft/pending/graded/published/returned.
+describe('getAnalyticsStatusLabel', () => {
+  const t = (key: string) => key
+
+  it('maps every v2 submission status onto a catalog key', () => {
+    for (const status of ['draft', 'pending', 'graded', 'published', 'returned']) {
+      expect(getAnalyticsStatusLabel(t, status)).toBe(`labels.status.${status}`)
+    }
   })
 })

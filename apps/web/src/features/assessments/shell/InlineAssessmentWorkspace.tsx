@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { LoaderCircle } from 'lucide-react'
+import { ClipboardList, LoaderCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
@@ -12,8 +12,14 @@ import { useContributorStatus } from '@/hooks/useContributorStatus'
 import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout'
 import AttemptEntryCard from '@/features/assessments/shell/AttemptEntryCard'
 import AttemptResultCard from '@/features/assessments/shell/AttemptResultCard'
+import { Button } from '@/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { ErrorState } from '@/components/ui/error-state'
+import Link from '@components/ui/AppLink'
 import { apiJson } from '@/lib/api-client'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { useSession } from '@/hooks/useSession'
+import { Actions, Resources, Scopes } from '@/types/permissions'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useApiError } from '@/hooks/useApiError'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
@@ -51,6 +57,12 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
   const tCommon = useTranslations('Common')
   const { handleApiError, toastApiError } = useApiError()
   const [isPending, setIsPending] = useState(false)
+  const { can } = useSession()
+  const canEditCourse =
+    can(Resources.COURSE, Actions.UPDATE, Scopes.OWN) || can(Resources.COURSE, Actions.UPDATE, Scopes.APP)
+  // A published activity whose assessment was never created: the contract
+  // answers 404, which is "not set up yet", not a failure.
+  const isNotConfigured = hasErrorCode(assessmentError, 'not-found')
 
   // Completion is the projection's call (learner-state), the same source the
   // outline sidebar ticks from — the latest attempt alone can disagree with it
@@ -128,6 +140,14 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
   // ── Register BottomActionBar CTA for PREFLIGHT ──────────────────────────────
 
   useEffect(() => {
+    if (isNotConfigured) {
+      // Replace the runtime's «Start» with an inert, explained control.
+      setBottomBarAction({ label: t('notConfiguredTitle'), handler: () => undefined, disabled: true })
+      return () => {
+        setBottomBarAction(null)
+      }
+    }
+
     if (!isPreflightMode || !vm) {
       setBottomBarAction(null)
       return
@@ -146,9 +166,32 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     return () => {
       setBottomBarAction(null)
     }
-  }, [isPreflightMode, canAct, recommendedAction, vm, isPending, setBottomBarAction, startAttempt, t])
+  }, [isNotConfigured, isPreflightMode, canAct, recommendedAction, vm, isPending, setBottomBarAction, startAttempt, t])
 
   // ── Loading ─────────────────────────────────────────────────────────────────
+
+  if (isNotConfigured) {
+    return (
+      <Empty className="min-h-52 border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <ClipboardList />
+          </EmptyMedia>
+          <EmptyTitle>{t('notConfiguredTitle')}</EmptyTitle>
+          <EmptyDescription>{t('notConfiguredDescription')}</EmptyDescription>
+        </EmptyHeader>
+        {canEditCourse ? (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link href={`/dash/courses/${courseUuid.replace(/^course_/, '')}/activity/${activityUuid}/studio`} />}
+          >
+            {t('openStudio')}
+          </Button>
+        ) : null}
+      </Empty>
+    )
+  }
 
   if (assessmentError) {
     const processed = handleApiError(assessmentError, { fallback: t('startActivityFailed') })

@@ -10,6 +10,15 @@ import { getLocale, getTranslations } from 'next-intl/server'
 import type { AssessmentType } from '@/types/analytics'
 import { fromUnix } from '@/lib/api/contract'
 import { Badge } from '@/components/ui/badge'
+import { getAssessment } from '@/lib/api/generated/assessments/assessments'
+import { analyticsPageMetadata } from '../../../_components/metadata'
+import type { Metadata } from 'next'
+
+export async function generateMetadata({ params }: { params: Promise<{ assessmentId: string }> }): Promise<Metadata> {
+  const { assessmentId } = await params
+  const assessment = await getAssessment(assessmentId).catch(() => null)
+  return assessment?.title ? { title: assessment.title } : analyticsPageMetadata('pages.assessmentsTitle')
+}
 
 export default function PlatformAnalyticsAssessmentDetailPage(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
@@ -88,7 +97,8 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               <div className="text-muted-foreground text-[10px] tracking-wide uppercase">
                 {t('pages.assessmentStatGenerated')}
               </div>
-              <div className="text-foreground mt-1 text-sm font-semibold">
+              {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+              <div className="text-foreground mt-1 text-sm font-semibold" suppressHydrationWarning>
                 {fromUnix(detail.generated_at_unix).toLocaleString(locale)}
               </div>
             </div>

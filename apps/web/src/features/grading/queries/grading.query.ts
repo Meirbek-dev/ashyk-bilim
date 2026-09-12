@@ -4,12 +4,14 @@ import { apiJson } from '@/lib/api-client'
 import type { SubmissionStats, SubmissionStatus, SubmissionsPage } from '@/features/grading/domain'
 import { ReviewPage } from '@/lib/api/generated/zod'
 import { gradebookFromWire, reviewItemFromWire, statsFromWire, teacherSubmissionFromWire } from '@/features/grading/domain/wire'
+import type { FileGradebookSource } from '@/features/grading/domain/wire'
+import { getFileSubmissionByActivity, getFileSubmissionReviewQueue } from '@/features/file-submissions/services/file-submissions'
 import { queryOptions } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { getCourse, getCurriculum } from '@/lib/api/generated/courses/courses'
 import { listCourseAssessments } from '@/lib/api/generated/assessments/assessments'
 import { gradebook as fetchGradebookPage } from '@/lib/api/generated/grading/grading'
-import type { GradebookPage } from '@/lib/api/generated/zod'
+import type { Curriculum, GradebookPage } from '@/lib/api/generated/zod'
 
 export interface SubmissionListQueryParams {
   assessmentUuid: string
@@ -94,6 +96,30 @@ export async function collectGradebookPages(courseUuid: string, maxPages = 20): 
 }
 
 /**
+ * The gradebook route has no file-submission cells (contract gap), so each
+ * file-submission activity's config + full review queue is fetched alongside.
+ * ponytail: 2+ requests per file activity; a `file_submissions` block on the
+ * gradebook route would replace this.
+ */
+async function collectFileSources(curriculum: Curriculum, maxPages = 20): Promise<FileGradebookSource[]> {
+  const activities = curriculum.chapters.flatMap(ch => ch.activities).filter(a => a.activity_type === 'file_submission')
+  return Promise.all(
+    activities.map(async activity => {
+      const config = await getFileSubmissionByActivity(activity.id)
+      const items: FileGradebookSource['items'] = []
+      let cursor: string | null = null
+      for (let index = 0; index < maxPages; index += 1) {
+        const page = await getFileSubmissionReviewQueue(config.id, { cursor, limit: 100 })
+        items.push(...page.items)
+        cursor = page.next_cursor ?? null
+        if (!cursor) break
+      }
+      return { config, items }
+    }),
+  )
+}
+
+/**
  * `params` (search/activityType/savedFilter/page) are legacy server-side
  * filters v2's gradebook route does not accept — filtering happens client
  * side in `filterGradebookStudents`/`buildGradebookRollups` on the full,
@@ -110,7 +136,7 @@ export function courseGradebookQueryOptions(courseUuid: string, params?: CourseG
         listCourseAssessments(courseUuid),
         getCurriculum(courseUuid),
       ])
-      return gradebookFromWire(pages, course, assessments, curriculum)
+      return gradebookFromWire(pages, course, assessments, curriculum, await collectFileSources(curriculum))
     },
     staleTime: 5000,
     // v2 has no course-wide grading event stream (only `GET submissions/{id}/events`

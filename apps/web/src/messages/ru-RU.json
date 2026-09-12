@@ -1321,7 +1321,7 @@
       },
       "teacherWorkloadPanel": {
         "title": "Нагрузка учителя",
-        "description": "Просмотрите backlog, нарушение SLA, задержку обратной связи и прогноз нагрузки на ближайшее время.",
+        "description": "Просмотрите очередь на проверку, нарушения SLA, задержку обратной связи и прогноз нагрузки на ближайшее время.",
         "backlog": "Очередь",
         "slaBreaches": "Нарушения SLA",
         "forecast7d": "Прогноз на 7д",
@@ -4144,7 +4144,7 @@
       "usernameColumn": "Имя пользователя",
       "usersSelectedMessage": "{count, plural, one {# пользователь выбран} few {# пользователя выбрано} many {# пользователей выбрано} other {# пользователей выбрано}}",
       "contributorPolicyStagedTitle": "Политика соавторства не сохраняется до нажатия кнопки «Сохранить»",
-      "contributorPolicyStagedDescription": "Политика открытого или закрытого доступа остаётся локальной до сохранения этого раздела. Добавление, удаление и редактирование соавторов ниже применяется немедленно.",
+      "contributorPolicyStagedDescription": "Политика открытого или закрытого доступа остаётся локальной до сохранения этого раздела.",
       "rosterActionsImmediateTitle": "Действия с участниками применяются немедленно",
       "rosterUnavailableTitle": "Управление соавторами недоступно в этой версии",
       "rosterUnavailableDescription": "Список соавторов, приглашения и роли появятся позже. Настройка «Открыт для соавторов» выше сохраняется.",
@@ -7375,7 +7375,10 @@
         "completed": "Завершено",
         "failed": "Ошибка",
         "processing": "Обрабатывается",
-        "pendingJudge0": "Ожидает Judge0"
+        "pendingJudge0": "Ожидает Judge0",
+        "draft": "Черновик",
+        "published": "Опубликовано",
+        "returned": "Возвращено"
       }
     },
     "kpi": {
@@ -7609,7 +7612,7 @@
       "assessmentCommonFailuresTitle": "Частые ошибки",
       "assessmentNoCommonFailures": "В текущих данных не обнаружено кластера частых ошибок.",
       "assessmentOpsTitle": "Операционная готовность",
-      "assessmentOpsDescription": "Сигналы по проверке, публикации, аудиту и готовности cutover для этой оценки.",
+      "assessmentOpsDescription": "Сигналы по проверке, публикации, аудиту и готовности к переходу для этой оценки.",
       "assessmentOpsDiagnosticsTitle": "Диагностический снимок",
       "assessmentOpsDiagnosticsManual": "Ручная проверка",
       "assessmentOpsDiagnosticsAuto": "Автопроверка",
@@ -7620,7 +7623,7 @@
       "assessmentOpsReturned": "Возвращено на доработку",
       "assessmentOpsReleased": "Опубликовано",
       "assessmentOpsLate": "Просроченные сдачи",
-      "assessmentOpsBacklog": "Застарелый backlog",
+      "assessmentOpsBacklog": "Застарелая очередь",
       "assessmentOpsSuspicious": "Подозрительные попытки",
       "assessmentOpsMissingScores": "Нет оценки",
       "assessmentOpsSloTitle": "Целевой уровень сервиса",
@@ -7634,12 +7637,12 @@
       "assessmentOpsSloBacklog": "Очередь",
       "assessmentOpsSloOverdue": "Просрочено",
       "assessmentOpsMigrationTitle": "Статус миграции",
-      "assessmentOpsMigrationCutoverReady": "Готово к cutover",
-      "assessmentOpsMigrationCutoverBlocked": "Cutover заблокирован",
+      "assessmentOpsMigrationCutoverReady": "Готово к переходу",
+      "assessmentOpsMigrationCutoverBlocked": "Переход заблокирован",
       "assessmentOpsMigrationCanonicalRows": "Канонические строки",
       "assessmentOpsMigrationModeCanonical": "Каноничный",
       "assessmentOpsAuditTitle": "История аудита",
-      "assessmentOpsAuditEmpty": "Для текущего scope нет операционных событий аудита.",
+      "assessmentOpsAuditEmpty": "Для текущей области нет операционных событий аудита.",
       "assessmentOpsAuditFilteredEmpty": "По текущим фильтрам события аудита не найдены.",
       "assessmentOpsAuditSearchPlaceholder": "Поиск по событиям аудита, действиям или исполнителям...",
       "assessmentOpsAuditExport": "Экспорт CSV",
@@ -7663,8 +7666,8 @@
       "assessmentSupportAuditEvents": "Видимые события аудита",
       "assessmentSupportAlerts": "Активные сигналы",
       "assessmentSupportAlertsEmpty": "Для текущей области нет активных сигналов поддержки.",
-      "assessmentSupportBlockers": "Блокеры cutover",
-      "assessmentSupportBlockersEmpty": "Активных блокеров cutover нет.",
+      "assessmentSupportBlockers": "Блокеры перехода",
+      "assessmentSupportBlockersEmpty": "Активных блокеров перехода нет.",
       "assessmentSignalHealthy": "В норме",
       "assessmentSignalWatch": "Наблюдение",
       "assessmentSignalCritical": "Критично",
@@ -7943,8 +7946,7 @@
           "graded": "Оценено",
           "passed": "Сдано",
           "failed": "Не сдано",
-          "completed": "Завершено",
-          "untracked": "н/д"
+          "completed": "Завершено"
         },
         "rollups": {
           "title": "Сводки прогресса",
@@ -9468,6 +9470,9 @@
       "noQuestionsSidebar": "Этот тест нельзя начать, так как в нем нет вопросов.",
       "teacherNoQuestionsSidebar": "Пожалуйста, добавьте вопросы перед публикацией.",
       "startActivityFailed": "Не удалось запустить эту активность. Обновите страницу и попробуйте снова.",
+      "notConfiguredTitle": "Задание ещё не настроено",
+      "notConfiguredDescription": "Преподаватель ещё не добавил условия этого задания. Загляните позже.",
+      "openStudio": "Настроить в студии",
       "focusRestoredResume": "Фокус и полноэкранный режим восстановлены. Экзамен продолжается.",
       "fullscreenUnsupported": "Полноэкранный режим не поддерживается в этом браузере.",
       "fullscreenRecommended": "Для этой попытки рекомендуется полноэкранный режим.",
@@ -10113,7 +10118,8 @@
       "failed": "Не удалось сохранить оценку"
     },
     "invalidItemScore": "Балл должен быть от 0 до {max}",
-    "republish": "Опубликовать заново"
+    "republish": "Опубликовать заново",
+    "shareOfTotal": "доля итога"
   },
   "FileSubmission": {
     "mimeCategories": {
@@ -10403,7 +10409,7 @@
       "retry": "Повторить",
       "dismiss": "Закрыть",
       "unavailable": "Функции ИИ сейчас недоступны. Попробуйте позже.",
-      "threadDeleted": "Обсуждение удалено",
+      "threadDeleted": "Диалог удалён",
       "courseContext": "По материалам курса",
       "emptyTitleCourse": "Спросите об этом курсе",
       "emptyDescCourse": "Ответы основаны на материалах курса; проверяйте источники, прежде чем полагаться на ответ."
@@ -10457,6 +10463,8 @@
       "acceptFinding": "Принять",
       "dismissFinding": "Отклонить",
       "createTask": "Создать задачу",
+      "findingReviewedToast": "Решение по находке сохранено",
+      "findingReviewFailed": "Не удалось сохранить решение по находке",
       "reviewActions": {
         "accepted": "Принято",
         "dismissed": "Отклонено",

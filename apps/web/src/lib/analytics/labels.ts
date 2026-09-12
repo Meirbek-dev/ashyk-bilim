@@ -87,6 +87,9 @@ const signalKeys: Record<string, string> = {
 }
 
 const statusKeys: Record<string, string> = {
+  DRAFT: 'labels.status.draft',
+  PUBLISHED: 'labels.status.published',
+  RETURNED: 'labels.status.returned',
   PENDING: 'labels.status.pending',
   SUBMITTED: 'labels.status.submitted',
   GRADED: 'labels.status.graded',

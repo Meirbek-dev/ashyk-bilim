@@ -72,9 +72,12 @@ export default function KpiCompletionGauge({ completionPct, deltaPct, direction 
           </ChartContainer>
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-6">
             <div className="text-center">
-              <div className="text-foreground text-4xl font-bold">{numberFormatter.format(completionPct)}%</div>
+              {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+              <div className="text-foreground text-4xl font-bold" suppressHydrationWarning>
+                {numberFormatter.format(completionPct)}%
+              </div>
               {deltaPct !== null && (
-                <div className={`mt-0.5 text-sm font-medium ${deltaColor}`}>
+                <div className={`mt-0.5 text-sm font-medium ${deltaColor}`} suppressHydrationWarning>
                   {deltaPct > 0 ? '+' : ''}
                   {numberFormatter.format(deltaPct)}% {t('kpiCharts.vsPrevPeriod')}
                 </div>

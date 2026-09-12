@@ -533,7 +533,8 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       <div className="text-foreground mt-2 text-sm font-medium">{auditSummary(event)}</div>
                       <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
                         <span>{event.actor_display_name || t('pages.assessmentOpsAuditSystem')}</span>
-                        <span>{fromUnix(event.occurred_at_unix).toLocaleString(locale)}</span>
+                        {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+                        <span suppressHydrationWarning>{fromUnix(event.occurred_at_unix).toLocaleString(locale)}</span>
                         {event.affected_count !== null && event.affected_count !== undefined ? (
                           <span>
                             {t('pages.assessmentOpsAuditAffected')}: {event.affected_count}

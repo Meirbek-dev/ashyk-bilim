@@ -55,17 +55,12 @@ export function gradebookActivityKind(activity: GradebookActivity) {
   return activity.assessment_type ?? activity.activity_type.replace('TYPE_', '').replaceAll('_', ' ')
 }
 
-/** Columns the gradebook wire does not cover (file submissions) — rendered as "n/a". */
-export function isGradebookActivityTracked(activity: GradebookActivity) {
-  return activity.assessment_type != null
-}
-
 /** The loaded gradebook as CSV (learner rows × activity columns) — v2 has no course-level export route. */
 export function gradebookToCsv(
   data: CourseGradebookResponse,
   activities: GradebookActivity[],
   students: GradebookStudent[],
-  labels: { learner: string; email: string; state: (state: ActivityProgressCell['state']) => string; untracked: string },
+  labels: { learner: string; email: string; state: (state: ActivityProgressCell['state']) => string },
 ) {
   const cellMap = new Map(data.cells.map(cell => [gradebookCellKey(cell.user_id, cell.activity_id), cell]))
   const header = [labels.learner, labels.email, ...activities.map(activity => activity.name)]
@@ -73,7 +68,6 @@ export function gradebookToCsv(
     gradebookLearnerName(student),
     student.email,
     ...activities.map(activity => {
-      if (!isGradebookActivityTracked(activity)) return labels.untracked
       const cell = cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity.id)
       return cell.score == null ? labels.state(cell.state) : `${Math.round(cell.score * 100) / 100}`
     }),
@@ -117,7 +111,7 @@ export function filterGradebookStudents(
   return data.students.filter(student => {
     const searchable = `${gradebookLearnerName(student)} ${student.username} ${student.email}`.toLowerCase()
     if (normalizedSearch && !searchable.includes(normalizedSearch)) return false
-    return visibleActivities.filter(isGradebookActivityTracked).some(activity => {
+    return visibleActivities.some(activity => {
       const cell = cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity.id)
       return matchesGradebookSavedFilter(cell, filters.savedFilter)
     })

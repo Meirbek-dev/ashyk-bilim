@@ -45,15 +45,23 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
     [preset, activity?.activity_uuid],
   )
 
-  // Keep editor content in sync when `content` prop changes
+  // Keep editor content in sync when `content` prop changes.
+  // Deferred out of the commit phase: replacing content mounts React node views
+  // (image/video blocks), and tiptap's ReactRenderer renders those with
+  // flushSync, which React rejects from inside an effect.
   useEffect(() => {
     if (!editor || editor.isDestroyed) return
 
     const newContent = resolveEditorContent(content)
-    const currentContent = editor.getJSON()
+    if (JSON.stringify(editor.getJSON()) === JSON.stringify(newContent)) return
 
-    if (JSON.stringify(currentContent) !== JSON.stringify(newContent)) {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled || editor.isDestroyed) return
       editor.commands.setContent(newContent, { emitUpdate: false })
+    })
+    return () => {
+      cancelled = true
     }
   }, [editor, content])
 

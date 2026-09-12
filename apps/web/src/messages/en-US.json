@@ -4134,7 +4134,7 @@
       "usernameColumn": "Username",
       "usersSelectedMessage": "{count, plural, one {# user selected} other {# users selected}}",
       "contributorPolicyStagedTitle": "Contributor policy is staged until you save",
-      "contributorPolicyStagedDescription": "The open or closed contribution policy stays local until you save this section. Adding, removing, and editing contributors below applies immediately.",
+      "contributorPolicyStagedDescription": "The open or closed contribution policy stays local until you save this section.",
       "rosterActionsImmediateTitle": "Roster actions apply immediately",
       "rosterUnavailableTitle": "Contributor management is not available in this version",
       "rosterUnavailableDescription": "The contributor roster, invitations and roles are coming later. The \"Open to contributors\" setting above is saved.",
@@ -7372,7 +7372,10 @@
         "completed": "Completed",
         "failed": "Failed",
         "processing": "Processing",
-        "pendingJudge0": "Pending Judge0"
+        "pendingJudge0": "Pending Judge0",
+        "draft": "Draft",
+        "published": "Published",
+        "returned": "Returned"
       }
     },
     "kpi": {
@@ -7930,8 +7933,7 @@
           "graded": "Graded",
           "passed": "Passed",
           "failed": "Failed",
-          "completed": "Completed",
-          "untracked": "n/a"
+          "completed": "Completed"
         },
         "rollups": {
           "title": "Progress rollups",
@@ -9457,6 +9459,9 @@
       "noQuestionsSidebar": "This exam cannot be started because it has no questions.",
       "teacherNoQuestionsSidebar": "Please add questions before publishing.",
       "startActivityFailed": "Unable to start this activity. Please refresh and try again.",
+      "notConfiguredTitle": "This assignment is not set up yet",
+      "notConfiguredDescription": "The teacher has not set up this assignment yet. Check back later.",
+      "openStudio": "Set up in the studio",
       "focusRestoredResume": "Focus and screen compliance restored. Resuming exam.",
       "fullscreenUnsupported": "Fullscreen is not supported in this browser.",
       "fullscreenRecommended": "Fullscreen is recommended for this attempt.",
@@ -10101,7 +10106,8 @@
       "failed": "Failed to save grading"
     },
     "invalidItemScore": "Score must be between 0 and {max}",
-    "republish": "Publish again"
+    "republish": "Publish again",
+    "shareOfTotal": "share of the total"
   },
   "FileSubmission": {
     "mimeCategories": {
@@ -10445,6 +10451,8 @@
       "acceptFinding": "Accept",
       "dismissFinding": "Dismiss",
       "createTask": "Create task",
+      "findingReviewedToast": "Finding decision saved",
+      "findingReviewFailed": "Could not save the finding decision",
       "reviewActions": {
         "accepted": "Accepted",
         "dismissed": "Dismissed",

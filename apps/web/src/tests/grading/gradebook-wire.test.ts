@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Assessment, Course, Curriculum, GradebookPage } from '@/lib/api/generated/zod'
+import type { Assessment, Course, Curriculum, FileReviewItem, FileSubmission, GradebookPage } from '@/lib/api/generated/zod'
 import { gradebookFromWire } from '@/features/grading/domain/wire'
 import { gradebookToCsv, localizeAutoGraderFeedback, matchesGradebookSavedFilter } from '@/features/grading/domain'
 
@@ -57,7 +57,9 @@ describe('gradebookFromWire (UX-013)', () => {
     expect(gradebookFromWire([page('published')], course, [exam]).activities[0]!.name).toBe('Exam')
   })
 
-  it('keeps file-submission activities as untracked columns', () => {
+  // Gauntlet F26: the gradebook route has no file-submission cells; they are
+  // built from each activity's review queue (newest attempt first).
+  it('fills file-submission columns from the review queue', () => {
     const curriculum = {
       chapters: [
         {
@@ -68,21 +70,38 @@ describe('gradebookFromWire (UX-013)', () => {
         },
       ],
     } as unknown as Curriculum
-    const data = gradebookFromWire([page('published')], course, [exam], curriculum)
+    const user = { id: USER_ID, username: 'learner', display_name: 'Learner', email: 'learner@example.com' }
+    const source = {
+      config: { id: 'fs_1', activity_id: 'activity_upload', due_at_unix: null } as unknown as FileSubmission,
+      items: [
+        { id: 'attempt_2', user, status: 'published', attempt_number: 2, final_score: 77, is_late: false, version: 4, file_count: 1 },
+        { id: 'attempt_1', user, status: 'returned', attempt_number: 1, final_score: 10, is_late: false, version: 2, file_count: 1 },
+      ] as FileReviewItem[],
+    }
+    const data = gradebookFromWire([page('published')], course, [exam], curriculum, [source])
     expect(data.activities.map(a => [a.name, a.assessment_type])).toEqual([
       ['Final Exam', 'exam'],
-      ['Project Upload', null],
+      ['Project Upload', 'file_submission'],
     ])
-    // Untracked columns count as columns but never as "not started" work.
-    expect(data.summary.activity_count).toBe(2)
-    expect(data.summary.not_started_count).toBe(0)
+    const cell = data.cells.find(c => c.activity_id === 'activity_upload')!
+    expect(cell).toMatchObject({
+      latest_submission_uuid: 'attempt_2', latest_submission_status: 'PUBLISHED', state: 'COMPLETED',
+      score: 77, attempt_count: 2, teacher_action_required: false,
+    })
+    expect(data.summary).toMatchObject({ activity_count: 2, completed_count: 2, not_started_count: 0 })
     const csv = gradebookToCsv(data, data.activities, data.students, {
       learner: 'Learner',
       email: 'Email',
       state: state => state,
-      untracked: 'n/a',
     })
-    expect(csv).toBe('Learner,Email,Final Exam,Project Upload\r\nLearner,learner@example.com,80,n/a')
+    expect(csv).toBe('Learner,Email,Final Exam,Project Upload\r\nLearner,learner@example.com,80,77')
+
+    // A submitted-but-ungraded attempt is teacher work, like a pending assessment.
+    const pending = gradebookFromWire([], course, [exam], curriculum, [
+      { ...source, items: [{ ...source.items[1]!, status: 'submitted', final_score: null }] },
+    ])
+    expect(pending.cells[0]).toMatchObject({ state: 'NEEDS_GRADING', teacher_action_required: true, score: null })
+    expect(pending.teacher_actions.map(action => action.activity_name)).toEqual(['Project Upload'])
   })
 
   it('leaves published work out of the teacher queue', () => {

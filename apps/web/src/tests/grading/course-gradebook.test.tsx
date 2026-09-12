@@ -205,15 +205,15 @@ describe('CourseGradebookCommandCenter', () => {
     expect(within(table).getByText('states.returned')).toBeInTheDocument()
   })
 
-  // Gauntlet F26: file-submission activities have no gradebook wire; the
-  // column stays visible as "n/a" and the export is built from the loaded data.
-  it('keeps untracked activities as an n/a column and exports the loaded matrix as CSV', () => {
+  // Gauntlet F26: file-submission columns render the same cells as
+  // assessments and the export is built from the loaded data.
+  it('renders file-submission columns as regular cells and exports the loaded matrix as CSV', () => {
     gradebook.activities.push({
       id: 'activity_upload',
       activity_uuid: 'activity_upload',
       name: 'Project Upload',
       activity_type: 'TYPE_FILE_SUBMISSION',
-      assessment_type: null,
+      assessment_type: 'file_submission',
     })
     const createObjectURL = vi.fn((_blob: Blob) => 'blob:gradebook')
     const revokeObjectURL = vi.fn()
@@ -223,7 +223,8 @@ describe('CourseGradebookCommandCenter', () => {
 
     const table = screen.getByRole('table')
     expect(within(table).getByText('Project Upload')).toBeInTheDocument()
-    expect(within(table).getAllByText('states.untracked').length).toBeGreaterThan(0)
+    expect(within(table).getAllByText('activityTypes.file').length).toBeGreaterThan(0)
+    expect(within(table).queryByText('states.untracked')).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'export' }))

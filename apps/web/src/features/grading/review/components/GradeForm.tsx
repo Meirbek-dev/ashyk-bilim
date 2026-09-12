@@ -449,7 +449,10 @@ export default function GradeForm({
                       className="w-20"
                       onChange={e => patchItemDraft(item.item_id, 'score', e.target.value)}
                     />
-                    <span className="text-muted-foreground text-xs">/ {item.max_score}</span>
+                    {/* Inputs are on the breakdown scale (the item's share of the 100-point total), not the author's item points. */}
+                    <span className="text-muted-foreground text-xs">
+                      / {item.max_score} · {tItemGrading('shareOfTotal')}
+                    </span>
                     {item.needs_manual_review && (
                       <span className="ml-auto text-xs text-amber-600">{t('needsReview')}</span>
                     )}
