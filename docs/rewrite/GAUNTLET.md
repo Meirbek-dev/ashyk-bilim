@@ -26,6 +26,20 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   challenges cannot be authored or run (F14). The e2e code tests skip on that probe.
 - **RustFS needs bucket CORS** for the browser's presigned PUT (`extra/storage-cors.json`,
   applied to `ab-private`/`ab-public`); curl uploads worked without it, browser ones did not.
+- **Stack rebuilt 2026-09-12** (containers were `--rm`): fresh `ashyq_dev`, new Zitadel —
+  `abenv.sh` reads the PAT from `$TEMP/zitadel-machinekey/pat.txt` and carries
+  `AB__SERVER__WEB_URL=http://localhost:3000`; the three accounts were recreated (same
+  logins, new ids); no seeded «Основы Python» — content is created by the e2e suite and
+  critics. Self-registration exists now (`/ru/auth/signup`).
+- **Two-session hazard**: a Playwright login revokes a curl session of the same user
+  (single-session semantics) — mint one or the other, not both.
+- **`just openapi` truncates the file when the server binary is running** — always
+  `taskkill //F //IM ashyq.exe` first (bit us twice).
+- **Next 16 keeps the previous route segment in a hidden `<Activity>`** — CSS locators
+  like `input[name=…]` match the stale form too; scope to `form:visible`.
+- **Cargo target hygiene**: `C:\cargo-target\ashyq-server` reached 135 GB (test-binary
+  hashes); `cargo clean` + rebuild when C: runs low. Build test binaries with
+  `--build-jobs 2` while anything else heavy runs.
 - **Playwright**: `apps/web/e2e/.env.test.local` (gitignored) carries the three accounts
   and `E2E_API_URL=http://127.0.0.1:8000/api/v2` (Node resolves `localhost` to `::1`,
   which the server does not listen on). `bun run test:e2e` runs chromium for everything
@@ -137,6 +151,8 @@ Regenerate this survey with `scratchpad/drift.py`.
 | pass | date | features probed | bugs found/fixed | gate | commit |
 |---|---|---|---|---|---|
 | 0 | 2026-09-10 | setup only: stack, accounts, ledger | — | — | e654349 |
+| 10 | 2026-09-13 | confirmation critic on the five pass-9 fails (R1–R10): all pass; two late gaps fixed (reporter learner-state 403, link-preview refetch on learner view) | BUG-089..090 fixed | e2e 92/2 skipped (07 string fixed), vitest 681/681, typecheck 0, error-codes 32/32; nextest 319/319, `just check` green | 0946a2a |
+| 9 | 2026-09-12/13 | **contract phase** — owner answered every QUESTIONS item (DECISIONS "Owner answers"): wave 1 (identity, catalog, grading) + wave 2 (analytics/jobs/ETL, certificates/AI/link-preview, RBAC/kk polyfill/localization sweep) landed F41–F55; three critics re-drove the new features + a learner regression sweep (24/29 pass); three polish builders closed the fails and ~40 nits | BUG-084..088 found and fixed | e2e 92/2 skipped, vitest 681/681, typecheck 0, error-codes 32/32; nextest 319/319, deny/machete green, CI green (34683118190) | 6167ef4 |
 | 8 | 2026-09-12 | final critic load of the four pass-7 fails (F21 F26 F31 F32): all pass, zero console/page errors across 14 analytics loads and 5 studio loads; three wording nits fixed | 4 nits → fixed | `bun run test:e2e` **86 passed / 2 skipped** (third green run on the final tree); web typecheck 0, vitest 626/626, error-codes 25/25; server nextest 283/283, `just check` green | 2a03ccc |
 | 7 | 2026-09-12 | two critics re-drove the 19 pass-6 fails: 15 pass, 4 fail (F21 console error, F26 hollow file cells, F31/F32 kz copy) + 9 new gaps; server: leave-course resets completions (DECISIONS), stale projection rows repaired with `ashyq admin progress-backfill`, 5 locally corrupted grades re-graded through the API; two builders closed the 4 fails and the gaps | BUG-077..083 found, all fixed | web typecheck 0, vitest 626/626, error-codes 25/25, `bun run test:e2e` 86/2 skipped (see pass log below for the final run); server `just check` green, nextest 283/283 | 1b1a3ad |
 | 6 | 2026-09-12 | three critics swept ALL 40 rows with headless Playwright (learner F05–F18/F30/F35, teacher F19–F37, admin F01–F04/F38–F40): 21 pass, 18 fail, F14 blocked; server: private-course visibility regression (every learner saw every draft), TOTP 409, thumbnail upload contract, hidden unreleased grades, revision-attempt cap, item-score guard; three builders closed the 18 fails; QUESTIONS Q-2026-09-12-2 (11 contract gaps) | BUG-059..076 found, 17 fixed, 1 blocked | web typecheck 0, vitest 620/620, error-codes 25/25, `bun run test:e2e` **86 passed / 2 skipped** (twice: 85+3, 86+2); server `just check` green, nextest **283/283**, CI green (34660958702) | f95697b |
@@ -192,6 +208,23 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 5 + pass 6 admin critic: users/roles CRUD with toasts and live tables, kz clean, own-row protections |
 | F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 7: teacher picker via /search (no 403), one action per row, read-only foreign groups, no hydration error, CRUD toasts for both roles |
 | F40 | user account general/profile settings | `/dash/user-account/settings/{general,profile}` | any | pass | pass 6 admin critic: rename/avatar/security dates; password change is not in v2 by design (AGENTS.md) |
+| F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 9 (auth9 N1): field errors, taken email/username inline, happy path → toast + login (ru/kz), login by email and username; verify page wrong code inline. e2e 00/01 |
+| F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 9 N2/N3: wrong current password inline (no logout), change → toast, `mfa_enabled` renders the enrolled state after reload, disable → login without TOTP; pass 10 R9: otpauth issuer «Ashyq Bilim», revoke asks for confirmation |
+| F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 9 N4: dialog → toast → row without reload, new user logs in, taken username inline |
+| F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 9 N5: `last-admin`, `self-disable`, `role-slug-taken` localized; custom role display name/description shown as text, edit/delete |
+| F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
+| F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 9 T1: presets/search/sort/pagination, summary counts match |
+| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 10 R1: add via search → maintainer edits the curriculum with a `user` role, reporter reads only, remove; apply → pending → approve (pass 9 T2) |
+| F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 10 R2: blockers link to their stage, `activity-not-ready` toast localized, no 500 |
+| F49 | gradebook: file cells, CSV export, live stream | `/dash/courses/[id]/gradebook` | teacher | pass | pass 9 T4: file cells from the wire, server CSV with ru header, grade published elsewhere updates the cell in 316 ms via `grading/events`; pass 10 R10 |
+| F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 10 R3: «Верно / Ответ не дан / Совпало пар: 2/3» on both sides, one number format |
+| F51 | matching items (learner body) | quiz attempt + review | learner+teacher | pass | pass 10 R4: two visible columns, shuffled right column, review shows the pairing without raw keys |
+| F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 9 T10 + learner9 F17: `certificate-<code>.pdf` (18 KB, `%PDF`), toast, kz label |
+| F53 | AI on file-submission attempts | file review page | teacher | pass | pass 9 T8: analysis → definite draft-mode state, feedback draft, remediation card; pass 10 R10 «черновой режим» |
+| F54 | link preview block | lecture editor | teacher | pass | pass 10 R6: one request per URL, inline scheme validation, safe fallback; learner view never refetches |
+| F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 9 T7: full localized sentences, zero console errors on 20 loads; retention pruning covered by `analytics_rollup` test |
+| F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 9 N9 + learner9 F06: «2026 ж. 12 қыр.», «66,67», zero hydration errors on 11 pages |
+| F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 10 R7: 200 with the public course cards; unknown user → localized not-found |
 
 ## Bugs
 
@@ -259,6 +292,14 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | BUG-081 | F31,F32 | kk KPI definitions English; «cutover/backlog/scope» in ru/kk; raw `published`; kz hydration page errors from Intl under Chromium-without-kk-ICU. | catalogs; `suppressHydrationWarning` on SSR'd Intl leaves — **fixed** | 1b1a3ad | pass 8 |
 | BUG-082 | F21,F14 | Studio logged a React `flushSync` error on lectures with image blocks; an unconfigured code challenge showed a trace-id error card and a dead «Начать». | `setContent` in an effect constructs node views synchronously → microtask; localized not-configured state — **fixed** | 1b1a3ad | pass 8 |
 | BUG-083 | F02,F07,F35 | Base UI uncontrolled-field warning on the TOTP step; kk `<time>` hydration mismatch in the work queue; Q&A delete toast/dialog wording; contributors intro contradicted its state; finding review silent. | fields keyed per step; suppressed leaf; copy; toast — **fixed** | 1b1a3ad | — |
+| BUG-084 | F47 (server) | A `user`-role maintainer got 403 on every curriculum write and `/unauthorized` on the workspace — authorship still required `course:update:own`. | active roster row IS the `:own` scope in every authoring predicate; reporters excluded from `contributor_ids` — **fixed** | d40554c | R1 |
+| BUG-085 | F48 | Publishing a file-submission activity with a draft config → server-action 500 + generic toast (409 lost across the action boundary, BUG-035 pattern). | curriculum mutations call the API from the client; blockers link to their stage — **fixed** | 6167ef4 | R2 |
+| BUG-086 | F13,F15 | «Черновик восстановлен» appeared on a brand-new attempt after the first autosave; file submit left the header/footer stale until reload. | "had draft on mount" snapshot; shared `refreshLearnerCourseState` after file submit — **fixed** | 6167ef4 | R3 R5 |
+| BUG-087 | F50,F51 | Learner result page showed no per-item verdicts and mixed number formats; matching UI was a select per term with a raw `Matching.correct` key in review. | verdicts from `feedback_code`, one formatter, two-column matching UI (duplicate choice-module path deleted), keys ×3 — **fixed** | 6167ef4 | R3 R4 |
+| BUG-088 | F54 | Link preview lookup fired twice, logged a page error and kept `href="not a url"`. | one request per URL, `mutate` not `mutateAsync`, `<a>` only for http(s) — **fixed** | 6167ef4 | R6 |
+| BUG-089 | F47 (server) | Active reporter on a private course: landing rendered over `learner-state → 403`. | `user_has_course_access` accepts any active roster row — **fixed** | 0946a2a | — |
+| BUG-090 | F54 | A saved block whose URL failed validation re-fetched (422 + error toast) on every learner view. | previews resolve only in an editable editor for http(s) URLs; the dialog validates the scheme inline — **fixed** | 0946a2a | — |
+| BUG-091 | F08 (server) | After leaving a course with submissions the learner stayed `enrolled:true` (rows past `not_started`), so «Начать курс» could never re-enrol. | enrolment = trail run (legacy `TrailRun`); the projector creates the run on the first submission — **fixed** | d40554c | R8 |
 | BUG-034 | F18 (server) | `PATCH gamification/preferences {"privacy":{"showOnLeaderboard":false}}` is stored but the learner still appears in `GET gamification/leaderboard`. The opt-out is not applied server-side. | **fixed** (f938ca9): leaderboard query filters opted-out profiles | f938ca9 | — |
 | BUG-035 | ALL (arch) | Fourteen `'use server'` service files are called from client components; `APIError.code` does not survive the Next server-action boundary in production, so problem+json codes degrade to the generic localized fallback (and a 403 once surfaced as a 500, BUG-027). Client-side calls should use `apiJson` directly (the pattern used by the fixed collections and auth flows). | architectural; per-service conversion | — | — |
 | BUG-020 | F25 | Teacher review queue spun on "Загрузка…" with "0 работ" while the header counted 2; then 400 on the list. | **fixed+verified** (64be288, f510686): queries gated on a legacy numeric `activityId` the v2 review passes as 0; the list still sent v1 offset params. Also `GET assessments/undefined/attempt-state` from the grader's inspector borrowing the learner hook, and three shapes on one cache key. Grade published in the browser; learner then saw the released score. | 64be288 f510686 | — |
