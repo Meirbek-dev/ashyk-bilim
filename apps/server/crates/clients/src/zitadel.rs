@@ -261,7 +261,7 @@ impl ZitadelClient {
 
     /// `POST /v2/users/{id}/totp` — start TOTP enrollment (idempotency:
     /// re-registering before verification returns a fresh secret; an already
-    /// verified TOTP yields code 9 `AlreadyReady` → Conflict).
+    /// verified TOTP yields `AlreadyExists`/`AlreadyReady` → Conflict).
     pub async fn register_totp(&self, user_id: &str) -> Result<TotpRegistration> {
         #[derive(Deserialize)]
         struct Registered {
@@ -291,7 +291,9 @@ impl ZitadelClient {
             .json()
             .await
             .map_err(|e| Error::internal("zitadel error response shape", e))?;
-        if err.code == 9 {
+        // 6 = AlreadyExists ("Multifactor OTP is already set up", COMMAND-do9se),
+        // 9 = FailedPrecondition (`AlreadyReady`): both mean "enrolled".
+        if matches!(err.code, 6 | 9) {
             return Err(Error::conflict("totp is already enrolled"));
         }
         Err(Error::app(

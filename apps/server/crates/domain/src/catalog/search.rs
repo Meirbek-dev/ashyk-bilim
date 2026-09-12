@@ -5,13 +5,14 @@
 //! (privacy upgrade over legacy — FINDINGS #16).
 
 use ab_core::Result;
-use ab_core::permission::{Action, Permission, ResourceType, Scope};
+use ab_core::permission::ResourceType;
 use sqlx::PgPool;
 
 pub use ab_db::search::UserHitRow as UserHit;
 
 use crate::catalog::collections::Collection;
 use crate::catalog::courses::Course;
+use crate::catalog::sees_private;
 use crate::identity::Actor;
 
 pub struct SearchResults {
@@ -42,16 +43,8 @@ impl SearchService {
             });
         }
         let viewer = Some(actor.user_id);
-        let courses_all = actor.has(Permission {
-            resource: ResourceType::Course,
-            action: Action::Read,
-            scope: Some(Scope::All),
-        });
-        let collections_all = actor.has(Permission {
-            resource: ResourceType::Collection,
-            action: Action::Read,
-            scope: Some(Scope::All),
-        });
+        let courses_all = sees_private(actor, ResourceType::Course);
+        let collections_all = sees_private(actor, ResourceType::Collection);
         let courses =
             ab_db::search::search_courses(&self.pool, query, viewer, courses_all, limit).await?;
         let collections =

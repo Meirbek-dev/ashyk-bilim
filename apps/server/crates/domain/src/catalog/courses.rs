@@ -12,6 +12,7 @@ use sqlx::PgPool;
 use ab_core::id::CourseUpdateId;
 pub use ab_db::catalog::{CourseRow as Course, CourseUpdateRow as CourseUpdate};
 
+use crate::catalog::sees_private;
 use crate::identity::Actor;
 
 const fn perm(action: Action, scope: Scope) -> Permission {
@@ -59,7 +60,7 @@ impl CoursesService {
     async fn require_read(&self, actor: &Actor, course: &Course) -> Result<()> {
         if course.public
             || course.creator_id == Some(actor.user_id)
-            || actor.has(perm(Action::Read, Scope::All))
+            || sees_private(actor, ResourceType::Course)
             || ab_db::usergroups::user_in_course_group(&self.pool, course.id, actor.user_id).await?
         {
             Ok(())
@@ -107,7 +108,7 @@ impl CoursesService {
         limit: i64,
     ) -> Result<(Vec<Course>, Option<CourseId>)> {
         let limit = limit.clamp(1, 100);
-        let see_all = actor.has(perm(Action::Read, Scope::All));
+        let see_all = sees_private(actor, ResourceType::Course);
         let mut rows = ab_db::catalog::list_courses(
             &self.pool,
             Some(actor.user_id),

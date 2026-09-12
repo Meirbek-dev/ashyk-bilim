@@ -721,3 +721,17 @@ T+30d; holding it to a unit-test floor would spend effort on code with a
 30-day life. Product crates measure 84.5% under the same floor.
 
 What it replaces: the workspace-wide floor. Revisit if the ETL outlives cutover.
+
+## `course:read:all` does not reveal private courses (2026-09-12)
+
+The v2 read path treated `course:read:all` as "see every course", but the
+seed grants it to every role — including `user` — because in the legacy it
+only meant "browse the public catalogue": `_accessible_courses_filter`
+applied public / creator / author / cohort to every authenticated caller
+regardless of grants. That made every draft visible to every learner in v2
+(catalogue, search, collections), while `learner-state` and enrolment then
+answered 403/500 behind the card. Visibility now follows the legacy filter;
+the platform-wide bypass is reserved for holders of `course:update:platform`
+or `course:manage:platform` (maintainers, admins), and the same rule applies
+to collections. Zitadel's `AlreadyExists` on TOTP enrolment maps to the
+contract's 409 alongside `AlreadyReady`.

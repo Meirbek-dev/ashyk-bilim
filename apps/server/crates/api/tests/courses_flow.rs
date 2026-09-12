@@ -45,9 +45,22 @@ async fn crud_lifecycle_and_visibility(pool: PgPool) {
     assert_eq!(own.status, StatusCode::OK);
     assert_eq!(own.json()["public"], false);
 
-    let stranger = app.mint_session(&["course:read:all"]).await; // read:all sees drafts
-    let seen = app
+    // `course:read:all` is the public-catalogue grant every role holds; it
+    // does not reveal drafts (legacy `_accessible_courses_filter`). Staff who
+    // manage courses platform-wide do see them.
+    let stranger = app.mint_session(&["course:read:all"]).await;
+    let unseen = app
         .get_as(&stranger, &format!("/api/v2/courses/{id}"))
+        .await;
+    assert_eq!(unseen.status, StatusCode::NOT_FOUND);
+    let listed = app.get_as(&stranger, "/api/v2/courses").await;
+    assert!(listed.json()["items"].as_array().unwrap().is_empty());
+
+    let maintainer = app
+        .mint_session(&["course:read:all", "course:update:platform"])
+        .await;
+    let seen = app
+        .get_as(&maintainer, &format!("/api/v2/courses/{id}"))
         .await;
     assert_eq!(seen.status, StatusCode::OK);
 
@@ -174,7 +187,7 @@ async fn announcements_follow_course_access(pool: PgPool) {
     assert_eq!(created.status, StatusCode::CREATED);
     let update_id = created.json()["id"].as_str().unwrap().to_owned();
 
-    // A rival instructor (sees the draft via read:all) can't post or edit.
+    // A rival instructor cannot even see the draft, let alone post to it.
     let rival = instructor(&app, "rival-announcer").await;
     let denied = app
         .post_as(
@@ -183,7 +196,7 @@ async fn announcements_follow_course_access(pool: PgPool) {
             &serde_json::json!({ "title": "Spam", "content": "spam" }),
         )
         .await;
-    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    assert_eq!(denied.status, StatusCode::NOT_FOUND);
 
     let edited = app
         .patch_as(

@@ -264,9 +264,9 @@ async fn curriculum_respects_course_access(pool: PgPool) {
     let course = create_course(&app, &teacher, "Private").await;
     let chapter = create_chapter(&app, &teacher, &course, "One").await;
 
-    // A rival instructor (who can SEE the draft via read:all) still can't
-    // author on it (403); a learner can't even see the private curriculum
-    // (404, no existence leak).
+    // A rival instructor cannot see the draft (`course:read:all` is the
+    // public-catalogue grant), so authoring on it is a 404 — no existence
+    // leak; a learner can't see the private curriculum either.
     let rival = instructor(&app, "rival").await;
     let denied = app
         .post_as(
@@ -275,7 +275,7 @@ async fn curriculum_respects_course_access(pool: PgPool) {
             &serde_json::json!({ "name": "Hijack" }),
         )
         .await;
-    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    assert_eq!(denied.status, StatusCode::NOT_FOUND);
     let denied = app
         .patch_as(
             &rival,
@@ -283,7 +283,7 @@ async fn curriculum_respects_course_access(pool: PgPool) {
             &serde_json::json!({ "name": "Hijack" }),
         )
         .await;
-    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    assert_eq!(denied.status, StatusCode::NOT_FOUND);
 
     let learner = app.mint_session(&[]).await;
     let hidden = app

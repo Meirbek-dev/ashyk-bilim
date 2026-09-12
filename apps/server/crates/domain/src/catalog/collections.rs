@@ -12,19 +12,12 @@ use sqlx::PgPool;
 pub use ab_db::collections::CollectionRow as Collection;
 
 use crate::catalog::courses::{Course, CoursesService};
+use crate::catalog::sees_private;
 use crate::identity::Actor;
 
 const fn perm(action: Action, scope: Scope) -> Permission {
     Permission {
         resource: ResourceType::Collection,
-        action,
-        scope: Some(scope),
-    }
-}
-
-const fn course_perm(action: Action, scope: Scope) -> Permission {
-    Permission {
-        resource: ResourceType::Course,
         action,
         scope: Some(scope),
     }
@@ -51,7 +44,7 @@ impl CollectionsService {
     fn require_read(actor: &Actor, collection: &Collection) -> Result<()> {
         if collection.public
             || collection.creator_id == Some(actor.user_id)
-            || actor.has(perm(Action::Read, Scope::All))
+            || sees_private(actor, ResourceType::Collection)
         {
             Ok(())
         } else {
@@ -85,7 +78,7 @@ impl CollectionsService {
         actor: &Actor,
         collection_id: CollectionId,
     ) -> Result<Vec<Course>> {
-        let see_all = actor.has(course_perm(Action::Read, Scope::All));
+        let see_all = sees_private(actor, ResourceType::Course);
         ab_db::collections::list_collection_courses(
             &self.pool,
             collection_id,
@@ -137,7 +130,7 @@ impl CollectionsService {
         limit: i64,
     ) -> Result<(Vec<CollectionWithCourses>, Option<CollectionId>)> {
         let limit = limit.clamp(1, 100);
-        let see_all = actor.has(perm(Action::Read, Scope::All));
+        let see_all = sees_private(actor, ResourceType::Collection);
         let mut rows = ab_db::collections::list_collections(
             &self.pool,
             Some(actor.user_id),
