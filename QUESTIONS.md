@@ -6,6 +6,36 @@ answered items into the docs.
 
 ## Open
 
+Nothing open. Two owner actions remain outside the repo (no secrets in chat or git):
+- `AB__AI__OPENAI_API_KEY` / `AB__AI__OPENROUTER_API_KEY` in the server env for the
+  live AI smoke run (`ashyq admin ai-eval`) — models stay `gpt-5.6-luna` and
+  `deepseek/deepseek-v4-flash`, budget 1 000 000 tokens/month.
+- A Resend API key in the server env before cutover, so registration and
+  verification emails actually send (registration still works without it; the
+  code is logged server-side).
+
+## Answered (2026-09-12) — owner decisions, recorded in DECISIONS.md "Owner answers"
+
+| question | answer | implementation |
+|---|---|---|
+| Q-2026-09-10-1 account creation | self-registration like before | `POST /auth/register` + `/auth/verify-email`, `POST /users` (admin), signup page, password change |
+| Q-2026-09-10-2 teacher listing | what's best | `GET /courses?mine=true&q&sort&preset` + summary |
+| Q-2026-09-10-3 collaboration | we want the feature | contributors model + routes + collaboration page + apply |
+| Q-2026-09-10-4 smaller gaps | no legacy shims, best UX | `GET /users/{username}/courses`, `GET /utils/link-preview`, readiness route; presets stay client defaults |
+| Q-2026-09-10-6 RBAC admin | best UX | rebuilt pages + dedicated conflict codes + custom-role text fields |
+| Q-2026-09-10-7 TOTP state | best UX | `mfa_enabled` on session and profile |
+| Q-2026-09-11-1 readiness | (b) server-side | `GET /courses/{id}/readiness` |
+| Q-2026-09-11-2 grader prose | fully localized | `feedback_code` + params |
+| Q-2026-09-12-1 matching | add `MatchingLearnerBody` | learner shape on the wire, attempt UI builds columns |
+| Q-2026-09-10-5 request_id | best UX | populated in the problem+json body |
+| Q-2026-09-06-1 gamification | zero everyone at cutover | ETL migrates no XP/levels/streaks/ledgers |
+| Q-2026-09-06-2 retention | best UX | rollup prunes events >400 d, daily rows >2 y |
+| Q-2026-09-06-3 AI models | keep `gpt-5.6-luna` / `deepseek-v4-flash` | defaults confirmed; keys are the owner's |
+| Q-2026-09-12-2 pass-6 gaps | complete all 11 | see DECISIONS; each item closed on the server |
+
+The original write-ups follow for reference.
+
+
 ### Pass-1 gauntlet: v2 contract gaps (2026-09-10)
 
 Raised by the browser-QA gauntlet (`docs/rewrite/GAUNTLET.md`). Each item is a
