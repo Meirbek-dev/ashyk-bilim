@@ -40,6 +40,12 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
   their flags.
 - **Role display names**: Cyrillic literals replaced by i18n keys during transform
   (FINDINGS #15).
+- **Gamification is zeroed at cutover** (DECISIONS, Q-2026-09-06-1 c): the
+  gamification phase migrates no XP transactions, totals, levels, streaks or
+  badges. Each legacy profile becomes a fresh `gamification_profiles` row with
+  zeroed counters that keeps only the user's `preferences`; the leaderboard
+  starts empty. The legacy `xp_transactions` count is reported and noted, never
+  written. (The earlier "recompute from verifiable sources" path is gone.)
 - Every phase emits a report row: source count, written count, dropped (with
   reasons), duration. The final **verification phase** re-checks: per-table counts,
   FK integrity (`NOT EXISTS` orphan scans), spot checksums (e.g. sum of grade
@@ -88,7 +94,9 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
 
 Run the **entire** pipeline against a restored production backup in a scratch
 compose stack (fresh PG + Zitadel + RustFS), repeatedly, until:
-1. ETL exits green with zero unexplained drops, twice in a row on fresh restores;
+1. ETL exits green with zero unexplained drops, twice in a row on fresh restores
+   (the report shows `xp_transactions` written = 0 and every
+   `gamification_profiles` row zeroed — gamification starts fresh by decision);
 2. rehearsal wall-clock is measured (informs the cutover window; expected minutes,
    not hours, at 16 MB of relational data);
 3. smoke suite passes against the rehearsal stack: login with imported password,
@@ -112,9 +120,10 @@ compose stack (fresh PG + Zitadel + RustFS), repeatedly, until:
   a real Session API login probe after the verifier setting above was enabled.
 - Explained production-data exceptions: two duplicate email addresses receive
   deterministic `+legacy-{id}` aliases; 63 orphan resource-author rows and one
-  orphan usergroup-resource row are dropped; 40 XP rows reference retired or
-  absent entities; 77 unknown assessment-setting keys and two unresolved answer
-  item references are retained in the detailed ETL drop log.
+  orphan usergroup-resource row are dropped; 77 unknown assessment-setting keys
+  and two unresolved answer item references are retained in the detailed ETL
+  drop log. (The 40 unverifiable XP rows noted at the time are moot: since
+  2026-09-12 no XP row is migrated at all — every learner starts at zero.)
 
 The data/identity/object migration exit gate is green. The browser smoke list and
 Playwright remain part of P9/P11 deployment verification because the frontend
@@ -133,6 +142,13 @@ T-0    1. docker compose stop web api taskiq-worker taskiq-scheduler   (Judge0, 
        4. Verification phase green (hard gate — abort on red).
        5. Bring up: zitadel, rustfs, server, worker; run `ashyq migrate` no-op check;
           swap nginx template (v2 routes, /content → rustfs); reload nginx.
+       4a. AI keys: put `AB__AI__OPENAI_API_KEY` / `AB__AI__OPENROUTER_API_KEY`
+          (owner-supplied, never in the repo) in the production `.env`; the models
+          default to `gpt-5.6-luna` / `deepseek/deepseek-v4-flash` and the budget to
+          1 000 000 tokens/month (`AB__AI__OPENAI_MODEL`, `AB__AI__OPENROUTER_MODEL`,
+          `AB__AI__MONTHLY_TOKEN_BUDGET` override). `ashyq admin config-check` prints
+          `ai.status` — `disabled: no provider key` until they are set (AI routes
+          answer 503 `ai-disabled`, agents return draft artifacts), `enabled` after.
        5a. `ashyq admin judge0-tune` (AB__JUDGE0__DATABASE_URL → Judge0's DB): applies
           the sandbox-safe compiler/run commands the legacy API patched on every boot.
           Idempotent; re-run after any Judge0 image upgrade.

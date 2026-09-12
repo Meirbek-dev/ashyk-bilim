@@ -428,6 +428,12 @@ CREATE TABLE jobs (
   disabled per Q4).
 - Graceful shutdown: `CancellationToken` → stop claiming, finish in-flight,
   heartbeat until done (compose `stop_grace_period` sized accordingly).
+- Analytics retention (DECISIONS "Analytics retention (b)"): `analytics:rollup`
+  (every 6 h) ends by pruning `analytics_events` older than **400 days** and
+  the five `daily_*` rollup tables plus `learner_risk_snapshots` older than
+  **2 years**, in 5 000-row batches through the primary key
+  (`ab_db::analytics::prune_retention`), summarised in one tracing line.
+  Dashboards only ever read the last 180 days.
 
 ## 10. Redis usage map
 

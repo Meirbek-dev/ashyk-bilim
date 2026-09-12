@@ -819,6 +819,27 @@ All open `QUESTIONS.md` items were answered; the answers are binding and the
   redirects; the web polyfills `Intl` locale data for kk when the browser lacks
   it.
 
+## Analytics contract closures (2026-09-12, gauntlet pass 8)
+
+- **Codes, not prose.** `AlertItem`, `ForecastItem`, `AnomalyItem`,
+  `InsightFeedItem` and `DataQualityIssue` carry `code: AnalyticsCode` (a
+  utoipa enum, 23 values) + `params` (object) and no `title` / `body` /
+  `prediction` / `detail`; `kind` stays where it existed. The web renders
+  `TeacherAnalytics.messages.<code>.{title,body}` with the params (ICU
+  plurals/selects; list params are joined through `codes.*`). `grading_slo_*`
+  params keep the course name, breach/queue counts and the oldest age the prose
+  used to lose. `AssessmentAuditEventRow.summary` → `final_score`;
+  `AssessmentItemAnalyticsRow.note` is now the workflow code or `null` next to
+  `accuracy_pct`. A vitest walks the generated enum and requires ru/kk/en copy.
+- **Retention** as answered: `analytics:rollup` prunes events > 400 d and daily
+  rows / risk snapshots > 2 y (ARCHITECTURE §9).
+- **Gamification zeroed** as answered: the ETL ledger recompute is deleted;
+  profiles are written with zeroed counters and only `preferences` kept
+  (MIGRATION §2).
+- **AI** as answered: defaults confirmed; `AB__AI__*` keys are owner-supplied
+  in the cutover compose; `ashyq admin config-check` prints `ai.status`
+  (`disabled: no provider key` without keys).
+
 ## Grading contract closures (2026-09-12, gauntlet pass 8)
 
 Implements the grading items of the owner answers above. Routes:
@@ -849,3 +870,56 @@ Implements the grading items of the owner answers above. Routes:
   submission, so the seed is the viewer, which is what keeps reloads
   stable. Option ids are the pair texts (unique per column by the
   readiness rules), so the answer wire and the grader are unchanged.
+
+## Certificates, AI on file attempts, link preview (2026-09-12, gauntlet pass 8)
+
+Implements three more items of the owner answers above. Routes:
+
+- `GET /certificates/{code}/pdf` — public by code, like verification. A4
+  landscape rendered on the server with `pdf-writer` + `subsetter` (typst's
+  writer/subsetter) and `skrifa` for glyph metrics — no headless browser;
+  two Noto Sans subsets (Latin + Cyrillic incl. Kazakh, SIL OFL) live in
+  `crates/domain/assets/fonts` and are embedded as CID fonts. The page
+  carries the holder, course, certificate name/type, issue date (UTC+5),
+  teacher (`certificate_instructor` from the template, else the course
+  creator), the verification code and the verify link
+  (`AB__SERVER__WEB_URL` + `/certificates/{code}/verify`, also a link
+  annotation). Language: `Accept-Language` (`ru`/`kk`/`en`), else the
+  holder's locale. `Content-Disposition: attachment`. The web downloads it
+  with the session cookie into a Blob («Скачать PDF» on the trail card and
+  the verify page); the client-side pdfme designer on the course-end view
+  stays for the template preview.
+- **AI analysis and remediation take a file-submission attempt** through
+  the *same* routes: `/ai/submission-analysis/{id}/…` and
+  `/ai/remediation/{id}/…` take an `AiSubjectId` — an assessment submission
+  id *or* a file-submission attempt id (both UUIDv7; the server looks the
+  id up in both tables, 404 otherwise). `SubmissionAnalysis` and
+  `RemediationSession` carry `submission_id` and
+  `file_submission_attempt_id`, exactly one set
+  (`ai_submission_analyses` / `ai_remediation_sessions` gained the nullable
+  column + `*_one_subject` CHECK; migration `20260912000020`). The attempt
+  context is the activity, the teacher's instructions and rubric, the
+  attempt's status/score/feedback/rubric scores and its files by name,
+  type and size; text files (`text/*`, JSON/XML/YAML) are read back from
+  storage (16 KiB each, 48 KiB total) — PDFs and office documents are
+  described, not extracted. There is no learner comment on v2 attempts.
+  Run metadata names the subject (`submission_id` or
+  `file_submission_attempt_id`, both in the admin-safe context keys). The
+  web mounts `SubmissionAIEntry` on the file-submission review page with
+  the attempt id.
+- `GET /utils/link-preview?url=` → `{url, title, description, image_url,
+  site_name}` from OpenGraph / `<title>` (any signed-in session — no new
+  permission resource; the legacy route was open). SSRF guard: `http(s)`
+  only, no credentials, the hostname is resolved first and every address
+  must be public (loopback/private/link-local/CGNAT/ULA/v4-mapped rejected;
+  the connection is pinned to the checked addresses), redirects (≤3) are
+  re-checked, 5 s deadline, 1 MiB read cap, HTML only. **Loopback is
+  accepted only when `AB__ENVIRONMENT` is not `production`** — that is how
+  the integration test previews a wiremock page and how the local editor
+  previews `localhost:3000`. Cached 24 h in Redis (`link-preview:<sha256>`).
+  Errors: a rejected URL is 422 with field `url`/`unsafe`; an unreadable
+  page is 502 `link-preview-failed` (new code, catalogs ×3). The editor's
+  link block maps `image_url → og_image` onto its stored `og_*`
+  attributes (plus a new `site_name`), and a failed preview keeps the link
+  as a fallback card (hostname + «Предпросмотр недоступен») with the
+  problem code toasted.
