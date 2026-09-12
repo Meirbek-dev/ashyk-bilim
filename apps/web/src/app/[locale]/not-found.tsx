@@ -6,6 +6,7 @@ import AppLink from '@components/ui/AppLink'
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import { APP_NAME } from '@/lib/constants'
+import DocumentTitle from '@components/ui/document-title'
 
 export default async function NotFound() {
   const t = await getTranslations('NotFoundPage')
@@ -13,8 +14,7 @@ export default async function NotFound() {
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center">
-      {/* not-found.tsx cannot export metadata; React hoists this into <head>. */}
-      <title>{`${t('title')} - ${APP_NAME}`}</title>
+      <DocumentTitle title={`${t('title')} - ${APP_NAME}`} />
       <div className="flex items-center pb-20 hover:opacity-75">
         <Image
           quality={100}
