@@ -923,3 +923,23 @@ Implements three more items of the owner answers above. Routes:
   attributes (plus a new `site_name`), and a failed preview keeps the link
   as a fallback card (hostname + «Предпросмотр недоступен») with the
   problem code toasted.
+
+## Contract-phase notes (2026-09-13)
+
+- **Contributors live in `resource_authors`.** The roster reuses the table the
+  ETL already fills (analytics and the work queue read it); the creator is
+  implicit (`courses.creator_id`, synthesised as `creator/active`, immutable).
+  Active `maintainer`/`contributor` rows ARE the `:own` scope for every
+  authoring check (`CourseRow::is_author`); no role grant is needed on top.
+  `reporter` reads the draft and the roster, never writes, and is absent from
+  `Course.contributor_ids`.
+- **Enrolment is the trail run**, as the legacy `TrailRun` was. Projection rows
+  survive a leave (submissions stay), so they cannot mean "enrolled"; the
+  projector creates the run on the first submission or file attempt so
+  starting work still enrols. Leave copy tells learners that lesson
+  completions reset while submitted work and grades stay.
+- **Registration limits**: 10 created accounts per hour per IP, 60 attempts
+  (register + verify) per hour per IP; the TOTP `otpauth` label/issuer carry
+  the platform name.
+- **Public profile**: `GET /users/{username}` (card) and
+  `GET /users/{username}/courses` answer anonymous callers with public data.
