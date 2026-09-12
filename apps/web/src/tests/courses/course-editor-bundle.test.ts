@@ -13,4 +13,12 @@ describe('getCourseEditorBundle', () => {
     expect(paths).toContain('courses/abc/certifications')
     expect(paths.some(p => String(p).includes('course_'))).toBe(false)
   })
+
+  it('never requests the contributor roster (no v2 route, F29) and reports it unavailable', async () => {
+    mocks.apiResult.mockClear()
+    const bundle = await getCourseEditorBundle('abc')
+    const paths = mocks.apiResult.mock.calls.map(c => String(c[0]))
+    expect(paths.some(p => p.includes('contributors'))).toBe(false)
+    expect(bundle.contributors).toMatchObject({ available: false, error: null, data: null })
+  })
 })

@@ -79,7 +79,6 @@ export function useCoursesMutations(courseUuid: string, withUnpublishedActivitie
     ) => updateAccessMutation.mutateAsync({ options, payload }),
     updateMetadata: async (payload: Partial<CourseGeneralValues>, options: MutationOptions) =>
       updateMetadataMutation.mutateAsync({ options, payload }),
-    updateThumbnail: async (formData: FormData, options: MutationOptions) =>
-      updateThumbnailMutation.mutateAsync({ formData, options }),
+    updateThumbnail: async (file: File) => updateThumbnailMutation.mutateAsync({ file }),
   }
 }

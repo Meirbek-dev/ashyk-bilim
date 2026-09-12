@@ -103,6 +103,7 @@ const toUpdateCourseRequest = (data: AppPayload) => ({
   ...(data.about === undefined ? {} : { about: data.about }),
   ...(data.tags === undefined ? {} : { tags: toTagArray(data.tags) }),
   ...(typeof data.open_to_contributors === 'boolean' ? { open_to_contributors: data.open_to_contributors } : {}),
+  ...(typeof data.thumbnail_upload_id === 'string' ? { thumbnail_upload_id: data.thumbnail_upload_id } : {}),
 })
 
 async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdateCourseRequest>) {
@@ -185,16 +186,9 @@ export async function updateCourseLifecycle(courseUuid: string, makePublic: bool
   return { ...result, data: toAppCourse(result.data) }
 }
 
-/** Blocked: no v2 route for `courses/{id}/thumbnail` (needs an `uploadFile()` + owner-attach contract). */
-export async function updateCourseThumbnail(course_uuid: string, formData: FormData, options?: CourseWriteOptions) {
-  if (options?.lastKnownUpdateDate) {
-    formData.set('last_known_update_date', options.lastKnownUpdateDate)
-  }
-
-  const id = stripEntityPrefix(course_uuid)
-  const result = await apiResult(`courses/${id}/thumbnail`, { method: 'PUT', body: formData }, Course.parse)
-  await revalidateCourse(id)
-  return { ...result, data: toAppCourse(result.data) }
+/** Claim a finalized `course-thumbnail` upload (`uploadFile(file, 'course-thumbnail').id`) as the thumbnail. */
+export async function updateCourseThumbnail(course_uuid: string, uploadId: string) {
+  return patchCourse(course_uuid, { thumbnail_upload_id: uploadId })
 }
 
 /**

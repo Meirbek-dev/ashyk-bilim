@@ -2,10 +2,9 @@
 
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import { useCreateExamWithActivity, useExamConfig } from '@/features/assessments/hooks/exam'
+import { useCreateExamWithActivity } from '@/features/assessments/hooks/exam'
 import { useTranslations } from 'next-intl'
 import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
-import { useEffect } from 'react'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
@@ -15,14 +14,17 @@ import { Switch } from '@components/ui/switch'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 
-const createValidationSchema = (t: (key: string) => string, limits?: { time_limit?: { min?: number; max?: number } }) =>
+// v2 has no `assessments/exam/config`; the time limit range is a fixed 1–180 minutes.
+const TIME_LIMIT_MIN = 1
+const TIME_LIMIT_MAX = 180
+const DEFAULT_TIME_LIMIT = 50
+
+const createValidationSchema = (t: (key: string) => string) =>
   v.object({
     exam_title: v.pipe(v.string(), v.minLength(1, t('examTitleRequired'))),
     activity_name: v.pipe(v.string(), v.minLength(1, t('activityNameRequired'))),
     exam_description: v.pipe(v.string(), v.minLength(1, t('examDescriptionRequired'))),
-    time_limit: v.optional(
-      v.pipe(v.number(), v.minValue(limits?.time_limit?.min ?? 1), v.maxValue(limits?.time_limit?.max ?? 180)),
-    ),
+    time_limit: v.optional(v.pipe(v.number(), v.minValue(TIME_LIMIT_MIN), v.maxValue(TIME_LIMIT_MAX))),
     has_time_limit: v.boolean(),
     shuffle_questions: v.boolean(),
     allow_result_review: v.boolean(),
@@ -30,9 +32,6 @@ const createValidationSchema = (t: (key: string) => string, limits?: { time_limi
 
 type FormValues = v.InferInput<ReturnType<typeof createValidationSchema>>
 type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
-
-const getDefaultTimeLimit = (limits?: { time_limit?: { min?: number; max?: number } }) =>
-  Math.min(Math.max(50, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180)
 
 type ExamCourseInput = AppActivityModalProps['course']
 
@@ -54,8 +53,7 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.NewExamModal')
 
-  const { data: limits } = useExamConfig()
-  const validationSchema = createValidationSchema(validationT, limits)
+  const validationSchema = createValidationSchema(validationT)
   const withUnpublishedActivities =
     typeof course?.withUnpublishedActivities === 'boolean' ? course.withUnpublishedActivities : false
   const courseUuid = getCourseUuid(course)
@@ -70,7 +68,7 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
       activity_name: '',
       exam_description: '',
       has_time_limit: true,
-      time_limit: getDefaultTimeLimit(limits),
+      time_limit: DEFAULT_TIME_LIMIT,
       shuffle_questions: true,
       allow_result_review: true,
     },
@@ -81,21 +79,6 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
     name: 'has_time_limit',
     defaultValue: true,
   })
-
-  useEffect(() => {
-    if (!limits) return
-
-    const currentValue = form.getValues('time_limit')
-    const nextValue =
-      currentValue === undefined
-        ? getDefaultTimeLimit(limits)
-        : Math.min(Math.max(currentValue, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180)
-
-    form.setValue('time_limit', nextValue, {
-      shouldDirty: false,
-      shouldValidate: false,
-    })
-  }, [form, limits])
 
   const onSubmit = async (values: SubmitValues) => {
     const toastLoading = toast.loading(t('creatingExam'))
@@ -212,8 +195,8 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
               <Input
                 id={field.name}
                 type="number"
-                min={limits?.time_limit?.min ?? 1}
-                max={limits?.time_limit?.max ?? 180}
+                min={TIME_LIMIT_MIN}
+                max={TIME_LIMIT_MAX}
                 placeholder="60"
                 {...field}
                 value={field.value ?? ''}

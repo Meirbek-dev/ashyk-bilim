@@ -1,7 +1,6 @@
 'use client'
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
-import { AlertTriangle, Image as ImageIcon, Tag, Video } from 'lucide-react'
+import { AlertTriangle, Image as ImageIcon, Tag } from 'lucide-react'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
@@ -18,31 +17,13 @@ import { courseGeneralSchema } from '@/schemas/courseSchemas'
 import { TagsInput } from '@components/ui/custom/tags-input'
 import { useEffect, useId, useMemo, useState } from 'react'
 import { useSaveSection } from '@/hooks/useSaveSection'
-import { Controller, useForm, useWatch } from 'react-hook-form'
-import { Separator } from '@components/ui/separator'
-import LearningItemsList from './LearningItemsList'
+import { Controller, useForm } from 'react-hook-form'
 import ThumbnailUpdate from './ThumbnailUpdate'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import type * as v from 'valibot'
 import { MarkdownEditor, getMarkdownSaveGate } from '@/features/content-markdown'
 import { Spinner } from '@/components/ui/spinner'
-
-// Placeholder ID is stable across SSR and hydration; LearningItemsList replaces it
-// with a real UUID in a post-mount effect, avoiding hydration mismatches.
-const LEARNINGS_PLACEHOLDER_ID = '__placeholder_0__'
-
-function initializeLearnings(learnings: unknown): string {
-  if (!learnings) return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
-  if (typeof learnings !== 'string') return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
-  try {
-    const parsed = JSON.parse(learnings)
-    if (Array.isArray(parsed)) return learnings
-  } catch {
-    return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: learnings, emoji: '' }])
-  }
-  return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
-}
 
 function parseTags(raw: unknown): string[] {
   if (!raw) return []
@@ -67,12 +48,7 @@ function buildFormValues(courseStructure: AppCourse): CourseGeneralValues {
     name: courseStructure?.name || '',
     description: courseStructure?.description || '',
     about: courseStructure?.about || '',
-    learnings: initializeLearnings(courseStructure?.learnings || ''),
     tags: parseTags(courseStructure?.tags),
-    public: courseStructure?.public ?? false,
-    thumbnail_type: ['image', 'video', 'both'].includes(String(courseStructure?.thumbnail_type))
-      ? (courseStructure.thumbnail_type as 'image' | 'video' | 'both')
-      : 'image',
   }
 }
 
@@ -80,37 +56,6 @@ function EditCourseGeneral() {
   const t = useTranslations('CourseEdit.General')
   const tCommon = useTranslations('Common')
   const [error, setError] = useState('')
-
-  const thumbnailTypeItems = [
-    {
-      value: 'image',
-      label: (
-        <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4" aria-hidden="true" />
-          {t('image')}
-        </div>
-      ),
-    },
-    {
-      value: 'video',
-      label: (
-        <div className="flex items-center gap-2">
-          <Video className="h-4 w-4" aria-hidden="true" />
-          {t('video')}
-        </div>
-      ),
-    },
-    {
-      value: 'both',
-      label: (
-        <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4" aria-hidden="true" />
-          <Video className="h-4 w-4" aria-hidden="true" />
-          {t('both')}
-        </div>
-      ),
-    },
-  ]
 
   const course = useCourse()
   const { isLoading, courseStructure } = course
@@ -125,12 +70,6 @@ function EditCourseGeneral() {
     resolver: valibotResolver(courseGeneralSchema),
     defaultValues: serverValues,
     mode: 'onChange',
-  })
-
-  const thumbnailType = useWatch({
-    control: form.control,
-    name: 'thumbnail_type',
-    defaultValue: serverValues.thumbnail_type,
   })
 
   const { isDirty } = form.formState
@@ -155,10 +94,7 @@ function EditCourseGeneral() {
 
   const handleSubmit = async (values: CourseGeneralValues) => {
     setError('')
-    const descriptionGate = getMarkdownSaveGate(values.description, 'courseDescription', {
-      intent: 'publish',
-      required: true,
-    })
+    const descriptionGate = getMarkdownSaveGate(values.description, 'courseDescription', { intent: 'publish' })
     if (!descriptionGate.canSave) {
       setError(descriptionGate.errors[0]?.message ?? t('errors.saveFailed'))
       return
@@ -246,7 +182,6 @@ function EditCourseGeneral() {
                       onBlur={field.onBlur}
                       preset="courseDescription"
                       placeholder={t('description.placeholder')}
-                      required
                     />
                   )}
                 />
@@ -271,24 +206,6 @@ function EditCourseGeneral() {
                 </FieldContent>
                 <FieldError errors={[form.formState.errors.about]} />
               </Field> */}
-
-            <Separator />
-
-            <Controller
-              control={form.control}
-              name="learnings"
-              render={({ field, fieldState }) => (
-                <Field>
-                  <FieldLabel id="learnings-label" className="text-base font-semibold">
-                    {t('learnings.label')}
-                  </FieldLabel>
-                  <div role="group" aria-labelledby="learnings-label">
-                    <LearningItemsList value={field.value} onChange={field.onChange} />
-                  </div>
-                  <FieldError errors={[fieldState.error]} />
-                </Field>
-              )}
-            />
 
             <Controller
               control={form.control}
@@ -322,32 +239,7 @@ function EditCourseGeneral() {
             description={t('thumbnail.mediaActionsDescription')}
           />
 
-          <Controller
-            control={form.control}
-            name="thumbnail_type"
-            render={({ field, fieldState }) => (
-              <Field>
-                <FieldLabel className="text-base font-semibold">{t('thumbnailType')}</FieldLabel>
-                <Select value={field.value} onValueChange={field.onChange} items={thumbnailTypeItems}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {thumbnailTypeItems.map(item => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                <FieldError errors={[fieldState.error]} />
-              </Field>
-            )}
-          />
-
-          <ThumbnailUpdate thumbnailType={thumbnailType} />
+          <ThumbnailUpdate />
         </CourseEditorSection>
       </form>
     </div>

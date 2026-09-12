@@ -1,11 +1,16 @@
 import EditCourseContributors from '@components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors'
 import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
+import { courseWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
 import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
 import { Suspense } from 'react'
 
 interface PlatformCourseAccessPageProps {
   params: Promise<{ courseuuid: string }>
+}
+
+export async function generateMetadata({ params }: PlatformCourseAccessPageProps) {
+  return courseWorkspaceMetadata((await params).courseuuid, 'settings')
 }
 
 export default function PlatformCourseAccessPage(props: PlatformCourseAccessPageProps) {

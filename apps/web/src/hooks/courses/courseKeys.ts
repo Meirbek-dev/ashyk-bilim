@@ -14,7 +14,14 @@ export const stripEntityPrefix = (id: string) => id.replace(/^(?:course|chapter|
 export function toAppCourse<T extends Course>(course: T) {
   const created = unixToIso(course.created_at_unix) ?? ''
   const updated = unixToIso(course.updated_at_unix) ?? ''
-  return { ...course, course_uuid: course.id, created_at: created, creation_date: created, update_date: updated }
+  return {
+    ...course,
+    course_uuid: course.id,
+    thumbnail_image: course.thumbnail_key ?? null,
+    created_at: created,
+    creation_date: created,
+    update_date: updated,
+  }
 }
 
 export const toWireActivityType = (token: string) => {

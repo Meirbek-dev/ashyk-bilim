@@ -509,15 +509,23 @@ function EditCourseContributors() {
       </CourseEditorStagedSection>
 
       <CourseEditorSection title={t('manageContributorsTitle')} contentClassName="gap-4">
-        <CourseEditorNotice
-          icon={Users}
-          title={t('rosterActionsImmediateTitle')}
-          description={t('rosterActionsImmediateDescription')}
-        />
+        {contributorsResource.available ? (
+          <CourseEditorNotice
+            icon={Users}
+            title={t('rosterActionsImmediateTitle')}
+            description={t('rosterActionsImmediateDescription')}
+          />
+        ) : (
+          <CourseEditorNotice
+            icon={Users}
+            title={t('rosterUnavailableTitle')}
+            description={t('rosterUnavailableDescription')}
+          />
+        )}
 
         {contributorsResource.error ? <InlineError description={contributorsResource.error} /> : null}
 
-        {!contributorsResource.error ? (
+        {contributorsResource.available && !contributorsResource.error ? (
           <div className="flex flex-col gap-3">
             <Popover
               open={searchOpen}
@@ -626,7 +634,7 @@ function EditCourseContributors() {
           </div>
         ) : null}
 
-        {!contributorsResource.error ? (
+        {contributorsResource.available && !contributorsResource.error ? (
           <div className="bg-card rounded-xl border">
             {selectedContributors.length > 0 && (
               <div className="bg-muted/60 flex items-center justify-between rounded-t-xl border-b px-4 py-3">

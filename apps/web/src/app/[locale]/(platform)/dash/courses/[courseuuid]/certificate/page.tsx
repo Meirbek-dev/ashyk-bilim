@@ -1,9 +1,14 @@
 import EditCourseCertification from '@components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
+import { courseWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
 import { Suspense } from 'react'
 
 interface PlatformCourseCertificatePageProps {
   params: Promise<{ courseuuid: string }>
+}
+
+export async function generateMetadata({ params }: PlatformCourseCertificatePageProps) {
+  return courseWorkspaceMetadata((await params).courseuuid, 'certificate')
 }
 
 export default function PlatformCourseCertificatePage(props: PlatformCourseCertificatePageProps) {

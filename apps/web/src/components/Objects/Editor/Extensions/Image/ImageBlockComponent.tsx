@@ -258,7 +258,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
   if (preview) {
     return (
       <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <div className="mx-auto h-48 w-full overflow-hidden rounded-md">
+        <div className="relative mx-auto h-48 w-full overflow-hidden rounded-md">
           <NextImage src={preview} alt={t('previewImageAlt')} fill className="object-contain" sizes="100vw" />
         </div>
         <div className="mt-4 flex justify-center gap-2">

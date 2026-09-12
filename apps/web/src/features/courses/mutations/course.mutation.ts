@@ -15,6 +15,7 @@ import type { CourseAccessValues, CourseGeneralValues } from '@/schemas/courseSc
 import type { CourseEditorBundle } from '@services/courses/editor'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { useCourseEditorStore } from '@/stores/courses'
+import { uploadFile } from '@services/media/uploads'
 
 interface MutationOptions {
   lastKnownUpdateDate?: string | null | undefined
@@ -135,8 +136,9 @@ export function updateCourseThumbnailMutationOptions(
   detailKey: readonly unknown[],
 ) {
   return mutationOptions({
-    mutationFn: async ({ formData, options }: { formData: FormData; options: MutationOptions }) =>
-      updateCourseThumbnail(courseUuid, formData, buildMutationOptions(options.lastKnownUpdateDate)),
+    // Presigned PUT → finalize, then the course claims the finalized upload.
+    mutationFn: async ({ file }: { file: File }) =>
+      updateCourseThumbnail(courseUuid, (await uploadFile(file, 'course-thumbnail')).id),
     onSuccess: async (response: Awaited<ReturnType<typeof updateCourseThumbnail>>) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([

@@ -169,6 +169,7 @@ function ChapterElement({
     try {
       await updateChapter(chapterUuid, { name: trimmedName })
       setIsEditing(false)
+      toast.success(t('chapterUpdatedSuccess'))
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, t('chapterUpdateFailed')))
       setEditedName(chapterName)
@@ -183,6 +184,7 @@ function ChapterElement({
     try {
       await deleteChapter(chapterUuid)
       setIsDeleteDialogOpen(false)
+      toast.success(t('chapterDeletedSuccess'))
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, t('chapterDeleteFailed')))
       setIsDeleteDialogOpen(false)

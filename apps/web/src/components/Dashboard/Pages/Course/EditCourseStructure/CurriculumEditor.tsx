@@ -174,6 +174,7 @@ function CurriculumEditor() {
       setStructureStatus('saving')
       await reorderStructure(newCourseStructure, payload)
       setStructureStatus('saved')
+      toast.success(t('orderSaved'))
     } catch (error: unknown) {
       setStructureStatus('error')
       toast.error(getErrorMessage(error, t('saveOrderError')))

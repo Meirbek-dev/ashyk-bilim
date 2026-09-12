@@ -1,10 +1,15 @@
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
+import { courseWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
 import CourseReviewPublish from '@components/Dashboard/Courses/CourseReviewPublish'
 import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
 import { Suspense } from 'react'
 
 interface PlatformCourseReviewPageProps {
   params: Promise<{ courseuuid: string }>
+}
+
+export async function generateMetadata({ params }: PlatformCourseReviewPageProps) {
+  return courseWorkspaceMetadata((await params).courseuuid, 'publish')
 }
 
 export default function PlatformCourseReviewPage(props: PlatformCourseReviewPageProps) {

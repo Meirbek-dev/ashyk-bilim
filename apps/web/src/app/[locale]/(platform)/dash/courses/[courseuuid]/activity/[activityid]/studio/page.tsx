@@ -11,9 +11,21 @@ import { redirect } from '@/i18n/navigation'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 
 interface PlatformAssessmentStudioPageProps {
   params: Promise<{ courseuuid: string; activityid: string }>
+}
+
+/** `<course name> · <activity name>`; both GETs are the ones the page renders from (memoized). */
+export async function generateMetadata({ params }: PlatformAssessmentStudioPageProps): Promise<Metadata> {
+  const { courseuuid, activityid } = await params
+  const [course, activity] = await Promise.all([
+    getCourseMetadata(courseuuid, undefined, true).catch(() => null),
+    getActivity(activityid).catch(() => null),
+  ])
+  const title = [course?.name, activity?.name].filter(Boolean).join(' · ')
+  return title ? { title } : {}
 }
 
 function StudioPageFallback() {

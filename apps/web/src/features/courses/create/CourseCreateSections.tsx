@@ -36,7 +36,7 @@ export function BasicsSection({
   onDescriptionBlur,
 }: BasicsSectionProps) {
   const t = useTranslations('DashPage.CourseManagement.Create')
-  const DESCRIPTION_MAX = 8000
+  const DESCRIPTION_MAX = 5000
 
   return (
     <section aria-labelledby="section-basics-heading" className="flex flex-col gap-5">

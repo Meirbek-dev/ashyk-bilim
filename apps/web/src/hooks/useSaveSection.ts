@@ -5,7 +5,9 @@ import { useCourse } from '@components/Contexts/CourseContext'
 import { useCourseEditorStore } from '@/stores/courses'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import { getApiErrorMessage } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
 
 type SaveResponse = { success?: boolean; status?: number; data?: unknown } | void
 
@@ -54,6 +56,9 @@ interface SaveInvocationOptions {
  */
 export function useSaveSection(options?: SaveSectionOptions) {
   const [isSaving, setIsSaving] = useState(false)
+  const tCommon = useTranslations('Common')
+  const tErrors = useTranslations('Errors')
+  const { toastApiError } = useApiError()
   const { refreshCourseMeta, refreshCourseEditor } = useCourse()
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const syncLastKnownUpdateDate = useCourseEditorStore(state => state.syncLastKnownUpdateDate)
@@ -81,7 +86,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
           }
           const message = getApiErrorMessage(
             response.data,
-            invocationOptions?.errorMessage || options?.errorMessage || 'Failed to save. Please try again.',
+            invocationOptions?.errorMessage || options?.errorMessage || tErrors('defaultError'),
           )
           options?.onError?.(message)
           toast.error(message)
@@ -97,7 +102,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
 
         syncLastKnownUpdateDate(response.data?.update_date)
 
-        const successMessage = invocationOptions?.successMessage || options?.successMessage || 'Изменения сохранены'
+        const successMessage = invocationOptions?.successMessage || options?.successMessage || tCommon('saved')
         if (successMessage) toast.success(successMessage)
 
         invocationOptions?.onSuccess?.()
@@ -114,19 +119,17 @@ export function useSaveSection(options?: SaveSectionOptions) {
           })
           return
         }
-        const message =
-          apiError.message ||
-          invocationOptions?.errorMessage ||
-          options?.errorMessage ||
-          'Failed to save. Please try again.'
+        // Localized problem+json copy (`Errors.codes.<code>`), never the raw English message.
+        const { message } = toastApiError(error, {
+          fallback: invocationOptions?.errorMessage || options?.errorMessage || tErrors('defaultError'),
+        })
         options?.onError?.(message)
-        toast.error(message)
       } finally {
         setIsSaving(false)
       }
     },
 
-    [options, refreshCourseEditor, refreshCourseMeta, setConflict, syncLastKnownUpdateDate],
+    [options, refreshCourseEditor, refreshCourseMeta, setConflict, syncLastKnownUpdateDate, tCommon, tErrors, toastApiError],
   )
 
   useEffect(() => {
