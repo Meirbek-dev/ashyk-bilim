@@ -51,6 +51,22 @@ test.describe.serial('Teacher – Grading Loop', () => {
     })
   })
 
+  // Q-2026-09-12-2 #3: «Export» downloads the server's CSV (UTF-8 BOM, header
+  // localized by Accept-Language), not a client-side rendering of the table.
+  test('teacher can export the gradebook as the server CSV', async ({ page, gradebookPage }) => {
+    await gradebookPage.goto(courseUuid)
+    const downloadPromise = page.waitForEvent('download', { timeout: 15_000 })
+    await page.getByRole('button', { name: /export/i }).first().click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toBe(`gradebook-${courseUuid}.csv`)
+    const stream = await download.createReadStream()
+    const chunks: Buffer[] = []
+    for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+    const text = Buffer.concat(chunks).toString('utf8')
+    expect(text.startsWith('\uFEFF')).toBe(true)
+    expect(text.split(/\r?\n/)[0]).toMatch(/^Learner,Email,/)
+  })
+
   // ── 2. Grade file submission ──────────────────────────────────────────────
 
   /**

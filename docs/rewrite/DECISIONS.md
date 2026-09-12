@@ -818,3 +818,34 @@ All open `QUESTIONS.md` items were answered; the answers are binding and the
   file-submission publish readiness; `AB__SERVER__WEB_URL` anchors browser
   redirects; the web polyfills `Intl` locale data for kk when the browser lacks
   it.
+
+## Grading contract closures (2026-09-12, gauntlet pass 8)
+
+Implements the grading items of the owner answers above. Routes:
+
+- `GET /courses/{id}/gradebook` — cells are keyed by `activity_id` and carry
+  either `assessment_id` + `submission_id` or `file_submission_id` +
+  `attempt_id` (a file attempt `submitted` reads as `pending`); the page
+  lists `file_submissions` columns next to `assessments`; the keyset cursor
+  is `<user_id>:<activity_id>`. The web reads cells from the wire only.
+- `GET /courses/{id}/gradebook/export` — CSV, UTF-8 with BOM, header and
+  status words in the `Accept-Language` language (`ru` default, `kk`,
+  `en`); graders only.
+- `GET /courses/{id}/grading/events` — SSE for graders on one Redis stream
+  per course (`sse:grading:course:{id}`): `submission.submitted`,
+  `grade.saved`, `grade.published`, `submission.returned` for assessment
+  submissions and file attempts; `payload` carries `activity_id`,
+  `user_id`, `status`, `final_score` and the attempt id. The web subscribes
+  with `EventSource` (credentials) and keeps 15 s polling only while the
+  stream is down.
+- `grading.items[].feedback_code` + `feedback_params` — the auto-grader's
+  verdict as a code (`no-answer`, `no-correct-answer`, `correct`,
+  `incorrect`, `partially-correct-no-credit`, `partially-correct`,
+  `pairs-matched`, `tests-passed`; ratio codes carry `{correct, total}`);
+  `feedback` keeps the English text; a teacher's prose clears the code.
+- `MatchingLearnerBody` — the learner read of a `matching` item is
+  `{kind: "matching", prompt, left[{id,text}], right[{id,text}]}` with the
+  right column shuffled per (viewer, item) — the assessment read has no
+  submission, so the seed is the viewer, which is what keeps reloads
+  stable. Option ids are the pair texts (unique per column by the
+  readiness rules), so the answer wire and the grader are unchanged.

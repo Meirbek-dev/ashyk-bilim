@@ -6,10 +6,9 @@
  *  - Login with invalid credentials shows error
  *  - Client-side validation of the login form
  *  - Unauthenticated users are redirected to login
+ *  - Self-registration (`POST /auth/register`) followed by a login
  *
- * v2 has no self-registration or password reset (accounts are provisioned by
- * an administrator or created through Google sign-in), so the legacy sign-up
- * scenarios are gone.
+ * Password reset is still not part of v2 (DECISIONS.md 2026-09-12).
  */
 
 import { test, expect } from '../fixtures'
@@ -76,8 +75,57 @@ test.describe('Auth guard', () => {
     expect(page.url()).toContain('returnTo=')
   })
 
-  test('legacy sign-up route no longer exists', async ({ page }) => {
-    const response = await page.goto('/en/signup')
-    expect(response?.status()).toBe(404)
+})
+
+// ---------------------------------------------------------------------------
+// Sign-up
+// ---------------------------------------------------------------------------
+
+test.describe('Sign-up', () => {
+  test('registers a new account, lands on login with a success message, then signs in', async ({
+    page,
+    signupPage,
+    loginPage,
+  }) => {
+    const stamp = Date.now()
+    const email = `e2e-signup-${stamp}@test.local`
+    const password = 'Signup1234!'
+
+    await signupPage.goto()
+    await signupPage.signup({
+      firstName: 'E2E',
+      lastName: 'Signup',
+      username: `e2e-signup-${stamp}`,
+      email,
+      password,
+    })
+
+    // Success: toast + the login page (no session is opened by registration).
+    await page.waitForURL(/\/login/, { timeout: 15_000 })
+    await expect(page.locator('[data-sonner-toast]').first()).toBeVisible()
+
+    await loginPage.loginAndWait(email, password)
+    expect(page.url()).not.toContain('/login')
+  })
+
+  test('shows the taken-email error inline', async ({ page, signupPage }) => {
+    await signupPage.goto()
+    await signupPage.signup({
+      firstName: 'Dup',
+      lastName: 'User',
+      username: `e2e-dup-${Date.now()}`,
+      email: USERS.admin.email,
+      password: 'Signup1234!',
+    })
+    // `email-taken` lands on the email field as a field error.
+    await expect(signupPage.errorBanner).toBeVisible({ timeout: 10_000 })
+    expect(page.url()).toContain('/signup')
+  })
+
+  test('shows validation errors for an empty form', async ({ page, signupPage }) => {
+    await signupPage.goto()
+    await signupPage.submitButton.click()
+    await expect(page.getByText(/required/i).first()).toBeVisible()
+    expect(page.url()).toContain('/signup')
   })
 })
