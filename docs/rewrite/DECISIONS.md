@@ -760,3 +760,61 @@ row past `not_started`, not from the mere existence of projection rows.
 Operational note: projector rule changes (this one and the unreleased-grade
 hiding above) need `ashyq admin progress-backfill` after deploy — persisted
 rows are only rewritten on the next write.
+
+## Owner answers to the gauntlet questions (2026-09-12)
+
+All open `QUESTIONS.md` items were answered; the answers are binding and the
+"Not in v2" list in `apps/web/AGENTS.md` is amended accordingly.
+
+- **Self-registration returns** (Q-2026-09-10-1): `POST /auth/register`
+  creates the Zitadel human (verification code returned headless, sent via
+  Resend per 2026-08-16) and the `users` row with the default `user` role;
+  `POST /auth/verify-email` confirms. Admins also get `POST /users` and a
+  "create user" action on `/dash/admin/users`. Password change comes back
+  with it (`POST /auth/password`), reset stays out until email flows are
+  proven live.
+- **Teacher course listing is server-side** (Q-2): `GET /courses?mine=true`
+  plus `q`, `sort`, `preset` and a `summary` block; the client-side walk is
+  retired.
+- **Course collaboration exists** (Q-3): contributors with the legacy roles
+  (`creator`, `maintainer`, `contributor`, `reporter`) and statuses
+  (`pending`, `active`, `inactive`); `GET|POST /courses/{id}/contributors`,
+  `PATCH|DELETE /courses/{id}/contributors/{user_id}`, `POST
+  /courses/{id}/contributors/apply` when `open_to_contributors`. Active
+  maintainers/contributors author on the course like the creator.
+- **Legacy-only gaps are replaced by first-class routes, not shims** (Q-4):
+  `GET /users/{username}/courses` (authored + active contributions, public
+  ones only for strangers), `GET /utils/link-preview` (server-side OG fetch,
+  http(s) only, 5 s, no private ranges), readiness on the server (below);
+  exam config / policy presets stay client defaults.
+- **RBAC admin surface stays on the rebuilt pages** (Q-6) with dedicated
+  error codes (`role-slug-taken`, `last-admin`, `self-disable`) and custom
+  roles carrying `display_name`/`description` text distinct from the seeded
+  roles' catalog keys.
+- **TOTP state is on the wire** (Q-7): `mfa_enabled` on `SessionInfo` and
+  `UserProfile`.
+- **Readiness is server-side** (Q-2026-09-11-1 b): `GET /courses/{id}/readiness`
+  with the curriculum rule plus each assessment's and file submission's own
+  readiness; publishing a file-submission activity requires a published config.
+- **The auto-grader emits codes** (Q-2026-09-11-2): `feedback_code` + params
+  next to `feedback`; the client localizes codes, teacher prose stays prose.
+- **Matching items get a learner shape** (Q-2026-09-12-1):
+  `MatchingLearnerBody { left[], right[] }` (shuffled right column), the
+  attempt UI builds columns from it; authors keep `pairs[]`.
+- **`request_id` reaches the problem+json body** (Q-2026-09-10-5).
+- **Gamification is zeroed at cutover** (Q-2026-09-06-1 c): the ETL migrates
+  no XP, levels, streaks or ledgers.
+- **Analytics retention** (Q-2026-09-06-2 b): `analytics:rollup` prunes
+  `analytics_events` older than 400 days and daily rollups older than 2 years.
+- **AI models** (Q-2026-09-06-3): `gpt-5.6-luna` / `deepseek/deepseek-v4-flash`
+  stay the defaults; the 1 000 000 tokens/month budget stands; keys are set by
+  the owner in the server env at cutover.
+- **Pass-6 contract gaps are closed on the server** (Q-2026-09-12-2): gradebook
+  carries file-submission cells; `GET /courses/{id}/grading/events` streams
+  grade changes course-wide; `GET /courses/{id}/gradebook/export` returns CSV;
+  analytics alerts/forecasts/anomalies/insights carry codes + params, no prose;
+  `GET /certificates/{code}/pdf`; per-user courses (above); AI analysis and
+  remediation accept file-submission attempts; `Usergroup.can_write`;
+  file-submission publish readiness; `AB__SERVER__WEB_URL` anchors browser
+  redirects; the web polyfills `Intl` locale data for kk when the browser lacks
+  it.
