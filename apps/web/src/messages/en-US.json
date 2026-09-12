@@ -2274,7 +2274,8 @@
       "websitePreview": "Website Preview",
       "websiteUrl": "Website URL",
       "previewUnavailable": "Preview unavailable",
-      "previewUnavailableHint": "The page details could not be fetched. The link still opens."
+      "previewUnavailableHint": "The page details could not be fetched. The link still opens.",
+      "urlMustBeHttp": "Enter a link that starts with http:// or https://"
     },
     "WhitelistManagement": {
       "accessModeSetToWhitelist": "Access mode set to WHITELIST so the whitelist will be enforced",

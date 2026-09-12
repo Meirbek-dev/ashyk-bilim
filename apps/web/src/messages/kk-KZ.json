@@ -2273,7 +2273,8 @@
       "websitePreview": "Веб-сайтты алдын ала қарау",
       "websiteUrl": "Веб-сайт URL мекенжайы",
       "previewUnavailable": "Алдын ала қарау қолжетімсіз",
-      "previewUnavailableHint": "Бет деректерін алу мүмкін болмады. Сілтеме бәрібір ашылады."
+      "previewUnavailableHint": "Бет деректерін алу мүмкін болмады. Сілтеме бәрібір ашылады.",
+      "urlMustBeHttp": "http:// немесе https:// деп басталатын сілтеме енгізіңіз"
     },
     "WhitelistManagement": {
       "accessModeSetToWhitelist": "Қол жетімділік режимі WHITELIST ретінде орнатылды, ақ тізім қолданылатын болады",

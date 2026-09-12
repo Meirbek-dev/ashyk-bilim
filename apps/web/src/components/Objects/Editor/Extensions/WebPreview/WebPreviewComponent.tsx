@@ -169,7 +169,7 @@ function AlignmentControls({
 // The component logic is intentionally split across helper functions and local state.
 // Complexity is managed by breaking large expressions into isolated helpers.
 
-function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewProps) {
+function WebPreviewComponent({ node, updateAttributes, deleteNode, editor }: WebPreviewProps) {
   const t = useTranslations('Components.WebPreview')
   const tErrors = useTranslations('Errors')
   const { handleApiError } = useApiError()
@@ -206,7 +206,11 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
   // One lookup per URL: a failed confirm stores the URL without metadata,
   // which must not re-trigger the auto-fetch (double 422 + double toast).
   const attemptedUrls = useRef(new Set<string>())
-  const shouldAutoFetchPreview = Boolean(node.attrs.url && !hasPreview && !attemptedUrls.current.has(node.attrs.url))
+  // Only editors resolve previews (a saved fallback must not refetch and toast
+  // on every learner view), and only for a URL the server could accept.
+  const shouldAutoFetchPreview = Boolean(
+    editor.isEditable && isHttpUrl(node.attrs.url) && !hasPreview && !attemptedUrls.current.has(node.attrs.url),
+  )
   const previewQuery = useQuery({
     ...urlPreviewQueryOptions(node.attrs.url || ''),
     enabled: shouldAutoFetchPreview,
@@ -324,6 +328,11 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
   }
 
   const handleSaveEdit = () => {
+    if (inputUrl && !isHttpUrl(inputUrl)) {
+      // The server would answer 422 on `url`; say so inline without a request.
+      setError(t('urlMustBeHttp'))
+      return
+    }
     if (inputUrl && inputUrl !== node.attrs.url) {
       setError(null)
       // `mutate`, not `mutateAsync`: the failure is handled in `onError`,

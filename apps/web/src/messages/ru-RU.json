@@ -2273,7 +2273,8 @@
       "websitePreview": "Предпросмотр веб-сайта",
       "websiteUrl": "URL веб-сайта",
       "previewUnavailable": "Предпросмотр недоступен",
-      "previewUnavailableHint": "Не удалось получить данные страницы. Ссылка всё равно будет открываться."
+      "previewUnavailableHint": "Не удалось получить данные страницы. Ссылка всё равно будет открываться.",
+      "urlMustBeHttp": "Введите ссылку, начинающуюся с http:// или https://"
     },
     "WhitelistManagement": {
       "accessModeSetToWhitelist": "Установлен WHITELIST режим доступа",

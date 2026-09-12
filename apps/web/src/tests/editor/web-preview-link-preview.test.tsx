@@ -63,12 +63,17 @@ function attrs(overrides: Partial<WebPreviewAttrs> = {}): WebPreviewAttrs {
   }
 }
 
-function renderBlock(nodeAttrs: WebPreviewAttrs) {
+function renderBlock(nodeAttrs: WebPreviewAttrs, editable = true) {
   const updateAttributes = vi.fn()
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  // Only the node, the attribute setter and delete are read by the view.
+  // Only the node, the attribute setter, delete and `editor.isEditable` are read by the view.
   const props = (attrsNow: WebPreviewAttrs) =>
-    ({ node: { attrs: attrsNow }, updateAttributes, deleteNode: vi.fn() }) as unknown as Parameters<
+    ({
+      node: { attrs: attrsNow },
+      updateAttributes,
+      deleteNode: vi.fn(),
+      editor: { isEditable: editable },
+    }) as unknown as Parameters<
       typeof WebPreviewComponent
     >[0]
   const tree = (attrsNow: WebPreviewAttrs) => (
@@ -151,17 +156,17 @@ describe('editor link block on `GET utils/link-preview`', () => {
       }),
     )
 
-    const updateAttributes = renderBlock(attrs({ url: 'not a url' }))
+    const REJECTED = 'http://10.255.255.1/private'
+    const updateAttributes = renderBlock(attrs({ url: REJECTED }))
 
-    await waitFor(() => expect(updateAttributes).toHaveBeenCalledWith(previewToAttrs('not a url', null)))
+    await waitFor(() => expect(updateAttributes).toHaveBeenCalledWith(previewToAttrs(REJECTED, null)))
     // The stored link without metadata comes back through the node attrs —
     // no second lookup, no second toast.
-    updateAttributes.rerenderWith(attrs(previewToAttrs('not a url', null)))
+    updateAttributes.rerenderWith(attrs(previewToAttrs(REJECTED, null)))
     await waitFor(() => expect(screen.getByTestId('web-preview-fallback')).toBeInTheDocument())
     expect(mocks.linkPreview).toHaveBeenCalledTimes(1)
     expect(mocks.toastError).toHaveBeenCalledTimes(1)
-    expect(screen.getByTestId('web-preview-fallback').closest('a')).toBeNull()
-    expect(screen.queryByText('Components.WebPreview.previewUnavailableHint')).not.toBeInTheDocument()
+    expect(screen.getByTestId('web-preview-fallback').closest('a')).not.toBeNull()
   })
 
   it('renders the stored card with the site name without refetching', () => {
@@ -170,5 +175,13 @@ describe('editor link block on `GET utils/link-preview`', () => {
     expect(screen.getByText('Rust & friends')).toBeInTheDocument()
     expect(screen.getByText('Example Blog')).toBeInTheDocument()
     expect(mocks.linkPreview).not.toHaveBeenCalled()
+  })
+
+  it('never resolves a preview in the read-only learner view', async () => {
+    const { linkPreview } = await import('@/lib/api/generated/utils/utils')
+    vi.mocked(linkPreview).mockClear()
+    renderBlock(attrs({ url: 'not a url' }), false)
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(linkPreview).not.toHaveBeenCalled()
   })
 })

@@ -118,7 +118,16 @@ impl AssessmentsService {
         if course.public || course.is_author(user_id) {
             return Ok(true);
         }
-        ab_db::usergroups::user_in_course_group(&self.pool, course.id, user_id).await
+        if ab_db::usergroups::user_in_course_group(&self.pool, course.id, user_id).await? {
+            return Ok(true);
+        }
+        // Reporters are not authors (`contributor_ids` excludes them) but an
+        // active roster row still reads the draft, learner-state included.
+        Ok(
+            ab_db::catalog::get_contributor(&self.pool, course.id, user_id)
+                .await?
+                .is_some_and(|row| row.status == "active"),
+        )
     }
 
     /// Course creators and platform authors preview without limits.

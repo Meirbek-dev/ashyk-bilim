@@ -411,6 +411,14 @@ async fn user_role_authors_write_reporters_read(pool: PgPool) {
         .await;
     assert_eq!(roster.status, StatusCode::OK);
     assert_eq!(roster.json().as_array().unwrap().len(), 4);
+    // The landing reads learner-state: an active reporter has course access.
+    let state = app
+        .get_as(
+            &reporter,
+            &format!("/api/v2/courses/{course}/learner-state"),
+        )
+        .await;
+    assert_eq!(state.status, StatusCode::OK, "{}", state.text());
     assert_eq!(
         add_chapter(&app, &reporter, &course).await,
         StatusCode::FORBIDDEN
