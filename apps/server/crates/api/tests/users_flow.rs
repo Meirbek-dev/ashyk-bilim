@@ -415,6 +415,19 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     assert_eq!(public.json()["items"][0]["name"], "Public one");
     let own = app.get_as(&teacher, "/api/v2/users/author/courses").await;
     assert_eq!(own.json()["items"].as_array().unwrap().len(), 2);
+    // Anonymous visitors read the public profile too.
+    let anon = app.get("/api/v2/users/author/courses").await;
+    assert_eq!(anon.status, StatusCode::OK, "{}", anon.text());
+    assert_eq!(anon.json()["items"].as_array().unwrap().len(), 1);
+    let card = app.get("/api/v2/users/Author").await;
+    assert_eq!(card.status, StatusCode::OK, "{}", card.text());
+    assert_eq!(card.json()["username"], "author");
+    assert_eq!(card.json()["id"], author.to_string());
+    assert_eq!(card.json()["display_name"], "author");
+    assert!(card.json()["avatar_key"].is_null());
+    assert!(card.json().get("email").is_none());
+    let no_card = app.get("/api/v2/users/nobody").await;
+    assert_eq!(no_card.status, StatusCode::NOT_FOUND);
 
     // Active contributors are listed on their own profile too.
     let helper = app

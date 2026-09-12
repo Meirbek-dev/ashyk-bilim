@@ -1,12 +1,13 @@
 //! Course CRUD + visibility lifecycle.
 //!
-//! Access semantics ported from the legacy service: read = public OR author
-//! OR cohort member OR platform manager; write = author with
-//! `course:update:own` OR `course:update:platform`. "Author" is
-//! `Course::is_author` — the creator or an active contributor
-//! (`resource_authors`, see `contributors.rs`) — the one predicate every
-//! authoring gate in the workspace (curriculum, assessments, files, grading,
-//! AI, certificates) goes through.
+//! Access semantics: read = public OR author OR active reporter OR cohort
+//! member OR platform manager; write = author OR `course:update:platform`.
+//! "Author" is `Course::is_author` — the creator or an active maintainer /
+//! contributor (`resource_authors`, see `contributors.rs`) — the one
+//! predicate every authoring gate in the workspace (curriculum, assessments,
+//! files, grading, AI, certificates) goes through. Authorship IS the `:own`
+//! scope: no role grant is needed on top (DECISIONS 2026-09-12, "active
+//! maintainers/contributors author on the course like the creator").
 
 use ab_core::id::{CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
@@ -63,26 +64,27 @@ impl CoursesService {
         Self { pool }
     }
 
-    /// Write access: platform-wide updaters, or an author with `own` scope.
+    /// Write access: platform-wide updaters, or an author (the creator or an
+    /// active maintainer / contributor — authorship is the `:own` scope).
     /// Shared with the curriculum service (chapters/activities inherit it).
     pub(crate) fn require_write(actor: &Actor, course: &Course) -> Result<()> {
-        if actor.has(perm(Action::Update, Scope::Platform)) {
-            return Ok(());
-        }
-        if course.is_author(actor.user_id) && actor.has(perm(Action::Update, Scope::Own)) {
+        if actor.has(perm(Action::Update, Scope::Platform)) || course.is_author(actor.user_id) {
             return Ok(());
         }
         Err(Error::forbidden("no write access to this course"))
     }
 
-    /// Visibility: public, author (creator / active contributor), platform
-    /// manager, or membership of a usergroup linked to the course (cohort
-    /// access). Invisible = 404.
+    /// Visibility: public, author (creator / active contributor), active
+    /// reporter, platform manager, or membership of a usergroup linked to
+    /// the course (cohort access). Invisible = 404.
     pub(crate) async fn require_read(&self, actor: &Actor, course: &Course) -> Result<()> {
         if course.public
             || course.is_author(actor.user_id)
             || sees_private(actor, ResourceType::Course)
             || ab_db::usergroups::user_in_course_group(&self.pool, course.id, actor.user_id).await?
+            || ab_db::catalog::get_contributor(&self.pool, course.id, actor.user_id)
+                .await?
+                .is_some_and(|row| row.status == "active")
         {
             Ok(())
         } else {

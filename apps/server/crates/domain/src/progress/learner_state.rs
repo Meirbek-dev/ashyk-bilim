@@ -219,12 +219,10 @@ impl LearnerStateService {
         let course_progress =
             ab_db::progress::get_course_progress(&self.pool, course.id, user_id).await?;
         let has_run = ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
-        // Rows exist for every learner the projector ever saw (a leave resets
-        // them to not_started); enrolment means a run or actual progress.
-        let enrolled = has_run
-            || rows
-                .iter()
-                .any(|r| r.state != ActivityProgressState::NotStarted);
+        // Enrolment is the trail run, as in the legacy `TrailRun`: projection
+        // rows survive a leave (submissions stay), so they cannot mean
+        // "enrolled" — otherwise a learner who left could never re-enrol.
+        let enrolled = has_run;
 
         let states: Vec<(ChapterId, ActivityState)> = activities
             .iter()

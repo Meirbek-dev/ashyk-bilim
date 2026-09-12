@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE courses SET\n               name = COALESCE($2, name),\n               description = COALESCE($3, description),\n               about = COALESCE($4, about),\n               tags = COALESCE($5, tags),\n               open_to_contributors = COALESCE($6, open_to_contributors),\n               thumbnail_image_key = COALESCE($7, thumbnail_image_key)\n           WHERE id = $1\n           RETURNING id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE (creator_id = $1\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = courses.id AND ra.user_id = $1\n                               AND ra.status = 'active'))\n             AND (public OR $2)\n             AND ($3::uuid IS NULL OR id < $3)\n           ORDER BY id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -124,12 +124,9 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Text",
-        "Text",
-        "Text",
-        "TextArray",
         "Bool",
-        "Text"
+        "Uuid",
+        "Int8"
       ]
     },
     "nullable": [
@@ -147,5 +144,5 @@
       null
     ]
   },
-  "hash": "32cfc5f595ac0dca6c234b2d1fe5da4d7dda91a0e817e4d01a4f09f9af4b372e"
+  "hash": "9a5c2c31d56093d3688834707c507d6c135d4fc4498e2464ebc49be7543b625c"
 }

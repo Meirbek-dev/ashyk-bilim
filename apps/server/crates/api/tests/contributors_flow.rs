@@ -316,3 +316,129 @@ async fn roster_management_rules(pool: PgPool) {
         .await;
     assert_eq!(closed.status, StatusCode::CONFLICT);
 }
+
+/// Authorship IS the `:own` scope: a plain `user`-role account (no
+/// `course:update:own` / `chapter:*` grants) that is an active maintainer or
+/// contributor writes on the course like the creator; a reporter reads the
+/// draft and the roster but never writes; a stranger with the `:own` grant
+/// still gets 403.
+#[sqlx::test(migrations = "../../migrations")]
+async fn user_role_authors_write_reporters_read(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = open_public_course(&app, &teacher).await;
+    let learner_grants = ["course:read:all", "assessment:submit:assigned"];
+    let user = |name: &'static str| {
+        let app = &app;
+        async move {
+            let id = app
+                .create_user(name, &format!("{name}@example.com"), &["user"])
+                .await;
+            (id, app.mint_session_for(id, &learner_grants).await)
+        }
+    };
+    let (maint_id, maint) = user("maint").await;
+    let (contrib_id, contrib) = user("contrib").await;
+    let (_, reporter) = user("reporter").await;
+    let (_, stranger) = user("stranger").await;
+    let own_stranger = app
+        .mint_session(&["course:read:all", "course:update:own"])
+        .await;
+
+    for (name, role) in [
+        ("maint", "maintainer"),
+        ("contrib", "contributor"),
+        ("reporter", "reporter"),
+    ] {
+        let added = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/courses/{course}/contributors"),
+                &serde_json::json!({ "username": name, "role": role }),
+            )
+            .await;
+        assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    }
+
+    // `contributor_ids` on the wire lists the writers only.
+    let got = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course}"))
+        .await;
+    let ids: Vec<String> = got.json()["contributor_ids"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(ids.len(), 2);
+    assert!(ids.contains(&maint_id.to_string()) && ids.contains(&contrib_id.to_string()));
+
+    // Writers: chapters, course details, assessments, certificates.
+    for session in [&maint, &contrib] {
+        assert_eq!(
+            add_chapter(&app, session, &course).await,
+            StatusCode::CREATED
+        );
+        let details = app
+            .patch_as(
+                session,
+                &format!("/api/v2/courses/{course}"),
+                &serde_json::json!({ "description": "by a co-author" }),
+            )
+            .await;
+        assert_eq!(details.status, StatusCode::OK, "{}", details.text());
+        let mine = app.get_as(session, "/api/v2/courses?mine=true").await;
+        assert_eq!(mine.json()["summary"]["total"], 1);
+    }
+    let readiness = app
+        .get_as(&maint, &format!("/api/v2/courses/{course}/readiness"))
+        .await;
+    assert_eq!(readiness.status, StatusCode::OK, "{}", readiness.text());
+
+    // Reporter and strangers: read yes, write no.
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/courses/{course}/lifecycle"),
+        &serde_json::json!({ "action": "unpublish" }),
+    )
+    .await;
+    let draft = app
+        .get_as(&reporter, &format!("/api/v2/courses/{course}"))
+        .await;
+    assert_eq!(draft.status, StatusCode::OK, "{}", draft.text());
+    let roster = app
+        .get_as(&reporter, &format!("/api/v2/courses/{course}/contributors"))
+        .await;
+    assert_eq!(roster.status, StatusCode::OK);
+    assert_eq!(roster.json().as_array().unwrap().len(), 4);
+    assert_eq!(
+        add_chapter(&app, &reporter, &course).await,
+        StatusCode::FORBIDDEN
+    );
+    let by_reporter = app
+        .patch_as(
+            &reporter,
+            &format!("/api/v2/courses/{course}"),
+            &serde_json::json!({ "description": "nope" }),
+        )
+        .await;
+    assert_eq!(by_reporter.status, StatusCode::FORBIDDEN);
+    assert_eq!(
+        add_chapter(&app, &stranger, &course).await,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        add_chapter(&app, &own_stranger, &course).await,
+        StatusCode::NOT_FOUND
+    );
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/courses/{course}/lifecycle"),
+        &serde_json::json!({ "action": "publish" }),
+    )
+    .await;
+    assert_eq!(
+        add_chapter(&app, &own_stranger, &course).await,
+        StatusCode::FORBIDDEN
+    );
+}

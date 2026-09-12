@@ -44,16 +44,18 @@ impl From<ab_domain::catalog::search::SearchResults> for SearchResults {
                     public: c.public,
                 })
                 .collect(),
-            users: r
-                .users
-                .into_iter()
-                .map(|u| UserHit {
-                    id: u.id,
-                    username: u.username,
-                    display_name: u.display_name,
-                    avatar_key: u.avatar_key,
-                })
-                .collect(),
+            users: r.users.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<ab_db::search::UserHitRow> for UserHit {
+    fn from(u: ab_db::search::UserHitRow) -> Self {
+        Self {
+            id: u.id,
+            username: u.username,
+            display_name: u.display_name,
+            avatar_key: u.avatar_key,
         }
     }
 }

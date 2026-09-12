@@ -3536,7 +3536,7 @@ expression: json
             "type": "string"
           },
           "contributor_ids": {
-            "description": "Active co-authors (`GET /courses/{id}/contributors`, status `active`);\nthey edit the course like the creator. Lets the client resolve its\nown `:own`-scoped grants the way the server does.",
+            "description": "Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.",
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
@@ -23773,6 +23773,49 @@ expression: json
         ]
       }
     },
+    "/api/v2/users/{username}": {
+      "get": {
+        "description": "Id, username, display name and avatar — readable anonymously, active\nusers only. The profile page resolves its subject here instead of\nscanning `/search`.",
+        "operationId": "public_profile",
+        "parameters": [
+          {
+            "description": "Username (case-insensitive)",
+            "in": "path",
+            "name": "username",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHit"
+                }
+              }
+            },
+            "description": "Public profile"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown user"
+          }
+        },
+        "summary": "Public profile card by username (legacy `GET /users/username/{username}`).",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/api/v2/users/{username}/courses": {
       "get": {
         "operationId": "user_courses",
@@ -23828,7 +23871,7 @@ expression: json
             "description": "Unknown user"
           }
         },
-        "summary": "Courses a user created or actively co-authors, newest first (public\nprofile). Private ones are included only for the user themself and\nplatform course managers.",
+        "summary": "Courses a user created or actively co-authors, newest first (public\nprofile, readable anonymously). Private ones are included only for the\nuser themself and platform course managers.",
         "tags": [
           "users"
         ]

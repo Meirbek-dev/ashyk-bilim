@@ -24,7 +24,7 @@ export const SearchResults = zod.object({
       contributor_ids: zod
         .array(zod.uuid())
         .describe(
-          'Active co-authors (`GET \/courses\/{id}\/contributors`, status `active`);\nthey edit the course like the creator. Lets the client resolve its\nown `:own`-scoped grants the way the server does.',
+          'Active maintainers \/ contributors (`GET \/courses\/{id}\/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
         ),
       created_at_unix: zod.int(),
       creator_id: zod.union([zod.null(), zod.uuid()]).optional(),

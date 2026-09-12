@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE search @@ websearch_to_tsquery('simple', $1)\n             AND (public OR $2 OR creator_id = $3\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = courses.id AND ra.user_id = $3\n                               AND ra.status = 'active'))\n           ORDER BY ts_rank_cd(search, websearch_to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE search @@ websearch_to_tsquery('simple', $1)\n             AND (public OR $2 OR creator_id = $3\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = courses.id AND ra.user_id = $3\n                               AND ra.status = 'active'))\n           ORDER BY ts_rank_cd(search, websearch_to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -144,5 +144,5 @@
       null
     ]
   },
-  "hash": "26fca3e3f47ef9090ef73a383b6d40db6bc9b61734cbdc22a7273ebcb8b3318f"
+  "hash": "4c77353085b2ec60d66b49a008e364d849547e2cb520671c17f91789917d37d6"
 }

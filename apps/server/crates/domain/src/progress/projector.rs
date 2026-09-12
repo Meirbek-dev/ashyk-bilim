@@ -74,6 +74,7 @@ impl ProgressProjector {
         else {
             return Ok(());
         };
+        self.ensure_enrolled(assessment.course_id, user_id).await?;
         self.recalculate_activity(assessment.activity_id, user_id)
             .await?;
         // A passing, published submission pays XP once (legacy award task).
@@ -108,6 +109,7 @@ impl ProgressProjector {
         else {
             return Ok(());
         };
+        self.ensure_enrolled(fs.course_id, user_id).await?;
         self.recalculate_activity(fs.activity_id, user_id).await?;
         Ok(())
     }
@@ -205,6 +207,15 @@ impl ProgressProjector {
     }
 
     // ── Recalculation ───────────────────────────────────────────────────
+
+    /// Working on a course enrols the learner: the trail run is what
+    /// `learner-state.enrolled` reads, and the legacy created it on the
+    /// first submission too.
+    async fn ensure_enrolled(&self, course_id: CourseId, user_id: UserId) -> Result<()> {
+        let trail = ab_db::progress::ensure_trail(&self.pool, user_id).await?;
+        ab_db::progress::ensure_trail_run(&self.pool, trail.id, course_id, user_id).await?;
+        Ok(())
+    }
 
     /// Rebuild one learner's row for one activity, then the course
     /// aggregate. Returns `None` when the activity has no projection of its

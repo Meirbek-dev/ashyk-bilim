@@ -117,7 +117,7 @@ impl CertificationsService {
     }
 
     /// Visible course (404) + a course-scoped certificate grant (platform,
-    /// or `own` for the course creator).
+    /// or authorship — the `:own` scope).
     async fn scoped_course(
         &self,
         actor: &Actor,
@@ -125,8 +125,7 @@ impl CertificationsService {
         action: Action,
     ) -> Result<Course> {
         let course = self.courses.get(actor, course_id).await?;
-        let allowed = actor.has(perm(action, Scope::Platform))
-            || (course.is_author(actor.user_id) && actor.has(perm(action, Scope::Own)));
+        let allowed = actor.has(perm(action, Scope::Platform)) || course.is_author(actor.user_id);
         if !allowed {
             return Err(Error::forbidden(format!(
                 "missing permission certificate:{}",

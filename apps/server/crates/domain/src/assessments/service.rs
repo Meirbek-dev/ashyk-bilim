@@ -446,10 +446,8 @@ impl AssessmentsService {
         action: Action,
         what: &str,
     ) -> Result<()> {
-        if actor.has(perm(action, Scope::Platform)) {
-            return Ok(());
-        }
-        if course.is_author(actor.user_id) && actor.has(perm(action, Scope::Own)) {
+        // Authorship is the `:own` scope (see `CoursesService::require_write`).
+        if actor.has(perm(action, Scope::Platform)) || course.is_author(actor.user_id) {
             return Ok(());
         }
         Err(Error::forbidden(format!(

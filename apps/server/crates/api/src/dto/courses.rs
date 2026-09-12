@@ -14,9 +14,10 @@ pub struct Course {
     /// Storage key of the thumbnail image, served at `/content/<key>`.
     pub thumbnail_key: Option<String>,
     pub creator_id: Option<UserId>,
-    /// Active co-authors (`GET /courses/{id}/contributors`, status `active`);
-    /// they edit the course like the creator. Lets the client resolve its
-    /// own `:own`-scoped grants the way the server does.
+    /// Active maintainers / contributors (`GET /courses/{id}/contributors`,
+    /// status `active`, role not `reporter`); they edit the course like the
+    /// creator without any role grant — authorship is the `:own` scope.
+    /// Reporters are read-only and not listed.
     pub contributor_ids: Vec<UserId>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,

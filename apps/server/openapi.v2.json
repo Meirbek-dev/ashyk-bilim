@@ -11739,12 +11739,55 @@
         }
       }
     },
+    "/api/v2/users/{username}": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Public profile card by username (legacy `GET /users/username/{username}`).",
+        "description": "Id, username, display name and avatar — readable anonymously, active\nusers only. The profile page resolves its subject here instead of\nscanning `/search`.",
+        "operationId": "public_profile",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "description": "Username (case-insensitive)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHit"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown user",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/users/{username}/courses": {
       "get": {
         "tags": [
           "users"
         ],
-        "summary": "Courses a user created or actively co-authors, newest first (public\nprofile). Private ones are included only for the user themself and\nplatform course managers.",
+        "summary": "Courses a user created or actively co-authors, newest first (public\nprofile, readable anonymously). Private ones are included only for the\nuser themself and platform course managers.",
         "operationId": "user_courses",
         "parameters": [
           {
@@ -15489,7 +15532,7 @@
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
-            "description": "Active co-authors (`GET /courses/{id}/contributors`, status `active`);\nthey edit the course like the creator. Lets the client resolve its\nown `:own`-scoped grants the way the server does."
+            "description": "Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed."
           },
           "created_at_unix": {
             "type": "integer",

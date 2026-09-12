@@ -24,7 +24,8 @@ pub async fn search_courses(
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -80,6 +81,23 @@ pub struct UserHitRow {
     pub username: String,
     pub display_name: String,
     pub avatar_key: Option<String>,
+}
+
+/// One active user's public projection by username (case-insensitive).
+pub async fn find_user_hit_by_username(
+    pool: &PgPool,
+    username: &str,
+) -> Result<Option<UserHitRow>> {
+    let row = sqlx::query_as!(
+        UserHitRow,
+        r#"SELECT id AS "id: UserId", username, display_name, avatar_key
+           FROM users
+           WHERE status = 'active' AND lower(username) = lower($1)"#,
+        username
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
 }
 
 /// Prefix matches rank above substring matches; active users only.

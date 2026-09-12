@@ -18,15 +18,17 @@ pub struct CourseRow {
     /// Storage key of the `course-thumbnail` upload (`/content/<key>`).
     pub thumbnail_key: Option<String>,
     pub creator_id: Option<UserId>,
-    /// Active `resource_authors` rows — co-authors who edit like the creator.
+    /// Active `resource_authors` rows that write (maintainer / contributor);
+    /// reporters are read-only and not listed.
     pub contributor_ids: Vec<UserId>,
     pub created_at: i64,
     pub updated_at: i64,
 }
 
 impl CourseRow {
-    /// The ONE authoring predicate: the creator, or an active contributor
-    /// (legacy `is_owner` — any active `resource_authors` row counted).
+    /// The ONE authoring predicate: the creator, or an active maintainer /
+    /// contributor. Authorship IS the `:own` scope for every course-scoped
+    /// write (DECISIONS 2026-09-12 "author on the course like the creator").
     #[must_use]
     pub fn is_author(&self, user_id: UserId) -> bool {
         self.creator_id == Some(user_id) || self.contributor_ids.contains(&user_id)
@@ -63,7 +65,8 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -111,7 +114,8 @@ pub async fn list_courses(
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -212,7 +216,8 @@ pub async fn list_user_courses(
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -263,7 +268,8 @@ pub async fn update_course(
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active')
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!""#,

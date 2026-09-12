@@ -162,11 +162,10 @@ async fn enrollment_activation_and_removal(pool: PgPool) {
         .await;
     assert_eq!(enroll.status, StatusCode::OK);
     assert_eq!(enroll.json()["secret"], "SECRET32");
-    assert!(
-        enroll.json()["uri"]
-            .as_str()
-            .unwrap()
-            .starts_with("otpauth://")
+    // The authenticator app lists the platform, not the identity provider.
+    assert_eq!(
+        enroll.json()["uri"],
+        "otpauth://totp/Ashyq%20Bilim:e@example.com?secret=SECRET32&issuer=Ashyq%20Bilim"
     );
 
     let verify = app

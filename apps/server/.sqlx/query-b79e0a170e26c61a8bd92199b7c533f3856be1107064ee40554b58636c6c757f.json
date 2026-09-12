@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses WHERE id = $1",
+  "query": "UPDATE courses SET\n               name = COALESCE($2, name),\n               description = COALESCE($3, description),\n               about = COALESCE($4, about),\n               tags = COALESCE($5, tags),\n               open_to_contributors = COALESCE($6, open_to_contributors),\n               thumbnail_image_key = COALESCE($7, thumbnail_image_key)\n           WHERE id = $1\n           RETURNING id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"",
   "describe": {
     "columns": [
       {
@@ -123,7 +123,13 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "TextArray",
+        "Bool",
+        "Text"
       ]
     },
     "nullable": [
@@ -141,5 +147,5 @@
       null
     ]
   },
-  "hash": "386ea93efb4f7bbe26313fa15cbf02026cd616310b2ff6d2b76d445fb2a22728"
+  "hash": "b79e0a170e26c61a8bd92199b7c533f3856be1107064ee40554b58636c6c757f"
 }

@@ -443,6 +443,53 @@ async fn registration_rejects_taken_username_and_email(pool: PgPool) {
     assert_eq!(res.json()["code"], "email-taken");
 }
 
+/// Ten typos behind one NAT must not lock the classroom out: only created
+/// accounts count toward the 10/h cap; attempts have their own wider cap.
+#[sqlx::test(migrations = "../../migrations")]
+async fn registration_limit_counts_created_accounts_not_failed_attempts(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("taken", "taken@example.com", &["user"])
+        .await;
+    mock_user_create_with_code(&app.zitadel, "ABC123").await;
+    // Unique per run: the limiter window in shared test Redis outlives a test.
+    let ip = format!(
+        "10.0.{}.{}",
+        std::process::id() % 256,
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+            % 256
+    );
+    let post = |body: serde_json::Value| {
+        app.send(
+            Request::builder()
+                .method("POST")
+                .uri("/api/v2/auth/register")
+                .header(header::CONTENT_TYPE, "application/json")
+                .header("x-forwarded-for", &ip)
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
+    };
+
+    for _ in 0..12 {
+        let res = post(register_body("taken", "fresh@example.com")).await;
+        assert_eq!(res.status, StatusCode::CONFLICT, "{}", res.json());
+    }
+    let res = post(register_body("fresh", "fresh@example.com")).await;
+    assert_eq!(res.status, StatusCode::CREATED, "{}", res.json());
+
+    // Attempts still have a ceiling (enumeration stays throttled): 13 used.
+    for _ in 13..60 {
+        let res = post(register_body("taken", "fresh2@example.com")).await;
+        assert_eq!(res.status, StatusCode::CONFLICT);
+    }
+    let res = post(register_body("taken", "fresh2@example.com")).await;
+    assert_eq!(res.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(res.json()["code"], "rate-limited");
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn registration_body_is_validated(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

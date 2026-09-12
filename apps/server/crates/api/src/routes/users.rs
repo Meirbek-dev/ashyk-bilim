@@ -7,12 +7,13 @@ use axum::http::{HeaderMap, StatusCode};
 use secrecy::SecretString;
 
 use crate::dto::courses::CoursePage;
+use crate::dto::search::UserHit;
 use crate::dto::users::{
     AdminUser, AdminUserListQuery, AdminUserPage, CreateUserRequest, SetUserStatusRequest,
     UpdateProfileRequest, UserCoursesQuery, UserProfile,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, ValidJson};
 use crate::routes::auth::{client_ip, user_agent};
 use crate::state::AppState;
 
@@ -177,9 +178,36 @@ pub async fn set_user_status(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// Public profile card by username (legacy `GET /users/username/{username}`).
+///
+/// Id, username, display name and avatar — readable anonymously, active
+/// users only. The profile page resolves its subject here instead of
+/// scanning `/search`.
+#[utoipa::path(
+    get,
+    path = "/users/{username}",
+    tag = "users",
+    params(("username" = String, Path, description = "Username (case-insensitive)")),
+    responses(
+        (status = 200, description = "Public profile", body = UserHit),
+        (status = 404, description = "Unknown user", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn public_profile(
+    State(state): State<AppState>,
+    MaybeActor(_actor): MaybeActor,
+    Path(username): Path<String>,
+) -> ApiResult<Json<UserHit>> {
+    let user = ab_db::search::find_user_hit_by_username(&state.pool, &username)
+        .await?
+        .ok_or_else(|| ab_core::Error::not_found("user"))?;
+    Ok(Json(user.into()))
+}
+
 /// Courses a user created or actively co-authors, newest first (public
-/// profile). Private ones are included only for the user themself and
-/// platform course managers.
+/// profile, readable anonymously). Private ones are included only for the
+/// user themself and platform course managers.
 #[utoipa::path(
     get,
     path = "/users/{username}/courses",
@@ -197,7 +225,7 @@ pub async fn set_user_status(
 )]
 pub async fn user_courses(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(username): Path<String>,
     Query(query): Query<UserCoursesQuery>,
 ) -> ApiResult<Json<CoursePage>> {

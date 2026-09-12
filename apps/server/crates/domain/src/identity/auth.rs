@@ -32,9 +32,16 @@ use crate::identity::sessions::{NewSession, SessionRecord, SessionStore};
 
 const IP_LIMIT: (u32, Duration) = (20, Duration::from_mins(5));
 const LOGIN_NAME_LIMIT: (u32, Duration) = (10, Duration::from_mins(15));
-/// Registrations and verification attempts per IP (account creation is the
-/// expensive path — two Zitadel calls plus an email).
+/// Accounts actually created per IP (the expensive path — two Zitadel calls
+/// plus an email). Failed attempts do not count: a classroom behind one NAT
+/// must survive ten typos.
 const REGISTER_IP_LIMIT: (u32, Duration) = (10, Duration::from_hours(1));
+/// Registration + verification *attempts* per IP, wide enough for humans,
+/// tight enough to throttle username/email enumeration.
+const REGISTER_ATTEMPT_IP_LIMIT: (u32, Duration) = (60, Duration::from_hours(1));
+
+/// Authenticator-app issuer when the platform singleton has no name yet.
+const DEFAULT_PLATFORM_NAME: &str = "Ashyq Bilim";
 
 pub const TOTP_METHOD: &str = "AUTHENTICATION_METHOD_TYPE_TOTP";
 
@@ -66,6 +73,29 @@ fn query_encode(value: &str) -> String {
         }
     }
     out
+}
+
+/// Zitadel labels the authenticator entry with its own name
+/// (`otpauth://totp/ZITADEL:<account>?…&issuer=ZITADEL`); the user enrolled
+/// on the platform, so the label and `issuer` say so.
+fn brand_otpauth_uri(uri: &str, issuer: &str) -> String {
+    let Some(rest) = uri.strip_prefix("otpauth://totp/") else {
+        return uri.to_owned();
+    };
+    let (label, query) = rest.split_once('?').unwrap_or((rest, ""));
+    let account = label
+        .split_once(':')
+        .or_else(|| label.split_once("%3A"))
+        .map_or(label, |(_, account)| account);
+    let issuer = query_encode(issuer);
+    let query = query
+        .split('&')
+        .filter(|pair| !pair.is_empty() && !pair.starts_with("issuer="))
+        .map(str::to_owned)
+        .chain(std::iter::once(format!("issuer={issuer}")))
+        .collect::<Vec<_>>()
+        .join("&");
+    format!("otpauth://totp/{issuer}:{account}?{query}")
 }
 
 fn html_escape(value: &str) -> String {
@@ -393,12 +423,16 @@ impl IdentityService {
 
     // ── Account creation (self-registration + admin) ───────────────────────
 
-    async fn enforce_register_limit(&self, ip: Option<&str>) -> Result<()> {
+    async fn enforce_register_limit(
+        &self,
+        ip: Option<&str>,
+        bucket: &str,
+        (limit, window): (u32, Duration),
+    ) -> Result<()> {
         let Some(ip) = ip else { return Ok(()) };
-        let (limit, window) = REGISTER_IP_LIMIT;
         if self
             .limiter
-            .check(&format!("rl:register:ip:{ip}"), limit, window)
+            .check(&format!("rl:register:{bucket}:ip:{ip}"), limit, window)
             .await?
         {
             Ok(())
@@ -504,7 +538,15 @@ impl IdentityService {
     /// code goes out via Resend; without a mailer it is logged and the
     /// account still works — the legacy never gated login on verification.
     pub async fn register(&self, account: NewAccount) -> Result<Profile> {
-        self.enforce_register_limit(account.ip.as_deref()).await?;
+        let ip = account.ip.as_deref();
+        self.enforce_register_limit(ip, "attempt", REGISTER_ATTEMPT_IP_LIMIT)
+            .await?;
+        // Only registrations that get past the uniqueness check count toward
+        // the tight cap (`create_account` re-checks; two index lookups).
+        self.require_unique(&account.username, &account.email)
+            .await?;
+        self.enforce_register_limit(ip, "created", REGISTER_IP_LIMIT)
+            .await?;
         let (profile, code) = self.create_account(&account, false).await?;
         if let Some(code) = code {
             self.deliver_verification_code(&profile, &code).await;
@@ -555,7 +597,8 @@ impl IdentityService {
     /// mailbox access, not a session. Uniform 422 on unknown email or wrong
     /// code (no account enumeration).
     pub async fn verify_email(&self, email: &str, code: &str, ip: Option<&str>) -> Result<()> {
-        self.enforce_register_limit(ip).await?;
+        self.enforce_register_limit(ip, "attempt", REGISTER_ATTEMPT_IP_LIMIT)
+            .await?;
         let invalid = || {
             Error::validation(vec![FieldError {
                 field: "code".into(),
@@ -644,7 +687,14 @@ impl IdentityService {
     /// Start TOTP enrollment; returns the otpauth URI + secret for the
     /// authenticator app. Conflict if already enrolled and verified.
     pub async fn totp_enroll(&self, actor: &Actor) -> Result<TotpRegistration> {
-        self.zitadel.register_totp(&actor.zitadel_user_id).await
+        let mut registration = self.zitadel.register_totp(&actor.zitadel_user_id).await?;
+        let issuer = ab_db::platform::get_platform(&self.pool)
+            .await?
+            .map(|platform| platform.name)
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or_else(|| DEFAULT_PLATFORM_NAME.to_owned());
+        registration.uri = brand_otpauth_uri(&registration.uri, &issuer);
+        Ok(registration)
     }
 
     /// Activate the enrollment with a first code.
@@ -747,5 +797,27 @@ impl IdentityService {
 
     async fn session_peek(&self, id: &str) -> Result<Option<SessionRecord>> {
         self.sessions.get_and_touch(id).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::brand_otpauth_uri;
+
+    #[test]
+    fn otpauth_label_and_issuer_are_rebranded() {
+        let uri = "otpauth://totp/ZITADEL:aigerim@example.com?algorithm=SHA1&digits=6&issuer=ZITADEL&period=30&secret=S3CRET";
+        assert_eq!(
+            brand_otpauth_uri(uri, "Ashyq Bilim"),
+            "otpauth://totp/Ashyq%20Bilim:aigerim@example.com?algorithm=SHA1&digits=6&period=30&secret=S3CRET&issuer=Ashyq%20Bilim"
+        );
+        assert_eq!(
+            brand_otpauth_uri("otpauth://totp/ZITADEL%3Auser?secret=X", "AB"),
+            "otpauth://totp/AB:user?secret=X&issuer=AB"
+        );
+        assert_eq!(
+            brand_otpauth_uri("otpauth://hotp/x", "AB"),
+            "otpauth://hotp/x"
+        );
     }
 }
