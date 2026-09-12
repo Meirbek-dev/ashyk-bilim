@@ -119,6 +119,7 @@ pub async fn update_course(
                 about: request.about,
                 tags: request.tags,
                 open_to_contributors: request.open_to_contributors,
+                thumbnail_upload_id: request.thumbnail_upload_id,
             },
         )
         .await?;

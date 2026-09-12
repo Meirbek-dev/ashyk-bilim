@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE (public OR $1 OR creator_id = $2\n                  OR EXISTS (SELECT 1 FROM usergroup_courses uc\n                             JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id\n                             WHERE uc.course_id = courses.id AND m.user_id = $2))\n             AND ($3::uuid IS NULL OR id < $3)\n           ORDER BY id DESC\n           LIMIT $4",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -82,6 +82,17 @@
       },
       {
         "ordinal": 7,
+        "name": "thumbnail_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "thumbnail_image_key"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -92,13 +103,13 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -106,10 +117,7 @@
     ],
     "parameters": {
       "Left": [
-        "Bool",
-        "Uuid",
-        "Uuid",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -121,9 +129,10 @@
       false,
       false,
       true,
+      true,
       null,
       null
     ]
   },
-  "hash": "9858ecd201c391e7d329b0db3bf5b41c406d5de68a2a812362c153863de36223"
+  "hash": "94a05bfc4850af093181169c18286eb6c0ed1fb038372595b84192966d5e3bbf"
 }

@@ -445,8 +445,9 @@ async fn learner_and_teacher_queues_follow_the_grading_lifecycle(pool: PgPool) {
     assert_eq!(too_big.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(too_big.json()["field_errors"][0]["field"], "limit");
 
-    // Saving a grade clears the grading item; a scored quiz decision is
-    // `passed` in the projection (legacy: `feedback_released`, normal).
+    // Saving a grade swaps the grading item for a release item (the
+    // decision stays teacher-only until published, like file attempts);
+    // publishing it releases `passed` to the learner.
     let saved = app
         .send(with_if_match(
             &teacher,
@@ -461,9 +462,31 @@ async fn learner_and_teacher_queues_follow_the_grading_lifecycle(pool: PgPool) {
     assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
     assert_eq!(saved.json()["status"], "graded");
     let after_save = queue(&app, &teacher, "?role=teacher").await;
-    assert_eq!(after_save["total"], 1);
+    assert_eq!(after_save["total"], 2, "bob + alice's unreleased grade");
+    let release = items(&after_save)
+        .iter()
+        .find(|item| item["kind"] == "awaiting_release")
+        .expect("release item for alice");
+    assert_eq!(release["status"], "graded_hidden");
     assert_eq!(
-        items(&after_save)[0]["description"],
+        release["href"],
+        format!("/dash/courses/{course_id}/activity/{quiz_activity}/review?submission={alice_sub}")
+    );
+    assert!(item_for(&queue(&app, &alice, "").await, &quiz_activity).is_none());
+    let published = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/submissions/{alice_sub}/grade"),
+            &saved.json()["version"].as_i64().unwrap().to_string(),
+            &serde_json::json!({ "action": "publish" }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let after_publish = queue(&app, &teacher, "?role=teacher").await;
+    assert_eq!(after_publish["total"], 1);
+    assert_eq!(
+        items(&after_publish)[0]["description"],
         "bob submitted work in Work 101."
     );
     let decided = queue(&app, &alice, "").await;

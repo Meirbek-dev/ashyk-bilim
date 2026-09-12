@@ -16,6 +16,7 @@ async fn instructor(app: &TestApp, name: &str) -> MintedSession {
             "course:read:all",
             "course:update:own",
             "course:delete:own",
+            "file:create:own",
         ],
     )
     .await
@@ -248,4 +249,95 @@ async fn creation_requires_the_grant(pool: PgPool) {
         )
         .await;
     assert_eq!(res.status, StatusCode::FORBIDDEN);
+}
+
+/// Upload + finalize through the real pipeline; returns (upload id, key).
+async fn finalized_upload(
+    app: &TestApp,
+    session: &MintedSession,
+    purpose: &str,
+) -> (String, String) {
+    let payload = b"thumb bytes".to_vec();
+    let created = app
+        .post_as(
+            session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": purpose, "mime": "image/png",
+                                  "size_bytes": payload.len() }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK);
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
+    let put = reqwest::Client::new()
+        .put(&put_url)
+        .body(payload)
+        .send()
+        .await
+        .unwrap();
+    assert!(put.status().is_success());
+    let finalized = app
+        .post_as(
+            session,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(finalized.status, StatusCode::OK);
+    (id, finalized.json()["key"].as_str().unwrap().to_owned())
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let id = create_course(&app, &teacher, "Thumbs").await;
+    let path = format!("/api/v2/courses/{id}");
+
+    // Fresh courses carry no thumbnail; a wrong-purpose upload is refused.
+    let fresh = app.get_as(&teacher, &path).await;
+    assert!(fresh.json()["thumbnail_key"].is_null());
+    let (avatar, _) = finalized_upload(&app, &teacher, "avatar").await;
+    let refused = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "thumbnail_upload_id": avatar }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // Claim → key on the course; a replacement releases the old key.
+    let (first, first_key) = finalized_upload(&app, &teacher, "course-thumbnail").await;
+    let claimed = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "thumbnail_upload_id": first }),
+        )
+        .await;
+    assert_eq!(claimed.status, StatusCode::OK);
+    assert_eq!(claimed.json()["thumbnail_key"], first_key);
+
+    let (second, second_key) = finalized_upload(&app, &teacher, "course-thumbnail").await;
+    let replaced = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "thumbnail_upload_id": second }),
+        )
+        .await;
+    assert_eq!(replaced.json()["thumbnail_key"], second_key);
+    let listed = app.get_as(&teacher, "/api/v2/courses").await;
+    assert_eq!(listed.json()["items"][0]["thumbnail_key"], second_key);
+    let released: bool =
+        sqlx::query_scalar("SELECT expires_at IS NOT NULL FROM uploads WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&first).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert!(
+        released,
+        "replaced thumbnail must re-enter the reaper's queue"
+    );
 }

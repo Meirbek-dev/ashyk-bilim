@@ -15,6 +15,8 @@ pub struct CourseRow {
     pub tags: Vec<String>,
     pub public: bool,
     pub open_to_contributors: bool,
+    /// Storage key of the `course-thumbnail` upload (`/content/<key>`).
+    pub thumbnail_key: Option<String>,
     pub creator_id: Option<UserId>,
     pub created_at: i64,
     pub updated_at: i64,
@@ -47,7 +49,8 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
     let row = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, creator_id AS "creator_id: UserId",
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses WHERE id = $1"#,
@@ -71,7 +74,8 @@ pub async fn list_courses(
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, creator_id AS "creator_id: UserId",
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
@@ -98,6 +102,7 @@ pub struct CourseChanges<'a> {
     pub about: Option<&'a str>,
     pub tags: Option<&'a [String]>,
     pub open_to_contributors: Option<bool>,
+    pub thumbnail_key: Option<&'a str>,
 }
 
 pub async fn update_course(
@@ -112,10 +117,12 @@ pub async fn update_course(
                description = COALESCE($3, description),
                about = COALESCE($4, about),
                tags = COALESCE($5, tags),
-               open_to_contributors = COALESCE($6, open_to_contributors)
+               open_to_contributors = COALESCE($6, open_to_contributors),
+               thumbnail_image_key = COALESCE($7, thumbnail_image_key)
            WHERE id = $1
            RETURNING id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, creator_id AS "creator_id: UserId",
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!""#,
         id.0,
@@ -123,7 +130,8 @@ pub async fn update_course(
         changes.description,
         changes.about,
         changes.tags,
-        changes.open_to_contributors
+        changes.open_to_contributors,
+        changes.thumbnail_key
     )
     .fetch_optional(pool)
     .await?;

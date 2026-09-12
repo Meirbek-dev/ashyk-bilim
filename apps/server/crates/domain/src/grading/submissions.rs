@@ -801,13 +801,20 @@ impl SubmissionsService {
         now: i64,
     ) -> Result<()> {
         if let Some(max) = effective.max_attempts {
-            let completed = ab_db::submissions::count_completed_attempts(
-                pool,
-                assessment.id,
-                submission.user_id,
-            )
-            .await?;
-            if completed >= i64::from(max) {
+            let prior =
+                ab_db::submissions::list_user_submissions(pool, assessment.id, submission.user_id)
+                    .await?;
+            // A returned attempt lifts the cap for its revision — the same rule
+            // `attempt-state` applies when it lets the learner start it.
+            let revision = prior
+                .iter()
+                .find(|s| s.status != SubmissionStatus::Draft)
+                .is_some_and(|s| s.status == SubmissionStatus::Returned);
+            let completed = prior
+                .iter()
+                .filter(|s| s.status != SubmissionStatus::Draft)
+                .count();
+            if !revision && completed >= usize::try_from(max).unwrap_or(usize::MAX) {
                 return Err(Error::forbidden("MAX_ATTEMPTS_REACHED"));
             }
         }

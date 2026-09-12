@@ -198,6 +198,38 @@ impl UploadsService {
     }
 }
 
+/// Claim a finalized upload the actor owns for `field` (which names the
+/// request field in the validation error) and return its storage key.
+/// Same mechanics as block media, avatars and platform branding.
+pub async fn claim_upload(
+    pool: &PgPool,
+    actor: &Actor,
+    upload_id: Uuid,
+    required_purpose: &str,
+    field: &str,
+) -> Result<String> {
+    let upload = ab_db::uploads::get_upload(pool, upload_id)
+        .await?
+        .ok_or_else(|| Error::not_found("upload"))?;
+    if upload.created_by != actor.user_id {
+        return Err(Error::forbidden("not your upload"));
+    }
+    if upload.purpose != required_purpose {
+        return Err(Error::validation(vec![FieldError {
+            field: field.into(),
+            code: "wrong-purpose".into(),
+            message: format!(
+                "expected a '{required_purpose}' upload, got '{}'",
+                upload.purpose
+            ),
+        }]));
+    }
+    if !ab_db::uploads::add_reference(pool, upload_id).await? {
+        return Err(Error::conflict("upload is not finalized"));
+    }
+    Ok(upload.key)
+}
+
 /// Reap expired pending/unreferenced uploads: rows first, then objects
 /// (best-effort — a missed object is retried never, but orphan objects are
 /// harmless and listable).

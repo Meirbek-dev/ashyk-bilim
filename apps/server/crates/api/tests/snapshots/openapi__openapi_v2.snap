@@ -3436,6 +3436,13 @@ expression: json
             },
             "type": "array"
           },
+          "thumbnail_key": {
+            "description": "Storage key of the thumbnail image, served at `/content/<key>`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "updated_at_unix": {
             "format": "int64",
             "type": "integer"
@@ -10635,6 +10642,14 @@ expression: json
             },
             "type": [
               "array",
+              "null"
+            ]
+          },
+          "thumbnail_upload_id": {
+            "description": "Finalized `course-thumbnail` upload to claim as the thumbnail.",
+            "format": "uuid",
+            "type": [
+              "string",
               "null"
             ]
           }

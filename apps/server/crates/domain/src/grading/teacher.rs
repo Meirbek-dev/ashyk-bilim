@@ -806,6 +806,25 @@ impl GradingService {
         }
 
         let items = self.items(assessment.id).await?;
+        // Item scores arrive on the item's own scale; anything above it would
+        // be multiplied into the breakdown (a 33.33 on a 1-point item became
+        // 1110.89 once) — refuse it at the boundary.
+        for grade in &input.item_grades {
+            if let Some(score) = grade.score
+                && let Some(item) = items.iter().find(|i| i.id == grade.item_id)
+                && item.max_score > 0.0
+                && score > item.max_score
+            {
+                return Err(Error::validation(vec![FieldError {
+                    field: "item_grades".into(),
+                    code: "range".into(),
+                    message: format!(
+                        "score for item {} must be within 0..={}",
+                        grade.item_id, item.max_score
+                    ),
+                }]));
+            }
+        }
         let answers = parse_answers(&row.answers)?;
         let previous = row.grading.clone();
         let mut breakdown = GradingBreakdown::from_value(&row.grading);

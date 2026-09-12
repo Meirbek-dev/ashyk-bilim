@@ -154,6 +154,7 @@ pub async fn list_collection_courses(
         CourseRow,
         r#"SELECT c.id AS "id: CourseId", c.name, c.description, c.about, c.tags,
                   c.public, c.open_to_contributors,
+                  c.thumbnail_image_key AS thumbnail_key,
                   c.creator_id AS "creator_id: UserId",
                   (extract(epoch FROM c.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM c.updated_at))::bigint AS "updated_at!"

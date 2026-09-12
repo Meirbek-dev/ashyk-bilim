@@ -17,6 +17,7 @@ export const Course = zod.object({
   open_to_contributors: zod.boolean(),
   public: zod.boolean(),
   tags: zod.array(zod.string()),
+  thumbnail_key: zod.string().nullish().describe('Storage key of the thumbnail image, served at `\/content\/<key>`.'),
   updated_at_unix: zod.int(),
 })
 

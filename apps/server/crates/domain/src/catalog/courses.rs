@@ -11,8 +11,10 @@ use sqlx::PgPool;
 
 use ab_core::id::CourseUpdateId;
 pub use ab_db::catalog::{CourseRow as Course, CourseUpdateRow as CourseUpdate};
+use uuid::Uuid;
 
 use crate::catalog::sees_private;
+use crate::files::uploads::{UNREFERENCED_GRACE, claim_upload};
 use crate::identity::Actor;
 
 const fn perm(action: Action, scope: Scope) -> Permission {
@@ -30,6 +32,9 @@ pub struct CourseChanges {
     pub about: Option<String>,
     pub tags: Option<Vec<String>>,
     pub open_to_contributors: Option<bool>,
+    /// Finalized `course-thumbnail` upload to claim; the replaced object is
+    /// released for reaping.
+    pub thumbnail_upload_id: Option<Uuid>,
 }
 
 #[derive(Clone)]
@@ -136,7 +141,20 @@ impl CoursesService {
             .await?
             .ok_or_else(|| Error::not_found("course"))?;
         Self::require_write(actor, &course)?;
-        ab_db::catalog::update_course(
+        let thumbnail_key = match changes.thumbnail_upload_id {
+            Some(upload_id) => Some(
+                claim_upload(
+                    &self.pool,
+                    actor,
+                    upload_id,
+                    "course-thumbnail",
+                    "thumbnail_upload_id",
+                )
+                .await?,
+            ),
+            None => None,
+        };
+        let updated = ab_db::catalog::update_course(
             &self.pool,
             id,
             ab_db::catalog::CourseChanges {
@@ -145,10 +163,22 @@ impl CoursesService {
                 about: changes.about.as_deref(),
                 tags: changes.tags.as_deref(),
                 open_to_contributors: changes.open_to_contributors,
+                thumbnail_key: thumbnail_key.as_deref(),
             },
         )
         .await?
-        .ok_or_else(|| Error::not_found("course"))
+        .ok_or_else(|| Error::not_found("course"))?;
+        if thumbnail_key.is_some()
+            && let Some(old) = course.thumbnail_key.as_deref()
+        {
+            ab_db::uploads::release_reference_by_key(
+                &self.pool,
+                old,
+                UNREFERENCED_GRACE.as_secs_f64(),
+            )
+            .await?;
+        }
+        Ok(updated)
     }
 
     /// Publish/unpublish (legacy `CourseLifecycleUpdate` semantics).

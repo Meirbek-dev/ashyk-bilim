@@ -9,8 +9,17 @@ import * as zod from 'zod'
 
 export const StreamRunBody = zod
   .object({
+    context: zod.array(zod.looseObject({})).nullish(),
+    forwardedProps: zod.looseObject({}).nullish(),
+    messages: zod.array(zod.looseObject({})).nullish(),
+    parentRunId: zod.string().nullish(),
     runId: zod.string(),
+    state: zod.looseObject({}).nullish(),
     threadId: zod.string(),
+    tools: zod
+      .array(zod.looseObject({}))
+      .nullish()
+      .describe('AG-UI protocol fields the client always sends; accepted and ignored.'),
   })
   .describe('AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_\*` event.')
 

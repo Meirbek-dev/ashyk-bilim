@@ -14498,6 +14498,13 @@
               "type": "string"
             }
           },
+          "thumbnail_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Storage key of the thumbnail image, served at `/content/<key>`."
+          },
           "updated_at_unix": {
             "type": "integer",
             "format": "int64"
@@ -21687,6 +21694,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "thumbnail_upload_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Finalized `course-thumbnail` upload to claim as the thumbnail."
           }
         },
         "additionalProperties": false

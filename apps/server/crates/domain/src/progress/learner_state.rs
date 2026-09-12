@@ -332,8 +332,13 @@ fn activity_state(
                 ActivityProgressState::Passed | ActivityProgressState::Completed
             )
         }),
-        score: progress.and_then(|p| p.score),
-        passed: progress.and_then(|p| p.passed),
+        // Unreleased grades are teacher-only until published.
+        score: progress
+            .filter(|_| !state.awaiting_grade())
+            .and_then(|p| p.score),
+        passed: progress
+            .filter(|_| !state.awaiting_grade())
+            .and_then(|p| p.passed),
         due_at_unix: progress.and_then(|p| p.due_at),
         is_late: progress.is_some_and(|p| p.is_late),
         available: true,

@@ -286,6 +286,27 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
     assert_eq!(missing.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(missing.json()["field_errors"][0]["field"], "If-Match");
 
+    // A score above the item's own max is refused, not scaled into the breakdown.
+    let over = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("\"1\""),
+            &serde_json::json!({
+                "action": "save",
+                "item_grades": [{ "item_id": &essay_id, "score": 50 }],
+            }),
+        ))
+        .await;
+    assert_eq!(
+        over.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        over.text()
+    );
+    assert_eq!(over.json()["field_errors"][0]["field"], "item_grades");
+    assert_eq!(over.json()["field_errors"][0]["code"], "range");
+
     // Save: essay 8/10 → (10 + 8) / 20 = 90, teacher-only.
     let saved = app
         .send(grade(
@@ -528,6 +549,65 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
         "the open revision draft is not a cell"
     );
     assert_eq!(bob_cell["attempts"], 1);
+}
+
+/// The cap is lifted for a revision at start (`attempt-state`) *and* at
+/// submit: a returned attempt on a `max_attempts: 1` quiz could be started
+/// again but its hand-in answered 403 `MAX_ATTEMPTS_REACHED`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_returned_attempt_can_be_handed_in_again_at_the_cap(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 1 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    let bob_sub = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    let returned = app
+        .send(grade(
+            &teacher,
+            &bob_sub,
+            Some("1"),
+            &serde_json::json!({ "action": "return", "feedback": "please expand" }),
+        ))
+        .await;
+    assert_eq!(returned.status, StatusCode::OK, "{}", returned.text());
+    let revision = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(revision.status, StatusCode::CREATED, "{}", revision.text());
+    let revision_id = revision.json()["id"].as_str().unwrap().to_owned();
+    let handed_in = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/submissions/{revision_id}/submit"),
+            &serde_json::json!({ "answers": {
+                &choice_id: { "kind": "choice", "selected": ["a"] },
+                &essay_id: { "kind": "open_text", "text": "Expanded." },
+            } }),
+        )
+        .await;
+    assert_eq!(handed_in.status, StatusCode::OK, "{}", handed_in.text());
+    assert_eq!(handed_in.json()["attempt_number"], 2);
+    assert_eq!(handed_in.json()["status"], "pending");
+    // A third attempt is still refused: the lift is for the revision only.
+    let third = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(third.status, StatusCode::FORBIDDEN, "{}", third.text());
 }
 
 #[sqlx::test(migrations = "../../migrations")]

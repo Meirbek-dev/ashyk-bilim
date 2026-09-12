@@ -9,6 +9,7 @@ import * as zod from 'zod'
 
 export const QaChatBody = zod
   .object({
+    context: zod.array(zod.looseObject({})).nullish(),
     forwardedProps: zod
       .object({
         activity_id: zod
@@ -40,8 +41,14 @@ export const QaChatBody = zod
           .describe('One message of the AG-UI conversation the client sends back.'),
       )
       .optional(),
+    parentRunId: zod.string().nullish(),
     runId: zod.string(),
+    state: zod.looseObject({}).nullish(),
     threadId: zod.string(),
+    tools: zod
+      .array(zod.looseObject({}))
+      .nullish()
+      .describe('AG-UI protocol fields the client always sends; accepted and ignored.'),
   })
   .describe('AG-UI `RunAgentInput` for `POST \/ai\/qa\/{course}\/chat`.')
 

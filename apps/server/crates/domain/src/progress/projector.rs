@@ -378,7 +378,10 @@ pub(crate) fn project_submissions(
                     ActivityProgressState::Submitted
                 }
             }
-            SubmissionStatus::Graded | SubmissionStatus::Published => match score {
+            // A saved-but-unreleased grade stays hidden (same as file attempts):
+            // pass/fail is the learner's to see only once published.
+            SubmissionStatus::Graded => ActivityProgressState::Graded,
+            SubmissionStatus::Published => match score {
                 None => ActivityProgressState::Graded,
                 Some(s) if s >= assessment.passing_score => ActivityProgressState::Passed,
                 Some(_) => ActivityProgressState::Failed,

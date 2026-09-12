@@ -21,7 +21,8 @@ pub async fn search_courses(
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, creator_id AS "creator_id: UserId",
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses

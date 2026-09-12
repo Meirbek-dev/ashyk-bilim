@@ -11,6 +11,8 @@ pub struct Course {
     pub tags: Vec<String>,
     pub public: bool,
     pub open_to_contributors: bool,
+    /// Storage key of the thumbnail image, served at `/content/<key>`.
+    pub thumbnail_key: Option<String>,
     pub creator_id: Option<UserId>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
@@ -26,6 +28,7 @@ impl From<ab_domain::catalog::courses::Course> for Course {
             tags: c.tags,
             public: c.public,
             open_to_contributors: c.open_to_contributors,
+            thumbnail_key: c.thumbnail_key,
             creator_id: c.creator_id,
             created_at_unix: c.created_at,
             updated_at_unix: c.updated_at,
@@ -66,6 +69,9 @@ pub struct UpdateCourseRequest {
     pub tags: Option<Vec<String>>,
     #[garde(skip)]
     pub open_to_contributors: Option<bool>,
+    /// Finalized `course-thumbnail` upload to claim as the thumbnail.
+    #[garde(skip)]
+    pub thumbnail_upload_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]

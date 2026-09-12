@@ -13,6 +13,7 @@ export const UpdateCourseRequest = zod.object({
   name: zod.string().nullish(),
   open_to_contributors: zod.boolean().nullish(),
   tags: zod.array(zod.string()).nullish(),
+  thumbnail_upload_id: zod.uuid().nullish().describe('Finalized `course-thumbnail` upload to claim as the thumbnail.'),
 })
 
 export type UpdateCourseRequest = zod.input<typeof UpdateCourseRequest>

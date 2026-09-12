@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses WHERE id = $1",
+  "query": "SELECT c.id AS \"id: CourseId\", c.name, c.description, c.about, c.tags,\n                  c.public, c.open_to_contributors,\n                  c.thumbnail_image_key AS thumbnail_key,\n                  c.creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM c.updated_at))::bigint AS \"updated_at!\"\n           FROM collection_courses cc\n           JOIN courses c ON c.id = cc.course_id\n           WHERE cc.collection_id = $1\n             AND (c.public OR $2 OR c.creator_id = $3)\n           ORDER BY cc.position, c.id",
   "describe": {
     "columns": [
       {
@@ -82,6 +82,17 @@
       },
       {
         "ordinal": 7,
+        "name": "thumbnail_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "thumbnail_image_key"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -92,13 +103,13 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -106,6 +117,8 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
+        "Bool",
         "Uuid"
       ]
     },
@@ -118,9 +131,10 @@
       false,
       false,
       true,
+      true,
       null,
       null
     ]
   },
-  "hash": "fe0eb401014ed7b8e49a3fb8307fb6f15c1d275d9cd998a0830b25a66dd5797b"
+  "hash": "7ffe8b1eaf6aa6c74657ccbc82ce97d7f32d64dcadc7d3be736c069ba4c53bf1"
 }
