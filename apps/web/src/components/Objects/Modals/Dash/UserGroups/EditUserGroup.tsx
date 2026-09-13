@@ -24,7 +24,7 @@ interface EditUserGroupProps {
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
-    name: v.pipe(v.string(), v.minLength(1, t('nameRequiredError'))),
+    name: v.pipe(v.string(), v.trim(), v.minLength(1, t('nameRequiredError'))),
     description: v.optional(v.string()),
   })
 

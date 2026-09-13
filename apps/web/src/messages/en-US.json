@@ -4040,9 +4040,9 @@
         "publicLabel": "Public",
         "tableHeaderActions": "Actions",
         "tableHeaderName": "Name",
-        "title": "UserGroups",
-        "unlinkConfirmMsg": "Users from this UserGroup will no longer have access to this course",
-        "unlinkConfirmTitle": "Unlink UserGroup?",
+        "title": "User groups",
+        "unlinkConfirmMsg": "Users from this user group will no longer have access to this course",
+        "unlinkConfirmTitle": "Unlink user group?",
         "unlinkUserGroupErrorDetailed": "Failed to unlink user group: {error}",
         "unlinkUserGroupErrorGeneric": "Failed to unlink user group",
         "loadingUserGroups": "Loading user groups...",
@@ -6708,7 +6708,7 @@
         "typeHeader": "Type"
       },
       "signupsTitle": "Signups & Invite Codes",
-      "usergroups": "UserGroups",
+      "usergroups": "User groups",
       "usergroupsDescription": "Create and manage user groups",
       "usergroupsSection": {
         "actionsHeader": "Actions",
@@ -6720,10 +6720,10 @@
         "deleteModalMessage": "Access to all resources will be removed for all users in this UserGroup. Are you sure you want to delete this UserGroup?",
         "deleteModalTitle": "Delete UserGroup?",
         "deletingUserGroup": "Deleting...",
-        "description": "UserGroups are a way to group users together to manage their access to the resources (Courses) in your organization.",
+        "description": "User groups are a way to group users together to manage their access to the resources (Courses) in your organization.",
         "descriptionHeader": "Description",
         "editButton": "Edit",
-        "errorLoadingUserGroups": "Failed to load usergroups",
+        "errorLoadingUserGroups": "Failed to load user groups",
         "errors": {
           "deleteUserGroupFailed": "Error deleting usergroup"
         },
@@ -6733,7 +6733,7 @@
         "manageUsersModalTitle": "Manage UserGroup Users",
         "noUserGroupsFound": "No user groups found.",
         "readOnlyGroup": "Read only",
-        "title": "Manage UserGroups & Users",
+        "title": "Manage user groups & users",
         "userGroupDeletedSuccess": "Deleted usergroup",
         "userGroupHeader": "UserGroup",
         "membersHeader": "Members",
@@ -6741,7 +6741,7 @@
         "editUserGroupModalTitle": "Edit UserGroup",
         "editUserGroupModalDescription": "Change the name and description of this UserGroup"
       },
-      "usergroupsTitle": "UserGroups",
+      "usergroupsTitle": "User groups",
       "users": "Users",
       "usersDescription": "Manage your organization users, assign roles and permissions",
       "usersSection": {
