@@ -995,3 +995,31 @@ async fn session_past_the_absolute_cap_is_expired(pool: PgPool) {
         StatusCode::UNAUTHORIZED
     );
 }
+
+/// BUG-143: an account without a password (admin-created / Google-only) is
+/// a 401 `invalid-credentials`, not a 503 leaking Zitadel's text.
+#[sqlx::test(migrations = "../../migrations")]
+async fn passwordless_account_login_is_invalid_credentials(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("nopw", "nopw@example.com", &["user"]).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 9,
+            "message": "User has not set a password (COMMAND-3nJ4t)",
+            "details": [{ "@type": "type.googleapis.com/zitadel.v1.ErrorDetail",
+                          "id": "COMMAND-3nJ4t", "message": "User has not set a password" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "nopw", "password": "anything" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::UNAUTHORIZED, "{}", res.text());
+    assert_eq!(res.json()["code"], "invalid-credentials");
+    assert!(!res.text().contains("COMMAND"), "{}", res.text());
+}

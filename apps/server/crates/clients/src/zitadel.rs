@@ -204,6 +204,13 @@ impl ZitadelClient {
         if err.code == 9 && totp_code.is_some() {
             return Result::Ok(PasswordSessionOutcome::InvalidTotp);
         }
+        // 9 = FailedPrecondition: the account has no password at all
+        // ("User has not set a password", COMMAND-3nJ4t — admin-created or
+        // Google-only accounts, BUG-143): a credential failure, not an outage.
+        if err.message.contains("COMMAND-3nJ4t") || err.detail_ids().any(|id| id == "COMMAND-3nJ4t")
+        {
+            return Result::Ok(PasswordSessionOutcome::InvalidCredentials { failed_attempts: 0 });
+        }
         if err.code == 3 {
             // Password failures carry a CredentialsCheckError detail with
             // `failedAttempts`; TOTP failures are a plain detail (captured live).
