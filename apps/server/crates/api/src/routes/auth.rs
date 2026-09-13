@@ -291,6 +291,8 @@ pub async fn totp_enroll(
         (status = 204, description = "TOTP active"),
         (status = 400, description = "Invalid code", body = Problem,
          content_type = "application/problem+json"),
+        (status = 409, description = "No enrolment pending, or already active", body = Problem,
+         content_type = "application/problem+json"),
     )
 )]
 pub async fn totp_verify(

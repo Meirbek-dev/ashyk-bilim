@@ -385,6 +385,10 @@ impl ZitadelClient {
                 ErrorCode::InvalidTotpCode,
                 "invalid one-time code",
             )),
+            // 5 = NotFound "Multifactor OTP (OneTimePassword) doesn't exist"
+            // (COMMAND-3Mif9s, captured live 2026-09-13): no enrolment was
+            // started (or it was cancelled) — the caller's state, not an outage.
+            5 => Err(Error::conflict("totp enrolment not started")),
             9 => Err(Error::conflict("totp is already enrolled")),
             _ => Err(Error::app(
                 ErrorCode::ServiceUnavailable,

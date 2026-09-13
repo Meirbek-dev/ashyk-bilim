@@ -319,3 +319,54 @@ async fn mfa_enabled_reflects_enrollment_on_session_and_profile(pool: PgPool) {
         false
     );
 }
+
+/// BUG-132: activating with no enrolment started answers Zitadel code 5
+/// "Multifactor OTP (OneTimePassword) doesn't exist" (COMMAND-3Mif9s,
+/// captured live 2026-09-13) — the caller's state, a 409, not a 503.
+#[sqlx::test(migrations = "../../migrations")]
+async fn verifying_without_a_pending_enrolment_is_a_conflict(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp/verify", session.user_id)))
+        .respond_with(ResponseTemplate::new(404).set_body_json(serde_json::json!({
+            "code": 5,
+            "message": "Multifactor OTP (OneTimePassword) doesn't exist (COMMAND-3Mif9s)",
+            "details": [{ "id": "COMMAND-3Mif9s", "message": "Multifactor OTP (OneTimePassword) doesn't exist" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": "123456" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CONFLICT, "{}", res.text());
+    assert_eq!(res.json()["code"], "conflict");
+}
+
+/// Branch #56: enrolling an already-active authenticator is a 409 (Zitadel
+/// code 6 "Multifactor OTP is already set up", COMMAND-do9se).
+#[sqlx::test(migrations = "../../migrations")]
+async fn enrolling_twice_is_a_conflict(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp", session.user_id)))
+        .respond_with(ResponseTemplate::new(409).set_body_json(serde_json::json!({
+            "code": 6,
+            "message": "Multifactor OTP is already set up (COMMAND-do9se)",
+            "details": [{ "id": "COMMAND-do9se", "message": "Multifactor OTP is already set up" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_as(&session, "/api/v2/auth/mfa/totp", &serde_json::json!({}))
+        .await;
+    assert_eq!(res.status, StatusCode::CONFLICT, "{}", res.text());
+    assert_eq!(res.json()["code"], "conflict");
+}
