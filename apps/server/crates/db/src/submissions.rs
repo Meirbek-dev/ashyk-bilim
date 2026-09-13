@@ -333,12 +333,24 @@ pub async fn mark_published(pool: &PgPool, id: SubmissionId, final_score: f64) -
     Ok(())
 }
 
-/// Recompute lateness after a deadline change.
-pub async fn set_is_late(pool: &PgPool, id: SubmissionId, is_late: bool) -> Result<()> {
+/// Recompute lateness after a deadline change; a cleared penalty carries
+/// the recomputed final score (`None` keeps the stored one).
+pub async fn set_lateness(
+    pool: &PgPool,
+    id: SubmissionId,
+    is_late: bool,
+    late_penalty_pct: f64,
+    final_score: Option<f64>,
+) -> Result<()> {
     sqlx::query!(
-        "UPDATE submissions SET is_late = $2 WHERE id = $1",
+        r#"UPDATE submissions SET is_late = $2, late_penalty_pct = $3,
+               final_score = COALESCE($4, final_score),
+               version = version + CASE WHEN $4 IS NULL THEN 0 ELSE 1 END
+           WHERE id = $1"#,
         id.0,
-        is_late
+        is_late,
+        late_penalty_pct,
+        final_score
     )
     .execute(pool)
     .await?;

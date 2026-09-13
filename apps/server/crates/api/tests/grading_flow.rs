@@ -681,6 +681,181 @@ async fn teacher_grade_applies_the_attempt_cap(pool: PgPool) {
     assert_eq!(graded.json()["final_score"], 80.0, "capped at 100 − 20 × 1");
 }
 
+/// BUG-138: a publish-only save (no score, no item grades) keeps the raw
+/// score of the latest entry — the late penalty is not applied twice — and
+/// an omitted `feedback` keeps the stored one; `audit_note` lands in the
+/// audit trail only. Also the small refusals: an unparsable `If-Match`,
+/// a draft, and another learner's feedback.
+#[sqlx::test(migrations = "../../migrations")]
+async fn publish_only_keeps_the_stored_raw_score_and_feedback(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 5, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let saved = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("1"),
+            &serde_json::json!({ "action": "save", "final_score": 95, "feedback": "скрытая" }),
+        ))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    assert_eq!(saved.json()["final_score"], 90.25, "95 − 5 % late");
+    let published = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("2"),
+            &serde_json::json!({ "action": "publish", "audit_note": "пакетная публикация" }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["status"], "published");
+    assert_eq!(
+        published.json()["final_score"],
+        90.25,
+        "not penalised again"
+    );
+    assert_eq!(published.json()["grading"]["feedback"], "скрытая");
+    let history = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/submissions/{alice_sub}/grading-history"),
+        )
+        .await;
+    assert_eq!(history.json()[0]["raw_score"], 95.0);
+    assert_eq!(history.json()[0]["overall_feedback"], "скрытая");
+    let (payload,): (serde_json::Value,) = sqlx::query_as(
+        "SELECT payload FROM assessment_audit_events WHERE event = 'grade-saved' ORDER BY id DESC LIMIT 1",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(payload["audit_note"], "пакетная публикация");
+
+    // Unparsable If-Match → 422; a draft → 409; another learner → 404.
+    let bad = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("abc"),
+            &serde_json::json!({ "action": "publish" }),
+        ))
+        .await;
+    assert_eq!(
+        bad.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad.text()
+    );
+    assert_eq!(bad.json()["field_errors"][0]["field"], "If-Match");
+    let draft = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let draft_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let refused = app
+        .send(grade(
+            &teacher,
+            &draft_id,
+            Some("1"),
+            &serde_json::json!({ "action": "save", "final_score": 10 }),
+        ))
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(
+        app.get_as(&bob, &format!("/api/v2/submissions/{alice_sub}/feedback"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+}
+
+/// BUG-139: an extension that makes a late hand-in on time clears the late
+/// penalty and re-scores graded work (the legacy kept deducting).
+#[sqlx::test(migrations = "../../migrations")]
+async fn deadline_extension_clears_the_late_penalty_of_graded_work(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let published = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["final_score"], 90.0);
+    let queued = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [alice.user_id], "new_due_at_unix": now_unix() + 86_400 }),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let action_id = queued.json()["id"].as_str().unwrap().to_owned();
+    ab_domain::grading::GradingService::execute_bulk_action(
+        &app.pool,
+        None,
+        ab_core::id::BulkActionId(uuid::Uuid::parse_str(&action_id).unwrap()),
+    )
+    .await
+    .unwrap();
+    let review = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{alice_sub}/review"))
+        .await;
+    assert_eq!(review.json()["is_late"], false);
+    assert_eq!(review.json()["late_penalty_pct"], 0.0);
+    assert_eq!(
+        review.json()["final_score"],
+        100.0,
+        "re-scored without the penalty"
+    );
+    let mine = app
+        .get_as(&alice, &format!("/api/v2/submissions/{alice_sub}"))
+        .await;
+    assert_eq!(mine.json()["final_score"], 100.0);
+    // A later publish-only save keeps it there.
+    let version = review.json()["version"].as_i64().unwrap().to_string();
+    let again = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some(&version),
+            &serde_json::json!({ "action": "publish" }),
+        ))
+        .await;
+    assert_eq!(again.status, StatusCode::OK, "{}", again.text());
+    assert_eq!(again.json()["final_score"], 100.0);
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn deadline_extension_is_a_queued_bulk_action(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

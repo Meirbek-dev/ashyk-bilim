@@ -234,14 +234,19 @@ pub struct GradeRequest {
     pub action: GradeAction,
     /// Raw 0..100 before the late penalty; omitted = computed from item
     /// scores (earned / possible × 100).
+    /// Omitted together with `item_grades` (a publish-only save), the raw
+    /// score of the latest grading entry is kept.
     #[garde(range(min = 0.0, max = 100.0))]
     pub final_score: Option<f64>,
+    /// Overall feedback shown to the learner; omitted = keep the stored one.
     #[garde(length(max = 10_000))]
-    #[serde(default)]
-    pub feedback: String,
+    pub feedback: Option<String>,
     #[garde(dive)]
     #[serde(default)]
     pub item_grades: Vec<ItemGradeRequest>,
+    /// Grader's note for the audit trail; never shown to the learner.
+    #[garde(length(max = 1000))]
+    pub audit_note: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

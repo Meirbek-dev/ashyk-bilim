@@ -4,16 +4,21 @@
 //! Only deadline extensions exist so far: per target learner an override
 //! carrying the new due date (other override fields untouched — the legacy
 //! overwrote the note and left the rest), then every submitted attempt's
-//! `is_late` is recomputed against the new date.
+//! `is_late` is recomputed against the new date. A hand-in that becomes on
+//! time also loses its late penalty: graded rows get a new ledger entry
+//! with the penalty cleared and the final score recomputed (the legacy kept
+//! deducting — DECISIONS.md, BUG-139).
 
 use ab_core::assessments::{BulkActionStatus, BulkActionType};
 use ab_core::id::{AssessmentId, BulkActionId, UserId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::assessments::OverrideValues;
 use ab_db::queue::NewJob;
+use ab_db::submissions::NewGradingEntry;
 use sqlx::PgPool;
 
 use crate::events::GradingEvents;
+use crate::grading::penalties::attempt_cap;
 use crate::grading::teacher::GradingService;
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -215,6 +220,9 @@ async fn run_deadline_extension(
     let granted_by = row
         .performed_by
         .ok_or_else(|| Error::app(ab_core::ErrorCode::Internal, "action has no performer"))?;
+    let assessment = ab_db::assessments::get_assessment(pool, row.assessment_id)
+        .await?
+        .ok_or_else(|| Error::not_found("assessment"))?;
     let mut affected = 0;
     for &user_id in &row.target_user_ids {
         let existing = ab_db::assessments::get_override(pool, row.assessment_id, user_id).await?;
@@ -235,9 +243,43 @@ async fn run_deadline_extension(
             ab_db::submissions::list_submitted_for_user(pool, row.assessment_id, user_id).await?;
         for submission in &submitted {
             let late = submission.submitted_at.is_some_and(|s| s > new_due_at);
-            if late != submission.is_late {
-                ab_db::submissions::set_is_late(pool, submission.id, late).await?;
+            if late == submission.is_late {
+                continue;
             }
+            // On time now: the penalty goes, and a graded row is re-scored
+            // from its ledger (raw score, attempt cap, no late deduction).
+            let mut penalty_pct = submission.late_penalty_pct;
+            let mut final_score = None;
+            if !late && penalty_pct > 0.0 {
+                penalty_pct = 0.0;
+                if let Some(entry) =
+                    ab_db::submissions::latest_grading_entry(pool, submission.id).await?
+                {
+                    let rescored = attempt_cap(
+                        entry.raw_score,
+                        assessment.attempt_penalty_percent,
+                        submission.attempt_number,
+                    );
+                    ab_db::submissions::insert_grading_entry(
+                        pool,
+                        NewGradingEntry {
+                            submission_id: submission.id,
+                            graded_by: Some(granted_by),
+                            raw_score: entry.raw_score,
+                            penalty_pct: 0.0,
+                            final_score: rescored,
+                            raw_breakdown: &entry.raw_breakdown,
+                            effective_breakdown: &entry.effective_breakdown,
+                            overall_feedback: &entry.overall_feedback,
+                            published: entry.published_at.is_some(),
+                        },
+                    )
+                    .await?;
+                    final_score = Some(rescored);
+                }
+            }
+            ab_db::submissions::set_lateness(pool, submission.id, late, penalty_pct, final_score)
+                .await?;
         }
         ProgressProjector::new(pool.clone())
             .after_submission(row.assessment_id, user_id)

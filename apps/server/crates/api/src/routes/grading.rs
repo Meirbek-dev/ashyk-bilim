@@ -197,6 +197,7 @@ pub async fn save_grade(
                 action: request.action.into(),
                 final_score: request.final_score,
                 feedback: request.feedback,
+                audit_note: request.audit_note,
                 item_grades: request
                     .item_grades
                     .into_iter()

@@ -189,8 +189,11 @@ pub struct GradeInput {
     /// Raw 0..100 before the late penalty. `None` = computed from the item
     /// scores (earned / possible × 100).
     pub final_score: Option<f64>,
-    pub feedback: String,
+    /// Overall feedback; `None` keeps the stored one (publish-only saves).
+    pub feedback: Option<String>,
     pub item_grades: Vec<ItemGrade>,
+    /// Grader's note for the audit trail only (never shown to the learner).
+    pub audit_note: Option<String>,
     /// From `If-Match`; the current `version`.
     pub expected_version: i64,
 }
@@ -866,9 +869,11 @@ impl GradingService {
     /// Save / publish / return a grade under the `version` lock.
     ///
     /// Item grades merge into the breakdown (a score clears the item's
-    /// manual-review flag); the raw score is either given or computed from
-    /// item scores; the late penalty recorded at submit applies on top.
-    /// Every save appends a grading entry and its item feedback rows.
+    /// manual-review flag); the raw score is either given, kept from the
+    /// latest ledger entry when nothing was re-scored (publish-only), or
+    /// computed from item scores; the late penalty recorded at submit
+    /// applies on top. Every save appends a grading entry and its item
+    /// feedback rows.
     #[allow(
         clippy::too_many_lines,
         reason = "the grade-save pipeline order is the contract; kept in one place"
@@ -939,10 +944,26 @@ impl GradingService {
         let mut breakdown = GradingBreakdown::from_value(&row.grading);
         merge_item_grades(&mut breakdown, &input.item_grades, &items, &answers);
         breakdown.needs_manual_review = breakdown.items.iter().any(|i| i.needs_manual_review);
-        breakdown.feedback.clone_from(&input.feedback);
+        if let Some(feedback) = &input.feedback {
+            breakdown.feedback.clone_from(feedback);
+        }
+        let feedback = breakdown.feedback.clone();
 
-        let raw = input.final_score.map_or_else(
-            || {
+        // BUG-138: a publish-only save (no score, no item grades) keeps the
+        // raw score of the latest entry — re-deriving it would drop a manual
+        // override, and re-sending the penalised final would penalise twice.
+        let stored_raw = if input.final_score.is_none() && input.item_grades.is_empty() {
+            ab_db::submissions::latest_grading_entry(&self.pool, id)
+                .await?
+                .map(|e| e.raw_score)
+        } else {
+            None
+        };
+        let raw = input
+            .final_score
+            .map(round2)
+            .or(stored_raw)
+            .unwrap_or_else(|| {
                 let possible: f64 = breakdown.items.iter().map(|i| i.max_score).sum();
                 let earned: f64 = breakdown.items.iter().map(|i| i.score).sum();
                 if possible > 0.0 {
@@ -950,9 +971,7 @@ impl GradingService {
                 } else {
                     0.0
                 }
-            },
-            round2,
-        );
+            });
         // Same order as the auto path (`penalties::apply`): cap, then late.
         let final_score = apply_late(
             attempt_cap(raw, assessment.attempt_penalty_percent, row.attempt_number),
@@ -986,6 +1005,7 @@ impl GradingService {
                 target,
                 raw,
                 final_score,
+                feedback: &feedback,
                 previous: &previous,
                 effective: &effective,
             },
@@ -1005,7 +1025,7 @@ impl GradingService {
                 self.emit(
                     id,
                     "submission.returned",
-                    serde_json::json!({ "feedback": input.feedback, "returned_at": now_unix() }),
+                    serde_json::json!({ "feedback": feedback, "returned_at": now_unix() }),
                 )
                 .await;
             }
@@ -1049,7 +1069,7 @@ impl GradingService {
                 final_score: ledger.final_score,
                 raw_breakdown: ledger.previous,
                 effective_breakdown: ledger.effective,
-                overall_feedback: &input.feedback,
+                overall_feedback: ledger.feedback,
                 published: ledger.target == SubmissionStatus::Published,
             },
         )
@@ -1084,6 +1104,7 @@ impl GradingService {
             serde_json::json!({
                 "submission_id": row.id, "status": ledger.target, "raw_score": ledger.raw,
                 "final_score": ledger.final_score, "learner_id": row.user_id,
+                "audit_note": input.audit_note.as_deref().map(str::trim).filter(|n| !n.is_empty()),
             }),
         )
         .await?;
@@ -1352,6 +1373,7 @@ struct LedgerEntry<'a> {
     target: SubmissionStatus,
     raw: f64,
     final_score: f64,
+    feedback: &'a str,
     previous: &'a serde_json::Value,
     effective: &'a serde_json::Value,
 }
