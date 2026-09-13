@@ -7753,7 +7753,8 @@
       "qualitySummary": "{strongMiss} {strongMissPct}% · {weakCorrect} {weakCorrectPct}% · {distractorIssues} {distractorIssueCount}"
     },
     "funnel": {
-      "learners": "Оқушылар"
+      "learners": "Оқушылар",
+      "empty": "Әзірге деректер жоқ: курста тараулар немесе прогресс жоқ."
     },
     "scoreChart": {
       "learners": "Оқушылар"
@@ -7898,7 +7899,8 @@
       "assessmentPassThreshold": "Өту шегі: {value}%",
       "assessmentStatGenerated": "Қалыптастырылды",
       "assessmentOpsAuditBulkSummary": "{action}: {count} оқушы",
-      "assessmentItemAccuracy": "Дәлдік {value}%"
+      "assessmentItemAccuracy": "Дәлдік {value}%",
+      "courseContentHealthNoLearners": "Әзірге деректер жоқ: курста әлі оқушылар жоқ."
     },
     "codes": {
       "active_learners": "Белсенді оқушылар",

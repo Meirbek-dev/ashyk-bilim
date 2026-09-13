@@ -7738,7 +7738,8 @@
       "qualitySummary": "{strongMiss} {strongMissPct}% · {weakCorrect} {weakCorrectPct}% · {distractorIssues} {distractorIssueCount}"
     },
     "funnel": {
-      "learners": "Учащиеся"
+      "learners": "Учащиеся",
+      "empty": "Пока нет данных: в курсе ещё нет глав или прогрессий."
     },
     "scoreChart": {
       "learners": "Учащиеся"
@@ -7883,7 +7884,8 @@
       "assessmentPassThreshold": "Проходной порог: {value}%",
       "assessmentStatGenerated": "Сформировано",
       "assessmentOpsAuditBulkSummary": "{action} для {count, plural, one {# учащегося} few {# учащихся} other {# учащихся}}",
-      "assessmentItemAccuracy": "Точность {value}%"
+      "assessmentItemAccuracy": "Точность {value}%",
+      "courseContentHealthNoLearners": "Пока нет данных: в курсе ещё нет учащихся."
     },
     "codes": {
       "active_learners": "Активные учащиеся",

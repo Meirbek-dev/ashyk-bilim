@@ -7723,7 +7723,8 @@
       "qualitySummary": "{strongMiss} {strongMissPct}% · {weakCorrect} {weakCorrectPct}% · {distractorIssues} {distractorIssueCount}"
     },
     "funnel": {
-      "learners": "Learners"
+      "learners": "Learners",
+      "empty": "No data yet: the course has no chapters or progress records."
     },
     "scoreChart": {
       "learners": "Learners"
@@ -7868,7 +7869,8 @@
       "assessmentPassThreshold": "Pass threshold: {value}%",
       "assessmentStatGenerated": "Generated",
       "assessmentOpsAuditBulkSummary": "{action} for {count, plural, one {# learner} other {# learners}}",
-      "assessmentItemAccuracy": "Accuracy {value}%"
+      "assessmentItemAccuracy": "Accuracy {value}%",
+      "courseContentHealthNoLearners": "No data yet: the course has no learners."
     },
     "codes": {
       "active_learners": "Active learners",
