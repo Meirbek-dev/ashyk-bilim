@@ -32,12 +32,7 @@ async fn course(app: &TestApp, session: &MintedSession, name: &str, publish: boo
         .await;
     let id = res.json()["id"].as_str().unwrap().to_owned();
     if publish {
-        app.post_as(
-            session,
-            &format!("/api/v2/courses/{id}/lifecycle"),
-            &serde_json::json!({ "action": "publish" }),
-        )
-        .await;
+        app.publish_course(&id).await;
     }
     id
 }

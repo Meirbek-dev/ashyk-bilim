@@ -257,6 +257,18 @@ impl TestApp {
         UserId(id)
     }
 
+    /// Fixture-level publish: flip `courses.public` directly, skipping the
+    /// readiness gate of `POST /courses/{id}/lifecycle` (which refuses a
+    /// course without a live activity — most fixtures have none).
+    pub async fn publish_course(&self, course_id: &str) {
+        let id: uuid::Uuid = course_id.parse().expect("course id");
+        sqlx::query("UPDATE courses SET public = true WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .expect("publish course");
+    }
+
     /// Mint a live session with the given grants; returns the `Cookie` header
     /// value for authenticated requests.
     pub async fn mint_session(&self, permissions: &[&str]) -> MintedSession {

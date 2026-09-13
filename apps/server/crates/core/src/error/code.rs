@@ -56,6 +56,9 @@ error_codes! {
     PayloadTooLarge => ("payload-too-large", 413, "Payload too large"),
     // Catalog
     ActivityNotReady => ("activity-not-ready", 409, "Activity is not ready to publish"),
+    CourseNotReady => ("course-not-ready", 422, "Course has publish blockers"),
+    // Files
+    UnsupportedMediaType => ("unsupported-media-type", 415, "Unsupported media type"),
     ServiceUnavailable => ("service-unavailable", 503, "Service temporarily unavailable"),
     // Auth
     InvalidCredentials => ("invalid-credentials", 401, "Invalid credentials"),

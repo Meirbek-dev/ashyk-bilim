@@ -57,12 +57,7 @@ async fn public_course(app: &TestApp, teacher: &MintedSession) -> (String, Strin
         )
         .await;
     let course_id = course.json()["id"].as_str().unwrap().to_owned();
-    app.post_as(
-        teacher,
-        &format!("/api/v2/courses/{course_id}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&course_id).await;
     let chapter = app
         .post_as(
             teacher,
@@ -728,6 +723,7 @@ async fn finalized_upload(app: &TestApp, session: &MintedSession, payload: &[u8]
     let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
     let put = reqwest::Client::new()
         .put(&put_url)
+        .header("content-type", "application/pdf")
         .body(payload.to_vec())
         .send()
         .await

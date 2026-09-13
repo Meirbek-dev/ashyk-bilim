@@ -145,6 +145,7 @@ async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
             let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
             let put = reqwest::Client::new()
                 .put(&put_url)
+                .header("content-type", mime)
                 .body(payload)
                 .send()
                 .await
@@ -433,12 +434,7 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
             .await;
         ids.push(res.json()["id"].as_str().unwrap().to_owned());
     }
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{}/lifecycle", ids[0]),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&ids[0]).await;
 
     // Strangers see public courses only; the author sees both.
     let stranger = app.mint_session(&[]).await;

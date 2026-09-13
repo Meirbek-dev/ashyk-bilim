@@ -348,6 +348,8 @@ pub async fn update_course(
         (status = 200, description = "Visibility changed", body = Course),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
+        (status = 422, description = "Publish blocked by readiness (`course-not-ready`,                                       `details.blockers`)", body = Problem,
+         content_type = "application/problem+json"),
     )
 )]
 pub async fn course_lifecycle(
@@ -356,10 +358,13 @@ pub async fn course_lifecycle(
     Path(id): Path<CourseId>,
     ValidJson(request): ValidJson<CourseLifecycleRequest>,
 ) -> ApiResult<Json<Course>> {
-    let course = state
-        .courses
-        .set_public(&actor, id, request.action == "publish")
-        .await?;
+    let course = ab_domain::catalog::readiness::set_course_public(
+        &state.assessments,
+        &actor,
+        id,
+        request.action == "publish",
+    )
+    .await?;
     Ok(Json(course.into()))
 }
 

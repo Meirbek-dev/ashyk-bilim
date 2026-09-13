@@ -70,15 +70,7 @@ async fn crud_lifecycle_and_visibility(pool: PgPool) {
     assert_eq!(hidden.status, StatusCode::NOT_FOUND);
 
     // Publish → learners can see it.
-    let published = app
-        .post_as(
-            &teacher,
-            &format!("/api/v2/courses/{id}/lifecycle"),
-            &serde_json::json!({ "action": "publish" }),
-        )
-        .await;
-    assert_eq!(published.status, StatusCode::OK);
-    assert_eq!(published.json()["public"], true);
+    app.publish_course(&id).await;
     let visible = app.get_as(&learner, &format!("/api/v2/courses/{id}")).await;
     assert_eq!(visible.status, StatusCode::OK);
 
@@ -132,12 +124,7 @@ async fn listing_paginates_and_respects_visibility(pool: PgPool) {
         let id = create_course(&app, &teacher, &format!("Course {i}")).await;
         // Publish all but the last.
         if i < 4 {
-            app.post_as(
-                &teacher,
-                &format!("/api/v2/courses/{id}/lifecycle"),
-                &serde_json::json!({ "action": "publish" }),
-            )
-            .await;
+            app.publish_course(&id).await;
         }
     }
 
@@ -215,12 +202,7 @@ async fn announcements_follow_course_access(pool: PgPool) {
         .get_as(&learner, &format!("/api/v2/courses/{id}/updates"))
         .await;
     assert_eq!(hidden.status, StatusCode::NOT_FOUND);
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{id}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&id).await;
     let feed = app
         .get_as(&learner, &format!("/api/v2/courses/{id}/updates"))
         .await;
@@ -271,6 +253,7 @@ async fn finalized_upload(
     let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
     let put = reqwest::Client::new()
         .put(&put_url)
+        .header("content-type", "image/png")
         .body(payload)
         .send()
         .await
@@ -351,20 +334,10 @@ async fn mine_listing_filters_sorts_and_summarizes(pool: PgPool) {
     let beta = create_course(&app, &teacher, "Beta").await;
     let _draft = create_course(&app, &teacher, "Gamma draft").await;
     for id in [&alpha, &beta] {
-        app.post_as(
-            &teacher,
-            &format!("/api/v2/courses/{id}/lifecycle"),
-            &serde_json::json!({ "action": "publish" }),
-        )
-        .await;
+        app.publish_course(id).await;
     }
     let other = create_course(&app, &rival, "Rival public").await;
-    app.post_as(
-        &rival,
-        &format!("/api/v2/courses/{other}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&other).await;
 
     // Plain listing: everything visible (3 own + rival's public one).
     let all = app.get_as(&teacher, "/api/v2/courses").await;
@@ -490,6 +463,28 @@ async fn readiness_reports_blockers_and_warnings(pool: PgPool) {
     assert_eq!(draft_warning["activity_id"], activity_id);
     assert_eq!(draft_warning["title"], "Intro");
 
+    // The lifecycle endpoint runs the same checks: blocked while a blocker
+    // remains, and the answer carries the blocker list.
+    let refused = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{id}/lifecycle"),
+            &serde_json::json!({ "action": "publish" }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(refused.json()["code"], "course-not-ready");
+    assert_eq!(
+        refused.json()["details"]["blockers"][0]["code"],
+        "no-live-activity"
+    );
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/courses/{id}"))
+            .await
+            .json()["public"],
+        false
+    );
+
     app.patch_as(
         &teacher,
         &format!("/api/v2/activities/{activity_id}"),
@@ -514,12 +509,15 @@ async fn readiness_reports_blockers_and_warnings(pool: PgPool) {
 
     // Publishing makes the course visible to everyone, but readiness stays
     // author-only.
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{id}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{id}/lifecycle"),
+            &serde_json::json!({ "action": "publish" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["public"], true);
     let forbidden = app
         .get_as(&stranger, &format!("/api/v2/courses/{id}/readiness"))
         .await;

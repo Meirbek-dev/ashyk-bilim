@@ -15,12 +15,12 @@
 //! - `activity-unpublished` — a draft activity learners cannot see yet.
 //! - `thumbnail-missing`, `certificate-not-configured`.
 
-use ab_core::Result;
 use ab_core::assessments::{FileSubmissionLifecycle, Lifecycle};
 use ab_core::id::{ActivityId, CourseId};
+use ab_core::{Error, ErrorCode, Result};
 
 use crate::assessments::AssessmentsService;
-use crate::catalog::courses::CoursesService;
+use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
 
 #[derive(Debug, Clone)]
@@ -117,4 +117,38 @@ pub async fn course_readiness(
         blockers,
         warnings,
     })
+}
+
+/// Course lifecycle (legacy `update_course_lifecycle`): publishing re-runs
+/// readiness and refuses with 422 `course-not-ready` (+ `details.blockers`)
+/// while any blocker remains; unpublishing is never gated.
+pub async fn set_course_public(
+    assessments: &AssessmentsService,
+    actor: &Actor,
+    course_id: CourseId,
+    public: bool,
+) -> Result<Course> {
+    if public {
+        let readiness = course_readiness(assessments, actor, course_id).await?;
+        if !readiness.ready {
+            let blockers: Vec<serde_json::Value> = readiness
+                .blockers
+                .iter()
+                .map(|b| {
+                    serde_json::json!({
+                        "code": b.code, "activity_id": b.activity_id, "title": b.title,
+                    })
+                })
+                .collect();
+            return Err(Error::app_with_details(
+                ErrorCode::CourseNotReady,
+                "resolve all course readiness blockers before publishing",
+                serde_json::json!({ "blockers": blockers }),
+            ));
+        }
+    }
+    assessments
+        .courses
+        .set_public(actor, course_id, public)
+        .await
 }

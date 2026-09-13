@@ -50,12 +50,7 @@ async fn public_course(app: &TestApp, teacher: &MintedSession, name: &str) -> (S
         )
         .await;
     let course_id = course.json()["id"].as_str().unwrap().to_owned();
-    app.post_as(
-        teacher,
-        &format!("/api/v2/courses/{course_id}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&course_id).await;
     let chapter = app
         .post_as(
             teacher,

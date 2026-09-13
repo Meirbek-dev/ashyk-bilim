@@ -374,12 +374,7 @@ async fn code_challenge_defaults_kind_rules_and_visibility(pool: PgPool) {
 
     // Visibility: learners can't see drafts at all; once published, only
     // holders of assessment:read:assigned can (course is public).
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{course_id}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&course_id).await;
     let learner = app.mint_session(&["assessment:read:assigned"]).await;
     let hidden = app
         .get_as(&learner, &format!("/api/v2/assessments/{id}"))
@@ -576,12 +571,7 @@ async fn matching_items_have_a_learner_shape_and_grade_by_id(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
     let (course_id, chapter_id) = scaffold(&app, &teacher).await;
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{course_id}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&course_id).await;
     let created = app
         .post_as(
             &teacher,

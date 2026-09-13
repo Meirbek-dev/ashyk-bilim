@@ -44,6 +44,10 @@ expression: registry
     409,
     "Conflict"
   ],
+  "course-not-ready": [
+    422,
+    "Course has publish blockers"
+  ],
   "csrf-rejected": [
     403,
     "Cross-site request rejected"
@@ -123,6 +127,10 @@ expression: registry
   "unauthenticated": [
     401,
     "Authentication required"
+  ],
+  "unsupported-media-type": [
+    415,
+    "Unsupported media type"
   ],
   "username-taken": [
     409,

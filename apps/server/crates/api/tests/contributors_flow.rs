@@ -42,14 +42,7 @@ async fn open_public_course(app: &TestApp, teacher: &MintedSession) -> String {
         )
         .await;
     assert_eq!(opened.status, StatusCode::OK);
-    let published = app
-        .post_as(
-            teacher,
-            &format!("/api/v2/courses/{id}/lifecycle"),
-            &serde_json::json!({ "action": "publish" }),
-        )
-        .await;
-    assert_eq!(published.status, StatusCode::OK);
+    app.publish_course(&id).await;
     id
 }
 
@@ -439,12 +432,7 @@ async fn user_role_authors_write_reporters_read(pool: PgPool) {
         add_chapter(&app, &own_stranger, &course).await,
         StatusCode::NOT_FOUND
     );
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{course}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&course).await;
     assert_eq!(
         add_chapter(&app, &own_stranger, &course).await,
         StatusCode::FORBIDDEN

@@ -6825,7 +6825,9 @@
       "role-slug-taken": "A role with this slug already exists.",
       "last-admin": "The platform must keep at least one active administrator.",
       "self-disable": "You cannot disable your own account.",
-      "activity-not-ready": "Publish the file-submission settings first, then the activity.",
+      "activity-not-ready": "Publish the assessment or file-submission settings first, then the activity.",
+      "course-not-ready": "Resolve every readiness blocker before publishing the course.",
+      "unsupported-media-type": "This file type is not allowed here.",
       "link-preview-failed": "Could not fetch a preview for the link. Check the address and try again later."
     },
     "fields": {
