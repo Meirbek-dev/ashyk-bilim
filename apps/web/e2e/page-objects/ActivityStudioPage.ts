@@ -184,7 +184,7 @@ export class ActivityStudioPage {
       r => r.request().method() === 'POST' && /\/assessments\/[^/]+\/lifecycle$/u.test(r.url()),
       { timeout: 15_000 },
     )
-    await dialog.getByRole('button', { name: /^publish (exam|assessment|quiz|challenge)$/i }).click()
+    await dialog.getByRole('button', { name: /^publish( (exam|assessment|quiz|challenge))?$/i }).click()
     const response = await lifecycle
     expect(response.ok(), `lifecycle → ${response.status()} ${await response.text()}`).toBe(true)
     await expect(this.page.getByText(/^published$/i).first()).toBeVisible({ timeout: 10_000 })
