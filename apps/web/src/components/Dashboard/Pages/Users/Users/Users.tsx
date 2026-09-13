@@ -28,9 +28,10 @@ import type { AdminUser } from '@/lib/api/generated/zod'
 import DataTable from '@/components/ui/data-table'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
 
-import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
+import { AlertTriangle, KeyRound, Loader2, UserRoundCheck, UserRoundX } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
-import { removeUser } from '@/services/platform/platform'
+import { setUserStatus } from '@/services/rbac'
+import { useApiError } from '@/hooks/useApiError'
 import { allMembersQueryOptions } from '@/features/users/queries/users.query'
 import React, { useState, useTransition, useSyncExternalStore } from 'react'
 
@@ -67,7 +68,7 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
       <AlertDialogTrigger
         render={
           <Button type="button" variant="destructive" size="sm">
-            <LogOut className="size-3.5" />
+            <UserRoundX className="size-3.5" />
             {t('removeFromOrgButton')}
           </Button>
         }
@@ -110,6 +111,7 @@ function Users() {
   const isAdminUser = sessionData?.permissions.includes(AUTH_PERMISSION_WILDCARD) ?? false
 
   const queryClient = useQueryClient()
+  const { toastApiError } = useApiError()
   const { data: users = [], isLoading, isError, error } = useAllMembers()
   const isForbidden = isError && hasErrorCode(error, 'forbidden')
   const hasMounted = useSyncExternalStore(
@@ -131,21 +133,21 @@ function Users() {
     setRolesModal(false)
   }, [])
 
-  const handleRemoveUser = React.useCallback(
-    async (user_id: string) => {
-      const toastId = toast.loading(t('removingUser'))
+  // v2 has no hard user delete (DECISIONS.md 2026-09-13): the control disables the account; a disabled row offers «Включить».
+  const handleSetDisabled = React.useCallback(
+    async (user_id: string, disabled: boolean) => {
+      const toastId = toast.loading(t(disabled ? 'removingUser' : 'enablingUser'))
       try {
-        await removeUser(user_id)
+        await setUserStatus(user_id, { disabled })
         await queryClient.invalidateQueries({ queryKey: allMembersQueryOptions().queryKey })
-        toast.success(t('userRemovedSuccess'), { id: toastId })
-      } catch {
-        toast.error(t('errors.removeUserFailed'), { id: toastId })
+        toast.success(t(disabled ? 'userRemovedSuccess' : 'userEnabledSuccess'), { id: toastId })
+      } catch (statusError) {
+        toastApiError(statusError, { toastId })
       }
     },
-    [queryClient, t],
+    [queryClient, t, toastApiError],
   )
-
-  const activeUsers = React.useMemo(() => users.filter(user => user.status === 'active'), [users])
+  const handleRemoveUser = React.useCallback((user_id: string) => handleSetDisabled(user_id, true), [handleSetDisabled])
   const columns = React.useMemo<DataTableColumnDef<UserRow>[]>(
     () => [
       {
@@ -158,6 +160,7 @@ function Users() {
             <Badge variant="outline" className="font-mono text-xs">
               @{row.original.username}
             </Badge>
+            {row.original.status === 'disabled' && <Badge variant="secondary">{t('statusDisabled')}</Badge>}
           </div>
         ),
       },
@@ -232,9 +235,15 @@ function Users() {
                   }
                 />
               )}
-              {showRemoveUser && (
-                <RemoveUserButton userId={user.id} username={user.username} onRemove={handleRemoveUser} t={t} />
-              )}
+              {showRemoveUser &&
+                (user.status === 'disabled' ? (
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleSetDisabled(user.id, false)}>
+                    <UserRoundCheck className="size-3.5" />
+                    {t('enableUserButton')}
+                  </Button>
+                ) : (
+                  <RemoveUserButton userId={user.id} username={user.username} onRemove={handleRemoveUser} t={t} />
+                ))}
             </div>
           )
         },
@@ -248,6 +257,7 @@ function Users() {
       handleCloseRolesModal,
       handleRolesModal,
       handleRemoveUser,
+      handleSetDisabled,
       isAdminUser,
       roleLabel,
       rolePriority,
@@ -299,7 +309,7 @@ function Users() {
         <CardContent className="pt-4">
           <DataTable
             columns={columns}
-            data={activeUsers}
+            data={users}
             pageSize={USERS_PER_PAGE}
             storageKey="platform-users"
             labels={{

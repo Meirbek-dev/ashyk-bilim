@@ -1037,3 +1037,38 @@ Implements three more items of the owner answers above. Routes:
   (BUG-133): read before, counted after the 201 — a policy-rejected password no
   longer eats the 10-per-hour budget.
 
+
+## Teacher grading (2026-09-13, gauntlet pass 12)
+
+- **A deadline extension that makes a hand-in on time clears its late penalty**
+  (BUG-139, deviation from legacy). `run_deadline_extension` recomputes
+  `is_late` as before and, when it flips to false, zeroes `late_penalty_pct`;
+  a graded row gets a new ledger entry (same raw score and breakdown, penalty
+  0, final = attempt cap only, published iff the previous entry was) and its
+  `final_score`/`version` follow. The legacy flipped `is_late` and kept
+  deducting on every later save. On-time → late is not penalised
+  retroactively (an extension never moves the date earlier in practice).
+- **`PATCH /submissions/{id}/grade` has a publish-only shape** (BUG-138):
+  with neither `final_score` nor `item_grades` the raw score of the latest
+  grading entry is kept (re-deriving it from items dropped manual overrides;
+  re-sending the penalised final applied the late penalty twice). `feedback`
+  is now optional — omitted keeps the stored feedback — and `audit_note`
+  (≤1000 chars) lands in the `grade-saved` audit payload only, never in what
+  the learner reads.
+- **A gate-mode remediation blocks new file-submission attempts too**
+  (BUG-140): `open_new_attempt` consults `active_remediation_gate` like
+  `assessments/access.rs` (403 `cannot start: REMEDIATION_REQUIRED`).
+- **`gate_mode` requires course write access** (BUG-141): a learner may still
+  generate remediation for their own work, but not assign themselves a gate
+  they can lift with a self-reported score. A lecture suggestion may only be
+  dismissed by an id the review carries (422 `suggestion_id/unknown`).
+
+## No hard user delete (2026-09-13, gauntlet pass 12)
+
+- **v2 has no `DELETE /users/{id}`** (UX-071). Accounts are disabled through
+  `PATCH /users/{id}/status {disabled}` and can be re-enabled the same way;
+  submissions, grades, audit rows and certificates keep their author. Both
+  admin surfaces (`/dash/admin/users`, `/dash/users/settings/users`) say
+  «Отключить пользователя» / «Включить» and list disabled users with a badge —
+  no «удалить» wording, no hidden rows. A GDPR-style erasure, if ever needed,
+  is a separate anonymisation job, not a row delete.

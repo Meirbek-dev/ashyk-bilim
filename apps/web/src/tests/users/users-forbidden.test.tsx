@@ -5,11 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { APIError } from '@/lib/api/assertSuccess'
 import Users from '@/components/Dashboard/Pages/Users/Users/Users'
 
-// Users.tsx pulls in `@/services/platform/platform` (for `removeUser`),
-// which imports the server-only `requireSession` — neutralize the
-// `server-only` guard the same way tests/auth/auth-pipeline.test.ts does.
-vi.mock('server-only', () => ({}))
-
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }))
