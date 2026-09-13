@@ -703,7 +703,8 @@
       "interactive": "Интерактивті",
       "learningMaterial": "Оқу материалы",
       "page": "Бет",
-      "video": "Бейне"
+      "video": "Бейне",
+      "quiz": "Тест"
     },
     "chapter": "Тарау",
     "completed": "аяқталды",
@@ -726,7 +727,8 @@
       "fileSubmission": "Файл жіберу",
       "learningMaterial": "Оқу материалы",
       "video": "Бейне",
-      "codeChallenge": "Код-аймақ"
+      "codeChallenge": "Код-аймақ",
+      "quiz": "Тест"
     },
     "chapter": "Тарау",
     "chapters": "Тараулар",
@@ -1716,12 +1718,14 @@
       "dynamicPage": "Динамикалық бет",
       "dynamicPageDesc": "Мәтін, медиа және жаттығулары бар интерактивті мазмұн",
       "exams": "Емтихан",
-      "examsDesc": "Автоматты тексеруі бар тест немесе емтихан жасаңыз",
+      "examsDesc": "Әрекет саны шектелген және өту бақыланатын емтихан жасаңыз",
       "fileSubmission": "Файл жіберу",
       "fileSubmissionDesc": "Студент файлдарын тексеру және пікірмен жинаңыз",
       "video": "Бейне",
       "videoDesc": "Студенттер үшін бейне жүктеңіз немесе ендіріңіз",
-      "opening": "Ашылуда…"
+      "opening": "Ашылуда…",
+      "quiz": "Тест",
+      "quizDesc": "Автоматты тексеруі бар тест жасаңыз"
     },
     "NewFileSubmissionModal": {
       "allowedTypes": "Рұқсат етілген файл түрлері",
@@ -1747,25 +1751,38 @@
     "NewExamModal": {
       "activityName": "Белсенділік атауы",
       "activityNameDescription": "Бұл курс мазмұнында көрсетілетін атау болады",
-      "activityNamePlaceholder": "мыс., Қорытынды емтихан",
       "allowResultReview": "Студенттерге нәтижелерді қарауға рұқсат беру",
       "allowResultReviewDescription": "Студенттер тапсырғаннан кейін өз жауаптары мен дұрыс жауаптарды көре алады",
       "cancel": "Болдырмау",
-      "createExam": "Емтихан жасау",
       "creating": "Жасалуда...",
-      "creatingExam": "Емтихан жасалуда...",
       "enableTimeLimit": "Уақыт шегін қосу",
-      "errorCreatingExam": "Емтиханды жасау сәтсіз аяқталды",
-      "examCreatedSuccessfully": "Емтихан сәтті жасалды",
-      "examDescription": "Емтихан сипаттамасы",
-      "examDescriptionPlaceholder": "Бұл емтихан не қамтитынын сипаттаңыз",
-      "examTitle": "Емтихан атауы",
-      "examTitlePlaceholder": "мыс., 1-тарау бойынша тест",
       "shuffleQuestions": "Сұрақтарды араластыру",
       "shuffleQuestionsDescription": "Сұрақтар әр студент үшін кездейсоқ ретте көрсетіледі",
       "timeLimitDescription": "Емтиханды аяқтау үшін максималды уақытты орнатыңыз",
       "timeLimitMinutes": "Уақыт шегі (минут)",
-      "timeLimitMinutesDescription": "Студенттерге емтиханды аяқтауға қанша уақыт беріледі"
+      "timeLimitMinutesDescription": "Студенттерге емтиханды аяқтауға қанша уақыт беріледі",
+      "exam": {
+        "activityNamePlaceholder": "мыс., Қорытынды емтихан",
+        "createExam": "Емтихан жасау",
+        "creatingExam": "Емтихан жасалуда...",
+        "errorCreatingExam": "Емтихан жасау мүмкін болмады",
+        "examCreatedSuccessfully": "Емтихан сәтті жасалды",
+        "examDescription": "Емтихан сипаттамасы",
+        "examDescriptionPlaceholder": "Бұл емтихан нені қамтитынын сипаттаңыз",
+        "examTitle": "Емтихан атауы",
+        "examTitlePlaceholder": "мыс., Курс бойынша емтихан"
+      },
+      "quiz": {
+        "activityNamePlaceholder": "мыс., Қорытынды тест",
+        "createExam": "Тест жасау",
+        "creatingExam": "Тест жасалуда...",
+        "errorCreatingExam": "Тест жасау мүмкін болмады",
+        "examCreatedSuccessfully": "Тест сәтті жасалды",
+        "examDescription": "Тест сипаттамасы",
+        "examDescriptionPlaceholder": "Бұл тест нені қамтитынын сипаттаңыз",
+        "examTitle": "Тест атауы",
+        "examTitlePlaceholder": "мыс., 1-тарау бойынша тест"
+      }
     },
     "Onboarding": {
       "endButton": "Аяқтау",
@@ -2827,7 +2844,8 @@
       "replied": "Жауап жіберілді",
       "edited": "Өзгерістер сақталды",
       "deleted": "Хабарлама жойылды"
-    }
+    },
+    "quiz": "Тест"
   },
   "Courses": {
     "CourseActionsMobile": {
@@ -8416,7 +8434,7 @@
           "TYPE_FILE_SUBMISSION": "Файл жіберу",
           "TYPE_EXAM": "Емтихан",
           "TYPE_CODE_CHALLENGE": "Код оқу әрекетісы",
-          "TYPE_CUSTOM": "Квиз"
+          "TYPE_CUSTOM": "Тест"
         },
         "NativeItemStudio": {
           "itemNouns": {

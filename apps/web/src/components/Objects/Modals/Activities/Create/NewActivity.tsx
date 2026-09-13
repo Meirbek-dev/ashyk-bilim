@@ -8,6 +8,7 @@ import {
   FileText,
   GraduationCap,
   LayoutTemplate,
+  ListChecks,
   Loader2,
   Video,
 } from 'lucide-react'
@@ -27,7 +28,7 @@ import FileSubmission from './NewActivityModal/FileSubmissionActivityModal'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ViewType = 'home' | 'dynamic' | 'video' | 'documentpdf' | 'filesubmission' | 'exams' | 'codechallenge'
+type ViewType = 'home' | 'dynamic' | 'video' | 'documentpdf' | 'filesubmission' | 'quizzes' | 'exams' | 'codechallenge'
 
 interface ActivityTypeConfig {
   id: Exclude<ViewType, 'home'>
@@ -84,6 +85,14 @@ const ACTIVITY_TYPES: ActivityTypeConfig[] = [
     labelKey: 'fileSubmission',
     descriptionKey: 'fileSubmissionDesc',
     icon: FileArchive,
+    iconColorClass: 'text-violet-600 dark:text-violet-400',
+    iconBgClass: 'bg-violet-50 dark:bg-violet-950/60',
+  },
+  {
+    id: 'quizzes',
+    labelKey: 'quiz',
+    descriptionKey: 'quizDesc',
+    icon: ListChecks,
     iconColorClass: 'text-violet-600 dark:text-violet-400',
     iconBgClass: 'bg-violet-50 dark:bg-violet-950/60',
   },
@@ -210,7 +219,8 @@ export default function NewActivityModal({
             />
           )}
           {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
-          {selectedView === 'exams' && <Exam submitActivity={submitActivity} {...sharedProps} />}
+          {selectedView === 'quizzes' && <Exam kind="quiz" {...sharedProps} />}
+          {selectedView === 'exams' && <Exam kind="exam" {...sharedProps} />}
           {selectedView === 'codechallenge' && <CodeChallenge submitActivity={submitActivity} {...sharedProps} />}
         </div>
       )}

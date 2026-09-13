@@ -5,6 +5,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useCreateExamWithActivity } from '@/features/assessments/hooks/exam'
 import { useTranslations } from 'next-intl'
 import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
+import { useRouter } from '@/i18n/navigation'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
@@ -45,13 +46,18 @@ const getCreatedActivityUuid = (data: AppPayload): string | null =>
   data?.data?.activity?.activity_uuid ??
   null
 
-const navigateTo = (url: string) => {
-  globalThis.location.href = url
+type NewExamProps = Pick<AppActivityModalProps, 'chapterId' | 'course' | 'closeModal'> & {
+  /** `quiz` keeps the server's quiz preset (no attempt cap, no proctoring); `exam` applies the exam preset. */
+  kind: 'quiz' | 'exam'
 }
 
-function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
+function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
   const validationT = useTranslations('Validation')
-  const t = useTranslations('Components.NewExamModal')
+  // Locale-aware navigation (UX-029): a bare `/dash/…` would 307 through the proxy.
+  const router = useRouter()
+  const tModal = useTranslations('Components.NewExamModal')
+  const t = (key: string) => tModal(key)
+  const tk = (key: string) => tModal(`${kind}.${key}`)
 
   const validationSchema = createValidationSchema(validationT)
   const withUnpublishedActivities =
@@ -81,28 +87,29 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
   })
 
   const onSubmit = async (values: SubmitValues) => {
-    const toastLoading = toast.loading(t('creatingExam'))
+    const toastLoading = toast.loading(tk('creatingExam'))
     try {
 
       const settings = {
         time_limit: values.has_time_limit ? values.time_limit : null,
-        attempt_limit: 1,
         shuffle_questions: values.shuffle_questions,
         shuffle_answers: true,
-        question_limit: null,
-        access_mode: 'NO_ACCESS',
-        whitelist_user_ids: [],
         allow_result_review: values.allow_result_review,
-        show_correct_answers: values.allow_result_review,
-        copy_paste_protection: true,
-        tab_switch_detection: true,
-        devtools_detection: true,
-        right_click_disable: true,
-        fullscreen_enforcement: true,
-        violation_threshold: 3,
+        ...(kind === 'exam'
+          ? {
+              attempt_limit: 1,
+              copy_paste_protection: true,
+              tab_switch_detection: true,
+              devtools_detection: true,
+              right_click_disable: true,
+              fullscreen_enforcement: true,
+              violation_threshold: 3,
+            }
+          : {}),
       }
 
       const data = await createExamMutation.mutateAsync({
+        kind,
         activityName: values.activity_name,
         chapterId,
         examTitle: values.exam_title,
@@ -111,7 +118,7 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
       })
 
       toast.dismiss(toastLoading)
-      toast.success(t('examCreatedSuccessfully'))
+      toast.success(tk('examCreatedSuccessfully'))
 
       const createdActivityUuid = getCreatedActivityUuid(data)
       if (createdActivityUuid) {
@@ -132,16 +139,16 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
           const activityUuidClean = cleanActivityUuid(createdActivityUuid)
           // A fresh assessment is unpublished, so the learner activity page
           // (which reads the published outline) cannot show it — go to the studio.
-          navigateTo(`/dash/courses/${courseUuidClean}/activity/${activityUuidClean}/studio`)
+          router.push(`/dash/courses/${courseUuidClean}/activity/${activityUuidClean}/studio`)
         } else {
-          navigateTo('/courses')
+          router.push('/courses')
         }
       }
 
       closeModal()
     } catch (error: unknown) {
       toast.dismiss(toastLoading)
-      toast.error(t('errorCreatingExam'))
+      toast.error(tk('errorCreatingExam'))
       console.error('Error creating exam:', error)
     }
   }
@@ -150,22 +157,22 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <Field>
         <FieldLabel htmlFor="activity_name">{t('activityName')}</FieldLabel>
-        <Input id="activity_name" placeholder={t('activityNamePlaceholder')} {...form.register('activity_name')} />
+        <Input id="activity_name" placeholder={tk('activityNamePlaceholder')} {...form.register('activity_name')} />
         <FieldDescription>{t('activityNameDescription')}</FieldDescription>
         <FieldError errors={[form.formState.errors.activity_name]} />
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="exam_title">{t('examTitle')}</FieldLabel>
-        <Input id="exam_title" placeholder={t('examTitlePlaceholder')} {...form.register('exam_title')} />
+        <FieldLabel htmlFor="exam_title">{tk('examTitle')}</FieldLabel>
+        <Input id="exam_title" placeholder={tk('examTitlePlaceholder')} {...form.register('exam_title')} />
         <FieldError errors={[form.formState.errors.exam_title]} />
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="exam_description">{t('examDescription')}</FieldLabel>
+        <FieldLabel htmlFor="exam_description">{tk('examDescription')}</FieldLabel>
         <Textarea
           id="exam_description"
-          placeholder={t('examDescriptionPlaceholder')}
+          placeholder={tk('examDescriptionPlaceholder')}
           {...form.register('exam_description')}
         />
         <FieldError errors={[form.formState.errors.exam_description]} />
@@ -244,7 +251,7 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
           {t('cancel')}
         </Button>
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? t('creating') : t('createExam')}
+          {form.formState.isSubmitting ? t('creating') : tk('createExam')}
         </Button>
       </div>
     </form>

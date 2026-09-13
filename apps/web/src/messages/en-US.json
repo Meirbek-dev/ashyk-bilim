@@ -704,7 +704,8 @@
       "interactive": "Interactive",
       "learningMaterial": "Learning Material",
       "page": "Page",
-      "video": "Video"
+      "video": "Video",
+      "quiz": "Quiz"
     },
     "chapter": "Chapter",
     "completed": "completed",
@@ -727,7 +728,8 @@
       "codeChallenge": "Code challenge",
       "fileSubmission": "File Submission",
       "learningMaterial": "Learning Material",
-      "video": "Video"
+      "video": "Video",
+      "quiz": "Quiz"
     },
     "chapter": "Chapter",
     "chapters": "Chapters",
@@ -1732,13 +1734,15 @@
       "documentDesc": "Upload a PDF or document for students to read",
       "dynamicPage": "Dynamic Page",
       "dynamicPageDesc": "Rich interactive content with text, media, and exercises",
-      "exams": "Exams",
-      "examsDesc": "Build a quiz or exam with automated grading",
+      "exams": "Exam",
+      "examsDesc": "Build an exam with limited attempts and proctoring",
       "fileSubmission": "File Submission",
       "fileSubmissionDesc": "Collect student files with review and feedback",
       "video": "Video",
       "videoDesc": "Upload or embed a video for students to watch",
-      "opening": "Opening…"
+      "opening": "Opening…",
+      "quiz": "Quiz",
+      "quizDesc": "Build a quiz with automated grading"
     },
     "NewFileSubmissionModal": {
       "allowedTypes": "Allowed file types",
@@ -1764,25 +1768,38 @@
     "NewExamModal": {
       "activityName": "Activity Name",
       "activityNameDescription": "This will be the name shown in the course content list",
-      "activityNamePlaceholder": "e.g., Final Exam",
       "allowResultReview": "Allow Students to Review Results",
       "allowResultReviewDescription": "Students can see their answers and correct answers after submission",
       "cancel": "Cancel",
-      "createExam": "Create Exam",
       "creating": "Creating...",
-      "creatingExam": "Creating exam...",
       "enableTimeLimit": "Enable Time Limit",
-      "errorCreatingExam": "Failed to create exam",
-      "examCreatedSuccessfully": "Exam created successfully",
-      "examDescription": "Exam Description",
-      "examDescriptionPlaceholder": "Describe what this exam covers",
-      "examTitle": "Exam Title",
-      "examTitlePlaceholder": "e.g., Chapter 1 Test",
       "shuffleQuestions": "Shuffle Questions",
       "shuffleQuestionsDescription": "Questions will appear in random order for each student",
       "timeLimitDescription": "Set a maximum time for completing the exam",
       "timeLimitMinutes": "Time Limit (minutes)",
-      "timeLimitMinutesDescription": "How long students have to complete the exam"
+      "timeLimitMinutesDescription": "How long students have to complete the exam",
+      "exam": {
+        "activityNamePlaceholder": "e.g., Final exam",
+        "createExam": "Create exam",
+        "creatingExam": "Creating exam...",
+        "errorCreatingExam": "Failed to create exam",
+        "examCreatedSuccessfully": "Exam created successfully",
+        "examDescription": "Exam description",
+        "examDescriptionPlaceholder": "Describe what this exam covers",
+        "examTitle": "Exam title",
+        "examTitlePlaceholder": "e.g., Course exam"
+      },
+      "quiz": {
+        "activityNamePlaceholder": "e.g., Final quiz",
+        "createExam": "Create quiz",
+        "creatingExam": "Creating quiz...",
+        "errorCreatingExam": "Failed to create quiz",
+        "examCreatedSuccessfully": "Quiz created successfully",
+        "examDescription": "Quiz description",
+        "examDescriptionPlaceholder": "Describe what this quiz covers",
+        "examTitle": "Quiz title",
+        "examTitlePlaceholder": "e.g., Chapter 1 quiz"
+      }
     },
     "Onboarding": {
       "endButton": "End",
@@ -2828,7 +2845,8 @@
       "replied": "Reply sent",
       "edited": "Changes saved",
       "deleted": "Message deleted"
-    }
+    },
+    "quiz": "Quiz"
   },
   "Courses": {
     "CourseActionsMobile": {

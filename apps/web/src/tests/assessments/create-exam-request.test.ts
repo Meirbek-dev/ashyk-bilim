@@ -24,7 +24,7 @@ describe('createExamWithActivity (v2)', () => {
     const queryClient = { invalidateQueries: vi.fn() } as never
     const opts = createExamWithActivityMutationOptions(queryClient, 'course-1')
     const result = await opts.mutationFn!({
-      activityName: 'Тест по введению', chapterId: 'ch-1', examTitle: 'Тест 1', examDescription: 'Основы',
+      kind: 'exam', activityName: 'Тест по введению', chapterId: 'ch-1', examTitle: 'Тест 1', examDescription: 'Основы',
       settings: { time_limit: 30, shuffle_questions: true, allow_result_review: false, attempt_limit: 1, violation_threshold: 3 },
     } as never, undefined as never)
 
@@ -38,5 +38,26 @@ describe('createExamWithActivity (v2)', () => {
     expect(Object.keys(put)).toEqual(expect.arrayContaining(Object.keys(preset)))
     expect(rename[0]).toBe('activities/act-1')
     expect(result).toEqual({ exam_uuid: 'asm-1', activity_uuid: 'act-1' })
+  })
+
+  // UX-028: «Тест» creates a quiz on the server's quiz preset — no exam proctoring, no attempt cap.
+  it('keeps the quiz preset: only the time limit / shuffle / review settings are applied', async () => {
+    mocks.apiJson.mockClear()
+    mocks.apiJson.mockImplementation(async (path: string) => {
+      if (path === 'assessments') return { id: 'asm-2', activity_id: 'act-2', policy: { ...preset, max_attempts: null } }
+      return {}
+    })
+    const opts = createExamWithActivityMutationOptions({ invalidateQueries: vi.fn() } as never, 'course-1')
+    await opts.mutationFn!({
+      kind: 'quiz', activityName: 'Quiz', chapterId: 'ch-1', examTitle: 'Quiz', examDescription: 'Basics',
+      settings: { time_limit: 10, shuffle_questions: false, shuffle_answers: true, allow_result_review: true },
+    } as never, undefined as never)
+
+    const calls = mocks.apiJson.mock.calls as [string, { body: string }][]
+    expect(JSON.parse(calls[0]![1].body).kind).toBe('quiz')
+    expect(JSON.parse(calls[1]![1].body)).toMatchObject({
+      max_attempts: null, time_limit_seconds: 600, fullscreen_required: false, devtools_detection: false,
+      tab_switch_detection: false, randomize_options: true, review_visibility: 'full',
+    })
   })
 })

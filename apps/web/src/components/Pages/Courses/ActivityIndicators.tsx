@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  ListChecks,
   Code2,
   FileArchive,
   FileText,
@@ -47,6 +48,9 @@ function getActivityTypeLabel(activityType: string, t: (key: string) => string):
     case 'TYPE_EXAM': {
       return t('activityTypes.exam')
     }
+    case 'TYPE_CUSTOM': {
+      return t('activityTypes.quiz')
+    }
     case 'TYPE_CODE_CHALLENGE': {
       return t('activityTypes.codeChallenge')
     }
@@ -72,6 +76,9 @@ function getActivityTypeIconColor(activityType: string): string {
     }
     case 'TYPE_EXAM': {
       return 'text-amber-500'
+    }
+    case 'TYPE_CUSTOM': {
+      return 'text-violet-500'
     }
     case 'TYPE_CODE_CHALLENGE': {
       return 'text-cyan-500'
@@ -99,6 +106,9 @@ function ActivityTypeIcon({ activityType, size = 14 }: { activityType: string; s
     }
     case 'TYPE_EXAM': {
       return <ClipboardList size={size} className={colorClass} />
+    }
+    case 'TYPE_CUSTOM': {
+      return <ListChecks size={size} className={colorClass} />
     }
     case 'TYPE_CODE_CHALLENGE': {
       return <Code2 size={size} className={colorClass} />

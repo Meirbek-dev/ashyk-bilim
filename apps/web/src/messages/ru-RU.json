@@ -699,12 +699,13 @@
     "activityTypes": {
       "codeChallenge": "Код-зона",
       "document": "Документ",
-      "exam": "Тест",
+      "exam": "Экзамен",
       "fileSubmission": "Отправка файлов",
       "interactive": "Интерактив",
       "learningMaterial": "Учебный материал",
       "page": "Страница",
-      "video": "Видео"
+      "video": "Видео",
+      "quiz": "Тест"
     },
     "chapter": "Глава",
     "completed": "завершено",
@@ -723,11 +724,12 @@
     "activityTypes": {
       "document": "Документ",
       "dynamic": "Страница",
-      "exam": "Тест",
+      "exam": "Экзамен",
       "fileSubmission": "Отправка файлов",
       "learningMaterial": "Учебный материал",
       "video": "Видео",
-      "codeChallenge": "Код-зона"
+      "codeChallenge": "Код-зона",
+      "quiz": "Тест"
     },
     "chapter": "Глава",
     "chapters": "Главы",
@@ -1716,13 +1718,15 @@
       "documentDesc": "Загрузите PDF или документ для чтения студентами",
       "dynamicPage": "Редактор",
       "dynamicPageDesc": "Интерактивный контент с текстом, медиа и упражнениями",
-      "exams": "Тест",
-      "examsDesc": "Создайте тест или экзамен с автоматической проверкой",
+      "exams": "Экзамен",
+      "examsDesc": "Создайте экзамен с ограничением попыток и контролем прохождения",
       "fileSubmission": "Отправка файлов",
       "fileSubmissionDesc": "Собирайте файлы студентов с проверкой и отзывами",
       "video": "Видео",
       "videoDesc": "Загрузите или встройте видео для просмотра студентами",
-      "opening": "Открытие…"
+      "opening": "Открытие…",
+      "quiz": "Тест",
+      "quizDesc": "Создайте тест с автоматической проверкой"
     },
     "NewFileSubmissionModal": {
       "allowedTypes": "Разрешенные типы файлов",
@@ -1748,25 +1752,38 @@
     "NewExamModal": {
       "activityName": "Название активности",
       "activityNameDescription": "Это название будет отображаться в списке содержания курса",
-      "activityNamePlaceholder": "напр., Итоговый тест",
       "allowResultReview": "Разрешить студентам просматривать результаты",
       "allowResultReviewDescription": "Студенты смогут увидеть свои ответы и правильные ответы после сдачи",
       "cancel": "Отмена",
-      "createExam": "Создать тест",
       "creating": "Создание...",
-      "creatingExam": "Создание теста...",
       "enableTimeLimit": "Включить ограничение времени",
-      "errorCreatingExam": "Не удалось создать тест",
-      "examCreatedSuccessfully": "Тест успешно создан",
-      "examDescription": "Описание теста",
-      "examDescriptionPlaceholder": "Опишите, что охватывает этот тест",
-      "examTitle": "Название теста",
-      "examTitlePlaceholder": "напр., Тест по главе 1",
       "shuffleQuestions": "Перемешать вопросы",
       "shuffleQuestionsDescription": "Вопросы будут появляться в случайном порядке для каждого студента",
       "timeLimitDescription": "Установите максимальное время для завершения теста",
       "timeLimitMinutes": "Ограничение времени (минуты)",
-      "timeLimitMinutesDescription": "Сколько времени у студентов на выполнение теста"
+      "timeLimitMinutesDescription": "Сколько времени у студентов на выполнение теста",
+      "exam": {
+        "activityNamePlaceholder": "напр., Итоговый экзамен",
+        "createExam": "Создать экзамен",
+        "creatingExam": "Создание экзамена...",
+        "errorCreatingExam": "Не удалось создать экзамен",
+        "examCreatedSuccessfully": "Экзамен успешно создан",
+        "examDescription": "Описание экзамена",
+        "examDescriptionPlaceholder": "Опишите, что охватывает этот экзамен",
+        "examTitle": "Название экзамена",
+        "examTitlePlaceholder": "напр., Экзамен по курсу"
+      },
+      "quiz": {
+        "activityNamePlaceholder": "напр., Итоговый тест",
+        "createExam": "Создать тест",
+        "creatingExam": "Создание теста...",
+        "errorCreatingExam": "Не удалось создать тест",
+        "examCreatedSuccessfully": "Тест успешно создан",
+        "examDescription": "Описание теста",
+        "examDescriptionPlaceholder": "Опишите, что охватывает этот тест",
+        "examTitle": "Название теста",
+        "examTitlePlaceholder": "напр., Тест по главе 1"
+      }
     },
     "Onboarding": {
       "endButton": "Завершить",
@@ -2517,9 +2534,9 @@
         "codeChallenge": "Код-зона",
         "document": "Документ",
         "dynamic": "Динамический",
-        "exam": "Тест",
+        "exam": "Экзамен",
         "fileSubmission": "Отправка файлов",
-        "quiz": "Квиз",
+        "quiz": "Тест",
         "video": "Видео"
       },
       "activityDeletedSuccess": "Активность успешно удалена",
@@ -2769,7 +2786,7 @@
     "editPostPlaceholder": "Редактировать ваш пост...",
     "editReplyPlaceholder": "Редактировать ваш ответ...",
     "edited": "Отредактировано",
-    "exam": "Тест",
+    "exam": "Экзамен",
     "general": "Общее",
     "hideReplies": "Скрыть ответы",
     "image": "Изображение",
@@ -2826,7 +2843,8 @@
       "replied": "Ответ отправлен",
       "edited": "Изменения сохранены",
       "deleted": "Сообщение удалено"
-    }
+    },
+    "quiz": "Тест"
   },
   "Courses": {
     "CourseActionsMobile": {
@@ -8395,13 +8413,13 @@
     "Assessments": {
       "Studio": {
         "kinds": {
-          "EXAM": "Тест",
+          "EXAM": "Экзамен",
           "CODE_CHALLENGE": "Код-зона",
-          "QUIZ": "Квиз",
+          "QUIZ": "Тест",
           "TYPE_FILE_SUBMISSION": "Отправка файлов",
-          "TYPE_EXAM": "Тест",
+          "TYPE_EXAM": "Экзамен",
           "TYPE_CODE_CHALLENGE": "Код-зона",
-          "TYPE_CUSTOM": "Квиз"
+          "TYPE_CUSTOM": "Тест"
         },
         "loading": "Загрузка студии",
         "unavailable": "Студия недоступна для этой активности.",

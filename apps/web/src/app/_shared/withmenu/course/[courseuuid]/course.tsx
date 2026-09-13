@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   ClipboardList,
+  ListChecks,
   File,
   FileArchive,
   ImageIcon,
@@ -176,6 +177,9 @@ function CourseClient(props: CourseClientProps) {
       }
       case 'TYPE_EXAM': {
         return t('exam')
+      }
+      case 'TYPE_CUSTOM': {
+        return t('quiz')
       }
       default: {
         return t('learningMaterial')
@@ -468,6 +472,7 @@ function CourseClient(props: CourseClientProps) {
                                         {activity.activity_type === 'TYPE_DOCUMENT' && <File size={11} />}
                                         {activity.activity_type === 'TYPE_FILE_SUBMISSION' && <FileArchive size={11} />}
                                         {activity.activity_type === 'TYPE_EXAM' && <ClipboardList size={11} />}
+                                        {activity.activity_type === 'TYPE_CUSTOM' && <ListChecks size={11} />}
                                         <span className="text-xs">
                                           {getActivityTypeLabel(activity.activity_type ?? '')}
                                         </span>

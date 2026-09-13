@@ -8,6 +8,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { buildExamPolicyPatch } from './policySettings'
 
 export interface CreateExamWithActivityInput {
+  kind: 'quiz' | 'exam'
   activityName: string
   chapterId: string
   examTitle: string
@@ -31,7 +32,8 @@ const json = (method: 'POST' | 'PUT' | 'PATCH', body: unknown) => ({
  * v2 creates the activity and the assessment in one `POST assessments`,
  * starting from the kind's policy preset. The modal's settings are then applied
  * as a whole-policy `PUT` merged onto that preset — `Policy` is replaced
- * wholesale, so a partial patch would 422.
+ * wholesale, so a partial patch would 422. A quiz keeps the preset's attempt
+ * and proctoring settings; only an exam overrides them (UX-028).
  */
 async function createExamWithActivityRequest(
   input: CreateExamWithActivityInput,
@@ -39,7 +41,7 @@ async function createExamWithActivityRequest(
   const created = await apiJson(
     'assessments',
     json('POST', {
-      kind: 'exam',
+      kind: input.kind,
       chapter_id: input.chapterId,
       title: input.examTitle,
       description: input.examDescription || null,
@@ -53,7 +55,7 @@ async function createExamWithActivityRequest(
     `assessments/${created.id}/policy`,
     json('PUT', {
       ...created.policy,
-      ...patch,
+      ...(input.kind === 'exam' ? patch : { time_limit_seconds: patch.time_limit_seconds }),
       ...(violation_threshold === null ? {} : { violation_threshold }),
       randomize_questions: input.settings.shuffle_questions === true,
       randomize_options: input.settings.shuffle_answers === true,
