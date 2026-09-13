@@ -9,7 +9,6 @@ import * as zod from 'zod'
 
 export const CertificateHolder = zod.object({
   display_name: zod.string(),
-  username: zod.string(),
 })
 
 export type CertificateHolder = zod.input<typeof CertificateHolder>

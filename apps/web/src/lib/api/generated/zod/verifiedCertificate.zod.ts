@@ -13,10 +13,7 @@ export const VerifiedCertificate = zod
       certification_id: zod.uuid(),
       id: zod.uuid(),
       issued_at_unix: zod.int(),
-      user_id: zod.uuid(),
-      verify_code: zod
-        .string()
-        .describe('Public verification code; the client links `\/certificates\/{code}\/verify`.'),
+      verify_code: zod.string(),
     }),
     certification: zod.object({
       config: zod.looseObject({}).describe("The client's PDF designer document (opaque to the server)."),
@@ -46,16 +43,10 @@ export const VerifiedCertificate = zod
         .describe('Storage key of the thumbnail image, served at `\/content\/<key>`.'),
       updated_at_unix: zod.int(),
     }),
-  })
-  .describe('A certificate with its template and course.')
-  .and(
-    zod.object({
-      holder: zod.object({
-        display_name: zod.string(),
-        username: zod.string(),
-      }),
+    holder: zod.object({
+      display_name: zod.string(),
     }),
-  )
+  })
   .describe('The public verification view.')
 
 export type VerifiedCertificate = zod.input<typeof VerifiedCertificate>

@@ -207,9 +207,17 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
     let verified = app.get(&format!("/api/v2/certificates/{code}")).await;
     assert_eq!(verified.status, StatusCode::OK, "{}", verified.text());
     assert_eq!(verified.json()["course"]["name"], "Certified 101");
-    assert_eq!(verified.json()["holder"]["username"], "alice");
+    assert_eq!(verified.json()["holder"]["display_name"], "alice");
     assert_eq!(verified.json()["certificate"]["verify_code"], code.as_str());
+    // BUG-116: the holder's identity stays private.
+    assert!(verified.json()["holder"].get("username").is_none());
     assert!(verified.json()["holder"].get("email").is_none());
+    assert!(verified.json()["certificate"].get("user_id").is_none());
+    // BUG-116: codes are case-insensitive and the dashes are optional.
+    let sloppy = code.to_lowercase().replace('-', "");
+    let relaxed = app.get(&format!("/api/v2/certificates/{sloppy}")).await;
+    assert_eq!(relaxed.status, StatusCode::OK, "{}", relaxed.text());
+    assert_eq!(relaxed.json()["certificate"]["verify_code"], code.as_str());
     assert_eq!(
         app.get("/api/v2/certificates/NOPE-NOPE-NOPE-NOPE")
             .await
@@ -239,7 +247,11 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
     assert!(bytes.len() > 4_000);
     let text = String::from_utf8_lossy(bytes);
     assert!(text.contains("/FontFile2"), "font not embedded");
-    assert!(text.contains(&format!("/certificates/{code}/verify")));
+    // UX-039: the verify link carries the PDF's locale prefix.
+    assert!(
+        text.contains(&format!("/kz/certificates/{code}/verify")),
+        "verify link is locale-prefixed"
+    );
     assert_eq!(
         app.get("/api/v2/certificates/NOPE-NOPE-NOPE-NOPE/pdf")
             .await

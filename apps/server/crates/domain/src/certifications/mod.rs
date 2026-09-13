@@ -52,6 +52,28 @@ pub fn new_verify_code() -> String {
     out
 }
 
+/// Canonical form of a code as typed or pasted: case-insensitive, dashes
+/// and spaces optional (`ftsb…` and `FTSB-…` name the same certificate).
+#[must_use]
+pub fn normalize_verify_code(raw: &str) -> String {
+    let compact: String = raw
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .map(|c| c.to_ascii_uppercase())
+        .collect();
+    if compact.len() != 16 {
+        return compact;
+    }
+    let mut out = String::with_capacity(19);
+    for (i, ch) in compact.chars().enumerate() {
+        if i > 0 && i % 4 == 0 {
+            out.push('-');
+        }
+        out.push(ch);
+    }
+    out
+}
+
 /// Issue every configured certificate of the course to the learner when
 /// their course progress says so. Returns how many were newly issued.
 pub async fn issue_for_completion(
@@ -93,8 +115,8 @@ pub struct IssuedCertificate {
 #[derive(Debug, Clone)]
 pub struct VerifiedCertificate {
     pub issued: IssuedCertificate,
+    /// The only thing a verifier learns about the holder.
     pub holder_display_name: String,
-    pub holder_username: String,
 }
 
 #[derive(Clone)]
@@ -267,10 +289,12 @@ impl CertificationsService {
 
     /// Public verification by code (no session).
     pub async fn verify(&self, verify_code: &str) -> Result<VerifiedCertificate> {
-        let certificate =
-            ab_db::certifications::get_certificate_by_code(&self.pool, verify_code.trim())
-                .await?
-                .ok_or_else(|| Error::not_found("certificate"))?;
+        let certificate = ab_db::certifications::get_certificate_by_code(
+            &self.pool,
+            &normalize_verify_code(verify_code),
+        )
+        .await?
+        .ok_or_else(|| Error::not_found("certificate"))?;
         let certification = self.load(certificate.certification_id).await?;
         let course = ab_db::catalog::get_course(&self.pool, certification.course_id)
             .await?
@@ -280,11 +304,7 @@ impl CertificationsService {
             .into_iter()
             .next();
         Ok(VerifiedCertificate {
-            holder_display_name: holder
-                .as_ref()
-                .map(|h| h.display_name.clone())
-                .unwrap_or_default(),
-            holder_username: holder.map(|h| h.username).unwrap_or_default(),
+            holder_display_name: holder.map(|h| h.display_name).unwrap_or_default(),
             issued: IssuedCertificate {
                 certificate,
                 certification,
@@ -295,12 +315,13 @@ impl CertificationsService {
 
     /// The certificate as a PDF (public by code, like `verify`). The page
     /// language is `language` when given, else the holder's locale;
-    /// `verify_url` turns the canonical code into the public verify link.
+    /// `verify_url` turns the page language and the canonical code into the
+    /// public verify link.
     pub async fn pdf(
         &self,
         verify_code: &str,
         language: Option<Language>,
-        verify_url: impl FnOnce(&str) -> String,
+        verify_url: impl FnOnce(Language, &str) -> String,
     ) -> Result<Vec<u8>> {
         let verified = self.verify(verify_code).await?;
         let holder =
@@ -341,7 +362,7 @@ impl CertificationsService {
             certificate_type: text("certification_type").unwrap_or_default(),
             course_name: verified.issued.course.name,
             issued_at_unix: verified.issued.certificate.created_at,
-            verify_url: verify_url(&code),
+            verify_url: verify_url(language, &code),
             verify_code: code,
             teacher_name,
         })
@@ -364,5 +385,15 @@ mod tests {
             }
         }
         assert_ne!(new_verify_code(), new_verify_code());
+    }
+
+    #[test]
+    fn codes_normalize_case_and_dashes() {
+        assert_eq!(
+            normalize_verify_code(" ftsb-2abc 9xyz-defg "),
+            "FTSB-2ABC-9XYZ-DEFG"
+        );
+        assert_eq!(normalize_verify_code("ftsb2abc9xyzdefg"), "FTSB-2ABC-9XYZ-DEFG");
+        assert_eq!(normalize_verify_code("short"), "SHORT");
     }
 }

@@ -136,7 +136,7 @@ pub async fn my_certificates(
 /// Public verification by code — no session needed.
 #[utoipa::path(
     get, path = "/certificates/{code}", tag = "certifications",
-    params(("code" = String, Path, description = "Verification code")),
+    params(("code" = String, Path, description = "Verification code (case-insensitive, dashes optional)")),
     responses(
         (status = 200, description = "Verified certificate", body = VerifiedCertificate),
         (status = 404, description = "Unknown code", body = Problem,
@@ -154,7 +154,7 @@ pub async fn verify_certificate(
 ///
 /// Holder, course, certificate name/type, issue date, teacher, the
 /// verification code and the verify link (`AB__SERVER__WEB_URL` +
-/// `/certificates/{code}/verify`). The page language follows
+/// `/{locale}/certificates/{code}/verify`). The page language follows
 /// `Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.
 #[utoipa::path(
     get, path = "/certificates/{code}/pdf", tag = "certifications",
@@ -180,11 +180,11 @@ pub async fn certificate_pdf(
     );
     let bytes = state
         .certifications
-        .pdf(&code, language, |code| {
-            state
-                .config
-                .server
-                .web_href(&format!("/certificates/{code}/verify"))
+        .pdf(&code, language, |language, code| {
+            state.config.server.web_href(&format!(
+                "{}/certificates/{code}/verify",
+                language.web_prefix()
+            ))
         })
         .await?;
     let mut response = (StatusCode::OK, bytes).into_response();

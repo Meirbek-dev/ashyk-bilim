@@ -93,27 +93,44 @@ impl From<domain::IssuedCertificate> for IssuedCertificate {
     }
 }
 
+/// What a verifier learns about the holder: the name on the certificate.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CertificateHolder {
     pub display_name: String,
-    pub username: String,
+}
+
+/// A certificate as the public sees it (no holder id).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PublicCertificate {
+    pub id: CertificateId,
+    pub certification_id: CertificationId,
+    pub verify_code: String,
+    pub issued_at_unix: i64,
 }
 
 /// The public verification view.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct VerifiedCertificate {
-    #[serde(flatten)]
-    pub issued: IssuedCertificate,
+    pub certificate: PublicCertificate,
+    pub certification: Certification,
+    pub course: Course,
     pub holder: CertificateHolder,
 }
 
 impl From<domain::VerifiedCertificate> for VerifiedCertificate {
     fn from(v: domain::VerifiedCertificate) -> Self {
+        let c = v.issued.certificate;
         Self {
-            issued: v.issued.into(),
+            certificate: PublicCertificate {
+                id: c.id,
+                certification_id: c.certification_id,
+                verify_code: c.verify_code,
+                issued_at_unix: c.created_at,
+            },
+            certification: v.issued.certification.into(),
+            course: v.issued.course.into(),
             holder: CertificateHolder {
                 display_name: v.holder_display_name,
-                username: v.holder_username,
             },
         }
     }

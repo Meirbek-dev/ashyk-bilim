@@ -29,6 +29,16 @@ impl Language {
             _ => None,
         }
     }
+
+    /// The web app's URL prefix for this language (`/ru`, `/kz`, `/en`).
+    #[must_use]
+    pub const fn web_prefix(self) -> &'static str {
+        match self {
+            Self::Ru => "/ru",
+            Self::Kk => "/kz",
+            Self::En => "/en",
+        }
+    }
 }
 
 #[cfg(test)]
