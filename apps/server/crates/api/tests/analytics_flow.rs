@@ -318,7 +318,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             "/api/v2/analytics/teacher/overview?window=3d&page_size=abc",
         )
         .await;
-    assert_eq!(bad.status, StatusCode::BAD_REQUEST, "{}", bad.text());
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", bad.text());
     let bad = app
         .get_as(
             &teacher,
@@ -733,7 +733,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let unknown_metric = app
         .get_as(&teacher, "/api/v2/analytics/teacher/drill-through/churn")
         .await;
-    assert_eq!(unknown_metric.status, StatusCode::BAD_REQUEST);
+    assert_eq!(unknown_metric.status, StatusCode::UNPROCESSABLE_ENTITY);
 
     // ── CSV exports ─────────────────────────────────────────────────────
     let csv = app
