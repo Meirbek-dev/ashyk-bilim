@@ -9,7 +9,7 @@
 
 use ab_core::id::{CourseId, UserId, UsergroupId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, Result};
+use ab_core::{Error, FieldError, Result};
 use sqlx::PgPool;
 
 use super::filters::AnalyticsFilters;
@@ -85,11 +85,41 @@ pub async fn resolve(
     }
     ensure_access(actor, action)?;
     let platform = has_platform_scope(actor, action);
+    // Inspecting another teacher needs platform scope (DECISIONS: legacy
+    // silently ignored the filter; a filter that does not apply is a 403).
+    if !platform && filters.teacher_user_id.is_some_and(|t| t != actor.user_id) {
+        return Err(Error::forbidden(
+            "teacher_user_id requires analytics:read:platform",
+        ));
+    }
     let target = if platform {
         filters.teacher_user_id.unwrap_or(actor.user_id)
     } else {
         actor.user_id
     };
+    if !filters.cohort_ids.is_empty() {
+        // Cohort composition is usergroup data: the caller must be able to
+        // read usergroups, and every id must exist (BUG-121).
+        actor.require(Permission {
+            resource: ResourceType::Usergroup,
+            action: Action::Read,
+            scope: Some(Scope::Platform),
+        })?;
+        let known = ab_db::usergroups::existing_ids(pool, &filters.cohort_ids).await?;
+        let errors: Vec<FieldError> = filters
+            .cohort_ids
+            .iter()
+            .filter(|id| !known.contains(id))
+            .map(|id| FieldError {
+                field: "cohort_ids".into(),
+                code: "unknown".into(),
+                message: format!("usergroup {id} does not exist"),
+            })
+            .collect();
+        if !errors.is_empty() {
+            return Err(Error::validation(errors));
+        }
+    }
     let mut course_ids = if platform && filters.teacher_user_id.is_none() {
         ab_db::analytics::all_course_ids(pool).await?
     } else {

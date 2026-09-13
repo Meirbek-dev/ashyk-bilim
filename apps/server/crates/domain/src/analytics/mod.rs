@@ -446,6 +446,16 @@ impl AnalyticsService {
                 message: "expected a JSON object".into(),
             });
         }
+        if ab_db::identity::user_status(&self.pool, input.user_id)
+            .await?
+            .is_none()
+        {
+            errors.push(FieldError {
+                field: "user_id".into(),
+                code: "unknown".into(),
+                message: format!("user {} does not exist", input.user_id),
+            });
+        }
         if !errors.is_empty() {
             return Err(Error::validation(errors));
         }
@@ -498,18 +508,32 @@ impl AnalyticsService {
         query: &serde_json::Value,
     ) -> Result<SavedView> {
         let scope = self.read_scope(actor, filters).await?;
+        let (name, view_type) = (name.trim(), view_type.trim());
+        let mut errors = Vec::new();
+        for (field, value) in [("name", name), ("view_type", view_type)] {
+            if value.is_empty() {
+                errors.push(FieldError {
+                    field: field.into(),
+                    code: "required".into(),
+                    message: format!("{field} must not be blank"),
+                });
+            }
+        }
         if !query.is_object() {
-            return Err(Error::validation(vec![FieldError {
+            errors.push(FieldError {
                 field: "query".into(),
                 code: "invalid".into(),
                 message: "expected a JSON object".into(),
-            }]));
+            });
+        }
+        if !errors.is_empty() {
+            return Err(Error::validation(errors));
         }
         let row = ab_db::analytics::upsert_saved_view(
             &self.pool,
             scope.teacher_user_id,
-            name.trim(),
-            view_type.trim(),
+            name,
+            view_type,
             query,
         )
         .await?;

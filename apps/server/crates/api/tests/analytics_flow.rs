@@ -318,7 +318,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             "/api/v2/analytics/teacher/overview?window=3d&page_size=abc",
         )
         .await;
-    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", bad.text());
+    assert_eq!(
+        bad.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad.text()
+    );
     let bad = app
         .get_as(
             &teacher,
@@ -806,4 +811,121 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .await;
     assert_eq!(carols_only.json()["total"], 1);
     assert_eq!(carols_only.json()["items"][0]["course_id"], other_course);
+}
+
+/// BUG-119 / BUG-120: unknown ids and blank names are 422s, never FK/CHECK 500s.
+#[sqlx::test(migrations = "../../migrations")]
+async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, _) = public_course(&app, &teacher, "Analytics 101").await;
+
+    let ghost = app
+        .post_as(
+            &teacher,
+            "/api/v2/analytics/teacher/interventions",
+            &serde_json::json!({
+                "user_id": uuid::Uuid::now_v7(), "course_id": course_id,
+                "intervention_type": "message_sent"
+            }),
+        )
+        .await;
+    assert_eq!(
+        ghost.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        ghost.text()
+    );
+    assert_eq!(ghost.json()["field_errors"][0]["field"], "user_id");
+    assert_eq!(ghost.json()["field_errors"][0]["code"], "unknown");
+
+    let blank = app
+        .post_as(
+            &teacher,
+            "/api/v2/analytics/teacher/saved-views",
+            &serde_json::json!({ "name": "   ", "view_type": "  ", "query": {} }),
+        )
+        .await;
+    assert_eq!(
+        blank.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        blank.text()
+    );
+    let fields: Vec<_> = blank.json()["field_errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| {
+            (
+                e["field"].as_str().unwrap().to_owned(),
+                e["code"] == "required",
+            )
+        })
+        .collect();
+    assert_eq!(
+        fields,
+        [("name".to_owned(), true), ("view_type".to_owned(), true)]
+    );
+}
+
+/// BUG-121: `cohort_ids` need usergroup read + existing groups;
+/// `teacher_user_id` is refused (not ignored) under the assigned scope.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cohort_and_teacher_filters_are_gated(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let carol = instructor(&app, "carol").await;
+    public_course(&app, &teacher, "Analytics 101").await;
+
+    let other_teacher = app
+        .get_as(
+            &teacher,
+            &format!(
+                "/api/v2/analytics/teacher/overview?teacher_user_id={}",
+                carol.user_id
+            ),
+        )
+        .await;
+    assert_eq!(
+        other_teacher.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        other_teacher.text()
+    );
+
+    let ghost_cohort = uuid::Uuid::now_v7();
+    let no_usergroup_read = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/overview?cohort_ids={ghost_cohort}"),
+        )
+        .await;
+    assert_eq!(
+        no_usergroup_read.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        no_usergroup_read.text()
+    );
+
+    let reader = app
+        .mint_session_for(
+            teacher.user_id,
+            &["analytics:read:assigned", "usergroup:read:platform"],
+        )
+        .await;
+    let unknown = app
+        .get_as(
+            &reader,
+            &format!("/api/v2/analytics/teacher/overview?cohort_ids={ghost_cohort}"),
+        )
+        .await;
+    assert_eq!(
+        unknown.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        unknown.text()
+    );
+    assert_eq!(unknown.json()["field_errors"][0]["field"], "cohort_ids");
+    assert_eq!(unknown.json()["field_errors"][0]["code"], "unknown");
 }

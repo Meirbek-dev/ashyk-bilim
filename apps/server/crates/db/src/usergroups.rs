@@ -103,7 +103,18 @@ pub async fn delete_usergroup(pool: &PgPool, id: UsergroupId) -> Result<bool> {
     Ok(deleted.rows_affected() == 1)
 }
 
-/// Batch add; unknown users fail the FK, duplicates are ignored.
+/// Which of `ids` exist (unknown ids are simply absent).
+pub async fn existing_ids(pool: &PgPool, ids: &[UsergroupId]) -> Result<Vec<UsergroupId>> {
+    let ids = sqlx::query_scalar!(
+        r#"SELECT id AS "id: UsergroupId" FROM usergroups WHERE id = ANY($1)"#,
+        &ids.iter().map(|g| g.0).collect::<Vec<_>>()
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(ids)
+}
+
+/// Batch add; the service checks the users exist, duplicates are ignored.
 pub async fn add_members(pool: &PgPool, id: UsergroupId, user_ids: &[UserId]) -> Result<()> {
     let mut tx = pool.begin().await?;
     for user_id in user_ids {

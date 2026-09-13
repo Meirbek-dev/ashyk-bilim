@@ -975,4 +975,11 @@ Implements three more items of the owner answers above. Routes:
   signs `Content-Type`; finalize verifies the stored object's type equals the
   declared one and that it is on the purpose allowlist (exact types, no
   `image/*` prefix; SVG rejected with 415 as legacy did).
+- **Analytics filters are validated, not silently ignored** (BUG-121, pass 11).
+  Legacy `resolve_teacher_scope` passed `cohort_ids` through unchecked and
+  dropped `teacher_user_id` for callers without platform scope. Now
+  `cohort_ids` requires `usergroup:read:platform` (403 — cohort composition is
+  usergroup data) and every id must exist (422 `cohort_ids`/`unknown`);
+  `teacher_user_id` naming someone else without `analytics:read:platform` is a
+  403 instead of a filter that quietly does nothing (own id still passes).
 
