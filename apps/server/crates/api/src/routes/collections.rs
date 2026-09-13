@@ -1,6 +1,6 @@
 use ab_core::id::CollectionId;
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::collections::{
@@ -8,7 +8,7 @@ use crate::dto::collections::{
     UpdateCollectionRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 /// Create a collection (requires `collection:create:platform`); every

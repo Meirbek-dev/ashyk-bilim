@@ -1,11 +1,11 @@
 //! Utilities for the authoring UI.
 
 use axum::Json;
-use axum::extract::{Query, State};
+use axum::extract::State;
 
 use crate::dto::utils::{LinkPreview, LinkPreviewQuery};
 use crate::error::{ApiResult, Problem};
-use crate::extract::CurrentActor;
+use crate::extract::{CurrentActor, Query};
 use crate::state::AppState;
 
 /// OpenGraph preview of a public web page, for the editor's link block.

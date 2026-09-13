@@ -1,13 +1,13 @@
 use ab_core::id::UserId;
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::rbac::{
     AssignRoleRequest, CreateRoleRequest, Role, SetRolePermissionsRequest, UpdateRoleRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, ValidJson};
 use crate::state::AppState;
 
 /// All roles with their grants (requires `role:read:platform`).

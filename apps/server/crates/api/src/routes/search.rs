@@ -1,9 +1,9 @@
 use axum::Json;
-use axum::extract::{Query, State};
+use axum::extract::State;
 
 use crate::dto::search::{SearchQuery, SearchResults};
 use crate::error::ApiResult;
-use crate::extract::MaybeActor;
+use crate::extract::{MaybeActor, Query};
 use crate::state::AppState;
 
 /// Platform search over courses, collections, and people. Anonymous callers

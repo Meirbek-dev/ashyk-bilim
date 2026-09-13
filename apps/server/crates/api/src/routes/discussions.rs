@@ -3,7 +3,7 @@
 use ab_core::assessments::ReactionKind;
 use ab_core::id::{CourseId, DiscussionId};
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::discussions::{
@@ -11,7 +11,7 @@ use crate::dto::discussions::{
     RepliesQuery, UpdateDiscussionRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 const DEFAULT_PAGE: i64 = 50;

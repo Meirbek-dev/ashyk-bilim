@@ -10,7 +10,7 @@ use ab_core::id::{AssessmentId, SubmissionId};
 use ab_core::{Error, ErrorCode, FieldError};
 use ab_domain::grading::submissions::ViolationState;
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
@@ -18,7 +18,7 @@ use crate::dto::submissions::{
     SaveDraftRequest, StudentSubmission, SubmitRequest, ViolationRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, ValidJson};
 use crate::state::AppState;
 
 const IDEMPOTENCY_KEY: &str = "idempotency-key";

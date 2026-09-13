@@ -8,6 +8,7 @@ use axum::extract::{FromRequest, FromRequestParts, Request};
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use serde::de::DeserializeOwned;
+use std::fmt::Display;
 
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -69,6 +70,46 @@ impl FromRequestParts<AppState> for MaybeActor {
             _ => Actor::anonymous(),
         };
         Ok(Self(actor))
+    }
+}
+
+/// One malformed request part → 422 `validation-failed` with a single
+/// field error, the shape [`ValidJson`] already uses for the body.
+fn rejected(field: &str, err: impl Display) -> ApiError {
+    ApiError(Error::validation(vec![FieldError {
+        field: field.into(),
+        code: "invalid".into(),
+        message: err.to_string(),
+    }]))
+}
+
+/// [`axum::extract::Query`] whose rejection is problem+json (`query`
+/// field error) instead of axum's plain-text 400.
+pub struct Query<T>(pub T);
+
+impl<T: DeserializeOwned, S: Send + Sync> FromRequestParts<S> for Query<T> {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        axum::extract::Query::<T>::from_request_parts(parts, state)
+            .await
+            .map(|q| Self(q.0))
+            .map_err(|err| rejected("query", err))
+    }
+}
+
+/// [`axum::extract::Path`] whose rejection is problem+json (`path` field
+/// error) instead of axum's plain-text 400.
+pub struct Path<T>(pub T);
+
+impl<T: DeserializeOwned + Send, S: Send + Sync> FromRequestParts<S> for Path<T> {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        axum::extract::Path::<T>::from_request_parts(parts, state)
+            .await
+            .map(|p| Self(p.0))
+            .map_err(|err| rejected("path", err))
     }
 }
 

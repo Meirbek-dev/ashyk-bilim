@@ -14,7 +14,7 @@ use ab_core::id::{
 use ab_core::{Error, FieldError};
 use ab_domain::ai::{QaRequest, QaTurn};
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::Sse;
 use axum::response::sse::{Event, KeepAlive};
@@ -27,7 +27,7 @@ use crate::dto::ai::{
     ThreadsQuery,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 const KEEPALIVE: Duration = Duration::from_secs(25);

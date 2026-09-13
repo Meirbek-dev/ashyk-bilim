@@ -3,7 +3,7 @@
 
 use ab_core::assessments::StreakKind;
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::gamification::{
@@ -11,7 +11,7 @@ use crate::dto::gamification::{
     Profile, StreakUpdate, UpdateGamificationConfigRequest, UserRank,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 /// Profile, recent XP, rank and the top-10 leaderboard in one call.

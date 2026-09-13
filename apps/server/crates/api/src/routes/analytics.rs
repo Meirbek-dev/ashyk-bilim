@@ -9,7 +9,7 @@ use ab_core::assessments::AssessmentKind;
 use ab_core::id::{AssessmentId, CourseId, SavedViewId};
 use ab_domain::analytics::{AnalyticsFilters, NewIntervention};
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
@@ -21,7 +21,7 @@ use crate::dto::analytics::{
     TeacherCourseListResponse, TeacherOverviewResponse,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 fn filters(query: AnalyticsQuery) -> ApiResult<AnalyticsFilters> {

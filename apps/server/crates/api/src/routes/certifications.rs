@@ -4,7 +4,7 @@
 use ab_core::id::{CertificationId, CourseId};
 use ab_core::language::Language;
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
@@ -13,7 +13,7 @@ use crate::dto::certifications::{
     VerifiedCertificate,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, ValidJson};
 use crate::state::AppState;
 
 /// Add a certification template to a course (`certificate:create`).

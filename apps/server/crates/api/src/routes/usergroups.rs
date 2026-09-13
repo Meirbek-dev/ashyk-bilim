@@ -1,6 +1,6 @@
 use ab_core::id::{CourseId, UsergroupId};
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::usergroups::{
@@ -8,7 +8,7 @@ use crate::dto::usergroups::{
     UsergroupListQuery, UsergroupMember, UsergroupMembersRequest, UsergroupPage,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 /// Create a usergroup (requires `usergroup:create:platform`).

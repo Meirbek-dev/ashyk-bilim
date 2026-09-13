@@ -2,11 +2,11 @@
 
 use ab_core::id::{ActivityId, CourseId};
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::State;
 
 use crate::dto::progress::{LearnerCourseState, Trail};
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor};
+use crate::extract::{CurrentActor, MaybeActor, Path};
 use crate::state::AppState;
 
 /// The caller's trail: one run per course, one step per activity marked

@@ -2,7 +2,7 @@ use ab_core::id::{CourseId, CourseUpdateId, UserId};
 use ab_domain::catalog::contributors::Target;
 use ab_domain::catalog::courses::{CourseChanges, ListParams};
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::courses::{
@@ -11,7 +11,7 @@ use crate::dto::courses::{
     EditCourseUpdateRequest, UpdateContributorRequest, UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 /// Create a course (requires `course:create:platform`).
@@ -225,7 +225,8 @@ pub async fn update_contributor(
     Ok(Json(row.into()))
 }
 
-/// Remove a contributor (reject an application, or drop an active one).
+/// Remove a contributor (reject an application, or drop an active one), or
+/// withdraw one's own pending application.
 #[utoipa::path(
     delete,
     path = "/courses/{id}/contributors/{user_id}",

@@ -168,3 +168,30 @@ async fn open_graph_preview_cache_guard_and_timeout(pool: PgPool) {
         assert_eq!(rejected.json()["field_errors"][0]["field"], "url", "{bad}");
     }
 }
+
+/// Malformed query strings and path parameters answer in the problem+json
+/// envelope (422 `validation-failed` with a `query` / `path` field error),
+/// never axum's plain-text 400 (BUG-101).
+#[sqlx::test(migrations = "../../migrations")]
+async fn malformed_query_and_path_are_problem_json(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    for (path, field) in [
+        ("/api/v2/courses?limit=abc", "query"),
+        ("/api/v2/courses?cursor=xyz", "query"),
+        ("/api/v2/courses/not-a-uuid", "path"),
+    ] {
+        let res = app.get(path).await;
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{path}: {}",
+            res.text()
+        );
+        assert_eq!(
+            res.headers["content-type"], "application/problem+json",
+            "{path}"
+        );
+        assert_eq!(res.json()["code"], "validation-failed", "{path}");
+        assert_eq!(res.json()["field_errors"][0]["field"], field, "{path}");
+    }
+}

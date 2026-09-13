@@ -1,11 +1,11 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::response::Redirect;
 use uuid::Uuid;
 
 use crate::dto::uploads::{CreateUploadRequest, CreatedUpload, FinalizedUpload};
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, ValidJson};
 use crate::state::AppState;
 
 /// Start an upload: validates the purpose policy and returns a presigned PUT

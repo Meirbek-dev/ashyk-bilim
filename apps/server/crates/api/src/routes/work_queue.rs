@@ -3,11 +3,11 @@
 
 use ab_domain::progress::work_queue::DEFAULT_PAGE;
 use axum::Json;
-use axum::extract::{Query, State};
+use axum::extract::State;
 
 use crate::dto::work_queue::{WorkQueue, WorkQueueQuery, WorkRole};
 use crate::error::{ApiResult, Problem};
-use crate::extract::CurrentActor;
+use crate::extract::{CurrentActor, Query};
 use crate::state::AppState;
 
 /// Ranked work items for the caller.

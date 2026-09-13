@@ -5,12 +5,12 @@ use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId};
 use ab_core::{Error, ErrorCode, FieldError};
 use ab_domain::code::RunInput;
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 
 use crate::dto::code::{CodeRun, LanguageInfo, ReferenceCheckResponse, RunRequest};
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, ValidJson};
 use crate::state::AppState;
 
 const IDEMPOTENCY_KEY: &str = "idempotency-key";

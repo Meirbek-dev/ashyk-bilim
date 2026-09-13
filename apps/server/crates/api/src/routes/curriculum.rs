@@ -2,7 +2,7 @@ use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId};
 use ab_core::{Error, FieldError};
 use ab_domain::catalog::curriculum::ActivityChanges;
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::curriculum::{
@@ -11,10 +11,11 @@ use crate::dto::curriculum::{
     UpdateActivityRequest, UpdateChapterRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, Path, ValidJson};
 use crate::state::AppState;
 
-/// Chapters with nested activities, in course order.
+/// Chapters with nested activities, in course order. Unpublished
+/// activities are listed for course editors only.
 #[utoipa::path(
     get,
     path = "/courses/{id}/curriculum",
@@ -180,7 +181,8 @@ pub async fn create_activity(
     Ok((StatusCode::CREATED, Json(activity.into())))
 }
 
-/// Full activity including content/details/settings.
+/// Full activity including content/details/settings. Unpublished
+/// activities exist for course editors only (404 otherwise).
 #[utoipa::path(
     get,
     path = "/activities/{id}",

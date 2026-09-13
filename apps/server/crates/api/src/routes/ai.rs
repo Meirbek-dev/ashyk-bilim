@@ -13,7 +13,7 @@ use ab_core::id::{AiRunId, CourseId};
 use ab_core::{Error, ErrorCode};
 use ab_domain::events::{AiStoredEvent, ConnectionSlot, MAX_CONNECTIONS_PER_USER};
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::HeaderMap;
 use axum::response::Sse;
 use axum::response::sse::{Event, KeepAlive};
@@ -25,7 +25,7 @@ use crate::dto::ai::{
     UsageSummary,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 /// Blocking-read window of the live tail.

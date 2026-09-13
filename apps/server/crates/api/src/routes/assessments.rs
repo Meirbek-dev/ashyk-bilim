@@ -3,7 +3,7 @@ use ab_domain::assessments::service::{
     AssessmentChanges, CreateAssessment, ItemChanges, Readiness,
 };
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::assessments::{
@@ -12,7 +12,7 @@ use crate::dto::assessments::{
     UpdateAssessmentRequest, UpdateItemRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson};
 use crate::state::AppState;
 
 /// Create an assessment with its backing activity (appended to the chapter).

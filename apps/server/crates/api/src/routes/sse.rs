@@ -13,14 +13,14 @@ use std::time::Duration;
 use ab_core::id::{CourseId, SubmissionId};
 use ab_core::{Error, ErrorCode};
 use ab_domain::events::{ConnectionSlot, GradingEvents, MAX_CONNECTIONS_PER_USER, Stream};
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::http::HeaderMap;
 use axum::response::Sse;
 use axum::response::sse::{Event, KeepAlive, KeepAliveStream};
 use futures::StreamExt;
 
 use crate::error::{ApiResult, Problem};
-use crate::extract::CurrentActor;
+use crate::extract::{CurrentActor, Path};
 use crate::state::AppState;
 
 /// Blocking-read window; also how quickly a dropped client frees its slot.
