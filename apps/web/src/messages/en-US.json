@@ -2911,6 +2911,10 @@
       "activitiesCompleted": "{completed} of {total} activities completed",
       "applicationPending": "Contributor application pending",
       "applyToContribute": "Apply to contribute",
+      "applicationWithdrawn": "Application withdrawn",
+      "withdrawApplication": "Withdraw application",
+      "withdrawApplicationError": "Could not withdraw the application. Please try again later.",
+      "withdrawingApplication": "Withdrawing application...",
       "aria": {
         "applyToBecome": "Apply to become a course contributor",
         "signupToApply": "Sign up to apply as course contributor"

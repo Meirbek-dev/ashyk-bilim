@@ -117,13 +117,23 @@ impl CoursesService {
             .ok_or_else(|| Error::not_found("contributor"))
     }
 
+    /// Remove a roster row (roster managers), or withdraw one's own
+    /// *pending* application (DECISIONS 2026-09-13).
     pub async fn remove_contributor(
         &self,
         actor: &Actor,
         course_id: CourseId,
         user_id: UserId,
     ) -> Result<()> {
-        let course = self.manageable(actor, course_id).await?;
+        let own_pending = user_id == actor.user_id
+            && ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
+                .await?
+                .is_some_and(|row| row.status == "pending");
+        let course = if own_pending {
+            self.get(actor, course_id).await?
+        } else {
+            self.manageable(actor, course_id).await?
+        };
         Self::not_creator(&course, user_id)?;
         if !ab_db::catalog::delete_contributor(&self.pool, course_id, user_id).await? {
             return Err(Error::not_found("contributor"));

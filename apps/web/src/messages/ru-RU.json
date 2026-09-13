@@ -2924,6 +2924,10 @@
       "activitiesCompleted": "{completed} из {total} активностей завершено",
       "applicationPending": "Заявка на участие в качестве автора на рассмотрении",
       "applyToContribute": "Подать заявку на участие",
+      "applicationWithdrawn": "Заявка отозвана",
+      "withdrawApplication": "Отозвать заявку",
+      "withdrawApplicationError": "Не удалось отозвать заявку. Пожалуйста, повторите попытку позже.",
+      "withdrawingApplication": "Отзыв заявки...",
       "aria": {
         "applyToBecome": "Подать заявку на участие в качестве автора",
         "signupToApply": "Зарегистрируйтесь, чтобы подать заявку на участие в качестве автора"

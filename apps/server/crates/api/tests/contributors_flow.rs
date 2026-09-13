@@ -450,3 +450,50 @@ async fn user_role_authors_write_reporters_read(pool: PgPool) {
         StatusCode::FORBIDDEN
     );
 }
+
+/// A pending applicant may withdraw their own application (`DELETE
+/// contributors/{self}` → 204, DECISIONS 2026-09-13); once active the row
+/// belongs to the roster managers again.
+#[sqlx::test(migrations = "../../migrations")]
+async fn applicant_withdraws_pending_application(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let helper = instructor(&app, "helper").await;
+    let course = open_public_course(&app, &teacher).await;
+    let apply = format!("/api/v2/courses/{course}/contributors/apply");
+
+    let applied = app.post_as(&helper, &apply, &serde_json::json!({})).await;
+    assert_eq!(applied.status, StatusCode::CREATED, "{}", applied.text());
+    let helper_id = applied.json()["user_id"].as_str().unwrap().to_owned();
+    let me = format!("/api/v2/courses/{course}/contributors/{helper_id}");
+
+    let withdrawn = app.delete_as(&helper, &me).await;
+    assert_eq!(
+        withdrawn.status,
+        StatusCode::NO_CONTENT,
+        "{}",
+        withdrawn.text()
+    );
+    // Nothing pending any more: back to the roster-manager gate.
+    assert_eq!(
+        app.delete_as(&helper, &me).await.status,
+        StatusCode::FORBIDDEN
+    );
+    // Free to apply again.
+    assert_eq!(
+        app.post_as(&helper, &apply, &serde_json::json!({}))
+            .await
+            .status,
+        StatusCode::CREATED
+    );
+
+    // Active rows are not self-service.
+    let approved = app
+        .patch_as(&teacher, &me, &serde_json::json!({ "status": "active" }))
+        .await;
+    assert_eq!(approved.status, StatusCode::OK, "{}", approved.text());
+    assert_eq!(
+        app.delete_as(&helper, &me).await.status,
+        StatusCode::FORBIDDEN
+    );
+}

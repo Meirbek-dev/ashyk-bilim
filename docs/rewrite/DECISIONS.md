@@ -959,3 +959,8 @@ Implements three more items of the owner answers above. Routes:
   `invalid-totp-code`. `Retry-After` on identity 429s comes from the live
   Redis window (`details.retry_after_seconds`), other limiters keep the
   60 s default (UX-020). Session listing is a pure peek (BUG-095).
+- **A pending applicant may withdraw their own application** (UX-023):
+  `DELETE /courses/{id}/contributors/{self}` while the row is `pending` →
+  204 without roster-management rights; an active row stays manager-only
+  (403), and re-applying afterwards is allowed. The landing shows
+  «Отозвать заявку» under the pending badge.

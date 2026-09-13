@@ -29,6 +29,11 @@ const fetchRuntime = cache(async (courseuuid: string, activityid: string) =>
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const { courseuuid, activityid } = await props.params
+  if (!(await getSession())) {
+    // The page redirects to login; no learner-state call without a session.
+    const tUnauthorized = await getTranslations('UnauthorizedPage')
+    return { title: `${tUnauthorized('title')} - ${APP_NAME}`, robots: { index: false } }
+  }
   try {
     const course_meta = await fetchCourseMetadata(courseuuid)
     const isCourseEnd = activityid === 'end'
@@ -105,6 +110,15 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
   const { locale, courseuuid, activityid } = await params
   setRequestLocale(locale)
   const isCourseEnd = activityid === 'end'
+
+  // Learner surface: sign in first (the learner-state read is a session
+  // read), and come back here afterwards.
+  if (!(await getSession())) {
+    redirect({
+      href: `/login?returnTo=${encodeURIComponent(`/course/${courseuuid}/activity/${activityid}`)}`,
+      locale,
+    })
+  }
 
   let course_meta
   let activity

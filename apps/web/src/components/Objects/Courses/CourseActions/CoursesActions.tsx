@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { learnerCourseProgress } from '@/features/learner-course/api'
 import type { LearnerCourseState } from '@/features/learner-course/api'
+import { buildLoginRedirect } from '@/lib/auth/redirect'
 
 interface CourseActionsProps {
   courseuuid: string
@@ -37,7 +38,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [isContributeLoading, setIsContributeLoading] = useState(false)
   const { contributorStatus, contributorRole, refetch } = useContributorStatus(courseuuid)
-  const { apply } = useContributorMutations(courseuuid)
+  const { apply, remove, busyUserId } = useContributorMutations(courseuuid)
   const { toastApiError } = useApiError()
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   const t = useTranslations('Courses.CoursesActions')
@@ -56,9 +57,12 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   // landing must not offer «Начать курс» to someone the server calls enrolled.
   const isStarted = learnerState?.enrolled ?? hasTrailRun
 
+  // Anonymous: sign in and come straight back to this course.
+  const loginHref = buildLoginRedirect(`/course/${courseuuid}`)
+
   const handleCourseAction = async () => {
     if (!currentUser) {
-      router.push('/auth/signup')
+      router.push(loginHref)
       return
     }
 
@@ -136,7 +140,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
 
   const handleApplyToContribute = async () => {
     if (!currentUser) {
-      router.push('/auth/signup')
+      router.push(loginHref)
       return
     }
 
@@ -154,6 +158,19 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
       else toastApiError(error, { toastId: loadingToast }, t('contributorApplicationError'))
     } finally {
       setIsContributeLoading(false)
+    }
+  }
+
+  // A pending applicant may withdraw (`DELETE contributors/{self}` → 204).
+  const handleWithdrawApplication = async () => {
+    if (!currentUser) return
+    const loadingToast = toast.loading(t('withdrawingApplication'))
+    try {
+      await remove(currentUser.id)
+      await refetch()
+      toast.success(t('applicationWithdrawn'), { id: loadingToast })
+    } catch (error) {
+      toastApiError(error, { toastId: loadingToast }, t('withdrawApplicationError'))
     }
   }
 
@@ -184,7 +201,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
       return (
         <Button
           variant="outline"
-          onClick={() => router.push('/auth/signup')}
+          onClick={() => router.push(loginHref)}
           aria-label={t('aria.signupToApply')}
           className="h-12 w-full gap-2 text-base"
         >
@@ -204,10 +221,22 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     }
 
     if (contributorStatus === 'PENDING') {
+      const isWithdrawing = busyUserId === currentUser.id
       return (
-        <div className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-amber-200/60 bg-gradient-to-r from-amber-500/5 to-yellow-500/5 px-4 text-sm font-medium text-amber-800 shadow-xs dark:border-amber-500/25 dark:from-amber-500/10 dark:to-yellow-500/5 dark:text-amber-400 dark:shadow-sm dark:shadow-amber-950/20">
-          <Clock className="size-4 text-amber-600 dark:text-amber-400" />
-          {t('contributorApplicationPending')}
+        <div className="space-y-2">
+          <div className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-amber-200/60 bg-gradient-to-r from-amber-500/5 to-yellow-500/5 px-4 text-sm font-medium text-amber-800 shadow-xs dark:border-amber-500/25 dark:from-amber-500/10 dark:to-yellow-500/5 dark:text-amber-400 dark:shadow-sm dark:shadow-amber-950/20">
+            <Clock className="size-4 text-amber-600 dark:text-amber-400" />
+            {t('contributorApplicationPending')}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleWithdrawApplication}
+            disabled={isWithdrawing}
+            className="text-muted-foreground w-full"
+          >
+            {isWithdrawing ? <Loader2 className="size-4 animate-spin" /> : t('withdrawApplication')}
+          </Button>
         </div>
       )
     }

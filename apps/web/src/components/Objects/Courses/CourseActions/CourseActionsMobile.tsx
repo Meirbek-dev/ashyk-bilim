@@ -10,6 +10,7 @@ import { getAbsoluteUrl } from '@services/config/config'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import type { LearnerCourseState } from '@/features/learner-course/api'
+import { buildLoginRedirect } from '@/lib/auth/redirect'
 
 import { Button } from '@/components/ui/button'
 import UserAvatar from '../../UserAvatar'
@@ -156,7 +157,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
 
   const handleCourseAction = async () => {
     if (!currentUser) {
-      router.push('/auth/signup')
+      router.push(buildLoginRedirect(`/course/${courseuuid}`))
       return
     }
 
