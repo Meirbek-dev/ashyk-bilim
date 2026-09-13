@@ -285,7 +285,8 @@ impl DiscussionsService {
         Ok(Abilities::of(actor, &course).resolve(actor, row, Vec::new()))
     }
 
-    /// Owner or moderator edits content and/or status.
+    /// Owner or moderator edits content; only a moderator changes status
+    /// (an owner could otherwise un-hide a moderated post).
     pub async fn update(
         &self,
         actor: &Actor,
@@ -298,6 +299,11 @@ impl DiscussionsService {
         let is_owner = row.user_id == Some(actor.user_id);
         if !(abilities.update_any || (is_owner && abilities.update_own)) {
             return Err(Error::forbidden("you cannot edit this discussion"));
+        }
+        if status.is_some_and(|s| s != row.status) && !abilities.moderate {
+            return Err(Error::forbidden(
+                "only a moderator can change a discussion's status",
+            ));
         }
         if let Some(content) = content {
             validate_content(content)?;

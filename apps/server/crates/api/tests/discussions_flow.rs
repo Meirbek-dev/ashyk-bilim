@@ -233,6 +233,42 @@ async fn posts_replies_reactions_and_moderation(pool: PgPool) {
             .status,
         StatusCode::NOT_FOUND
     );
+    // BUG-115: the owner cannot un-hide what a moderator hid (content edits
+    // still work); the moderator can.
+    let unhide = app
+        .patch_as(
+            &bob,
+            &format!("/api/v2/discussions/{reply_id}"),
+            &serde_json::json!({ "status": "active" }),
+        )
+        .await;
+    assert_eq!(unhide.status, StatusCode::FORBIDDEN, "{}", unhide.text());
+    let owner_edit = app
+        .patch_as(
+            &bob,
+            &format!("/api/v2/discussions/{reply_id}"),
+            &serde_json::json!({ "content": "Week 3, edited." }),
+        )
+        .await;
+    assert_eq!(owner_edit.status, StatusCode::OK, "{}", owner_edit.text());
+    assert_eq!(owner_edit.json()["status"], "hidden");
+    let restored = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/discussions/{reply_id}"),
+            &serde_json::json!({ "status": "active" }),
+        )
+        .await;
+    assert_eq!(restored.status, StatusCode::OK, "{}", restored.text());
+    assert_eq!(restored.json()["status"], "active");
+    let rehidden = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/discussions/{reply_id}"),
+            &serde_json::json!({ "status": "hidden" }),
+        )
+        .await;
+    assert_eq!(rehidden.status, StatusCode::OK, "{}", rehidden.text());
 
     // Deletion: stranger 403, owner 204; replies go with the post.
     assert_eq!(

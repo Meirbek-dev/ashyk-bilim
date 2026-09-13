@@ -69,14 +69,15 @@ pub async fn create_discussion(
     Ok((StatusCode::CREATED, Json(created.into())))
 }
 
-/// Edit content and/or status (owner, or a moderator).
+/// Edit content (owner, or a moderator); only a moderator may change
+/// `status`.
 #[utoipa::path(
     patch, path = "/discussions/{id}", tag = "discussions",
     params(("id" = DiscussionId, Path, description = "Discussion id")),
     request_body = UpdateDiscussionRequest,
     responses(
         (status = 200, description = "Updated", body = Discussion),
-        (status = 403, description = "Not yours and not a moderator", body = Problem,
+        (status = 403, description = "Not yours and not a moderator, or a status change by a non-moderator", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
