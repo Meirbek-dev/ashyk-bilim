@@ -16,6 +16,8 @@ import {
   X,
 } from 'lucide-react'
 import { useUserCourses } from '@/features/users/hooks/useUsers'
+import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
+import { useSession } from '@/hooks/useSession'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import UserAvatar from '@components/Objects/UserAvatar'
@@ -162,6 +164,9 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
     enabled: Boolean(userData.username),
   })
   const userCourses = userCoursesQuery.isSuccess ? userCoursesQuery.data : []
+  // Same progress label as home/courses: the cards need the viewer's trail (UX-053).
+  const { isAuthenticated } = useSession()
+  const { data: trailData, isLoading: isTrailLoading } = useTrailCurrent({ enabled: isAuthenticated })
 
   return (
     <div className="text-foreground container mx-auto py-8">
@@ -260,7 +265,11 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       return (
                         <div key={course.id} className="mx-auto w-full max-w-[300px]">
-                          <CourseThumbnail course={courseThumbnailData} />
+                          <CourseThumbnail
+                            course={courseThumbnailData}
+                            trailData={trailData}
+                            trailLoading={isAuthenticated && isTrailLoading}
+                          />
                         </div>
                       )
                     })}

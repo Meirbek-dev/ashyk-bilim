@@ -22,6 +22,8 @@ import { toast } from 'sonner'
 import { learnerCourseProgress } from '@/features/learner-course/api'
 import type { LearnerCourseState } from '@/features/learner-course/api'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
+import { buildCourseWorkspacePath } from '@/lib/course-management'
+import Link from '@components/ui/AppLink'
 
 interface CourseActionsProps {
   courseuuid: string
@@ -66,6 +68,8 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     learnerState?.certificate?.issued && learnerState.certificate.href
       ? getAbsoluteUrl(learnerState.certificate.href)
       : null
+  // 100 % without a certificate: the wire's next action is a review, not «Продолжить» (UX-053).
+  const isReviewCompletion = isStarted && !nextUnfinished && learnerState?.next_action?.id === 'review_completion'
 
   // Anonymous: sign in and come straight back to this course.
   const loginHref = buildLoginRedirect(`/course/${courseuuid}`)
@@ -79,6 +83,10 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     // A completed course with a certificate leads to the certificate, not back into the course.
     if (isStarted && !nextUnfinished && certificateHref) {
       router.push(certificateHref)
+      return
+    }
+    if (isReviewCompletion) {
+      setIsProgressOpen(true)
       return
     }
 
@@ -186,22 +194,34 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
       await refetch()
       toast.success(t('applicationWithdrawn'), { id: loadingToast })
     } catch (error) {
+      // Stale page: the application was decided (403) or withdrawn elsewhere (404) — refetch and say so (UX-050).
+      if (hasErrorCode(error, 'forbidden') || hasErrorCode(error, 'not-found')) {
+        await refetch()
+        toast.info(t('applicationAlreadyReviewed'), { id: loadingToast })
+        return
+      }
       toastApiError(error, { toastId: loadingToast }, t('withdrawApplicationError'))
     }
   }
 
-  const renderActionButton = (action: 'start' | 'continue' | 'certificate') => {
+  const renderActionButton = (action: 'start' | 'continue' | 'certificate' | 'review') => {
     const isAuthenticated = Boolean(currentUser)
     const icon =
       action === 'start' ? (
         <PlayCircle className="size-5" />
-      ) : action === 'certificate' ? (
+      ) : action === 'certificate' || action === 'review' ? (
         <CheckCircle2 className="size-5" />
       ) : (
         <ArrowRight className="size-5" />
       )
     const label =
-      action === 'start' ? t('startCourse') : action === 'certificate' ? t('viewCertificate') : t('continueLearning')
+      action === 'start'
+        ? t('startCourse')
+        : action === 'certificate'
+          ? t('viewCertificate')
+          : action === 'review'
+            ? t('reviewCompletion')
+            : t('continueLearning')
 
     return (
       <div className="flex items-center gap-3">
@@ -237,10 +257,14 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
 
     if (contributorStatus === 'ACTIVE') {
       return (
-        <div className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 px-4 text-sm font-medium text-emerald-800 shadow-xs dark:border-emerald-500/25 dark:from-emerald-500/10 dark:to-teal-500/5 dark:text-emerald-400 dark:shadow-sm dark:shadow-emerald-950/20">
+        <Link
+          href={buildCourseWorkspacePath(courseuuid, 'overview')}
+          className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 px-4 text-sm font-medium text-emerald-800 shadow-xs hover:underline dark:border-emerald-500/25 dark:from-emerald-500/10 dark:to-teal-500/5 dark:text-emerald-400 dark:shadow-sm dark:shadow-emerald-950/20"
+        >
           <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
           {t('youAreAContributor')}
-        </div>
+          <ArrowRight className="size-4" />
+        </Link>
       )
     }
 
@@ -393,7 +417,15 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
           {isActionLoading ? (
             <Loader2 className="size-5 animate-spin" />
           ) : (
-            renderActionButton(!isStarted ? 'start' : !nextUnfinished && certificateHref ? 'certificate' : 'continue')
+            renderActionButton(
+              !isStarted
+                ? 'start'
+                : !nextUnfinished && certificateHref
+                  ? 'certificate'
+                  : isReviewCompletion
+                    ? 'review'
+                    : 'continue',
+            )
           )}
         </Button>
 

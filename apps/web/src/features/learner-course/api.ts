@@ -10,7 +10,10 @@ export const learnerCourseStateQueryOptions = (courseUuid: string, enabled = tru
     queryKey: ['learner-course', courseUuid, 'state'],
     queryFn: () => apiJson(`courses/${courseUuid}/learner-state`, {}, value => LearnerCourseState.parse(value)),
     enabled: enabled && Boolean(courseUuid),
-    staleTime: 15_000,
+    // Teachers publish/unpublish while the learner reads: refresh on focus and remount (UX-050).
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   })
 
 /**

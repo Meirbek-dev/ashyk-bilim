@@ -21,6 +21,11 @@ export function contributorsQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.contributors(id),
     queryFn: () => listContributors(id),
+    // Two people edit this roster (applicant / roster manager): pick up the
+    // other side's change on focus and on remount instead of the 60 s default (UX-050).
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   })
 }
 

@@ -462,10 +462,11 @@ async fn applicant_withdraws_pending_application(pool: PgPool) {
         "{}",
         withdrawn.text()
     );
-    // Nothing pending any more: back to the roster-manager gate.
+    // Nothing pending any more: a stale second withdraw is a 404, not a
+    // roster-manager 403 (UX-050).
     assert_eq!(
         app.delete_as(&helper, &me).await.status,
-        StatusCode::FORBIDDEN
+        StatusCode::NOT_FOUND
     );
     // Free to apply again.
     assert_eq!(

@@ -2956,6 +2956,8 @@
       "applicationPending": "Заявка на участие в качестве автора на рассмотрении",
       "applyToContribute": "Подать заявку на участие",
       "applicationWithdrawn": "Заявка отозвана",
+      "applicationAlreadyReviewed": "Заявка уже рассмотрена — статус обновлён",
+      "reviewCompletion": "Посмотреть итоги курса",
       "withdrawApplication": "Отозвать заявку",
       "withdrawApplicationError": "Не удалось отозвать заявку. Пожалуйста, повторите попытку позже.",
       "withdrawingApplication": "Отзыв заявки...",

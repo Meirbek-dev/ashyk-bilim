@@ -2943,6 +2943,8 @@
       "applicationPending": "Contributor application pending",
       "applyToContribute": "Apply to contribute",
       "applicationWithdrawn": "Application withdrawn",
+      "applicationAlreadyReviewed": "The application was already reviewed — status updated",
+      "reviewCompletion": "Review course completion",
       "withdrawApplication": "Withdraw application",
       "withdrawApplicationError": "Could not withdraw the application. Please try again later.",
       "withdrawingApplication": "Withdrawing application...",

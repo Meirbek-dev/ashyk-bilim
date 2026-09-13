@@ -2957,6 +2957,8 @@
       "applicationPending": "Автор ретінде қатысуға өтінім қаралуда",
       "applyToContribute": "Қатысуға өтінім беру",
       "applicationWithdrawn": "Өтінім кері қайтарылды",
+      "applicationAlreadyReviewed": "Өтінім қаралып қойған — мәртебе жаңартылды",
+      "reviewCompletion": "Курс қорытындысын қарау",
       "withdrawApplication": "Өтінімді кері қайтару",
       "withdrawApplicationError": "Өтінімді кері қайтару мүмкін болмады. Кейінірек қайталап көріңіз.",
       "withdrawingApplication": "Өтінім кері қайтарылуда...",

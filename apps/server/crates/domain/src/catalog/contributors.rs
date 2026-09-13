@@ -125,10 +125,14 @@ impl CoursesService {
         course_id: CourseId,
         user_id: UserId,
     ) -> Result<()> {
+        // Self-service: no row at all is a 404 (the application was already
+        // decided or withdrawn), not a roster-manager 403 (UX-050).
         let own_pending = user_id == actor.user_id
             && ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
                 .await?
-                .is_some_and(|row| row.status == "pending");
+                .ok_or_else(|| Error::not_found("contributor"))?
+                .status
+                == "pending";
         let course = if own_pending {
             self.get(actor, course_id).await?
         } else {
