@@ -725,6 +725,50 @@ async fn budget_and_master_switch_answer_503(pool: PgPool) {
     assert_eq!(capabilities.json()["reason"], "ai_disabled");
 }
 
+/// UX-037: without a provider, draft mode answers in the requested
+/// language (the legacy text was Russian regardless).
+#[sqlx::test(migrations = "../../migrations")]
+async fn draft_mode_answers_in_the_requested_language(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.ai.openai_api_key = None;
+        config.ai.ai_draft_mode_enabled = true;
+    })
+    .await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Draft").await;
+    let base = app.serve().await;
+    let client = reqwest::Client::new();
+    let mut stream = client
+        .post(format!("{base}/api/v2/ai/qa/{course_id}/chat"))
+        .header("cookie", &alice.cookie)
+        .json(&serde_json::json!({
+            "threadId": "t", "runId": "r",
+            "messages": [{ "id": "m1", "role": "user", "content": "Монада дегеніміз не?" }],
+            "forwardedProps": { "client_turn_id": "turn-kk", "language": "kk" },
+            "tools": [], "context": [], "state": {}
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(stream.status(), StatusCode::OK);
+    let mut buffer = String::new();
+    read_until(&mut stream, &mut buffer, "RUN_FINISHED").await;
+    let parsed = events(&buffer);
+    let answer: String = parsed
+        .iter()
+        .filter(|e| e["type"] == "TEXT_MESSAGE_CONTENT")
+        .filter_map(|e| e["delta"].as_str())
+        .collect();
+    assert!(answer.starts_with("Курс бойынша"), "{answer}");
+    let finished = parsed.last().unwrap();
+    assert_eq!(finished["type"], "RUN_FINISHED");
+    assert_eq!(
+        finished["result"]["follow_up_suggestions"][0],
+        "Бұл сұраққа оқытушыдан жауап беруін сұрау"
+    );
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn capabilities_follow_role_and_surface(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

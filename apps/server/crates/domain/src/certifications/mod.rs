@@ -393,7 +393,10 @@ mod tests {
             normalize_verify_code(" ftsb-2abc 9xyz-defg "),
             "FTSB-2ABC-9XYZ-DEFG"
         );
-        assert_eq!(normalize_verify_code("ftsb2abc9xyzdefg"), "FTSB-2ABC-9XYZ-DEFG");
+        assert_eq!(
+            normalize_verify_code("ftsb2abc9xyzdefg"),
+            "FTSB-2ABC-9XYZ-DEFG"
+        );
         assert_eq!(normalize_verify_code("short"), "SHORT");
     }
 }

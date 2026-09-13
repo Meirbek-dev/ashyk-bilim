@@ -34,15 +34,18 @@ pub enum Prompt {
     SubmissionAnalysis,
 }
 
-/// Locale directories that exist in the legacy prompt tree.
+/// Locale directories that exist in the legacy prompt tree (`Root` = en).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Locale {
+pub enum Locale {
     Root,
     Ru,
     Kk,
 }
 
-fn resolve_locale(locale: Option<&str>) -> Locale {
+/// `ru`/`ru-RU` → Ru, `kk`/`kk-KZ` → Kk, anything else (incl. `en`, empty,
+/// `auto`) → Root.
+#[must_use]
+pub fn resolve_locale(locale: Option<&str>) -> Locale {
     let Some(raw) = locale.map(str::trim).filter(|l| !l.is_empty()) else {
         return Locale::Root;
     };

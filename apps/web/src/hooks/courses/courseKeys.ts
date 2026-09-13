@@ -1,4 +1,12 @@
-import type { Activity, Chapter, Collection, Course, IssuedCertificate, Trail } from '@/lib/api/generated/zod'
+import type {
+  Activity,
+  Chapter,
+  Collection,
+  Course,
+  IssuedCertificate,
+  Trail,
+  VerifiedCertificate,
+} from '@/lib/api/generated/zod'
 import { unixToIso } from '@/lib/api/contract'
 
 /** Accepts legacy `course_<id>` style params and returns the bare v2 id. */
@@ -60,7 +68,8 @@ export function toAppTrail(trail: Trail): AppTrailData {
   return { ...trail, runs: trail.runs.map(run => ({ ...run, course: toAppCourse(run.course) })) }
 }
 
-export function toAppCertification(issued: IssuedCertificate): AppCertification {
+/** The learner's own certificate or the public verify view (no holder id). */
+export function toAppCertification(issued: IssuedCertificate | VerifiedCertificate): AppCertification {
   const { certificate, certification, course } = issued
   return {
     ...issued,
