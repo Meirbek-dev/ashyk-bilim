@@ -190,6 +190,25 @@ impl SessionStore {
         Ok(Some(record))
     }
 
+    /// Read without touching: no TTL refresh, no `last_seen` update (session
+    /// listings must not keep idle sessions alive). Sessions past the
+    /// absolute cap read as gone, same as [`Self::get_and_touch`].
+    pub async fn peek(&self, id: &str) -> Result<Option<SessionRecord>> {
+        let mut conn = self.redis.clone();
+        let raw: Option<String> = conn
+            .get(session_key(id))
+            .await
+            .map_err(|e| Error::internal("loading session", e))?;
+        let Some(raw) = raw else { return Ok(None) };
+        let record: SessionRecord =
+            serde_json::from_str(&raw).map_err(|e| Error::internal("corrupt session record", e))?;
+        let age = now_unix().saturating_sub(record.created_at_unix);
+        if age >= i64::try_from(ABSOLUTE_CAP.as_secs()).unwrap_or(i64::MAX) {
+            return Ok(None);
+        }
+        Ok(Some(record))
+    }
+
     pub async fn revoke(&self, user_id: UserId, id: &str) -> Result<()> {
         let mut conn = self.redis.clone();
         let () = conn

@@ -90,20 +90,29 @@ impl IntoResponse for ApiError {
         let problem = Problem::from_error(&err);
         let status =
             StatusCode::from_u16(problem.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        // Limiters that know their window put `retry_after_seconds` in
+        // `details`; the rest fall back to a minute.
+        let retry_after = match status {
+            StatusCode::SERVICE_UNAVAILABLE => Some(30),
+            StatusCode::TOO_MANY_REQUESTS => Some(
+                problem
+                    .details
+                    .as_ref()
+                    .and_then(|d| d.get("retry_after_seconds"))
+                    .and_then(serde_json::Value::as_u64)
+                    .unwrap_or(60),
+            ),
+            _ => None,
+        };
         let mut response = (status, Json(problem)).into_response();
         response.headers_mut().insert(
             header::CONTENT_TYPE,
             HeaderValue::from_static(PROBLEM_CONTENT_TYPE),
         );
-        let retry_after = match status {
-            StatusCode::SERVICE_UNAVAILABLE => Some("30"),
-            StatusCode::TOO_MANY_REQUESTS => Some("60"),
-            _ => None,
-        };
-        if let Some(seconds) = retry_after {
-            response
-                .headers_mut()
-                .insert(header::RETRY_AFTER, HeaderValue::from_static(seconds));
+        if let Some(seconds) = retry_after
+            && let Ok(value) = HeaderValue::from_str(&seconds.to_string())
+        {
+            response.headers_mut().insert(header::RETRY_AFTER, value);
         }
         response
     }

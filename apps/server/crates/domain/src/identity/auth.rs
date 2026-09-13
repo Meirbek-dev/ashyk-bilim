@@ -28,7 +28,7 @@ use sqlx::PgPool;
 
 use crate::identity::Actor;
 use crate::identity::rate_limit::RateLimiter;
-use crate::identity::sessions::{NewSession, SessionRecord, SessionStore};
+use crate::identity::sessions::{NewSession, SessionStore};
 
 const IP_LIMIT: (u32, Duration) = (20, Duration::from_mins(5));
 const LOGIN_NAME_LIMIT: (u32, Duration) = (10, Duration::from_mins(15));
@@ -231,29 +231,35 @@ impl IdentityService {
         .await
     }
 
+    /// `rate-limited` with `retry_after_seconds` from the live window (the
+    /// problem+json layer turns it into `Retry-After`).
+    async fn rate_limited(&self, key: &str, window: Duration, message: &str) -> Result<Error> {
+        let retry_after = self.limiter.retry_after(key, window).await?;
+        Ok(Error::app_with_details(
+            ErrorCode::RateLimited,
+            message,
+            serde_json::json!({ "retry_after_seconds": retry_after }),
+        ))
+    }
+
     /// Per-IP and per-login-name limits, checked before any Zitadel
     /// round-trip. Returns the login-name key (cleared on success).
     async fn enforce_login_limits(&self, input: &LoginInput) -> Result<String> {
         if let Some(ip) = &input.ip {
             let (limit, window) = IP_LIMIT;
-            if !self
-                .limiter
-                .check(&format!("rl:login:ip:{ip}"), limit, window)
-                .await?
-            {
-                return Err(Error::app(
-                    ErrorCode::RateLimited,
-                    "too many login attempts",
-                ));
+            let key = format!("rl:login:ip:{ip}");
+            if !self.limiter.check(&key, limit, window).await? {
+                return Err(self
+                    .rate_limited(&key, window, "too many login attempts")
+                    .await?);
             }
         }
         let login_key = format!("rl:login:name:{}", input.login.to_lowercase());
         let (limit, window) = LOGIN_NAME_LIMIT;
         if !self.limiter.check(&login_key, limit, window).await? {
-            return Err(Error::app(
-                ErrorCode::RateLimited,
-                "too many login attempts",
-            ));
+            return Err(self
+                .rate_limited(&login_key, window, "too many login attempts")
+                .await?);
         }
         Ok(login_key)
     }
@@ -430,17 +436,13 @@ impl IdentityService {
         (limit, window): (u32, Duration),
     ) -> Result<()> {
         let Some(ip) = ip else { return Ok(()) };
-        if self
-            .limiter
-            .check(&format!("rl:register:{bucket}:ip:{ip}"), limit, window)
-            .await?
-        {
+        let key = format!("rl:register:{bucket}:ip:{ip}");
+        if self.limiter.check(&key, limit, window).await? {
             Ok(())
         } else {
-            Err(Error::app(
-                ErrorCode::RateLimited,
-                "too many registration attempts",
-            ))
+            Err(self
+                .rate_limited(&key, window, "too many registration attempts")
+                .await?)
         }
     }
 
@@ -732,7 +734,7 @@ impl IdentityService {
     /// Terminate the actor's current session (idempotent). The Zitadel-side
     /// session delete is best-effort — our session is the credential.
     pub async fn logout(&self, actor: &Actor) -> Result<()> {
-        if let Some(record) = self.sessions.get_and_touch(&actor.session_id).await? {
+        if let Some(record) = self.sessions.peek(&actor.session_id).await? {
             let token = SecretString::from(record.zitadel_session_token.clone());
             if let Err(err) = self
                 .zitadel
@@ -760,7 +762,7 @@ impl IdentityService {
     pub async fn list_sessions(&self, actor: &Actor) -> Result<Vec<SessionSummary>> {
         let mut summaries = Vec::new();
         for id in self.sessions.list(actor.user_id).await? {
-            if let Some(record) = self.session_peek(&id).await? {
+            if let Some(record) = self.sessions.peek(&id).await? {
                 summaries.push(SessionSummary {
                     handle: session_handle(&id),
                     current: id == actor.session_id,
@@ -793,10 +795,6 @@ impl IdentityService {
             }
         }
         Ok(false)
-    }
-
-    async fn session_peek(&self, id: &str) -> Result<Option<SessionRecord>> {
-        self.sessions.get_and_touch(id).await
     }
 }
 

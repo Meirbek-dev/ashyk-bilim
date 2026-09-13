@@ -37,6 +37,21 @@ impl RateLimiter {
         Ok(count <= limit)
     }
 
+    /// Seconds until the window on `key` resets (`Retry-After`); `fallback`
+    /// when the key has no TTL (raced away between INCR and this read).
+    pub async fn retry_after(&self, key: &str, fallback: Duration) -> Result<u64> {
+        let mut conn = self.redis.clone();
+        let ttl: i64 = redis::cmd("TTL")
+            .arg(key)
+            .query_async(&mut conn)
+            .await
+            .map_err(|e| Error::internal("rate limit ttl", e))?;
+        Ok(u64::try_from(ttl)
+            .ok()
+            .filter(|t| *t > 0)
+            .unwrap_or(fallback.as_secs()))
+    }
+
     /// Clear a window early (e.g. successful login clears the failure count).
     pub async fn clear(&self, key: &str) -> Result<()> {
         let mut conn = self.redis.clone();
