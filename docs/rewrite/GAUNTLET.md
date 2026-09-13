@@ -86,7 +86,7 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   `NEXT_PUBLIC_MEDIA_URL=http://localhost:3000/` in `apps/web/.env.local` — otherwise
   avatars and block media 404 (ORB) because nothing serves `/content/`.
 - **Pass 11+ process layout (2026-09-13):** `abenv.sh` and the live logs sit in the
-  session scratchpad `%LOCALAPPDATA%\Temp\claude\X--projects-ashyq-bilim3c95abb-74bf-437e-98f7-358220713b12\scratchpad\`
+  session scratchpad `%LOCALAPPDATA%\Temp\claude\X--projects-ashyq-bilim\a3c95abb-74bf-437e-98f7-358220713b12\scratchpad\`
   (`abenv.sh`, `server.log`, `worker.log`). Serve + worker run with
   `RUST_LOG='info,tower_http::trace=debug'` so every request logs
   `method/uri → status/latency` — that is the per-request evidence line for critics.
