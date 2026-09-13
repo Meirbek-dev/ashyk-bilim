@@ -196,12 +196,33 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(board.json()["entries"][0]["username"], "bob");
     let bob_rank = app.get_as(&bob, "/api/v2/gamification/rank").await;
     assert_eq!(bob_rank.json()["rank"], 1);
+    // BUG-137: an opted-out profile has no rank, and a nested null is not an answer.
+    let alice_rank = app.get_as(&alice, "/api/v2/gamification/rank").await;
+    assert_eq!(alice_rank.status, StatusCode::OK, "{}", alice_rank.text());
+    assert!(alice_rank.json()["rank"].is_null());
+    let nested_null = app
+        .patch_as(
+            &alice,
+            "/api/v2/gamification/preferences",
+            &serde_json::json!({ "privacy": { "showOnLeaderboard": null } }),
+        )
+        .await;
+    assert_eq!(
+        nested_null.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        nested_null.text()
+    );
     app.patch_as(
         &alice,
         "/api/v2/gamification/preferences",
         &serde_json::json!({ "privacy": { "showOnLeaderboard": true } }),
     )
     .await;
+    assert_eq!(
+        app.get_as(&alice, "/api/v2/gamification/rank").await.json()["rank"],
+        1
+    );
     let board = app
         .get_as(&bob, "/api/v2/gamification/leaderboard?limit=5")
         .await;

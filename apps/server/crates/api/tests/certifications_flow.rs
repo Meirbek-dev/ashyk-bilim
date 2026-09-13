@@ -213,6 +213,12 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
     assert!(verified.json()["holder"].get("username").is_none());
     assert!(verified.json()["holder"].get("email").is_none());
     assert!(verified.json()["certificate"].get("user_id").is_none());
+    // BUG-137: nor the course's author ids.
+    assert!(verified.json()["course"]["creator_id"].is_null());
+    assert_eq!(
+        verified.json()["course"]["contributor_ids"],
+        serde_json::json!([])
+    );
     // BUG-116: codes are case-insensitive and the dashes are optional.
     let sloppy = code.to_lowercase().replace('-', "");
     let relaxed = app.get(&format!("/api/v2/certificates/{sloppy}")).await;

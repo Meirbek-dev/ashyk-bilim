@@ -663,6 +663,14 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
         empty.text()
     );
     assert_eq!(empty.json()["field_errors"][0]["field"], "files");
+    // BUG-137: …and it did not open an empty draft attempt on the way out.
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{empty_target}/me"),
+        )
+        .await;
+    assert_eq!(mine.json().as_array().unwrap().len(), 0, "{}", mine.text());
 
     // Penalised: 10%/day, two days late (capped at 5 days).
     let penalised = published_activity(

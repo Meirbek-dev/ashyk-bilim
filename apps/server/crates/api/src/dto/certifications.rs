@@ -128,7 +128,12 @@ impl From<domain::VerifiedCertificate> for VerifiedCertificate {
                 issued_at_unix: c.created_at,
             },
             certification: v.issued.certification.into(),
-            course: v.issued.course.into(),
+            // Public view: no user ids at all (BUG-137) — `creator_id` is optional on the wire.
+            course: Course {
+                creator_id: None,
+                contributor_ids: Vec::new(),
+                ..v.issued.course.into()
+            },
             holder: CertificateHolder {
                 display_name: v.holder_display_name,
             },

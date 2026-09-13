@@ -302,9 +302,20 @@ impl GamificationService {
         ab_db::gamification::ensure_profile(&self.pool, actor.user_id).await
     }
 
-    pub async fn rank(&self, actor: &Actor) -> Result<i64> {
+    /// Position on the public board; `None` for a profile that opted out
+    /// (`privacy.showOnLeaderboard = false`) — it is not on the board (BUG-137).
+    pub async fn rank(&self, actor: &Actor) -> Result<Option<i64>> {
         let profile = ab_db::gamification::ensure_profile(&self.pool, actor.user_id).await?;
-        Ok(ab_db::gamification::count_with_more_xp(&self.pool, profile.total_xp).await? + 1)
+        if profile
+            .preferences
+            .pointer("/privacy/showOnLeaderboard")
+            .is_some_and(|v| v == false)
+        {
+            return Ok(None);
+        }
+        Ok(Some(
+            ab_db::gamification::count_with_more_xp(&self.pool, profile.total_xp).await? + 1,
+        ))
     }
 
     pub async fn leaderboard(&self, limit: i64, offset: i64) -> Result<Leaderboard> {
@@ -368,6 +379,16 @@ impl GamificationService {
                     Some((
                         "invalid",
                         format!("preferences.{key} must be an object or null"),
+                    ))
+                } else if value
+                    .as_object()
+                    .is_some_and(|section| section.values().any(serde_json::Value::is_null))
+                {
+                    // `{"privacy": {"showOnLeaderboard": null}}` is neither an opt-in nor an
+                    // opt-out; drop the key with `"privacy": null` instead (BUG-137).
+                    Some((
+                        "invalid",
+                        format!("preferences.{key} values must not be null"),
                     ))
                 } else {
                     None

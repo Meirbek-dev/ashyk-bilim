@@ -164,7 +164,8 @@ pub struct LeaderboardQuery {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserRank {
     pub user_id: UserId,
-    pub rank: i64,
+    /// `null` when the profile opted out of the leaderboard.
+    pub rank: Option<i64>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
