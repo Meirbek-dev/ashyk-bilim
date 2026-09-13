@@ -2,7 +2,7 @@
 //! semantics — 1-based contiguous positions per parent, moves clamp the
 //! target position and renumber all siblings.
 
-use ab_core::assessments::FileSubmissionLifecycle;
+use ab_core::assessments::{FileSubmissionLifecycle, Lifecycle};
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId};
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use sqlx::PgPool;
@@ -273,6 +273,49 @@ impl CurriculumService {
         Ok(ActivityDetail { activity, content })
     }
 
+    /// An activity goes live only behind a published backing object: a
+    /// file-submission config (`POST /file-submissions/{id}/publish` flips
+    /// both) or, for quiz/exam/code, a `published` assessment (its lifecycle
+    /// transition flips the activity). The raw toggle refuses otherwise so
+    /// learners never see an activity that answers 404 when opened.
+    async fn require_publishable(
+        &self,
+        activity_id: ActivityId,
+        activity_type: &str,
+    ) -> Result<()> {
+        let reason = match activity_type {
+            "file_submission" => {
+                let published = ab_db::file_submissions::get_file_submission_by_activity(
+                    &self.pool,
+                    activity_id,
+                )
+                .await?
+                .is_some_and(|c| c.lifecycle == FileSubmissionLifecycle::Published);
+                (!published).then_some("file-submission-unpublished")
+            }
+            "quiz" | "exam" | "code_challenge" => {
+                match ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id)
+                    .await?
+                {
+                    None if activity_type == "code_challenge" => {
+                        Some("code-challenge-unconfigured")
+                    }
+                    Some(a) if a.lifecycle == Lifecycle::Published => None,
+                    _ => Some("assessment-not-ready"),
+                }
+            }
+            _ => None,
+        };
+        match reason {
+            None => Ok(()),
+            Some(reason) => Err(Error::app_with_details(
+                ErrorCode::ActivityNotReady,
+                "publish the activity's assessment or config before the activity",
+                serde_json::json!({ "reason": reason }),
+            )),
+        }
+    }
+
     pub async fn update_activity(
         &self,
         actor: &Actor,
@@ -289,32 +332,24 @@ impl CurriculumService {
                 serde_json::json!({ "expected": expected, "actual": activity.version }),
             ));
         }
-        // A file-submission activity goes live only through a published
-        // config (`POST /file-submissions/{id}/publish` flips both); the raw
-        // toggle refuses so learners never see an activity without one.
-        if changes.published == Some(true)
-            && !activity.published
-            && activity.activity_type == "file_submission"
+        if let Some((activity_type, sub_type)) = changes.type_pair
+            && !valid_pair(activity_type, sub_type)
         {
-            let published =
-                ab_db::file_submissions::get_file_submission_by_activity(&self.pool, activity_id)
-                    .await?
-                    .is_some_and(|c| c.lifecycle == FileSubmissionLifecycle::Published);
-            if !published {
-                return Err(Error::app(
-                    ErrorCode::ActivityNotReady,
-                    "publish the file-submission config before the activity",
-                ));
-            }
+            return Err(Error::validation(vec![FieldError {
+                field: "activity_sub_type".into(),
+                code: "invalid".into(),
+                message: format!("'{sub_type}' is not valid for '{activity_type}'"),
+            }]));
+        }
+        // The publish gate reads the MERGED row: the type this PATCH sets
+        // (or keeps) and the published flag it asks for.
+        let merged_type = changes
+            .type_pair
+            .map_or(activity.activity_type.as_str(), |(t, _)| t);
+        if changes.published == Some(true) && !activity.published {
+            self.require_publishable(activity_id, merged_type).await?;
         }
         if let Some((activity_type, sub_type)) = changes.type_pair {
-            if !valid_pair(activity_type, sub_type) {
-                return Err(Error::validation(vec![FieldError {
-                    field: "activity_sub_type".into(),
-                    code: "invalid".into(),
-                    message: format!("'{sub_type}' is not valid for '{activity_type}'"),
-                }]));
-            }
             ab_db::catalog::set_activity_type(&self.pool, activity_id, activity_type, sub_type)
                 .await?;
         }

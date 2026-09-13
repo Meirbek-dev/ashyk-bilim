@@ -292,12 +292,7 @@ async fn curriculum_respects_course_access(pool: PgPool) {
     assert_eq!(hidden.status, StatusCode::NOT_FOUND);
 
     // Published course → learners read the curriculum.
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{course}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&course).await;
     let visible = app
         .get_as(&learner, &format!("/api/v2/courses/{course}/curriculum"))
         .await;
@@ -377,6 +372,105 @@ async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
     assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
 }
 
+/// The raw publish toggle refuses an assessment-backed activity whose
+/// assessment is not `published` (BUG-102), and the gate reads the type
+/// this PATCH sets, not the stored one (BUG-104).
+#[sqlx::test(migrations = "../../migrations")]
+async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("exams", "exams@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Exams").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "exam", "title": "Final" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let assessment_id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+
+    // Draft assessment → the activity cannot go live on its own.
+    let refused = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "activity-not-ready");
+    assert_eq!(refused.json()["details"]["reason"], "assessment-not-ready");
+
+    // Published assessment → the toggle is a no-op that succeeds.
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{assessment_id}/items"),
+        &serde_json::json!({
+            "title": "1+1?", "max_score": 5,
+            "body": { "kind": "choice", "prompt": "1+1?",
+                      "options": [{ "id": "a", "text": "2", "is_correct": true },
+                                  { "id": "b", "text": "3", "is_correct": false }] }
+        }),
+    )
+    .await;
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{assessment_id}/lifecycle"),
+            &serde_json::json!({ "to": "published", "note": "go" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let toggled = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(toggled.status, StatusCode::OK, "{}", toggled.text());
+
+    // Type change + publish in one body: the gate sees the NEW type.
+    let draft = create_activity(&app, &teacher, &chapter_id, "Essay").await;
+    let bypass = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{draft}"),
+            &serde_json::json!({
+                "activity_type": "file_submission",
+                "activity_sub_type": "file_submission_standard",
+                "published": true,
+            }),
+        )
+        .await;
+    assert_eq!(bypass.status, StatusCode::CONFLICT, "{}", bypass.text());
+    assert_eq!(
+        bypass.json()["details"]["reason"],
+        "file-submission-unpublished"
+    );
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/activities/{draft}"))
+        .await;
+    assert_eq!(detail.json()["published"], false);
+    assert_eq!(detail.json()["activity_type"], "video");
+}
+
 /// Unpublished activities exist for editors only: learners and anonymous
 /// callers get a curriculum without them and a 404 for the activity and
 /// its blocks (BUG-099).
@@ -396,12 +490,7 @@ async fn drafts_are_visible_to_editors_only(pool: PgPool) {
         )
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{course}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&course).await;
 
     let names = |res: ab_testkit::TestResponse| -> Vec<String> {
         res.json()["chapters"][0]["activities"]
