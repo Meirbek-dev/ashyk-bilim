@@ -304,7 +304,29 @@ impl AiService {
             .await?
             .ok_or_else(|| Error::not_found("course analysis"))
     }
+}
 
+/// The ids the client can review: each recommendation's own `id`, its
+/// positional `finding-{index}` fallback, or `summary` when the report has
+/// no recommendation list (the web's `normalizeFindings`).
+fn known_finding_ids(report: &serde_json::Value) -> Vec<String> {
+    match report.get("recommendations").and_then(|r| r.as_array()) {
+        Some(recs) => recs
+            .iter()
+            .enumerate()
+            .flat_map(|(i, rec)| {
+                rec.get("id")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned)
+                    .into_iter()
+                    .chain(std::iter::once(format!("finding-{i}")))
+            })
+            .collect(),
+        None => vec!["summary".to_owned()],
+    }
+}
+
+impl AiService {
     /// `POST /ai/course-analysis/{analysis}/findings/review`: records the
     /// teacher's verdict under `report.finding_reviews[finding_id]`.
     pub async fn review_course_finding(
@@ -327,6 +349,13 @@ impl AiService {
         let mut report = analysis.report;
         if !report.is_object() {
             report = serde_json::json!({});
+        }
+        if !known_finding_ids(&report).iter().any(|k| k == finding_id) {
+            return Err(Error::validation(vec![FieldError {
+                field: "finding_id".into(),
+                code: "unknown".into(),
+                message: format!("finding '{finding_id}' is not in this report"),
+            }]));
         }
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

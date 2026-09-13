@@ -981,6 +981,16 @@ impl FileSubmissionsService {
             FileGradeAction::Publish => FileAttemptStatus::Published,
             FileGradeAction::Return => FileAttemptStatus::Returned,
         };
+        // Same rule as assessment submissions: a released grade is final
+        // (re-publishing is allowed, retracting it is not).
+        if attempt.status == FileAttemptStatus::Published && status != FileAttemptStatus::Published
+        {
+            return Err(Error::validation(vec![field(
+                "action",
+                "transition-not-allowed",
+                format!("cannot move a published attempt to {status}"),
+            )]));
+        }
         if status != FileAttemptStatus::Returned && input.final_score.is_none() {
             return Err(Error::validation(vec![field(
                 "final_score",
@@ -1093,10 +1103,12 @@ impl FileSubmissionsService {
                 .await
                 .map_err(|_| Error::not_found("file"))?;
         }
-        let url = self
-            .storage
-            .presign_get(Bucket::Private, &file.storage_key, DOWNLOAD_TTL)
-            .await?;
+        let url = self.storage.presign_get(
+            Bucket::Private,
+            &file.storage_key,
+            Some(&file.display_name),
+            DOWNLOAD_TTL,
+        )?;
         Ok(SignedDownload {
             url,
             expires_at: now_unix() + i64::try_from(DOWNLOAD_TTL.as_secs()).unwrap_or(3600),

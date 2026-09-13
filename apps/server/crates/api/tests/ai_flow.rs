@@ -1185,3 +1185,59 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
     assert_eq!(open.json()["disabled_reasons"], serde_json::json!([]));
 }
 
+/// BUG-128: `language` is `auto`/ru/kk/en (422 otherwise) and a finding
+/// review names a finding of the report (`finding-{index}` or its id).
+#[sqlx::test(migrations = "../../migrations")]
+async fn course_analysis_rejects_unknown_language_and_finding(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.ai.openai_api_key = None;
+        config.ai.ai_draft_mode_enabled = true;
+    })
+    .await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = published_course(&app, &teacher, "Findings").await;
+    let analyze = format!("/api/v2/ai/course-analysis/{course_id}/analyze");
+    let bad_language = app
+        .post_as(&teacher, &analyze, &serde_json::json!({ "language": "xx" }))
+        .await;
+    assert_eq!(
+        bad_language.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad_language.text()
+    );
+    assert_eq!(bad_language.json()["field_errors"][0]["field"], "language");
+    let analysed = app
+        .post_as(&teacher, &analyze, &serde_json::json!({ "language": "ru" }))
+        .await;
+    assert_eq!(analysed.status, StatusCode::OK, "{}", analysed.text());
+    let analysis_id = analysed.json()["id"].as_str().unwrap().to_owned();
+    let review = format!("/api/v2/ai/course-analysis/{analysis_id}/findings/review");
+    let unknown = app
+        .post_as(
+            &teacher,
+            &review,
+            &serde_json::json!({ "finding_id": "nope", "action": "accepted" }),
+        )
+        .await;
+    assert_eq!(
+        unknown.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        unknown.text()
+    );
+    assert_eq!(unknown.json()["field_errors"][0]["field"], "finding_id");
+    assert_eq!(unknown.json()["field_errors"][0]["code"], "unknown");
+    let accepted = app
+        .post_as(
+            &teacher,
+            &review,
+            &serde_json::json!({ "finding_id": "finding-0", "action": "accepted" }),
+        )
+        .await;
+    assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.text());
+    assert_eq!(
+        accepted.json()["report"]["finding_reviews"]["finding-0"]["action"],
+        "accepted"
+    );
+}

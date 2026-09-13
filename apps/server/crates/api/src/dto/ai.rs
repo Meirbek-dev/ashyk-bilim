@@ -26,6 +26,34 @@ fn default_language() -> String {
     "auto".into()
 }
 
+/// `auto` or one of the platform languages (`ru`, `kk`, `en`, with or
+/// without a region tag) — see `ai::prompts::resolve_locale`.
+fn known_language(value: &str) -> garde::Result {
+    let lang = value
+        .split('-')
+        .next()
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if matches!(lang.as_str(), "auto" | "ru" | "kk" | "en") {
+        Ok(())
+    } else {
+        Err(garde::Error::new(format!(
+            "unsupported language '{value}' (auto, ru, kk, en)"
+        )))
+    }
+}
+
+// garde's custom-validator contract fixes these signatures (&field, &context).
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn valid_language(value: &str, _ctx: &()) -> garde::Result {
+    known_language(value)
+}
+
+#[allow(clippy::ref_option, clippy::trivially_copy_pass_by_ref)]
+fn valid_optional_language(value: &Option<String>, _ctx: &()) -> garde::Result {
+    value.as_deref().map_or(Ok(()), known_language)
+}
+
 // ── Runs ────────────────────────────────────────────────────────────────────
 
 /// One AI run as its owner sees it (legacy `AIRunStatusRead`).
@@ -192,7 +220,7 @@ pub struct QaForwardedProps {
     /// Continue an existing thread of the caller in this course.
     #[garde(skip)]
     pub thread_id: Option<AiThreadId>,
-    #[garde(length(max = 16))]
+    #[garde(custom(valid_optional_language))]
     pub language: Option<String>,
     /// Narrow the context to one activity of the course.
     #[garde(skip)]
@@ -326,7 +354,7 @@ impl From<ab_db::ai::QaMessageRow> for QaMessage {
 #[derive(Debug, Default, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LanguageRequest {
-    #[garde(length(max = 16))]
+    #[garde(custom(valid_language))]
     #[serde(default = "default_language")]
     pub language: String,
 }
@@ -347,7 +375,7 @@ pub struct FindingReviewRequest {
 pub struct LectureReviewRequest {
     #[garde(skip)]
     pub activity_id: Option<ActivityId>,
-    #[garde(length(max = 16))]
+    #[garde(custom(valid_language))]
     #[serde(default = "default_language")]
     pub language: String,
 }
@@ -365,7 +393,7 @@ pub struct RemediationRequest {
     #[garde(skip)]
     #[serde(default)]
     pub gate_mode: bool,
-    #[garde(length(max = 16))]
+    #[garde(custom(valid_language))]
     #[serde(default = "default_language")]
     pub language: String,
 }
@@ -385,7 +413,7 @@ pub struct StudyRequest {
     #[garde(skip)]
     #[serde(default = "StudyRequest::default_mode")]
     pub mode: StudyMode,
-    #[garde(length(max = 16))]
+    #[garde(custom(valid_language))]
     #[serde(default = "default_language")]
     pub language: String,
 }

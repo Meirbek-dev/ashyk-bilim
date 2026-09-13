@@ -507,6 +507,28 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         "{}",
         published_grade.text()
     );
+    // BUG-128: a released grade is final — it cannot be returned (same
+    // table as assessment submissions).
+    let retract = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some("5"),
+            &serde_json::json!({ "action": "return", "feedback": "again" }),
+        ))
+        .await;
+    assert_eq!(
+        retract.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        retract.text()
+    );
+    assert_eq!(retract.json()["field_errors"][0]["field"], "action");
+    assert_eq!(
+        retract.json()["field_errors"][0]["code"],
+        "transition-not-allowed"
+    );
     let visible = app
         .get_as(&alice, &format!("/api/v2/file-submissions/{id}/me"))
         .await;
