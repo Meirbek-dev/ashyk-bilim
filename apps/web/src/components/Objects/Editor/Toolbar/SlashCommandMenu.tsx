@@ -38,10 +38,24 @@ export function SlashCommandMenu() {
       closeSlashCommand(editor)
     }
 
+    // Focus stays in the editor while the menu is open, so cmdk never sees the
+    // keys itself: forward ArrowUp/ArrowDown/Enter to its root (the same React
+    // handler a focused palette would run) before ProseMirror inserts a newline.
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown' && event.key !== 'Enter') return
+      const root = menuRef.current?.querySelector('[cmdk-root]')
+      if (!root || (event.target instanceof Node && menuRef.current?.contains(event.target))) return
+      event.preventDefault()
+      event.stopPropagation()
+      root.dispatchEvent(new KeyboardEvent('keydown', { key: event.key, bubbles: true }))
+    }
+
     document.addEventListener('pointerdown', handlePointerDown, true)
+    document.addEventListener('keydown', handleKeyDown, true)
 
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown, true)
+      document.removeEventListener('keydown', handleKeyDown, true)
     }
   }, [editor, slashState?.active])
 

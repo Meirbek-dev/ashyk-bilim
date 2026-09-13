@@ -94,7 +94,7 @@ export const SlashCommand = Extension.create({
               closeSlashCommand(ext.editor)
               return true
             }
-            // Arrow keys / Enter are handled by the React menu itself
+            // Arrow keys / Enter are forwarded to the React menu by its document listener
             return false
           },
 
