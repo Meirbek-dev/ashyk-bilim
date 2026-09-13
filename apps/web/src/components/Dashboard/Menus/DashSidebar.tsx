@@ -21,6 +21,7 @@ import appLogoLight from '@public/app_logo_light.svg'
 import { useTheme } from '@/components/providers/theme-provider'
 import { useLogout } from '@/lib/auth/use-logout'
 import { Separator } from '@/components/ui/separator'
+import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher'
 import { Skeleton } from '@/components/ui/skeleton'
 import UserAvatar from '../../Objects/UserAvatar'
 import { useCallback, useEffect, useEffectEvent } from 'react'
@@ -315,6 +316,9 @@ function DashSidebar({ className }: SidebarProps) {
               <p className="text-sidebar-foreground/60 truncate text-xs">@{user.username}</p>
             </div>
           </div>
+
+          {/* Locale switcher (UX-074): the same control as the public nav, on every /dash screen */}
+          {!isCollapsed && <LocaleSwitcher className="w-full [&>select]:flex-1" />}
 
           {/* Action Buttons */}
           <div className={`flex gap-2 ${isCollapsed ? 'w-full flex-col' : ''}`}>
