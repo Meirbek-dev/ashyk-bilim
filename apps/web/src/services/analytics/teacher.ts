@@ -1,4 +1,5 @@
 import type { AnalyticsQuery, AssessmentType, SavedAnalyticsViewCreate } from '@/types/analytics'
+import { createIdempotencyKey } from '@/lib/api/headers'
 import {
   TeacherOverviewResponse,
   AdminAnalyticsResponse,
@@ -125,7 +126,7 @@ export function getAtRiskLearners(query?: AnalyticsQuery) {
 export function createTeacherIntervention(payload: TeacherInterventionCreate, query?: AnalyticsQuery) {
   return analyticsRequest(`teacher/interventions`, value => Intervention.parse(value), query, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createIdempotencyKey() },
     body: JSON.stringify(CreateInterventionRequest.parse(payload)),
   })
 }
