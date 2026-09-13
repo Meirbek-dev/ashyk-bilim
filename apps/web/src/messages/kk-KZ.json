@@ -1244,7 +1244,13 @@
     "Calendar": {
       "set": "Орнату",
       "pickDate": "Күнді таңдаңыз",
-      "pickDateTime": "Күн мен уақытты таңдаңыз"
+      "pickDateTime": "Күн мен уақытты таңдаңыз",
+      "previousMonth": "Алдыңғы ай",
+      "nextMonth": "Келесі ай",
+      "chooseMonth": "Айды таңдаңыз",
+      "chooseYear": "Жылды таңдаңыз",
+      "today": "Бүгін, {date}",
+      "selected": "{date}, таңдалды"
     },
     "SaveStateBadge": {
       "unsaved": "Сақталмады",
@@ -7104,16 +7110,16 @@
       "releaseStateAwaitingRelease": "Жарияланым күтуде",
       "releaseStateVisible": "Студентке көрінеді",
       "releaseStateReturned": "Қайтарылды",
-      "staleDraftTitle": "Сақталмаған жергілікті жоба",
+      "staleDraftTitle": "Бағаны әріптесіңіз жаңартты",
       "staleDraft": {
         "serverScoreLabel": "Сервер баллы:",
         "yourDraftLabel": "Сіздің жобаңыз:"
       },
-      "useServerValues": "Сервер мәндерін пайдалану",
+      "useServerValues": "Олардың нұсқасын жүктеу",
       "keepMyDraft": "Жобамды сақтау",
       "saveDraftGrade": "Жоба ретінде сақтау",
       "returnForRevision": "Қайта өңдеуге қайтару",
-      "publishPrerequisite": "Жариялау алдында кем дегенде бір элементке баға қойылуы керек.",
+      "publishPrerequisite": "Жариялау алдында барлық элементке балл қойыңыз.",
       "keyboardHintNextKey": "j",
       "keyboardHintPrevKey": "k",
       "keyboardHintForward": "Келесі студент",
@@ -8256,12 +8262,15 @@
             "bulkPartialFailure": "{failed} жұмыс(ы) жаңарту мүмкін болмады — төмендегі мәліметті қараңыз.",
             "deadlineQueued": "Мерзімді ұзарту кезекке қойылды",
             "extendFailed": "Мерзімді ұзарту сәтсіз аяқталды",
+            "deadlineExtended": "Мерзім {count} оқушыға ұзартылды",
             "hiddenReleased": "Жасырын бағалар жарияланды",
             "releaseFailed": "Жасырын бағаларды жариялау сәтсіз аяқталды"
           },
           "summaries": {
             "publishFinished": "Жаппай жариялау аяқталды",
             "returnFinished": "Жаппай қайтару аяқталды",
+            "deadlineExtended": "Мерзім ұзартылды",
+            "finishedWithErrors": "Жаппай әрекет қателермен аяқталды",
             "resultDetail": "Сәтті: {succeeded}. Сәтсіз: {failed}.",
             "deadlineQueued": "Мерзімді ұзарту кезекке қойылды",
             "deadlineDetail": "Қамтылған білім алушылар: {count}. {reason}",
@@ -8279,6 +8288,7 @@
             "reason": "Себебі",
             "notSet": "Орнатылмаған",
             "noReason": "Себеп көрсетілмеген",
+            "notReturnable": "{count} жарияланған жұмысты қайтару мүмкін емес — олар өткізіп жіберілді.",
             "selectedHiddenSubmissions": "Таңдалған жасырын жұмыстар",
             "releaseHiddenDescription": "Бұл әрекет оқу әрекеті деңгейіндегі бағаларды жариялап, әлі жасырын тұрған бағаланған жұмыстарды көрсетеді."
           },
@@ -10586,7 +10596,11 @@
     "publishResult": "Нәтижені жариялау",
     "selectSubmission": "Тапсырманы таңдаңыз.",
     "rubric": "Рубрика",
-    "submissionUpdated": "Тапсырма жаңартылды",
+    "draftSaved": "Жоба сақталды",
+    "gradePublished": "Баға жарияланды",
+    "gradeReturned": "Жұмыс қайта өңдеуге қайтарылды",
+    "scoreInvalid": "Балл 0 мен 100 аралығында болуы керек",
+    "scoreRequired": "Балл көрсетіңіз",
     "updateSubmissionFailed": "Тапсырманы жаңарту мүмкін болмады",
     "openFileFailed": "Файлды ашу мүмкін болмады",
     "previewFileFailed": "Файлдың алдын ала қарауын ашу мүмкін болмады",

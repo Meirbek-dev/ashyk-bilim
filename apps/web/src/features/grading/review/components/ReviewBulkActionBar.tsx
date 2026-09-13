@@ -6,9 +6,13 @@ import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 import type { Submission } from '@/features/grading/domain'
-import { getReleaseState } from '@/features/grading/domain'
-import { exportGradesCSV, publishAssessmentGrades, saveGrade } from '@/services/grading/grading'
-import { createStudentPolicyOverride } from '@/services/assessments/assessment-actions'
+import { canReturnSubmission, canTeacherEditGrade, getReleaseState } from '@/features/grading/domain'
+import { exportGradesCSV, publishAssessmentGrades } from '@/services/grading/grading'
+import { extendDeadline, getBulkAction, saveGrade } from '@/lib/api/generated/grading/grading'
+import type { BulkAction } from '@/lib/api/generated/zod'
+import { toUnix } from '@/lib/api/contract'
+import { ifMatchHeaders } from '@/lib/api/headers'
+import { useApiError } from '@/hooks/useApiError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +48,7 @@ export default function ReviewBulkActionBar({
   onRefresh: () => Promise<void>
 }) {
   const t = useTranslations('Features.Grading.Review.bulkActions')
+  const { handleApiError } = useApiError()
   const [isPending, startTransition] = useTransition()
   const [deadlineLocal, setDeadlineLocal] = useState('')
   const [reason, setReason] = useState('')
@@ -53,6 +58,13 @@ export default function ReviewBulkActionBar({
   const [failedSubmissions, setFailedSubmissions] = useState<{ name: string; error: string }[]>([])
 
   const gradeable = submissions.filter(submission => submission.final_score !== null)
+  // BUG-125: the server's transition table — a PUBLISHED row can only be
+  // re-published, never returned; such rows are left out of the bulk return.
+  const eligible = (status: 'PUBLISHED' | 'RETURNED') =>
+    gradeable.filter(submission =>
+      status === 'RETURNED' ? canReturnSubmission(submission.status) : canTeacherEditGrade(submission.status),
+    )
+  const returnable = eligible('RETURNED')
   const userIds = submissions
     .map(submission => submission.user?.id)
     .filter((id): id is string => typeof id === 'string')
@@ -77,60 +89,67 @@ export default function ReviewBulkActionBar({
   const auditNoteValid = !actionNeedsAuditNote || auditNote.trim().length >= 8
 
   const bulkUpdate = (status: 'PUBLISHED' | 'RETURNED') => {
-    if (gradeable.length === 0) {
+    const targets = eligible(status)
+    if (targets.length === 0) {
       toast.error(t('toasts.needsSavedScores'))
       return
     }
-    if (!assessmentUuid) {
-      toast.error(t('toasts.bulkActionFailed'))
-      return
-    }
     startTransition(async () => {
-      try {
-        const result = await saveGradesWithinAssessment(assessmentUuid, gradeable, status, auditNote.trim(), t('auditNote.unknownError'))
-        setFailedSubmissions(result.failures)
-        if (result.failures.length > 0) {
-          toast.warning(t('toasts.bulkPartialFailure', { failed: result.failures.length }))
-        } else {
-          toast.success(status === 'PUBLISHED' ? t('toasts.published') : t('toasts.returned'))
-        }
-        setLastSummary({
-          label: status === 'PUBLISHED' ? t('summaries.publishFinished') : t('summaries.returnFinished'),
-          detail: t('summaries.resultDetail', {
-            succeeded: result.succeeded,
-            failed: result.failed,
-          }),
-          tone: result.failed > 0 ? 'warning' : 'success',
-        })
+      const result = await saveGrades(targets, status, auditNote.trim(), error => handleApiError(error).message)
+      setFailedSubmissions(result.failures)
+      const failed = result.failures.length > 0
+      if (failed) {
+        toast.warning(t('toasts.bulkPartialFailure', { failed: result.failures.length }))
+      } else {
+        toast.success(status === 'PUBLISHED' ? t('toasts.published') : t('toasts.returned'))
+      }
+      setLastSummary({
+        label: failed
+          ? t('summaries.finishedWithErrors')
+          : status === 'PUBLISHED'
+            ? t('summaries.publishFinished')
+            : t('summaries.returnFinished'),
+        detail: t('summaries.resultDetail', { succeeded: result.succeeded, failed: result.failures.length }),
+        tone: failed ? 'warning' : 'success',
+      })
+      // On failure the dialog stays open: the per-row errors are listed in it.
+      if (!failed) {
         setPendingAction(null)
         setAuditNote('')
-        await onRefresh()
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('toasts.bulkActionFailed'))
       }
+      await onRefresh()
     })
   }
 
+  // BUG-124: «Продлить» is the server's `deadline-extensions` bulk action (a
+  // queued job that also recomputes `is_late`), not a per-learner override.
   const applyDeadline = () => {
-    if (!deadlineLocal || userIds.length === 0 || !assessmentUuid) return
+    const newDueAtUnix = toUnix(deadlineLocal)
+    if (newDueAtUnix === null || userIds.length === 0 || !assessmentUuid) return
     startTransition(async () => {
       try {
-        await Promise.all(
-          userIds.map(userId =>
-            createStudentPolicyOverride(assessmentUuid, {
-              user_id: userId,
-              due_at_override: new Date(deadlineLocal).toISOString(),
-              note: reason,
-            }),
-          ),
-        )
-        toast.success(t('toasts.deadlineQueued'))
+        const queued = await extendDeadline(assessmentUuid, {
+          user_ids: userIds,
+          new_due_at_unix: newDueAtUnix,
+          ...(reason.trim() ? { reason: reason.trim() } : {}),
+        })
+        const outcome = await waitForBulkAction(queued)
+        const done = outcome.status === 'completed'
+        const count = done ? outcome.affected_count : userIds.length
+        const detail = t('summaries.deadlineDetail', { count, reason: reason || '' })
+        if (outcome.status === 'failed') {
+          toast.error(t('toasts.extendFailed'))
+          setLastSummary({
+            label: t('summaries.finishedWithErrors'),
+            detail: outcome.error_log || detail,
+            tone: 'warning',
+          })
+          return
+        }
+        toast.success(done ? t('toasts.deadlineExtended', { count }) : t('toasts.deadlineQueued'))
         setLastSummary({
-          label: t('summaries.deadlineQueued'),
-          detail: t('summaries.deadlineDetail', {
-            count: userIds.length,
-            reason: reason || '',
-          }),
+          label: done ? t('summaries.deadlineExtended') : t('summaries.deadlineQueued'),
+          detail,
           tone: 'success',
         })
         setDeadlineLocal('')
@@ -139,7 +158,7 @@ export default function ReviewBulkActionBar({
         setPendingAction(null)
         await onRefresh()
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('toasts.extendFailed'))
+        toast.error(handleApiError(error, { fallback: t('toasts.extendFailed') }).message)
       }
     })
   }
@@ -217,7 +236,7 @@ export default function ReviewBulkActionBar({
       <Button
         variant="outline"
         size="sm"
-        disabled={disabled || isPending || gradeable.length === 0}
+        disabled={disabled || isPending || returnable.length === 0}
         onClick={() => setPendingAction('return-selected')}
       >
         <RotateCcw className="size-4" />
@@ -273,6 +292,11 @@ export default function ReviewBulkActionBar({
                 <PreviewRow label={t('preview.gradeReady')} value={String(gradeable.length)} />
                 <PreviewRow label={t('preview.hiddenFromStudent')} value={String(releaseSummary.hidden)} />
                 <PreviewRow label={t('preview.alreadyVisible')} value={String(releaseSummary.visible)} />
+                {pendingAction === 'return-selected' && returnable.length < submissions.length ? (
+                  <p className="text-muted-foreground text-xs">
+                    {t('preview.notReturnable', { count: submissions.length - returnable.length })}
+                  </p>
+                ) : null}
               </>
             ) : null}
             {pendingAction === 'extend-deadline' ? (
@@ -293,7 +317,9 @@ export default function ReviewBulkActionBar({
                   placeholder={t('auditNote.placeholder')}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAuditNote(event.target.value)}
                 />
-                <p className="text-muted-foreground text-xs">{auditNoteValid ? t('auditNote.help') : t('auditNote.tooShort')}</p>
+                <p className="text-muted-foreground text-xs">
+                  {auditNoteValid ? t('auditNote.help') : t('auditNote.tooShort')}
+                </p>
               </div>
             ) : null}
             {pendingAction === 'release-hidden' ? (
@@ -363,54 +389,51 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-async function saveGradesWithinAssessment(
-  assessmentUuid: string,
+/** One `PATCH submissions/{id}/grade` per row; a rejected row keeps its localized problem message. */
+async function saveGrades(
   submissions: Submission[],
   status: 'PUBLISHED' | 'RETURNED',
   auditNote: string,
-  unknownError: string,
+  describeError: (error: unknown) => string,
 ) {
   const results = await Promise.allSettled(
     submissions.map(submission =>
       saveGrade(
         submission.submission_uuid,
         {
+          action: status === 'PUBLISHED' ? 'publish' : 'return',
           final_score: submission.final_score ?? 0,
-          status,
           feedback: appendAuditNote(submission.grading_json?.feedback ?? '', auditNote),
         },
-        submission.version,
-        assessmentUuid,
+        { headers: ifMatchHeaders(submission.version) },
       ),
     ),
   )
 
   const failures: { name: string; error: string }[] = []
   results.forEach((result, i) => {
-    if (result.status === 'rejected') {
-      const sub = submissions[i]
-      if (!sub) return
-
-      const name = sub.user
-        ? `${sub.user.first_name ?? ''} ${sub.user.last_name ?? ''}`.trim() ||
-          sub.user.username ||
-          sub.user.email ||
-          sub.submission_uuid
-        : sub.submission_uuid
-
-      failures.push({
-        name,
-        error: result.reason instanceof Error ? result.reason.message : unknownError,
-      })
-    }
+    const sub = submissions[i]
+    if (result.status !== 'rejected' || !sub) return
+    const name = sub.user
+      ? `${sub.user.first_name ?? ''} ${sub.user.last_name ?? ''}`.trim() ||
+        sub.user.username ||
+        sub.user.email ||
+        sub.submission_uuid
+      : sub.submission_uuid
+    failures.push({ name, error: describeError(result.reason) })
   })
 
-  const succeeded = results.filter(result => result.status === 'fulfilled').length
-  return {
-    succeeded,
-    failed: results.length - succeeded,
-    failures,
+  return { succeeded: results.length - failures.length, failures }
+}
+
+/** Poll the queued bulk action for a few seconds; a still-pending job is reported as queued. */
+async function waitForBulkAction(action: BulkAction, attempts = 10): Promise<BulkAction> {
+  let current = action
+  for (let i = 0; i < attempts && (current.status === 'pending' || current.status === 'running'); i += 1) {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    current = await getBulkAction(current.id)
   }
+  return current
 }
 
 function appendAuditNote(feedback: string, auditNote: string): string {

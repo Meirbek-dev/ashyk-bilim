@@ -11,12 +11,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const mocks = vi.hoisted(() => ({
   publishAssessmentGradesMock: vi.fn(),
-  createStudentPolicyOverrideMock: vi.fn(),
+  extendDeadlineMock: vi.fn(),
+  getBulkActionMock: vi.fn(),
   exportGradesCsvMock: vi.fn(),
   saveGradeMock: vi.fn(),
   saveGradingDraftMock: vi.fn(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
+  toastWarningMock: vi.fn(),
   mutateMock: vi.fn().mockResolvedValue(undefined),
   gradingPanelState: {
     submission: null as Submission | null,
@@ -47,7 +49,14 @@ vi.mock('sonner', () => ({
   toast: {
     success: mocks.toastSuccessMock,
     error: mocks.toastErrorMock,
+    warning: mocks.toastWarningMock,
   },
+}))
+
+vi.mock('@/hooks/useApiError', () => ({
+  useApiError: () => ({
+    handleApiError: (error: unknown) => ({ message: error instanceof Error ? error.message : 'unknown' }),
+  }),
 }))
 
 vi.mock('next-intl', () => ({
@@ -59,11 +68,17 @@ vi.mock('next-intl', () => ({
 vi.mock('@/services/grading/grading', () => ({
   publishAssessmentGrades: (...args: unknown[]) => mocks.publishAssessmentGradesMock(...args),
   exportGradesCSV: (...args: unknown[]) => mocks.exportGradesCsvMock(...args),
+}))
+
+// Bulk rows and the deadline extension go straight to the API from the
+// browser (problem+json codes survive, BUG-035).
+vi.mock('@/lib/api/generated/grading/grading', () => ({
   saveGrade: (...args: unknown[]) => mocks.saveGradeMock(...args),
+  extendDeadline: (...args: unknown[]) => mocks.extendDeadlineMock(...args),
+  getBulkAction: (...args: unknown[]) => mocks.getBulkActionMock(...args),
 }))
 
 vi.mock('@/services/assessments/assessment-actions', () => ({
-  createStudentPolicyOverride: (...args: unknown[]) => mocks.createStudentPolicyOverrideMock(...args),
   saveGradingDraft: (...args: unknown[]) => mocks.saveGradingDraftMock(...args),
 }))
 
@@ -118,7 +133,13 @@ describe('teacher review controls', () => {
       published_count: 2,
       already_published_count: 1,
     })
-    mocks.createStudentPolicyOverrideMock.mockResolvedValue({ id: 1 })
+    mocks.extendDeadlineMock.mockResolvedValue({
+      id: 'bulk_1',
+      action_type: 'extend_deadline',
+      status: 'completed',
+      affected_count: 2,
+      error_log: '',
+    })
     mocks.exportGradesCsvMock.mockResolvedValue('header\nvalue')
     mocks.saveGradeMock.mockResolvedValue(createSubmission({ status: 'PUBLISHED' }))
     mocks.saveGradingDraftMock.mockResolvedValue(createSubmission({ status: 'PUBLISHED' }))
@@ -174,30 +195,62 @@ describe('teacher review controls', () => {
       1,
       'submission_ready',
       {
+        action: 'publish',
         final_score: 91,
         feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
-        status: 'PUBLISHED',
       },
-      3,
-      'assessment_review',
+      { headers: { 'If-Match': '"3"' } },
     )
     expect(mocks.saveGradeMock).toHaveBeenNthCalledWith(
       2,
       'submission_visible',
       {
+        action: 'publish',
         final_score: 77,
         feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
-        status: 'PUBLISHED',
       },
-      3,
-      'assessment_review',
+      { headers: { 'If-Match': '"3"' } },
     )
     expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.published')
     expect(onRefresh).toHaveBeenCalledTimes(1)
     expect(await screen.findByText('summaries.publishFinished')).toBeInTheDocument()
   })
 
-  it('shows deadline extension preview and queues the selected learner override', async () => {
+  // BUG-125: a PUBLISHED row cannot be returned — it is left out, and a
+  // server refusal keeps the dialog open with the per-row error, no success badge.
+  it('returns only returnable rows and keeps the dialog open when the server refuses one', async () => {
+    mocks.saveGradeMock.mockRejectedValueOnce(new Error('transition-not-allowed'))
+    render(
+      <ReviewBulkActionBar
+        activityId={42}
+        assessmentUuid="assessment_review"
+        disabled={false}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        submissions={[
+          createSubmission({ submission_uuid: 'submission_ready', status: 'GRADED', final_score: 91 }),
+          createSubmission({ submission_uuid: 'submission_visible', status: 'PUBLISHED', final_score: 77 }),
+        ]}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'returnSelected' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('preview.notReturnable')).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
+      target: { value: 'Return for another pass' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'confirmReturn' }))
+
+    await waitFor(() => expect(mocks.saveGradeMock).toHaveBeenCalledTimes(1))
+    expect(mocks.saveGradeMock.mock.calls[0]?.[0]).toBe('submission_ready')
+    expect(await within(dialog).findByText('transition-not-allowed', { exact: false })).toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(mocks.toastWarningMock).toHaveBeenCalledWith('toasts.bulkPartialFailure')
+    expect(screen.getByText('summaries.finishedWithErrors')).toBeInTheDocument()
+    expect(screen.queryByText('summaries.returnFinished')).toBeNull()
+  })
+
+  it('shows deadline extension preview and runs the deadline-extensions bulk action', async () => {
     const onRefresh = vi.fn().mockResolvedValue(undefined)
     const dueDate = new Date()
     dueDate.setDate(dueDate.getDate() + 1)
@@ -260,15 +313,17 @@ describe('teacher review controls', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
 
+    // BUG-124: one queued bulk action, never per-learner policy overrides.
     await waitFor(() => {
-      expect(mocks.createStudentPolicyOverrideMock).toHaveBeenCalledTimes(2)
+      expect(mocks.extendDeadlineMock).toHaveBeenCalledTimes(1)
     })
-    expect(mocks.createStudentPolicyOverrideMock).toHaveBeenNthCalledWith(1, 'assessment_review', {
-      user_id: 'user_a',
-      due_at_override: expectedDueAt.toISOString(),
-      note: 'Medical extension',
+    expect(mocks.extendDeadlineMock).toHaveBeenCalledWith('assessment_review', {
+      user_ids: ['user_a', 'user_b'],
+      new_due_at_unix: Math.floor(expectedDueAt.getTime() / 1000),
+      reason: 'Medical extension',
     })
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineQueued')
+    await waitFor(() => expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineExtended'))
+    expect(mocks.getBulkActionMock).not.toHaveBeenCalled()
     expect(onRefresh).toHaveBeenCalledTimes(1)
   })
 
@@ -348,6 +403,44 @@ describe('teacher review controls', () => {
     expect(screen.getByText('publishPrerequisite')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled()
     expect(screen.getByText('publishPrerequisite')).toBeInTheDocument()
+  })
+
+  // BUG-123: a colleague's save (SSE refetch) must not overwrite what the
+  // grader typed; the server copy is offered behind an explicit action.
+  it('keeps a dirty draft when the submission is refetched and offers the colleague version', async () => {
+    mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 91, version: 3 })
+    const queryClient = new QueryClient()
+    const navigation = { hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }
+    // A fresh element each time — React skips a re-render of an identical element.
+    const ui = () => (
+      <QueryClientProvider client={queryClient}>
+        <AnnotationProvider>
+          <GradeForm
+            submissionUuid="submission_review"
+            assessmentUuid="assessment_review"
+            onSaved={vi.fn().mockResolvedValue(undefined)}
+            navigation={navigation}
+          />
+        </AnnotationProvider>
+      </QueryClientProvider>
+    )
+    const { rerender } = render(ui())
+
+    fireEvent.change(screen.getByLabelText('finalScore'), { target: { value: '40' } })
+    mocks.gradingPanelState.submission = createSubmission({
+      status: 'GRADED',
+      final_score: 77,
+      version: 4,
+      grading_json: { feedback: 'Colleague feedback' },
+    })
+    rerender(ui())
+
+    expect(screen.getByLabelText('finalScore')).toHaveValue(40)
+    expect(screen.getByText('staleDraftTitle')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'useServerValues' }))
+    expect(screen.getByLabelText('finalScore')).toHaveValue(77)
+    expect(screen.queryByText('staleDraftTitle')).toBeNull()
   })
 
   it('explains awaiting release state and publishes student-visible grades', async () => {

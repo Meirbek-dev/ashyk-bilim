@@ -1245,7 +1245,13 @@
     "Calendar": {
       "set": "Установить",
       "pickDate": "Выберите дату",
-      "pickDateTime": "Выберите дату и время"
+      "pickDateTime": "Выберите дату и время",
+      "previousMonth": "Предыдущий месяц",
+      "nextMonth": "Следующий месяц",
+      "chooseMonth": "Выберите месяц",
+      "chooseYear": "Выберите год",
+      "today": "Сегодня, {date}",
+      "selected": "{date}, выбрано"
     },
     "SaveStateBadge": {
       "unsaved": "Не сохранено",
@@ -7089,16 +7095,16 @@
       "releaseStateAwaitingRelease": "Ожидает публикации",
       "releaseStateVisible": "Видно",
       "releaseStateReturned": "Возвращено",
-      "staleDraftTitle": "Несохраненный локальный черновик",
+      "staleDraftTitle": "Оценка обновлена коллегой",
       "staleDraft": {
         "serverScoreLabel": "Балл на сервере:",
         "yourDraftLabel": "Ваш черновик:"
       },
-      "useServerValues": "Использовать значения с сервера",
+      "useServerValues": "Загрузить их версию",
       "keepMyDraft": "Оставить мой черновик",
       "saveDraftGrade": "Сохранить как черновик",
       "returnForRevision": "Вернуть на доработку",
-      "publishPrerequisite": "Необходимо оценить хотя бы один элемент перед публикацией.",
+      "publishPrerequisite": "Перед публикацией выставьте баллы по всем элементам.",
       "keyboardHintNextKey": "j",
       "keyboardHintPrevKey": "k",
       "keyboardHintForward": "Следующий студент",
@@ -8273,12 +8279,15 @@
             "bulkPartialFailure": "{failed} работа(ы) не удалось обновить - смотрите подробности ниже.",
             "deadlineQueued": "Продление срока поставлено в очередь",
             "extendFailed": "Не удалось продлить срок",
+            "deadlineExtended": "Срок продлён для {count} учащихся",
             "hiddenReleased": "Скрытые оценки опубликованы",
             "releaseFailed": "Не удалось открыть скрытые оценки"
           },
           "summaries": {
             "publishFinished": "Массовая публикация завершена",
             "returnFinished": "Массовый возврат завершён",
+            "deadlineExtended": "Срок продлён",
+            "finishedWithErrors": "Массовое действие завершено с ошибками",
             "resultDetail": "Успешно: {succeeded}. Ошибок: {failed}.",
             "deadlineQueued": "Продление срока поставлено в очередь",
             "deadlineDetail": "Затронуто учащихся: {count}. {reason}",
@@ -8296,6 +8305,7 @@
             "reason": "Причина",
             "notSet": "Не задано",
             "noReason": "Причина не указана",
+            "notReturnable": "{count, plural, one {# опубликованная работа} few {# опубликованные работы} other {# опубликованных работ}} нельзя вернуть — они пропущены.",
             "selectedHiddenSubmissions": "Выбранные скрытые работы",
             "releaseHiddenDescription": "Это применит действие публикации оценок на уровне учебные задачи и откроет все уже проверенные, но ещё скрытые работы."
           },
@@ -10416,7 +10426,11 @@
     "publishResult": "Опубликовать результат",
     "selectSubmission": "Выберите отправку.",
     "rubric": "Критерии оценивания",
-    "submissionUpdated": "Отправка обновлена",
+    "draftSaved": "Черновик сохранён",
+    "gradePublished": "Оценка опубликована",
+    "gradeReturned": "Работа возвращена на доработку",
+    "scoreInvalid": "Балл должен быть от 0 до 100",
+    "scoreRequired": "Укажите балл",
     "updateSubmissionFailed": "Не удалось обновить отправку",
     "openFileFailed": "Не удалось открыть файл",
     "previewFileFailed": "Не удалось показать предпросмотр файла",

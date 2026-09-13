@@ -81,10 +81,11 @@ export default function GradeForm({
   const [overrideScore, setOverrideScore] = useState(false)
   const [overrideReason, setOverrideReason] = useState('')
   const [isSaving, startSaving] = useTransition()
-  const [staleDraft, setStaleDraft] = useState<{
-    server: Submission
-    local: GradeDraft
-  } | null>(null)
+  // BUG-123: an unsaved edit must survive a `grade.saved` refetch from a
+  // colleague (and a 412 on our own save) — the server copy is offered in a
+  // notice instead of silently replacing the drafts.
+  const [dirty, setDirty] = useState(false)
+  const [remoteUpdate, setRemoteUpdate] = useState(false)
 
   // Items from grading breakdown — may be empty for manual-only assessments.
   // An auto-grader verdict (`feedback_code`) is shown localized, read-only;
@@ -148,18 +149,18 @@ export default function GradeForm({
   const hasInvalidScore = finalScoreInvalid || invalidItemIds.size > 0
 
   const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.final_score ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
-  const [prevSyncTrigger, setPrevSyncTrigger] = useState<string>('')
+  const [lastSeed, setLastSeed] = useState({ uuid: '', trigger: '' })
 
-  if (syncTrigger !== prevSyncTrigger) {
-    setPrevSyncTrigger(syncTrigger)
+  const seedDrafts = () => {
     setDraft({
       score:
         submission?.final_score !== null && submission?.final_score !== undefined ? String(submission.final_score) : '',
       feedback: submission?.grading_json?.feedback ?? '',
     })
-    setStaleDraft(null)
     setOverrideScore(false)
     setOverrideReason('')
+    setDirty(false)
+    setRemoteUpdate(false)
 
     if (submission?.grading_json?.items) {
       const next: Record<string, ItemDraftEntry> = {}
@@ -175,7 +176,21 @@ export default function GradeForm({
     }
   }
 
+  if (syncTrigger !== lastSeed.trigger) {
+    const uuid = submission?.submission_uuid ?? ''
+    const fromColleague = dirty && uuid !== '' && uuid === lastSeed.uuid
+    setLastSeed({ uuid, trigger: syncTrigger })
+    if (fromColleague) setRemoteUpdate(true)
+    else seedDrafts()
+  }
+
+  const editDraft = (patch: Partial<GradeDraft>) => {
+    setDraft(current => ({ ...current, ...patch }))
+    setDirty(true)
+  }
+
   const patchItemDraft = (itemId: string, field: keyof ItemDraftEntry, value: string) => {
+    setDirty(true)
     setItemDrafts(prev => ({
       ...prev,
       [itemId]: {
@@ -235,6 +250,7 @@ export default function GradeForm({
         finalScore: overrideScore ? (finalScore ?? null) : null,
       })
 
+      setDirty(false)
       queryClient.setQueryData(detailQueryKey, optimisticSubmission)
 
       startSaving(async () => {
@@ -259,7 +275,6 @@ export default function GradeForm({
                 ? tItemGrading('toasts.returned')
                 : tItemGrading('toasts.saved'),
           )
-          setStaleDraft(null)
           clearAnnotations()
           await Promise.all([mutate(), onSaved()])
         } catch (error) {
@@ -267,7 +282,8 @@ export default function GradeForm({
             queryClient.setQueryData(detailQueryKey, previousSubmission)
           }
           if (error instanceof StaleGradeError) {
-            setStaleDraft({ server: error.serverSubmission, local: draft })
+            // Keep what was typed; the refetch below raises the colleague notice.
+            setDirty(true)
             await mutate()
           } else {
             toast.error(tItemGrading('toasts.failed'))
@@ -379,33 +395,24 @@ export default function GradeForm({
         </AlertTitle>
       </Alert>
 
-      {/* ── OCC stale-grade banner ─────────────────────────────────────── */}
-      {staleDraft ? (
-        <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+      {/* ── Colleague saved meanwhile (SSE refetch or 412) ─────────────── */}
+      {remoteUpdate ? (
+        <Alert
+          role="status"
+          className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+        >
           <AlertTriangle className="size-4" />
           <AlertTitle>{t('staleDraftTitle')}</AlertTitle>
           <AlertDescription className="mt-1 space-y-1 text-xs">
             <p>
-              {t('staleDraft.serverScoreLabel')} <strong>{staleDraft.server.final_score ?? '—'}</strong>.{' '}
-              {t('staleDraft.yourDraftLabel')} <strong>{staleDraft.local.score}</strong>.
+              {t('staleDraft.serverScoreLabel')} <strong>{submission.final_score ?? '—'}</strong>.{' '}
+              {t('staleDraft.yourDraftLabel')} <strong>{calculatedTotal ?? draft.score}</strong>.
             </p>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 text-xs"
-                onClick={() => {
-                  const s = staleDraft.server
-                  setDraft({
-                    score: s.final_score !== null && s.final_score !== undefined ? String(s.final_score) : '',
-                    feedback: s.grading_json?.feedback ?? '',
-                  })
-                  setStaleDraft(null)
-                }}
-              >
+              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={seedDrafts}>
                 {t('useServerValues')}
               </Button>
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setStaleDraft(null)}>
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setRemoteUpdate(false)}>
                 {t('keepMyDraft')}
               </Button>
             </div>
@@ -458,7 +465,9 @@ export default function GradeForm({
                       disabled={!editable || isSaving}
                       aria-label={`${idx + 1}. ${item.item_text || item.item_id}`}
                       aria-invalid={invalidItemIds.has(item.item_id) || undefined}
-                      aria-describedby={invalidItemIds.has(item.item_id) ? `item-score-error-${item.item_id}` : undefined}
+                      aria-describedby={
+                        invalidItemIds.has(item.item_id) ? `item-score-error-${item.item_id}` : undefined
+                      }
                       className="w-20"
                       onChange={e => patchItemDraft(item.item_id, 'score', e.target.value)}
                     />
@@ -499,7 +508,10 @@ export default function GradeForm({
               <Switch
                 id="override-score-switch"
                 checked={overrideScore}
-                onCheckedChange={setOverrideScore}
+                onCheckedChange={checked => {
+                  setOverrideScore(checked)
+                  setDirty(true)
+                }}
                 disabled={!editable}
               />
               <Label htmlFor="override-score-switch" className="text-sm">
@@ -518,7 +530,7 @@ export default function GradeForm({
                     disabled={!editable || isSaving}
                     aria-invalid={finalScoreInvalid || undefined}
                     aria-describedby={finalScoreInvalid ? 'override-score-error' : undefined}
-                    onChange={e => setDraft(cur => ({ ...cur, score: e.target.value }))}
+                    onChange={e => editDraft({ score: e.target.value })}
                     className="w-24"
                   />
                   <span className="text-muted-foreground text-sm">{t('scoreOutOf100')}</span>
@@ -532,7 +544,10 @@ export default function GradeForm({
                   placeholder={tItemGrading('overrideReason')}
                   value={overrideReason}
                   disabled={!editable || isSaving}
-                  onChange={e => setOverrideReason(e.target.value)}
+                  onChange={e => {
+                    setOverrideReason(e.target.value)
+                    setDirty(true)
+                  }}
                 />
               </div>
             )}
@@ -549,7 +564,7 @@ export default function GradeForm({
               disabled={!editable || isSaving}
               preset="explanation"
               minHeight={140}
-              onChange={markdown => setDraft(cur => ({ ...cur, feedback: markdown }))}
+              onChange={markdown => editDraft({ feedback: markdown })}
             />
           </div>
 
@@ -600,12 +615,7 @@ export default function GradeForm({
                 disabled={!editable || isSaving}
                 aria-invalid={finalScoreInvalid || undefined}
                 aria-describedby={finalScoreInvalid ? 'review-score-error' : undefined}
-                onChange={event =>
-                  setDraft(current => ({
-                    ...current,
-                    score: event.target.value,
-                  }))
-                }
+                onChange={event => editDraft({ score: event.target.value })}
               />
               <span className="text-muted-foreground text-sm">{t('scoreOutOf100')}</span>
             </div>
@@ -620,12 +630,7 @@ export default function GradeForm({
                 variant="link"
                 className="h-auto p-0 text-xs"
                 disabled={!editable || isSaving || Number.parseFloat(draft.score) === submission.auto_score}
-                onClick={() =>
-                  setDraft(current => ({
-                    ...current,
-                    score: String(submission.auto_score),
-                  }))
-                }
+                onClick={() => editDraft({ score: String(submission.auto_score) })}
               >
                 {t('useAutoScore')} {submission.auto_score}
               </Button>
@@ -642,7 +647,7 @@ export default function GradeForm({
               disabled={!editable || isSaving}
               preset="explanation"
               minHeight={160}
-              onChange={markdown => setDraft(current => ({ ...current, feedback: markdown }))}
+              onChange={markdown => editDraft({ feedback: markdown })}
             />
           </div>
 
@@ -679,10 +684,7 @@ export default function GradeForm({
       )}
 
       <div className="border-t pt-4">
-        <SubmissionAIEntry
-          submissionUuid={submissionUuid}
-          onDraftFeedback={feedback => setDraft(current => ({ ...current, feedback }))}
-        />
+        <SubmissionAIEntry submissionUuid={submissionUuid} onDraftFeedback={feedback => editDraft({ feedback })} />
       </div>
 
       {/* ── Keyboard legend ────────────────────────────────────────────── */}

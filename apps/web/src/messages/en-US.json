@@ -1245,7 +1245,13 @@
     "Calendar": {
       "set": "Set",
       "pickDate": "Pick a date",
-      "pickDateTime": "Pick a date and time"
+      "pickDateTime": "Pick a date and time",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "chooseMonth": "Choose the month",
+      "chooseYear": "Choose the year",
+      "today": "Today, {date}",
+      "selected": "{date}, selected"
     },
     "SaveStateBadge": {
       "unsaved": "Unsaved",
@@ -7084,16 +7090,16 @@
       "releaseStateAwaitingRelease": "Awaiting release",
       "releaseStateVisible": "Visible",
       "releaseStateReturned": "Returned",
-      "staleDraftTitle": "Unsaved local draft",
+      "staleDraftTitle": "Grade updated by a colleague",
       "staleDraft": {
         "serverScoreLabel": "Server score:",
         "yourDraftLabel": "Your draft:"
       },
-      "useServerValues": "Use server values",
+      "useServerValues": "Load their version",
       "keepMyDraft": "Keep my draft",
       "saveDraftGrade": "Save as draft",
       "returnForRevision": "Return for revision",
-      "publishPrerequisite": "At least one item must be graded before publishing.",
+      "publishPrerequisite": "Score every item before publishing.",
       "keyboardHintNextKey": "j",
       "keyboardHintPrevKey": "k",
       "keyboardHintForward": "Next student",
@@ -8258,12 +8264,15 @@
             "bulkPartialFailure": "{failed} submission(s) could not be updated — see details below.",
             "deadlineQueued": "Deadline extension queued",
             "extendFailed": "Failed to extend deadline",
+            "deadlineExtended": "Deadline extended for {count} learners",
             "hiddenReleased": "Hidden grades released",
             "releaseFailed": "Failed to release hidden grades"
           },
           "summaries": {
             "publishFinished": "Bulk publish finished",
             "returnFinished": "Bulk return finished",
+            "deadlineExtended": "Deadline extended",
+            "finishedWithErrors": "Bulk action finished with errors",
             "resultDetail": "Succeeded: {succeeded}. Failed: {failed}.",
             "deadlineQueued": "Deadline extension queued",
             "deadlineDetail": "Learners targeted: {count}. {reason}",
@@ -8281,6 +8290,7 @@
             "reason": "Reason",
             "notSet": "Not set",
             "noReason": "No reason provided",
+            "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned — skipped.",
             "selectedHiddenSubmissions": "Selected hidden submissions",
             "releaseHiddenDescription": "This applies the activity-level grade release action and updates any graded submissions that are still hidden."
           },
@@ -10402,7 +10412,11 @@
     "publishResult": "Publish result",
     "selectSubmission": "Select a submission.",
     "rubric": "Rubric",
-    "submissionUpdated": "Submission updated",
+    "draftSaved": "Draft saved",
+    "gradePublished": "Grade published",
+    "gradeReturned": "Submission returned for revision",
+    "scoreInvalid": "Score must be between 0 and 100",
+    "scoreRequired": "Enter a score",
     "updateSubmissionFailed": "Unable to update submission",
     "openFileFailed": "Unable to open file",
     "previewFileFailed": "Unable to preview file",
