@@ -7,7 +7,7 @@ vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: vi.fn() }) }))
-const deleteAnalyticsView = vi.fn(async () => undefined)
+const deleteAnalyticsView = vi.fn(async (..._args: unknown[]) => undefined)
 vi.mock('@services/analytics/teacher', () => ({
   getSavedAnalyticsViews: async () => ({ items: [{ id: 'v1', name: 'Мой вид', view_type: 'overview', query: {} }] }),
   saveAnalyticsView: vi.fn(),

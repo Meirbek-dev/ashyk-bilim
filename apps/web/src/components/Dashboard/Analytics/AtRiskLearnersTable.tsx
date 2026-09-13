@@ -381,9 +381,7 @@ function LearnerInterventionDialog({
               ) : null}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`remediation-${row.course_id}-${row.user_id}`}>
-                {t('intervention.draftLabel')}
-              </Label>
+              <Label htmlFor={`remediation-${row.course_id}-${row.user_id}`}>{t('intervention.draftLabel')}</Label>
               <Textarea
                 id={`remediation-${row.course_id}-${row.user_id}`}
                 value={draft}
@@ -448,7 +446,9 @@ function InterventionAuditLog({
               <span className="text-muted-foreground text-xs">{formatAuditDate(row.created_at_unix)}</span>
             </div>
             <div className="text-sm font-medium">{getAnalyticsCodeLabel(t, row.intervention_type)}</div>
-            {row.outcome ? <p className="text-muted-foreground text-xs">{getAnalyticsCodeLabel(t, row.outcome)}</p> : null}
+            {row.outcome ? (
+              <p className="text-muted-foreground text-xs">{getAnalyticsCodeLabel(t, row.outcome)}</p>
+            ) : null}
             {row.notes ? (
               <p className="text-muted-foreground line-clamp-3 text-xs">{getAnalyticsCodeLabel(t, row.notes)}</p>
             ) : null}

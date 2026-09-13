@@ -6,16 +6,16 @@ import { InterventionStateBadge } from '@/components/Dashboard/Analytics/AtRiskL
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
 vi.mock('@/i18n/navigation', () => ({ Link: () => null, useRouter: () => ({}) }))
 
-const base = { risk_trend: 'stable', intervention_count: 1, risk_score_delta: null } as never
+const base = { risk_trend: 'stable', intervention_count: 1, risk_score_delta: null } as const
 
 afterEach(cleanup)
 
 describe('UX-073 watchlist badge follows the latest intervention', () => {
   it('a completed message is not «open»; a planned meeting is', () => {
-    render(<InterventionStateBadge row={{ ...base, last_intervention_type: 'message_sent' }} />)
+    render(<InterventionStateBadge row={{ ...base, last_intervention_type: 'message_sent' } as never} />)
     expect(screen.getByText('intervention.completed')).toBeTruthy()
     cleanup()
-    render(<InterventionStateBadge row={{ ...base, last_intervention_type: 'meeting_scheduled' }} />)
+    render(<InterventionStateBadge row={{ ...base, last_intervention_type: 'meeting_scheduled' } as never} />)
     expect(screen.getByText('intervention.open')).toBeTruthy()
   })
 })

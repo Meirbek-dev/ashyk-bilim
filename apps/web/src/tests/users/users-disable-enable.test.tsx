@@ -10,10 +10,15 @@ vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: vi.
 vi.mock('@/hooks/useSession', () => ({
   useSession: () => ({ session: { roles: ['admin'], permissions: ['*:*:*'] }, user: { id: 'me' }, can: () => true }),
 }))
-const setUserStatus = vi.fn(async () => {})
+const setUserStatus = vi.fn(async (..._args: unknown[]) => {})
 vi.mock('@/services/rbac', () => ({ setUserStatus: (...args: unknown[]) => setUserStatus(...args) }))
 const row = (id: string, status: string) => ({
-  id, username: id, email: `${id}@x.kz`, display_name: id, status, roles: ['user'],
+  id,
+  username: id,
+  email: `${id}@x.kz`,
+  display_name: id,
+  status,
+  roles: ['user'],
 })
 vi.mock('@/features/users/hooks/useUsers', () => ({
   useAllMembers: () => ({ data: [row('alpha', 'active'), row('beta', 'disabled')], isLoading: false, isError: false }),
