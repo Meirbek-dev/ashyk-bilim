@@ -508,7 +508,7 @@ function CourseClient(props: CourseClientProps) {
                   trailData={trailData}
                   learnerState={learnerState}
                 />
-                <CourseAuthors authors={(course.authors ?? []) as never} courseUuid={course.course_uuid} />
+                <CourseAuthors courseUuid={course.course_uuid} />
               </div>
             </div>
           </GeneralWrapper>

@@ -17,6 +17,8 @@ import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { useCourseUpdates } from '@/features/courses/hooks/useCourseQueries'
+import { useContributors } from '@/features/courses/hooks/useContributors'
+import type { Contributor } from '@/lib/api/generated/zod'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { useDateFnsLocale } from '@/hooks/useDateFnsLocale'
 import { useQueryClient } from '@tanstack/react-query'
@@ -38,30 +40,22 @@ import * as v from 'valibot'
 const getCourseUpdatesQueryKey = (courseUuid?: string | null) =>
   courseUuid ? queryKeys.courses.updates(courseUuid) : (['courses', 'updates', 'disabled'] as const)
 
-interface Author {
-  user: {
-    id: string
-    user_uuid: string
-    avatar_image: string
-    first_name: string
-    middle_name?: string
-    last_name: string
-    username: string
-  }
-  authorship: 'CREATOR' | 'CONTRIBUTOR' | 'MAINTAINER' | 'REPORTER'
-  authorship_status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
-}
+/** An active roster row (`GET /courses/{id}/contributors`), creator first. */
+type Author = Contributor
 
 interface CourseAuthorsProps {
-  authors: Author[]
   courseUuid: string
 }
+
+const ROLE_PRIORITY: Record<string, number> = { creator: 0, maintainer: 1, contributor: 2, reporter: 3 }
 
 function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: boolean }) {
   const t = useTranslations('Courses.CourseAuthors')
   const displayedAvatars = authors.slice(0, 3)
   const displayedNames = authors.slice(0, 2)
   const remainingCount = Math.max(0, authors.length - 3)
+  const nameOf = (author: Author) => author.display_name || `@${author.username || t('unknownAuthor')}`
+  const [first] = authors
 
   // Consistent sizes for both avatars and badge
   const avatarSize = isMobile ? 72 : 86
@@ -73,19 +67,15 @@ function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: b
       {/* Avatars row */}
       <div className="relative flex justify-center -space-x-6">
         {displayedAvatars.map((author, index) => (
-          <div key={author.user.user_uuid} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
+          <div key={author.user_id} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
             <div className="ring-background">
               <UserAvatar
                 size={isMobile ? 'xl' : '2xl'}
                 variant="outline"
-                avatar_url={
-                  author.user.avatar_image && author.user.user_uuid
-                    ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image)
-                    : ''
-                }
-                {...(!author.user.avatar_image ? { predefined_avatar: 'empty' } : {})}
+                avatar_url={author.avatar_key ? getUserAvatarMediaDirectory(author.user_id, author.avatar_key) : ''}
+                {...(author.avatar_key ? {} : { predefined_avatar: 'empty' })}
                 showProfilePopup
-                userId={author.user.id}
+                userId={author.user_id}
               />
             </div>
           </div>
@@ -109,21 +99,13 @@ function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: b
       {/* Names row - improved display logic */}
       <div className="mt-2 text-center">
         <div className="text-foreground text-sm font-medium">
-          {authors.length === 1 ? (
-            <span>
-              {authors[0]?.user?.first_name && authors[0]?.user?.last_name
-                ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
-                    .filter(Boolean)
-                    .join(' ')
-                : `@${authors[0]?.user?.username || t('unknownAuthor')}`}
-            </span>
+          {authors.length === 1 && first ? (
+            <span>{nameOf(first)}</span>
           ) : (
             <>
               {displayedNames.map((author, index) => (
-                <span key={author.user.user_uuid}>
-                  {author.user.first_name && author.user.last_name
-                    ? [author.user.first_name, author.user.middle_name, author.user.last_name].filter(Boolean).join(' ')
-                    : `@${author.user.username}`}
+                <span key={author.user_id}>
+                  {nameOf(author)}
                   {index === 0 && authors.length > 1 && index < displayedNames.length - 1 && t('and')}
                 </span>
               ))}
@@ -135,11 +117,11 @@ function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: b
         </div>
         <div className="text-muted-foreground mt-0.5 text-xs">
           {authors.length === 1 ? (
-            <span>@{authors[0]?.user?.username || t('unknownAuthor')}</span>
+            <span>@{first?.username || t('unknownAuthor')}</span>
           ) : (
             displayedNames.map((author, index) => (
-              <span key={author.user.user_uuid}>
-                @{author.user?.username || t('unknownAuthor')}
+              <span key={author.user_id}>
+                @{author.username || t('unknownAuthor')}
                 {index === 0 && authors.length > 1 && index < displayedNames.length - 1 && t('and')}
               </span>
             ))
@@ -454,27 +436,19 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
   )
 }
 
-function CourseAuthors({ authors, courseUuid }: CourseAuthorsProps) {
+function CourseAuthors({ courseUuid }: CourseAuthorsProps) {
   const isMobile = useIsMobile()
-
-  // Filter active authors and sort by role priority
-  const sortedAuthors = [...authors]
-    .filter(author => author.authorship_status === 'ACTIVE')
-    .toSorted((a, b) => {
-      const rolePriority: Record<string, number> = {
-        CREATOR: 0,
-        MAINTAINER: 1,
-        CONTRIBUTOR: 2,
-        REPORTER: 3,
-      }
-      const aPriority = rolePriority[a.authorship] ?? 999
-      const bPriority = rolePriority[b.authorship] ?? 999
-      return aPriority - bPriority
-    })
+  const { isAuthenticated } = useSession()
+  // The roster is a signed-in read (anonymous → 401): active rows only,
+  // creator first, then maintainers, contributors, reporters.
+  const { data: roster } = useContributors(courseUuid, { enabled: isAuthenticated })
+  const sortedAuthors = (roster ?? [])
+    .filter(row => row.status === 'active')
+    .toSorted((a, b) => (ROLE_PRIORITY[a.role] ?? 999) - (ROLE_PRIORITY[b.role] ?? 999))
 
   return (
     <div className="antialiased">
-      <MultipleAuthors authors={sortedAuthors} isMobile={isMobile} />
+      {sortedAuthors.length > 0 && <MultipleAuthors authors={sortedAuthors} isMobile={isMobile} />}
       <UpdatesSection courseUuid={courseUuid} />
     </div>
   )
