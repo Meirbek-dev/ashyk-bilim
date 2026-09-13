@@ -24,15 +24,33 @@ const PRESIGN_GET_TTL: Duration = Duration::from_mins(5);
 
 const MB: i64 = 1024 * 1024;
 
-/// (bucket, max bytes, allowed mime prefixes — empty = any).
+/// Legacy `file_validation.py` image allowlist — no SVG (scriptable) and no
+/// `image/*` prefix: the public bucket is served on the web origin.
+const IMAGES: &[&str] = &[
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/avif",
+];
+const VIDEOS: &[&str] = &[
+    "video/mp4",
+    "video/webm",
+    "video/x-matroska",
+    "video/quicktime",
+    "video/x-msvideo",
+    "video/x-flv",
+];
+
+/// (bucket, max bytes, allowed content types — exact match; empty = any).
 fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
     match purpose {
-        "avatar" => Some((Bucket::Public, 5 * MB, &["image/"])),
+        "avatar" => Some((Bucket::Public, 5 * MB, IMAGES)),
         "course-thumbnail" | "block-image" | "platform-logo" | "platform-thumbnail" => {
-            Some((Bucket::Public, 10 * MB, &["image/"]))
+            Some((Bucket::Public, 10 * MB, IMAGES))
         }
         "block-pdf" => Some((Bucket::Public, 50 * MB, &["application/pdf"])),
-        "block-video" => Some((Bucket::Public, 500 * MB, &["video/"])),
+        "block-video" => Some((Bucket::Public, 500 * MB, VIDEOS)),
         "file-submission" => Some((Bucket::Private, 100 * MB, &[])),
         _ => None,
     }
@@ -106,19 +124,18 @@ impl UploadsService {
                 message: format!("{purpose} uploads are capped at {max_bytes} bytes"),
             }]));
         }
-        if !allowed.is_empty() && !allowed.iter().any(|prefix| mime.starts_with(prefix)) {
-            return Err(Error::validation(vec![FieldError {
-                field: "mime".into(),
-                code: "unsupported".into(),
-                message: format!("{purpose} does not accept '{mime}'"),
-            }]));
+        if !allowed.is_empty() && !allowed.contains(&mime) {
+            return Err(Error::app(
+                ErrorCode::UnsupportedMediaType,
+                format!("{purpose} does not accept '{mime}'"),
+            ));
         }
 
         let key = format!("{purpose}/{}", Uuid::now_v7().simple());
+        // The PUT is pinned to the declared type; finalize re-checks it.
         let put_url = self
             .storage
-            .presign_put(bucket, &key, PRESIGN_PUT_TTL)
-            .await?;
+            .presign_put(bucket, &key, mime, PRESIGN_PUT_TTL)?;
         let id = ab_db::uploads::insert_upload(
             &self.pool,
             ab_db::uploads::NewUpload {
@@ -147,10 +164,21 @@ impl UploadsService {
             return Err(Error::conflict("upload is already finalized"));
         }
         let bucket = bucket_from_name(&row.bucket);
-        let Some(actual_size) = self.storage.head(bucket, &row.key).await? else {
+        let Some(head) = self.storage.head(bucket, &row.key).await? else {
             return Err(Error::conflict("no object received for this upload"));
         };
-        let actual_size = i64::try_from(actual_size).unwrap_or(i64::MAX);
+        // The stored type must be exactly what was declared (and allowed):
+        // the public bucket is served on the web origin, so a `text/html`
+        // object behind an `image/png` slot would be stored XSS.
+        if head.content_type.as_deref() != Some(row.mime.as_str()) {
+            self.storage.delete(bucket, &row.key).await?;
+            return Err(Error::app_with_details(
+                ErrorCode::UnsupportedMediaType,
+                "stored object's content type does not match the declared one",
+                serde_json::json!({ "declared": row.mime, "actual": head.content_type }),
+            ));
+        }
+        let actual_size = i64::try_from(head.size).unwrap_or(i64::MAX);
         if let Some((_, max_bytes, _)) = policy(&row.purpose)
             && actual_size > max_bytes
         {

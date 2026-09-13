@@ -4,7 +4,7 @@
 
 use std::time::Duration;
 
-use ab_clients::storage::{Bucket, StorageClient, StorageConfig};
+use ab_clients::storage::{Bucket, ObjectHead, StorageClient, StorageConfig};
 use secrecy::SecretString;
 
 fn client() -> StorageClient {
@@ -39,8 +39,13 @@ async fn put_head_presigned_get_delete_roundtrip() {
         .await
         .unwrap();
     assert_eq!(
-        storage.head(Bucket::Private, &key).await.unwrap(),
-        Some(payload.len() as u64)
+        storage
+            .head(Bucket::Private, &key)
+            .await
+            .unwrap()
+            .unwrap()
+            .size,
+        payload.len() as u64
     );
 
     // Presigned GET works without credentials.
@@ -65,11 +70,26 @@ async fn presigned_put_uploads_without_credentials() {
     let payload = b"uploaded via presigned url".to_vec();
 
     let url = storage
-        .presign_put(Bucket::Public, &key, Duration::from_mins(1))
+        .presign_put(Bucket::Public, &key, "image/png", Duration::from_mins(1))
+        .unwrap();
+    // The signature pins Content-Type: a PUT declaring another type fails.
+    let mismatched = reqwest::Client::new()
+        .put(&url)
+        .header("content-type", "text/html")
+        .body(payload.clone())
+        .send()
         .await
         .unwrap();
+    assert_eq!(
+        mismatched.status(),
+        403,
+        "storage accepted a mismatched type"
+    );
+    assert_eq!(storage.head(Bucket::Public, &key).await.unwrap(), None);
+
     let uploaded = reqwest::Client::new()
         .put(&url)
+        .header("content-type", "image/png")
         .body(payload.clone())
         .send()
         .await
@@ -81,7 +101,10 @@ async fn presigned_put_uploads_without_credentials() {
     );
     assert_eq!(
         storage.head(Bucket::Public, &key).await.unwrap(),
-        Some(payload.len() as u64)
+        Some(ObjectHead {
+            size: payload.len() as u64,
+            content_type: Some("image/png".into()),
+        })
     );
     storage.delete(Bucket::Public, &key).await.unwrap();
 }

@@ -78,6 +78,7 @@ async fn finalized_upload(
     let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
     let put = reqwest::Client::new()
         .put(&put_url)
+        .header("content-type", mime)
         .body(payload)
         .send()
         .await
@@ -132,7 +133,9 @@ async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
 
     // Non-object content is refused at the DTO layer.
     let scalar = app
-        .send(content_patch(serde_json::json!({ "content": "just a string" })))
+        .send(content_patch(
+            serde_json::json!({ "content": "just a string" }),
+        ))
         .await;
     assert_eq!(scalar.status, StatusCode::UNPROCESSABLE_ENTITY);
 

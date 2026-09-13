@@ -22,6 +22,7 @@ async fn upload_logo(app: &TestApp, session: &MintedSession) -> (String, String)
     let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
     let put = reqwest::Client::new()
         .put(&put_url)
+        .header("content-type", "image/png")
         .body(payload)
         .send()
         .await

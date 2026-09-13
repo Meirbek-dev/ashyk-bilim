@@ -10,11 +10,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use ab_core::{Error, ErrorCode, Result};
+use hmac::{Hmac, KeyInit, Mac};
 use object_store::aws::{AmazonS3, AmazonS3Builder};
 use object_store::path::Path as ObjectPath;
 use object_store::signer::Signer;
-use object_store::{ObjectStore, ObjectStoreExt};
+use object_store::{Attribute, GetOptions, ObjectStore, ObjectStoreExt};
 use secrecy::{ExposeSecret, SecretString};
+use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone)]
 pub struct StorageConfig {
@@ -38,6 +40,16 @@ pub enum Bucket {
 pub struct StorageClient {
     public: Arc<AmazonS3>,
     private: Arc<AmazonS3>,
+    /// Kept for the PUT presigner: `object_store` signs `host` only, and a
+    /// browser upload must be pinned to its declared `Content-Type`.
+    config: StorageConfig,
+}
+
+/// What a stored object looks like (finalize verification).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjectHead {
+    pub size: u64,
+    pub content_type: Option<String>,
 }
 
 impl StorageClient {
@@ -57,7 +69,15 @@ impl StorageClient {
         Ok(Self {
             public: Arc::new(build(&config.public_bucket)?),
             private: Arc::new(build(&config.private_bucket)?),
+            config: config.clone(),
         })
+    }
+
+    fn bucket_name(&self, bucket: Bucket) -> &str {
+        match bucket {
+            Bucket::Public => &self.config.public_bucket,
+            Bucket::Private => &self.config.private_bucket,
+        }
     }
 
     fn store(&self, bucket: Bucket) -> &AmazonS3 {
@@ -67,19 +87,64 @@ impl StorageClient {
         }
     }
 
-    /// Presigned PUT for direct browser upload.
-    pub async fn presign_put(
+    /// Presigned PUT for direct browser upload, pinned to `content_type`:
+    /// the header is part of the signature (`SignedHeaders=content-type;host`),
+    /// so storage refuses a PUT that declares anything else.
+    ///
+    /// Hand-rolled SigV4 query signing (path-style, UNSIGNED-PAYLOAD):
+    /// `object_store::Signer` cannot add headers to the signature.
+    pub fn presign_put(
         &self,
         bucket: Bucket,
         key: &str,
+        content_type: &str,
         expires_in: Duration,
     ) -> Result<String> {
-        let url = self
-            .store(bucket)
-            .signed_url(http::Method::PUT, &ObjectPath::from(key), expires_in)
-            .await
-            .map_err(|e| Error::internal("presigning put", e))?;
-        Ok(url.into())
+        const ALGORITHM: &str = "AWS4-HMAC-SHA256";
+        const REGION: &str = "us-east-1";
+        let endpoint: http::Uri = self
+            .config
+            .endpoint
+            .parse()
+            .map_err(|e| Error::internal("parsing storage endpoint", e))?;
+        let Some(host) = endpoint.authority().map(|a| a.as_str().to_owned()) else {
+            return Err(Error::app(
+                ErrorCode::Internal,
+                "storage endpoint has no host",
+            ));
+        };
+        let now = jiff::Timestamp::now();
+        let amz_date = now.strftime("%Y%m%dT%H%M%SZ").to_string();
+        let datestamp = now.strftime("%Y%m%d").to_string();
+        let scope = format!("{datestamp}/{REGION}/s3/aws4_request");
+        let path = format!("/{}/{key}", self.bucket_name(bucket));
+        // Query parameters, already in canonical (sorted, encoded) order.
+        let query = format!(
+            "X-Amz-Algorithm={ALGORITHM}&X-Amz-Credential={}&X-Amz-Date={amz_date}\
+             &X-Amz-Expires={}&X-Amz-SignedHeaders=content-type%3Bhost",
+            aws_encode(&format!("{}/{scope}", self.config.access_key)),
+            expires_in.as_secs(),
+        );
+        let canonical_request = format!(
+            "PUT\n{path}\n{query}\ncontent-type:{content_type}\nhost:{host}\n\n\
+             content-type;host\nUNSIGNED-PAYLOAD"
+        );
+        let string_to_sign = format!(
+            "{ALGORITHM}\n{amz_date}\n{scope}\n{}",
+            hex(&Sha256::digest(canonical_request.as_bytes()))
+        );
+        let mut signing_key = hmac_sha256(
+            format!("AWS4{}", self.config.secret_key.expose_secret()).as_bytes(),
+            datestamp.as_bytes(),
+        )?;
+        for part in [REGION, "s3", "aws4_request"] {
+            signing_key = hmac_sha256(&signing_key, part.as_bytes())?;
+        }
+        let signature = hex(&hmac_sha256(&signing_key, string_to_sign.as_bytes())?);
+        Ok(format!(
+            "{}{path}?{query}&X-Amz-Signature={signature}",
+            self.config.endpoint.trim_end_matches('/')
+        ))
     }
 
     /// Presigned GET for private downloads.
@@ -97,10 +162,26 @@ impl StorageClient {
         Ok(url.into())
     }
 
-    /// Object size if it exists (finalize verification).
-    pub async fn head(&self, bucket: Bucket, key: &str) -> Result<Option<u64>> {
-        match self.store(bucket).head(&ObjectPath::from(key)).await {
-            Ok(meta) => Ok(Some(meta.size)),
+    /// Object size + stored content type if it exists (finalize
+    /// verification). Goes through `get_opts(head)` because a plain `head`
+    /// drops the response headers.
+    pub async fn head(&self, bucket: Bucket, key: &str) -> Result<Option<ObjectHead>> {
+        let options = GetOptions {
+            head: true,
+            ..GetOptions::default()
+        };
+        match self
+            .store(bucket)
+            .get_opts(&ObjectPath::from(key), options)
+            .await
+        {
+            Ok(result) => Ok(Some(ObjectHead {
+                size: result.meta.size,
+                content_type: result
+                    .attributes
+                    .get(&Attribute::ContentType)
+                    .map(|v| v.to_string()),
+            })),
             Err(object_store::Error::NotFound { .. }) => Ok(None),
             Err(e) => Err(Error::internal("object head", e)),
         }
@@ -148,4 +229,37 @@ impl StorageClient {
             )),
         }
     }
+}
+
+fn hmac_sha256(key: &[u8], data: &[u8]) -> Result<Vec<u8>> {
+    let mut mac =
+        Hmac::<Sha256>::new_from_slice(key).map_err(|e| Error::internal("hmac key", e))?;
+    mac.update(data);
+    Ok(mac.finalize().into_bytes().to_vec())
+}
+
+fn hex(bytes: &[u8]) -> String {
+    use std::fmt::Write;
+    bytes
+        .iter()
+        .fold(String::with_capacity(bytes.len() * 2), |mut out, b| {
+            // Writing into a String is infallible.
+            let _ = write!(out, "{b:02x}");
+            out
+        })
+}
+
+/// AWS query-string encoding: RFC 3986 unreserved characters stay.
+fn aws_encode(value: &str) -> String {
+    use std::fmt::Write;
+    value
+        .bytes()
+        .fold(String::with_capacity(value.len()), |mut out, b| {
+            if b.is_ascii_alphanumeric() || b"-_.~".contains(&b) {
+                out.push(char::from(b));
+            } else {
+                let _ = write!(out, "%{b:02X}");
+            }
+            out
+        })
 }

@@ -76,7 +76,10 @@ async fn copy_objects(ctx: &mut Ctx) -> Result<()> {
                 },
             );
             storage.put(target.bucket, &target.key, bytes).await?;
-            let stored_size = storage.head(target.bucket, &target.key).await?;
+            let stored_size = storage
+                .head(target.bucket, &target.key)
+                .await?
+                .map(|head| head.size);
             if stored_size != Some(size) {
                 return Err(Error::config(format!(
                     "object verification failed for {}: source size {size}, stored {stored_size:?}",

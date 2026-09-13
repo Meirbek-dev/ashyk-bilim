@@ -2,8 +2,10 @@
 //! verification, presigned download, policy rejections, reaper.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+use ab_clients::storage::{Bucket, StorageClient, StorageConfig};
 use ab_testkit::TestApp;
 use axum::http::StatusCode;
+use secrecy::SecretString;
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -29,9 +31,11 @@ async fn full_upload_finalize_download_flow(pool: PgPool) {
     let put_url = body["put_url"].as_str().unwrap().to_owned();
     assert!(body["key"].as_str().unwrap().starts_with("avatar/"));
 
-    // The browser's part: PUT the bytes straight to storage.
+    // The browser's part: PUT the bytes straight to storage, declaring the
+    // type the slot was created with (the signature pins it).
     let put = reqwest::Client::new()
         .put(&put_url)
+        .header("content-type", "image/png")
         .body(payload.clone())
         .send()
         .await
@@ -89,8 +93,20 @@ async fn policy_rejects_oversize_and_wrong_mime(pool: PgPool) {
                                   "size_bytes": 1000 }),
         )
         .await;
-    assert_eq!(wrong_mime.status, StatusCode::UNPROCESSABLE_ENTITY);
-    assert_eq!(wrong_mime.json()["field_errors"][0]["field"], "mime");
+    assert_eq!(wrong_mime.status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+    assert_eq!(wrong_mime.json()["code"], "unsupported-media-type");
+
+    // The image allowlist is exact: no `image/*` prefix, no scriptable SVG.
+    let svg = app
+        .post_as(
+            &session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "block-image", "mime": "image/svg+xml",
+                                  "size_bytes": 1000 }),
+        )
+        .await;
+    assert_eq!(svg.status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+    assert_eq!(svg.json()["code"], "unsupported-media-type");
 
     let bad_purpose = app
         .post_as(
@@ -137,4 +153,71 @@ async fn finalize_without_object_is_a_conflict(pool: PgPool) {
         )
         .await;
     assert_eq!(foreign.status, StatusCode::FORBIDDEN);
+}
+
+/// Declare `image/png`, store HTML: the signed PUT refuses the header, and
+/// an object that still lands with another type is rejected on finalize and
+/// deleted — nothing served from the public bucket as `text/html`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn finalize_rejects_a_content_type_mismatch(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("xss", "x@example.com", &["user"]).await;
+    let session = app.mint_session_for(user, &["file:create:own"]).await;
+    let html = b"<script>alert(1)</script>".to_vec();
+
+    let created = app
+        .post_as(
+            &session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "avatar", "mime": "image/png",
+                                  "size_bytes": html.len() }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK);
+    let body = created.json();
+    let id = body["id"].as_str().unwrap().to_owned();
+    let key = body["key"].as_str().unwrap().to_owned();
+
+    // The presigned URL is pinned to the declared type.
+    let put = reqwest::Client::new()
+        .put(body["put_url"].as_str().unwrap())
+        .header("content-type", "text/html")
+        .body(html.clone())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(
+        put.status(),
+        403,
+        "storage accepted a mismatched content type"
+    );
+
+    // Backstop: an object that lands with another type anyway (a storage
+    // that ignores signed headers) never finalizes and is removed.
+    let storage = StorageClient::new(&StorageConfig {
+        endpoint: std::env::var("TEST_S3_ENDPOINT")
+            .unwrap_or_else(|_| "http://localhost:9002".into()),
+        access_key: "ashyq-dev".into(),
+        secret_key: SecretString::from("ashyq-dev-secret"),
+        public_bucket: "ab-public".into(),
+        private_bucket: "ab-private".into(),
+    })
+    .unwrap();
+    storage.put(Bucket::Public, &key, html).await.unwrap();
+    let finalized = app
+        .post_as(
+            &session,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        finalized.status,
+        StatusCode::UNSUPPORTED_MEDIA_TYPE,
+        "{}",
+        finalized.text()
+    );
+    assert_eq!(finalized.json()["code"], "unsupported-media-type");
+    assert_eq!(finalized.json()["details"]["declared"], "image/png");
+    assert_eq!(storage.head(Bucket::Public, &key).await.unwrap(), None);
 }
