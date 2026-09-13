@@ -24,7 +24,7 @@ export const RunStatus = zod
     status: zod
       .enum(['queued', 'running', 'succeeded', 'failed', 'aborted'])
       .describe(
-        'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished\/error.',
+        'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.',
       ),
     thread_id: zod.uuid(),
   })

@@ -16,7 +16,7 @@ export const RegisterBody = zod
     username: zod.string().describe('3–48 characters: letters, digits, `.`, `_`, `-`.'),
   })
   .describe(
-    'Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username\/email, password of\nat least 8 characters.',
+    'Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email, password of\nat least 8 characters.',
   )
 
 export type RegisterBody = zod.input<typeof RegisterBody>

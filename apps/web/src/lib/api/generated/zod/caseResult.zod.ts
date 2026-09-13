@@ -27,7 +27,7 @@ export const CaseResult = zod
     weight: zod.number(),
   })
   .describe(
-    "One test's outcome. Hidden tests lose `stdin`\/`expected`\/`actual`\/\n`stdout`\/`stderr` for non-authors (see [`CodeRun::masked`]).",
+    "One test's outcome. Hidden tests lose `stdin`/`expected`/`actual`/\n`stdout`/`stderr` for non-authors (see [`CodeRun::masked`]).",
   )
 
 export type CaseResult = zod.input<typeof CaseResult>

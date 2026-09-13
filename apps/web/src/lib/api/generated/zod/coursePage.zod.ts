@@ -15,7 +15,7 @@ export const CoursePage = zod
         contributor_ids: zod
           .array(zod.uuid())
           .describe(
-            'Active maintainers \/ contributors (`GET \/courses\/{id}\/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
+            'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
           ),
         created_at_unix: zod.int(),
         creator_id: zod.union([zod.null(), zod.uuid()]).optional(),
@@ -28,7 +28,7 @@ export const CoursePage = zod
         thumbnail_key: zod
           .string()
           .nullish()
-          .describe('Storage key of the thumbnail image, served at `\/content\/<key>`.'),
+          .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
         updated_at_unix: zod.int(),
       }),
     ),

@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const TotpEnrollment = zod
   .object({
     secret: zod.string().describe('Base32 secret for manual entry.'),
-    uri: zod.string().describe('`otpauth:\/\/` URI for QR rendering.'),
+    uri: zod.string().describe('`otpauth://` URI for QR rendering.'),
   })
   .describe('TOTP enrollment secrets — shown to the user exactly once.')
 

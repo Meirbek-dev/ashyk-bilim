@@ -35,7 +35,7 @@ export const QaChatRequest = zod
             parts: zod
               .array(zod.looseObject({}))
               .nullish()
-              .describe('`[{type: \"text\", content: \"…\"}, …]` — an alternative to `content`.'),
+              .describe('`[{type: "text", content: "…"}, …]` — an alternative to `content`.'),
             role: zod.string(),
           })
           .describe('One message of the AG-UI conversation the client sends back.'),
@@ -50,7 +50,7 @@ export const QaChatRequest = zod
       .nullish()
       .describe('AG-UI protocol fields the client always sends; accepted and ignored.'),
   })
-  .describe('AG-UI `RunAgentInput` for `POST \/ai\/qa\/{course}\/chat`.')
+  .describe('AG-UI `RunAgentInput` for `POST /ai/qa/{course}/chat`.')
 
 export type QaChatRequest = zod.input<typeof QaChatRequest>
 export type QaChatRequestOutput = zod.output<typeof QaChatRequest>

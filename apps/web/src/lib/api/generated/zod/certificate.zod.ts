@@ -12,7 +12,7 @@ export const Certificate = zod.object({
   id: zod.uuid(),
   issued_at_unix: zod.int(),
   user_id: zod.uuid(),
-  verify_code: zod.string().describe('Public verification code; the client links `\/certificates\/{code}\/verify`.'),
+  verify_code: zod.string().describe('Public verification code; the client links `/certificates/{code}/verify`.'),
 })
 
 export type Certificate = zod.input<typeof Certificate>

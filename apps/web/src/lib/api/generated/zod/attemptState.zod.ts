@@ -25,7 +25,7 @@ export const AttemptState = zod
           'REMEDIATION_REQUIRED',
         ])
         .describe(
-          'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt\/timer-based ones arrive with submissions in P4).',
+          'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).',
         ),
     ),
     draft_id: zod.union([zod.null(), zod.uuid()]).optional(),

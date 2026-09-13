@@ -17,7 +17,7 @@ export const MatchingBody = zod.object({
       }),
     )
     .describe(
-      "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`\/`right`, no pairs).",
+      "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
     ),
   prompt: zod.string().optional(),
 })

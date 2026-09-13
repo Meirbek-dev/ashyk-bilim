@@ -16,7 +16,7 @@ export const AssessmentAuditEventRow = zod.object({
   final_score: zod
     .number()
     .nullish()
-    .describe('The saved\/published score of a grading entry; `None` for bulk actions.'),
+    .describe('The saved/published score of a grading entry; `None` for bulk actions.'),
   grading_entry_id: zod.union([zod.null(), zod.uuid()]).optional(),
   id: zod.string(),
   occurred_at_unix: zod.int(),

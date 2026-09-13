@@ -17,7 +17,7 @@ export const CreateUserRequest = zod
     username: zod.string(),
   })
   .describe(
-    'Admin account creation (`POST \/users`). No `Debug` — may carry a\npassword. Without one the account is IdP-only (Google sign-in).',
+    'Admin account creation (`POST /users`). No `Debug` — may carry a\npassword. Without one the account is IdP-only (Google sign-in).',
   )
 
 export type CreateUserRequest = zod.input<typeof CreateUserRequest>

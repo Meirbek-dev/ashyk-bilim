@@ -2406,6 +2406,8 @@ export const getCreateInterventionUrl = (params?: CreateInterventionParams) => {
 }
 
 /**
+ * Retry-safe with `Idempotency-Key`: a replay returns the stored 201, a
+ * different body under the same key is a 422.
  * @summary Record an intervention; the learner's latest risk score is captured as
 `risk_score_before`.
  */
@@ -2417,8 +2419,16 @@ export const createIntervention = async (
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {}
     if (h instanceof Headers) return Object.fromEntries(h.entries())
-    if (Array.isArray(h)) return Object.fromEntries(h)
-    return h
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
   }
   return orvalMutator<Intervention>(
     getCreateInterventionUrl(params),
@@ -2515,7 +2525,11 @@ export const getAtRiskLearnersUrl = (params?: AtRiskLearnersParams) => {
 }
 
 /**
- * @summary Learners at medium or high risk, worst first.
+ * `low` rows are included (the KPI counters only count medium/high);
+ * course editors enrolled in their own course are never listed. `sort_by`
+ * accepts `risk` (default), `progress`, `activity`, `name`;
+ * `sort_order=asc` reverses.
+ * @summary Every learner carrying at least one risk signal, worst first.
  */
 export const atRiskLearners = async (
   params?: AtRiskLearnersParams,
@@ -2603,7 +2617,7 @@ export function useAtRiskLearners<TData = Awaited<ReturnType<typeof atRiskLearne
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Learners at medium or high risk, worst first.
+ * @summary Every learner carrying at least one risk signal, worst first.
  */
 
 export function useAtRiskLearners<TData = Awaited<ReturnType<typeof atRiskLearners>>, TError = ErrorType<unknown>>(
@@ -2684,7 +2698,7 @@ export function useAtRiskLearnersSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Learners at medium or high risk, worst first.
+ * @summary Every learner carrying at least one risk signal, worst first.
  */
 
 export function useAtRiskLearnersSuspense<
@@ -3146,8 +3160,16 @@ export const saveView = async (
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {}
     if (h instanceof Headers) return Object.fromEntries(h.entries())
-    if (Array.isArray(h)) return Object.fromEntries(h)
-    return h
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
   }
   return orvalMutator<SavedView>(
     getSaveViewUrl(params),

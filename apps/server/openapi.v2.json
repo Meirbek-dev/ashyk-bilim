@@ -3578,6 +3578,7 @@
           "analytics"
         ],
         "summary": "Record an intervention; the learner's latest risk score is captured as\n`risk_score_before`.",
+        "description": "Retry-safe with `Idempotency-Key`: a replay returns the stored 201, a\ndifferent body under the same key is a 422.",
         "operationId": "create_intervention",
         "parameters": [
           {
@@ -3739,7 +3740,8 @@
         "tags": [
           "analytics"
         ],
-        "summary": "Learners at medium or high risk, worst first.",
+        "summary": "Every learner carrying at least one risk signal, worst first.",
+        "description": "`low` rows are included (the KPI counters only count medium/high);\ncourse editors enrolled in their own course are never listed. `sort_by`\naccepts `risk` (default), `progress`, `activity`, `name`;\n`sort_order=asc` reverses.",
         "operationId": "at_risk_learners",
         "parameters": [
           {
@@ -6147,6 +6149,16 @@
           },
           "400": {
             "description": "Invalid code",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No enrolment pending, or already active",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10991,7 +11003,7 @@
         "tags": [
           "uploads"
         ],
-        "summary": "Finalize after the PUT: verifies the object exists and is within policy.",
+        "summary": "Finalize after the PUT: verifies the object exists and is within policy.\nWith an `Idempotency-Key`, a retry replays the original 200 for 24h\ninstead of the \"already finalized\" 409.",
         "operationId": "finalize_upload",
         "parameters": [
           {
@@ -11002,6 +11014,18 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client retry token (optional)",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -17734,8 +17758,19 @@
           "action": {
             "$ref": "#/components/schemas/GradeAction"
           },
+          "audit_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Grader's note for the audit trail; never shown to the learner."
+          },
           "feedback": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Overall feedback shown to the learner; omitted = keep the stored one."
           },
           "final_score": {
             "type": [
@@ -17743,7 +17778,7 @@
               "null"
             ],
             "format": "double",
-            "description": "Raw 0..100 before the late penalty; omitted = computed from item\nscores (earned / possible × 100)."
+            "description": "Raw 0..100 before the late penalty; omitted = computed from item\nscores (earned / possible × 100).\nOmitted together with `item_grades` (a publish-only save), the raw\nscore of the latest grading entry is kept."
           },
           "item_grades": {
             "type": "array",
@@ -23651,13 +23686,16 @@
       "UserRank": {
         "type": "object",
         "required": [
-          "user_id",
-          "rank"
+          "user_id"
         ],
         "properties": {
           "rank": {
-            "type": "integer",
-            "format": "int64"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "`null` when the profile opted out of the leaderboard."
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"

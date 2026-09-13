@@ -9,11 +9,14 @@ import * as zod from 'zod'
 
 export const GradeRequest = zod.object({
   action: zod.enum(['save', 'publish', 'return']),
-  feedback: zod.string().optional(),
+  audit_note: zod.string().nullish().describe("Grader's note for the audit trail; never shown to the learner."),
+  feedback: zod.string().nullish().describe('Overall feedback shown to the learner; omitted = keep the stored one.'),
   final_score: zod
     .number()
     .nullish()
-    .describe('Raw 0..100 before the late penalty; omitted = computed from item\nscores (earned \/ possible × 100).'),
+    .describe(
+      'Raw 0..100 before the late penalty; omitted = computed from item\nscores (earned / possible × 100).\nOmitted together with `item_grades` (a publish-only save), the raw\nscore of the latest grading entry is kept.',
+    ),
   item_grades: zod
     .array(
       zod.object({

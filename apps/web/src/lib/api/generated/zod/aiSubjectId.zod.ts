@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const AiSubjectId = zod
   .uuid()
   .describe(
-    'The work an AI analysis or remediation is about: an assessment\nsubmission id \*or\* a file-submission attempt id (both UUIDv7, one\nroute parameter — the server looks the id up in both tables).',
+    'The work an AI analysis or remediation is about: an assessment\nsubmission id *or* a file-submission attempt id (both UUIDv7, one\nroute parameter — the server looks the id up in both tables).',
   )
 
 export type AiSubjectId = zod.input<typeof AiSubjectId>

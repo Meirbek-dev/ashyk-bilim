@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const ScoreBucket = zod.object({
   count: zod.int(),
-  range: zod.string().describe('`\"0-10\"`, …, `\"90-100\"`.'),
+  range: zod.string().describe('`"0-10"`, …, `"90-100"`.'),
 })
 
 export type ScoreBucket = zod.input<typeof ScoreBucket>

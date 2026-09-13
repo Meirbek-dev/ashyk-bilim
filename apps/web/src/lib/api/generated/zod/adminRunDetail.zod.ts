@@ -65,7 +65,7 @@ export const AdminRunDetail = zod.object({
       status: zod
         .enum(['queued', 'running', 'succeeded', 'failed', 'aborted'])
         .describe(
-          'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished\/error.',
+          'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.',
         ),
       stuck: zod.boolean().describe('Queued or running for over ten minutes.'),
       time_to_first_text_ms: zod.int().nullish(),

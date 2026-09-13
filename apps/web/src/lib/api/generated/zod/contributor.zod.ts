@@ -18,7 +18,7 @@ export const Contributor = zod
     username: zod.string(),
   })
   .describe(
-    'One roster entry.\n\nThe creator is always listed first as `creator\/active`; the other roles\nare `maintainer | contributor | reporter`, statuses `pending | active |\ninactive`. Any active entry authors on the course like the creator.',
+    'One roster entry.\n\nThe creator is always listed first as `creator/active`; the other roles\nare `maintainer | contributor | reporter`, statuses `pending | active |\ninactive`. Any active entry authors on the course like the creator.',
   )
 
 export type Contributor = zod.input<typeof Contributor>

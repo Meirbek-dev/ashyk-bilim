@@ -11,7 +11,7 @@ export const Usergroup = zod.object({
   can_write: zod
     .boolean()
     .describe(
-      'Whether the caller may edit\/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).',
+      'Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).',
     ),
   created_at_unix: zod.int(),
   creator_id: zod.union([zod.null(), zod.uuid()]).optional(),

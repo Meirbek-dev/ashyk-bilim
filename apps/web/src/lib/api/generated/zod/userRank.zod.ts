@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const UserRank = zod.object({
-  rank: zod.int(),
+  rank: zod.int().nullish().describe('`null` when the profile opted out of the leaderboard.'),
   user_id: zod.uuid(),
 })
 

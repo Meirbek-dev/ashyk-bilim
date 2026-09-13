@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const Health = zod.object({
-  status: zod.string().describe('Always `\"ok\"` when the endpoint answers.'),
+  status: zod.string().describe('Always `"ok"` when the endpoint answers.'),
   version: zod.string().describe('Server crate version.'),
 })
 

@@ -50,7 +50,7 @@ export const StudentSubmission = zod
           ])
           .describe('Internally tagged on `kind`, mirroring the item body kinds.'),
       )
-      .describe('`{ \"<item_id>\": ItemAnswer }`.'),
+      .describe('`{ "<item_id>": ItemAnswer }`.'),
     assessment_id: zod.uuid(),
     attempt_number: zod.int(),
     auto_score: zod.number().nullish(),

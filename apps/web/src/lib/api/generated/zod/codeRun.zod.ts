@@ -31,7 +31,7 @@ export const CodeRun = zod
           weight: zod.number(),
         })
         .describe(
-          "One test's outcome. Hidden tests lose `stdin`\/`expected`\/`actual`\/\n`stdout`\/`stderr` for non-authors (see [`CodeRun::masked`]).",
+          "One test's outcome. Hidden tests lose `stdin`/`expected`/`actual`/\n`stdout`/`stderr` for non-authors (see [`CodeRun::masked`]).",
         ),
     ),
     compile_output: zod.string().nullish(),

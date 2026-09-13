@@ -18,7 +18,7 @@ export const DisabledReason = zod
     'REMEDIATION_REQUIRED',
   ])
   .describe(
-    'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt\/timer-based ones arrive with submissions in P4).',
+    'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).',
   )
 
 export type DisabledReason = zod.input<typeof DisabledReason>

@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const FileGradeRequest = zod.object({
   action: zod.enum(['save', 'publish', 'return']),
   feedback: zod.string().optional(),
-  final_score: zod.number().nullish().describe('Required for save\/publish; 0..=100.'),
+  final_score: zod.number().nullish().describe('Required for save/publish; 0..=100.'),
   rubric_scores: zod.looseObject({}).nullish().describe('Omit to keep the stored rubric scores.'),
 })
 

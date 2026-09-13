@@ -12,7 +12,7 @@ export const Stats = zod.object({
   distribution: zod.array(
     zod.object({
       count: zod.int(),
-      range: zod.string().describe('`\"0-10\"`, …, `\"90-100\"`.'),
+      range: zod.string().describe('`"0-10"`, …, `"90-100"`.'),
     }),
   ),
   graded: zod.int(),

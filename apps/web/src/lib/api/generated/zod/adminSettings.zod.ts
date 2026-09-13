@@ -14,7 +14,7 @@ export const adminSettingsMaxTokensPerRequestMin = 0
 export const AdminSettings = zod.object({
   ai_enabled: zod.boolean(),
   draft_mode_enabled: zod.boolean(),
-  effective: zod.looseObject({}).describe('The whole `AB__AI__\*` section with secrets redacted.'),
+  effective: zod.looseObject({}).describe('The whole `AB__AI__*` section with secrets redacted.'),
   features: zod.array(
     zod.object({
       editable: zod.boolean().describe('Flags come from the environment; there is no runtime toggle.'),

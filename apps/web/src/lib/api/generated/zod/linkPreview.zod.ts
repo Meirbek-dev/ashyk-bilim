@@ -15,7 +15,7 @@ export const LinkPreview = zod
     title: zod.string().nullish(),
     url: zod.string().describe('The URL the page was read from (after redirects).'),
   })
-  .describe('OpenGraph \/ `<title>` summary of a public web page.')
+  .describe('OpenGraph / `<title>` summary of a public web page.')
 
 export type LinkPreview = zod.input<typeof LinkPreview>
 export type LinkPreviewOutput = zod.output<typeof LinkPreview>

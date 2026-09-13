@@ -11,7 +11,7 @@ export const DuplicateAssessmentBody = zod.object({
   chapter_id: zod
     .union([zod.null(), zod.uuid().describe("Target chapter in the same course; defaults to the source's chapter.")])
     .optional(),
-  title: zod.string().nullish().describe('Defaults to `\"<title> (copy)\"`.'),
+  title: zod.string().nullish().describe('Defaults to `"<title> (copy)"`.'),
 })
 
 export type DuplicateAssessmentBody = zod.input<typeof DuplicateAssessmentBody>

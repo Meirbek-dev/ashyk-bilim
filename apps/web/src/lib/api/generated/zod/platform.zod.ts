@@ -12,7 +12,7 @@ export const Platform = zod.object({
   description: zod.string(),
   email: zod.string(),
   label: zod.string().nullish(),
-  logo_key: zod.string().nullish().describe('Public-bucket storage keys (served via the CDN \/content route).'),
+  logo_key: zod.string().nullish().describe('Public-bucket storage keys (served via the CDN /content route).'),
   name: zod.string(),
   thumbnail_key: zod.string().nullish(),
 })

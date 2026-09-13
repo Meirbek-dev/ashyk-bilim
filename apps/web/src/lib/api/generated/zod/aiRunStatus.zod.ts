@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const AiRunStatus = zod
   .enum(['queued', 'running', 'succeeded', 'failed', 'aborted'])
   .describe(
-    'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished\/error.',
+    'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.',
   )
 
 export type AiRunStatus = zod.input<typeof AiRunStatus>

@@ -5680,11 +5680,22 @@ expression: json
           "action": {
             "$ref": "#/components/schemas/GradeAction"
           },
+          "audit_note": {
+            "description": "Grader's note for the audit trail; never shown to the learner.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "feedback": {
-            "type": "string"
+            "description": "Overall feedback shown to the learner; omitted = keep the stored one.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "final_score": {
-            "description": "Raw 0..100 before the late penalty; omitted = computed from item\nscores (earned / possible × 100).",
+            "description": "Raw 0..100 before the late penalty; omitted = computed from item\nscores (earned / possible × 100).\nOmitted together with `item_grades` (a publish-only save), the raw\nscore of the latest grading entry is kept.",
             "format": "double",
             "type": [
               "number",
@@ -11600,16 +11611,19 @@ expression: json
       "UserRank": {
         "properties": {
           "rank": {
+            "description": "`null` when the profile opted out of the leaderboard.",
             "format": "int64",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
           }
         },
         "required": [
-          "user_id",
-          "rank"
+          "user_id"
         ],
         "type": "object"
       },
@@ -15655,6 +15669,7 @@ expression: json
         ]
       },
       "post": {
+        "description": "Retry-safe with `Idempotency-Key`: a replay returns the stored 201, a\ndifferent body under the same key is a 422.",
         "operationId": "create_intervention",
         "parameters": [
           {
@@ -15817,6 +15832,7 @@ expression: json
     },
     "/api/v2/analytics/teacher/learners/at-risk": {
       "get": {
+        "description": "`low` rows are included (the KPI counters only count medium/high);\ncourse editors enrolled in their own course are never listed. `sort_by`\naccepts `risk` (default), `progress`, `activity`, `name`;\n`sort_order=asc` reverses.",
         "operationId": "at_risk_learners",
         "parameters": [
           {
@@ -15941,7 +15957,7 @@ expression: json
             "description": "At-risk learners"
           }
         },
-        "summary": "Learners at medium or high risk, worst first.",
+        "summary": "Every learner carrying at least one risk signal, worst first.",
         "tags": [
           "analytics"
         ]
@@ -18231,6 +18247,16 @@ expression: json
               }
             },
             "description": "Invalid code"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No enrolment pending, or already active"
           }
         },
         "summary": "Activate TOTP with the first code from the authenticator app.",
@@ -23080,6 +23106,18 @@ expression: json
               "format": "uuid",
               "type": "string"
             }
+          },
+          {
+            "description": "Client retry token (optional)",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -23104,7 +23142,7 @@ expression: json
             "description": "No object received / already finalized"
           }
         },
-        "summary": "Finalize after the PUT: verifies the object exists and is within policy.",
+        "summary": "Finalize after the PUT: verifies the object exists and is within policy.\nWith an `Idempotency-Key`, a retry replays the original 200 for 24h\ninstead of the \"already finalized\" 409.",
         "tags": [
           "uploads"
         ]

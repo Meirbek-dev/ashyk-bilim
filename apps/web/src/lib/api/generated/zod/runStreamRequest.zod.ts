@@ -21,7 +21,7 @@ export const RunStreamRequest = zod
       .nullish()
       .describe('AG-UI protocol fields the client always sends; accepted and ignored.'),
   })
-  .describe('AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_\*` event.')
+  .describe('AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_*` event.')
 
 export type RunStreamRequest = zod.input<typeof RunStreamRequest>
 export type RunStreamRequestOutput = zod.output<typeof RunStreamRequest>
