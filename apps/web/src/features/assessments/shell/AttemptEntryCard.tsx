@@ -26,6 +26,7 @@ interface AttemptEntryCardProps {
 export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntryCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
   const tKinds = useTranslations('Features.Assessments.Studio.kinds')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
   const formatTimeLimit = useTimeLimitLabel()
 
   const { recommendedAction, policy, items } = vm
@@ -47,7 +48,11 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
           <Lock className="text-destructive size-8" />
         </div>
         <h2 className="text-xl font-semibold tracking-tight">{vm.title}</h2>
-        <p className="text-muted-foreground max-w-md text-sm">{t('assessmentBlocked')}</p>
+        <p className="text-muted-foreground max-w-md text-sm">
+          {vm.disabledActionReasons.find((r) => tReasons.has(r))
+            ? tReasons(vm.disabledActionReasons.find((r) => tReasons.has(r)) as never)
+            : t('assessmentBlocked')}
+        </p>
       </div>
     )
   }

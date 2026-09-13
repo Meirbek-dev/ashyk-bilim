@@ -10251,6 +10251,7 @@
       "MAX_ATTEMPTS_REACHED": "You have used all your allowed attempts.",
       "NOT_ENROLLED": "You are not enrolled in this course.",
       "AWAITING_GRADE": "Your submission is being graded. Please check back later.",
+      "REMEDIATION_REQUIRED": "Finish the assigned remediation first.",
       "UNKNOWN": "Action unavailable."
     }
   },
