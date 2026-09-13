@@ -9,6 +9,7 @@ import * as zod from 'zod'
 
 export const SubmitHeaders = zod.object({
   'If-Match': zod.int().nullish(),
+  'Idempotency-Key': zod.string().nullish(),
 })
 
 export type SubmitHeaders = zod.input<typeof SubmitHeaders>

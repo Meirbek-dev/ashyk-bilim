@@ -8,7 +8,15 @@
 import * as zod from 'zod'
 
 export const DisabledReason = zod
-  .enum(['NOT_PUBLISHED', 'SCHEDULED_NOT_OPEN', 'ARCHIVED', 'PAST_DUE', 'MAX_ATTEMPTS_REACHED', 'TIME_LIMIT_EXPIRED'])
+  .enum([
+    'NOT_PUBLISHED',
+    'SCHEDULED_NOT_OPEN',
+    'ARCHIVED',
+    'PAST_DUE',
+    'MAX_ATTEMPTS_REACHED',
+    'TIME_LIMIT_EXPIRED',
+    'REMEDIATION_REQUIRED',
+  ])
   .describe(
     'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt\/timer-based ones arrive with submissions in P4).',
   )

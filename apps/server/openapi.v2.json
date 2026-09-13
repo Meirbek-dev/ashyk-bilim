@@ -6525,7 +6525,7 @@
           {
             "name": "code",
             "in": "path",
-            "description": "Verification code",
+            "description": "Verification code (case-insensitive, dashes optional)",
             "required": true,
             "schema": {
               "type": "string"
@@ -6562,7 +6562,7 @@
           "certifications"
         ],
         "summary": "The certificate as an A4-landscape PDF — public by code, like verification.",
-        "description": "Holder, course, certificate name/type, issue date, teacher, the\nverification code and the verify link (`AB__SERVER__WEB_URL` +\n`/certificates/{code}/verify`). The page language follows\n`Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.",
+        "description": "Holder, course, certificate name/type, issue date, teacher, the\nverification code and the verify link (`AB__SERVER__WEB_URL` +\n`/{locale}/certificates/{code}/verify`). The page language follows\n`Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.",
         "operationId": "certificate_pdf",
         "parameters": [
           {
@@ -8671,7 +8671,7 @@
         "tags": [
           "discussions"
         ],
-        "summary": "Edit content and/or status (owner, or a moderator).",
+        "summary": "Edit content (owner, or a moderator); only a moderator may change\n`status`.",
         "operationId": "update_discussion",
         "parameters": [
           {
@@ -8706,7 +8706,7 @@
             }
           },
           "403": {
-            "description": "Not yours and not a moderator",
+            "description": "Not yours and not a moderator, or a status change by a non-moderator",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9234,6 +9234,16 @@
               }
             }
           },
+          "409": {
+            "description": "Not published or attempt cap reached",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "412": {
             "description": "Stale version",
             "content": {
@@ -9459,7 +9469,7 @@
           "file-submissions"
         ],
         "summary": "Submit the open attempt (optionally replacing files first).",
-        "description": "At least one file is required; late work is refused when the activity\ndoes not allow it and penalised by the late policy otherwise.",
+        "description": "At least one file is required; late work is refused when the activity\ndoes not allow it and penalised by the late policy otherwise. With an\n`Idempotency-Key`, a retry with the same body replays the original\nresponse for 24h instead of opening a new attempt; the same key with a\ndifferent body is 422.",
         "operationId": "submit",
         "parameters": [
           {
@@ -9482,6 +9492,18 @@
                 "null"
               ],
               "format": "int64"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client retry token (optional)",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -9517,7 +9539,7 @@
             }
           },
           "422": {
-            "description": "No files",
+            "description": "No files, or Idempotency-Key reused with a different body",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14685,15 +14707,12 @@
       },
       "CertificateHolder": {
         "type": "object",
+        "description": "What a verifier learns about the holder: the name on the certificate.",
         "required": [
-          "display_name",
-          "username"
+          "display_name"
         ],
         "properties": {
           "display_name": {
-            "type": "string"
-          },
-          "username": {
             "type": "string"
           }
         }
@@ -16575,7 +16594,8 @@
           "ARCHIVED",
           "PAST_DUE",
           "MAX_ATTEMPTS_REACHED",
-          "TIME_LIMIT_EXPIRED"
+          "TIME_LIMIT_EXPIRED",
+          "REMEDIATION_REQUIRED"
         ]
       },
       "Discussion": {
@@ -19887,6 +19907,31 @@
           }
         }
       },
+      "PublicCertificate": {
+        "type": "object",
+        "description": "A certificate as the public sees it (no holder id).",
+        "required": [
+          "id",
+          "certification_id",
+          "verify_code",
+          "issued_at_unix"
+        ],
+        "properties": {
+          "certification_id": {
+            "$ref": "#/components/schemas/CertificationId"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CertificateId"
+          },
+          "issued_at_unix": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "verify_code": {
+            "type": "string"
+          }
+        }
+      },
       "PublishSummary": {
         "type": "object",
         "required": [
@@ -21686,6 +21731,17 @@
               "null"
             ],
             "format": "double"
+          },
+          "auto_submit_reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AutoSubmitReason",
+                "description": "Set when the server closed the attempt (time ran out, integrity\nviolation); `null` when the learner submitted."
+              }
+            ]
           },
           "draft_version": {
             "type": "integer",
@@ -23796,23 +23852,28 @@
         }
       },
       "VerifiedCertificate": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/IssuedCertificate"
-          },
-          {
-            "type": "object",
-            "required": [
-              "holder"
-            ],
-            "properties": {
-              "holder": {
-                "$ref": "#/components/schemas/CertificateHolder"
-              }
-            }
-          }
+        "type": "object",
+        "description": "The public verification view.",
+        "required": [
+          "certificate",
+          "certification",
+          "course",
+          "holder"
         ],
-        "description": "The public verification view."
+        "properties": {
+          "certificate": {
+            "$ref": "#/components/schemas/PublicCertificate"
+          },
+          "certification": {
+            "$ref": "#/components/schemas/Certification"
+          },
+          "course": {
+            "$ref": "#/components/schemas/Course"
+          },
+          "holder": {
+            "$ref": "#/components/schemas/CertificateHolder"
+          }
+        }
       },
       "VerifyEmailRequest": {
         "type": "object",

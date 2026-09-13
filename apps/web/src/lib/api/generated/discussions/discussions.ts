@@ -456,7 +456,8 @@ export const getUpdateDiscussionUrl = (id: DiscussionId) => {
 }
 
 /**
- * @summary Edit content and/or status (owner, or a moderator).
+ * @summary Edit content (owner, or a moderator); only a moderator may change
+`status`.
  */
 export const updateDiscussion = async (
   id: DiscussionId,
@@ -522,7 +523,8 @@ export type UpdateDiscussionMutationError = ErrorType<Problem>
 export type UpdateDiscussionMutationVariables = { id: DiscussionId; data: BodyType<UpdateDiscussionRequest> }
 
 /**
- * @summary Edit content and/or status (owner, or a moderator).
+ * @summary Edit content (owner, or a moderator); only a moderator may change
+`status`.
  */
 export const useUpdateDiscussion = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

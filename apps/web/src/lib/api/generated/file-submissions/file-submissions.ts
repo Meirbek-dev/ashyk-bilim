@@ -2149,7 +2149,10 @@ export const getSubmitUrl = (id: FileSubmissionId) => {
 
 /**
  * At least one file is required; late work is refused when the activity
- * does not allow it and penalised by the late policy otherwise.
+ * does not allow it and penalised by the late policy otherwise. With an
+ * `Idempotency-Key`, a retry with the same body replays the original
+ * response for 24h instead of opening a new attempt; the same key with a
+ * different body is 422.
  * @summary Submit the open attempt (optionally replacing files first).
  */
 export const submit = async (

@@ -54,6 +54,16 @@ export const StudentSubmission = zod
     assessment_id: zod.uuid(),
     attempt_number: zod.int(),
     auto_score: zod.number().nullish(),
+    auto_submit_reason: zod
+      .union([
+        zod.null(),
+        zod
+          .enum(['time_expired', 'integrity_violation'])
+          .describe(
+            'Set when the server closed the attempt (time ran out, integrity\nviolation); `null` when the learner submitted.',
+          ),
+      ])
+      .optional(),
     draft_version: zod.int().describe('Send back as `If-Match` on draft saves and submits.'),
     final_score: zod.number().nullish(),
     graded_at_unix: zod.int().nullish(),

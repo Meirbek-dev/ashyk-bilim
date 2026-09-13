@@ -270,7 +270,7 @@ export const getCertificatePdfUrl = (code: string) => {
 /**
  * Holder, course, certificate name/type, issue date, teacher, the
  * verification code and the verify link (`AB__SERVER__WEB_URL` +
- * `/certificates/{code}/verify`). The page language follows
+ * `/{locale}/certificates/{code}/verify`). The page language follows
  * `Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.
  * @summary The certificate as an A4-landscape PDF — public by code, like verification.
  */

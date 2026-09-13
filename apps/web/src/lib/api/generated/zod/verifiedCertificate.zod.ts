@@ -9,12 +9,14 @@ import * as zod from 'zod'
 
 export const VerifiedCertificate = zod
   .object({
-    certificate: zod.object({
-      certification_id: zod.uuid(),
-      id: zod.uuid(),
-      issued_at_unix: zod.int(),
-      verify_code: zod.string(),
-    }),
+    certificate: zod
+      .object({
+        certification_id: zod.uuid(),
+        id: zod.uuid(),
+        issued_at_unix: zod.int(),
+        verify_code: zod.string(),
+      })
+      .describe('A certificate as the public sees it (no holder id).'),
     certification: zod.object({
       config: zod.looseObject({}).describe("The client's PDF designer document (opaque to the server)."),
       course_id: zod.uuid(),
@@ -43,9 +45,11 @@ export const VerifiedCertificate = zod
         .describe('Storage key of the thumbnail image, served at `\/content\/<key>`.'),
       updated_at_unix: zod.int(),
     }),
-    holder: zod.object({
-      display_name: zod.string(),
-    }),
+    holder: zod
+      .object({
+        display_name: zod.string(),
+      })
+      .describe('What a verifier learns about the holder: the name on the certificate.'),
   })
   .describe('The public verification view.')
 
