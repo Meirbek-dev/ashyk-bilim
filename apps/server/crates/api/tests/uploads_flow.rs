@@ -4,7 +4,8 @@
 
 use ab_clients::storage::{Bucket, StorageClient, StorageConfig};
 use ab_testkit::TestApp;
-use axum::http::StatusCode;
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
 use secrecy::SecretString;
 use sqlx::PgPool;
 
@@ -46,15 +47,25 @@ async fn full_upload_finalize_download_flow(pool: PgPool) {
         put.status()
     );
 
-    let finalized = app
-        .post_as(
-            &session,
-            &format!("/api/v2/uploads/{id}/finalize"),
-            &serde_json::json!({}),
+    // UX-058: finalize honours `Idempotency-Key` — a retry replays the
+    // stored 200 instead of the "already finalized" 409.
+    let finalize = || {
+        app.send(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/api/v2/uploads/{id}/finalize"))
+                .header("cookie", &session.cookie)
+                .header("idempotency-key", "fin-1")
+                .body(Body::empty())
+                .unwrap(),
         )
-        .await;
-    assert_eq!(finalized.status, StatusCode::OK);
+    };
+    let finalized = finalize().await;
+    assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
     assert_eq!(finalized.json()["size_bytes"], payload.len());
+    let replayed = finalize().await;
+    assert_eq!(replayed.status, StatusCode::OK, "{}", replayed.text());
+    assert_eq!(replayed.json(), finalized.json());
 
     // Download redirects to a presigned URL that serves the bytes.
     let download = app

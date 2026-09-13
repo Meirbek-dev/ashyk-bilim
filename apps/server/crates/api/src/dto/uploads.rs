@@ -23,7 +23,7 @@ pub struct CreatedUpload {
     pub put_url: String,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct FinalizedUpload {
     pub id: Uuid,
     pub key: String,

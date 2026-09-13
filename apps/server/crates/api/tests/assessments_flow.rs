@@ -707,3 +707,195 @@ async fn matching_items_have_a_learner_shape_and_grade_by_id(pool: PgPool) {
     );
     assert_eq!(graded["feedback"], "4/6 pairs matched");
 }
+
+/// Studio guards on the money/permission/deadline paths: a schedule after
+/// the due date is a readiness blocker; a published assessment with any
+/// submission is read-only (`ensure_editable`), including item content
+/// (`ensure_content_unlocked`), and the lock lifts on published→draft
+/// (legacy parity); a learner without `assessment:submit:*` is 403; the
+/// item cap is 200.
+#[sqlx::test(migrations = "../../migrations")]
+async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Q" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("1+1?"),
+        )
+        .await;
+    let item_id = item.json()["id"].as_str().unwrap().to_owned();
+    let put_policy = |policy: serde_json::Value| {
+        app.send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/policy"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(policy.to_string()))
+                .unwrap(),
+        )
+    };
+    let mut policy = created.json()["policy"].clone();
+    policy["due_at_unix"] = serde_json::json!(far_future());
+    let saved = put_policy(policy.clone()).await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+
+    // Scheduled opening after the due date → readiness blocker.
+    let late = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "scheduled", "scheduled_at_unix": far_future() + 3600 }),
+        )
+        .await;
+    assert_eq!(
+        late.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        late.text()
+    );
+    assert!(
+        late.json()["field_errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|e| e["code"] == "schedule.after_due_at"),
+        "{}",
+        late.text()
+    );
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    // Course access without `assessment:submit:*` → 403.
+    let reader = app
+        .create_user("reader", "reader@example.com", &["user"])
+        .await;
+    let reader = app
+        .mint_session_for(reader, &["assessment:read:assigned"])
+        .await;
+    let denied = app
+        .get_as(&reader, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN, "{}", denied.text());
+
+    // A submitted attempt freezes the published assessment.
+    let learner = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            learner,
+            &["assessment:submit:assigned", "assessment:read:assigned"],
+        )
+        .await;
+    let started = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+    let sub_id = started.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { &item_id: { "kind": "choice", "selected": ["a"] } } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}"),
+            &serde_json::json!({ "title": "Q2" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::CONFLICT, "{}", renamed.text());
+    let policy_locked = put_policy(policy).await;
+    assert_eq!(policy_locked.status, StatusCode::CONFLICT);
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("2+2?"),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CONFLICT);
+    let rescored = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{item_id}"),
+            &serde_json::json!({ "max_score": 7 }),
+        )
+        .await;
+    assert_eq!(rescored.status, StatusCode::CONFLICT, "{}", rescored.text());
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/assessment-items/{item_id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::CONFLICT);
+
+    // Published → draft lifts the lock (legacy `_is_assessment_locked` parity).
+    let back = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "draft" }),
+        )
+        .await;
+    assert_eq!(back.status, StatusCode::OK, "{}", back.text());
+    let rescored = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{item_id}"),
+            &serde_json::json!({ "max_score": 7 }),
+        )
+        .await;
+    assert_eq!(rescored.status, StatusCode::OK, "{}", rescored.text());
+
+    // Item cap: the 201st item is refused.
+    for n in 1..200 {
+        let res = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/items"),
+                &choice_item(&format!("q{n}")),
+            )
+            .await;
+        assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
+    }
+    let capped = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("one too many"),
+        )
+        .await;
+    assert_eq!(
+        capped.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        capped.text()
+    );
+    assert_eq!(capped.json()["field_errors"][0]["code"], "limit-exceeded");
+}
