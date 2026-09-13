@@ -236,3 +236,31 @@ async fn web_url_makes_browser_redirects_absolute(pool: PgPool) {
     );
     assert!(res.session_cookie().is_some());
 }
+
+/// Branch #71: a disabled account cannot sign in through Google either —
+/// back to login with `?error=account-disabled`, no cookie.
+#[sqlx::test(migrations = "../../migrations")]
+async fn disabled_account_is_sent_back_with_account_disabled(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("banned", "banned@example.com", &["user"])
+        .await;
+    sqlx::query("UPDATE users SET status = 'disabled'")
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    mock_zitadel_user_create(&app, 0).await;
+    mock_google_token(&app, "g-sub-banned", "banned@example.com").await;
+
+    let state = start_and_get_state(&app, "/").await;
+    let res = app
+        .get(&format!(
+            "/api/v2/auth/google/callback?code=c&state={state}"
+        ))
+        .await;
+    assert_eq!(res.status, StatusCode::SEE_OTHER);
+    assert_eq!(
+        res.headers.get("location").unwrap().to_str().unwrap(),
+        "/auth/login?error=account-disabled"
+    );
+    assert!(res.session_cookie().is_none());
+}
