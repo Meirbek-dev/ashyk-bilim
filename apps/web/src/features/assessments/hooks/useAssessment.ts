@@ -181,22 +181,7 @@ function useAssessment(
     visible: 'VISIBLE',
     returned_for_revision: 'RETURNED_FOR_REVISION',
   } as const
-  // A released result wins over "you may start again": with unlimited
-  // attempts the learner must still see the score they just earned. The
-  // result card offers the retake.
-  const recommendedAction: AttemptViewModel['recommendedAction'] = state.can_continue
-    ? 'continueDraft'
-    : state.revision_requested && state.can_start
-      ? 'startRevision'
-      : visible
-        ? 'viewResult'
-        : state.can_start
-          ? 'start'
-          : latest?.release_state === 'awaiting_release'
-          ? 'waitForRelease'
-          : state.disabled_reasons.length
-            ? 'blocked'
-            : 'noAction'
+  const recommendedAction = recommendedActionFor(state, latest, visible)
   const startedAt = latest?.status === 'DRAFT' ? latest.started_at_unix : null
   const timeLimit = state.effective.time_limit_seconds
   const vm: AttemptViewModel = {
@@ -238,6 +223,10 @@ function useAssessment(
     canContinue: state.can_continue,
     canViewResult: visible,
     canStartRevision: state.revision_requested && state.can_start,
+    nextAttemptCapPercent:
+      assessment.policy.attempt_penalty_percent > 0 && state.attempts_used > 0
+        ? Math.max(0, 100 - assessment.policy.attempt_penalty_percent * state.attempts_used)
+        : null,
     recommendedAction,
     primaryButtonLabelKey: recommendedAction,
     startedAt: unixToIso(startedAt),
@@ -246,6 +235,26 @@ function useAssessment(
       typeof startedAt === 'number' && typeof timeLimit === 'number' ? unixToIso(startedAt + timeLimit) : null,
   }
   return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null }
+}
+
+/**
+ * A released result wins over "you may start again": with unlimited attempts
+ * the learner must still see the score they just earned (the result card
+ * offers the retake). A hand-in the teacher has not released yet — pending
+ * grading or graded but unpublished — is "received, awaiting review", never
+ * the red "blocked" lock (UX-032).
+ */
+export function recommendedActionFor(
+  state: Pick<AttemptState, 'can_continue' | 'can_start' | 'revision_requested' | 'disabled_reasons'>,
+  latest: { status: string; release_state: string } | undefined,
+  visible: boolean,
+): AttemptViewModel['recommendedAction'] {
+  if (state.can_continue) return 'continueDraft'
+  if (state.revision_requested && state.can_start) return 'startRevision'
+  if (visible) return 'viewResult'
+  if (state.can_start) return 'start'
+  if (latest?.release_state === 'awaiting_release' || latest?.status === 'PENDING') return 'waitForRelease'
+  return state.disabled_reasons.length ? 'blocked' : 'noAction'
 }
 
 // ── Convenience selector hooks ─────────────────────────────────────────────────

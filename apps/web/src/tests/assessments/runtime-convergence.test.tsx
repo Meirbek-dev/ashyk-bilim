@@ -169,6 +169,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     canContinue: false,
     canViewResult: false,
     canStartRevision: true,
+    nextAttemptCapPercent: null,
     recommendedAction: 'startRevision',
     primaryButtonLabelKey: 'startRevision',
     isReturnedForRevision: true,

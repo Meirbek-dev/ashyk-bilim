@@ -117,6 +117,8 @@ export interface AttemptViewModel {
   canViewResult: boolean
   /** Student can start a revision (returned attempt). */
   canStartRevision: boolean
+  /** Score cap the next attempt would carry (`attempt_penalty_percent` × attempts used), null when uncapped. */
+  nextAttemptCapPercent: number | null
   /**
    * Backend-recommended primary action for this student right now.
    * Drive the primary CTA from this value.
