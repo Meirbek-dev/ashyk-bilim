@@ -1,6 +1,6 @@
 import { getServerGamificationDashboard, getServerLeaderboard } from '@/services/gamification/server'
 import { GamificationProvider } from '@/components/Contexts/GamificationContext'
-import { getSession } from '@/lib/auth/session'
+import { requireSession } from '@/lib/auth/session'
 import { APP_NAME } from '@/lib/constants'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
@@ -42,16 +42,13 @@ export default async function PlatformTrailPage(props: PageProps) {
 
 async function TrailContent({ params }: PageProps) {
   await params
+  // Anonymous → login before anything renders or fetches (UX-054).
+  await requireSession()
   const content = (
     <div>
       <Trail />
     </div>
   )
-
-  const session = await getSession()
-  if (!session) {
-    return content
-  }
 
   const [dashboardData, leaderboardData] = await Promise.all([
     getServerGamificationDashboard(),
