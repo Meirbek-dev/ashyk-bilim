@@ -98,6 +98,14 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 - **Do not kill `node.exe` / `bun.exe` wholesale** — the web dev server (bun → next dev)
   died with exit 9 mid-pass-11 while builders were running; restart it with
   `preview_start {name:"web"}`. Kill Playwright/vitest processes by PID only.
+- **Stack rebuilt again 2026-09-13 15:20** (machine restart mid-pass-11; podman machine
+  was down, all `--rm` containers gone; the RustFS named volume `ashyq-rustfs-data`
+  survived). Fastest account recreation now: `POST /auth/register` ×3 (code in
+  server.log `code: "XXXXXX"`) → `POST /auth/verify-email` → `UPDATE user_roles` to
+  `instructor`/`admin`. No Zitadel API calls needed. New user ids again; every course
+  and submission from passes 1–10 is gone — critics create their own content.
+- **Pass-11 findings by the identity/auth critic stand:** a `BUG-101`-class Query/Path
+  change now makes malformed params 422 (tests updated).
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
