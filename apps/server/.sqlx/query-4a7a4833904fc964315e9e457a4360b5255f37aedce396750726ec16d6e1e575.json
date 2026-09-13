@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE activities SET\n               content = COALESCE($2, content),\n               details = COALESCE($3, details),\n               settings = COALESCE($4, settings),\n               version = version + 1\n           WHERE id = $1 AND ($5::int IS NULL OR version = $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Jsonb",
+        "Jsonb",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4a7a4833904fc964315e9e457a4360b5255f37aedce396750726ec16d6e1e575"
+}

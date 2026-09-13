@@ -423,6 +423,8 @@ pub struct ActivityRow {
     pub activity_sub_type: String,
     pub published: bool,
     pub position: i32,
+    /// Bumped by every content/details/settings write; the editor's `If-Match`.
+    pub version: i32,
 }
 
 pub async fn insert_activity(
@@ -457,7 +459,7 @@ pub async fn get_activity(pool: &PgPool, id: ActivityId) -> Result<Option<Activi
         ActivityRow,
         r#"SELECT id AS "id: ActivityId", chapter_id AS "chapter_id: ChapterId",
                   course_id AS "course_id: CourseId", name,
-                  activity_type, activity_sub_type, published, position
+                  activity_type, activity_sub_type, published, position, version
            FROM activities WHERE id = $1"#,
         id.0
     )
@@ -471,7 +473,7 @@ pub async fn list_activities(pool: &PgPool, course_id: CourseId) -> Result<Vec<A
         ActivityRow,
         r#"SELECT id AS "id: ActivityId", chapter_id AS "chapter_id: ChapterId",
                   course_id AS "course_id: CourseId", name,
-                  activity_type, activity_sub_type, published, position
+                  activity_type, activity_sub_type, published, position, version
            FROM activities WHERE course_id = $1
            ORDER BY chapter_id, position, id"#,
         course_id.0
@@ -559,23 +561,28 @@ pub async fn get_activity_content(
     Ok(row)
 }
 
+/// Writes only when `expected_version` is `None` or matches; `false` means a
+/// stale version (the caller answers 412). Every write bumps `version`.
 pub async fn update_activity_content(
     pool: &PgPool,
     id: ActivityId,
     content: Option<&serde_json::Value>,
     details: Option<&serde_json::Value>,
     settings: Option<&serde_json::Value>,
+    expected_version: Option<i32>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE activities SET
                content = COALESCE($2, content),
                details = COALESCE($3, details),
-               settings = COALESCE($4, settings)
-           WHERE id = $1"#,
+               settings = COALESCE($4, settings),
+               version = version + 1
+           WHERE id = $1 AND ($5::int IS NULL OR version = $5)"#,
         id.0,
         content,
         details,
-        settings
+        settings,
+        expected_version
     )
     .execute(pool)
     .await?;

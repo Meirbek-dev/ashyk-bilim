@@ -60,6 +60,8 @@ pub struct ActivityChanges<'a> {
     pub content: Option<&'a serde_json::Value>,
     pub details: Option<&'a serde_json::Value>,
     pub settings: Option<&'a serde_json::Value>,
+    /// `If-Match` version of the row the editor loaded; a mismatch is 412.
+    pub expected_version: Option<i32>,
 }
 
 /// An activity with its heavy jsonb columns (single-activity view).
@@ -278,6 +280,15 @@ impl CurriculumService {
         changes: ActivityChanges<'_>,
     ) -> Result<ActivityDetail> {
         let activity = self.writable_activity(actor, activity_id).await?;
+        if let Some(expected) = changes.expected_version
+            && expected != activity.version
+        {
+            return Err(Error::app_with_details(
+                ErrorCode::PreconditionFailed,
+                "activity changed since you loaded it",
+                serde_json::json!({ "expected": expected, "actual": activity.version }),
+            ));
+        }
         // A file-submission activity goes live only through a published
         // config (`POST /file-submissions/{id}/publish` flips both); the raw
         // toggle refuses so learners never see an activity without one.
@@ -316,14 +327,23 @@ impl CurriculumService {
                 .await?;
         }
         if changes.content.is_some() || changes.details.is_some() || changes.settings.is_some() {
-            ab_db::catalog::update_activity_content(
+            let updated = ab_db::catalog::update_activity_content(
                 &self.pool,
                 activity_id,
                 changes.content,
                 changes.details,
                 changes.settings,
+                changes.expected_version,
             )
             .await?;
+            if !updated {
+                // Lost the race between the check above and the write.
+                return Err(Error::app_with_details(
+                    ErrorCode::PreconditionFailed,
+                    "activity changed since you loaded it",
+                    serde_json::json!({ "expected": changes.expected_version }),
+                ));
+            }
         }
         self.activity_detail(actor, activity_id).await
     }

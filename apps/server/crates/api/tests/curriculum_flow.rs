@@ -439,3 +439,70 @@ async fn drafts_are_visible_to_editors_only(pool: PgPool) {
     assert_eq!(names(app.get(&curriculum).await), ["Live"]);
     assert_eq!(app.get(&activity).await.status, StatusCode::NOT_FOUND);
 }
+
+/// UX-027: the editor autosave (`content`) is an optimistic-lock write —
+/// `If-Match` required, stale version 412, new version in the body + `ETag`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn content_writes_are_version_locked(pool: PgPool) {
+    use axum::body::Body;
+    use axum::http::{Request, header};
+
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Locked").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let activity = create_activity(&app, &teacher, &chapter, "Page").await;
+    let path = format!("/api/v2/activities/{activity}");
+
+    let loaded = app.get_as(&teacher, &path).await;
+    assert_eq!(loaded.status, StatusCode::OK);
+    assert_eq!(loaded.json()["version"], 1);
+    assert_eq!(loaded.headers[header::ETAG], "\"1\"");
+
+    let save = |if_match: Option<&str>, text: &str| {
+        let mut builder = Request::builder()
+            .method("PATCH")
+            .uri(&path)
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &teacher.cookie);
+        if let Some(version) = if_match {
+            builder = builder.header(header::IF_MATCH, version);
+        }
+        let body = serde_json::json!({ "content": { "type": "doc", "text": text } });
+        builder.body(Body::from(body.to_string())).unwrap()
+    };
+
+    // Content without a version: refused, nothing written.
+    let missing = app.send(save(None, "no lock")).await;
+    assert_eq!(missing.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(missing.json()["field_errors"][0]["field"], "If-Match");
+
+    // Tab A saves with the loaded version → version 2.
+    let first = app.send(save(Some("\"1\""), "AAA")).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["version"], 2);
+    assert_eq!(first.headers[header::ETAG], "\"2\"");
+
+    // Tab B still holds version 1 → 412, AAA survives.
+    let stale = app.send(save(Some("\"1\""), "BBB")).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["code"], "precondition-failed");
+    assert_eq!(stale.json()["details"]["expected"], 1);
+    assert_eq!(stale.json()["details"]["actual"], 2);
+    assert_eq!(
+        app.get_as(&teacher, &path).await.json()["content"]["text"],
+        "AAA"
+    );
+
+    // Name/publish edits from the curriculum need no version.
+    let rename = app
+        .patch_as(&teacher, &path, &serde_json::json!({ "name": "Renamed" }))
+        .await;
+    assert_eq!(rename.status, StatusCode::OK, "{}", rename.text());
+    assert_eq!(rename.json()["version"], 2);
+}

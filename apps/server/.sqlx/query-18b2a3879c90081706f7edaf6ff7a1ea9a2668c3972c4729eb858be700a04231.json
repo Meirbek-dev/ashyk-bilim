@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: ActivityId\", chapter_id AS \"chapter_id: ChapterId\",\n                  course_id AS \"course_id: CourseId\", name,\n                  activity_type, activity_sub_type, published, position\n           FROM activities WHERE id = $1",
+  "query": "SELECT id AS \"id: ActivityId\", chapter_id AS \"chapter_id: ChapterId\",\n                  course_id AS \"course_id: CourseId\", name,\n                  activity_type, activity_sub_type, published, position, version\n           FROM activities WHERE course_id = $1\n           ORDER BY chapter_id, position, id",
   "describe": {
     "columns": [
       {
@@ -90,6 +90,17 @@
             "name": "position"
           }
         }
+      },
+      {
+        "ordinal": 8,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "version"
+          }
+        }
       }
     ],
     "parameters": {
@@ -105,8 +116,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "f8e52bbc39474e74c1a79b03c493390c70d56cea31025685f871f8ac19a0e607"
+  "hash": "18b2a3879c90081706f7edaf6ff7a1ea9a2668c3972c4729eb858be700a04231"
 }

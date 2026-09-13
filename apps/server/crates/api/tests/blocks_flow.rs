@@ -100,17 +100,24 @@ async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
     let teacher = author(&app, "teacher").await;
     let (_, activity) = scaffold_activity(&app, &teacher).await;
 
-    // Content/details/settings persist through PATCH → GET.
+    // Content/details/settings persist through PATCH → GET. A content write
+    // carries the loaded version as `If-Match` (UX-027; a fresh activity is 1).
     let editor_json = serde_json::json!({ "blocks": [{ "type": "paragraph", "text": "hi" }] });
+    let content_patch = |body: serde_json::Value| {
+        axum::http::Request::builder()
+            .method("PATCH")
+            .uri(format!("/api/v2/activities/{activity}"))
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &teacher.cookie)
+            .header(axum::http::header::IF_MATCH, "\"1\"")
+            .body(axum::body::Body::from(body.to_string()))
+            .unwrap()
+    };
     let updated = app
-        .patch_as(
-            &teacher,
-            &format!("/api/v2/activities/{activity}"),
-            &serde_json::json!({
-                "content": editor_json,
-                "settings": { "show_toc": true },
-            }),
-        )
+        .send(content_patch(serde_json::json!({
+            "content": editor_json,
+            "settings": { "show_toc": true },
+        })))
         .await;
     assert_eq!(updated.status, StatusCode::OK);
     assert_eq!(updated.json()["content"], editor_json);
@@ -125,11 +132,7 @@ async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
 
     // Non-object content is refused at the DTO layer.
     let scalar = app
-        .patch_as(
-            &teacher,
-            &format!("/api/v2/activities/{activity}"),
-            &serde_json::json!({ "content": "just a string" }),
-        )
+        .send(content_patch(serde_json::json!({ "content": "just a string" })))
         .await;
     assert_eq!(scalar.status, StatusCode::UNPROCESSABLE_ENTITY);
 

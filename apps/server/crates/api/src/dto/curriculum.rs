@@ -35,6 +35,8 @@ pub struct Activity {
     pub published: bool,
     /// 1-based, contiguous within the chapter.
     pub position: i32,
+    /// Optimistic lock — send back as `If-Match` on the content PATCH.
+    pub version: i32,
 }
 
 impl From<ab_domain::catalog::curriculum::Activity> for Activity {
@@ -48,6 +50,7 @@ impl From<ab_domain::catalog::curriculum::Activity> for Activity {
             activity_sub_type: a.activity_sub_type,
             published: a.published,
             position: a.position,
+            version: a.version,
         }
     }
 }

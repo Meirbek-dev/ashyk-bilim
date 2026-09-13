@@ -3,7 +3,8 @@ use ab_core::{Error, FieldError};
 use ab_domain::catalog::curriculum::ActivityChanges;
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::response::{IntoResponse, Response};
 
 use crate::dto::curriculum::{
     Activity, ActivityDetail, Block, Chapter, CreateActivityRequest, CreateBlockRequest,
@@ -13,6 +14,35 @@ use crate::dto::curriculum::{
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, MaybeActor, Path, ValidJson};
 use crate::state::AppState;
+
+/// `If-Match: "<version>"` → version; absent → `None`; malformed → 422.
+fn if_match(headers: &HeaderMap) -> ApiResult<Option<i32>> {
+    let Some(raw) = headers.get(header::IF_MATCH) else {
+        return Ok(None);
+    };
+    raw.to_str()
+        .ok()
+        .and_then(|s| s.trim().trim_matches('"').parse::<i32>().ok())
+        .map(Some)
+        .ok_or_else(|| {
+            Error::validation(vec![FieldError {
+                field: "If-Match".into(),
+                code: "invalid".into(),
+                message: "If-Match must carry the version as an integer".into(),
+            }])
+            .into()
+        })
+}
+
+/// The activity JSON with an `ETag` carrying its version, so the editor can
+/// echo it as `If-Match` without reading the body.
+fn with_etag(body: ActivityDetail) -> Response {
+    let etag = HeaderValue::from_str(&format!("\"{}\"", body.activity.version))
+        .unwrap_or_else(|_| HeaderValue::from_static("\"0\""));
+    let mut response = Json(body).into_response();
+    response.headers_mut().insert(header::ETAG, etag);
+    response
+}
 
 /// Chapters with nested activities, in course order. Unpublished
 /// activities are listed for course editors only.
@@ -189,7 +219,8 @@ pub async fn create_activity(
     tag = "courses",
     params(("id" = ActivityId, Path, description = "Activity id")),
     responses(
-        (status = 200, description = "Activity detail", body = ActivityDetail),
+        (status = 200, description = "Activity detail", body = ActivityDetail,
+         headers(("ETag" = String, description = "Quoted version"))),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -198,23 +229,34 @@ pub async fn get_activity(
     State(state): State<AppState>,
     MaybeActor(actor): MaybeActor,
     Path(id): Path<ActivityId>,
-) -> ApiResult<Json<ActivityDetail>> {
-    Ok(Json(
+) -> ApiResult<Response> {
+    Ok(with_etag(
         state.curriculum.activity_detail(&actor, id).await?.into(),
     ))
 }
 
 /// Partial update: name, publish state, content/details/settings, or the
 /// type pair (both `activity_type` and `activity_sub_type` together).
+///
+/// A `content` write (the editor autosave) requires `If-Match: "<version>"`;
+/// other fields honour it when sent. A stale version is 412
+/// `precondition-failed` with `details {expected, actual}` — never a silent
+/// overwrite of another tab's save.
 #[utoipa::path(
     patch,
     path = "/activities/{id}",
     tag = "courses",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    params(
+        ("id" = ActivityId, Path, description = "Activity id"),
+        ("If-Match" = Option<i32>, Header, description = "Current version (required with `content`)"),
+    ),
     request_body = UpdateActivityRequest,
     responses(
-        (status = 200, description = "Updated", body = ActivityDetail),
+        (status = 200, description = "Updated", body = ActivityDetail,
+         headers(("ETag" = String, description = "Quoted new version"))),
         (status = 403, description = "No write access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 412, description = "Stale version", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
@@ -222,8 +264,19 @@ pub async fn update_activity(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
+    headers: HeaderMap,
     ValidJson(request): ValidJson<UpdateActivityRequest>,
-) -> ApiResult<Json<ActivityDetail>> {
+) -> ApiResult<Response> {
+    let expected_version = if_match(&headers)?;
+    if request.content.is_some() && expected_version.is_none() {
+        return Err(Error::validation(vec![FieldError {
+            field: "If-Match".into(),
+            code: "required".into(),
+            message: "If-Match with the activity's current version is required to write content"
+                .into(),
+        }])
+        .into());
+    }
     let type_pair = match (&request.activity_type, &request.activity_sub_type) {
         (Some(t), Some(s)) => Some((t.as_str(), s.as_str())),
         (None, None) => None,
@@ -248,10 +301,11 @@ pub async fn update_activity(
                 content: request.content.as_ref(),
                 details: request.details.as_ref(),
                 settings: request.settings.as_ref(),
+                expected_version,
             },
         )
         .await?;
-    Ok(Json(detail.into()))
+    Ok(with_etag(detail.into()))
 }
 
 /// Delete an activity; chapter siblings renumber to stay contiguous.
