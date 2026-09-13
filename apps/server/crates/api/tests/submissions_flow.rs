@@ -394,6 +394,11 @@ async fn quiz_attempt_draft_lock_submit_replay_and_attempt_cap(pool: PgPool) {
         )
         .await;
     assert_eq!(refused.status, StatusCode::FORBIDDEN);
+    assert_eq!(
+        refused.json()["detail"],
+        "cannot start: MAX_ATTEMPTS_REACHED",
+        "UX-038: same vocabulary as disabled_reasons"
+    );
     let mine = app
         .get_as(&alice, &format!("/api/v2/assessments/{id}/submissions/me"))
         .await;
@@ -413,6 +418,71 @@ async fn quiz_attempt_draft_lock_submit_replay_and_attempt_cap(pool: PgPool) {
     assert_eq!(preview.json()["is_teacher_preview"], true);
     assert_eq!(preview.json()["can_start"], true);
     assert!(preview.json()["attempts_remaining"].is_null());
+}
+
+/// BUG-112: `review_visibility` is enforced on the wire for the owner's
+/// read — `score_only` strips correctness and the correct answers,
+/// `none` hides the item breakdown; scores stay visible in both.
+#[sqlx::test(migrations = "../../migrations")]
+async fn review_visibility_redacts_the_learner_breakdown(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    for (visibility, items_expected) in [("score_only", true), ("none", false)] {
+        let (id, items) = published_assessment(
+            &app,
+            &teacher,
+            &chapter_id,
+            "quiz",
+            serde_json::json!({ "review_visibility": visibility }),
+            &[choice_item("First?")],
+        )
+        .await;
+        let started = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        let sub_id = started.json()["id"].as_str().unwrap().to_owned();
+        let submitted = app
+            .send(submit(
+                &alice,
+                &sub_id,
+                None,
+                &serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["b"] } } }),
+            ))
+            .await;
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        let mine = app
+            .get_as(&alice, &format!("/api/v2/submissions/{sub_id}"))
+            .await;
+        let body = mine.json();
+        assert_eq!(body["release_state"], "visible", "{visibility}");
+        assert_eq!(body["final_score"], 0.0, "{visibility}: the score stays");
+        if items_expected {
+            let item = &body["grading"]["items"][0];
+            assert_eq!(item["score"], 0.0);
+            assert!(item["correct"].is_null(), "{visibility}: {item}");
+            assert!(item["correct_answer"].is_null(), "{visibility}: {item}");
+            assert!(item.get("feedback_code").is_none(), "{visibility}: {item}");
+            assert_eq!(item["feedback"], "", "{visibility}: {item}");
+        } else {
+            assert!(body["grading"].is_null(), "{visibility}: {}", body["grading"]);
+        }
+        // The grader's read is untouched.
+        let graded = app
+            .get_as(&teacher, &format!("/api/v2/submissions/{sub_id}/review"))
+            .await;
+        assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+        assert_eq!(
+            graded.json()["grading"]["items"][0]["correct_answer"],
+            serde_json::json!(["a"]),
+            "{visibility}"
+        );
+    }
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -592,6 +662,7 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
         .await;
     assert_eq!(mine.json()["status"], "published");
     assert_eq!(mine.json()["auto_score"], 100.0);
+    assert_eq!(mine.json()["auto_submit_reason"], "time_expired");
     assert!(mine.json()["time_remaining_seconds"].is_null());
     let (reason, auto_submitted): (Option<String>, bool) = sqlx::query_as(
         "SELECT auto_submit_reason, auto_submitted_at IS NOT NULL FROM submissions WHERE id = $1",

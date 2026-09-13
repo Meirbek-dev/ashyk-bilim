@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use ab_core::assessments::SubmissionStatus;
+use ab_core::assessments::{AutoSubmitReason, SubmissionStatus};
 use ab_core::id::{AssessmentId, AssessmentItemId, SubmissionId};
 use ab_domain::grading::answers::ItemAnswer;
 use ab_domain::grading::breakdown::GradingBreakdown;
@@ -30,6 +30,9 @@ pub struct StudentSubmission {
     pub started_at_unix: Option<i64>,
     pub submitted_at_unix: Option<i64>,
     pub graded_at_unix: Option<i64>,
+    /// Set when the server closed the attempt (time ran out, integrity
+    /// violation); `null` when the learner submitted.
+    pub auto_submit_reason: Option<AutoSubmitReason>,
     /// Send back as `If-Match` on draft saves and submits.
     pub draft_version: i64,
     pub violation_count: i32,
@@ -56,6 +59,7 @@ impl From<DomainSubmission> for StudentSubmission {
             started_at_unix: s.started_at,
             submitted_at_unix: s.submitted_at,
             graded_at_unix: s.graded_at,
+            auto_submit_reason: s.auto_submit_reason,
             draft_version: s.draft_version,
             violation_count: s.violation_count,
             answered_count: s.answered_count,

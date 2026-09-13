@@ -11,7 +11,8 @@
 use std::time::Duration;
 
 use ab_core::assessments::{
-    AssessmentKind, AutoSubmitReason, CodeRunStatus, GradeReleaseMode, ItemKind, SubmissionStatus,
+    AssessmentKind, AutoSubmitReason, CodeRunStatus, GradeReleaseMode, ItemKind, ReviewVisibility,
+    SubmissionStatus,
 };
 use ab_core::id::{AssessmentId, SubmissionId};
 use ab_core::{Error, ErrorCode, Result};
@@ -222,6 +223,31 @@ pub(crate) async fn release_state(pool: &PgPool, submission: &Submission) -> Res
     })
 }
 
+/// The learner-facing breakdown under `review_visibility`: `full` keeps
+/// everything, `score_only` keeps per-item scores and teacher prose but
+/// drops correctness and the correct answers, `none` hides the items.
+fn redact_grading(
+    mut grading: GradingBreakdown,
+    visibility: ReviewVisibility,
+) -> Option<GradingBreakdown> {
+    match visibility {
+        ReviewVisibility::Full => Some(grading),
+        ReviewVisibility::None => None,
+        ReviewVisibility::ScoreOnly => {
+            for item in &mut grading.items {
+                item.correct = None;
+                item.correct_answer = serde_json::Value::Null;
+                // An auto verdict (coded) says right/wrong; teacher prose stays.
+                if item.feedback_code.take().is_some() {
+                    item.feedback.clear();
+                }
+                item.feedback_params = None;
+            }
+            Some(grading)
+        }
+    }
+}
+
 /// A submission as its owner sees it: scores and grading only once
 /// released (the legacy also leaked `late_penalty_pct`; we hide it too).
 #[derive(Debug, Clone)]
@@ -240,6 +266,8 @@ pub struct StudentSubmission {
     pub started_at: Option<i64>,
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
+    /// Why the server closed the attempt (`None` = the learner submitted).
+    pub auto_submit_reason: Option<AutoSubmitReason>,
     pub draft_version: i64,
     pub violation_count: i32,
     pub answered_count: usize,
@@ -327,13 +355,15 @@ impl SubmissionsService {
         })
     }
 
-    /// The owner's view, redacted by release state.
+    /// The owner's view, redacted by release state and, for the grading
+    /// breakdown, by the policy's `review_visibility`.
     pub async fn student_view(
         &self,
         submission: Submission,
-        time_limit_seconds: Option<i32>,
+        effective: &EffectivePolicy,
         total_items: usize,
     ) -> Result<StudentSubmission> {
+        let time_limit_seconds = effective.time_limit_seconds;
         let release_state = release_state(&self.pool, &submission).await?;
         let visible = matches!(
             release_state,
@@ -355,7 +385,9 @@ impl SubmissionsService {
             status: submission.status,
             release_state,
             answers,
-            grading: visible.then(|| GradingBreakdown::from_value(&submission.grading)),
+            grading: visible
+                .then(|| GradingBreakdown::from_value(&submission.grading))
+                .and_then(|g| redact_grading(g, effective.review_visibility)),
             auto_score: visible.then_some(submission.auto_score).flatten(),
             final_score: visible.then_some(submission.final_score).flatten(),
             is_late: submission.is_late,
@@ -363,6 +395,7 @@ impl SubmissionsService {
             started_at: submission.started_at,
             submitted_at: submission.submitted_at,
             graded_at: visible.then_some(submission.graded_at).flatten(),
+            auto_submit_reason: submission.auto_submit_reason,
             draft_version: submission.draft_version,
             violation_count: submission.violation_count,
             answered_count,
@@ -385,11 +418,7 @@ impl SubmissionsService {
         };
         let total = ab_db::assessments::count_items(&self.pool, assessment_id).await?;
         Ok(Some(
-            self.student_view(
-                draft,
-                state.effective.time_limit_seconds,
-                usize::try_from(total).unwrap_or(0),
-            )
+            self.student_view(draft, &state.effective, usize::try_from(total).unwrap_or(0))
             .await?,
         ))
     }
@@ -410,7 +439,7 @@ impl SubmissionsService {
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(
-                self.student_view(row, state.effective.time_limit_seconds, total)
+                self.student_view(row, &state.effective, total)
                     .await?,
             );
         }
@@ -432,7 +461,7 @@ impl SubmissionsService {
             ab_db::assessments::count_items(&self.pool, submission.assessment_id).await?,
         )
         .unwrap_or(0);
-        self.student_view(submission, state.effective.time_limit_seconds, total)
+        self.student_view(submission, &state.effective, total)
             .await
     }
 
@@ -442,12 +471,13 @@ impl SubmissionsService {
     pub async fn start(&self, actor: &Actor, assessment_id: AssessmentId) -> Result<Started> {
         let state = self.assessments.attempt_state(actor, assessment_id).await?;
         if !state.can_start && !state.can_continue {
+            // Same vocabulary as `attempt-state.disabled_reasons`.
             return Err(Error::forbidden(format!(
                 "cannot start: {}",
                 state
                     .disabled_reasons
                     .iter()
-                    .map(|r| format!("{r:?}"))
+                    .map(|r| r.as_str())
                     .collect::<Vec<_>>()
                     .join(", ")
             )));
@@ -482,7 +512,7 @@ impl SubmissionsService {
             usize::try_from(ab_db::assessments::count_items(&self.pool, assessment_id).await?)
                 .unwrap_or(0);
         let submission = self
-            .student_view(draft, state.effective.time_limit_seconds, total)
+            .student_view(draft, &state.effective, total)
             .await?;
         self.projector
             .after_submission(assessment_id, actor.user_id)
@@ -594,7 +624,7 @@ impl SubmissionsService {
             .after_submission(fresh.assessment_id, fresh.user_id)
             .await;
         let total = ctx.items.len();
-        self.student_view(fresh, ctx.effective.time_limit_seconds, total)
+        self.student_view(fresh, &ctx.effective, total)
             .await
     }
 
@@ -677,12 +707,11 @@ impl SubmissionsService {
         self.projector
             .after_submission(fresh.0.assessment_id, fresh.0.user_id)
             .await;
-        let time_limit = fresh.1;
-        let total = fresh.2;
-        self.student_view(fresh.0, time_limit, total).await
+        let (fresh, effective, total) = fresh;
+        self.student_view(fresh, &effective, total).await
     }
 
-    /// The pipeline proper. Returns (row, time limit, item count).
+    /// The pipeline proper. Returns (row, effective policy, item count).
     #[allow(
         clippy::too_many_lines,
         reason = "the submit pipeline order is the contract; kept in one place"
@@ -693,7 +722,7 @@ impl SubmissionsService {
         ctx: Context,
         answers: Answers,
         opts: FinalizeOptions,
-    ) -> Result<(Submission, Option<i32>, usize)> {
+    ) -> Result<(Submission, EffectivePolicy, usize)> {
         let pool = runner.pool();
         let now = now_unix();
         let Context {
@@ -814,7 +843,7 @@ impl SubmissionsService {
                 )
                 .await;
         }
-        Ok((fresh, effective.time_limit_seconds, items.len()))
+        Ok((fresh, effective, items.len()))
     }
 
     /// The submit-time gates (legacy `_validate_submission_constraints`).

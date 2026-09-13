@@ -8,7 +8,7 @@
 //! `max_attempts` and `due_at` (the legacy never let overrides touch the
 //! time limit).
 
-use ab_core::assessments::{AccessMode, Lifecycle};
+use ab_core::assessments::{AccessMode, Lifecycle, ReviewVisibility};
 use ab_core::id::{AssessmentId, UserId, UsergroupId};
 use ab_core::permission::{Action, Scope};
 use ab_core::{Error, FieldError, Result};
@@ -72,6 +72,8 @@ pub struct EffectivePolicy {
     pub late_policy: LatePolicy,
     pub waive_late_penalty: bool,
     pub override_applied: bool,
+    /// What the learner may see of a released grade.
+    pub review_visibility: ReviewVisibility,
 }
 
 /// Why a learner cannot act right now (legacy `disabled_action_reasons`;
@@ -85,6 +87,21 @@ pub enum DisabledReason {
     PastDue,
     MaxAttemptsReached,
     TimeLimitExpired,
+}
+
+impl DisabledReason {
+    /// The wire spelling (`SCREAMING_SNAKE_CASE`), for error details.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::NotPublished => "NOT_PUBLISHED",
+            Self::ScheduledNotOpen => "SCHEDULED_NOT_OPEN",
+            Self::Archived => "ARCHIVED",
+            Self::PastDue => "PAST_DUE",
+            Self::MaxAttemptsReached => "MAX_ATTEMPTS_REACHED",
+            Self::TimeLimitExpired => "TIME_LIMIT_EXPIRED",
+        }
+    }
 }
 
 /// A flat state mirror for the client; the flags are independent facts.
@@ -403,6 +420,7 @@ impl AssessmentsService {
             ),
             waive_late_penalty: active.as_ref().is_some_and(|o| o.waive_late_penalty),
             override_applied: active.is_some(),
+            review_visibility: assessment.review_visibility,
         })
     }
 
