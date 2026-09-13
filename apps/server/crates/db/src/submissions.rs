@@ -296,8 +296,8 @@ pub async fn persist_submit(pool: &PgPool, id: SubmissionId, o: SubmitOutcome<'_
 }
 
 /// Teacher write under optimistic lock (`version`). `false` = mismatch.
-pub async fn teacher_save(
-    pool: &PgPool,
+pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
     id: SubmissionId,
     expected_version: i64,
     status: SubmissionStatus,
@@ -315,7 +315,7 @@ pub async fn teacher_save(
         final_score,
         expected_version
     )
-    .execute(pool)
+    .execute(executor)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -694,7 +694,10 @@ pub struct NewGradingEntry<'a> {
     pub published: bool,
 }
 
-pub async fn insert_grading_entry(pool: &PgPool, e: NewGradingEntry<'_>) -> Result<GradingEntryId> {
+pub async fn insert_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
+    e: NewGradingEntry<'_>,
+) -> Result<GradingEntryId> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO grading_entries
                (submission_id, graded_by, raw_score, penalty_pct, final_score,
@@ -712,7 +715,7 @@ pub async fn insert_grading_entry(pool: &PgPool, e: NewGradingEntry<'_>) -> Resu
         e.overall_feedback,
         e.published
     )
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await?;
     Ok(id)
 }
@@ -799,7 +802,10 @@ pub struct NewItemFeedback<'a> {
     pub graded_by: UserId,
 }
 
-pub async fn insert_item_feedback(pool: &PgPool, f: NewItemFeedback<'_>) -> Result<ItemFeedbackId> {
+pub async fn insert_item_feedback<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
+    f: NewItemFeedback<'_>,
+) -> Result<ItemFeedbackId> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO item_feedback
                (grading_entry_id, submission_id, item_id, item_ref, comment, score, max_score,
@@ -817,7 +823,7 @@ pub async fn insert_item_feedback(pool: &PgPool, f: NewItemFeedback<'_>) -> Resu
         f.annotation_key,
         f.graded_by.0
     )
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await?;
     Ok(id)
 }

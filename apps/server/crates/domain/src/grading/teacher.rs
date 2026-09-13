@@ -906,12 +906,21 @@ impl GradingService {
         }
 
         let items = self.items(assessment.id).await?;
-        // Item scores arrive on the item's own scale; anything above it would
-        // be multiplied into the breakdown (a 33.33 on a 1-point item became
-        // 1110.89 once) — refuse it at the boundary.
         for grade in &input.item_grades {
+            // An id outside the assessment used to be appended to the
+            // breakdown (max 0, inflating every later score) and then
+            // failed the feedback FK after the row was written.
+            let Some(item) = items.iter().find(|i| i.id == grade.item_id) else {
+                return Err(Error::validation(vec![FieldError {
+                    field: "item_grades".into(),
+                    code: "unknown".into(),
+                    message: format!("item {} is not part of this assessment", grade.item_id),
+                }]));
+            };
+            // Item scores arrive on the item's own scale; anything above it would
+            // be multiplied into the breakdown (a 33.33 on a 1-point item became
+            // 1110.89 once) — refuse it at the boundary.
             if let Some(score) = grade.score
-                && let Some(item) = items.iter().find(|i| i.id == grade.item_id)
                 && item.max_score > 0.0
                 && score > item.max_score
             {
@@ -950,8 +959,11 @@ impl GradingService {
             row.late_penalty_pct,
         );
         let effective = breakdown.to_value();
+        // The row update and its ledger (entry, item feedback, audit) land
+        // together or not at all.
+        let mut tx = self.pool.begin().await?;
         let written = ab_db::submissions::teacher_save(
-            &self.pool,
+            &mut *tx,
             id,
             input.expected_version,
             target,
@@ -960,10 +972,12 @@ impl GradingService {
         )
         .await?;
         if !written {
+            drop(tx);
             let latest = self.load_submission(id).await?;
             return Err(stale_version(input.expected_version, latest.version));
         }
-        self.record_grade(
+        Self::record_grade(
+            &mut tx,
             actor,
             &row,
             &items,
@@ -977,6 +991,7 @@ impl GradingService {
             },
         )
         .await?;
+        tx.commit().await?;
         match target {
             SubmissionStatus::Published => {
                 self.emit(
@@ -1017,7 +1032,7 @@ impl GradingService {
 
     /// The ledger side of a save: grading entry, item feedback rows, audit.
     async fn record_grade(
-        &self,
+        tx: &mut sqlx::PgTransaction<'_>,
         actor: &Actor,
         row: &SubmissionRow,
         items: &[Item],
@@ -1025,7 +1040,7 @@ impl GradingService {
         ledger: LedgerEntry<'_>,
     ) -> Result<()> {
         let entry = ab_db::submissions::insert_grading_entry(
-            &self.pool,
+            &mut **tx,
             NewGradingEntry {
                 submission_id: row.id,
                 graded_by: Some(actor.user_id),
@@ -1045,7 +1060,7 @@ impl GradingService {
                 continue;
             }
             ab_db::submissions::insert_item_feedback(
-                &self.pool,
+                &mut **tx,
                 NewItemFeedback {
                     grading_entry_id: entry,
                     submission_id: row.id,
@@ -1062,7 +1077,7 @@ impl GradingService {
             .await?;
         }
         ab_db::assessments::insert_audit_event(
-            &self.pool,
+            &mut **tx,
             row.assessment_id,
             Some(actor.user_id),
             "grade-saved",
@@ -1366,8 +1381,8 @@ fn parse_gradebook_cursor(cursor: &str) -> Result<(UserId, ActivityId)> {
 }
 
 /// Legacy merge: a score sets the item and clears manual review; feedback
-/// replaces the item feedback; unknown items are appended (with the real
-/// max score when the item still exists — the legacy wrote 0).
+/// replaces the item feedback; items not yet in the breakdown are appended
+/// with their real max score (`save_grade` refuses ids outside the assessment).
 fn merge_item_grades(
     breakdown: &mut GradingBreakdown,
     grades: &[ItemGrade],

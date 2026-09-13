@@ -301,6 +301,42 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
     );
     assert_eq!(over.json()["field_errors"][0]["field"], "item_grades");
     assert_eq!(over.json()["field_errors"][0]["code"], "range");
+    // An item id outside the assessment is refused before anything is
+    // written: no version bump, no phantom breakdown item, no ledger entry.
+    let unknown = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("\"1\""),
+            &serde_json::json!({
+                "action": "save",
+                "item_grades": [
+                    { "item_id": &essay_id, "score": 5 },
+                    { "item_id": uuid::Uuid::now_v7(), "score": 5 },
+                ],
+            }),
+        ))
+        .await;
+    assert_eq!(
+        unknown.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        unknown.text()
+    );
+    assert_eq!(unknown.json()["field_errors"][0]["field"], "item_grades");
+    assert_eq!(unknown.json()["field_errors"][0]["code"], "unknown");
+    let untouched = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{alice_sub}/review"))
+        .await;
+    assert_eq!(untouched.json()["version"], 1);
+    assert_eq!(untouched.json()["grading"], review.json()["grading"]);
+    let no_ledger = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/submissions/{alice_sub}/grading-history"),
+        )
+        .await;
+    assert_eq!(no_ledger.json().as_array().unwrap().len(), 0);
 
     // Save: essay 8/10 → (10 + 8) / 20 = 90, teacher-only.
     let saved = app

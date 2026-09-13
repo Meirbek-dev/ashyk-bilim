@@ -658,8 +658,8 @@ pub async fn renumber_items(pool: &PgPool, ordered_ids: &[AssessmentItemId]) -> 
 
 // ── Audit ───────────────────────────────────────────────────────────────────
 
-pub async fn insert_audit_event(
-    pool: &PgPool,
+pub async fn insert_audit_event<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
     assessment_id: AssessmentId,
     actor_id: Option<UserId>,
     event: &str,
@@ -673,7 +673,7 @@ pub async fn insert_audit_event(
         event,
         payload
     )
-    .execute(pool)
+    .execute(executor)
     .await?;
     Ok(())
 }
