@@ -25,7 +25,7 @@
   "devDependencies": {
     "taze": "^21.1.0",
     "turbo": "^2.10.12",
-    "vite-plus": "0.2.9"
+    "vite-plus": "0.3.1"
   },
   "overrides": {
     "prosemirror-model": "1.25.7",
@@ -39,6 +39,6 @@
   "catalog": {
     "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9",
     "vitest": "4.1.10",
-    "vite-plus": "0.2.9"
+    "vite-plus": "0.3.1"
   }
 }
