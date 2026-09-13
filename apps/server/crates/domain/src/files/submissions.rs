@@ -680,6 +680,7 @@ impl FileSubmissionsService {
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
         self.require_submit_access(actor, &row).await?;
+        Self::require_published(&row, self.activity_published(&row).await?)?;
         let attempt =
             match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
                 Some(a) => a,

@@ -18,7 +18,7 @@ use crate::dto::file_submissions::{
     SignedDownload, SubmitRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotency_key, sha256_hex};
 use crate::state::AppState;
 
 const DEFAULT_REVIEW_PAGE: i64 = 25;
@@ -228,6 +228,8 @@ pub async fn start_draft(
     request_body = DraftRequest,
     responses(
         (status = 200, description = "Saved", body = Attempt),
+        (status = 409, description = "Not published or attempt cap reached", body = Problem,
+         content_type = "application/problem+json"),
         (status = 412, description = "Stale version", body = Problem,
          content_type = "application/problem+json"),
         (status = 422, description = "Too many / duplicate / not-ready / disallowed files",
@@ -252,20 +254,24 @@ pub async fn save_draft(
 /// Submit the open attempt (optionally replacing files first).
 ///
 /// At least one file is required; late work is refused when the activity
-/// does not allow it and penalised by the late policy otherwise.
+/// does not allow it and penalised by the late policy otherwise. With an
+/// `Idempotency-Key`, a retry with the same body replays the original
+/// response for 24h instead of opening a new attempt; the same key with a
+/// different body is 422.
 #[utoipa::path(
     post, path = "/file-submissions/{id}/submit", tag = "file-submissions",
     params(
         ("id" = FileSubmissionId, Path, description = "File submission id"),
         ("If-Match" = Option<i64>, Header, description = "Attempt version (optional)"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Client retry token (optional)"),
     ),
     request_body = SubmitRequest,
     responses(
         (status = 200, description = "Submitted", body = Attempt),
         (status = 409, description = "Not published, cap reached, or late work closed",
          body = Problem, content_type = "application/problem+json"),
-        (status = 422, description = "No files", body = Problem,
-         content_type = "application/problem+json"),
+        (status = 422, description = "No files, or Idempotency-Key reused with a different body",
+         body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn submit(
@@ -273,15 +279,52 @@ pub async fn submit(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileSubmissionId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<SubmitRequest>,
-) -> ApiResult<Json<Attempt>> {
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
     let expected = if_match(&headers)?;
+    let key = idempotency_key(&headers)?.map(|k| format!("file-submit:{id}:{k}"));
+    let request_hash = sha256_hex(&body);
+    if let Some(key) = &key
+        && let Some(stored) =
+            ab_db::submissions::get_idempotent(&state.pool, actor.user_id, key).await?
+    {
+        if stored.request_hash != request_hash {
+            return Err(Error::validation(vec![FieldError {
+                field: "Idempotency-Key".into(),
+                code: "reused".into(),
+                message: "Idempotency-Key was already used with a different request body".into(),
+            }])
+            .into());
+        }
+        let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
+            .unwrap_or(StatusCode::OK);
+        return Ok((status, Json(stored.response)).into_response());
+    }
+    let request = if body.is_empty() {
+        SubmitRequest::default()
+    } else {
+        ValidJson::<SubmitRequest>::parse(&body)?
+    };
     let files = request.files.map(refs);
     let submitted = state
         .file_submissions
         .submit(&actor, id, files.as_deref(), expected)
         .await?;
-    Ok(Json(submitted.into()))
+    let dto = Attempt::from(submitted);
+    if let Some(key) = &key {
+        let value = serde_json::to_value(&dto)
+            .map_err(|err| Error::internal("serialize attempt", err))?;
+        ab_db::submissions::store_idempotent(
+            &state.pool,
+            actor.user_id,
+            key,
+            &request_hash,
+            i32::from(StatusCode::OK.as_u16()),
+            &value,
+        )
+        .await?;
+    }
+    Ok((StatusCode::OK, Json(dto)).into_response())
 }
 
 /// Every attempt the caller made, newest first.

@@ -18,11 +18,8 @@ use crate::dto::submissions::{
     SaveDraftRequest, StudentSubmission, SubmitRequest, ViolationRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, ValidJson};
+use crate::extract::{CurrentActor, Path, ValidJson, idempotency_key, sha256_hex};
 use crate::state::AppState;
-
-const IDEMPOTENCY_KEY: &str = "idempotency-key";
-const MAX_IDEMPOTENCY_KEY_LEN: usize = 128;
 
 /// `If-Match: "3"` or `If-Match: 3` → 3. Anything else is a validation error.
 fn if_match(headers: &HeaderMap) -> ApiResult<Option<i64>> {
@@ -53,35 +50,6 @@ fn require_if_match(headers: &HeaderMap) -> ApiResult<i64> {
         }])
         .into()
     })
-}
-
-fn idempotency_key(headers: &HeaderMap) -> ApiResult<Option<String>> {
-    let Some(raw) = headers.get(IDEMPOTENCY_KEY) else {
-        return Ok(None);
-    };
-    let key = raw.to_str().map(str::trim).unwrap_or_default();
-    if key.is_empty() || key.len() > MAX_IDEMPOTENCY_KEY_LEN || !key.is_ascii() {
-        return Err(Error::validation(vec![FieldError {
-            field: "Idempotency-Key".into(),
-            code: "invalid".into(),
-            message: format!(
-                "Idempotency-Key must be 1..={MAX_IDEMPOTENCY_KEY_LEN} ASCII characters"
-            ),
-        }])
-        .into());
-    }
-    Ok(Some(key.to_owned()))
-}
-
-fn sha256_hex(bytes: &[u8]) -> String {
-    use sha2::Digest;
-    use std::fmt::Write;
-    let digest = sha2::Sha256::digest(bytes);
-    let mut out = String::with_capacity(64);
-    for byte in digest {
-        let _ = write!(out, "{byte:02x}");
-    }
-    out
 }
 
 /// A JSON response with an `ETag` carrying the draft version, so clients
@@ -336,29 +304,9 @@ pub async fn submit_submission(
     Ok((StatusCode::OK, Json(dto)).into_response())
 }
 
-/// The `ValidJson` rules applied to an already-read body (the submit
-/// handler needs the raw bytes for the idempotency hash first).
+/// [`ValidJson`] plus the sign check on the raw body.
 fn parse_and_validate(body: &[u8]) -> ApiResult<SubmitRequest> {
-    use garde::Validate;
-    let request: SubmitRequest = serde_json::from_slice(body).map_err(|err| {
-        Error::validation(vec![FieldError {
-            field: "body".into(),
-            code: "invalid-json".into(),
-            message: err.to_string(),
-        }])
-    })?;
-    request.validate().map_err(|report| {
-        Error::validation(
-            report
-                .iter()
-                .map(|(path, error)| FieldError {
-                    field: path.to_string(),
-                    code: "invalid".into(),
-                    message: error.to_string(),
-                })
-                .collect(),
-        )
-    })?;
+    let request = ValidJson::<SubmitRequest>::parse(body)?;
     if request.violation_count < 0 {
         return Err(Error::app(ErrorCode::ValidationFailed, "violation_count must be >= 0").into());
     }

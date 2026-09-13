@@ -2,7 +2,7 @@
 //! lookup, the author's reference check, the language list.
 
 use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId};
-use ab_core::{Error, ErrorCode, FieldError};
+use ab_core::{Error, ErrorCode};
 use ab_domain::code::RunInput;
 use axum::Json;
 use axum::extract::State;
@@ -10,29 +10,8 @@ use axum::http::{HeaderMap, StatusCode};
 
 use crate::dto::code::{CodeRun, LanguageInfo, ReferenceCheckResponse, RunRequest};
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, ValidJson};
+use crate::extract::{CurrentActor, Path, ValidJson, idempotency_key};
 use crate::state::AppState;
-
-const IDEMPOTENCY_KEY: &str = "idempotency-key";
-const MAX_IDEMPOTENCY_KEY_LEN: usize = 128;
-
-fn idempotency_key(headers: &HeaderMap) -> ApiResult<Option<String>> {
-    let Some(raw) = headers.get(IDEMPOTENCY_KEY) else {
-        return Ok(None);
-    };
-    let key = raw.to_str().map(str::trim).unwrap_or_default();
-    if key.is_empty() || key.len() > MAX_IDEMPOTENCY_KEY_LEN || !key.is_ascii() {
-        return Err(Error::validation(vec![FieldError {
-            field: "Idempotency-Key".into(),
-            code: "invalid".into(),
-            message: format!(
-                "Idempotency-Key must be 1..={MAX_IDEMPOTENCY_KEY_LEN} ASCII characters"
-            ),
-        }])
-        .into());
-    }
-    Ok(Some(key.to_owned()))
-}
 
 /// Run code against an item's visible tests (or one custom input).
 ///

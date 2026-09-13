@@ -193,6 +193,22 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
             .status,
         StatusCode::NOT_FOUND
     );
+    // BUG-114: saving a draft on an unpublished activity is 409 like starting one.
+    let draft_on_draft = app
+        .send(with_if_match(
+            &alice,
+            "PATCH",
+            format!("/api/v2/file-submissions/{id}/draft"),
+            None,
+            &serde_json::json!({ "files": [] }),
+        ))
+        .await;
+    assert_eq!(
+        draft_on_draft.status,
+        StatusCode::CONFLICT,
+        "{}",
+        draft_on_draft.text()
+    );
     // Publishing needs instructions.
     let refused = app
         .post_as(
@@ -538,6 +554,50 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         "{text}"
     );
     assert!(text.contains("alice@example.com,published,1,"), "{text}");
+}
+
+/// BUG-113: a submit retried with the same `Idempotency-Key` replays the
+/// stored response instead of opening and submitting a second attempt.
+#[sqlx::test(migrations = "../../migrations")]
+async fn submit_replays_under_an_idempotency_key(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF once").await;
+    let id = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2 }),
+    )
+    .await;
+    let submit = |key: &str, body: serde_json::Value| {
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/v2/file-submissions/{id}/submit"))
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &alice.cookie)
+            .header("idempotency-key", key)
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    };
+    let body = serde_json::json!({ "files": [{ "upload_id": pdf_upload }] });
+    let first = app.send(submit("k1", body.clone())).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["attempt_number"], 1);
+    let replay = app.send(submit("k1", body)).await;
+    assert_eq!(replay.status, StatusCode::OK, "{}", replay.text());
+    assert_eq!(replay.json(), first.json(), "the stored response, verbatim");
+    let reused = app
+        .send(submit("k1", serde_json::json!({ "files": [] })))
+        .await;
+    assert_eq!(reused.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(reused.json()["field_errors"][0]["code"], "reused");
+    let mine = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}/me"))
+        .await;
+    assert_eq!(mine.json().as_array().unwrap().len(), 1, "{}", mine.text());
 }
 
 #[sqlx::test(migrations = "../../migrations")]

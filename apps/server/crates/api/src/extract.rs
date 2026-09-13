@@ -5,6 +5,7 @@ use ab_core::{Error, ErrorCode, FieldError};
 use ab_domain::identity::Actor;
 use axum::Json;
 use axum::extract::{FromRequest, FromRequestParts, Request};
+use axum::http::HeaderMap;
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use serde::de::DeserializeOwned;
@@ -146,4 +147,68 @@ where
         })?;
         Ok(Self(value))
     }
+}
+
+impl<T> ValidJson<T>
+where
+    T: DeserializeOwned + garde::Validate<Context = ()>,
+{
+    /// The same rules applied to an already-read body (handlers that hash
+    /// the raw bytes for an idempotency check read the body first).
+    pub fn parse(body: &[u8]) -> Result<T, ApiError> {
+        let value: T = serde_json::from_slice(body).map_err(|err| {
+            ApiError(Error::validation(vec![FieldError {
+                field: "body".into(),
+                code: "invalid-json".into(),
+                message: err.to_string(),
+            }]))
+        })?;
+        value.validate().map_err(|report| {
+            ApiError(Error::validation(
+                report
+                    .iter()
+                    .map(|(path, error)| FieldError {
+                        field: path.to_string(),
+                        code: "invalid".into(),
+                        message: error.to_string(),
+                    })
+                    .collect(),
+            ))
+        })?;
+        Ok(value)
+    }
+}
+
+const IDEMPOTENCY_KEY: &str = "idempotency-key";
+const MAX_IDEMPOTENCY_KEY_LEN: usize = 128;
+
+/// `Idempotency-Key` header, validated (1..=128 ASCII); `None` when absent.
+pub fn idempotency_key(headers: &HeaderMap) -> Result<Option<String>, ApiError> {
+    let Some(raw) = headers.get(IDEMPOTENCY_KEY) else {
+        return Ok(None);
+    };
+    let key = raw.to_str().map(str::trim).unwrap_or_default();
+    if key.is_empty() || key.len() > MAX_IDEMPOTENCY_KEY_LEN || !key.is_ascii() {
+        return Err(ApiError(Error::validation(vec![FieldError {
+            field: "Idempotency-Key".into(),
+            code: "invalid".into(),
+            message: format!(
+                "Idempotency-Key must be 1..={MAX_IDEMPOTENCY_KEY_LEN} ASCII characters"
+            ),
+        }])));
+    }
+    Ok(Some(key.to_owned()))
+}
+
+/// Request-body fingerprint for idempotent replays.
+#[must_use]
+pub fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::Digest;
+    use std::fmt::Write;
+    let digest = sha2::Sha256::digest(bytes);
+    let mut out = String::with_capacity(64);
+    for b in digest {
+        let _ = write!(out, "{b:02x}");
+    }
+    out
 }
