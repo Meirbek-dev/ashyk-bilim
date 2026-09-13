@@ -130,6 +130,20 @@ impl AssessmentsService {
         )
     }
 
+    /// The user row must exist before an access-list / override insert —
+    /// the FK would otherwise surface as a 500 (public courses skip the
+    /// course-access check that used to catch this by accident).
+    async fn unknown_user(&self, user_id: UserId, field: &str) -> Result<Option<FieldError>> {
+        Ok(ab_db::identity::user_status(&self.pool, user_id)
+            .await?
+            .is_none()
+            .then(|| FieldError {
+                field: field.into(),
+                code: "unknown".into(),
+                message: format!("user {user_id} does not exist"),
+            }))
+    }
+
     /// Course creators and platform authors preview without limits.
     fn is_teacher_preview(actor: &Actor, course: &Course) -> bool {
         Self::require_scoped(actor, course, Action::Author, "preview").is_ok()
@@ -195,7 +209,9 @@ impl AssessmentsService {
             AccessMode::Restricted => {
                 let mut errors = Vec::new();
                 for user_id in user_ids {
-                    if !self.user_has_course_access(&course, *user_id).await? {
+                    if let Some(e) = self.unknown_user(*user_id, "user_ids").await? {
+                        errors.push(e);
+                    } else if !self.user_has_course_access(&course, *user_id).await? {
                         errors.push(FieldError {
                             field: "user_ids".into(),
                             code: "not-in-course".into(),
@@ -251,6 +267,9 @@ impl AssessmentsService {
     ) -> Result<Override> {
         self.load_for_author(actor, id).await?;
         input.validate()?;
+        if let Some(e) = self.unknown_user(user_id, "user_id").await? {
+            return Err(Error::validation(vec![e]));
+        }
         let created = ab_db::assessments::insert_override(
             &self.pool,
             id,
@@ -391,6 +410,12 @@ impl AssessmentsService {
     pub async fn attempt_state(&self, actor: &Actor, id: AssessmentId) -> Result<AttemptState> {
         let assessment = self.load(id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
+        // Same existence rule as `get`: an unpublished assessment does not
+        // exist for anyone but its authors.
+        if assessment.lifecycle != Lifecycle::Published && !Self::is_teacher_preview(actor, &course)
+        {
+            return Err(Error::not_found("assessment"));
+        }
         let teacher_preview = self
             .require_submit_access(actor, &assessment, &course)
             .await?;
@@ -409,17 +434,9 @@ impl AssessmentsService {
 
         let now = now_unix();
         let mut reasons = Vec::new();
+        // Lifecycle reasons need no branch here: a non-preview caller only
+        // reaches this point for a published assessment (404 above).
         if !teacher_preview {
-            match assessment.lifecycle {
-                Lifecycle::Draft => reasons.push(DisabledReason::NotPublished),
-                Lifecycle::Scheduled => {
-                    if assessment.scheduled_at.is_none_or(|at| at > now) {
-                        reasons.push(DisabledReason::ScheduledNotOpen);
-                    }
-                }
-                Lifecycle::Archived => reasons.push(DisabledReason::Archived),
-                Lifecycle::Published => {}
-            }
             if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
                 reasons.push(DisabledReason::PastDue);
             }

@@ -273,12 +273,7 @@ async fn overrides_shape_the_effective_policy(pool: PgPool) {
     let teacher = instructor(&app, "teacher").await;
     let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
     // Make the course public so learners reach it without a cohort.
-    app.post_as(
-        &teacher,
-        &format!("/api/v2/courses/{course_id}/lifecycle"),
-        &serde_json::json!({ "action": "publish" }),
-    )
-    .await;
+    app.publish_course(&course_id).await;
     let (alice, alice_session) = learner(&app, "alice").await;
 
     // Policy: 2 attempts, a due date in the past, no late work → blocked.
@@ -415,4 +410,96 @@ async fn overrides_shape_the_effective_policy(pool: PgPool) {
             "lifecycle-transition"
         ]
     );
+}
+
+/// Unknown user ids in access lists and overrides are 422s, not FK 500s
+/// (BUG-106); an unpublished assessment has no attempt state for learners,
+/// just as it has no detail (BUG-108).
+#[sqlx::test(migrations = "../../migrations")]
+async fn unknown_users_and_drafts_are_client_errors(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    // Public: `user_has_course_access` short-circuits, so the existence
+    // check has to stand on its own.
+    app.publish_course(&course_id).await;
+    let ghost = uuid::Uuid::now_v7();
+
+    let restricted = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/access"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "mode": "restricted", "user_ids": [ghost] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(
+        restricted.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        restricted.text()
+    );
+    assert_eq!(restricted.json()["field_errors"][0]["field"], "user_ids");
+    assert_eq!(restricted.json()["field_errors"][0]["code"], "unknown");
+
+    let overridden = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{ghost}"),
+            &serde_json::json!({ "max_attempts_override": 3 }),
+        )
+        .await;
+    assert_eq!(
+        overridden.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        overridden.text()
+    );
+    assert_eq!(overridden.json()["field_errors"][0]["field"], "user_id");
+
+    // A draft quiz in the same course: 404 for the learner on both routes,
+    // teacher preview still sees it.
+    let chapter = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/curriculum"))
+        .await
+        .json()["chapters"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let draft = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter, "kind": "quiz", "title": "Draft" }),
+        )
+        .await
+        .json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let (_, alice_session) = learner(&app, "alice").await;
+    let detail = app
+        .get_as(&alice_session, &format!("/api/v2/assessments/{draft}"))
+        .await;
+    assert_eq!(detail.status, StatusCode::NOT_FOUND);
+    let state = app
+        .get_as(
+            &alice_session,
+            &format!("/api/v2/assessments/{draft}/attempt-state"),
+        )
+        .await;
+    assert_eq!(state.status, StatusCode::NOT_FOUND, "{}", state.text());
+    let preview = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{draft}/attempt-state"),
+        )
+        .await;
+    assert_eq!(preview.status, StatusCode::OK, "{}", preview.text());
+    assert_eq!(preview.json()["is_teacher_preview"], true);
 }
