@@ -1,9 +1,10 @@
 'use client'
 
-import { DayPicker, getDefaultClassNames } from '@daypicker/react'
+import { DayPicker, getDefaultClassNames, labelDayButton } from '@daypicker/react'
 import type { DayButtonProps, Locale } from '@daypicker/react'
+import { enUS, kk, ru } from '@daypicker/react/locale'
 import * as React from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import {
   Calendar as CalendarIcon,
@@ -19,6 +20,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils'
 
 const DEFAULT_MIN_DATE = new Date(1900, 0, 1)
+// UX-047: the picker follows the app locale (month/weekday names, aria labels)
+// unless a caller passes its own `locale`.
+const DAY_PICKER_LOCALES: Record<string, Locale> = { ru, kk, en: enUS }
 
 function Calendar({
   className,
@@ -26,7 +30,8 @@ function Calendar({
   showOutsideDays = true,
   captionLayout = 'label',
   buttonVariant = 'ghost',
-  locale,
+  locale: localeProp,
+  labels,
   formatters,
   components,
   // allow callers to set a min/max date range; sane defaults for far past/future
@@ -39,6 +44,9 @@ function Calendar({
   maxDate?: Date
 }) {
   const defaultClassNames = getDefaultClassNames()
+  const t = useTranslations('Components.Calendar')
+  const appLocale = useLocale()
+  const locale = localeProp ?? DAY_PICKER_LOCALES[appLocale.slice(0, 2)] ?? enUS
 
   // Default `toDate` to 50 years in the future so the year dropdown and navigation
   // don't stop at the end of the current year (e.g. 31.12.2025)
@@ -61,6 +69,19 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       locale={locale}
+      labels={{
+        labelPrevious: () => t('previousMonth'),
+        labelNext: () => t('nextMonth'),
+        labelMonthDropdown: () => t('chooseMonth'),
+        labelYearDropdown: () => t('chooseYear'),
+        labelDayButton: (date, modifiers, options, dateLib) => {
+          const formatted = labelDayButton(date, {}, options, dateLib)
+          if (modifiers.today) return t('today', { date: formatted })
+          if (modifiers.selected) return t('selected', { date: formatted })
+          return formatted
+        },
+        ...labels,
+      }}
       formatters={{
         formatMonthDropdown: date => date.toLocaleString(locale?.code, { month: 'short' }),
         ...formatters,
@@ -147,7 +168,7 @@ function Calendar({
 
           return <ChevronDownIcon className={cn('size-4', chevronClassName)} {...chevronProps} />
         },
-        DayButton: ({ ...dayButtonProps }) => <CalendarDayButton {...dayButtonProps} {...(locale ? { locale } : {})} />,
+        DayButton: ({ ...dayButtonProps }) => <CalendarDayButton {...dayButtonProps} locale={locale} />,
         WeekNumber: ({ children, ...weekNumberProps }) => {
           return (
             <td {...weekNumberProps}>

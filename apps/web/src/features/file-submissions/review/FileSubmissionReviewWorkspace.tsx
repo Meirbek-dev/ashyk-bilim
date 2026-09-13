@@ -201,14 +201,20 @@ export default function FileSubmissionReviewWorkspace({
   const gradeMutation = useMutation({
     mutationFn: async ({ attempt, payload }: { attempt: FileSubmissionAttempt; payload: FileSubmissionGradePayload }) =>
       gradeFileSubmissionAttempt(attempt.id, payload, attempt.version),
-    onSuccess: async (_saved, { attempt }) => {
+    onSuccess: async (_saved, { attempt, payload }) => {
       await Promise.all([
         config ? queryClient.invalidateQueries({ queryKey: queueQueryKey(config.id) }) : null,
         // The gradebook builds its file-submission cells from this queue.
         config ? queryClient.invalidateQueries({ queryKey: queryKeys.grading.gradebook(config.course_id) }) : null,
         queryClient.invalidateQueries({ queryKey: attemptQueryKey(attempt.id) }),
       ])
-      toast.success(t('submissionUpdated'))
+      toast.success(
+        payload.action === 'publish'
+          ? t('gradePublished')
+          : payload.action === 'return'
+            ? t('gradeReturned')
+            : t('draftSaved'),
+      )
     },
     onError: gradeError => {
       setIsGradeDirty(true)
@@ -240,7 +246,15 @@ export default function FileSubmissionReviewWorkspace({
   async function openFile(fileId: string) {
     try {
       const result = await getFileSubmissionFileUrl(fileId)
-      window.open(result.url, '_blank', 'noopener,noreferrer')
+      // `download` names the saved file after the original upload once the
+      // signed URL carries a Content-Disposition; a plain window.open kept
+      // the storage key.
+      const anchor = document.createElement('a')
+      anchor.href = result.url
+      anchor.download = result.filename
+      anchor.target = '_blank'
+      anchor.rel = 'noopener noreferrer'
+      anchor.click()
     } catch (error) {
       toastApiError(error, { fallback: t('openFileFailed') })
     }
@@ -628,13 +642,28 @@ function GradeEditor({
   const [score, setScore] = useState(typeof attempt.final_score === 'number' ? String(attempt.final_score) : '')
   const [feedback, setFeedback] = useState(attempt.feedback ?? '')
   const [rubricScores, setRubricScores] = useState<Record<string, number>>(() => readRubricScores(attempt))
+  const [showErrors, setShowErrors] = useState(false)
   const rubricTotalScore =
     criteria.length === 0
       ? null
       : criteria.reduce((total, criterion) => total + (rubricScores[criterion.criterion_id] ?? 0), 0)
   const scoreId = `fs-review-score-${attempt.id}`
+  // UX-047: mirror the server's `final_score` rules (required for save/publish,
+  // 0..=100) as a field error instead of a generic validation toast.
+  const parsedScore = score.trim() === '' ? null : Number(score)
+  const scoreOutOfRange =
+    parsedScore !== null && (!Number.isFinite(parsedScore) || parsedScore < 0 || parsedScore > 100)
+  const scoreError = scoreOutOfRange
+    ? t('scoreInvalid')
+    : showErrors && parsedScore === null
+      ? t('scoreRequired')
+      : null
 
   function submit(status: GradeStatus) {
+    if (scoreOutOfRange || (status !== 'RETURNED' && parsedScore === null)) {
+      setShowErrors(true)
+      return
+    }
     const rubric =
       criteria.length > 0
         ? {
@@ -648,7 +677,7 @@ function GradeEditor({
         : {}
     onSubmit({
       action: GRADE_ACTIONS[status],
-      final_score: score.trim() === '' ? null : Number(score),
+      final_score: parsedScore,
       feedback,
       rubric_scores: rubric,
     })
@@ -688,6 +717,8 @@ function GradeEditor({
                 onDirtyChange(true)
               }}
               placeholder={t('scorePlaceholder')}
+              aria-invalid={scoreError ? true : undefined}
+              aria-describedby={scoreError ? `${scoreId}-error` : undefined}
               className="w-24 tabular-nums"
             />
             <span className="text-muted-foreground text-sm">{t('scoreSlash')}</span>
@@ -706,6 +737,11 @@ function GradeEditor({
               </Button>
             ) : null}
           </div>
+          {scoreError ? (
+            <p id={`${scoreId}-error`} role="alert" className="text-destructive text-xs">
+              {scoreError}
+            </p>
+          ) : null}
         </div>
         <MarkdownEditor
           value={feedback}

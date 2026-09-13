@@ -14,11 +14,10 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
-  canPublishGrade,
   canReturnSubmission,
   canSaveGradeDraft,
   canTeacherEditGrade,
@@ -76,6 +75,7 @@ export default function GradeForm({
   const t = useTranslations('Grading.Panel')
   const tItemGrading = useTranslations('ItemGrading')
   const tGrading = useTranslations('Features.Grading')
+  const format = useFormatter()
   const [draft, setDraft] = useState<GradeDraft>({ score: '', feedback: '' })
   const [itemDrafts, setItemDrafts] = useState<Record<string, ItemDraftEntry>>({})
   const [overrideScore, setOverrideScore] = useState(false)
@@ -362,7 +362,13 @@ export default function GradeForm({
     return <aside className="text-muted-foreground p-4 text-sm">{t('formUnavailable')}</aside>
   }
 
-  const canPublishNow = canPublishGrade(submission.status)
+  // UX-047: publish follows the form, not the stored status — every item (or
+  // the final score) must carry a valid score; the server allows the publish
+  // transition from PENDING/GRADED/RETURNED/PUBLISHED alike.
+  const formScored = hasItemGrading
+    ? gradedItems.every(item => (itemDrafts[item.item_id]?.score ?? '').trim() !== '')
+    : draft.score.trim() !== ''
+  const canPublishNow = editable && formScored && !hasInvalidScore
   const canReturnNow = canReturnSubmission(submission.status)
   const canSaveDraftNow = canSaveGradeDraft(submission.status)
   const isRepublish = submission.status === 'PUBLISHED'
@@ -473,7 +479,7 @@ export default function GradeForm({
                     />
                     {/* Inputs are on the breakdown scale (the item's share of the 100-point total), not the author's item points. */}
                     <span className="text-muted-foreground text-xs">
-                      / {item.max_score} · {tItemGrading('shareOfTotal')}
+                      / {format.number(item.max_score)} · {tItemGrading('shareOfTotal')}
                     </span>
                     {item.needs_manual_review && (
                       <span className="ml-auto text-xs text-amber-600">{t('needsReview')}</span>
@@ -486,7 +492,7 @@ export default function GradeForm({
                   ) : null}
                   {invalidItemIds.has(item.item_id) ? (
                     <p id={`item-score-error-${item.item_id}`} className="text-destructive text-xs" role="alert">
-                      {tItemGrading('invalidItemScore', { max: item.max_score })}
+                      {tItemGrading('invalidItemScore', { max: format.number(item.max_score) })}
                     </p>
                   ) : null}
                   <MarkdownEditor

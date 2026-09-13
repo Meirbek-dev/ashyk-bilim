@@ -16,6 +16,11 @@ const mocks = vi.hoisted(() => ({
   getAttempt: vi.fn(),
   grade: vi.fn(),
   replace: vi.fn(),
+  toastSuccess: vi.fn(),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { success: (...args: unknown[]) => mocks.toastSuccess(...args), error: vi.fn() },
 }))
 
 vi.mock('next-intl', () => ({
@@ -133,5 +138,36 @@ describe('file submission review workspace', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'discardAndSwitch' }))
     await waitFor(() => expect(screen.getByDisplayValue('64')).not.toBeNull())
+  })
+
+  // UX-047: the score field validates inline (server rules: 0..=100, required
+  // for save/publish) and each action has its own toast.
+  it('flags an out-of-range score on the field and toasts what was saved', async () => {
+    mocks.grade.mockImplementation(async () => attempt('attempt_first', 'Aruzhan', 95, 'First learner feedback'))
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <FileSubmissionReviewWorkspace activityUuid="activity_1" />
+      </QueryClientProvider>,
+    )
+
+    const score = await screen.findByDisplayValue('92')
+    fireEvent.change(score, { target: { value: '101' } })
+    expect(score).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('alert')).toHaveTextContent('scoreInvalid')
+    fireEvent.click(screen.getByRole('button', { name: 'saveGrade' }))
+    expect(mocks.grade).not.toHaveBeenCalled()
+
+    fireEvent.change(score, { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'publishResult' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('scoreRequired')
+    expect(mocks.grade).not.toHaveBeenCalled()
+
+    fireEvent.change(score, { target: { value: '95' } })
+    expect(screen.queryByRole('alert')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'saveGrade' }))
+    await waitFor(() => expect(mocks.grade).toHaveBeenCalledTimes(1))
+    expect(mocks.grade.mock.calls[0]?.[1]).toMatchObject({ action: 'save', final_score: 95 })
+    await waitFor(() => expect(mocks.toastSuccess).toHaveBeenCalledWith('draftSaved'))
   })
 })
