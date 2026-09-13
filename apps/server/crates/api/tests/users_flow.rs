@@ -85,6 +85,39 @@ async fn unsupported_locale_is_rejected(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
+async fn blank_display_name_is_rejected_and_names_are_trimmed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("blank", "b@example.com", &["user"]).await;
+    let session = app.mint_session_for(user, &["user:update:own"]).await;
+
+    let res = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "display_name": "   " }),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "display_name");
+    assert_eq!(res.json()["field_errors"][0]["code"], "required");
+
+    let res = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "display_name": "  Aigerim  " }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    assert_eq!(res.json()["display_name"], "Aigerim");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
 async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
