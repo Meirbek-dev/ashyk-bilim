@@ -15,11 +15,13 @@ import { getAbsoluteUrl } from '@services/config/config'
 import { verifyEmailAction } from '@/app/actions/auth'
 
 interface VerifyState {
+  /** Submitted values, re-applied after a failure (the form action resets uncontrolled inputs). */
+  values: { email: string; code: string }
   error: string | null
   fieldErrors: { email?: string; code?: string }
+  /** Bumped per submit: the form re-mounts so `defaultValue` re-applies (Base UI warns otherwise). */
+  version: number
 }
-
-const INITIAL_STATE: VerifyState = { error: null, fieldErrors: {} }
 
 interface VerifyEmailClientProps {
   /** `?email=` from the email link (prefill only). */
@@ -44,28 +46,33 @@ function VerifyEmailClient({ email, code }: VerifyEmailClientProps) {
     code: v.pipe(v.string(), v.trim(), v.minLength(1, validationT('required')), v.maxLength(32)),
   })
 
-  const [state, action, isPending] = useActionState(async (_prev: VerifyState, formData: FormData): Promise<VerifyState> => {
-    const parsed = v.safeParse(schema, { email: formData.get('email'), code: formData.get('code') })
+  const initialState: VerifyState = { values: { email, code }, error: null, fieldErrors: {}, version: 0 }
+  const [state, action, isPending] = useActionState(async (prev: VerifyState, formData: FormData): Promise<VerifyState> => {
+    const version = prev.version + 1
+    const values = { email: String(formData.get('email') ?? ''), code: String(formData.get('code') ?? '') }
+    const parsed = v.safeParse(schema, values)
     if (!parsed.success) {
       const flat = v.flatten<typeof schema>(parsed.issues)
       return {
+        values,
         error: null,
         fieldErrors: {
           ...(flat.nested?.email?.[0] ? { email: flat.nested.email[0] } : {}),
           ...(flat.nested?.code?.[0] ? { code: flat.nested.code[0] } : {}),
         },
+        version,
       }
     }
     const result = await verifyEmailAction(parsed.output)
     if (!result.ok) {
-      if (result.fieldErrors?.code) return { error: null, fieldErrors: { code: t('invalidCode') } }
+      if (result.fieldErrors?.code) return { values, error: null, fieldErrors: { code: t('invalidCode') }, version }
       const key = `codes.${result.code}`
-      return { error: errorsT.has(key) ? errorsT(key) : t('failed'), fieldErrors: {} }
+      return { values, error: errorsT.has(key) ? errorsT(key) : t('failed'), fieldErrors: {}, version }
     }
     toast.success(t('success'))
     router.push('/auth/login')
-    return INITIAL_STATE
-  }, INITIAL_STATE)
+    return { ...initialState, version }
+  }, initialState)
 
   return (
     <AuthCard>
@@ -81,14 +88,14 @@ function VerifyEmailClient({ email, code }: VerifyEmailClientProps) {
         </div>
       ) : null}
 
-      <form className="w-full space-y-4" action={action} noValidate>
+      <form key={state.version} className="w-full space-y-4" action={action} noValidate>
         <Field>
           <FieldLabel>{t('email')}</FieldLabel>
           <FieldContent>
             <Input
               name="email"
               type="email"
-              defaultValue={email}
+              defaultValue={state.values.email}
               autoComplete="email"
               className="w-full"
             />
@@ -100,7 +107,7 @@ function VerifyEmailClient({ email, code }: VerifyEmailClientProps) {
           <FieldContent>
             <Input
               name="code"
-              defaultValue={code}
+              defaultValue={state.values.code}
               autoComplete="one-time-code"
               autoCapitalize="characters"
               className="w-full"

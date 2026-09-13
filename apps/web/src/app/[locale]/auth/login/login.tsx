@@ -113,6 +113,9 @@ function LoginClient() {
       const returnTo = searchParams.get('returnTo')
 
       if (prev.step === 'totp') {
+        // «Back to login» is a form intent: the URL alone cannot reset
+        // `useActionState`, so the same component would keep the TOTP step.
+        if (formData.get('intent') === 'back') return { ...INITIAL_STATE, login: prev.login }
         const parsed = v.safeParse(totpSchema, { totpCode: formData.get('totpCode') })
         if (!parsed.success) {
           const flat = v.flatten(parsed.issues)
@@ -276,12 +279,15 @@ function LoginClient() {
             </Field>
 
             <AuthSubmitButton isPending={anyPending} label={t('verifyCode')} pendingLabel={t('loading')} />
-            <Link
-              href={getAbsoluteUrl('/login')}
+            <button
+              type="submit"
+              name="intent"
+              value="back"
+              formNoValidate
               className="text-muted-foreground block w-full text-center text-sm underline"
             >
               {t('backToPassword')}
-            </Link>
+            </button>
           </>
         )}
       </form>
