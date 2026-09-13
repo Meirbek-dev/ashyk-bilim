@@ -85,6 +85,16 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   `CONTENT_REWRITE_TARGET=http://localhost:9002/ab-public` and
   `NEXT_PUBLIC_MEDIA_URL=http://localhost:3000/` in `apps/web/.env.local` — otherwise
   avatars and block media 404 (ORB) because nothing serves `/content/`.
+- **Pass 11+ process layout (2026-09-13):** `abenv.sh` and the live logs sit in the
+  session scratchpad `%LOCALAPPDATA%\Temp\claude\X--projects-ashyq-bilim3c95abb-74bf-437e-98f7-358220713b12\scratchpad\`
+  (`abenv.sh`, `server.log`, `worker.log`). Serve + worker run with
+  `RUST_LOG='info,tower_http::trace=debug'` so every request logs
+  `method/uri → status/latency` — that is the per-request evidence line for critics.
+- **Session cap, not single-session:** `MAX_SESSIONS_PER_USER = 10`, oldest evicted
+  (`identity/sessions.rs`). A curl session dies after ~10 later logins of the same user
+  (every Playwright run logs each role in), and an RBAC change on a user revokes ALL
+  their sessions (`rbac_admin.rs:290`). Mint curl sessions right before use, re-mint on
+  401, and never change the roles of the three shared accounts — create your own user.
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
@@ -150,6 +160,7 @@ Regenerate this survey with `scratchpad/drift.py`.
 
 | pass | date | features probed | bugs found/fixed | gate | commit |
 |---|---|---|---|---|---|
+| 11 | 2026-09-13 | **in progress** — full sweep, scopes A+B+C on every non-blocked row (F01–F57 minus F14) in six clusters: identity, learner catalog/course, learner assessments, teacher authoring, teacher grading/AI, analytics/admin; stale rows first (F08 F47 F54 from 0946a2a) | — | — | — |
 | 0 | 2026-09-10 | setup only: stack, accounts, ledger | — | — | e654349 |
 | 10 | 2026-09-13 | confirmation critic on the five pass-9 fails (R1–R10): all pass; two late gaps fixed (reporter learner-state 403, link-preview refetch on learner view) | BUG-089..090 fixed | e2e 92/2 skipped (07 string fixed), vitest 681/681, typecheck 0, error-codes 32/32; nextest 319/319, `just check` green | 0946a2a |
 | 9 | 2026-09-12/13 | **contract phase** — owner answered every QUESTIONS item (DECISIONS "Owner answers"): wave 1 (identity, catalog, grading) + wave 2 (analytics/jobs/ETL, certificates/AI/link-preview, RBAC/kk polyfill/localization sweep) landed F41–F55; three critics re-drove the new features + a learner regression sweep (24/29 pass); three polish builders closed the fails and ~40 nits | BUG-084..088 found and fixed | e2e 92/2 skipped, vitest 681/681, typecheck 0, error-codes 32/32; nextest 319/319, deny/machete green, CI green (34683118190) | 6167ef4 |
