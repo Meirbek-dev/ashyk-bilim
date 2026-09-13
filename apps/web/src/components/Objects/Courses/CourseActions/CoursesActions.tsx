@@ -56,6 +56,16 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   // but keeps submissions (leaving only resets lesson completions), so the
   // landing must not offer «Начать курс» to someone the server calls enrolled.
   const isStarted = learnerState?.enrolled ?? hasTrailRun
+  const nextUnfinished = (() => {
+    const { completedIds } = learnerCourseProgress(learnerState)
+    return course.chapters
+      ?.flatMap(chapter => chapter.activities ?? [])
+      .find(activity => !completedIds.has(activity.activity_uuid.replace('activity_', '')))
+  })()
+  const certificateHref =
+    learnerState?.certificate?.issued && learnerState.certificate.href
+      ? getAbsoluteUrl(learnerState.certificate.href)
+      : null
 
   // Anonymous: sign in and come straight back to this course.
   const loginHref = buildLoginRedirect(`/course/${courseuuid}`)
@@ -63,6 +73,12 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   const handleCourseAction = async () => {
     if (!currentUser) {
       router.push(loginHref)
+      return
+    }
+
+    // A completed course with a certificate leads to the certificate, not back into the course.
+    if (isStarted && !nextUnfinished && certificateHref) {
+      router.push(certificateHref)
       return
     }
 
@@ -174,10 +190,18 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     }
   }
 
-  const renderActionButton = (action: 'start' | 'continue') => {
+  const renderActionButton = (action: 'start' | 'continue' | 'certificate') => {
     const isAuthenticated = Boolean(currentUser)
-    const icon = action === 'start' ? <PlayCircle className="size-5" /> : <ArrowRight className="size-5" />
-    const label = action === 'start' ? t('startCourse') : t('continueLearning')
+    const icon =
+      action === 'start' ? (
+        <PlayCircle className="size-5" />
+      ) : action === 'certificate' ? (
+        <CheckCircle2 className="size-5" />
+      ) : (
+        <ArrowRight className="size-5" />
+      )
+    const label =
+      action === 'start' ? t('startCourse') : action === 'certificate' ? t('viewCertificate') : t('continueLearning')
 
     return (
       <div className="flex items-center gap-3">
@@ -369,7 +393,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
           {isActionLoading ? (
             <Loader2 className="size-5 animate-spin" />
           ) : (
-            renderActionButton(isStarted ? 'continue' : 'start')
+            renderActionButton(!isStarted ? 'start' : !nextUnfinished && certificateHref ? 'certificate' : 'continue')
           )}
         </Button>
 

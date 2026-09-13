@@ -21,20 +21,23 @@ function escapeCsvValue(value: string | number | null | undefined) {
   return `"${String(value ?? '').replaceAll('"', '""')}"`
 }
 
-function formatHours(value: number | null | undefined, emptyLabel: string) {
+// One decimal, locale separators («68,8 %» in ru) — same as the summary tiles.
+const oneDecimal = (locale: string) => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
+
+function formatHours(value: number | null | undefined, emptyLabel: string, locale: string) {
   if (value === null || value === undefined) {
     return emptyLabel
   }
 
-  return `${value.toFixed(1)}h`
+  return `${oneDecimal(locale).format(value)}h`
 }
 
-function formatRate(value: number | null | undefined, emptyLabel: string) {
+function formatRate(value: number | null | undefined, emptyLabel: string, locale: string) {
   if (value === null || value === undefined) {
     return emptyLabel
   }
 
-  return `${value.toFixed(1)}%`
+  return `${oneDecimal(locale).format(value)}%`
 }
 
 function getSloBadgeVariant(status: TeacherAssessmentDetailResponse['slo']['status']) {
@@ -163,11 +166,11 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
     if (event.source === 'bulk_action') {
       return t('pages.assessmentOpsAuditBulkSummary', { action, count: event.affected_count ?? 0 })
     }
-    return event.final_score == null ? action : `${action}: ${event.final_score.toFixed(1)}%`
+    return event.final_score == null ? action : `${action}: ${oneDecimal(locale).format(event.final_score)}%`
   }
   const itemNote = (item: TeacherAssessmentDetailResponse['item_analytics'][number]) =>
     item.accuracy_pct != null
-      ? t('pages.assessmentItemAccuracy', { value: item.accuracy_pct.toFixed(1) })
+      ? t('pages.assessmentItemAccuracy', { value: oneDecimal(locale).format(item.accuracy_pct) })
       : getAnalyticsCodeLabel(t, item.note ?? 'accuracy_unavailable')
   const normalizedAuditSearch = auditSearch.trim().toLowerCase()
   const filteredAuditHistory = detail.audit_history.filter(event => {
@@ -217,7 +220,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
     link.click()
     URL.revokeObjectURL(url)
   }
-
 
   const resetAuditFilters = () => {
     setAuditSearch('')
@@ -340,19 +342,19 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
               <div className="px-4 py-2.5">
                 <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloTarget')}</div>
                 <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
-                  {formatHours(detail.slo.target_hours, t('atRisk.na'))}
+                  {formatHours(detail.slo.target_hours, t('atRisk.na'), locale)}
                 </div>
               </div>
               <div className="px-4 py-2.5">
                 <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloP50')}</div>
                 <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
-                  {formatHours(detail.slo.observed_p50_hours, t('atRisk.na'))}
+                  {formatHours(detail.slo.observed_p50_hours, t('atRisk.na'), locale)}
                 </div>
               </div>
               <div className="border-border border-t px-4 py-2.5">
                 <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloP90')}</div>
                 <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
-                  {formatHours(detail.slo.observed_p90_hours, t('atRisk.na'))}
+                  {formatHours(detail.slo.observed_p90_hours, t('atRisk.na'), locale)}
                 </div>
               </div>
               <div className="border-border border-t px-4 py-2.5">
@@ -393,7 +395,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       {t('pages.assessmentItemImpacted')}: {item.impacted_count}
                     </span>
                     <span>
-                      {t('pages.assessmentItemRate')}: {formatRate(item.impact_rate, t('atRisk.na'))}
+                      {t('pages.assessmentItemRate')}: {formatRate(item.impact_rate, t('atRisk.na'), locale)}
                     </span>
                   </div>
                   <div className="text-muted-foreground mt-1 text-xs">{itemNote(item)}</div>
@@ -424,7 +426,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       {t('pages.assessmentCohortSubmitted')}: {cohort.submitted_learners}
                     </span>
                     <span>
-                      {t('pages.assessmentCohortPassRate')}: {formatRate(cohort.pass_rate, t('atRisk.na'))}
+                      {t('pages.assessmentCohortPassRate')}: {formatRate(cohort.pass_rate, t('atRisk.na'), locale)}
                     </span>
                     <span>
                       {t('pages.assessmentCohortAwaiting')}: {cohort.awaiting_grading}
@@ -493,7 +495,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       size="sm"
                       onClick={() => setAuditSourceFilter(source)}
                     >
-                      {source === 'all' ? t('pages.assessmentOpsAuditFilterAllSources') : getAnalyticsCodeLabel(t, source)}
+                      {source === 'all'
+                        ? t('pages.assessmentOpsAuditFilterAllSources')
+                        : getAnalyticsCodeLabel(t, source)}
                     </Button>
                   ))}
                 </div>
@@ -526,7 +530,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                     <div key={event.id} className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline">{getAnalyticsCodeLabel(t, event.source)}</Badge>
-                        {event.status ? <Badge variant="secondary">{getAnalyticsCodeLabel(t, event.status)}</Badge> : null}
+                        {event.status ? (
+                          <Badge variant="secondary">{getAnalyticsCodeLabel(t, event.status)}</Badge>
+                        ) : null}
                       </div>
                       <div className="text-foreground mt-2 text-sm font-medium">{auditSummary(event)}</div>
                       <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">

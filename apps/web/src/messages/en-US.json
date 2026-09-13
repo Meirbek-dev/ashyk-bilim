@@ -2956,6 +2956,7 @@
       "authors": "Authors",
       "completed": "Done",
       "completedActivities": "{completedActivities} of {totalActivities} completed",
+      "viewCertificate": "View certificate",
       "continueLearning": "Continue Learning",
       "contributeError": "Failed to submit your application. Please try again later.",
       "contributeLoading": "Submitting contributor application...",
@@ -7854,7 +7855,7 @@
       "assessmentColSubmitted": "Awaiting grade",
       "assessmentColStatus": "Status",
       "assessmentPassThresholdExam": "Pass threshold from exam settings",
-      "assessmentPassThresholdDefault": "Pass threshold: 60%",
+      "assessmentPassThreshold": "Pass threshold: {value}%",
       "assessmentStatGenerated": "Generated",
       "assessmentOpsAuditBulkSummary": "{action} for {count, plural, one {# learner} other {# learners}}",
       "assessmentItemAccuracy": "Accuracy {value}%"

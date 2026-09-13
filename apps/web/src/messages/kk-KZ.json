@@ -2970,6 +2970,7 @@
       "authors": "Авторлар",
       "completed": "Дайын",
       "completedActivities": "{totalActivities} белсенділіктің {completedActivities} аяқталды",
+      "viewCertificate": "Сертификатты көру",
       "continueLearning": "Оқуды жалғастыру",
       "contributeError": "Өтінім жіберу мүмкін болмады. Кейінірек қайталап көріңіз.",
       "contributeLoading": "Қатысуға өтінім жіберілуде...",
@@ -7884,7 +7885,7 @@
       "assessmentColSubmitted": "Тапсырылды",
       "assessmentColStatus": "Күй",
       "assessmentPassThresholdExam": "Емтихан параметрлерінен өту шегі",
-      "assessmentPassThresholdDefault": "Өту шегі: 60%",
+      "assessmentPassThreshold": "Өту шегі: {value}%",
       "assessmentStatGenerated": "Қалыптастырылды",
       "assessmentOpsAuditBulkSummary": "{action}: {count} оқушы",
       "assessmentItemAccuracy": "Дәлдік {value}%"

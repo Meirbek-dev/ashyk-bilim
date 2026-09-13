@@ -2969,6 +2969,7 @@
       "authors": "Авторы",
       "completed": "Готово",
       "completedActivities": "Завершено {completedActivities} из {totalActivities}",
+      "viewCertificate": "Просмотреть сертификат",
       "continueLearning": "Продолжить обучение",
       "contributeError": "Не удалось отправить заявку. Пожалуйста, повторите попытку позже.",
       "contributeLoading": "Отправка заявки на участие...",
@@ -7869,7 +7870,7 @@
       "assessmentColSubmitted": "Отправлено",
       "assessmentColStatus": "Статус",
       "assessmentPassThresholdExam": "Проходной порог из настроек экзамена",
-      "assessmentPassThresholdDefault": "Проходной порог: 60%",
+      "assessmentPassThreshold": "Проходной порог: {value}%",
       "assessmentStatGenerated": "Сформировано",
       "assessmentOpsAuditBulkSummary": "{action} для {count, plural, one {# учащегося} few {# учащихся} other {# учащихся}}",
       "assessmentItemAccuracy": "Точность {value}%"

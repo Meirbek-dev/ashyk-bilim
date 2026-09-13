@@ -1,14 +1,6 @@
 'use client'
 
-import {
-  AlertCircle,
-  ArrowRight,
-  Award,
-  BookOpenCheck,
-  CheckCircle2,
-  ClipboardCheck,
-  PlayCircle,
-} from 'lucide-react'
+import { AlertCircle, ArrowRight, Award, BookOpenCheck, CheckCircle2, ClipboardCheck, PlayCircle } from 'lucide-react'
 import { useMemo } from 'react'
 import type React from 'react'
 import { useTranslations } from 'next-intl'
@@ -77,6 +69,11 @@ export function LearnerCourseModules({
         isAuthenticated={isAuthenticated}
         isEnrolled={learnerState?.enrolled ?? isEnrolled}
         nextItem={progress.nextItem}
+        certificateHref={
+          learnerState?.certificate?.issued && learnerState.certificate.href
+            ? getAbsoluteUrl(learnerState.certificate.href)
+            : null
+        }
         onStartCourse={onStartCourse}
         starting={starting}
       />
@@ -97,6 +94,7 @@ function CourseEnrollmentState({
   isAuthenticated,
   isEnrolled,
   nextItem,
+  certificateHref,
   onStartCourse,
   starting,
 }: {
@@ -104,6 +102,7 @@ function CourseEnrollmentState({
   isAuthenticated: boolean
   isEnrolled: boolean
   nextItem: CourseActivityAgendaItem | null
+  certificateHref?: string | null
   onStartCourse?: (() => void) | undefined
   starting?: boolean | undefined
 }) {
@@ -131,7 +130,13 @@ function CourseEnrollmentState({
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:min-w-52">
-          {isEnrolled && nextItem ? (
+          {isEnrolled && !nextItem && certificateHref ? (
+            // BUG-129 follow-up: a completed course leads to the certificate, not «Продолжить».
+            <Button className="w-full" nativeButton={false} render={<AppLink href={certificateHref} />}>
+              <BookOpenCheck data-icon="inline-start" aria-hidden="true" />
+              {t('verifyCertificate')}
+            </Button>
+          ) : isEnrolled && nextItem ? (
             <Button className="w-full" nativeButton={false} render={<AppLink href={nextItem.href} />}>
               <PlayCircle data-icon="inline-start" aria-hidden="true" />
               {t('continue')}
@@ -173,9 +178,7 @@ function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; pr
               <ClipboardCheck className="size-4" />
               {t('agendaTitle')}
             </CardTitle>
-            <CardDescription>
-              {isEnrolled ? t('agendaDescription') : t('agendaLocked')}
-            </CardDescription>
+            <CardDescription>{isEnrolled ? t('agendaDescription') : t('agendaLocked')}</CardDescription>
           </div>
           <Badge variant="outline" className="tabular-nums">
             {progress.completed}/{progress.total}
@@ -211,9 +214,7 @@ function LearnerAgendaModule({ isEnrolled, progress }: { isEnrolled: boolean; pr
                   {item.complete ? <CheckCircle2 className="size-4" /> : item.index + 1}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">
-                    {item.title || t('untitledActivity')}
-                  </span>
+                  <span className="block truncate text-sm font-medium">{item.title || t('untitledActivity')}</span>
                   <span className="text-muted-foreground block truncate text-xs">{item.chapterName}</span>
                 </span>
                 {item.returned ? <Badge variant="destructive">{t('returned')}</Badge> : null}
@@ -246,9 +247,7 @@ function CertificateProgressModule({
           <Award className="size-4" />
           {t('certificateProgress')}
         </CardTitle>
-        <CardDescription>
-          {certificate?.issued ? t('certificateEarned') : t('certificateDescription')}
-        </CardDescription>
+        <CardDescription>{certificate?.issued ? t('certificateEarned') : t('certificateDescription')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -284,11 +283,7 @@ function CertificateProgressModule({
               certificate?.eligible ? LmsStatuses.READY : isEnrolled ? LmsStatuses.IN_PROGRESS : LmsStatuses.LIMITED
             }
             label={
-              certificate?.eligible
-                ? t('certificateCheckPending')
-                : isEnrolled
-                  ? t('inProgress')
-                  : t('notEnrolled')
+              certificate?.eligible ? t('certificateCheckPending') : isEnrolled ? t('inProgress') : t('notEnrolled')
             }
           />
         )}

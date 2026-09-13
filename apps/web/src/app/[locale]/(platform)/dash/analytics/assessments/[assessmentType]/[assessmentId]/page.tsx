@@ -89,7 +89,9 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatPassRate')}
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
-                {detail.summary.pass_rate == null ? t('atRisk.na') : `${format.number(detail.summary.pass_rate, { maximumFractionDigits: 1 })}%`}
+                {detail.summary.pass_rate == null
+                  ? t('atRisk.na')
+                  : `${format.number(detail.summary.pass_rate, { maximumFractionDigits: 1 })}%`}
               </div>
             </div>
             <div className="px-4 py-3">
@@ -97,7 +99,9 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatMedianScore')}
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
-                {detail.summary.median_score == null ? t('atRisk.na') : `${format.number(detail.summary.median_score, { maximumFractionDigits: 1 })}%`}
+                {detail.summary.median_score == null
+                  ? t('atRisk.na')
+                  : `${format.number(detail.summary.median_score, { maximumFractionDigits: 1 })}%`}
               </div>
             </div>
             <div className="px-4 py-3">
@@ -120,7 +124,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           data={detail.score_distribution}
           {...(detail.pass_threshold != null
             ? {
-                thresholdLabel: `${t('pages.assessmentPassThresholdDefault')} ${detail.pass_threshold}%`,
+                thresholdLabel: t('pages.assessmentPassThreshold', { value: detail.pass_threshold }),
               }
             : {})}
           {...(detail.pass_threshold_bucket_label ? { thresholdBucketLabel: detail.pass_threshold_bucket_label } : {})}
