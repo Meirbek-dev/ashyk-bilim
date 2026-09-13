@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import RBACAdminClient from '@/app/_shared/dash/admin/roles/client'
+import { APIError } from '@/lib/api/assertSuccess'
 
 const catalog: Record<string, string> = {
   'roles.admin.name': 'Administrator',
@@ -78,6 +79,11 @@ describe('/dash/admin/roles (v2 Role wire)', () => {
 
     await user.type(input, 'not a grant{Enter}')
     expect(within(dialog).getByText('invalidGrant')).toBeInTheDocument()
+    // well-formed but outside the server vocabulary (UX-043)
+    await user.clear(input)
+    await user.type(input, 'nope:zip:zap{Enter}')
+    expect(within(dialog).getByText('invalidGrant')).toBeInTheDocument()
+    expect(within(dialog).queryByText('nope:zip:zap')).toBeNull()
     expect(setRolePermissions).not.toHaveBeenCalled()
 
     await user.clear(input)
@@ -88,5 +94,25 @@ describe('/dash/admin/roles (v2 Role wire)', () => {
 
     await waitFor(() => expect(setRolePermissions).toHaveBeenCalledWith('ta', ['quiz:*:own']))
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users', 'roles'] }))
+  })
+
+  it('marks the chip a 422 field error names instead of a generic toast', async () => {
+    const user = userEvent.setup()
+    setRolePermissions.mockRejectedValue(
+      new APIError({
+        status: 422,
+        code: 'validation-failed',
+        message: 'Validation failed',
+        fieldErrors: [{ field: 'permissions', code: 'invalid', message: 'course:read:all: unknown Scope: all' }],
+      }),
+    )
+    renderPage()
+    const taRow = (await screen.findByText('Teaching assistant')).closest('tr')!
+    await user.click(within(taRow).getByRole('button', { name: 'permissionsAria' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'save' }))
+
+    expect(await within(dialog).findByText('rejectedGrant')).toBeInTheDocument()
+    expect(within(dialog).getByText('course:read:all')).toHaveAttribute('title', 'rejectedGrant')
   })
 })

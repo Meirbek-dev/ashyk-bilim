@@ -19,6 +19,8 @@ export const Actions = {
   EXPORT: 'export',
   GRADE: 'grade',
   SUBMIT: 'submit',
+  AUTHOR: 'author',
+  PUBLISH: 'publish',
   ENROLL: 'enroll',
 } as const
 
@@ -72,8 +74,21 @@ export type RoleSlug = (typeof RoleSlugs)[keyof typeof RoleSlugs]
 /** Permission string format: "resource:action:scope" */
 export type PermissionString = `${Resource}:${Action}:${Scope}`
 
-/** `resource:action[:scope]`, each segment a lowercase identifier or `*` (matches the server registry). */
-export const GRANT_PATTERN = /^([a-z][a-z0-9_]*|\*):([a-z][a-z0-9_]*|\*)(?::([a-z][a-z0-9_]*|\*))?$/
+const VOCABULARY: readonly (readonly string[])[] = [
+  Object.values(Resources),
+  Object.values(Actions),
+  Object.values(Scopes),
+]
+
+/**
+ * `resource:action[:scope]` where every segment is `*` or a name the server
+ * registry knows (`ab_core::permission`); mirrors `Grant::parse`.
+ */
+export function isKnownGrant(grant: string): boolean {
+  const parts = grant.split(':')
+  if (parts.length < 2 || parts.length > 3) return false
+  return parts.every((part, index) => part === '*' || VOCABULARY[index]!.includes(part))
+}
 
 // ============================================================================
 // Helpers

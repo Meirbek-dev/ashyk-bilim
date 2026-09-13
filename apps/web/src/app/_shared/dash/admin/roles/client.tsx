@@ -40,12 +40,21 @@ import { useSession } from '@/hooks/useSession'
 import type { Role } from '@/lib/api/generated/zod'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { createRole, deleteRole, setRolePermissions, updateRole } from '@/services/rbac'
-import { GRANT_PATTERN, KNOWN_GRANTS } from '@/types/permissions'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { KNOWN_GRANTS, isKnownGrant } from '@/types/permissions'
 
 type RoleDraft = { slug: string; display_name: string; description: string; priority: number }
 
-/** Every role mutation: localized toast, dialogs closed, role list refetched; errors go through problem+json. */
-function useRoleMutation<TVars>(mutationFn: (vars: TVars) => Promise<void>, success: string, onDone: () => void) {
+/**
+ * Every role mutation: localized toast, dialogs closed, role list refetched; errors go through
+ * problem+json unless `onError` reports it handled the failure inline.
+ */
+function useRoleMutation<TVars>(
+  mutationFn: (vars: TVars) => Promise<void>,
+  success: string,
+  onDone: () => void,
+  onError?: (error: unknown) => boolean,
+) {
   const queryClient = useQueryClient()
   const { toastApiError } = useApiError()
   return useMutation({
@@ -55,8 +64,16 @@ function useRoleMutation<TVars>(mutationFn: (vars: TVars) => Promise<void>, succ
       onDone()
       await queryClient.invalidateQueries({ queryKey: queryKeys.users.roles() })
     },
-    onError: error => toastApiError(error),
+    onError: error => {
+      if (!onError?.(error)) toastApiError(error)
+    },
   })
+}
+
+/** Grants a 422 rejected: one `permissions` field error per grant, message `<grant>: …`. */
+function rejectedGrants(error: unknown): string[] {
+  if (!isApiError(error)) return []
+  return error.fieldErrors.filter(item => item.field === 'permissions').map(item => item.message.split(': ')[0]!)
 }
 
 export default function RBACAdminClient() {
@@ -72,6 +89,7 @@ export default function RBACAdminClient() {
 
   const [editing, setEditing] = useState<Role | 'new' | null>(null)
   const [grantsFor, setGrantsFor] = useState<Role | null>(null)
+  const [rejected, setRejected] = useState<string[]>([])
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null)
   const closeDialogs = () => {
     setEditing(null)
@@ -85,6 +103,11 @@ export default function RBACAdminClient() {
     ({ slug, permissions }: { slug: string; permissions: string[] }) => setRolePermissions(slug, permissions),
     t('permissionsSaved'),
     closeDialogs,
+    error => {
+      const grants = rejectedGrants(error)
+      setRejected(grants)
+      return grants.length > 0
+    },
   )
 
   return (
@@ -179,7 +202,10 @@ export default function RBACAdminClient() {
                               variant="ghost"
                               size="icon"
                               aria-label={t('permissionsAria', { roleName: roleName(role) })}
-                              onClick={() => setGrantsFor(role)}
+                              onClick={() => {
+                                setRejected([])
+                                setGrantsFor(role)
+                              }}
                             >
                               <KeyRound className="h-4 w-4" />
                             </Button>
@@ -225,6 +251,7 @@ export default function RBACAdminClient() {
               role={grantsFor}
               title={t('managePermissionsTitle', { roleName: roleName(grantsFor) })}
               vocabulary={[...new Set([...KNOWN_GRANTS, ...roles.flatMap(role => role.permissions)])].toSorted()}
+              rejected={rejected}
               pending={saveGrants.isPending}
               onCancel={() => setGrantsFor(null)}
               onSubmit={permissions => saveGrants.mutate({ slug: grantsFor.slug, permissions })}
@@ -357,6 +384,7 @@ function GrantsForm({
   role,
   title,
   vocabulary,
+  rejected,
   pending,
   onCancel,
   onSubmit,
@@ -364,6 +392,8 @@ function GrantsForm({
   role: Role
   title: string
   vocabulary: string[]
+  /** Grants the server rejected on the last save (rendered on their chips). */
+  rejected: string[]
   pending: boolean
   onCancel: () => void
   onSubmit: (permissions: string[]) => void
@@ -376,7 +406,7 @@ function GrantsForm({
 
   const add = () => {
     const grant = draft.trim()
-    if (!GRANT_PATTERN.test(grant)) return setInvalid(true)
+    if (!isKnownGrant(grant)) return setInvalid(true)
     setGrants(prev => (prev.includes(grant) ? prev : [...prev, grant]))
     setDraft('')
     setInvalid(false)
@@ -391,7 +421,12 @@ function GrantsForm({
       <div className="flex flex-wrap gap-1 py-2">
         {grants.length === 0 && <p className="text-muted-foreground text-sm">{t('noGrants')}</p>}
         {grants.map(grant => (
-          <Badge key={grant} variant="outline" className="gap-1 pr-1 font-mono">
+          <Badge
+            key={grant}
+            variant={rejected.includes(grant) ? 'destructive' : 'outline'}
+            className="gap-1 pr-1 font-mono"
+            title={rejected.includes(grant) ? t('rejectedGrant', { grant }) : undefined}
+          >
             {grant}
             <button
               type="button"
@@ -404,6 +439,13 @@ function GrantsForm({
           </Badge>
         ))}
       </div>
+      {rejected
+        .filter(grant => grants.includes(grant))
+        .map(grant => (
+          <p key={grant} className="text-destructive text-xs">
+            {t('rejectedGrant', { grant })}
+          </p>
+        ))}
       <div className="flex items-start gap-2">
         <div className="grid flex-1 gap-1">
           {/* Native datalist: suggestions from the vocabulary, free text kept as typed (a combobox would clear it on close). */}
