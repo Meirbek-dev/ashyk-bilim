@@ -175,7 +175,7 @@ Regenerate this survey with `scratchpad/drift.py`.
 
 | pass | date | features probed | bugs found/fixed | gate | commit |
 |---|---|---|---|---|---|
-| 11 | 2026-09-13 | **in progress** — full sweep, scopes A+B+C on every non-blocked row (F01–F57 minus F14) in six clusters: identity, learner catalog/course, learner assessments, teacher authoring, teacher grading/AI, analytics/admin; stale rows first (F08 F47 F54 from 0946a2a) | — | — | — |
+| 11 | 2026-09-13 | **full sweep, scopes A+B+C on all 56 non-blocked rows** in six critic clusters (identity, learner course, learner assessments, teacher authoring, teacher grading/AI, analytics/admin): 621 server branches inventoried, 255 uncovered (97 on money/grade/permission/deadline paths → findings or test tasks in `critic11/*/branches.md`); 14 builder batches; four re-verifiers flipped every row (F14 stays blocked). Machine restart mid-pass: stack + accounts rebuilt. | BUG-092..129 (38) found, all fixed; UX-015..049 (35) found, all fixed; BUG-010 closed | `just check` green, nextest **347/347**, web typecheck 0, vitest **705/705**, error-codes 34/34 ×3, e2e **93 passed / 2 skipped** | see pass 11 commits |
 | 0 | 2026-09-10 | setup only: stack, accounts, ledger | — | — | e654349 |
 | 10 | 2026-09-13 | confirmation critic on the five pass-9 fails (R1–R10): all pass; two late gaps fixed (reporter learner-state 403, link-preview refetch on learner view) | BUG-089..090 fixed | e2e 92/2 skipped (07 string fixed), vitest 681/681, typecheck 0, error-codes 32/32; nextest 319/319, `just check` green | 0946a2a |
 | 9 | 2026-09-12/13 | **contract phase** — owner answered every QUESTIONS item (DECISIONS "Owner answers"): wave 1 (identity, catalog, grading) + wave 2 (analytics/jobs/ETL, certificates/AI/link-preview, RBAC/kk polyfill/localization sweep) landed F41–F55; three critics re-drove the new features + a learner regression sweep (24/29 pass); three polish builders closed the fails and ~40 nits | BUG-084..088 found and fixed | e2e 92/2 skipped, vitest 681/681, typecheck 0, error-codes 32/32; nextest 319/319, deny/machete green, CI green (34683118190) | 6167ef4 |
@@ -228,11 +228,11 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 11 (reverify-C): bad params → not-found page; drilldown ru/kz clean; heading case fixed 843e662 |
 | F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 11 (reverify-C): watchlist dialog, focus return, no uuid line; unknown intervention user → 422 |
 | F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 11 (reverify-C): at-risk.csv + grading-backlog.csv, learner 403, out-of-scope 403 |
-| F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | fail | pass 11 (reverify-B) on /ru; **fail** on /kz — web sent `language: auto` (fixed 11cb90f, needs re-drive) |
+| F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | pass | pass 11 (reverify-D): ru «…еще не включены…», kz «…әлі қосылмаған…» |
 | F36 | AI agent: lecture authoring critique | `/dash/courses/[uuid]` | teacher | pass | pass 11 (reverify-B): course analysis accept + gate checkbox + «Оценка качества опубликована»; unknown language/finding → 422 |
 | F37 | AI agents: remaining 4 | assorted | teacher | pass | pass 11 (reverify-B): file/quiz analysis, feedback draft, remediation card; gate mode blocks the learner (REMEDIATION_REQUIRED) |
 | F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 11 (reverify-C): users create/dup/assign/remove, self-row 0 buttons; unknown user role assign → 404 |
-| F39 | usergroups | `/dash/users/settings/usergroups` | admin | fail | pass 11 (reverify-C) CRUD; **fail** — raw `membersHeader` key + count stale until reload (fixed 843e662, needs re-drive) |
+| F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 11 (reverify-D): create/link/unlink/edit/delete toasts; «Участники» 0→1→0 live; kz/en headers |
 | F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 11 (reverify-A): rename, blank name → 422 inline, avatar; localized field labels (route is `settings/general`, no `profile` page) |
 | F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 11 (reverify-A): policy error inline (ru/kz), verify keeps the email after a wrong code, upper-case email variant → 409 |
 | F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 11 (reverify-A): same-password → 422 inline, real policy hint, sessions list refreshed |
@@ -246,7 +246,7 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 11 (reverify-B): «Верно / Ответ не дан / 10 / 10 / 0 / 9» ru+kz, one number format |
 | F51 | matching items (learner body) | quiz attempt + review | learner+teacher | pass | pass 11 (reverify-B): learner body left/right only; review shows pairs |
 | F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 11 (reverify-B): `certificate-NRWF-….pdf`, kz label, locale verify link |
-| F53 | AI on file-submission attempts | file review page | teacher | pass | pass 11 (reverify-B): file review save/publish/return toasts, inline score errors, AI draft — layout at 1280 px pending UX-048 |
+| F53 | AI on file-submission attempts | file review page | teacher | pass | pass 11 (reverify-B): file review save/publish/return toasts, inline score errors, AI draft; 1280 px stacked (reverify-D) |
 | F54 | link preview block | lecture editor | teacher | pass | pass 11 (reverify-A): one request per URL (no retry, no refetch on reload), inline scheme validation, cancel leaves nothing |
 | F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 11 (reverify-C): localized sentences, zero console errors, kz/en |
 | F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 11 (reverify-C): kz dates «13.09.2026, 17:37:03», no «M09», no hydration errors |
