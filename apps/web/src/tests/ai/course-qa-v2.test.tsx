@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/ag-ui-transport', () => ({ createAGUIAgent: mocks.createAGUIAgent }))
 vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
+vi.mock('next-intl', () => ({ useLocale: () => 'kk-KZ' }))
 
 import { useQAThread } from '@/features/course-qa/api/use-ask-question'
 import { useCourseQAChat } from '@/features/course-qa/api/use-course-qa-chat'
@@ -67,7 +68,7 @@ describe('course Q&A on the v2 wire', () => {
 
     expect(mocks.runAgent).toHaveBeenCalledWith(
       expect.objectContaining({
-        forwardedProps: expect.objectContaining({ activity_id: 'act-1', thread_id: null, language: 'auto' }),
+        forwardedProps: expect.objectContaining({ activity_id: 'act-1', thread_id: null, language: 'kk' }),
       }),
       expect.anything(),
     )

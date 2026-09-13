@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { aiLanguageFor } from '@/i18n/config'
 import { SendIcon } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group'
@@ -36,6 +37,7 @@ function StudyCompanionPanelInner({
   initialMode: StudyCompanionMode
 }) {
   const t = useTranslations('AiExperience.studyCompanion')
+  const locale = useLocale()
   const [question, setQuestion] = useState('')
   const [mode, setMode] = useState<StudyCompanionMode>(initialMode)
   const queue = useQueueStudyCompanion(courseUuid)
@@ -63,7 +65,7 @@ function StudyCompanionPanelInner({
             <InputGroupAddon align="block-end">
               <InputGroupButton
                 onClick={() => {
-                  void run.start({ question, mode, language: 'auto' }).then(() => setQuestion(''))
+                  void run.start({ question, mode, language: aiLanguageFor(locale) }).then(() => setQuestion(''))
                 }}
                 disabled={!question.trim() || run.pending}
               >

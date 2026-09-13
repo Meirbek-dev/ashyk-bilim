@@ -1,5 +1,8 @@
 'use client'
 
+import { useLocale } from 'next-intl'
+import { aiLanguageFor } from '@/i18n/config'
+
 import { useCallback, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -53,6 +56,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
   const abortRef = useRef<AbortController | null>(null)
   const lastTurnRef = useRef<{ clientTurnId: string; question: string } | null>(null)
   const [snapshot, setSnapshot] = useState(initialSnapshot)
+  const locale = useLocale()
 
   const submit = useCallback(
     async (rawQuestion: string, retryClientTurnId?: string) => {
@@ -66,7 +70,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
       const forwardedProps: QaForwardedProps = {
         activity_id: activityUuid || null,
         client_turn_id: clientTurnId,
-        language: 'auto',
+        language: aiLanguageFor(locale),
         thread_id: threadUuid || null,
       }
       agent.setMessages([{ id: clientTurnId, role: 'user', content: question }])

@@ -1,8 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
+import { aiLanguageFor } from '@/i18n/config'
 import { BrainCircuit, FilePenLine, RefreshCw, Route } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,6 +33,7 @@ export function SubmissionAIEntry({
   submissionUuid: string | null
 }) {
   const t = useTranslations('AiExperience.submissionAIEntry')
+  const locale = useLocale()
   const latest = useLatestSubmissionAnalysis(submissionUuid ?? '')
   const queueAnalysis = useQueueSubmissionAnalysis(submissionUuid ?? '')
   const run = useAIRunController({
@@ -99,7 +101,7 @@ export function SubmissionAIEntry({
           className="w-full"
           variant="secondary"
           disabled={remediation.pending || !latest.data}
-          onClick={() => void remediation.start({ gate_mode: true, language: 'auto' })}
+          onClick={() => void remediation.start({ gate_mode: true, language: aiLanguageFor(locale) })}
         >
           <Route data-icon="inline-start" aria-hidden="true" />
           {t('generateGate')}
