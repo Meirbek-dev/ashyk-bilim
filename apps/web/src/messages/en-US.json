@@ -8092,7 +8092,8 @@
       "none": "No intervention",
       "riskDescription": "{course} · risk {score} · {level}",
       "draftTemplate": "Goal: reduce the risk for {learner} in {course}.\nRisk drivers: {reasons}.\nTeacher action: {action}.\nSupport plan: assign a short catch-up task, message the learner with one concrete next step, and review progress after the next activity.",
-      "needsReview": "needs teacher review"
+      "needsReview": "needs teacher review",
+      "completed": "Last intervention completed"
     }
   },
   "Features": {
