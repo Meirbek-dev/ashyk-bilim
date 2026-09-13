@@ -419,7 +419,7 @@ impl SubmissionsService {
         let total = ab_db::assessments::count_items(&self.pool, assessment_id).await?;
         Ok(Some(
             self.student_view(draft, &state.effective, usize::try_from(total).unwrap_or(0))
-            .await?,
+                .await?,
         ))
     }
 
@@ -438,10 +438,7 @@ impl SubmissionsService {
                 .await?;
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(
-                self.student_view(row, &state.effective, total)
-                    .await?,
-            );
+            out.push(self.student_view(row, &state.effective, total).await?);
         }
         Ok(out)
     }
@@ -461,8 +458,7 @@ impl SubmissionsService {
             ab_db::assessments::count_items(&self.pool, submission.assessment_id).await?,
         )
         .unwrap_or(0);
-        self.student_view(submission, &state.effective, total)
-            .await
+        self.student_view(submission, &state.effective, total).await
     }
 
     // ── Lifecycle ───────────────────────────────────────────────────────
@@ -511,9 +507,7 @@ impl SubmissionsService {
         let total =
             usize::try_from(ab_db::assessments::count_items(&self.pool, assessment_id).await?)
                 .unwrap_or(0);
-        let submission = self
-            .student_view(draft, &state.effective, total)
-            .await?;
+        let submission = self.student_view(draft, &state.effective, total).await?;
         self.projector
             .after_submission(assessment_id, actor.user_id)
             .await;
@@ -624,8 +618,7 @@ impl SubmissionsService {
             .after_submission(fresh.assessment_id, fresh.user_id)
             .await;
         let total = ctx.items.len();
-        self.student_view(fresh, &ctx.effective, total)
-            .await
+        self.student_view(fresh, &ctx.effective, total).await
     }
 
     fn merge(ctx: &Context, patch: Answers) -> Result<Answers> {

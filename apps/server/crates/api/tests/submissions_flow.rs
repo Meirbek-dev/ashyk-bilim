@@ -470,7 +470,11 @@ async fn review_visibility_redacts_the_learner_breakdown(pool: PgPool) {
             assert!(item.get("feedback_code").is_none(), "{visibility}: {item}");
             assert_eq!(item["feedback"], "", "{visibility}: {item}");
         } else {
-            assert!(body["grading"].is_null(), "{visibility}: {}", body["grading"]);
+            assert!(
+                body["grading"].is_null(),
+                "{visibility}: {}",
+                body["grading"]
+            );
         }
         // The grader's read is untouched.
         let graded = app

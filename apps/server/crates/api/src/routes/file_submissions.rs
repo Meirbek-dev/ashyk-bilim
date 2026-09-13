@@ -312,8 +312,8 @@ pub async fn submit(
         .await?;
     let dto = Attempt::from(submitted);
     if let Some(key) = &key {
-        let value = serde_json::to_value(&dto)
-            .map_err(|err| Error::internal("serialize attempt", err))?;
+        let value =
+            serde_json::to_value(&dto).map_err(|err| Error::internal("serialize attempt", err))?;
         ab_db::submissions::store_idempotent(
             &state.pool,
             actor.user_id,
