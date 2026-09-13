@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 import type React from 'react'
 import { compressImage } from '@/lib/image-compression'
 
-const MAX_FILE_SIZE = 8_000_000 // 8MB (the `course-thumbnail` upload policy caps at 10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // the server's `course-thumbnail` upload policy
 const REQUIRED_IMAGE_ASPECT_RATIO = 16 / 9
 const IMAGE_ASPECT_RATIO_TOLERANCE = 0.01
 const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'] as const

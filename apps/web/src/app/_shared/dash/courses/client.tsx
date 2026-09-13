@@ -631,7 +631,7 @@ function CoursesHome({
           </div>
 
           <div className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">
-            {t('resultsSummary', {
+            {t(hasQuery ? 'resultsSummaryWithQuery' : 'resultsSummary', {
               visible: optimisticCourses.length,
               total: totalCourses,
             })}
@@ -643,11 +643,13 @@ function CoursesHome({
           <div className="bg-card rounded-2xl border border-dashed py-16 shadow-2xs">
             <div className="flex items-center justify-center">
               <div className="max-w-sm space-y-4 px-4 text-center">
-                <h2 className="text-foreground text-xl font-bold">{t('empty.title')}</h2>
+                <h2 className="text-foreground text-xl font-bold">
+                  {hasQuery ? t('empty.titleWithQuery', { query: searchQuery }) : t('empty.title')}
+                </h2>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   {hasQuery ? t('empty.withQuery') : t('empty.withoutQuery')}
                 </p>
-                {canCreateCourse ? (
+                {canCreateCourse && !hasQuery ? (
                   <div className="flex justify-center pt-2">
                     <Button
                       size="sm"

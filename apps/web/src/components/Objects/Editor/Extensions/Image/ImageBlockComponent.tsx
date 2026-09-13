@@ -93,8 +93,9 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
         return
       }
 
-      // Validate file type
-      if (!selectedFile.type.startsWith('image/')) {
+      // Exact allowlist (the server's `block-image` policy): `image/*` would
+      // let a dropped SVG through — `accept` is only a hint for drag-and-drop.
+      if (!SUPPORTED_FILES.split(',').includes(selectedFile.type)) {
         setError(t('invalidImageFile'))
         return
       }

@@ -3,6 +3,7 @@
 import { useActivityAutosave } from '@/hooks/useActivityAutosave'
 
 import { PlatformContextProvider } from '@/components/Contexts/PlatformContext'
+import { stripEmptyFileBlocks } from '@components/Objects/Editor/core'
 import type { ActivityRef } from '@components/Objects/Editor/core'
 import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
@@ -38,8 +39,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
     if (activityAutosave.saveStatus === 'conflict') return
     const { activity } = props
 
-    const plainContent = structuredClone(content)
-    const updatedActivity = { ...activity, content: plainContent }
+    const updatedActivity = { ...activity, content: stripEmptyFileBlocks(structuredClone(content)) }
 
     toast.promise(activityAutosave.flush(updatedActivity), {
       loading: t('saving'),
@@ -72,9 +72,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
           activity={props.activity}
           content={props.content}
           onContentChange={content => {
-            const plainContent = structuredClone(content)
-            const updatedActivity = { ...props.activity, content: plainContent }
-            activityAutosave.onChange(updatedActivity)
+            activityAutosave.onChange({ ...props.activity, content: stripEmptyFileBlocks(structuredClone(content)) })
           }}
           saveState={activityAutosave.saveStatus}
           setContent={setContent}

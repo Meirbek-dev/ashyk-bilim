@@ -30,7 +30,8 @@ import { getSubmissionViolations } from '@/features/grading/domain/types'
 import type { ReleaseState, Submission, SubmissionStatus } from '@/features/grading/domain'
 import { submissionStatsQueryOptions, submissionsQueryOptions } from '@/features/grading/queries/grading.query'
 import { cn } from '@/lib/utils'
-import { apiBody, apiJson } from '@/lib/api-client'
+import { itemAnalytics as fetchItemAnalytics } from '@/lib/api/generated/grading/grading'
+import { apiBody } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import Link from '@components/ui/AppLink'
 import { Badge } from '@/components/ui/badge'
@@ -42,21 +43,12 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { countItemActionPrompts, getItemActionPrompt, summarizeIntegrityEvents } from './operateViewUtils'
 
-interface ItemAnalytics {
-  item_uuid: string
-  title: string
-  kind: string
-  max_score: number
-  response_count: number
-  avg_score_pct: number | null
-  correct_pct: number | null
-  discrimination_index: number | null
-}
-
 const itemAnalyticsQueryOptions = (assessmentUuid: string) =>
   queryOptions({
     queryKey: queryKeys.assessments.itemAnalytics(assessmentUuid),
-    queryFn: () => apiJson<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`),
+    // The generated fetcher: the row key is `item_id` (UX-058 — a hand-rolled
+    // `item_uuid` type left every row keyed `undefined`).
+    queryFn: () => fetchItemAnalytics(assessmentUuid),
     staleTime: 30_000,
   })
 
@@ -461,9 +453,9 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                   <TableBody className="divide-y">
                     {itemAnalytics.map((item, index) => {
                       const prompt = getItemActionPrompt(item)
-                      const marked = regradeCandidates.has(item.item_uuid)
+                      const marked = regradeCandidates.has(item.item_id)
                       return (
-                        <TableRow key={item.item_uuid} className="hover:bg-muted/20 transition-colors">
+                        <TableRow key={item.item_id} className="hover:bg-muted/20 transition-colors">
                           <TableCell className="text-muted-foreground px-4 py-2.5">{index + 1}</TableCell>
                           <TableCell className="max-w-[280px] truncate px-4 py-2.5 font-medium" title={item.title}>
                             {item.title || '--'}
@@ -473,10 +465,10 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.response_count}</TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.correct_pct !== null ? <PercentBadge value={item.correct_pct} /> : '--'}
+                            {typeof item.correct_pct === 'number' ? <PercentBadge value={item.correct_pct} /> : '--'}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.discrimination_index !== null ? (
+                            {typeof item.discrimination_index === 'number' ? (
                               <DiscriminationBadge value={item.discrimination_index} />
                             ) : (
                               '--'
@@ -494,8 +486,8 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                               onClick={() => {
                                 setRegradeCandidates(current => {
                                   const next = new Set(current)
-                                  if (next.has(item.item_uuid)) next.delete(item.item_uuid)
-                                  else next.add(item.item_uuid)
+                                  if (next.has(item.item_id)) next.delete(item.item_id)
+                                  else next.add(item.item_id)
                                   return next
                                 })
                               }}
