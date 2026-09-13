@@ -439,9 +439,11 @@ export default function FileSubmissionReviewWorkspace({
         ) : null}
       </aside>
 
-      <main className="p-4 lg:p-6">
+      <main className="@container/review p-4 lg:p-6">
         {selected ? (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          // Container query, not a viewport breakpoint: the shell sidebar and
+          // the submission list eat ~620px, so at 1280px the aside must stack.
+          <div className="grid gap-6 @[44rem]/review:grid-cols-[minmax(0,1fr)_360px]">
             <section className="space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
