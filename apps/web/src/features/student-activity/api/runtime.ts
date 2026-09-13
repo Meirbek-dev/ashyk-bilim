@@ -21,7 +21,7 @@ export type StudentActivityState =
   | 'attempt_exhausted'
   | 'course_end'
 
-export type StudentActivityActionRequest = {
+export interface StudentActivityActionRequest {
   command: 'mark_complete' | 'unmark_complete'
   payload?: Record<string, unknown>
 }
@@ -112,6 +112,15 @@ function toNavItem(activity: OutlineActivity): RuntimeNavItem {
   }
 }
 
+const VIEW_STATES = new Set<StudentActivityState>([
+  'submitted',
+  'needs_grading',
+  'graded_hidden',
+  'published',
+  'passed',
+  'failed',
+])
+
 function primaryAction(current: OutlineActivity, next: RuntimeNavItem | null): StudentActivityRuntime['primary_action'] {
   if (!current.available || current.state === 'locked') {
     return {
@@ -120,7 +129,10 @@ function primaryAction(current: OutlineActivity, next: RuntimeNavItem | null): S
       ...(current.blocked_reason === undefined ? {} : { reason: current.blocked_reason }),
     }
   }
-  if (current.complete) {
+  // A hand-in, a pending grade or a released result is this page's content:
+  // «Посмотреть квитанцию» / «Смотреть результат» had nothing to open (UX-033),
+  // so the bar moves the learner on instead.
+  if (current.complete || VIEW_STATES.has(current.state)) {
     return next
       ? { id: 'next_activity', enabled: next.published && next.state !== 'locked', target_activity_uuid: next.uuid }
       : { id: 'back_to_course', enabled: true }
@@ -130,16 +142,10 @@ function primaryAction(current: OutlineActivity, next: RuntimeNavItem | null): S
   }
   const actionByState: Partial<Record<StudentActivityState, StudentActivityRuntime['primary_action']['id']>> = {
     in_progress: 'continue',
-    submitted: 'view_receipt',
-    needs_grading: 'view_receipt',
-    graded_hidden: 'review_policy',
-    published: 'view_feedback',
     returned: 'revise',
-    passed: 'view_feedback',
-    failed: 'view_feedback',
   }
   const id = actionByState[current.state] ?? 'start'
-  return { id, enabled: current.allowed_actions.includes(id === 'review_policy' ? 'view_receipt' : id) }
+  return { id, enabled: current.allowed_actions.includes(id) }
 }
 
 /** `null` when the activity is not in the learner outline (unpublished or foreign). */
@@ -154,7 +160,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     chapter.activities.map((activity, index) => ({ activity, chapter, index })),
   )
   const currentIndex = flat.findIndex(item => item.activity.id === activityId)
-  const currentEntry = currentIndex >= 0 ? flat[currentIndex] : undefined
+  const currentEntry = currentIndex !== -1 ? flat[currentIndex] : undefined
   if (!currentEntry) return null
 
   const { activity, chapter, index } = currentEntry
