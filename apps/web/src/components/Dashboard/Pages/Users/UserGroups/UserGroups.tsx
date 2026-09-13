@@ -142,6 +142,11 @@ function UserGroups() {
       cell: ({ row }) => row.original.description || '—',
     },
     {
+      accessorKey: 'member_count',
+      header: t('membersHeader'),
+      cell: ({ row }) => <span className="tabular-nums">{row.original.member_count}</span>,
+    },
+    {
       id: 'manageUsers',
       header: t('manageUsersHeader'),
       enableSorting: false,
