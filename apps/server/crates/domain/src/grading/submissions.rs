@@ -238,10 +238,13 @@ fn redact_grading(
                 item.correct = None;
                 item.correct_answer = serde_json::Value::Null;
                 // An auto verdict (coded) says right/wrong; teacher prose stays.
-                if item.feedback_code.take().is_some() {
-                    item.feedback.clear();
+                // The code runner's «n/m tests passed» is the result itself, not a key.
+                if item.feedback_code.as_deref() != Some("tests-passed") {
+                    if item.feedback_code.take().is_some() {
+                        item.feedback.clear();
+                    }
+                    item.feedback_params = None;
                 }
-                item.feedback_params = None;
             }
             Some(grading)
         }
