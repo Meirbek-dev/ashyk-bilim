@@ -27,7 +27,7 @@ import { queryKeys } from '@/lib/react-query/queryKeys'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
-import { isAnswered as isItemAnswered, matchingColumns } from '@/features/assessments/domain/items'
+import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList'
@@ -38,27 +38,10 @@ import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAsse
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import ExamQuestionNavigation, { ExamQuestionNavigationMobile } from './ExamQuestionNavigation'
-import { getOrderedExamQuestions } from './questionOrder'
 import { Progress } from '@components/ui/progress'
 import type { KindAttemptProps } from '../index'
 import ExamQuestionCard from './ExamQuestionCard'
 import ExamSubmitDialog from './ExamSubmitDialog'
-
-interface QuestionData {
-  id: string
-  question_uuid: string
-  question_text: string
-  question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING'
-  points: number
-  explanation?: string
-  answer_options: {
-    text: string
-    is_correct?: boolean
-    left?: string
-    right?: string
-    option_id?: string | number
-  }[]
-}
 
 export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps) {
   const t = useTranslations('Activities.ExamActivity')
@@ -68,7 +51,8 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
   const [isStarting, setIsStarting] = useState(false)
   const policy = vm?.policy ?? DEFAULT_POLICY_VIEW
   const assessmentUuid = vm?.assessmentUuid ?? null
-  const questions = useMemo(() => buildExamQuestions(vm?.items ?? []), [vm?.items])
+  // Every item the server returns is a question — no kind filter (BUG-110).
+  const questions = vm?.items ?? []
 
   const handleComplete = useCallback(async () => {
     await Promise.allSettled([
@@ -298,7 +282,7 @@ function ExamTakingContent({
   historyItems,
 }: {
   title: string
-  questions: QuestionData[]
+  questions: AssessmentItem[]
   submissionState: ReturnType<typeof useAssessmentSubmission>
   attempt: NonNullable<ReturnType<typeof useAssessmentSubmission>['draft']>
   policy: typeof DEFAULT_POLICY_VIEW
@@ -385,7 +369,7 @@ function ExamTakingContent({
     onRestore: handleRestoreAnswers,
   })
 
-  const orderedQuestions = useMemo(() => getOrderedExamQuestions(questions, null), [questions])
+  const orderedQuestions = questions
 
   // Track which question is in view when in SCROLL mode
   useEffect(() => {
@@ -406,21 +390,6 @@ function ExamTakingContent({
     return () => observers.forEach(obs => obs.disconnect())
   }, [viewMode, orderedQuestions])
   const currentQuestion = orderedQuestions[currentIndex]
-  const questionById = useMemo(
-    () => new Map(orderedQuestions.map(question => [question.id, question])),
-    [orderedQuestions],
-  )
-
-  const displayAnswers = useMemo(() => {
-    const next: Record<string, unknown> = {}
-    for (const question of orderedQuestions) {
-      const answer = submissionState.answers[question.id]
-      if (!answer) continue
-      next[question.id] = toExamAnswer(question, answer)
-    }
-    return next
-  }, [orderedQuestions, submissionState.answers])
-
   const isAnswered = useCallback(
     (questionId: string) => isItemAnswered(submissionState.answers[questionId]),
     [submissionState.answers],
@@ -438,15 +407,9 @@ function ExamTakingContent({
 
   const progress = orderedQuestions.length > 0 ? (answeredCount / orderedQuestions.length) * 100 : 0
 
-  const handleAnswerChange = (questionId: string, answer: unknown) => {
-    const question = questionById.get(questionId)
-    if (!question) return
-    const canonicalAnswer = fromExamAnswer(question, answer)
-    submissionState.setItemAnswer(question.id, canonicalAnswer)
-    persistence.saveAnswers({
-      ...submissionState.answers,
-      [question.id]: canonicalAnswer,
-    })
+  const handleAnswerChange = (itemId: string, answer: ItemAnswer) => {
+    submissionState.setItemAnswer(itemId, answer)
+    persistence.saveAnswers({ ...submissionState.answers, [itemId]: answer })
   }
 
   const handleOpenSubmitConfirmation = useCallback(() => {
@@ -698,9 +661,9 @@ function ExamTakingContent({
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="space-y-6">
             <ExamQuestionCard
-              question={currentQuestion}
+              item={currentQuestion}
               questionNumber={currentIndex + 1}
-              answer={displayAnswers}
+              answer={submissionState.answers[currentQuestion.id]}
               isFlagged={flaggedIndexes.has(currentIndex)}
               onAnswerChange={handleAnswerChange}
               onToggleFlag={() => toggleFlag(currentIndex)}
@@ -734,9 +697,9 @@ function ExamTakingContent({
                 )}
               >
                 <ExamQuestionCard
-                  question={question}
+                  item={question}
                   questionNumber={index + 1}
-                  answer={displayAnswers}
+                  answer={submissionState.answers[question.id]}
                   isFlagged={flaggedIndexes.has(index)}
                   onAnswerChange={handleAnswerChange}
                   onToggleFlag={() => toggleFlag(index)}
@@ -792,7 +755,7 @@ function ExamTakingContent({
         answeredCount={answeredCount}
         flaggedCount={flaggedIndexes.size}
         unansweredQuestions={orderedQuestions
-          .map((q, i) => ({ index: i, id: q.id, question_text: q.question_text }))
+          .map((q, i) => ({ index: i, id: q.id, question_text: q.body.prompt }))
           .filter(q => !isAnswered(q.id))}
         isSubmitting={submissionState.isSubmitting}
         onNavigateTo={index => {
@@ -816,52 +779,6 @@ function ExamTakingContent({
       />
     </div>
   )
-}
-
-function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
-  return items.reduce<QuestionData[]>((questions, item) => {
-    const { body } = item
-
-    if (body.kind === 'CHOICE') {
-      questions.push({
-        id: item.item_uuid,
-        question_uuid: item.item_uuid,
-        question_text: body.prompt,
-        question_type:
-          body.variant === 'TRUE_FALSE' ? 'TRUE_FALSE' : body.multiple ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
-        points: item.max_score,
-        ...(body.explanation === null || body.explanation === undefined ? {} : { explanation: body.explanation }),
-        answer_options: body.options.map(option => ({
-          text: option.text,
-          is_correct: option.is_correct,
-          option_id: option.id,
-        })),
-      })
-      return questions
-    }
-
-    if (body.kind === 'MATCHING') {
-      questions.push({
-        id: item.item_uuid,
-        question_uuid: item.item_uuid,
-        question_text: body.prompt,
-        question_type: 'MATCHING',
-        points: item.max_score,
-        ...(body.explanation === null || body.explanation === undefined ? {} : { explanation: body.explanation }),
-        // Rows are the left column, the select's options the right one (server
-        // order — shuffled on the learner read); the pairing is never on the wire.
-        answer_options: (({ left, right }) =>
-          left.map((option, index) => ({
-            text: '',
-            left: option.id,
-            right: right[index]?.id ?? '',
-            option_id: String(index),
-          })))(matchingColumns(body)),
-      })
-    }
-
-    return questions
-  }, [])
 }
 
 function ExamSubmissionStatePanel({
@@ -939,33 +856,4 @@ function formatDateTime(value: string): string {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date)
-}
-
-function toExamAnswer(question: QuestionData, answer: ItemAnswer): unknown {
-  if (question.question_type === 'MATCHING' && answer.kind === 'MATCHING') {
-    return Object.fromEntries(answer.matches.map(pair => [pair.left, pair.right]))
-  }
-
-  if (answer.kind !== 'CHOICE') return null
-  if (question.question_type === 'MULTIPLE_CHOICE') return answer.selected
-  return answer.selected[0] ?? null
-}
-
-function fromExamAnswer(question: QuestionData, answer: unknown): ItemAnswer {
-  if (question.question_type === 'MATCHING') {
-    const matches =
-      answer && typeof answer === 'object' && !Array.isArray(answer)
-        ? Object.entries(answer as Record<string, string>)
-            .filter(([, right]) => typeof right === 'string' && right.length > 0)
-            .map(([left, right]) => ({ left, right }))
-        : []
-    return { kind: 'MATCHING', matches }
-  }
-
-  const selected = Array.isArray(answer)
-    ? answer.map(String)
-    : answer === null || answer === undefined || answer === ''
-      ? []
-      : [String(answer)]
-  return { kind: 'CHOICE', selected }
 }

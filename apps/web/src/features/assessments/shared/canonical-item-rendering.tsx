@@ -17,13 +17,11 @@ export function CanonicalAttemptItem({
   item,
   answer,
   disabled,
-  assessmentUuid: _assessmentUuid,
   onChange,
 }: {
   item: AssessmentItem
   answer: ItemAnswer | undefined
   disabled: boolean
-  assessmentUuid: string
   onChange: (answer: ItemAnswer) => void
 }) {
   const { body } = item
