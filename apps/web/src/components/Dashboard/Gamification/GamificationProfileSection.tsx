@@ -3,7 +3,7 @@
 import { Activity, CalendarCheck, Crown, GraduationCap, Star, Target, Trophy } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar'
-import { getLevelInfo } from '@/lib/gamification/levels'
+import { getLevelInfo, xpForLevel } from '@/lib/gamification/levels'
 import { GlowingLevelBadge, LevelProgress } from '@/lib/gamification'
 import type { UserGamificationProfile } from '@/types/gamification'
 import { useGamificationStore } from '@/stores/gamification'
@@ -126,7 +126,9 @@ export function GamificationProfileSection({
             <div className="flex items-center justify-between">
               <GlowingLevelBadge level={profile.level} size="lg" animated />
               <div className="text-right text-sm">
-                <div className="font-semibold">{profile.total_xp.toLocaleString()} {t('leaderboard.stats.xp')}</div>
+                <div className="font-semibold">
+                  {profile.total_xp.toLocaleString()} {t('leaderboard.stats.xp')}
+                </div>
                 <div className="text-muted-foreground text-xs">
                   {profile.xp_to_next_level?.toLocaleString() || 0} {t('levelIndicators.xpToNext')}
                 </div>
@@ -176,8 +178,11 @@ export function GamificationProfileSection({
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-muted-foreground text-xs tabular-nums">
-                    {nextMilestone.minXP - profile.total_xp} {t('levelIndicators.xpToNext')}
+                  {/* UX-064: the milestone distance comes from the server curve and names its level; the
+                      «до следующего уровня» number above is the profile's own `xp_to_next_level`. */}
+                  <p className="text-muted-foreground text-xs tabular-nums" data-testid="milestone-xp">
+                    {(xpForLevel(nextMilestone.level) - profile.total_xp).toLocaleString()}{' '}
+                    {t('levelIndicators.xpToLevel', { level: nextMilestone.level })}
                   </p>
                 </div>
               </div>
@@ -251,35 +256,30 @@ function getNextMilestone(currentLevel: number) {
       title: 'Apprentice',
       color: 'text-blue-500',
       icon: Star,
-      minXP: 1000,
     },
     {
       level: 10,
       title: 'Scholar',
       color: 'text-slate-500',
       icon: GraduationCap,
-      minXP: 3000,
     },
     {
       level: 15,
       title: 'Expert',
       color: 'text-green-500',
       icon: Trophy,
-      minXP: 6000,
     },
     {
       level: 25,
       title: 'Master',
       color: 'text-orange-500',
       icon: Crown,
-      minXP: 12_000,
     },
     {
       level: 50,
       title: 'Grandmaster',
       color: 'text-red-500',
       icon: Crown,
-      minXP: 30_000,
     },
   ]
 
