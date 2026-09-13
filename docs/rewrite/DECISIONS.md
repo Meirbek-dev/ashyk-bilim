@@ -964,3 +964,15 @@ Implements three more items of the owner answers above. Routes:
   204 without roster-management rights; an active row stays manager-only
   (403), and re-applying afterwards is allowed. The landing shows
   «Отозвать заявку» under the pending badge.
+- **Publishing gates live in the server** (BUG-102/103/104, pass 11). An
+  activity whose assessment is still `draft` cannot be published (409
+  `activity-not-ready`, the same code the file-submission gate uses); the gate
+  is evaluated on the merged body (type change + publish in one PATCH). Course
+  `lifecycle publish` re-runs readiness and answers 422 `course-not-ready` with
+  the blocker list while any blocker remains — the review page's claim that the
+  server repeats the checks is now true.
+- **Uploads enforce the declared content type** (BUG-105). The presigned PUT
+  signs `Content-Type`; finalize verifies the stored object's type equals the
+  declared one and that it is on the purpose allowlist (exact types, no
+  `image/*` prefix; SVG rejected with 415 as legacy did).
+
