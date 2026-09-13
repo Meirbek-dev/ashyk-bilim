@@ -422,6 +422,20 @@ pub(crate) fn project_submissions(
             ) {
                 state = ActivityProgressState::Completed;
             }
+        } else if let Some(released) = submissions
+            .iter()
+            .filter(|s| s.status == SubmissionStatus::Published)
+            .max_by_key(|s| submission_sort_key(s))
+            .filter(|s| completion_satisfied(assessment, s, score))
+        {
+            // Completion is sticky (BUG-129, DECISIONS 2026-09-13): a newer
+            // attempt keeps the last released verdict until it is published.
+            completed_at = Some(
+                released
+                    .graded_at
+                    .or(released.submitted_at)
+                    .unwrap_or(released.updated_at),
+            );
         }
     }
 
@@ -475,11 +489,19 @@ pub(crate) fn project_file_attempts(
     attempts: &[AttemptRow],
 ) -> ActivityProgressWrite {
     let latest = attempts.iter().max_by_key(|a| (a.updated_at, a.id.0));
+    // Completion is sticky (BUG-129, DECISIONS 2026-09-13): until a newer
+    // attempt is published, the last released one keeps its verdict.
+    let released = attempts
+        .iter()
+        .filter(|a| a.status == FileAttemptStatus::Published)
+        .max_by_key(|a| (a.updated_at, a.id.0));
     let submitted = attempts
         .iter()
         .filter(|a| a.status != FileAttemptStatus::Draft)
         .count();
-    let score = latest.and_then(|a| a.final_score);
+    let score = latest
+        .and_then(|a| a.final_score)
+        .or_else(|| released.and_then(|a| a.final_score));
     let passed = score.map(|s| s >= FILE_SUBMISSION_PASSING_SCORE);
     let mut state = ActivityProgressState::NotStarted;
     let mut teacher_action = false;
@@ -498,10 +520,6 @@ pub(crate) fn project_file_attempts(
             }
             FileAttemptStatus::Graded => ActivityProgressState::Graded,
             FileAttemptStatus::Published => {
-                completed_at = latest
-                    .graded_at
-                    .or(latest.submitted_at)
-                    .or(Some(latest.updated_at));
                 if passed == Some(true) {
                     ActivityProgressState::Passed
                 } else {
@@ -509,6 +527,7 @@ pub(crate) fn project_file_attempts(
                 }
             }
         };
+        completed_at = released.map(|a| a.graded_at.or(a.submitted_at).unwrap_or(a.updated_at));
     }
     ActivityProgressWrite {
         course_id: activity.course_id,

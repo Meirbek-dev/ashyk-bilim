@@ -21,6 +21,7 @@ async fn instructor(app: &TestApp, name: &str) -> MintedSession {
             "course:read:all",
             "course:update:own",
             "assessment:*:own",
+            "certificate:create:platform",
         ],
     )
     .await
@@ -687,4 +688,89 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
     assert_eq!(submitted.json()["late_penalty_pct"], 30.0);
     // The same upload is now referenced by two attempts.
     assert_eq!(referenced_count(&app, &pdf_upload).await, 2);
+}
+
+/// BUG-129: completion is sticky. A second attempt that is only submitted
+/// (not yet published) keeps the course completed and the certificate.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_pending_reattempt_keeps_the_course_completed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2 }),
+    )
+    .await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF v1").await;
+    let first = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let attempt_id = first.json()["id"].as_str().unwrap().to_owned();
+    let version = first.json()["version"].to_string();
+    let published = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 91 }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let learner_state = format!("/api/v2/courses/{course_id}/learner-state");
+    let state = app.get_as(&alice, &learner_state).await;
+    assert_eq!(
+        state.json()["enrollment_state"],
+        "completed",
+        "{}",
+        state.text()
+    );
+    assert_eq!(state.json()["progress"]["completed_required_count"], 1);
+    assert_eq!(state.json()["certificate"]["issued"], true);
+    let code = state.json()["certificate"]["verify_code"].clone();
+
+    // Second attempt, submitted and awaiting a grade.
+    let second = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    assert_eq!(second.json()["status"], "submitted");
+    let state = app.get_as(&alice, &learner_state).await;
+    assert_eq!(
+        state.json()["enrollment_state"],
+        "completed",
+        "{}",
+        state.text()
+    );
+    assert_eq!(state.json()["progress"]["completed_required_count"], 1);
+    assert_eq!(state.json()["progress"]["progress_pct"], 100.0);
+    assert_eq!(state.json()["progress"]["needs_grading_count"], 1);
+    assert_eq!(
+        state.json()["outline"][0]["activities"][0]["complete"],
+        true
+    );
+    assert_eq!(state.json()["certificate"]["issued"], true);
+    assert_eq!(state.json()["certificate"]["verify_code"], code);
+    assert_eq!(state.json()["next_action"]["id"], "view_certificate");
 }

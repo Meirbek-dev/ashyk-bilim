@@ -329,12 +329,7 @@ fn activity_state(
         activity_type: activity.activity_type.clone(),
         required: progress.is_none_or(|p| p.required),
         state,
-        complete: progress.is_some_and(|p| {
-            matches!(
-                p.state,
-                ActivityProgressState::Passed | ActivityProgressState::Completed
-            )
-        }),
+        complete: progress.is_some_and(super::projector::progress_is_completed),
         // Unreleased grades are teacher-only until published.
         score: progress
             .filter(|_| !state.awaiting_grade())

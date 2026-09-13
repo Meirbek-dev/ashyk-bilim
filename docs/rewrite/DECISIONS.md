@@ -1004,3 +1004,17 @@ Implements three more items of the owner answers above. Routes:
   `response-content-disposition=attachment; filename*=UTF-8''…`, so the browser
   saves «проект.pdf» instead of the storage key. `object_store::Signer` cannot
   sign `response-*` query parameters, hence the shared presigner.
+- **Activity completion is sticky across a new attempt** (BUG-129, pass 11).
+  Legacy `_recalculate_file_submission_progress` /
+  `_apply_progress_from_submissions` derived `completed_at` from the latest
+  attempt only, so a learner with a completed course (attempt 1 published
+  91 %, certificate issued) who submitted a second attempt dropped to
+  «3 из 4 · Продолжить обучение» while it waited for a grade. The projector
+  now keeps `completed_at` from the most recent **published** attempt until
+  a newer one is published (file attempts: any published attempt completes;
+  assessments: the published one must still satisfy the completion rule, so
+  a re-attempt released below passing under `passed` does un-complete).
+  `state` still follows the latest attempt (`needs_grading`, `in_progress`,
+  …) — only the completion count, `progress_pct`, `certificate_eligible`
+  and the outline `complete` flag (now `completed_at || passed/completed`,
+  the same predicate as the course aggregate) are sticky.
