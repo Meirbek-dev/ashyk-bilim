@@ -167,6 +167,16 @@ pub async fn assign_role(
     role_id: uuid::Uuid,
 ) -> Result<Option<i64>> {
     let mut tx = pool.begin().await?;
+    // Bump first: an unknown user is `None` here, before the FK could fire.
+    let Some(version) = sqlx::query_scalar!(
+        "UPDATE users SET rbac_version = rbac_version + 1 WHERE id = $1 RETURNING rbac_version",
+        user_id.0
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    else {
+        return Ok(None);
+    };
     sqlx::query!(
         "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
         user_id.0,
@@ -174,14 +184,8 @@ pub async fn assign_role(
     )
     .execute(&mut *tx)
     .await?;
-    let version = sqlx::query_scalar!(
-        "UPDATE users SET rbac_version = rbac_version + 1 WHERE id = $1 RETURNING rbac_version",
-        user_id.0
-    )
-    .fetch_optional(&mut *tx)
-    .await?;
     tx.commit().await?;
-    Ok(version)
+    Ok(Some(version))
 }
 
 /// Remove a role and bump rbac_version. Returns the new version (`None` if

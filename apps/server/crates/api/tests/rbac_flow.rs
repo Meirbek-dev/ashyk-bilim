@@ -270,3 +270,68 @@ async fn last_admin_role_cannot_be_removed(pool: PgPool) {
         .await;
     assert_eq!(removed.status, StatusCode::NO_CONTENT);
 }
+
+/// BUG-118 / UX-043 / UX-045: unknown user → 404 (not an FK 500); removing a
+/// role the user does not hold → 404 before the last-admin guard; a bad grant
+/// names itself without the `internal:` prefix.
+#[sqlx::test(migrations = "../../migrations")]
+async fn role_errors_are_typed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+
+    let ghost = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/users/{}/roles", uuid::Uuid::now_v7()),
+            &serde_json::json!({ "role": "instructor" }),
+        )
+        .await;
+    assert_eq!(ghost.status, StatusCode::NOT_FOUND, "{}", ghost.text());
+
+    let plain = app.create_user("plain", "plain@example.com", &[]).await;
+    let not_held = app
+        .delete_as(&admin, &format!("/api/v2/users/{plain}/roles/admin"))
+        .await;
+    assert_eq!(
+        not_held.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        not_held.text()
+    );
+
+    app.post_as(
+        &admin,
+        "/api/v2/rbac/roles",
+        &serde_json::json!({ "slug": "helper", "display_name": "Helper", "priority": 10 }),
+    )
+    .await;
+    let bad = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri("/api/v2/rbac/roles/helper/permissions")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &admin.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "permissions": ["course:read:all", "nope:zip:zap"] })
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(
+        bad.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad.text()
+    );
+    let message = bad.json()["field_errors"][0]["message"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(message.starts_with("nope:zip:zap:"), "{message}");
+    assert!(!message.contains("internal:"), "{message}");
+}

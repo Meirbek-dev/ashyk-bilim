@@ -101,6 +101,15 @@ impl RbacAdminService {
 
     pub async fn unassign_role(&self, actor: &Actor, user_id: UserId, slug: &str) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
+        let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
+            .await?
+            .ok_or_else(|| Error::not_found("role"))?;
+        // Unknown user or a role the user does not hold → 404 (before the
+        // last-admin guard, which must only fire for an actual admin).
+        let (roles, _) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
+        if !roles.iter().any(|r| r == slug) {
+            return Err(Error::not_found("role assignment"));
+        }
         // Last-admin guard: the platform must always keep one active admin.
         if slug == "admin" && ab_db::identity::count_role_holders(&self.pool, "admin").await? <= 1 {
             return Err(Error::app(
@@ -108,9 +117,6 @@ impl RbacAdminService {
                 "cannot remove the last admin",
             ));
         }
-        let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
-            .await?
-            .ok_or_else(|| Error::not_found("role"))?;
         let version = ab_db::identity::unassign_role(&self.pool, user_id, role.id)
             .await?
             .ok_or_else(|| Error::not_found("user"))?;
@@ -205,15 +211,26 @@ impl RbacAdminService {
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
         // Every grant string must parse against the closed registry; a bad
-        // one is caller input here, not deploy drift.
-        if let Err(err) =
-            ab_core::permission::PermissionSet::parse(permissions.iter().map(String::as_str))
-        {
-            return Err(Error::validation(vec![ab_core::FieldError {
+        // one is caller input here, not deploy drift — name it, without the
+        // `internal:` prefix the parser's error code would render.
+        let errors: Vec<ab_core::FieldError> = permissions
+            .iter()
+            .filter_map(|grant| {
+                ab_core::permission::Grant::parse(grant)
+                    .err()
+                    .map(|e| (grant, e))
+            })
+            .map(|(grant, err)| ab_core::FieldError {
                 field: "permissions".into(),
                 code: "invalid".into(),
-                message: err.to_string(),
-            }]));
+                message: match err {
+                    Error::App { message, .. } => format!("{grant}: {message}"),
+                    other => format!("{grant}: {other}"),
+                },
+            })
+            .collect();
+        if !errors.is_empty() {
+            return Err(Error::validation(errors));
         }
         let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
             .await?

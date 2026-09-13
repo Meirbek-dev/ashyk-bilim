@@ -110,12 +110,17 @@ impl ZitadelErrorBody {
 }
 
 /// 422 on `field` for a password Zitadel's complexity policy rejects; the
-/// web catalog renders `password-policy` as the localized rule.
-fn password_policy_error(field: &str, message: String) -> Error {
+/// web catalog renders `password-policy` as the localized rule. The trailing
+/// Zitadel error id («… (COMMA-VoaRj)») is dropped from the message.
+fn password_policy_error(field: &str, message: &str) -> Error {
+    let message = message
+        .rsplit_once(" (")
+        .filter(|(_, tail)| tail.ends_with(')') && tail.contains('-'))
+        .map_or(message, |(head, _)| head);
     Error::validation(vec![ab_core::FieldError {
         field: field.into(),
         code: "password-policy".into(),
-        message,
+        message: message.to_owned(),
     }])
 }
 
@@ -476,7 +481,7 @@ impl ZitadelClient {
         // 3 = InvalidArgument: the password fails Zitadel's complexity policy
         // (captured live: "Password must contain upper case", COMMA-VoaRj).
         if err.code == 3 && matches!(user.password, PasswordSpec::Plain(_)) {
-            return Err(password_policy_error("password", err.message));
+            return Err(password_policy_error("password", &err.message));
         }
         Err(Error::app(
             ErrorCode::ServiceUnavailable,
@@ -564,7 +569,7 @@ impl ZitadelClient {
                     "current password is invalid",
                 ));
             }
-            return Err(password_policy_error("new_password", err.message));
+            return Err(password_policy_error("new_password", &err.message));
         }
         // Zitadel reports "new password equals the current one" as an
         // internal error (code 13, COMMAND-CahN2; captured live 2026-09-13)
@@ -637,5 +642,21 @@ impl ZitadelClient {
             .await
             .map_err(|e| Error::internal("zitadel user lookup response shape", e))?;
         Ok(Some(envelope.user.id))
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::panic)]
+mod tests {
+    #[test]
+    fn password_policy_message_drops_the_zitadel_code() {
+        let err = super::password_policy_error(
+            "password",
+            "Password must contain upper case (COMMA-VoaRj)",
+        );
+        let ab_core::Error::Validation { field_errors } = err else {
+            panic!("expected a validation error");
+        };
+        assert_eq!(field_errors[0].message, "Password must contain upper case");
     }
 }
