@@ -451,6 +451,22 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         ))
         .await;
     assert_eq!(no_score.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(no_score.json()["field_errors"][0]["field"], "final_score");
+    assert_eq!(no_score.json()["field_errors"][0]["code"], "required");
+    let out_of_range = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some("3"),
+            &serde_json::json!({ "action": "save", "final_score": 101 }),
+        ))
+        .await;
+    assert_eq!(out_of_range.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(
+        out_of_range.json()["field_errors"][0]["field"],
+        "final_score"
+    );
     let no_lock = app
         .patch_as(
             &teacher,

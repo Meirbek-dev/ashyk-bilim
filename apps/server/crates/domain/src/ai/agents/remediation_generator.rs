@@ -17,6 +17,7 @@ use super::{Execution, draft_citation, metadata_language, run_user};
 use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
 use crate::ai::context::ContextBundle;
+use crate::ai::policy;
 use crate::ai::prompts::{Prompt, clipped, load_prompt};
 use crate::ai::redact;
 use crate::ai::runs::RunSpec;
@@ -120,6 +121,7 @@ impl AiService {
     ) -> Result<RemediationSessionRow> {
         self.require_feature(AiFeature::Remediation)?;
         let subject = self.accessible_subject(actor, subject_id).await?;
+        self.require_gate_rights(actor, &subject, gate_mode).await?;
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Remediation)
             .await?;
@@ -165,6 +167,21 @@ impl AiService {
         .await
     }
 
+    /// BUG-141: a gate (`gate_mode`) blocks the learner's next attempt, so
+    /// only someone who grades the course may set one — never the learner.
+    async fn require_gate_rights(
+        &self,
+        actor: &Actor,
+        subject: &Subject,
+        gate_mode: bool,
+    ) -> Result<()> {
+        if !gate_mode {
+            return Ok(());
+        }
+        let course = self.courses.get(actor, subject.course_id()).await?;
+        policy::require_course_update(actor, &course)
+    }
+
     /// `POST /ai/remediation/{subject}/generate/queue`.
     pub async fn queue_remediation(
         &self,
@@ -175,6 +192,7 @@ impl AiService {
     ) -> Result<RunRow> {
         self.require_feature(AiFeature::Remediation)?;
         let subject = self.accessible_subject(actor, subject_id).await?;
+        self.require_gate_rights(actor, &subject, gate_mode).await?;
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Remediation)
             .await?;

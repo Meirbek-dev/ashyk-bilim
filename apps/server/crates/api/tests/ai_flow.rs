@@ -863,7 +863,7 @@ async fn submitted_file_attempt(
     teacher: &MintedSession,
     alice: &MintedSession,
     course_id: &str,
-) -> (String, String) {
+) -> (String, String, String) {
     let chapter = app
         .post_as(
             teacher,
@@ -931,7 +931,7 @@ async fn submitted_file_attempt(
         )
         .await;
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
-    (attempt_id, activity_id)
+    (attempt_id, activity_id, fs_id)
 }
 
 fn remediation_reply() -> serde_json::Value {
@@ -972,7 +972,7 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         )
         .await;
     let course_id = published_course(&app, &teacher, "Files").await;
-    let (attempt_id, activity_id) =
+    let (attempt_id, activity_id, fs_id) =
         submitted_file_attempt(&app, &teacher, &alice, &course_id).await;
     mount_json_reply(&app.llm, &analysis_reply(&attempt_id)).await;
 
@@ -1067,6 +1067,61 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         .status,
         StatusCode::NOT_FOUND
     );
+    // BUG-141: a learner may not set a gate on their own work; another
+    // learner's session list is 403.
+    let self_gate = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/remediation/{attempt_id}/generate"),
+            &serde_json::json!({ "gate_mode": true, "language": "en" }),
+        )
+        .await;
+    assert_eq!(
+        self_gate.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        self_gate.text()
+    );
+    assert_eq!(
+        app.get_as(
+            &bob,
+            &format!("/api/v2/ai/remediation/student/{}", alice.user_id)
+        )
+        .await
+        .status,
+        StatusCode::FORBIDDEN
+    );
+    // BUG-140: the gate blocks a new file attempt too (draft and start).
+    let gated = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{fs_id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(gated.status, StatusCode::FORBIDDEN, "{}", gated.text());
+    assert!(
+        gated.json()["detail"]
+            .as_str()
+            .unwrap()
+            .contains("REMEDIATION_REQUIRED")
+    );
+    let passed = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
+            &serde_json::json!({ "score": 80 }),
+        )
+        .await;
+    assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
+    let reopened = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{fs_id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(reopened.status, StatusCode::CREATED, "{}", reopened.text());
 
     // Queued analysis: the worker re-derives the attempt from the run.
     app.llm.reset().await;
@@ -1239,5 +1294,47 @@ async fn course_analysis_rejects_unknown_language_and_finding(pool: PgPool) {
     assert_eq!(
         accepted.json()["report"]["finding_reviews"]["finding-0"]["action"],
         "accepted"
+    );
+
+    // BUG-141: a lecture suggestion is dismissed by an id the review carries.
+    let critique = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/lecture-authoring/{course_id}/critique"),
+            &serde_json::json!({ "language": "ru" }),
+        )
+        .await;
+    assert_eq!(critique.status, StatusCode::OK, "{}", critique.text());
+    let review_id = critique.json()["id"].as_str().unwrap().to_owned();
+    let suggestion_id = critique.json()["suggestions"]["suggestions"][0]["suggestion_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let dismiss = format!("/api/v2/ai/lecture-authoring/reviews/{review_id}/dismiss");
+    let unknown = app
+        .post_as(
+            &teacher,
+            &dismiss,
+            &serde_json::json!({ "suggestion_id": "nope" }),
+        )
+        .await;
+    assert_eq!(
+        unknown.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        unknown.text()
+    );
+    assert_eq!(unknown.json()["field_errors"][0]["code"], "unknown");
+    let dismissed = app
+        .post_as(
+            &teacher,
+            &dismiss,
+            &serde_json::json!({ "suggestion_id": suggestion_id }),
+        )
+        .await;
+    assert_eq!(dismissed.status, StatusCode::OK, "{}", dismissed.text());
+    assert_eq!(
+        dismissed.json()["dismissed_suggestion_ids"][0],
+        suggestion_id.as_str()
     );
 }

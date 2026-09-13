@@ -284,6 +284,17 @@ impl AiService {
                 message: "suggestion_id must be 1–200 characters".into(),
             }]));
         }
+        // BUG-141: only an id the review actually carries may be dismissed.
+        let known = review.suggestions["suggestions"]
+            .as_array()
+            .is_some_and(|list| list.iter().any(|s| s["suggestion_id"] == suggestion_id));
+        if !known {
+            return Err(Error::validation(vec![FieldError {
+                field: "suggestion_id".into(),
+                code: "unknown".into(),
+                message: format!("suggestion {suggestion_id} is not part of this review"),
+            }]));
+        }
         ab_db::ai::dismiss_lecture_suggestion(&self.pool, review_id, suggestion_id).await?;
         ab_db::ai::get_lecture_review(&self.pool, review_id)
             .await?
