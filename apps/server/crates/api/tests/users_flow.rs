@@ -476,3 +476,38 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     let unknown = app.get_as(&stranger, "/api/v2/users/nobody/courses").await;
     assert_eq!(unknown.status, StatusCode::NOT_FOUND);
 }
+
+/// Claiming another user's upload as an avatar is a 403 (never a takeover,
+/// never a 404 that leaks the upload's existence).
+#[sqlx::test(migrations = "../../migrations")]
+async fn claiming_a_foreign_upload_as_avatar_is_forbidden(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = app
+        .create_user("owner", "owner@example.com", &["user"])
+        .await;
+    let owner_session = app
+        .mint_session_for(owner, &["user:update:own", "file:create:own"])
+        .await;
+    let created = app
+        .post_as(
+            &owner_session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "avatar", "mime": "image/png", "size_bytes": 4 }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+    let upload_id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let thief = app
+        .create_user("thief", "thief@example.com", &["user"])
+        .await;
+    let thief_session = app.mint_session_for(thief, &["user:update:own"]).await;
+    let refused = app
+        .patch_as(
+            &thief_session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "avatar_upload_id": upload_id }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+}
