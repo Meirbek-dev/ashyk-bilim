@@ -764,3 +764,234 @@ async fn unchanged_password_is_a_field_error(pool: PgPool) {
     assert_eq!(res.json()["field_errors"][0]["field"], "new_password");
     assert_eq!(res.json()["field_errors"][0]["code"], "password-unchanged");
 }
+
+// ── Brute-force limits + session store caps (critic12 identity) ────────────
+
+/// Unique per run: the limiter windows in shared test Redis outlive a test.
+fn unique_ip() -> String {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    format!(
+        "10.{}.{}.{}",
+        std::process::id() % 256,
+        (nanos / 256) % 256,
+        nanos % 256
+    )
+}
+
+async fn login_from(app: &TestApp, ip: &str, body: &serde_json::Value) -> ab_testkit::TestResponse {
+    app.send(
+        Request::builder()
+            .method("POST")
+            .uri("/api/v2/auth/login")
+            .header(header::CONTENT_TYPE, "application/json")
+            .header("x-forwarded-for", ip)
+            .body(Body::from(body.to_string()))
+            .unwrap(),
+    )
+    .await
+}
+
+/// BUG-130 (branch #2): a classroom behind one NAT — every browser shares
+/// `X-Forwarded-For` behind Next — logs in twenty-plus times; only failed
+/// passwords count toward the 20 per 5 min IP cap.
+#[sqlx::test(migrations = "../../migrations")]
+async fn ip_limit_counts_failed_logins_only(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("nat", "nat@example.com", &["user"]).await;
+    mock_password_ok(&app.zitadel).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-nat/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": { "totalResult": "1" },
+            "authMethodTypes": ["AUTHENTICATION_METHOD_TYPE_PASSWORD"]
+        })))
+        .mount(&app.zitadel)
+        .await;
+    let ip = unique_ip();
+    let ok = serde_json::json!({ "login": "nat", "password": "correct horse" });
+    for _ in 0..25 {
+        let res = login_from(&app, &ip, &ok).await;
+        assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    }
+    // Twenty failures (distinct unknown names: the account lock stays out
+    // of the way) fill the IP window; the 21st is throttled.
+    for i in 0..20 {
+        let body = serde_json::json!({ "login": format!("ghost-{i}"), "password": "x" });
+        assert_eq!(
+            login_from(&app, &ip, &body).await.status,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    let body = serde_json::json!({ "login": "ghost-21", "password": "x" });
+    let res = login_from(&app, &ip, &body).await;
+    assert_eq!(res.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(res.json()["code"], "rate-limited");
+    assert!(res.headers.contains_key(header::RETRY_AFTER));
+}
+
+/// BUG-134: the account lock keys on the resolved user, so a limit hit via
+/// the username also holds for the email of the same account.
+#[sqlx::test(migrations = "../../migrations")]
+async fn login_name_limit_covers_username_and_email_of_one_account(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("dual", "dual@example.com", &["user"]).await;
+    mock_password_invalid(&app.zitadel).await;
+    for _ in 0..10 {
+        let body = serde_json::json!({ "login": "dual", "password": "x" });
+        assert_eq!(
+            app.post_json("/api/v2/auth/login", &body).await.status,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    let by_email = serde_json::json!({ "login": "DUAL@example.com", "password": "x" });
+    let res = app.post_json("/api/v2/auth/login", &by_email).await;
+    assert_eq!(res.status, StatusCode::TOO_MANY_REQUESTS, "{}", res.text());
+}
+
+/// BUG-133: the 10-created-per-hour cap counts accounts Zitadel actually
+/// created — a policy-rejected password (422) leaves the budget alone.
+#[sqlx::test(migrations = "../../migrations")]
+async fn register_created_limit_ignores_rejected_passwords(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "password": { "password": "weak" }
+        })))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Password must contain upper case (COMMA-VoaRj)",
+            "details": [{ "id": "COMMA-VoaRj", "message": "Password must contain upper case" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+    mock_user_create_with_code(&app.zitadel, "ABC123").await;
+    let ip = unique_ip();
+    let post = |body: serde_json::Value| {
+        app.send(
+            Request::builder()
+                .method("POST")
+                .uri("/api/v2/auth/register")
+                .header(header::CONTENT_TYPE, "application/json")
+                .header("x-forwarded-for", &ip)
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
+    };
+    for i in 0..10 {
+        let mut body = register_body(&format!("weak{i}"), &format!("weak{i}@example.com"));
+        body["password"] = serde_json::json!("weak");
+        let res = post(body).await;
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+    }
+    let res = post(register_body("fresh", "fresh@example.com")).await;
+    assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
+}
+
+/// BUG-131: a stolen session cannot brute-force the current password on
+/// `POST /auth/password` — five wrong guesses per 15 min, then 429.
+#[sqlx::test(migrations = "../../migrations")]
+async fn password_change_limits_wrong_current_password_guesses(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("guessed", "g@example.com", &["user"]).await;
+    let session = app.mint_session_for(user, &[]).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{user}/password")))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Password is invalid (COMMAND-3M0fs)",
+            "details": [{ "id": "COMMAND-3M0fs", "message": "Password is invalid", "failedAttempts": 1 }]
+        })))
+        .expect(5)
+        .mount(&app.zitadel)
+        .await;
+    let body =
+        serde_json::json!({ "current_password": "wrong", "new_password": "new horse battery" });
+    for _ in 0..5 {
+        let res = app.post_as(&session, "/api/v2/auth/password", &body).await;
+        assert_eq!(res.status, StatusCode::UNAUTHORIZED);
+    }
+    let res = app.post_as(&session, "/api/v2/auth/password", &body).await;
+    assert_eq!(res.status, StatusCode::TOO_MANY_REQUESTS, "{}", res.text());
+    assert_eq!(res.json()["code"], "rate-limited");
+    assert!(res.headers.contains_key(header::RETRY_AFTER));
+}
+
+/// Branch #54: another user's session handle is not the caller's to revoke
+/// — 404, and the other session stays alive.
+#[sqlx::test(migrations = "../../migrations")]
+async fn revoking_another_users_session_handle_is_not_found(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let alice = app.mint_session(&[]).await;
+    let bob = app.mint_session(&[]).await;
+    let bob_list = app.get_as(&bob, "/api/v2/auth/sessions").await;
+    let handle = bob_list.json()[0]["handle"].as_str().unwrap().to_owned();
+
+    let res = app
+        .delete_as(&alice, &format!("/api/v2/auth/sessions/{handle}"))
+        .await;
+    assert_eq!(res.status, StatusCode::NOT_FOUND);
+    assert_eq!(
+        app.get_as(&bob, "/api/v2/auth/session").await.status,
+        StatusCode::OK
+    );
+}
+
+/// Branch #74: the eleventh session evicts the oldest one.
+#[sqlx::test(migrations = "../../migrations")]
+async fn eleventh_session_evicts_the_oldest(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("many", "many@example.com", &["user"]).await;
+    let first = app.mint_session_for(user, &[]).await;
+    for _ in 0..9 {
+        app.mint_session_for(user, &[]).await;
+    }
+    assert_eq!(
+        app.get_as(&first, "/api/v2/auth/session").await.status,
+        StatusCode::OK
+    );
+    let eleventh = app.mint_session_for(user, &[]).await;
+    assert_eq!(
+        app.get_as(&first, "/api/v2/auth/session").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+    let list = app.get_as(&eleventh, "/api/v2/auth/sessions").await;
+    assert_eq!(list.json().as_array().unwrap().len(), 10);
+}
+
+/// Branch #75: a session older than the 90-day absolute cap is gone even
+/// when its idle TTL is fresh.
+#[sqlx::test(migrations = "../../migrations")]
+async fn session_past_the_absolute_cap_is_expired(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    assert_eq!(
+        app.get_as(&session, "/api/v2/auth/session").await.status,
+        StatusCode::OK
+    );
+
+    // Backdate `created_at_unix` in the stored record by 91 days.
+    let id = session.cookie.split_once('=').unwrap().1.to_owned();
+    let key = format!("session:{id}");
+    let mut redis = app.sessions.redis();
+    let raw: String = redis::AsyncCommands::get(&mut redis, &key).await.unwrap();
+    let mut record: serde_json::Value = serde_json::from_str(&raw).unwrap();
+    record["created_at_unix"] =
+        serde_json::json!(record["created_at_unix"].as_i64().unwrap() - 91 * 86_400);
+    let () = redis::AsyncCommands::set(&mut redis, &key, record.to_string())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        app.get_as(&session, "/api/v2/auth/session").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+}

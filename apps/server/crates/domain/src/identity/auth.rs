@@ -30,8 +30,17 @@ use crate::identity::Actor;
 use crate::identity::rate_limit::RateLimiter;
 use crate::identity::sessions::{NewSession, SessionStore};
 
+/// Failed logins per IP. Every attempt is counted up front (before the
+/// Zitadel round-trip) and released once Zitadel accepts the password, so
+/// a classroom NAT behind one `X-Forwarded-For` is throttled by its
+/// failures only (DECISIONS 2026-09-13).
 const IP_LIMIT: (u32, Duration) = (20, Duration::from_mins(5));
+/// Login attempts per account (the user id when the login name resolves —
+/// email and username share one lock — the normalised name otherwise).
 const LOGIN_NAME_LIMIT: (u32, Duration) = (10, Duration::from_mins(15));
+/// Wrong `current_password` guesses per user on the password change — a
+/// stolen session must not brute-force the password it never knew.
+const PASSWORD_CHECK_LIMIT: (u32, Duration) = (5, Duration::from_mins(15));
 /// Accounts actually created per IP (the expensive path — two Zitadel calls
 /// plus an email). Failed attempts do not count: a classroom behind one NAT
 /// must survive ten typos.
@@ -242,26 +251,24 @@ impl IdentityService {
         ))
     }
 
-    /// Per-IP and per-login-name limits, checked before any Zitadel
-    /// round-trip. Returns the login-name key (cleared on success).
-    async fn enforce_login_limits(&self, input: &LoginInput) -> Result<String> {
-        if let Some(ip) = &input.ip {
-            let (limit, window) = IP_LIMIT;
-            let key = format!("rl:login:ip:{ip}");
-            if !self.limiter.check(&key, limit, window).await? {
-                return Err(self
-                    .rate_limited(&key, window, "too many login attempts")
-                    .await?);
-            }
+    /// Count a hit on `key`; `rate-limited` past `limit`.
+    async fn enforce(&self, key: &str, (limit, window): (u32, Duration), what: &str) -> Result<()> {
+        if self.limiter.check(key, limit, window).await? {
+            Ok(())
+        } else {
+            Err(self
+                .rate_limited(key, window, &format!("too many {what} attempts"))
+                .await?)
         }
-        let login_key = format!("rl:login:name:{}", input.login.to_lowercase());
-        let (limit, window) = LOGIN_NAME_LIMIT;
-        if !self.limiter.check(&login_key, limit, window).await? {
-            return Err(self
-                .rate_limited(&login_key, window, "too many login attempts")
-                .await?);
-        }
-        Ok(login_key)
+    }
+
+    /// Per-IP limit, checked before any Zitadel round-trip. Returns the
+    /// key (released once the password is accepted).
+    async fn enforce_login_ip_limit(&self, input: &LoginInput) -> Result<Option<String>> {
+        let Some(ip) = &input.ip else { return Ok(None) };
+        let key = format!("rl:login:ip:{ip}");
+        self.enforce(&key, IP_LIMIT, "login").await?;
+        Ok(Some(key))
     }
 
     /// Map a Zitadel check outcome to a session or the audited uniform error.
@@ -317,14 +324,32 @@ impl IdentityService {
         }
     }
 
+    /// Per-account limit: one lock per resolved user, so the username and
+    /// the email do not each get their own ten tries; unknown names throttle
+    /// on the normalised name itself. Returns the key (cleared on success).
+    async fn enforce_login_name_limit(
+        &self,
+        input: &LoginInput,
+        user: Option<&ab_db::identity::AuthUserRow>,
+    ) -> Result<String> {
+        let subject = user.map_or_else(
+            || input.login.trim().to_lowercase(),
+            |user| user.id.to_string(),
+        );
+        let key = format!("rl:login:name:{subject}");
+        self.enforce(&key, LOGIN_NAME_LIMIT, "login").await?;
+        Ok(key)
+    }
+
     pub async fn login(&self, input: LoginInput) -> Result<LoginOk> {
-        let login_key = self.enforce_login_limits(&input).await?;
+        let ip_key = self.enforce_login_ip_limit(&input).await?;
 
         // Our row first (username or email, legacy semantics), then the
         // password check by Zitadel user id — Zitadel's login name may be
         // either identifier depending on how the account was created.
-        let Some(user) = ab_db::identity::find_user_for_login(&self.pool, &input.login).await?
-        else {
+        let user = ab_db::identity::find_user_for_login(&self.pool, &input.login).await?;
+        let login_key = self.enforce_login_name_limit(&input, user.as_ref()).await?;
+        let Some(user) = user else {
             self.audit(
                 None,
                 "login-failed",
@@ -347,6 +372,10 @@ impl IdentityService {
             )
             .await?;
         let zsession = self.resolve_session_outcome(outcome, &input).await?;
+        // Password accepted: not a brute-force attempt against this IP.
+        if let Some(key) = &ip_key {
+            self.limiter.release(key).await?;
+        }
         if user.status != "active" {
             self.audit(
                 Some(user.id),
@@ -437,13 +466,7 @@ impl IdentityService {
     ) -> Result<()> {
         let Some(ip) = ip else { return Ok(()) };
         let key = format!("rl:register:{bucket}:ip:{ip}");
-        if self.limiter.check(&key, limit, window).await? {
-            Ok(())
-        } else {
-            Err(self
-                .rate_limited(&key, window, "too many registration attempts")
-                .await?)
-        }
+        self.enforce(&key, (limit, window), "registration").await
     }
 
     /// Legacy `_validate_unique_username` / `_validate_unique_email`, as
@@ -547,9 +570,22 @@ impl IdentityService {
         // the tight cap (`create_account` re-checks; two index lookups).
         self.require_unique(&account.username, &account.email)
             .await?;
-        self.enforce_register_limit(ip, "created", REGISTER_IP_LIMIT)
-            .await?;
+        // The `created` cap is read before and counted after the account
+        // exists: a policy-rejected password (422) or a Zitadel outage must
+        // not eat the classroom's budget.
+        let created_key = ip.map(|ip| format!("rl:register:created:ip:{ip}"));
+        let (limit, window) = REGISTER_IP_LIMIT;
+        if let Some(key) = &created_key
+            && self.limiter.count(key).await? >= limit
+        {
+            return Err(self
+                .rate_limited(key, window, "too many registration attempts")
+                .await?);
+        }
         let (profile, code) = self.create_account(&account, false).await?;
+        if let Some(key) = &created_key {
+            self.limiter.check(key, limit, window).await?;
+        }
         if let Some(code) = code {
             self.deliver_verification_code(&profile, &code).await;
         }
@@ -665,9 +701,21 @@ impl IdentityService {
         current: &SecretString,
         new: &SecretString,
     ) -> Result<()> {
-        self.zitadel
+        // Wrong current passwords are counted per user; a policy or outage
+        // failure is not a guess and hands the attempt back.
+        let key = format!("rl:password:user:{}", actor.user_id);
+        self.enforce(&key, PASSWORD_CHECK_LIMIT, "password").await?;
+        if let Err(err) = self
+            .zitadel
             .change_password(&actor.zitadel_user_id, current, new)
-            .await?;
+            .await
+        {
+            if err.code() != ErrorCode::InvalidCredentials {
+                self.limiter.release(&key).await?;
+            }
+            return Err(err);
+        }
+        self.limiter.clear(&key).await?;
         for id in self.sessions.list(actor.user_id).await? {
             if id != actor.session_id {
                 self.sessions.revoke(actor.user_id, &id).await?;

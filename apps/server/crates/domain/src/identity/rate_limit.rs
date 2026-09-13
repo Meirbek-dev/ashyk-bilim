@@ -52,6 +52,33 @@ impl RateLimiter {
             .unwrap_or(fallback.as_secs()))
     }
 
+    /// Hits so far in the window on `key`, without counting one.
+    pub async fn count(&self, key: &str) -> Result<u32> {
+        let mut conn = self.redis.clone();
+        let count: Option<u32> = redis::cmd("GET")
+            .arg(key)
+            .query_async(&mut conn)
+            .await
+            .map_err(|e| Error::internal("rate limit get", e))?;
+        Ok(count.unwrap_or(0))
+    }
+
+    /// Undo one hit (a login whose password Zitadel accepted is not a
+    /// brute-force attempt). The key goes away at zero so an expired window
+    /// never lingers as a TTL-less negative counter.
+    pub async fn release(&self, key: &str) -> Result<()> {
+        let mut conn = self.redis.clone();
+        let left: i64 = redis::cmd("DECR")
+            .arg(key)
+            .query_async(&mut conn)
+            .await
+            .map_err(|e| Error::internal("rate limit decr", e))?;
+        if left <= 0 {
+            self.clear(key).await?;
+        }
+        Ok(())
+    }
+
     /// Clear a window early (e.g. successful login clears the failure count).
     pub async fn clear(&self, key: &str) -> Result<()> {
         let mut conn = self.redis.clone();
