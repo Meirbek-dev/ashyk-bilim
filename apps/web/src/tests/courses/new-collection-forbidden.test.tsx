@@ -53,3 +53,49 @@ describe('NewCollection 403 handling', () => {
     expect(message).not.toBe(ruMessages.NewCollectionPage.toast.failure)
   })
 })
+
+function renderNewCollection() {
+  return render(
+    <NextIntlClientProvider locale="ru" messages={ruMessages}>
+      <NewCollection />
+    </NextIntlClientProvider>,
+  )
+}
+
+// BUG-014: the row's div onClick toggled a second time on a checkbox click and
+// cancelled it; the checkbox itself (mouse and Space) must select the course.
+describe('NewCollection course picker checkbox', () => {
+  it('toggles on the checkbox itself, via Space, and via the row label', async () => {
+    renderNewCollection()
+    const checkbox = screen.getByRole('checkbox', { name: 'Python' })
+    expect(screen.getAllByText('Курсы не выбраны').length).toBeGreaterThan(0)
+
+    fireEvent.click(checkbox)
+    await waitFor(() => expect(checkbox).toHaveAttribute('aria-checked', 'true'))
+    expect(screen.getAllByText('1 курс выбран').length).toBeGreaterThan(0)
+
+    fireEvent.click(checkbox)
+    await waitFor(() => expect(checkbox).toHaveAttribute('aria-checked', 'false'))
+
+    fireEvent.click(screen.getByRole('heading', { name: 'Python' }))
+    await waitFor(() => expect(checkbox).toHaveAttribute('aria-checked', 'true'))
+
+    checkbox.focus()
+    fireEvent.keyDown(checkbox, { key: ' ' })
+    fireEvent.keyUp(checkbox, { key: ' ' })
+    await waitFor(() => expect(checkbox).toHaveAttribute('aria-checked', 'false'))
+  })
+})
+
+// UX-051 (BUG-013): an empty name is a field error on the input, not only a toast.
+describe('NewCollection required fields', () => {
+  it('marks the empty name invalid inline and focuses it', async () => {
+    renderNewCollection()
+    fireEvent.click(screen.getByRole('button', { name: ruMessages.NewCollectionPage.createButton }))
+    const name = screen.getByLabelText(/Название/)
+    await waitFor(() => expect(name).toHaveAttribute('aria-invalid', 'true'))
+    expect(screen.getByRole('alert')).toHaveTextContent(ruMessages.NewCollectionPage.toast.missingName)
+    expect(document.activeElement).toBe(name)
+    expect(toast.error).not.toHaveBeenCalledWith(ruMessages.NewCollectionPage.toast.missingName)
+  })
+})

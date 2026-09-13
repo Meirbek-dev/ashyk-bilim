@@ -46,6 +46,8 @@ function NewCollection() {
   const { toastApiError } = useApiError()
   const { data: courses, error, isLoading } = useCourseList<CourseListItem>()
   const [isPublic, setIsPublic] = useState(true)
+  // Inline field error on submit, cleared as the field changes (UX-051 / BUG-013).
+  const [fieldError, setFieldError] = useState<'name' | 'description' | null>(null)
 
   const filteredCourses = useMemo(() => {
     if (!courses || !searchQuery.trim()) return courses || []
@@ -62,22 +64,26 @@ function NewCollection() {
 
   const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value)
+    setFieldError(null)
   }
 
   const handleDescriptionChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setDescription(event.target.value)
+    setFieldError(null)
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!name.trim()) {
-      toast.error(t('toast.missingName'))
+      setFieldError('name')
+      document.getElementById('collection-name')?.focus()
       return
     }
 
     if (!description.trim()) {
-      toast.error(t('toast.missingDescription'))
+      setFieldError('description')
+      document.getElementById('collection-description')?.focus()
       return
     }
 
@@ -181,7 +187,14 @@ function NewCollection() {
                   onChange={handleNameChange}
                   maxLength={100}
                   className="h-10"
+                  aria-invalid={fieldError === 'name' || undefined}
+                  aria-describedby={fieldError === 'name' ? 'collection-name-error' : undefined}
                 />
+                {fieldError === 'name' ? (
+                  <p id="collection-name-error" role="alert" className="text-destructive text-xs">
+                    {t('toast.missingName')}
+                  </p>
+                ) : null}
                 <p className="text-muted-foreground text-xs">{t('nameChars', { current: name.length, max: 100 })}</p>
               </div>
 
@@ -226,7 +239,14 @@ function NewCollection() {
                 rows={4}
                 maxLength={500}
                 className="resize-none"
+                aria-invalid={fieldError === 'description' || undefined}
+                aria-describedby={fieldError === 'description' ? 'collection-description-error' : undefined}
               />
+              {fieldError === 'description' ? (
+                <p id="collection-description-error" role="alert" className="text-destructive text-xs">
+                  {t('toast.missingDescription')}
+                </p>
+              ) : null}
               <p className="text-muted-foreground text-xs">
                 {t('descriptionChars', { current: description.length, max: 500 })}
               </p>
@@ -309,10 +329,11 @@ function NewCollection() {
                     ) : (
                       filteredCourses.map((course: CourseListItem) => {
                         const isSelected = selectedCourses.includes(course.id)
+                        // A <label> wires the row text to the checkbox; the old div onClick
+                        // toggled a second time on a checkbox click and cancelled it (BUG-014).
                         return (
-                          <div
+                          <label
                             key={course.id}
-                            onClick={() => toggleCourse(course.id)}
                             className={`group hover:border-primary hover:bg-accent relative flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-all ${
                               isSelected ? 'border-primary bg-accent' : ''
                             }`}
@@ -352,7 +373,7 @@ function NewCollection() {
                                 </p>
                               )}
                             </div>
-                          </div>
+                          </label>
                         )
                       })
                     )}
