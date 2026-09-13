@@ -75,9 +75,11 @@ pub struct TeacherWorkRow {
     pub review_ref: Option<uuid::Uuid>,
 }
 
-/// Rows flagged `teacher_action_required` in the teacher's courses (creator,
-/// or active `resource_authors` entry). The review target is the latest
-/// submission, else the newest `submitted` file attempt.
+/// Rows flagged `teacher_action_required` in the courses the teacher may grade.
+///
+/// Grading courses: creator, or an active non-reporter `resource_authors`
+/// entry (the authorship rule of `Course::is_author`). The review target is
+/// the latest submission, else the newest `submitted` file attempt.
 pub async fn list_teacher_grading_work(
     pool: &PgPool,
     teacher_id: UserId,
@@ -107,7 +109,8 @@ pub async fn list_teacher_grading_work(
            WHERE p.teacher_action_required
              AND (c.creator_id = $1 OR EXISTS (
                      SELECT 1 FROM resource_authors ra
-                     WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'))"#,
+                     WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
+                       AND ra.authorship <> 'reporter'))"#,
         teacher_id.0
     )
     .fetch_all(pool)
@@ -148,7 +151,8 @@ pub async fn list_teacher_release_work(
            WHERE p.state = 'graded'
              AND (c.creator_id = $1 OR EXISTS (
                      SELECT 1 FROM resource_authors ra
-                     WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'))"#,
+                     WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
+                       AND ra.authorship <> 'reporter'))"#,
         teacher_id.0
     )
     .fetch_all(pool)
