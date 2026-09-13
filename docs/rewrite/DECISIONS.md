@@ -1018,3 +1018,22 @@ Implements three more items of the owner answers above. Routes:
   …) — only the completion count, `progress_pct`, `certificate_eligible`
   and the outline `complete` flag (now `completed_at || passed/completed`,
   the same predicate as the course aggregate) are sticky.
+
+## Login brute-force limits (2026-09-13, gauntlet pass 12)
+
+- **The per-IP login window counts failures only** (BUG-130). Behind Next every
+  browser shares `X-Forwarded-For: ::1`, so a classroom NAT hit the 20-per-5-min
+  cap with correct passwords. Every attempt is still counted before the Zitadel
+  round-trip (an attacker cannot race the counter); the hit is released once
+  Zitadel accepts the password (success, MFA-required, disabled account). Numbers
+  stay `20 / 5 min` per IP, `10 / 15 min` per account (cleared on success).
+- **The per-account key is the resolved user id** (BUG-134): `rl:login:name:<user
+  id>` when the login resolves, `rl:login:name:<trimmed lower-case identifier>`
+  for unknown names — a username lock cannot be bypassed via the email.
+- **`POST /auth/password` limits wrong current passwords**: `5 / 15 min` per user
+  (`rl:password:user:<id>`), 429 with `Retry-After`; a policy or outage failure
+  hands the attempt back, a success clears the window (BUG-131).
+- **The registration `created` cap counts accounts Zitadel actually created**
+  (BUG-133): read before, counted after the 201 — a policy-rejected password no
+  longer eats the 10-per-hour budget.
+
