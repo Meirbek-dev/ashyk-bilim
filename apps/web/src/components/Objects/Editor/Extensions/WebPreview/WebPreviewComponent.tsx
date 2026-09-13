@@ -1,13 +1,8 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlignCenter, AlignLeft, AlignRight, Edit2, Globe, Save, Trash, X } from 'lucide-react'
 import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { getYouTubeVideoId } from '@/lib/utils'
-import { queryKeys } from '@/lib/react-query/queryKeys'
-import { useApiError } from '@/hooks/useApiError'
-import { linkPreview } from '@/lib/api/generated/utils/utils'
-import type { LinkPreview } from '@/lib/api/generated/zod'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { Checkbox } from '@components/ui/checkbox'
 import NextImage from '@components/ui/NextImage'
@@ -16,9 +11,9 @@ import { Button } from '@components/ui/button'
 import { Label } from '@components/ui/label'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import type { WebPreviewAttrs } from './WebPreview'
+import { isHttpUrl, previewHostname, useLinkPreviewLookup } from './link-preview'
 
 type WebPreviewProps = TypedNodeViewProps<WebPreviewAttrs> & {
   deleteNode?: () => void
@@ -62,38 +57,6 @@ function FaviconDisplay({
   )
 }
 
-/** `example.com` for the fallback card when the page gave no metadata. */
-export function previewHostname(url: string): string {
-  try {
-    return new URL(url).hostname
-  } catch {
-    return url
-  }
-}
-
-/** Only an http(s) URL becomes an anchor; a rejected value («not a url») stays plain text. */
-export function isHttpUrl(url: string | null | undefined): url is string {
-  try {
-    return Boolean(url) && /^https?:$/.test(new URL(url ?? '').protocol)
-  } catch {
-    return false
-  }
-}
-
-/** The node's attributes for a server preview (`GET utils/link-preview`); `og_*` names are the stored schema. */
-export function previewToAttrs(url: string, preview: LinkPreview | null): Partial<WebPreviewAttrs> {
-  return {
-    url,
-    title: preview?.title ?? null,
-    description: preview?.description ?? null,
-    og_image: preview?.image_url ?? null,
-    favicon: null,
-    og_type: null,
-    og_url: preview?.url ?? null,
-    site_name: preview?.site_name ?? null,
-  }
-}
-
 /** The card body: an anchor for a real http(s) link, a plain block otherwise. */
 function CardLink({ href, children }: { href: string | undefined; children: React.ReactNode }) {
   const className = 'no-underline hover:no-underline focus:no-underline active:no-underline'
@@ -116,16 +79,6 @@ const getAlignmentClass = (alignment: string) => {
   if (alignment === 'center') return 'justify-center'
   if (alignment === 'right') return 'justify-end'
   return 'justify-start'
-}
-
-function urlPreviewQueryOptions(url: string) {
-  return queryOptions({
-    queryKey: queryKeys.activities.linkPreview(url),
-    queryFn: () => linkPreview({ url }),
-    refetchOnWindowFocus: false,
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-  })
 }
 
 function AlignmentControls({
@@ -169,15 +122,12 @@ function AlignmentControls({
 // The component logic is intentionally split across helper functions and local state.
 // Complexity is managed by breaking large expressions into isolated helpers.
 
-function WebPreviewComponent({ node, updateAttributes, deleteNode, editor }: WebPreviewProps) {
+function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewProps) {
   const t = useTranslations('Components.WebPreview')
-  const tErrors = useTranslations('Errors')
-  const { handleApiError } = useApiError()
   const [inputUrl, setInputUrl] = useState(node.attrs.url || '')
   const [error, setError] = useState<string | null>(null)
-  const [editing, setEditing] = useState(!node.attrs.url)
+  const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const queryClient = useQueryClient()
   const editorContext = useEditorProvider()
   const isEditable = editorContext?.isEditable ?? true
 
@@ -202,86 +152,11 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode, editor }: Web
   const [showButton, setShowButton] = useState(node.attrs.showButton)
   const [openInPopup, setOpenInPopup] = useState(node.attrs.openInPopup)
   const [popupOpen, setPopupOpen] = useState(false)
-  const [modalOpen, setModalOpen] = useState(!node.attrs.url)
-  // One lookup per URL: a failed confirm stores the URL without metadata,
-  // which must not re-trigger the auto-fetch (double 422 + double toast).
-  const attemptedUrls = useRef(new Set<string>())
-  // Only editors resolve previews (a saved fallback must not refetch and toast
-  // on every learner view), and only for a URL the server could accept.
-  const shouldAutoFetchPreview = Boolean(
-    editor.isEditable && isHttpUrl(node.attrs.url) && !hasPreview && !attemptedUrls.current.has(node.attrs.url),
-  )
-  const previewQuery = useQuery({
-    ...urlPreviewQueryOptions(node.attrs.url || ''),
-    enabled: shouldAutoFetchPreview,
-  })
-
-  const applyPreviewData = useCallback(
-    (url: string, data: LinkPreview) => {
-      const hasMinimalMetadata = !(data.title || data.description || data.image_url)
-
-      if (hasMinimalMetadata) {
-        toast.error(t('metadataIncomplete'), {
-          duration: 4000,
-        })
-      }
-
-      updateAttributes(previewToAttrs(url, data))
-      setEditing(false)
-      setError(null)
-    },
-    [t, updateAttributes],
-  )
-
-  // The link is kept either way: a failed preview becomes the fallback card
-  // (hostname + hint) and the reason is toasted from the problem+json code.
-  const applyPreviewFailure = useCallback(
-    (url: string, failure: unknown) => {
-      const processed = handleApiError(failure, undefined, t('errorFetchingPreview'))
-      // A rejected URL (422 on `url`) reads better as its field message than as "check the form".
-      const field = processed.fieldErrors[0]
-      const message = field && tErrors.has(`fields.${field.code}`) ? tErrors(`fields.${field.code}`) : processed.description
-      toast.error(message, { duration: 4000 })
-      updateAttributes(previewToAttrs(url, null))
-      setEditing(false)
-      setError(null)
-    },
-    [handleApiError, t, tErrors, updateAttributes],
-  )
-
-  const fetchPreviewMutation = useMutation({
-    mutationFn: async (url: string) => {
-      attemptedUrls.current.add(url)
-      return queryClient.fetchQuery(urlPreviewQueryOptions(url))
-    },
-    onSuccess: (data, url) => {
-      applyPreviewData(url, data)
-    },
-    onError: (fetchError: unknown, url) => {
-      applyPreviewFailure(url, fetchError)
-    },
-  })
-
-  const loading = previewQuery.isFetching || fetchPreviewMutation.isPending
-
-  useEffect(() => {
-    if (!shouldAutoFetchPreview) return
-
-    const url = node.attrs.url
-    if (previewQuery.data && url) {
-      queueMicrotask(() => {
-        applyPreviewData(url, previewQuery.data)
-      })
-      return
-    }
-
-    if (previewQuery.error && url) {
-      attemptedUrls.current.add(url)
-      queueMicrotask(() => {
-        applyPreviewFailure(url, previewQuery.error)
-      })
-    }
-  }, [applyPreviewData, applyPreviewFailure, node.attrs.url, previewQuery.data, previewQuery.error, shouldAutoFetchPreview])
+  const [modalOpen, setModalOpen] = useState(false)
+  // A stored block is never resolved again on load (learner or editor): the
+  // lookup runs once, when the author confirms a new URL in the dialog.
+  const lookup = useLinkPreviewLookup()
+  const loading = lookup.isPending
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -308,15 +183,6 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode, editor }: Web
     setOpenInPopup(node.attrs.openInPopup)
   }
 
-  useEffect(() => {
-    if (!node.attrs.url) {
-      queueMicrotask(() => {
-        setEditing(true)
-        setModalOpen(true)
-      })
-    }
-  }, [node.attrs.url])
-
   function handleAlignmentChange(value: string) {
     updateAttributes({ alignment: value })
   }
@@ -334,22 +200,11 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode, editor }: Web
       return
     }
     if (inputUrl && inputUrl !== node.attrs.url) {
-      setError(null)
-      // `mutate`, not `mutateAsync`: the failure is handled in `onError`,
-      // nothing may reach `window.onerror` as an unhandled rejection.
-      fetchPreviewMutation.mutate(inputUrl)
-    } else {
-      setEditing(false)
-      setModalOpen(false)
+      lookup.mutate(inputUrl, { onSuccess: attrs => updateAttributes(attrs) })
     }
-    updateAttributes({ buttonLabel, showButton, openInPopup })
-    setModalOpen(false)
-  }
-
-  const handleCancelEdit = () => {
     setEditing(false)
-    setInputUrl(node.attrs.url || '')
     setError(null)
+    updateAttributes({ buttonLabel, showButton, openInPopup })
     setModalOpen(false)
   }
 
@@ -368,6 +223,15 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode, editor }: Web
         site_name: null,
       })
     }
+  }
+
+  const handleCancelEdit = () => {
+    setEditing(false)
+    setInputUrl(node.attrs.url || '')
+    setError(null)
+    setModalOpen(false)
+    // A block without a URL has nothing to show: cancelling removes it rather than leaving an empty card.
+    if (!node.attrs.url) handleDelete()
   }
 
   const alignmentClass = getAlignmentClass(node.attrs.alignment || 'left')
@@ -546,6 +410,11 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode, editor }: Web
               </form>
             }
           />
+          {!previewUrl && isEditable && !editing ? (
+            <button type="button" className="text-sm text-gray-500 hover:text-gray-700" onClick={handleEdit}>
+              {t('enterWebsiteUrl')}
+            </button>
+          ) : null}
           {/* Only show preview card when not editing */}
           {showCard ? (
             <>

@@ -22,11 +22,21 @@ export interface WebPreviewAttrs {
   openInPopup: boolean
 }
 
+export interface WebPreviewStorage {
+  /** The URL dialog is open; the node is inserted only once it confirms (BUG-107). */
+  insertOpen: boolean
+}
+
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     blockWebPreview: {
-      insertWebPreview: () => ReturnType
+      /** Without attrs: opens the URL dialog (`WebPreviewInsertDialog`); with a `url`: inserts the block. */
+      insertWebPreview: (attrs?: Partial<WebPreviewAttrs> & { url: string }) => ReturnType
+      closeWebPreviewDialog: () => ReturnType
     }
+  }
+  interface Storage {
+    blockWebPreview: WebPreviewStorage
   }
 }
 
@@ -34,6 +44,10 @@ const WebPreview = Node.create({
   name: 'blockWebPreview',
   group: 'block',
   atom: true,
+
+  addStorage(): WebPreviewStorage {
+    return { insertOpen: false }
+  },
 
   addAttributes() {
     return {
@@ -63,9 +77,19 @@ const WebPreview = Node.create({
   addCommands() {
     return {
       insertWebPreview:
+        attrs =>
+        ({ commands, editor }: CommandProps) => {
+          if (attrs) return commands.insertContent({ type: this.name, attrs })
+          // A doc-neutral transaction: `useEditorState` re-reads the storage, autosave sees no change.
+          editor.storage.blockWebPreview.insertOpen = true
+          return true
+        },
+      closeWebPreviewDialog:
         () =>
-        ({ commands }: CommandProps) =>
-          commands.insertContent({ type: this.name }),
+        ({ editor }: CommandProps) => {
+          editor.storage.blockWebPreview.insertOpen = false
+          return true
+        },
     }
   },
 

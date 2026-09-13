@@ -68,6 +68,10 @@ vi.mock('../../components/Objects/Editor/Toolbar/SlashCommandMenu', () => ({
   SlashCommandMenu: () => null,
 }))
 
+vi.mock('../../components/Objects/Editor/Extensions/WebPreview/WebPreviewInsertDialog', () => ({
+  WebPreviewInsertDialog: () => null,
+}))
+
 vi.mock('../../components/Objects/Editor/menus/BubbleToolbar', () => ({
   BubbleToolbar: () => null,
 }))

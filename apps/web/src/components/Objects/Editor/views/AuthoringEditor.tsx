@@ -10,6 +10,7 @@ import { BubbleToolbar } from '../menus/BubbleToolbar'
 import { FloatingPlusButton } from '../menus/FloatingPlusButton'
 import { SlashCommandMenu } from '../Toolbar/SlashCommandMenu'
 import { EditorHeader, EditorShell } from '../chrome'
+import { WebPreviewInsertDialog } from '../Extensions/WebPreview/WebPreviewInsertDialog'
 import DesktopOnlyGuard from '@components/Dashboard/Misc/DesktopOnlyGuard'
 import { BubbleMenu } from '@tiptap/react/menus'
 import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
@@ -116,6 +117,8 @@ function EditorCore({ activity, content, onUpdate }: EditorCoreProps) {
           not affect visual layout (Requirements 3.2, 3.4). */}
       <EmbedPanel />
     </Tiptap>
+      {/* URL dialog for a new web-preview block: the node is inserted only on confirm (BUG-107). */}
+      <WebPreviewInsertDialog />
   )
 }
 

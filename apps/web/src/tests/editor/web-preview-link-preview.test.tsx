@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
@@ -10,6 +10,11 @@ import { APIError } from '@/lib/api/assertSuccess'
 const mocks = vi.hoisted(() => ({
   linkPreview: vi.fn(),
   toastError: vi.fn(),
+  editor: {
+    storage: { blockWebPreview: { insertOpen: true } },
+    commands: { closeWebPreviewDialog: vi.fn() },
+    inserted: [] as unknown[],
+  },
 }))
 
 vi.mock('@/lib/api/generated/utils/utils', () => ({ linkPreview: mocks.linkPreview }))
@@ -23,15 +28,37 @@ vi.mock('next-intl', () => ({
 }))
 vi.mock('@tiptap/react', () => ({
   NodeViewWrapper: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  useTiptap: () => ({
+    editor: {
+      ...mocks.editor,
+      chain: () => ({
+        focus: () => ({
+          insertWebPreview: (attrs: unknown) => ({
+            run: () => {
+              mocks.editor.inserted.push(attrs)
+            },
+          }),
+        }),
+      }),
+    },
+  }),
+  useEditorState: ({ selector }: { selector: (ctx: { editor: typeof mocks.editor }) => boolean }) =>
+    selector({ editor: mocks.editor }),
 }))
 vi.mock('@components/Contexts/Editor/EditorContext', () => ({ useEditorProvider: () => ({ isEditable: true }) }))
-vi.mock('@/components/Objects/Elements/Modal/Modal', () => ({ default: () => null }))
+vi.mock('@/components/Objects/Elements/Modal/Modal', () => ({
+  default: (props: { isDialogOpen?: boolean; dialogContent: ReactNode }) =>
+    props.isDialogOpen ? <div role="dialog">{props.dialogContent}</div> : null,
+}))
 vi.mock('@components/ui/NextImage', () => ({ default: (props: { alt: string }) => <img alt={props.alt} /> }))
 
-import WebPreviewComponent, {
+import WebPreviewComponent from '@/components/Objects/Editor/Extensions/WebPreview/WebPreviewComponent'
+import { WebPreviewInsertDialog } from '@/components/Objects/Editor/Extensions/WebPreview/WebPreviewInsertDialog'
+import {
   previewHostname,
   previewToAttrs,
-} from '@/components/Objects/Editor/Extensions/WebPreview/WebPreviewComponent'
+  useLinkPreviewLookup,
+} from '@/components/Objects/Editor/Extensions/WebPreview/link-preview'
 import type { WebPreviewAttrs } from '@/components/Objects/Editor/Extensions/WebPreview/WebPreview'
 
 const URL_UNDER_TEST = 'https://example.com/posts/1'
@@ -63,31 +90,27 @@ function attrs(overrides: Partial<WebPreviewAttrs> = {}): WebPreviewAttrs {
   }
 }
 
-function renderBlock(nodeAttrs: WebPreviewAttrs, editable = true) {
-  const updateAttributes = vi.fn()
+function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  // Only the node, the attribute setter, delete and `editor.isEditable` are read by the view.
-  const props = (attrsNow: WebPreviewAttrs) =>
-    ({
-      node: { attrs: attrsNow },
-      updateAttributes,
-      deleteNode: vi.fn(),
-      editor: { isEditable: editable },
-    }) as unknown as Parameters<
-      typeof WebPreviewComponent
-    >[0]
-  const tree = (attrsNow: WebPreviewAttrs) => (
-    <QueryClientProvider client={client}>
-      <WebPreviewComponent {...props(attrsNow)} />
-    </QueryClientProvider>
-  )
-  const { rerender } = render(tree(nodeAttrs))
-  return Object.assign(updateAttributes, { rerenderWith: (next: WebPreviewAttrs) => rerender(tree(next)) })
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+}
+
+function renderBlock(nodeAttrs: WebPreviewAttrs) {
+  const updateAttributes = vi.fn()
+  const deleteNode = vi.fn()
+  // Only the node, the attribute setter and delete are read by the view.
+  const props = { node: { attrs: nodeAttrs }, updateAttributes, deleteNode } as unknown as Parameters<
+    typeof WebPreviewComponent
+  >[0]
+  render(<WebPreviewComponent {...props} />, { wrapper })
+  return { updateAttributes, deleteNode }
 }
 
 describe('editor link block on `GET utils/link-preview`', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.editor.storage.blockWebPreview.insertOpen = true
+    mocks.editor.inserted = []
   })
 
   it('maps the v2 preview onto the stored `og_*` attributes', () => {
@@ -106,28 +129,24 @@ describe('editor link block on `GET utils/link-preview`', () => {
     expect(previewHostname('not a url')).toBe('not a url')
   })
 
-  it('fetches the preview for a saved link and stores the card', async () => {
+  it('resolves a confirmed URL once and stores the card', async () => {
     mocks.linkPreview.mockResolvedValue(wire)
+    const { result } = renderHook(() => useLinkPreviewLookup(), { wrapper })
 
-    const updateAttributes = renderBlock(attrs({ url: URL_UNDER_TEST }))
-
-    await waitFor(() => expect(updateAttributes).toHaveBeenCalledWith(previewToAttrs(URL_UNDER_TEST, wire)))
+    await expect(result.current.mutateAsync(URL_UNDER_TEST)).resolves.toEqual(previewToAttrs(URL_UNDER_TEST, wire))
     expect(mocks.linkPreview).toHaveBeenCalledWith({ url: URL_UNDER_TEST })
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
 
-  it('keeps the link and renders the localized fallback card when the preview fails', async () => {
+  it('keeps the link as the fallback card and toasts the localized code when the preview fails', async () => {
     mocks.linkPreview.mockRejectedValue(
       new APIError({ code: 'link-preview-failed', message: 'page answered 500', status: 502 }),
     )
+    const { result } = renderHook(() => useLinkPreviewLookup(), { wrapper })
 
-    const updateAttributes = renderBlock(attrs({ url: URL_UNDER_TEST }))
-
-    await waitFor(() => expect(updateAttributes).toHaveBeenCalledWith(previewToAttrs(URL_UNDER_TEST, null)))
+    await expect(result.current.mutateAsync(URL_UNDER_TEST)).resolves.toEqual(previewToAttrs(URL_UNDER_TEST, null))
     expect(String(mocks.toastError.mock.calls[0]?.[0])).toContain('codes.link-preview-failed')
-    expect(screen.getByTestId('web-preview-fallback')).toHaveTextContent('example.com')
-    expect(screen.getByText('Components.WebPreview.previewUnavailable')).toBeInTheDocument()
-    expect(screen.queryByText(/page answered/u)).not.toBeInTheDocument()
+    expect(String(mocks.toastError.mock.calls[0]?.[0])).not.toContain('page answered')
   })
 
   it('toasts the field message for a URL the server refuses', async () => {
@@ -139,34 +158,21 @@ describe('editor link block on `GET utils/link-preview`', () => {
         fieldErrors: [{ field: 'url', code: 'unsafe', message: 'URL resolves to a non-public address' }],
       }),
     )
+    const { result } = renderHook(() => useLinkPreviewLookup(), { wrapper })
 
-    const updateAttributes = renderBlock(attrs({ url: 'http://10.0.0.1/secret' }))
-
-    await waitFor(() => expect(updateAttributes).toHaveBeenCalledWith(previewToAttrs('http://10.0.0.1/secret', null)))
+    await result.current.mutateAsync('http://10.0.0.1/secret')
     expect(String(mocks.toastError.mock.calls[0]?.[0])).toBe('Errors.fields.unsafe')
   })
 
-  it('looks a rejected URL up once, then shows a fallback card that is not a link', async () => {
-    mocks.linkPreview.mockRejectedValue(
-      new APIError({
-        code: 'validation-failed',
-        message: 'Validation failed',
-        status: 422,
-        fieldErrors: [{ field: 'url', code: 'unsafe', message: 'not a url' }],
-      }),
-    )
-
+  it('renders a stored fallback card without refetching (UX-025)', () => {
     const REJECTED = 'http://10.255.255.1/private'
-    const updateAttributes = renderBlock(attrs({ url: REJECTED }))
+    renderBlock(attrs(previewToAttrs(REJECTED, null)))
 
-    await waitFor(() => expect(updateAttributes).toHaveBeenCalledWith(previewToAttrs(REJECTED, null)))
-    // The stored link without metadata comes back through the node attrs —
-    // no second lookup, no second toast.
-    updateAttributes.rerenderWith(attrs(previewToAttrs(REJECTED, null)))
-    await waitFor(() => expect(screen.getByTestId('web-preview-fallback')).toBeInTheDocument())
-    expect(mocks.linkPreview).toHaveBeenCalledTimes(1)
-    expect(mocks.toastError).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('web-preview-fallback')).toHaveTextContent('10.255.255.1')
+    expect(screen.getByText('Components.WebPreview.previewUnavailable')).toBeInTheDocument()
     expect(screen.getByTestId('web-preview-fallback').closest('a')).not.toBeNull()
+    expect(mocks.linkPreview).not.toHaveBeenCalled()
+    expect(mocks.toastError).not.toHaveBeenCalled()
   })
 
   it('renders the stored card with the site name without refetching', () => {
@@ -177,11 +183,32 @@ describe('editor link block on `GET utils/link-preview`', () => {
     expect(mocks.linkPreview).not.toHaveBeenCalled()
   })
 
-  it('never resolves a preview in the read-only learner view', async () => {
-    const { linkPreview } = await import('@/lib/api/generated/utils/utils')
-    vi.mocked(linkPreview).mockClear()
-    renderBlock(attrs({ url: 'not a url' }), false)
-    await new Promise(resolve => setTimeout(resolve, 20))
-    expect(linkPreview).not.toHaveBeenCalled()
+  it('opens no dialog for a stored block without a URL; cancelling its edit removes it', () => {
+    const { deleteNode } = renderBlock(attrs())
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    fireEvent.click(screen.getByText('Components.WebPreview.enterWebsiteUrl'))
+    fireEvent.click(screen.getByText('Components.WebPreview.cancel'))
+    expect(deleteNode).toHaveBeenCalled()
+  })
+
+  // BUG-107: the block exists only after the URL dialog confirms.
+  it('insert dialog: cancel inserts nothing, confirm inserts the resolved block', async () => {
+    mocks.linkPreview.mockResolvedValue(wire)
+    render(<WebPreviewInsertDialog />, { wrapper })
+
+    fireEvent.click(screen.getByText('Components.WebPreview.cancel'))
+    expect(mocks.editor.commands.closeWebPreviewDialog).toHaveBeenCalled()
+    expect(mocks.editor.inserted).toEqual([])
+
+    fireEvent.change(screen.getByLabelText('Components.WebPreview.websiteUrl'), { target: { value: 'not a url' } })
+    fireEvent.click(screen.getByText('Components.WebPreview.save'))
+    expect(screen.getByText('Components.WebPreview.urlMustBeHttp')).toBeInTheDocument()
+    expect(mocks.editor.inserted).toEqual([])
+
+    fireEvent.change(screen.getByLabelText('Components.WebPreview.websiteUrl'), { target: { value: URL_UNDER_TEST } })
+    fireEvent.click(screen.getByText('Components.WebPreview.save'))
+    await waitFor(() => expect(mocks.editor.inserted).toEqual([previewToAttrs(URL_UNDER_TEST, wire)]))
+    expect(mocks.linkPreview).toHaveBeenCalledTimes(1)
   })
 })
