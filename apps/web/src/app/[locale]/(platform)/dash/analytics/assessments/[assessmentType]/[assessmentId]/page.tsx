@@ -7,12 +7,16 @@ import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyS
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsAssessmentTypeLabel } from '@/lib/analytics/labels'
 import { getLocale, getTranslations } from 'next-intl/server'
+import { describeAnalyticsError } from '@/lib/analytics/errors'
 import type { AssessmentType } from '@/types/analytics'
 import { fromUnix } from '@/lib/api/contract'
 import { Badge } from '@/components/ui/badge'
 import { getAssessment } from '@/lib/api/generated/assessments/assessments'
 import { analyticsPageMetadata } from '../../../_components/metadata'
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { AssessmentId, AssessmentKind } from '@/lib/api/generated/zod'
 
 export async function generateMetadata({ params }: { params: Promise<{ assessmentId: string }> }): Promise<Metadata> {
   const { assessmentId } = await params
@@ -31,12 +35,14 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const [{ assessmentType, assessmentId }, searchParams, locale, t] = await Promise.all([
+  const [{ assessmentType, assessmentId }, searchParams, locale, t, tErrors] = await Promise.all([
     props.params,
     props.searchParams,
     getLocale(),
     getTranslations('TeacherAnalytics'),
+    getTranslations('Errors'),
   ])
+  if (!AssessmentKind.safeParse(assessmentType).success || !AssessmentId.safeParse(assessmentId).success) notFound()
   const query = normalizeAnalyticsQuery(searchParams)
 
   let detail: Awaited<ReturnType<typeof getTeacherAssessmentDetail>>
@@ -47,10 +53,12 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
       query,
     })
   } catch (error) {
+    // Unknown assessment, wrong kind or out of scope: the not-found page, not an English detail.
+    if (isApiError(error) && error.status === 404) notFound()
     return (
       <AnalyticsEmptyState
         title={t('pages.assessmentDetailTitle')}
-        description={error instanceof Error ? error.message : t('pages.assessmentDetailLoadError')}
+        description={describeAnalyticsError(error, t, tErrors, t('pages.assessmentDetailLoadError'))}
       />
     )
   }

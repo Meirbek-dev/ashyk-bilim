@@ -8,8 +8,12 @@ import AtRiskLearnersTable from '@components/Dashboard/Analytics/AtRiskLearnersT
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
+import { describeAnalyticsError } from '@/lib/analytics/errors'
 import { getCourseMetadata } from '@services/courses/courses'
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { CourseId } from '@/lib/api/generated/zod'
 import { Badge } from '@/components/ui/badge'
 import { analyticsPageMetadata } from '../../_components/metadata'
 
@@ -30,21 +34,25 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
   params: Promise<{ courseuuid: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const [{ courseuuid }, searchParams, t] = await Promise.all([
+  const [{ courseuuid }, searchParams, t, tErrors] = await Promise.all([
     props.params,
     props.searchParams,
     getTranslations('TeacherAnalytics'),
+    getTranslations('Errors'),
   ])
+  if (!CourseId.safeParse(courseuuid).success) notFound()
   const query = normalizeAnalyticsQuery(searchParams)
 
   let detail: Awaited<ReturnType<typeof getTeacherCourseDetailByUuid>>
   try {
     detail = await getTeacherCourseDetailByUuid(courseuuid, query)
   } catch (error) {
+    // Unknown or out-of-scope course: the not-found page, not an English detail.
+    if (isApiError(error) && error.status === 404) notFound()
     return (
       <AnalyticsEmptyState
         title={t('pages.courseDetailTitle')}
-        description={error instanceof Error ? error.message : t('pages.courseDetailLoadError')}
+        description={describeAnalyticsError(error, t, tErrors, t('pages.courseDetailLoadError'))}
       />
     )
   }
