@@ -47,6 +47,19 @@ pub(crate) fn reject_unknown<T: PartialEq + std::fmt::Display>(
     }
 }
 
+/// Trimmed name, or 422 `name`/`required` when blank (BUG-142).
+fn trimmed_name(name: &str) -> Result<&str> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(Error::validation(vec![FieldError {
+            field: "name".into(),
+            code: "required".into(),
+            message: "name must not be blank".into(),
+        }]));
+    }
+    Ok(name)
+}
+
 #[derive(Clone)]
 pub struct UsergroupsService {
     pool: PgPool,
@@ -80,6 +93,7 @@ impl UsergroupsService {
 
     pub async fn create(&self, actor: &Actor, name: &str, description: &str) -> Result<Usergroup> {
         actor.require(perm(Action::Create))?;
+        let name = trimmed_name(name)?;
         let id = ab_db::usergroups::insert_usergroup(&self.pool, name, description, actor.user_id)
             .await?;
         ab_db::usergroups::get_usergroup(&self.pool, id)
@@ -120,6 +134,7 @@ impl UsergroupsService {
         description: Option<&str>,
     ) -> Result<Usergroup> {
         self.writable(actor, id).await?;
+        let name = name.map(trimmed_name).transpose()?;
         ab_db::usergroups::update_usergroup(&self.pool, id, name, description).await?;
         ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?

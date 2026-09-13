@@ -165,3 +165,67 @@ async fn unknown_member_and_course_ids_are_validation_errors(pool: PgPool) {
     assert_eq!(courses.json()["field_errors"][0]["field"], "course_ids");
     assert_eq!(courses.json()["field_errors"][0]["code"], "unknown");
 }
+
+/// BUG-142: a blank name is 422 `name`/`required` (create and rename);
+/// surrounding whitespace is trimmed. Plus the manage grant: a non-creator
+/// holding `usergroup:manage:platform` can rename and delete.
+#[sqlx::test(migrations = "../../migrations")]
+async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = organizer(&app, "owner").await;
+
+    let blank = app
+        .post_as(
+            &owner,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "   " }),
+        )
+        .await;
+    assert_eq!(
+        blank.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        blank.text()
+    );
+    assert_eq!(blank.json()["field_errors"][0]["field"], "name");
+    assert_eq!(blank.json()["field_errors"][0]["code"], "required");
+
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "  Cohort  " }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    assert_eq!(created.json()["name"], "Cohort");
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let blank_rename = app
+        .patch_as(
+            &owner,
+            &format!("/api/v2/usergroups/{id}"),
+            &serde_json::json!({ "name": " " }),
+        )
+        .await;
+    assert_eq!(blank_rename.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(blank_rename.json()["field_errors"][0]["field"], "name");
+
+    let manager = app
+        .mint_session(&["usergroup:manage:platform", "usergroup:read:platform"])
+        .await;
+    let renamed = app
+        .patch_as(
+            &manager,
+            &format!("/api/v2/usergroups/{id}"),
+            &serde_json::json!({ "name": " Managed " }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    assert_eq!(renamed.json()["name"], "Managed");
+    assert_eq!(renamed.json()["can_write"], true);
+    let deleted = app
+        .delete_as(&manager, &format!("/api/v2/usergroups/{id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+}
