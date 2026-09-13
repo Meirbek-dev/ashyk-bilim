@@ -16,7 +16,9 @@ vi.mock('@services/analytics/teacher', async importOriginal => ({
 }))
 
 vi.mock('next-intl/server', () => ({
-  getTranslations: vi.fn(async () => (key: string) => `translated:${key}`),
+  getTranslations: vi.fn(async () =>
+    Object.assign((key: string) => `translated:${key}`, { has: (key: string) => key.startsWith('codes.') }),
+  ),
 }))
 
 vi.mock('@/i18n/navigation', () => ({ redirect: mocks.redirect }))
@@ -49,7 +51,9 @@ describe('shared analytics page loader', () => {
   })
 
   it('renders the shared empty state when analytics loading fails', async () => {
-    mocks.getTeacherOverview.mockRejectedValue(new Error('Analytics unavailable'))
+    mocks.getTeacherOverview.mockRejectedValue(
+      new APIError({ status: 403, code: 'forbidden', message: 'missing permission analytics:read' }),
+    )
 
     const result = (await AnalyticsPageContent({
       params: Promise.resolve({ locale: 'en' }),
@@ -60,7 +64,7 @@ describe('shared analytics page loader', () => {
 
     expect(result.props).toMatchObject({
       title: 'translated:pages.overviewDisabledTitle',
-      description: 'Analytics unavailable',
+      description: 'translated:pages.scopeDenied',
     })
   })
 })

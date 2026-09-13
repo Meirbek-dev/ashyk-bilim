@@ -4,6 +4,7 @@ import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyS
 import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar'
 import { Card, CardContent } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
+import { describeAnalyticsError } from '@/lib/analytics/errors'
 import { analyticsPageMetadata } from '../../_components/metadata'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
@@ -21,7 +22,7 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const query = normalizeAnalyticsQuery(await props.searchParams)
-  const t = await getTranslations('TeacherAnalytics')
+  const [t, tErrors] = await Promise.all([getTranslations('TeacherAnalytics'), getTranslations('Errors')])
 
   let risk: Awaited<ReturnType<typeof getAtRiskLearners>>
   try {
@@ -30,7 +31,7 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
     return (
       <AnalyticsEmptyState
         title={t('pages.atRiskUnavailableTitle')}
-        description={error instanceof Error ? error.message : t('pages.atRiskLoadError')}
+        description={describeAnalyticsError(error, t, tErrors, t('pages.atRiskLoadError'))}
       />
     )
   }

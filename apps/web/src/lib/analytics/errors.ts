@@ -1,0 +1,24 @@
+import { isApiError } from '@/lib/api/assertSuccess'
+
+type Translator = ((key: string, values?: Record<string, string | number>) => string) & {
+  has: (key: string) => boolean
+}
+
+/**
+ * Localized sentence for a failed analytics load. Analytics-specific buckets
+ * first (403 = filters point outside the caller's scope, 422 = bad filters),
+ * then `Errors.codes.<code>`; never the server's English `detail`, and
+ * `fallback` for anything without a translated contract code.
+ */
+export function describeAnalyticsError(
+  error: unknown,
+  t: Translator, // TeacherAnalytics
+  tErrors: Translator, // Errors
+  fallback: string,
+): string {
+  if (!isApiError(error)) return fallback
+  if (error.status === 403) return t('pages.scopeDenied')
+  if (error.status === 422) return t('pages.invalidFilters')
+  const key = `codes.${error.code}`
+  return tErrors.has(key) ? tErrors(key) : fallback
+}

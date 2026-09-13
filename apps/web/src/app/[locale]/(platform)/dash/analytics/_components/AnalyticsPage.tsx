@@ -3,6 +3,7 @@ import AnalyticsShell from '@components/Dashboard/Analytics/AnalyticsShell'
 import { getAdminAnalyticsOverview, getTeacherOverview, normalizeAnalyticsQuery } from '@services/analytics/teacher'
 import { Loader2 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { describeAnalyticsError } from '@/lib/analytics/errors'
 import { Suspense } from 'react'
 import type { ReactNode } from 'react'
 import { redirect } from '@/i18n/navigation'
@@ -51,7 +52,10 @@ export async function AnalyticsPageContent({
 }: SharedAnalyticsPageProps) {
   const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams])
   const query = normalizeAnalyticsQuery(resolvedSearchParams)
-  const t = await getTranslations({ locale: resolvedParams.locale, namespace: 'TeacherAnalytics' })
+  const [t, tErrors] = await Promise.all([
+    getTranslations({ locale: resolvedParams.locale, namespace: 'TeacherAnalytics' }),
+    getTranslations({ locale: resolvedParams.locale, namespace: 'Errors' }),
+  ])
 
   let overview: TeacherOverviewResponse
   let adminData: AdminAnalyticsResponse | null
@@ -69,7 +73,7 @@ export async function AnalyticsPageContent({
     return (
       <AnalyticsEmptyState
         title={t('pages.overviewDisabledTitle')}
-        description={error instanceof Error ? error.message : t('pages.overviewLoadError')}
+        description={describeAnalyticsError(error, t, tErrors, t('pages.overviewLoadError'))}
       />
     )
   }
