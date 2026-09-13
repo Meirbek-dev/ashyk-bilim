@@ -130,6 +130,11 @@ expression: json
           },
           "published": {
             "type": "boolean"
+          },
+          "version": {
+            "description": "Optimistic lock — send back as `If-Match` on the content PATCH.",
+            "format": "int32",
+            "type": "integer"
           }
         },
         "required": [
@@ -140,7 +145,8 @@ expression: json
           "activity_type",
           "activity_sub_type",
           "published",
-          "position"
+          "position",
+          "version"
         ],
         "type": "object"
       },
@@ -2649,17 +2655,14 @@ expression: json
         "type": "object"
       },
       "CertificateHolder": {
+        "description": "What a verifier learns about the holder: the name on the certificate.",
         "properties": {
           "display_name": {
-            "type": "string"
-          },
-          "username": {
             "type": "string"
           }
         },
         "required": [
-          "display_name",
-          "username"
+          "display_name"
         ],
         "type": "object"
       },
@@ -4539,7 +4542,8 @@ expression: json
           "ARCHIVED",
           "PAST_DUE",
           "MAX_ATTEMPTS_REACHED",
-          "TIME_LIMIT_EXPIRED"
+          "TIME_LIMIT_EXPIRED",
+          "REMEDIATION_REQUIRED"
         ],
         "type": "string"
       },
@@ -4882,6 +4886,8 @@ expression: json
           "rate-limited",
           "payload-too-large",
           "activity-not-ready",
+          "course-not-ready",
+          "unsupported-media-type",
           "service-unavailable",
           "invalid-credentials",
           "mfa-required",
@@ -7850,6 +7856,31 @@ expression: json
         ],
         "type": "object"
       },
+      "PublicCertificate": {
+        "description": "A certificate as the public sees it (no holder id).",
+        "properties": {
+          "certification_id": {
+            "$ref": "#/components/schemas/CertificationId"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CertificateId"
+          },
+          "issued_at_unix": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "verify_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "certification_id",
+          "verify_code",
+          "issued_at_unix"
+        ],
+        "type": "object"
+      },
       "PublishSummary": {
         "properties": {
           "already_published_count": {
@@ -9634,6 +9665,17 @@ expression: json
             "type": [
               "number",
               "null"
+            ]
+          },
+          "auto_submit_reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AutoSubmitReason",
+                "description": "Set when the server closed the attempt (time ran out, integrity\nviolation); `null` when the learner submitted."
+              }
             ]
           },
           "draft_version": {
@@ -11759,23 +11801,28 @@ expression: json
         "type": "object"
       },
       "VerifiedCertificate": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/IssuedCertificate"
+        "description": "The public verification view.",
+        "properties": {
+          "certificate": {
+            "$ref": "#/components/schemas/PublicCertificate"
           },
-          {
-            "properties": {
-              "holder": {
-                "$ref": "#/components/schemas/CertificateHolder"
-              }
-            },
-            "required": [
-              "holder"
-            ],
-            "type": "object"
+          "certification": {
+            "$ref": "#/components/schemas/Certification"
+          },
+          "course": {
+            "$ref": "#/components/schemas/Course"
+          },
+          "holder": {
+            "$ref": "#/components/schemas/CertificateHolder"
           }
+        },
+        "required": [
+          "certificate",
+          "certification",
+          "course",
+          "holder"
         ],
-        "description": "The public verification view."
+        "type": "object"
       },
       "VerifyEmailRequest": {
         "additionalProperties": false,
@@ -12099,7 +12146,15 @@ expression: json
                 }
               }
             },
-            "description": "Activity detail"
+            "description": "Activity detail",
+            "headers": {
+              "ETag": {
+                "description": "Quoted version",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "content": {
@@ -12112,12 +12167,13 @@ expression: json
             "description": "Unknown or inaccessible"
           }
         },
-        "summary": "Full activity including content/details/settings.",
+        "summary": "Full activity including content/details/settings. Unpublished\nactivities exist for course editors only (404 otherwise).",
         "tags": [
           "courses"
         ]
       },
       "patch": {
+        "description": "A `content` write (the editor autosave) requires `If-Match: \"<version>\"`;\nother fields honour it when sent. A stale version is 412\n`precondition-failed` with `details {expected, actual}` — never a silent\noverwrite of another tab's save.",
         "operationId": "update_activity",
         "parameters": [
           {
@@ -12127,6 +12183,19 @@ expression: json
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/ActivityId"
+            }
+          },
+          {
+            "description": "Current version (required with `content`)",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
             }
           }
         ],
@@ -12149,7 +12218,15 @@ expression: json
                 }
               }
             },
-            "description": "Updated"
+            "description": "Updated",
+            "headers": {
+              "ETag": {
+                "description": "Quoted new version",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "content": {
@@ -12160,6 +12237,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale version"
           }
         },
         "summary": "Partial update: name, publish state, content/details/settings, or the\ntype pair (both `activity_type` and `activity_sub_type` together).",
@@ -18513,7 +18600,7 @@ expression: json
         "operationId": "verify_certificate",
         "parameters": [
           {
-            "description": "Verification code",
+            "description": "Verification code (case-insensitive, dashes optional)",
             "in": "path",
             "name": "code",
             "required": true,
@@ -18552,7 +18639,7 @@ expression: json
     },
     "/api/v2/certificates/{code}/pdf": {
       "get": {
-        "description": "Holder, course, certificate name/type, issue date, teacher, the\nverification code and the verify link (`AB__SERVER__WEB_URL` +\n`/certificates/{code}/verify`). The page language follows\n`Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.",
+        "description": "Holder, course, certificate name/type, issue date, teacher, the\nverification code and the verify link (`AB__SERVER__WEB_URL` +\n`/{locale}/certificates/{code}/verify`). The page language follows\n`Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.",
         "operationId": "certificate_pdf",
         "parameters": [
           {
@@ -19915,7 +20002,7 @@ expression: json
             "description": "Not on the roster"
           }
         },
-        "summary": "Remove a contributor (reject an application, or drop an active one).",
+        "summary": "Remove a contributor (reject an application, or drop an active one), or\nwithdraw one's own pending application.",
         "tags": [
           "courses"
         ]
@@ -20026,7 +20113,7 @@ expression: json
             "description": "Unknown or inaccessible course"
           }
         },
-        "summary": "Chapters with nested activities, in course order.",
+        "summary": "Chapters with nested activities, in course order. Unpublished\nactivities are listed for course editors only.",
         "tags": [
           "courses"
         ]
@@ -20437,6 +20524,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Publish blocked by readiness (`course-not-ready`,                                       `details.blockers`)"
           }
         },
         "summary": "Publish/unpublish (legacy lifecycle semantics).",
@@ -20693,10 +20790,10 @@ expression: json
                 }
               }
             },
-            "description": "Not yours and not a moderator"
+            "description": "Not yours and not a moderator, or a status change by a non-moderator"
           }
         },
-        "summary": "Edit content and/or status (owner, or a moderator).",
+        "summary": "Edit content (owner, or a moderator); only a moderator may change\n`status`.",
         "tags": [
           "discussions"
         ]
@@ -21164,6 +21261,16 @@ expression: json
             },
             "description": "Saved"
           },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not published or attempt cap reached"
+          },
           "412": {
             "content": {
               "application/problem+json": {
@@ -21439,7 +21546,7 @@ expression: json
     },
     "/api/v2/file-submissions/{id}/submit": {
       "post": {
-        "description": "At least one file is required; late work is refused when the activity\ndoes not allow it and penalised by the late policy otherwise.",
+        "description": "At least one file is required; late work is refused when the activity\ndoes not allow it and penalised by the late policy otherwise. With an\n`Idempotency-Key`, a retry with the same body replays the original\nresponse for 24h instead of opening a new attempt; the same key with a\ndifferent body is 422.",
         "operationId": "submit",
         "parameters": [
           {
@@ -21460,6 +21567,18 @@ expression: json
               "format": "int64",
               "type": [
                 "integer",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Client retry token (optional)",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
                 "null"
               ]
             }
@@ -21504,7 +21623,7 @@ expression: json
                 }
               }
             },
-            "description": "No files"
+            "description": "No files, or Idempotency-Key reused with a different body"
           }
         },
         "summary": "Submit the open attempt (optionally replacing files first).",
