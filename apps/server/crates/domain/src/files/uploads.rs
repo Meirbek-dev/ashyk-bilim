@@ -220,9 +220,12 @@ impl UploadsService {
         if row.created_by != actor.user_id {
             return Err(Error::forbidden("not your upload"));
         }
-        self.storage
-            .presign_get(bucket_from_name(&row.bucket), &row.key, PRESIGN_GET_TTL)
-            .await
+        self.storage.presign_get(
+            bucket_from_name(&row.bucket),
+            &row.key,
+            None,
+            PRESIGN_GET_TTL,
+        )
     }
 }
 

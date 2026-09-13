@@ -48,14 +48,29 @@ async fn put_head_presigned_get_delete_roundtrip() {
         payload.len() as u64
     );
 
-    // Presigned GET works without credentials.
+    // Presigned GET works without credentials; a filename becomes the
+    // signed `response-content-disposition`.
     let url = storage
-        .presign_get(Bucket::Private, &key, Duration::from_mins(1))
-        .await
+        .presign_get(Bucket::Private, &key, None, Duration::from_mins(1))
         .unwrap();
     let fetched = reqwest::get(&url).await.unwrap();
     assert!(fetched.status().is_success());
+    assert!(fetched.headers().get("content-disposition").is_none());
     assert_eq!(fetched.bytes().await.unwrap().to_vec(), payload);
+    let named = storage
+        .presign_get(
+            Bucket::Private,
+            &key,
+            Some("проект.pdf"),
+            Duration::from_mins(1),
+        )
+        .unwrap();
+    let fetched = reqwest::get(&named).await.unwrap();
+    assert!(fetched.status().is_success(), "{}", fetched.status());
+    assert_eq!(
+        fetched.headers()["content-disposition"].to_str().unwrap(),
+        "attachment; filename*=UTF-8''%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82.pdf"
+    );
 
     storage.delete(Bucket::Private, &key).await.unwrap();
     assert_eq!(storage.head(Bucket::Private, &key).await.unwrap(), None);

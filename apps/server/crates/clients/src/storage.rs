@@ -13,7 +13,6 @@ use ab_core::{Error, ErrorCode, Result};
 use hmac::{Hmac, KeyInit, Mac};
 use object_store::aws::{AmazonS3, AmazonS3Builder};
 use object_store::path::Path as ObjectPath;
-use object_store::signer::Signer;
 use object_store::{Attribute, GetOptions, ObjectStore, ObjectStoreExt};
 use secrecy::{ExposeSecret, SecretString};
 use sha2::{Digest, Sha256};
@@ -40,8 +39,9 @@ pub enum Bucket {
 pub struct StorageClient {
     public: Arc<AmazonS3>,
     private: Arc<AmazonS3>,
-    /// Kept for the PUT presigner: `object_store` signs `host` only, and a
-    /// browser upload must be pinned to its declared `Content-Type`.
+    /// Kept for the presigners: `object_store` signs `host` only, and a
+    /// browser upload must be pinned to its declared `Content-Type` while a
+    /// download may carry a `response-content-disposition`.
     config: StorageConfig,
 }
 
@@ -90,14 +90,55 @@ impl StorageClient {
     /// Presigned PUT for direct browser upload, pinned to `content_type`:
     /// the header is part of the signature (`SignedHeaders=content-type;host`),
     /// so storage refuses a PUT that declares anything else.
-    ///
-    /// Hand-rolled SigV4 query signing (path-style, UNSIGNED-PAYLOAD):
-    /// `object_store::Signer` cannot add headers to the signature.
     pub fn presign_put(
         &self,
         bucket: Bucket,
         key: &str,
         content_type: &str,
+        expires_in: Duration,
+    ) -> Result<String> {
+        self.presign(
+            "PUT",
+            bucket,
+            key,
+            &[],
+            &[("content-type", content_type)],
+            expires_in,
+        )
+    }
+
+    /// Presigned GET for private downloads. With `filename`, the response
+    /// carries `Content-Disposition: attachment` under that name (part of
+    /// the signature), so the browser saves the original name instead of
+    /// the storage key.
+    pub fn presign_get(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        filename: Option<&str>,
+        expires_in: Duration,
+    ) -> Result<String> {
+        let disposition = filename
+            .map(|name| format!("attachment; filename*=UTF-8''{}", aws_encode(name.trim())));
+        let query: Vec<(&str, &str)> = disposition
+            .as_deref()
+            .map(|d| ("response-content-disposition", d))
+            .into_iter()
+            .collect();
+        self.presign("GET", bucket, key, &query, &[], expires_in)
+    }
+
+    /// Hand-rolled SigV4 query signing (path-style, UNSIGNED-PAYLOAD):
+    /// `object_store::Signer` can add neither headers nor query parameters
+    /// (`response-*`) to the signature. `extra_query` and `headers` must
+    /// already be in canonical (sorted) order.
+    fn presign(
+        &self,
+        method: &str,
+        bucket: Bucket,
+        key: &str,
+        extra_query: &[(&str, &str)],
+        headers: &[(&str, &str)],
         expires_in: Duration,
     ) -> Result<String> {
         const ALGORITHM: &str = "AWS4-HMAC-SHA256";
@@ -118,16 +159,37 @@ impl StorageClient {
         let datestamp = now.strftime("%Y%m%d").to_string();
         let scope = format!("{datestamp}/{REGION}/s3/aws4_request");
         let path = format!("/{}/{key}", self.bucket_name(bucket));
-        // Query parameters, already in canonical (sorted, encoded) order.
-        let query = format!(
+        let signed_headers = headers
+            .iter()
+            .map(|(name, _)| *name)
+            .chain(std::iter::once("host"))
+            .collect::<Vec<_>>()
+            .join(";");
+        // Query parameters in canonical (sorted, encoded) order: the
+        // `X-Amz-*` block sorts before any `response-*` parameter.
+        let mut query = format!(
             "X-Amz-Algorithm={ALGORITHM}&X-Amz-Credential={}&X-Amz-Date={amz_date}\
-             &X-Amz-Expires={}&X-Amz-SignedHeaders=content-type%3Bhost",
+             &X-Amz-Expires={}&X-Amz-SignedHeaders={}",
             aws_encode(&format!("{}/{scope}", self.config.access_key)),
             expires_in.as_secs(),
+            aws_encode(&signed_headers),
         );
+        for (name, value) in extra_query {
+            query.push('&');
+            query.push_str(&aws_encode(name));
+            query.push('=');
+            query.push_str(&aws_encode(value));
+        }
+        let mut canonical_headers = String::new();
+        for (name, value) in headers {
+            canonical_headers.push_str(name);
+            canonical_headers.push(':');
+            canonical_headers.push_str(value);
+            canonical_headers.push('\n');
+        }
         let canonical_request = format!(
-            "PUT\n{path}\n{query}\ncontent-type:{content_type}\nhost:{host}\n\n\
-             content-type;host\nUNSIGNED-PAYLOAD"
+            "{method}\n{path}\n{query}\n{canonical_headers}host:{host}\n\n\
+             {signed_headers}\nUNSIGNED-PAYLOAD"
         );
         let string_to_sign = format!(
             "{ALGORITHM}\n{amz_date}\n{scope}\n{}",
@@ -145,21 +207,6 @@ impl StorageClient {
             "{}{path}?{query}&X-Amz-Signature={signature}",
             self.config.endpoint.trim_end_matches('/')
         ))
-    }
-
-    /// Presigned GET for private downloads.
-    pub async fn presign_get(
-        &self,
-        bucket: Bucket,
-        key: &str,
-        expires_in: Duration,
-    ) -> Result<String> {
-        let url = self
-            .store(bucket)
-            .signed_url(http::Method::GET, &ObjectPath::from(key), expires_in)
-            .await
-            .map_err(|e| Error::internal("presigning get", e))?;
-        Ok(url.into())
     }
 
     /// Object size + stored content type if it exists (finalize
