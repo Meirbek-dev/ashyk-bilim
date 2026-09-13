@@ -97,6 +97,15 @@ pub async fn resolve(
     } else {
         actor.user_id
     };
+    // An inspected teacher must exist (BUG-145): an unknown id would
+    // otherwise read as a real teacher with an empty scope.
+    if target != actor.user_id && ab_db::identity::user_status(pool, target).await?.is_none() {
+        return Err(Error::validation(vec![FieldError {
+            field: "teacher_user_id".into(),
+            code: "unknown".into(),
+            message: format!("user {target} does not exist"),
+        }]));
+    }
     if !filters.cohort_ids.is_empty() {
         // Cohort composition is usergroup data: the caller must be able to
         // read usergroups, and every id must exist (BUG-121).

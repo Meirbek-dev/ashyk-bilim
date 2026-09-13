@@ -373,7 +373,8 @@ impl AnalyticsService {
     ) -> Result<AtRiskLearnersResponse> {
         let scope = self.read_scope(actor, filters).await?;
         let ctx = AnalyticsContext::load(&self.pool, &scope.course_ids, None).await?;
-        let rows = self.enriched_risk_rows(&ctx, &scope, filters).await?;
+        let mut rows = self.enriched_risk_rows(&ctx, &scope, filters).await?;
+        risk::sort_risk_rows(&mut rows, filters.sort_by.as_deref(), filters.sort_order);
         Ok(AtRiskLearnersResponse {
             generated_at_unix: ctx.generated_at,
             total: page_i64(rows.len()),

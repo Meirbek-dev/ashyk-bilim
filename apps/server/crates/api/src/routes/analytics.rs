@@ -7,10 +7,11 @@
 
 use ab_core::assessments::AssessmentKind;
 use ab_core::id::{AssessmentId, CourseId, SavedViewId};
+use ab_core::{Error, FieldError};
 use ab_domain::analytics::{AnalyticsFilters, NewIntervention};
 use axum::Json;
 use axum::extract::State;
-use axum::http::{HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
 use crate::dto::analytics::{
@@ -21,7 +22,7 @@ use crate::dto::analytics::{
     TeacherCourseListResponse, TeacherOverviewResponse,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotency_key, sha256_hex};
 use crate::state::AppState;
 
 fn filters(query: AnalyticsQuery) -> ApiResult<AnalyticsFilters> {
@@ -37,7 +38,7 @@ fn csv_response(body: String, filename: &str) -> ApiResult<Response> {
     response.headers_mut().insert(
         header::CONTENT_DISPOSITION,
         HeaderValue::from_str(&format!("attachment; filename=\"{filename}\""))
-            .map_err(|e| ab_core::Error::internal("csv content-disposition header", e))?,
+            .map_err(|e| Error::internal("csv content-disposition header", e))?,
     );
     Ok(response)
 }
@@ -168,7 +169,12 @@ pub async fn assessment_detail(
     ))
 }
 
-/// Learners at medium or high risk, worst first.
+/// Every learner carrying at least one risk signal, worst first.
+///
+/// `low` rows are included (the KPI counters only count medium/high);
+/// course editors enrolled in their own course are never listed. `sort_by`
+/// accepts `risk` (default), `progress`, `activity`, `name`;
+/// `sort_order=asc` reverses.
 #[utoipa::path(
     get, path = "/analytics/teacher/learners/at-risk", tag = "analytics",
     params(AnalyticsQuery),
@@ -210,6 +216,9 @@ pub async fn list_interventions(
 
 /// Record an intervention; the learner's latest risk score is captured as
 /// `risk_score_before`.
+///
+/// Retry-safe with `Idempotency-Key`: a replay returns the stored 201, a
+/// different body under the same key is a 422.
 #[utoipa::path(
     post, path = "/analytics/teacher/interventions", tag = "analytics",
     params(AnalyticsQuery),
@@ -226,8 +235,28 @@ pub async fn create_intervention(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Query(query): Query<AnalyticsQuery>,
-    ValidJson(request): ValidJson<CreateInterventionRequest>,
-) -> ApiResult<(StatusCode, Json<Intervention>)> {
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    let key = idempotency_key(&headers)?.map(|k| format!("intervention:{k}"));
+    let request_hash = sha256_hex(&body);
+    if let Some(key) = &key
+        && let Some(stored) =
+            ab_db::submissions::get_idempotent(&state.pool, actor.user_id, key).await?
+    {
+        if stored.request_hash != request_hash {
+            return Err(Error::validation(vec![FieldError {
+                field: "Idempotency-Key".into(),
+                code: "reused".into(),
+                message: "Idempotency-Key was already used with a different request body".into(),
+            }])
+            .into());
+        }
+        let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
+            .unwrap_or(StatusCode::OK);
+        return Ok((status, Json(stored.response)).into_response());
+    }
+    let request = ValidJson::<CreateInterventionRequest>::parse(&body)?;
     let filters = filters(query)?;
     let created = state
         .analytics
@@ -245,7 +274,20 @@ pub async fn create_intervention(
             },
         )
         .await?;
-    Ok((StatusCode::CREATED, Json(created)))
+    if let Some(key) = &key {
+        let value = serde_json::to_value(&created)
+            .map_err(|err| Error::internal("serialize intervention", err))?;
+        ab_db::submissions::store_idempotent(
+            &state.pool,
+            actor.user_id,
+            key,
+            &request_hash,
+            i32::from(StatusCode::CREATED.as_u16()),
+            &value,
+        )
+        .await?;
+    }
+    Ok((StatusCode::CREATED, Json(created)).into_response())
 }
 
 // ── Saved views ─────────────────────────────────────────────────────────

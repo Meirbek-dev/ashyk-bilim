@@ -17,7 +17,7 @@ use super::context::{
     AnalyticsContext, SnapshotKey, build_activity_events, days_between, is_graded, is_reviewable,
     progress_snapshots, round1, score_of, utc_date,
 };
-use super::filters::AnalyticsFilters;
+use super::filters::{AnalyticsFilters, SortOrder};
 use super::scope::TeacherScope;
 use super::types::{AtRiskLearnerRow, Confidence, RiskLevel, RiskTrend};
 
@@ -266,6 +266,9 @@ pub fn build_risk_rows(
         let Some(course) = ctx.courses.get(&course_id) else {
             continue;
         };
+        if ctx.course_authors.contains(key) {
+            continue;
+        }
         let days_since = last_activity
             .get(key)
             .map(|ts| days_between(*ts, now).max(0));
@@ -349,6 +352,32 @@ pub fn build_risk_rows(
             .then_with(|| a.user_display_name.cmp(&b.user_display_name))
     });
     rows
+}
+
+/// `sort_by` for the at-risk list (`risk` = score, `progress`, `activity` =
+/// idle days, `name`); anything else keeps the worst-first default, which
+/// `sort_order=asc` reverses.
+pub fn sort_risk_rows(rows: &mut [AtRiskLearnerRow], sort_by: Option<&str>, order: SortOrder) {
+    let cmp = |a: &AtRiskLearnerRow, b: &AtRiskLearnerRow| match sort_by {
+        Some("progress") => a.progress_pct.total_cmp(&b.progress_pct),
+        Some("activity") => a
+            .days_since_last_activity
+            .unwrap_or(-1)
+            .cmp(&b.days_since_last_activity.unwrap_or(-1)),
+        Some("name") => a
+            .user_display_name
+            .to_lowercase()
+            .cmp(&b.user_display_name.to_lowercase()),
+        _ => a
+            .risk_score
+            .total_cmp(&b.risk_score)
+            .then_with(|| b.course_name.cmp(&a.course_name))
+            .then_with(|| b.user_display_name.cmp(&a.user_display_name)),
+    };
+    rows.sort_by(|a, b| match order {
+        SortOrder::Asc => cmp(a, b),
+        SortOrder::Desc => cmp(b, a),
+    });
 }
 
 /// Legacy `enrich_risk_rows`: trend against the newest earlier snapshot and

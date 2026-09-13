@@ -234,6 +234,9 @@ pub struct AnalyticsContext {
     pub users: HashMap<UserId, UserInfoRow>,
     pub usergroup_names: BTreeMap<UsergroupId, String>,
     pub cohorts_by_user: HashMap<UserId, BTreeSet<UsergroupId>>,
+    /// (course, editor) pairs — creator + active co-authors. Editors who
+    /// enrol in their own course are never at-risk learners (BUG-145).
+    pub course_authors: HashSet<SnapshotKey>,
 }
 
 impl AnalyticsContext {
@@ -257,6 +260,11 @@ impl AnalyticsContext {
         let trail_runs = ab_db::analytics::list_trail_runs(pool, course_ids).await?;
         let certificates = ab_db::analytics::list_certificates(pool, course_ids).await?;
         let events = ab_db::analytics::list_events(pool, course_ids, since).await?;
+        let course_authors = ab_db::analytics::list_course_authors(pool, course_ids)
+            .await?
+            .into_iter()
+            .map(|a| (a.course_id, a.user_id))
+            .collect();
 
         let mut user_ids: BTreeSet<UserId> = BTreeSet::new();
         user_ids.extend(trail_runs.iter().map(|r| r.user_id));
@@ -294,6 +302,7 @@ impl AnalyticsContext {
             users: users.into_iter().map(|u| (u.id, u)).collect(),
             usergroup_names,
             cohorts_by_user,
+            course_authors,
         })
     }
 

@@ -929,3 +929,184 @@ async fn cohort_and_teacher_filters_are_gated(pool: PgPool) {
     assert_eq!(unknown.json()["field_errors"][0]["field"], "cohort_ids");
     assert_eq!(unknown.json()["field_errors"][0]["code"], "unknown");
 }
+
+/// BUG-145: course editors are never at-risk learners of their own course;
+/// `sort_by`/`sort_order` apply to the at-risk list; an unknown
+/// `teacher_user_id` is a 422; `POST interventions` honours
+/// `Idempotency-Key`. Plus the out-of-scope course on list-interventions /
+/// drill-through (404) and exports (403).
+#[sqlx::test(migrations = "../../migrations")]
+async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let carol = instructor(&app, "carol").await;
+    let (course_id, _) = public_course(&app, &teacher, "Analytics 101").await;
+    let (other_course, _) = public_course(&app, &carol, "Other course").await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+
+    // Progress rows straight into the table: the teacher enrolled in his
+    // own course, alice at 0 % (score 30), bob at 40 % (score 18).
+    let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
+    for (user, pct) in [
+        (teacher.user_id, 0.0),
+        (alice.user_id, 0.0),
+        (bob.user_id, 40.0),
+    ] {
+        sqlx::query(
+            "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, $3)",
+        )
+        .bind(course_uuid)
+        .bind(user.0)
+        .bind(pct)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
+    let at_risk = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/learners/at-risk")
+        .await;
+    assert_eq!(at_risk.status, StatusCode::OK, "{}", at_risk.text());
+    let ids = |body: &serde_json::Value| -> Vec<String> {
+        body["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["user_id"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    assert_eq!(
+        ids(&at_risk.json()),
+        [alice.user_id.to_string(), bob.user_id.to_string()],
+        "worst first, the editor excluded: {}",
+        at_risk.text()
+    );
+    let ascending = app
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/learners/at-risk?sort_by=risk&sort_order=asc",
+        )
+        .await;
+    assert_eq!(
+        ids(&ascending.json()),
+        [bob.user_id.to_string(), alice.user_id.to_string()]
+    );
+    let by_name = app
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/learners/at-risk?sort_by=name&sort_order=desc",
+        )
+        .await;
+    assert_eq!(
+        ids(&by_name.json()),
+        [bob.user_id.to_string(), alice.user_id.to_string()]
+    );
+
+    // Unknown inspected teacher under platform scope.
+    let platform = app
+        .mint_session_for(teacher.user_id, &["analytics:read:platform"])
+        .await;
+    let ghost = app
+        .get_as(
+            &platform,
+            &format!(
+                "/api/v2/analytics/teacher/overview?teacher_user_id={}",
+                uuid::Uuid::now_v7()
+            ),
+        )
+        .await;
+    assert_eq!(
+        ghost.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        ghost.text()
+    );
+    assert_eq!(ghost.json()["field_errors"][0]["field"], "teacher_user_id");
+    assert_eq!(ghost.json()["field_errors"][0]["code"], "unknown");
+
+    // Idempotent intervention creation.
+    let body = serde_json::json!({
+        "user_id": alice.user_id, "course_id": course_id,
+        "intervention_type": "message_sent", "notes": "pinged"
+    });
+    let post = |body: serde_json::Value| {
+        let app = &app;
+        let teacher = &teacher;
+        async move {
+            app.send(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/analytics/teacher/interventions")
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::COOKIE, &teacher.cookie)
+                    .header("idempotency-key", "retry-1")
+                    .body(Body::from(body.to_string()))
+                    .unwrap(),
+            )
+            .await
+        }
+    };
+    let first = post(body.clone()).await;
+    assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
+    let replay = post(body).await;
+    assert_eq!(replay.status, StatusCode::CREATED, "{}", replay.text());
+    assert_eq!(replay.json()["id"], first.json()["id"]);
+    let list = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/interventions")
+        .await;
+    assert_eq!(list.json()["total"], 1, "{}", list.text());
+    let reused = post(serde_json::json!({
+        "user_id": bob.user_id, "course_id": course_id,
+        "intervention_type": "message_sent"
+    }))
+    .await;
+    assert_eq!(
+        reused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        reused.text()
+    );
+    assert_eq!(reused.json()["field_errors"][0]["code"], "reused");
+
+    // A course outside the scope: 404 on the narrowing filters, 403 on the
+    // explicit course_ids filter of an export.
+    let foreign_list = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/interventions?course_id={other_course}"),
+        )
+        .await;
+    assert_eq!(
+        foreign_list.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        foreign_list.text()
+    );
+    let foreign_drill = app
+        .get_as(
+            &teacher,
+            &format!(
+                "/api/v2/analytics/teacher/drill-through/active_learners?course_id={other_course}"
+            ),
+        )
+        .await;
+    assert_eq!(
+        foreign_drill.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        foreign_drill.text()
+    );
+    let foreign_export = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/exports/at-risk.csv?course_ids={other_course}"),
+        )
+        .await;
+    assert_eq!(
+        foreign_export.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        foreign_export.text()
+    );
+}
