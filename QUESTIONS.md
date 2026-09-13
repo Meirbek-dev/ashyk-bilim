@@ -266,3 +266,9 @@ run moves to the cutover checklist.
 11. **Kazakh dates in Chromium builds without kk ICU data** render as «2026 M09 12»
     (Playwright's Chromium and the embedded pane; Firefox and Node format correctly).
     Not an app defect; worth knowing when a kk user reports it.
+
+## Q-2026-09-13-1 — Brand spelling: «Ashyk Bilim» vs «Ashyq Bilim»
+
+The web `<title>` and header say **Ashyk Bilim**; the server's `DEFAULT_PLATFORM_NAME`
+(TOTP issuer, email subjects, certificate PDF) says **Ashyq Bilim**. Pick one; the
+other side is a one-line change. Not blocking — left as is until answered.
