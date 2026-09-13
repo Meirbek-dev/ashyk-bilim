@@ -110,8 +110,13 @@ impl RbacAdminService {
         if !roles.iter().any(|r| r == slug) {
             return Err(Error::not_found("role assignment"));
         }
-        // Last-admin guard: the platform must always keep one active admin.
-        if slug == "admin" && ab_db::identity::count_role_holders(&self.pool, "admin").await? <= 1 {
+        // Last-admin guard: some *other* active admin must remain (the
+        // target's own status is irrelevant, BUG-144).
+        if slug == "admin"
+            && ab_db::identity::count_other_active_role_holders(&self.pool, "admin", user_id)
+                .await?
+                == 0
+        {
             return Err(Error::app(
                 ErrorCode::LastAdmin,
                 "cannot remove the last admin",
@@ -291,7 +296,9 @@ impl RbacAdminService {
         if disabled {
             let (roles, _) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
             if roles.iter().any(|r| r == "admin")
-                && ab_db::identity::count_role_holders(&self.pool, "admin").await? <= 1
+                && ab_db::identity::count_other_active_role_holders(&self.pool, "admin", user_id)
+                    .await?
+                    == 0
             {
                 return Err(Error::app(
                     ErrorCode::LastAdmin,

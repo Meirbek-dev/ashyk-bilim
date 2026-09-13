@@ -513,15 +513,21 @@ pub async fn user_status(pool: &PgPool, user_id: UserId) -> Result<Option<String
     Ok(status)
 }
 
-/// How many active users hold the role (last-admin guard: a disabled admin
-/// cannot sign in, so it does not count).
-pub async fn count_role_holders(pool: &PgPool, slug: &str) -> Result<i64> {
+/// Active holders of `slug` other than `except` (the last-admin guard's
+/// "would anyone be left" count — the target's own status is irrelevant,
+/// BUG-144).
+pub async fn count_other_active_role_holders(
+    pool: &PgPool,
+    slug: &str,
+    except: UserId,
+) -> Result<i64> {
     let count = sqlx::query_scalar!(
         r#"SELECT count(*) AS "count!" FROM user_roles ur
            JOIN roles r ON r.id = ur.role_id
            JOIN users u ON u.id = ur.user_id
-           WHERE r.slug = $1 AND u.status = 'active'"#,
-        slug
+           WHERE r.slug = $1 AND u.status = 'active' AND u.id <> $2"#,
+        slug,
+        except.0
     )
     .fetch_one(pool)
     .await?;

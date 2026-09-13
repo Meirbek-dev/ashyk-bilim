@@ -335,3 +335,67 @@ async fn role_errors_are_typed(pool: PgPool) {
     assert!(message.starts_with("nope:zip:zap:"), "{message}");
     assert!(!message.contains("internal:"), "{message}");
 }
+
+/// BUG-144: the last-admin guard asks "would another *active* admin remain",
+/// so a disabled admin can lose the role (or be disabled again) while one
+/// other admin is active — and the only active admin still cannot.
+#[sqlx::test(migrations = "../../migrations")]
+async fn disabled_admin_can_lose_the_role_while_another_is_active(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+    let gamma = app
+        .create_user("gamma", "gamma@example.com", &["admin"])
+        .await;
+    let disabled = app
+        .patch_as(
+            &admin,
+            &format!("/api/v2/users/{gamma}/status"),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    assert_eq!(
+        disabled.status,
+        StatusCode::NO_CONTENT,
+        "{}",
+        disabled.text()
+    );
+
+    let again = app
+        .patch_as(
+            &admin,
+            &format!("/api/v2/users/{gamma}/status"),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::NO_CONTENT, "{}", again.text());
+    let removed = app
+        .delete_as(&admin, &format!("/api/v2/users/{gamma}/roles/admin"))
+        .await;
+    assert_eq!(removed.status, StatusCode::NO_CONTENT, "{}", removed.text());
+
+    // Boss is now the only admin: still guarded.
+    let refused = app
+        .delete_as(&admin, &format!("/api/v2/users/{boss}/roles/admin"))
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT);
+    assert_eq!(refused.json()["code"], "last-admin");
+}
+
+/// `GET /rbac/roles` needs `role:read:platform`; system roles cannot be
+/// deleted even by an admin.
+#[sqlx::test(migrations = "../../migrations")]
+async fn role_reads_are_gated_and_system_roles_are_undeletable(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = app.mint_session(&["course:create:platform"]).await;
+    let denied = app.get_as(&teacher, "/api/v2/rbac/roles").await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN, "{}", denied.text());
+    let anon = app.get("/api/v2/rbac/roles").await;
+    assert_eq!(anon.status, StatusCode::UNAUTHORIZED);
+
+    let admin = app.mint_session(&["*:*:*"]).await;
+    let system = app.delete_as(&admin, "/api/v2/rbac/roles/admin").await;
+    assert_eq!(system.status, StatusCode::FORBIDDEN, "{}", system.text());
+}
