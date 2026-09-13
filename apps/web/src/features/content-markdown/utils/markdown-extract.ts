@@ -1,7 +1,14 @@
 import { normalizeMarkdown } from './markdown-sanitize'
 
+// Backslash-escaped punctuation (`\*` from a WYSIWYG editor) is literal text:
+// parked before the markup strip so `\*\*x\*\*` reads `**x**`, not `\\x\\` (UX-030).
+const ESCAPED_PUNCTUATION = /\\([\\`*_{}[\]()#+\-.!~|>])/g
+const PARKED = /\uE000(\d+)\uE001/g
+
 export function extractMarkdownPlainText(markdown: string): string {
+  const parked: string[] = []
   return normalizeMarkdown(markdown)
+    .replace(ESCAPED_PUNCTUATION, (_match, char: string) => `\uE000${parked.push(char) - 1}\uE001`)
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/!\[([^\]]*)]\([^)]+\)/g, '$1')
@@ -11,6 +18,7 @@ export function extractMarkdownPlainText(markdown: string): string {
     .replace(/^\s*[-*+]\s+/gm, '')
     .replace(/^\s*\d+\.\s+/gm, '')
     .replace(/[*_~|]/g, '')
+    .replace(PARKED, (_match, index: string) => parked[Number(index)] ?? '')
     .replace(/\s+/g, ' ')
     .trim()
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { validateMarkdownContent, getHighestMarkdownIssueSeverity } from '@/features/content-markdown'
+import { extractMarkdownPlainText, extractMarkdownSummary } from '@/features/content-markdown'
 import {
   isSafeMarkdownUrl,
   hasRawHtml,
@@ -21,6 +22,16 @@ describe('isSafeMarkdownUrl', () => {
   it('rejects empty strings', () => expect(isSafeMarkdownUrl('')).toBe(false))
   it('rejects null', () => expect(isSafeMarkdownUrl(null)).toBe(false))
   it('rejects undefined', () => expect(isSafeMarkdownUrl(undefined)).toBe(false))
+})
+
+// UX-030: the dash course table shows the stored description as plain text.
+describe('extractMarkdownPlainText', () => {
+  it('keeps backslash-escaped punctuation literal instead of leaving the backslashes', () => {
+    expect(extractMarkdownPlainText('Описание курса \\*\\*гонтлет\\*\\* 11')).toBe('Описание курса **гонтлет** 11')
+  })
+  it('still strips real markup', () => {
+    expect(extractMarkdownSummary('# Title\n\n**bold** and `code` [link](https://x.y)')).toBe('Title bold and code link')
+  })
 })
 
 describe('hasRawHtml', () => {
