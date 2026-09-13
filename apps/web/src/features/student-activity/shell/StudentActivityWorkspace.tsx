@@ -174,7 +174,8 @@ export default function StudentActivityWorkspace({
         panel={aiEnabled ? <CourseAIHub courseUuid={courseUuid} scope={aiScope} variant="panel" /> : null}
         className="relative flex flex-1"
       >
-        <main
+        {/* The layout already owns the <main> landmark; this is a region inside it (UX-052). */}
+        <section
           id="activity-main-content"
           className={cn(
             'min-w-0 flex-1 px-4 sm:px-6 lg:px-8',
@@ -185,7 +186,7 @@ export default function StudentActivityWorkspace({
           {!isAttemptActive && !isLocked && !focusModeActive ? <InlineStatusStrip runtime={runtime} /> : null}
 
           {isLocked ? <LockStateCard runtime={runtime} /> : children}
-        </main>
+        </section>
       </ActivityAIDockLayout>
 
       <BottomActionBar

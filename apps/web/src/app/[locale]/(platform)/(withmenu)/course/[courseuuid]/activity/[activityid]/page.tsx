@@ -43,7 +43,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     if (!isCourseEnd && !runtime) {
       // Unpublished: the learner outline has no entry, so the title must not name it.
       const tErrors = await getTranslations('Errors')
-      return { title: `${tErrors('activityUnavailable')} - ${course_meta.name ?? ''}`, robots: { index: false } }
+      return { title: `${tErrors('activityUnavailable')} - ${APP_NAME}`, robots: { index: false } }
     }
 
     const courseName = course_meta.name ?? ''
@@ -53,7 +53,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       : typeof course_meta.learnings === 'string'
         ? [course_meta.learnings]
         : []
-    const pageTitle = isCourseEnd ? `Course End - ${courseName}` : `${activity?.name ?? ''} - ${courseName}`
+    // Same «… - Ashyk Bilim» suffix as every other page (UX-052).
+    const pageTitle = `${isCourseEnd ? courseName : `${activity?.name ?? ''} - ${courseName}`} - ${APP_NAME}`
 
     return {
       title: pageTitle,
