@@ -1472,7 +1472,10 @@
         "couldNotSave": "Не удалось сохранить представление.",
         "noSavedViews": "Пока нет сохраненных представлений.",
         "namePlaceholder": "Сохранить текущие фильтры",
-        "save": "Сохранить"
+        "save": "Сохранить",
+        "deleted": "Представление удалено.",
+        "couldNotDelete": "Не удалось удалить представление.",
+        "deleteView": "Удалить представление «{name}»"
       }
     },
     "Button": {
@@ -6743,29 +6746,30 @@
       "usersDescription": "Управляйте пользователями, назначайте роли и разрешения",
       "usersSection": {
         "actionsHeader": "Действия",
-        "activeUsersTitle": "Активные пользователи",
+        "activeUsersTitle": "Пользователи",
         "cannotEditSelf": "Вы не можете изменить свою роль",
         "cannotManageHigherRole": "Вы не можете управлять пользователями с более высокой ролью или равной вашей",
         "description": "Управляйте пользователями, назначайте роли и разрешения",
         "editRoleButton": "Изменить роль",
-        "errors": {
-          "removeUserFailed": "Ошибка удаления пользователя"
-        },
+        "enableUserButton": "Включить",
+        "enablingUser": "Включение...",
         "noActionsForAdministrators": "Нет действий для администратора",
         "noSearchResults": "Пользователи не найдены по вашему запросу.",
         "noUsersFound": "Пользователи не найдены.",
         "paginationInfo": "Показано {start}-{end} из {total} пользователей",
-        "removeFromOrgButton": "Удалить пользователя",
-        "removeUserButton": "Удалить пользователя",
-        "removeUserModalMessage": "Вы уверены, что хотите удалить этого пользователя из Ashyk Bilim?",
-        "removeUserModalTitle": "Удалить {username}?",
-        "removingUser": "Удаление...",
+        "removeFromOrgButton": "Отключить пользователя",
+        "removeUserButton": "Отключить пользователя",
+        "removeUserModalMessage": "Пользователь не сможет войти в Ashyk Bilim, пока его не включат снова. Данные и прогресс сохраняются.",
+        "removeUserModalTitle": "Отключить {username}?",
+        "removingUser": "Отключение...",
         "roleHeader": "Роль",
         "searchPlaceholder": "Поиск по имени, логину или эл. почте...",
+        "statusDisabled": "Отключён",
         "updateRoleModalDescription": "Обновить роль @{username}",
         "updateRoleModalTitle": "Обновить роль",
+        "userEnabledSuccess": "Пользователь включён",
         "userHeader": "Пользователь",
-        "userRemovedSuccess": "Пользователь удален из Ashyk Bilim"
+        "userRemovedSuccess": "Пользователь отключён"
       },
       "usersTitle": "Пользователи"
     },

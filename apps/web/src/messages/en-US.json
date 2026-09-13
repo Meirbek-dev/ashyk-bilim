@@ -1472,7 +1472,10 @@
         "couldNotSave": "Could not save view.",
         "noSavedViews": "No saved views yet.",
         "namePlaceholder": "Save current filters",
-        "save": "Save draft"
+        "save": "Save draft",
+        "deleted": "View deleted.",
+        "couldNotDelete": "Could not delete the view.",
+        "deleteView": "Delete the “{name}” view"
       }
     },
     "Button": {
@@ -6743,29 +6746,30 @@
       "usersDescription": "Manage your organization users, assign roles and permissions",
       "usersSection": {
         "actionsHeader": "Actions",
-        "activeUsersTitle": "Active users",
+        "activeUsersTitle": "Users",
         "cannotEditSelf": "You cannot change your own role",
         "cannotManageHigherRole": "You cannot manage users with a higher role than you",
         "description": "Manage your organization users, assign roles and permissions",
         "editRoleButton": "Edit Role",
-        "errors": {
-          "removeUserFailed": "Error removing user"
-        },
+        "enableUserButton": "Enable",
+        "enablingUser": "Enabling...",
         "noActionsForAdministrators": "No actions for administrator",
         "noSearchResults": "No users found matching your search.",
         "noUsersFound": "No users found in this organization.",
         "paginationInfo": "Showing {start}-{end} of {total} users",
-        "removeFromOrgButton": "Remove from organization",
-        "removeUserButton": "Remove User",
-        "removeUserModalMessage": "Are you sure you want remove this user from the organization?",
-        "removeUserModalTitle": "Remove {username}?",
-        "removingUser": "Removing...",
+        "removeFromOrgButton": "Disable user",
+        "removeUserButton": "Disable user",
+        "removeUserModalMessage": "The user will not be able to sign in to Ashyk Bilim until re-enabled. Data and progress are kept.",
+        "removeUserModalTitle": "Disable {username}?",
+        "removingUser": "Disabling...",
         "roleHeader": "Role",
         "searchPlaceholder": "Search by name, username, or email...",
+        "statusDisabled": "Disabled",
         "updateRoleModalDescription": "Update @{username}'s role",
         "updateRoleModalTitle": "Update Role",
+        "userEnabledSuccess": "User enabled",
         "userHeader": "User",
-        "userRemovedSuccess": "Removed user from org"
+        "userRemovedSuccess": "User disabled"
       },
       "usersTitle": "Users"
     },

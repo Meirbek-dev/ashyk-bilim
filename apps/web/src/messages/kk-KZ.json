@@ -1471,7 +1471,10 @@
         "couldNotSave": "Көріністі сақтау мүмкін болмады.",
         "noSavedViews": "Әлі сақталған көріністер жоқ.",
         "namePlaceholder": "Ағымдағы сүзгілерді сақтау",
-        "save": "Сақтау"
+        "save": "Сақтау",
+        "deleted": "Көрініс жойылды.",
+        "couldNotDelete": "Көріністі жою мүмкін болмады.",
+        "deleteView": "«{name}» көрінісін жою"
       }
     },
     "Button": {
@@ -6758,29 +6761,30 @@
       "usersDescription": "Ұйымыңыздағы пайдаланушыларды басқарыңыз, рөлдер мен рұқсаттарды тағайындаңыз",
       "usersSection": {
         "actionsHeader": "Әрекеттер",
-        "activeUsersTitle": "Белсенді пайдаланушылар",
+        "activeUsersTitle": "Пайдаланушылар",
         "cannotEditSelf": "Сіз өз рөліңізді өзгерте алмайсыз",
         "cannotManageHigherRole": "Сіз рөлі сізден жоғары пайдаланушыларды басқара алмайсыз",
         "description": "Ұйымыңыздағы пайдаланушыларды басқарыңыз, рөлдер мен рұқсаттарды тағайындаңыз",
         "editRoleButton": "Рөлді өзгерту",
-        "errors": {
-          "removeUserFailed": "Пайдаланушыны жою қатесі"
-        },
+        "enableUserButton": "Қосу",
+        "enablingUser": "Қосылуда...",
         "noActionsForAdministrators": "Әкімші үшін әрекеттер жоқ",
         "noSearchResults": "Іздеу бойынша пайдаланушылар табылмады.",
         "noUsersFound": "Бұл ұйымда пайдаланушылар табылмады.",
         "paginationInfo": "{total} пайдаланушыдан {start}-{end} көрсетілуде",
-        "removeFromOrgButton": "Ұйымнан жою",
-        "removeUserButton": "Пайдаланушыны жою",
-        "removeUserModalMessage": "Бұл пайдаланушыны ұйымнан жойғыңыз келетініне сенімдісіз бе?",
-        "removeUserModalTitle": "{username} жою?",
-        "removingUser": "Жойылуда...",
+        "removeFromOrgButton": "Пайдаланушыны өшіру",
+        "removeUserButton": "Пайдаланушыны өшіру",
+        "removeUserModalMessage": "Пайдаланушы қайта қосылғанша Ashyk Bilim жүйесіне кіре алмайды. Деректер мен прогресс сақталады.",
+        "removeUserModalTitle": "{username} өшіру керек пе?",
+        "removingUser": "Өшірілуде...",
         "roleHeader": "Рөл",
         "searchPlaceholder": "Аты, логині немесе эл. поштасы бойынша іздеу…",
+        "statusDisabled": "Өшірілген",
         "updateRoleModalDescription": "@{username} рөлін жаңарту",
         "updateRoleModalTitle": "Рөлді жаңарту",
+        "userEnabledSuccess": "Пайдаланушы қосылды",
         "userHeader": "Пайдаланушы",
-        "userRemovedSuccess": "Пайдаланушы ұйымнан жойылды"
+        "userRemovedSuccess": "Пайдаланушы өшірілді"
       },
       "usersTitle": "Пайдаланушылар"
     },
