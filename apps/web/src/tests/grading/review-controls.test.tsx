@@ -62,7 +62,7 @@ vi.mock('@/hooks/useApiError', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => 'en',
-  useFormatter: () => ({ number: (value: number) => String(value) }),
+  useFormatter: () => ({ number: (value: number) => String(value), dateTime: (value: Date) => value.toISOString() }),
 }))
 
 vi.mock('@/services/grading/grading', () => ({
@@ -182,6 +182,8 @@ describe('teacher review controls', () => {
     expect(within(dialog).getByText('preview.gradeReady')).toBeInTheDocument()
     expect(within(dialog).getByText('preview.hiddenFromStudent')).toBeInTheDocument()
     expect(within(dialog).getByText('preview.alreadyVisible')).toBeInTheDocument()
+    // UX-067: the ungraded row is named as skipped, not silently dropped.
+    expect(within(dialog).getByText('preview.notGraded')).toBeInTheDocument()
 
     fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
       target: { value: 'Publish graded submissions' },
@@ -191,27 +193,22 @@ describe('teacher review controls', () => {
     await waitFor(() => {
       expect(mocks.saveGradeMock).toHaveBeenCalledTimes(2)
     })
+    // BUG-138: publish-only — no score (the server keeps the stored raw score
+    // and penalties), no feedback (kept); the note goes to the audit trail.
     expect(mocks.saveGradeMock).toHaveBeenNthCalledWith(
       1,
       'submission_ready',
-      {
-        action: 'publish',
-        final_score: 91,
-        feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
-      },
+      { action: 'publish', audit_note: 'Publish graded submissions' },
       { headers: { 'If-Match': '"3"' } },
     )
     expect(mocks.saveGradeMock).toHaveBeenNthCalledWith(
       2,
       'submission_visible',
-      {
-        action: 'publish',
-        final_score: 77,
-        feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
-      },
+      { action: 'publish', audit_note: 'Publish graded submissions' },
       { headers: { 'If-Match': '"3"' } },
     )
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.published')
+    expect(mocks.toastWarningMock).toHaveBeenCalledWith('toasts.publishedWithSkipped')
+    expect(mocks.toastSuccessMock).not.toHaveBeenCalledWith('toasts.published')
     expect(onRefresh).toHaveBeenCalledTimes(1)
     expect(await screen.findByText('summaries.publishFinished')).toBeInTheDocument()
   })
@@ -302,14 +299,15 @@ describe('teacher review controls', () => {
     fireEvent.change(dueAtTimeInput!, { target: { value: '14:30' } })
     fireEvent.click(within(dueAtDialog).getByRole('button', { name: /set/i }))
 
-    fireEvent.change(screen.getByPlaceholderText('reasonPlaceholder'), {
-      target: { value: 'Medical extension' },
-    })
     fireEvent.click(screen.getByRole('button', { name: 'extend' }))
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('dialogs.extendTitle')).toBeInTheDocument()
-    expect(within(dialog).getByText('Medical extension')).toBeInTheDocument()
+    // UX-066: the reason is asked for in the dialog; the date is localized, not raw ISO.
+    expect(within(dialog).getByText(expectedDueAt.toISOString())).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByPlaceholderText('reasonPlaceholder'), {
+      target: { value: 'Medical extension' },
+    })
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
 

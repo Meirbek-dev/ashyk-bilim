@@ -170,4 +170,26 @@ describe('file submission review workspace', () => {
     expect(mocks.grade.mock.calls[0]?.[1]).toMatchObject({ action: 'save', final_score: 95 })
     await waitFor(() => expect(mocks.toastSuccess).toHaveBeenCalledWith('draftSaved'))
   })
+
+  // UX-065: a released grade is final (BUG-128) — save/return are disabled with a hint.
+  it('offers only a re-publish on a published attempt', async () => {
+    const released: FileSubmissionAttempt = {
+      ...attempt('attempt_first', 'Aruzhan', 92, 'First learner feedback'),
+      status: 'published',
+    }
+    mocks.getQueue.mockResolvedValue({ items: [queueItem(released)], next_cursor: null })
+    mocks.getAttempt.mockResolvedValue(released)
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <FileSubmissionReviewWorkspace activityUuid="activity_1" />
+      </QueryClientProvider>,
+    )
+
+    await screen.findByDisplayValue('92')
+    expect(screen.getByText('publishedIsFinal')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'saveGrade' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'returnForRevision' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'publishResult' })).toBeEnabled()
+  })
 })

@@ -8241,7 +8241,8 @@
             "pending": "Plagiarism: Pending",
             "match": "Plagiarism: {score}% Match",
             "clear": "Plagiarism: Clear"
-          }
+          },
+          "unknownSubmissionParam": "The submission from the link was not found — the first one in the list is shown."
         },
         "bulkActions": {
           "selectedCount": "{count} selected",
@@ -8276,9 +8277,13 @@
             "bulkPartialFailure": "{failed} submission(s) could not be updated — see details below.",
             "deadlineQueued": "Deadline extension queued",
             "extendFailed": "Failed to extend deadline",
-            "deadlineExtended": "Deadline extended for {count} learners",
+            "deadlineExtended": "Deadline extended for {count, plural, one {# learner} other {# learners}}",
             "hiddenReleased": "Hidden grades released",
-            "releaseFailed": "Failed to release hidden grades"
+            "releaseFailed": "Failed to release hidden grades",
+            "publishedWithSkipped": "Published: {count}. Skipped without a grade: {skipped}.",
+            "returnedWithSkipped": "Returned: {count}. Skipped without a grade: {skipped}.",
+            "exported": "CSV saved",
+            "exportFailed": "Could not export the CSV"
           },
           "summaries": {
             "publishFinished": "Bulk publish finished",
@@ -8304,7 +8309,8 @@
             "noReason": "No reason provided",
             "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned — skipped.",
             "selectedHiddenSubmissions": "Selected hidden submissions",
-            "releaseHiddenDescription": "This applies the activity-level grade release action and updates any graded submissions that are still hidden."
+            "releaseHiddenDescription": "This applies the activity-level grade release action and updates any graded submissions that are still hidden.",
+            "notGraded": "{count, plural, one {# ungraded submission is skipped} other {# ungraded submissions are skipped}}: {names}"
           },
           "dialogs": {
             "publishTitle": "Publish selected grades",
@@ -10468,7 +10474,8 @@
     "scan_pending": "scan pending",
     "scan_clean": "scanned",
     "scan_flagged": "flagged",
-    "scan_error": "scan error"
+    "scan_error": "scan error",
+    "publishedIsFinal": "The grade is published and final: the score cannot be changed and the work cannot be returned — only a re-publish is possible."
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Loading file submission studio",

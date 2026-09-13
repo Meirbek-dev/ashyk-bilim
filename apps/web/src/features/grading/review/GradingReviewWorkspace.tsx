@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 import type { KindModule } from '@/features/assessments/registry'
+import { useGradingPanel } from '@/hooks/useGradingPanel'
 import { useSubmissionStats } from '@/hooks/useSubmissionStats'
 import { useSubmissions } from '@/hooks/useSubmissions'
 import { AnnotationProvider } from './AnnotationContext'
@@ -36,6 +39,7 @@ export default function GradingReviewWorkspace({
   initialFilter,
 }: GradingReviewWorkspaceProps) {
   const searchParams = useSearchParams()
+  const t = useTranslations('Features.Grading.Review.submissionInspector')
 
   // ── URL-persisted filters ─────────────────────────────────────────────────
   const filterFromUrl = (searchParams.get('filter') as StatusFilter | null) ?? initialFilter ?? 'NEEDS_GRADING'
@@ -150,6 +154,24 @@ export default function GradingReviewWorkspace({
     },
     [updateUrl],
   )
+
+  // UX-067: an unknown `?submission=` (deleted, another activity, a typo) is
+  // said out loud and dropped from the URL instead of selecting nothing.
+  const initialPanel = useGradingPanel(
+    selectedUuid && selectedUuid === initialSubmissionUuid ? selectedUuid : null,
+    assessmentUuid ?? null,
+  )
+  const initialUnknown =
+    Boolean(initialSubmissionUuid) &&
+    selectedUuid === initialSubmissionUuid &&
+    !initialPanel.isLoading &&
+    initialPanel.submission === null &&
+    !isSelectedUuidValid
+  useEffect(() => {
+    if (!initialUnknown) return
+    toast.warning(t('unknownSubmissionParam'))
+    selectSubmission(null)
+  }, [initialUnknown, selectSubmission, t])
 
   const selectByOffset = useCallback(
     (offset: number) => {

@@ -410,7 +410,8 @@ export default function GradeForm({
         <p className="text-muted-foreground text-sm">{t('gradeDescription')}</p>
       </div>
 
-      <Alert>
+      {/* UX-067: a standing state, not an alert — no live-region announcement on every render. */}
+      <Alert role="note">
         <Info className="size-4" />
         <AlertTitle>
           {releaseState === 'HIDDEN'

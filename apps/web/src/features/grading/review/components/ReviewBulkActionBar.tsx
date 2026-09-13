@@ -1,7 +1,7 @@
 'use client'
 
 import { CalendarClock, Clock3, Download, RotateCcw, Send } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
@@ -9,7 +9,7 @@ import type { Submission } from '@/features/grading/domain'
 import { canReturnSubmission, canTeacherEditGrade, getReleaseState } from '@/features/grading/domain'
 import { exportGradesCSV, publishAssessmentGrades } from '@/services/grading/grading'
 import { extendDeadline, getBulkAction, saveGrade } from '@/lib/api/generated/grading/grading'
-import type { BulkAction } from '@/lib/api/generated/zod'
+import type { BulkAction, GradeRequest } from '@/lib/api/generated/zod'
 import { toUnix } from '@/lib/api/contract'
 import { ifMatchHeaders } from '@/lib/api/headers'
 import { useApiError } from '@/hooks/useApiError'
@@ -48,6 +48,7 @@ export default function ReviewBulkActionBar({
   onRefresh: () => Promise<void>
 }) {
   const t = useTranslations('Features.Grading.Review.bulkActions')
+  const format = useFormatter()
   const { handleApiError } = useApiError()
   const [isPending, startTransition] = useTransition()
   const [deadlineLocal, setDeadlineLocal] = useState('')
@@ -58,6 +59,10 @@ export default function ReviewBulkActionBar({
   const [failedSubmissions, setFailedSubmissions] = useState<{ name: string; error: string }[]>([])
 
   const gradeable = submissions.filter(submission => submission.final_score !== null)
+  // UX-067: rows without a saved score are left out of a bulk publish/return
+  // — the dialog and the toast name them instead of claiming a clean run.
+  const ungraded = submissions.filter(submission => submission.final_score === null)
+  const ungradedNames = ungraded.map(displayName).join(', ')
   // BUG-125: the server's transition table — a PUBLISHED row can only be
   // re-published, never returned; such rows are left out of the bulk return.
   const eligible = (status: 'PUBLISHED' | 'RETURNED') =>
@@ -100,6 +105,13 @@ export default function ReviewBulkActionBar({
       const failed = result.failures.length > 0
       if (failed) {
         toast.warning(t('toasts.bulkPartialFailure', { failed: result.failures.length }))
+      } else if (ungraded.length > 0) {
+        toast.warning(
+          t(status === 'PUBLISHED' ? 'toasts.publishedWithSkipped' : 'toasts.returnedWithSkipped', {
+            count: result.succeeded,
+            skipped: ungraded.length,
+          }),
+        )
       } else {
         toast.success(status === 'PUBLISHED' ? t('toasts.published') : t('toasts.returned'))
       }
@@ -136,7 +148,7 @@ export default function ReviewBulkActionBar({
         const outcome = await waitForBulkAction(queued)
         const done = outcome.status === 'completed'
         const count = done ? outcome.affected_count : userIds.length
-        const detail = t('summaries.deadlineDetail', { count, reason: reason || '' })
+        const detail = t('summaries.deadlineDetail', { count, reason: reason.trim() || t('preview.noReason') })
         if (outcome.status === 'failed') {
           toast.error(t('toasts.extendFailed'))
           setLastSummary({
@@ -195,14 +207,19 @@ export default function ReviewBulkActionBar({
       return
     }
     startTransition(async () => {
-      const csv = await exportGradesCSV(assessmentUuid)
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = `grades-assessment-${assessmentUuid}.csv`
-      anchor.click()
-      URL.revokeObjectURL(url)
+      try {
+        const csv = await exportGradesCSV(assessmentUuid)
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = `grades-assessment-${assessmentUuid}.csv`
+        anchor.click()
+        URL.revokeObjectURL(url)
+        toast.success(t('toasts.exported'))
+      } catch (error) {
+        toast.error(handleApiError(error, { fallback: t('toasts.exportFailed') }).message)
+      }
     })
   }
 
@@ -253,13 +270,6 @@ export default function ReviewBulkActionBar({
         placeholder={t('deadlinePlaceholder')}
         className="w-48"
       />
-      <Input
-        value={reason}
-        disabled={disabled || isPending}
-        placeholder={t('reasonPlaceholder')}
-        className="w-40"
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setReason(event.target.value)}
-      />
       <Button
         variant="outline"
         size="sm"
@@ -292,9 +302,14 @@ export default function ReviewBulkActionBar({
                 <PreviewRow label={t('preview.gradeReady')} value={String(gradeable.length)} />
                 <PreviewRow label={t('preview.hiddenFromStudent')} value={String(releaseSummary.hidden)} />
                 <PreviewRow label={t('preview.alreadyVisible')} value={String(releaseSummary.visible)} />
-                {pendingAction === 'return-selected' && returnable.length < submissions.length ? (
+                {ungraded.length > 0 ? (
                   <p className="text-muted-foreground text-xs">
-                    {t('preview.notReturnable', { count: submissions.length - returnable.length })}
+                    {t('preview.notGraded', { count: ungraded.length, names: ungradedNames })}
+                  </p>
+                ) : null}
+                {pendingAction === 'return-selected' && returnable.length < gradeable.length ? (
+                  <p className="text-muted-foreground text-xs">
+                    {t('preview.notReturnable', { count: gradeable.length - returnable.length })}
                   </p>
                 ) : null}
               </>
@@ -302,8 +317,25 @@ export default function ReviewBulkActionBar({
             {pendingAction === 'extend-deadline' ? (
               <>
                 <PreviewRow label={t('preview.learners')} value={String(userIds.length)} />
-                <PreviewRow label={t('preview.newDueDate')} value={deadlineLocal || t('preview.notSet')} />
-                <PreviewRow label={t('preview.reason')} value={reason || t('preview.noReason')} />
+                <PreviewRow
+                  label={t('preview.newDueDate')}
+                  value={
+                    deadlineLocal
+                      ? format.dateTime(new Date(deadlineLocal), { dateStyle: 'long', timeStyle: 'short' })
+                      : t('preview.notSet')
+                  }
+                />
+                <div className="space-y-2 rounded-md border p-3">
+                  <label htmlFor="bulk-extend-reason" className="text-sm font-medium">
+                    {t('preview.reason')}
+                  </label>
+                  <Input
+                    id="bulk-extend-reason"
+                    value={reason}
+                    placeholder={t('reasonPlaceholder')}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => setReason(event.target.value)}
+                  />
+                </div>
               </>
             ) : null}
             {actionNeedsAuditNote ? (
@@ -389,7 +421,21 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** One `PATCH submissions/{id}/grade` per row; a rejected row keeps its localized problem message. */
+function displayName(sub: Submission): string {
+  return sub.user
+    ? `${sub.user.first_name ?? ''} ${sub.user.last_name ?? ''}`.trim() ||
+        sub.user.username ||
+        sub.user.email ||
+        sub.submission_uuid
+    : sub.submission_uuid
+}
+
+/**
+ * One `PATCH submissions/{id}/grade` per row; a rejected row keeps its
+ * localized problem message. BUG-138: the row is already graded, so the
+ * request carries no score (the server keeps the stored raw score and
+ * penalties) and no feedback (kept); the audit note goes to the audit trail.
+ */
 async function saveGrades(
   submissions: Submission[],
   status: 'PUBLISHED' | 'RETURNED',
@@ -397,30 +443,20 @@ async function saveGrades(
   describeError: (error: unknown) => string,
 ) {
   const results = await Promise.allSettled(
-    submissions.map(submission =>
-      saveGrade(
-        submission.submission_uuid,
-        {
-          action: status === 'PUBLISHED' ? 'publish' : 'return',
-          final_score: submission.final_score ?? 0,
-          feedback: appendAuditNote(submission.grading_json?.feedback ?? '', auditNote),
-        },
-        { headers: ifMatchHeaders(submission.version) },
-      ),
-    ),
+    submissions.map(submission => {
+      const body: GradeRequest & { audit_note: string } = {
+        action: status === 'PUBLISHED' ? 'publish' : 'return',
+        audit_note: auditNote,
+      }
+      return saveGrade(submission.submission_uuid, body, { headers: ifMatchHeaders(submission.version) })
+    }),
   )
 
   const failures: { name: string; error: string }[] = []
   results.forEach((result, i) => {
     const sub = submissions[i]
     if (result.status !== 'rejected' || !sub) return
-    const name = sub.user
-      ? `${sub.user.first_name ?? ''} ${sub.user.last_name ?? ''}`.trim() ||
-        sub.user.username ||
-        sub.user.email ||
-        sub.submission_uuid
-      : sub.submission_uuid
-    failures.push({ name, error: describeError(result.reason) })
+    failures.push({ name: displayName(sub), error: describeError(result.reason) })
   })
 
   return { succeeded: results.length - failures.length, failures }
@@ -434,12 +470,6 @@ async function waitForBulkAction(action: BulkAction, attempts = 10): Promise<Bul
     current = await getBulkAction(current.id)
   }
   return current
-}
-
-function appendAuditNote(feedback: string, auditNote: string): string {
-  const note = auditNote.trim()
-  if (!note) return feedback
-  return feedback ? `${feedback}\n\nAudit note: ${note}` : `Audit note: ${note}`
 }
 
 function getDialogTitle(

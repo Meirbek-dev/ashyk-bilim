@@ -650,6 +650,7 @@ function GradeEditor({
       ? null
       : criteria.reduce((total, criterion) => total + (rubricScores[criterion.criterion_id] ?? 0), 0)
   const scoreId = `fs-review-score-${attempt.id}`
+  const isPublished = attempt.status === 'published'
   // UX-047: mirror the server's `final_score` rules (required for save/publish,
   // 0..=100) as a field error instead of a generic validation toast.
   const parsedScore = score.trim() === '' ? null : Number(score)
@@ -755,8 +756,10 @@ function GradeEditor({
           minHeight={160}
           placeholder={t('feedbackPlaceholder')}
         />
+        {/* UX-065: a released grade is final (BUG-128) — only a re-publish is offered. */}
+        {isPublished ? <p className="text-muted-foreground text-xs">{t('publishedIsFinal')}</p> : null}
         <div className="grid gap-2">
-          <Button onClick={() => submit('GRADED')} disabled={isPending}>
+          <Button onClick={() => submit('GRADED')} disabled={isPending || isPublished}>
             {isPending ? (
               <Loader2 data-icon="inline-start" className="animate-spin" />
             ) : (
@@ -764,7 +767,7 @@ function GradeEditor({
             )}
             {t('saveGrade')}
           </Button>
-          <Button variant="outline" onClick={() => submit('RETURNED')} disabled={isPending}>
+          <Button variant="outline" onClick={() => submit('RETURNED')} disabled={isPending || isPublished}>
             <RotateCcw data-icon="inline-start" />
             {t('returnForRevision')}
           </Button>
