@@ -34,6 +34,8 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
   })
 
   async function setContent(content: unknown) {
+    // The header already shows the conflict notice; nothing may overwrite the other tab's save.
+    if (activityAutosave.saveStatus === 'conflict') return
     const { activity } = props
 
     const plainContent = structuredClone(content)

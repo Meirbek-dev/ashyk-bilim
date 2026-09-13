@@ -3,18 +3,34 @@
 // does not survive the Next server-action boundary (GAUNTLET BUG-035).
 // Nothing reads the `courses` / `activities` cache tags (no `cacheTag()`
 // consumer), so there is nothing to revalidate here.
-import { apiJson } from '@/lib/api-client'
+import { apiJson, apiResult } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
+import { ifMatchHeaders, parseEntityTagVersion } from '@/lib/api/headers'
 import { Activity as ActivitySchema, ActivityDetail } from '@/lib/api/generated/zod'
+import type { Activity as WireActivity } from '@/lib/api/generated/zod'
 import { stripEntityPrefix, toAppActivity, toWireActivityType } from '@/hooks/courses/courseKeys'
 import { getAPIUrl } from '@services/config/config'
 import type { Activity } from '@/components/Contexts/CourseContext'
 
-const json = (method: 'POST' | 'PATCH', body: unknown) => ({
+const json = (method: 'POST' | 'PATCH', body: unknown, headers: Record<string, string> = {}) => ({
   method,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', ...headers },
   body: JSON.stringify(body),
 })
+
+/**
+ * Activities are optimistic-lock writes (UX-027): the server answers with
+ * `ETag: "<version>"`, and a `content` PATCH must send it back as `If-Match`
+ * (stale → 412 `precondition-failed`). The version rides on the app activity.
+ */
+async function withVersion<T extends WireActivity>(
+  path: string,
+  init: Parameters<typeof apiResult>[1],
+  parse: (data: unknown) => T,
+) {
+  const { data, headers } = await apiResult(path, init, parse)
+  return { ...toAppActivity(data), version: parseEntityTagVersion(headers) }
+}
 
 /** Closed v2 `UpdateActivityRequest` (`additionalProperties: false`), with `TYPE_*` tokens mapped to the wire. */
 function toUpdateActivityRequest(data: Record<string, unknown>) {
@@ -41,7 +57,7 @@ export async function createActivity(data: AppPayload, chapter_id: string | numb
   }
 
   const { name, activity_type, activity_sub_type, chapter_id: _chapterId, ...extras } = data
-  let created = await apiJson(
+  let created = await withVersion(
     `chapters/${stripEntityPrefix(String(chapter_id))}/activities`,
     json('POST', {
       name,
@@ -53,10 +69,14 @@ export async function createActivity(data: AppPayload, chapter_id: string | numb
 
   const patch = toUpdateActivityRequest(extras)
   if (Object.keys(patch).length > 0) {
-    created = await apiJson(`activities/${created.id}`, json('PATCH', patch), ActivitySchema.parse)
+    created = await withVersion(
+      `activities/${created.id}`,
+      json('PATCH', patch, ifMatchHeaders(created.version)),
+      ActivitySchema.parse,
+    )
   }
 
-  return toAppActivity(created)
+  return created
 }
 
 /** YouTube activity: `video` / `video_youtube` with `content {uri, type}` and player `details`. */
@@ -97,23 +117,23 @@ export async function createExternalVideoActivity(
 }
 
 export async function getActivity(activity_uuid: string, _next?: unknown): Promise<Activity> {
-  const detail = await apiJson(
+  return withVersion(
     `activities/${stripEntityPrefix(activity_uuid)}`,
     { method: 'GET', baseUrl: getAPIUrl(), timeoutMs: 10_000 },
     ActivityDetail.parse,
   )
-  return toAppActivity(detail)
 }
 
 export async function deleteActivity(activity_uuid: string) {
   await apiJson(`activities/${stripEntityPrefix(activity_uuid)}`, { method: 'DELETE' })
 }
 
+/** `data.version` (from the loaded activity) travels as `If-Match`; the answer carries the new one. */
 export async function updateActivity(data: Record<string, unknown>, activity_uuid: string) {
-  const activity = await apiJson(
+  const version = typeof data.version === 'number' ? data.version : undefined
+  return withVersion(
     `activities/${stripEntityPrefix(activity_uuid)}`,
-    json('PATCH', toUpdateActivityRequest(data)),
+    json('PATCH', toUpdateActivityRequest(data), ifMatchHeaders(version)),
     ActivitySchema.parse,
   )
-  return toAppActivity(activity)
 }

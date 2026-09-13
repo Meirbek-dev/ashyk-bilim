@@ -5,12 +5,13 @@ import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext'
 import { Tiptap } from '@tiptap/react'
 import { useEditorInstance } from '@components/Objects/Editor/core'
 import type { ActivityRef } from '@components/Objects/Editor/core/editor-types'
+import type { SaveStatus } from '@/stores/courses/courseEditorStore'
 import { EditorToolbar } from '../Toolbar/EditorToolbar'
 import { BubbleToolbar } from '../menus/BubbleToolbar'
 import { FloatingPlusButton } from '../menus/FloatingPlusButton'
 import { SlashCommandMenu } from '../Toolbar/SlashCommandMenu'
-import { EditorHeader, EditorShell } from '../chrome'
 import { WebPreviewInsertDialog } from '../Extensions/WebPreview/WebPreviewInsertDialog'
+import { EditorHeader, EditorShell } from '../chrome'
 import DesktopOnlyGuard from '@components/Dashboard/Misc/DesktopOnlyGuard'
 import { BubbleMenu } from '@tiptap/react/menus'
 import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
@@ -116,9 +117,9 @@ function EditorCore({ activity, content, onUpdate }: EditorCoreProps) {
           It renders as a fixed-position modal overlay, so placement here does
           not affect visual layout (Requirements 3.2, 3.4). */}
       <EmbedPanel />
-    </Tiptap>
       {/* URL dialog for a new web-preview block: the node is inserted only on confirm (BUG-107). */}
       <WebPreviewInsertDialog />
+    </Tiptap>
   )
 }
 
@@ -134,7 +135,7 @@ interface AuthoringEditorProps {
   }
   platform: unknown
   onContentChange: (content: unknown) => void
-  saveState: 'idle' | 'saving' | 'saved' | 'error'
+  saveState: SaveStatus
   setContent: (content: unknown) => void
   assistantSlot?: ReactNode
 }

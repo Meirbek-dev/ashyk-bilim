@@ -10,6 +10,7 @@ import appLogoLight from '@public/app_logo_light.svg'
 import UserAvatar from '../../UserAvatar'
 import { Separator } from '@/components/ui/separator'
 import { EditorSaveIndicator } from './EditorSaveIndicator'
+import type { SaveStatus } from '@/stores/courses/courseEditorStore'
 import type { ReactNode } from 'react'
 
 interface EditorHeaderProps {
@@ -17,7 +18,7 @@ interface EditorHeaderProps {
   activityName: string
   courseUuid: string
   activityUuid: string
-  saveState: 'idle' | 'saving' | 'saved' | 'error'
+  saveState: SaveStatus
   onSave: () => void
   assistantSlot?: ReactNode
 }

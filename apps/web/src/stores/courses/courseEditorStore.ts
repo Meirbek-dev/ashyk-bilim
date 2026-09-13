@@ -6,7 +6,8 @@ import { IS_DEVELOPMENT } from '@/services/config/env'
 import { cleanCourseUuid } from '@/lib/course-management'
 
 export type CourseDirtySection = 'general' | 'access' | 'contributors' | 'certification' | 'content'
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+/** `conflict`: another editor saved first (412); autosave is off until the page reloads. */
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'conflict'
 
 interface ConflictState {
   isOpen: boolean
