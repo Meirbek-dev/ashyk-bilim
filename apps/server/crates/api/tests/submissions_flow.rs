@@ -795,3 +795,117 @@ async fn violations_past_the_threshold_zero_the_attempt(pool: PgPool) {
     assert_eq!(submitted.json()["final_score"], 100.0);
     assert_eq!(submitted.json()["violation_count"], 5);
 }
+
+/// Submit guards: a stale `If-Match` is 409 with `{expected, actual}`, two
+/// concurrent submits of one draft leave exactly one winner (the loser is a
+/// 409 — CAS lost or already submitted), the fourth submit inside the window
+/// is 429, and a draft opened before the deadline is 403 `PAST_DUE` at submit
+/// once the deadline passes with `allow_late = false` (critic12 branch list).
+#[sqlx::test(migrations = "../../migrations")]
+async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "allow_late": false }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let answer = serde_json::json!({
+        "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } }
+    });
+
+    // Alice: draft at version 2, submit with version 1 → 409 conflict.
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let saved = app
+        .send(patch_draft(&alice, &sub_id, Some("\"1\""), &answer))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    let stale = app
+        .send(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/api/v2/submissions/{sub_id}/submit"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &alice.cookie)
+                .header(header::IF_MATCH, "\"1\"")
+                .body(Body::from(answer.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.text());
+    assert_eq!(stale.json()["code"], "conflict");
+    assert_eq!(stale.json()["details"]["expected"], 1);
+    assert_eq!(stale.json()["details"]["actual"], 2);
+
+    // Two submits race: one wins, the other is a 409 (never a double grade).
+    let (first, second) = tokio::join!(
+        app.send(submit(&alice, &sub_id, None, &answer)),
+        app.send(submit(&alice, &sub_id, None, &answer)),
+    );
+    let mut statuses = [first.status, second.status];
+    statuses.sort();
+    assert_eq!(
+        statuses,
+        [StatusCode::OK, StatusCode::CONFLICT],
+        "{} / {}",
+        first.text(),
+        second.text()
+    );
+    let published: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM submissions WHERE id = $1 AND status = 'published'",
+    )
+    .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(published, 1);
+
+    // Fourth submit inside the 10 s window → 429 before any other check.
+    let spam = app.send(submit(&alice, &sub_id, None, &answer)).await;
+    assert_eq!(
+        spam.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        spam.text()
+    );
+    assert_eq!(spam.json()["code"], "rate-limited");
+
+    // Bob opened his draft in time; the deadline passes; no late work → 403 PAST_DUE.
+    let bob = learner(&app, "bob").await;
+    let draft = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let bob_sub = draft.json()["id"].as_str().unwrap().to_owned();
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let late = app.send(submit(&bob, &bob_sub, None, &answer)).await;
+    assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
+    assert_eq!(late.json()["detail"], "PAST_DUE");
+    let still_draft: String = sqlx::query_scalar("SELECT status FROM submissions WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&bob_sub).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(still_draft, "draft");
+}
