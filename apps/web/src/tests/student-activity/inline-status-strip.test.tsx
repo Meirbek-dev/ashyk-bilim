@@ -54,6 +54,6 @@ describe('InlineStatusStrip (UX-009)', () => {
     expect(screen.queryByText('Неограниченное количество попыток')).toBeNull()
     expect(screen.getByText('Использовано 1 из 1 попыток')).toBeInTheDocument()
     expect(screen.getByText('50 мин')).toBeInTheDocument()
-    expect(screen.getByText('Тест')).toBeInTheDocument()
+    expect(screen.getByText('Экзамен')).toBeInTheDocument()
   })
 })

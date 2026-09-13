@@ -33,7 +33,7 @@ describe('attempt surface i18n (UX-010)', () => {
   it('renders a localized kind label and time limit on the entry card', () => {
     renderRu(<AttemptEntryCard vm={vm} />)
     expect(screen.queryByText(/quiz/i)).toBeNull()
-    expect(screen.getByText('Квиз')).toBeInTheDocument()
+    expect(screen.getByText('Тест')).toBeInTheDocument()
     expect(screen.getByText('50 мин')).toBeInTheDocument()
   })
 
