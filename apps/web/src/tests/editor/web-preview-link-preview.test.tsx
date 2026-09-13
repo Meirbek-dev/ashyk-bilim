@@ -134,7 +134,7 @@ describe('editor link block on `GET utils/link-preview`', () => {
     const { result } = renderHook(() => useLinkPreviewLookup(), { wrapper })
 
     await expect(result.current.mutateAsync(URL_UNDER_TEST)).resolves.toEqual(previewToAttrs(URL_UNDER_TEST, wire))
-    expect(mocks.linkPreview).toHaveBeenCalledWith({ url: URL_UNDER_TEST })
+    expect(mocks.linkPreview).toHaveBeenCalledWith({ url: URL_UNDER_TEST }, { retry: 0 })
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
 
