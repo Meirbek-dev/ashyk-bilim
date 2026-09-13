@@ -469,6 +469,32 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
         .await;
     assert_eq!(detail.json()["published"], false);
     assert_eq!(detail.json()["activity_type"], "video");
+
+    // BUG-135: a type change on an already-published activity runs the same
+    // gate — a live page cannot silently become a quiz with no assessment.
+    let live = create_activity(&app, &teacher, &chapter_id, "Live").await;
+    let toggled = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{live}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(toggled.status, StatusCode::OK, "{}", toggled.text());
+    let retyped = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{live}"),
+            &serde_json::json!({ "activity_type": "quiz", "activity_sub_type": "quiz_standard" }),
+        )
+        .await;
+    assert_eq!(retyped.status, StatusCode::CONFLICT, "{}", retyped.text());
+    assert_eq!(retyped.json()["code"], "activity-not-ready");
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/activities/{live}"))
+        .await;
+    assert_eq!(detail.json()["published"], true);
+    assert_eq!(detail.json()["activity_type"], "video");
 }
 
 /// Unpublished activities exist for editors only: learners and anonymous

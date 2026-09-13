@@ -342,11 +342,15 @@ impl CurriculumService {
             }]));
         }
         // The publish gate reads the MERGED row: the type this PATCH sets
-        // (or keeps) and the published flag it asks for.
+        // (or keeps) and the published flag it asks for. It runs whenever
+        // the merged row is published and either the flag flips or the type
+        // changes — a live activity cannot become a quiz with no assessment.
         let merged_type = changes
             .type_pair
             .map_or(activity.activity_type.as_str(), |(t, _)| t);
-        if changes.published == Some(true) && !activity.published {
+        let merged_published = changes.published.unwrap_or(activity.published);
+        let type_changes = merged_type != activity.activity_type;
+        if merged_published && (type_changes || !activity.published) {
             self.require_publishable(activity_id, merged_type).await?;
         }
         if let Some((activity_type, sub_type)) = changes.type_pair {
