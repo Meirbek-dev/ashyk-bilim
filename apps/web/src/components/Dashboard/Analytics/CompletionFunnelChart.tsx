@@ -21,26 +21,30 @@ export default function CompletionFunnelChart({ title, description, data }: Comp
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer
-          className="h-[280px] w-full"
-          config={{
-            count: {
-              label: t('funnel.learners'),
-              color: 'var(--chart-2)',
-              valueFormatter: value => `${value ?? 0} ${t('funnel.learners')}`,
-            },
-          }}
-        >
-          <BarChart data={data} layout="vertical" margin={{ left: 18 }}>
-            <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-            <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={v => String(v)} />
-            <YAxis dataKey="label" type="category" width={170} tickLine={false} axisLine={false} />
-            <ChartTooltip
-              content={<ChartTooltipContent nameKey="label" formatter={v => [`${v} ${t('funnel.learners')}`, '']} />}
-            />
-            <Bar dataKey="count" fill="var(--color-count)" radius={8} />
-          </BarChart>
-        </ChartContainer>
+        {data.length === 0 ? (
+          <p className="text-muted-foreground py-10 text-center text-sm">{t('funnel.empty')}</p>
+        ) : (
+          <ChartContainer
+            className="h-[280px] w-full"
+            config={{
+              count: {
+                label: t('funnel.learners'),
+                color: 'var(--chart-2)',
+                valueFormatter: value => `${value ?? 0} ${t('funnel.learners')}`,
+              },
+            }}
+          >
+            <BarChart data={data} layout="vertical" margin={{ left: 18 }}>
+              <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+              <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={v => String(v)} />
+              <YAxis dataKey="label" type="category" width={170} tickLine={false} axisLine={false} />
+              <ChartTooltip
+                content={<ChartTooltipContent nameKey="label" formatter={v => [`${v} ${t('funnel.learners')}`, '']} />}
+              />
+              <Bar dataKey="count" fill="var(--color-count)" radius={8} />
+            </BarChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )

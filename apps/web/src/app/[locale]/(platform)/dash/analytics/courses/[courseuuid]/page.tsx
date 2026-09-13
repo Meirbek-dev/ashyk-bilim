@@ -113,24 +113,30 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
           <CardTitle>{t('pages.courseContentHealthTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
-          {detail.content_health.map(item => (
-            <div key={item.signal} className="border-border/60 bg-muted/20 rounded-xl border p-4">
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant={
-                    item.severity === 'critical' ? 'destructive' : item.severity === 'warning' ? 'warning' : 'outline'
-                  }
-                >
-                  {getAnalyticsSeverityLabel(t, item.severity)}
-                </Badge>
-                <span className="text-foreground text-sm font-medium">{getAnalyticsSignalLabel(t, item.signal)}</span>
+          {detail.summary.enrolled_learners === 0 ? (
+            <p className="text-muted-foreground text-sm md:col-span-3">{t('pages.courseContentHealthNoLearners')}</p>
+          ) : (
+            detail.content_health.map(item => (
+              <div key={item.signal} className="border-border/60 bg-muted/20 rounded-xl border p-4">
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={
+                      item.severity === 'critical' ? 'destructive' : item.severity === 'warning' ? 'warning' : 'outline'
+                    }
+                  >
+                    {getAnalyticsSeverityLabel(t, item.severity)}
+                  </Badge>
+                  <span className="text-foreground text-sm font-medium">{getAnalyticsSignalLabel(t, item.signal)}</span>
+                </div>
+                <div className="text-muted-foreground mt-3 text-sm leading-6">
+                  {getAnalyticsCodeLabel(t, item.note)}
+                </div>
+                {item.value !== null ? (
+                  <div className="text-foreground mt-3 text-2xl font-semibold">{item.value}</div>
+                ) : null}
               </div>
-              <div className="text-muted-foreground mt-3 text-sm leading-6">{getAnalyticsCodeLabel(t, item.note)}</div>
-              {item.value !== null ? (
-                <div className="text-foreground mt-3 text-2xl font-semibold">{item.value}</div>
-              ) : null}
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
 
