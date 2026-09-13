@@ -99,6 +99,26 @@ struct ZitadelErrorBody {
     details: Vec<serde_json::Value>,
 }
 
+impl ZitadelErrorBody {
+    /// Zitadel's stable error ids (`details[].id`, e.g. `COMMAND-CahN2`) —
+    /// the only reliable discriminator behind generic gRPC codes.
+    fn detail_ids(&self) -> impl Iterator<Item = &str> {
+        self.details
+            .iter()
+            .filter_map(|d| d.get("id").and_then(serde_json::Value::as_str))
+    }
+}
+
+/// 422 on `field` for a password Zitadel's complexity policy rejects; the
+/// web catalog renders `password-policy` as the localized rule.
+fn password_policy_error(field: &str, message: String) -> Error {
+    Error::validation(vec![ab_core::FieldError {
+        field: field.into(),
+        code: "password-policy".into(),
+        message,
+    }])
+}
+
 impl ZitadelClient {
     pub fn new(config: ZitadelConfig) -> Result<Self> {
         let http = reqwest::Client::builder()
@@ -172,6 +192,12 @@ impl ZitadelClient {
         // detail carrying failedAttempts; unknown user → code 5 (NotFound).
         if err.code == 5 {
             return Result::Ok(PasswordSessionOutcome::UserNotFound);
+        }
+        // 9 = FailedPrecondition: a TOTP code was sent for an account with no
+        // authenticator ("Multifactor OTP (OneTimePassword) isn't ready",
+        // COMMAND-3Mif9s) — a bad second factor, not an outage.
+        if err.code == 9 && totp_code.is_some() {
+            return Result::Ok(PasswordSessionOutcome::InvalidTotp);
         }
         if err.code == 3 {
             // Password failures carry a CredentialsCheckError detail with
@@ -447,6 +473,11 @@ impl ZitadelClient {
                 user.username
             )));
         }
+        // 3 = InvalidArgument: the password fails Zitadel's complexity policy
+        // (captured live: "Password must contain upper case", COMMA-VoaRj).
+        if err.code == 3 && matches!(user.password, PasswordSpec::Plain(_)) {
+            return Err(password_policy_error("password", err.message));
+        }
         Err(Error::app(
             ErrorCode::ServiceUnavailable,
             format!(
@@ -533,10 +564,16 @@ impl ZitadelClient {
                     "current password is invalid",
                 ));
             }
+            return Err(password_policy_error("new_password", err.message));
+        }
+        // Zitadel reports "new password equals the current one" as an
+        // internal error (code 13, COMMAND-CahN2; captured live 2026-09-13)
+        // — a user mistake, not an outage.
+        if err.code == 13 && err.detail_ids().any(|id| id == "COMMAND-CahN2") {
             return Err(Error::validation(vec![ab_core::FieldError {
                 field: "new_password".into(),
-                code: "invalid".into(),
-                message: err.message,
+                code: "password-unchanged".into(),
+                message: "new password must differ from the current one".into(),
             }]));
         }
         Err(Error::app(

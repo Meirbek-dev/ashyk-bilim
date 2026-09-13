@@ -227,6 +227,51 @@ async fn login_name_rate_limit_kicks_in(pool: PgPool) {
     let res = app.post_json("/api/v2/auth/login", &body).await;
     assert_eq!(res.status, StatusCode::TOO_MANY_REQUESTS);
     assert_eq!(res.json()["code"], "rate-limited");
+    // Retry-After reflects the 15-minute name window, not a fixed minute.
+    let retry_after: u64 = res.headers[header::RETRY_AFTER]
+        .to_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!(
+        (61..=900).contains(&retry_after),
+        "retry-after {retry_after}"
+    );
+    assert_eq!(res.json()["details"]["retry_after_seconds"], retry_after);
+}
+
+/// Viewing the sessions page must not keep idle sessions alive: listing is
+/// a pure read (no idle-TTL refresh, no `last_seen` bump).
+#[sqlx::test(migrations = "../../migrations")]
+async fn listing_sessions_does_not_touch_them(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("peeker", "peeker@example.com", &["user"])
+        .await;
+    let current = app.mint_session_for(user, &[]).await;
+    let idle = app.mint_session_for(user, &[]).await;
+    let idle_key = format!("session:{}", idle.cookie.split_once('=').unwrap().1);
+    let mut redis = app.sessions.redis();
+    let () = redis::cmd("EXPIRE")
+        .arg(&idle_key)
+        .arg(100)
+        .query_async(&mut redis)
+        .await
+        .unwrap();
+
+    let list = app.get_as(&current, "/api/v2/auth/sessions").await;
+    assert_eq!(list.status, StatusCode::OK);
+    assert_eq!(list.json().as_array().unwrap().len(), 2);
+
+    let ttl: i64 = redis::cmd("TTL")
+        .arg(&idle_key)
+        .query_async(&mut redis)
+        .await
+        .unwrap();
+    assert!(
+        (1..=100).contains(&ttl),
+        "listing refreshed the idle TTL: {ttl}"
+    );
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -443,6 +488,97 @@ async fn registration_rejects_taken_username_and_email(pool: PgPool) {
     assert_eq!(res.json()["code"], "email-taken");
 }
 
+/// Emails are case-insensitive identities: registration stores them
+/// lower-cased, uniqueness and login ignore case (usernames too).
+#[sqlx::test(migrations = "../../migrations")]
+async fn email_and_username_are_case_insensitive(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("casey", "casey@example.com", &["user"])
+        .await;
+    mock_password_ok(&app.zitadel).await;
+    Mock::given(method("GET"))
+        .and(wiremock::matchers::path_regex(
+            r"^/v2/users/.+/authentication_methods$",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "authMethodTypes": ["AUTHENTICATION_METHOD_TYPE_PASSWORD"]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    for taken in ["Casey@Example.com", "CASEY@EXAMPLE.COM"] {
+        let res = app
+            .post_json("/api/v2/auth/register", &register_body("fresh", taken))
+            .await;
+        assert_eq!(res.status, StatusCode::CONFLICT, "{taken}");
+        assert_eq!(res.json()["code"], "email-taken");
+    }
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &register_body("CASEY", "other@example.com"),
+        )
+        .await;
+    assert_eq!(res.json()["code"], "username-taken");
+
+    for login in ["CASEY@EXAMPLE.COM", "Casey"] {
+        let res = app
+            .post_json(
+                "/api/v2/auth/login",
+                &serde_json::json!({ "login": login, "password": "pw" }),
+            )
+            .await;
+        assert_eq!(res.status, StatusCode::OK, "{login}: {}", res.text());
+    }
+
+    mock_user_create_with_code(&app.zitadel, "123456").await;
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &register_body("mixed", "Mixed.Case@Example.COM"),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
+    assert_eq!(res.json()["email"], "mixed.case@example.com");
+}
+
+/// A password Zitadel's policy rejects is the user's mistake (422 on the
+/// field), not an outage (503). Captured live 2026-09-13: code 3, COMMA-VoaRj.
+#[sqlx::test(migrations = "../../migrations")]
+async fn weak_password_is_a_field_error_not_an_outage(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Password must contain upper case (COMMA-VoaRj)",
+            "details": [{ "id": "COMMA-VoaRj", "message": "Password must contain upper case" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &register_body("weak", "weak@example.com"),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "password");
+    assert_eq!(res.json()["field_errors"][0]["code"], "password-policy");
+    // Nothing was created on our side.
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM users WHERE username = 'weak'")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(count, 0);
+}
+
 /// Ten typos behind one NAT must not lock the classroom out: only created
 /// accounts count toward the 10/h cap; attempts have their own wider cap.
 #[sqlx::test(migrations = "../../migrations")]
@@ -590,4 +726,41 @@ async fn password_change_checks_the_current_password_and_revokes_other_sessions(
         )
         .await;
     assert_eq!(anon.status, StatusCode::UNAUTHORIZED);
+}
+
+/// Zitadel reports "new password equals the current one" as an internal
+/// error (code 13, COMMAND-CahN2; captured live 2026-09-13) — the user's
+/// mistake, so a 422 on the field, not a 503.
+#[sqlx::test(migrations = "../../migrations")]
+async fn unchanged_password_is_a_field_error(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("samepw", "same@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &[]).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{user}/password")))
+        .respond_with(ResponseTemplate::new(500).set_body_json(serde_json::json!({
+            "code": 13,
+            "message": "An internal error occurred (COMMAND-CahN2)",
+            "details": [{ "id": "COMMAND-CahN2", "message": "An internal error occurred" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_as(
+            &session,
+            "/api/v2/auth/password",
+            &serde_json::json!({ "current_password": "Same!Pass1", "new_password": "Same!Pass1" }),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "new_password");
+    assert_eq!(res.json()["field_errors"][0]["code"], "password-unchanged");
 }

@@ -123,6 +123,34 @@ async fn wrong_totp_code_is_distinguished_from_bad_password(pool: PgPool) {
     assert_eq!(res.json()["code"], "invalid-totp-code");
 }
 
+/// A code sent for an account with no authenticator: Zitadel answers code 9
+/// "Multifactor OTP (OneTimePassword) isn't ready" (COMMAND-3Mif9s, captured
+/// live 2026-09-13) — a bad second factor, not an outage.
+#[sqlx::test(migrations = "../../migrations")]
+async fn totp_code_for_an_unenrolled_account_is_invalid_not_an_outage(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("nototp", "nototp@example.com", &["user"])
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 9,
+            "message": "Multifactor OTP (OneTimePassword) isn't ready (COMMAND-3Mif9s)",
+            "details": [{ "id": "COMMAND-3Mif9s", "message": "Multifactor OTP (OneTimePassword) isn't ready" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "nototp", "password": "pw", "totp_code": "123456" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::BAD_REQUEST, "{}", res.text());
+    assert_eq!(res.json()["code"], "invalid-totp-code");
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn enrollment_activation_and_removal(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

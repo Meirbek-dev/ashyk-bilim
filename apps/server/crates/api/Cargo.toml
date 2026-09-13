@@ -36,5 +36,6 @@ ab-clients = { workspace = true }
 ab-testkit = { workspace = true }
 base64.workspace = true
 insta = { workspace = true }
+redis = { workspace = true }
 reqwest.workspace = true
 wiremock = { workspace = true }

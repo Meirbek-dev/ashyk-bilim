@@ -18,6 +18,7 @@ dependencies = [
  "futures",
  "garde",
  "insta",
+ "redis",
  "reqwest",
  "secrecy",
  "serde",
