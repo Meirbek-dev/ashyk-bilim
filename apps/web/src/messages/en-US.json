@@ -887,7 +887,7 @@
       "emailPlaceholder": "Enter your email",
       "password": "Password",
       "passwordPlaceholder": "Choose a password",
-      "passwordRule": "At least 8 characters.",
+      "passwordRule": "At least 8 characters, including an uppercase and a lowercase letter, a digit and a symbol.",
       "confirmPassword": "Confirm password",
       "submit": "Sign up",
       "submitting": "Creating your account...",
@@ -1927,7 +1927,7 @@
       "usernameLabel": "Username",
       "emailLabel": "Email",
       "passwordLabel": "Password (optional)",
-      "passwordHint": "At least 8 characters. Leave empty for Google-only sign-in.",
+      "passwordHint": "At least 8 characters, including an uppercase and a lowercase letter, a digit and a symbol. Leave empty for Google-only sign-in.",
       "extraRolesLabel": "Additional role",
       "noExtraRole": "\"User\" only",
       "createUserSubmit": "Create",
@@ -6261,7 +6261,7 @@
           "currentPassword": "Current password",
           "newPassword": "New password",
           "confirmPassword": "Confirm new password",
-          "passwordRule": "At least 8 characters.",
+          "passwordRule": "At least 8 characters, including an uppercase and a lowercase letter, a digit and a symbol.",
           "changePassword": "Change password",
           "passwordChanged": "Password changed",
           "passwordChangedDescription": "Your other sessions were signed out.",
@@ -6272,7 +6272,9 @@
           "passwordsDoNotMatch": "The passwords do not match.",
           "revokeConfirmTitle": "End this session?",
           "revokeConfirmDescription": "The device will be signed out and asked to log in again on its next action.",
-          "revokeCancel": "Cancel"
+          "revokeCancel": "Cancel",
+          "disableTotpConfirmTitle": "Disable two-factor authentication?",
+          "disableTotpConfirmDescription": "Signing in will no longer ask for an authenticator-app code. You can enable it again at any time."
         }
       },
       "gamification": "Gamification Settings",
@@ -6809,7 +6811,9 @@
       "too-short": "The value is too short.",
       "out-of-range": "The value is out of range.",
       "unknown-field": "Unknown field.",
-      "unsafe": "This address cannot be used."
+      "unsafe": "This address cannot be used.",
+      "password-policy": "The password must be at least 8 characters and include an uppercase and a lowercase letter, a digit and a symbol.",
+      "password-unchanged": "The new password is the same as the current one."
     }
   },
   "FixedActivitySecondaryBar": {

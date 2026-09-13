@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
-import { render, screen, waitFor, cleanup } from '@testing-library/react'
+import { render, screen, waitFor, within, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import UserSecuritySettings from '@/components/Dashboard/Pages/UserAccount/UserSecuritySettings/UserSecuritySettings'
@@ -20,10 +20,11 @@ vi.mock('@/hooks/useApiError', () => ({
 
 const mockListSessions = vi.fn()
 const mockChangePassword = vi.fn()
+const mockRemoveTotp = vi.fn()
 vi.mock('@services/auth/auth', () => ({
   changePassword: (...args: unknown[]) => mockChangePassword(...args),
   listSessions: (...args: unknown[]) => mockListSessions(...args),
-  removeTotp: vi.fn(),
+  removeTotp: (...args: unknown[]) => mockRemoveTotp(...args),
   revokeSession: vi.fn(),
   startTotpEnrollment: vi.fn(),
   verifyTotpEnrollment: vi.fn(),
@@ -126,5 +127,33 @@ describe('UserSecuritySettings', () => {
     await waitFor(() => expect(mockChangePassword).toHaveBeenCalledTimes(2))
     // Success clears the form.
     await waitFor(() => expect(input('currentPassword').value).toBe(''))
+    // UX-017: the server revoked the other sessions — the list refetches.
+    await waitFor(() => expect(mockListSessions).toHaveBeenCalledTimes(2))
+  })
+
+  // UX-018: «Disable» removed TOTP on the spot; revoke-session asks first.
+  it('asks for confirmation before disabling TOTP', async () => {
+    mockListSessions.mockResolvedValue([])
+    mockRemoveTotp.mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings mfaEnabled />
+      </QueryClientProvider>,
+    )
+    await user.click(await screen.findByRole('button', { name: 'disableTotp' }))
+    expect(await screen.findByText('disableTotpConfirmTitle')).toBeDefined()
+    expect(mockRemoveTotp).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'cancel' }))
+    await waitFor(() => expect(screen.queryByText('disableTotpConfirmTitle')).toBeNull())
+    expect(mockRemoveTotp).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'disableTotp' }))
+    const dialog = await screen.findByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: 'disableTotp' }))
+    await waitFor(() => expect(mockRemoveTotp).toHaveBeenCalledTimes(1))
+    expect(await screen.findByText('enableTotp')).toBeDefined()
   })
 })

@@ -23,7 +23,7 @@ import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@
 import { useApiError } from '@/hooks/useApiError'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { fromUnix } from '@/lib/api/contract'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { APIError, hasErrorCode } from '@/lib/api/assertSuccess'
 import {
   changePassword,
   listSessions,
@@ -167,15 +167,19 @@ function SessionsSection({ t }: { t: Translator }) {
 
 function PasswordSection({ t }: { t: Translator }) {
   const { toastApiError } = useApiError()
+  const errorsT = useTranslations('Errors')
+  const queryClient = useQueryClient()
   const [values, setValues] = useState({ current: '', next: '', confirm: '' })
   const [errors, setErrors] = useState<{ current?: string; next?: string; confirm?: string }>({})
 
   const mutation = useMutation({
     mutationFn: () => changePassword(values.current, values.next),
-    onSuccess: () => {
+    onSuccess: async () => {
       setValues({ current: '', next: '', confirm: '' })
       setErrors({})
       toast.success(t('passwordChanged'), { description: t('passwordChangedDescription') })
+      // The server revoked every other session: the list above is stale.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.sessions() })
     },
     onError: error => {
       if (hasErrorCode(error, 'invalid-credentials')) {
@@ -183,7 +187,10 @@ function PasswordSection({ t }: { t: Translator }) {
         return
       }
       if (hasErrorCode(error, 'validation-failed')) {
-        setErrors({ next: t('newPasswordRejected') })
+        // `password-policy` / `password-unchanged` carry the specific rule.
+        const code = error instanceof APIError ? error.fieldErrors.find(f => f.field === 'new_password')?.code : undefined
+        const key = `fields.${code ?? ''}`
+        setErrors({ next: code && errorsT.has(key) ? errorsT(key) : t('newPasswordRejected') })
         return
       }
       toastApiError(error)
@@ -255,6 +262,7 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
   const [active, setActive] = useState(initialActive)
+  const [confirmDisable, setConfirmDisable] = useState(false)
 
   const enrollMutation = useMutation({
     mutationFn: startTotpEnrollment,
@@ -359,9 +367,27 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
         // "not yet enrolled" state to enable into).
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-muted-foreground text-sm">{t('totpActive')}</span>
-          <Button variant="outline" onClick={() => removeMutation.mutate()} disabled={removeMutation.isPending}>
+          <Button variant="outline" onClick={() => setConfirmDisable(true)} disabled={removeMutation.isPending}>
             {t('disableTotp')}
           </Button>
+          <AlertDialog open={confirmDisable} onOpenChange={setConfirmDisable}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('disableTotpConfirmTitle')}</AlertDialogTitle>
+                <AlertDialogDescription>{t('disableTotpConfirmDescription')}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={removeMutation.isPending}
+                  onClick={() => removeMutation.mutate(undefined, { onSettled: () => setConfirmDisable(false) })}
+                >
+                  {t('disableTotp')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       ) : (
         // Not enrolled: disabling is meaningless (and `DELETE` is
