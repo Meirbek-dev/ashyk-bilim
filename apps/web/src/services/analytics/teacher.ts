@@ -157,6 +157,13 @@ export function saveAnalyticsView(payload: SavedAnalyticsViewCreate, query?: Ana
   })
 }
 
+/** `DELETE analytics/teacher/saved-views/{id}` — 404 unless the view belongs to the caller. */
+export function deleteAnalyticsView(viewId: string, query?: AnalyticsQuery) {
+  return analyticsRequest(`teacher/saved-views/${encodeURIComponent(viewId)}`, () => undefined, query, {
+    method: 'DELETE',
+  })
+}
+
 export function getTeacherDrillThrough(
   metric: DrillThroughResponse['metric'],
   query?: AnalyticsQuery & {

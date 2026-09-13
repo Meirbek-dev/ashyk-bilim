@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import type { AnalyticsQuery, SavedAnalyticsViewRow } from '@/types/analytics'
-import { getSavedAnalyticsViews, saveAnalyticsView } from '@services/analytics/teacher'
-import { Save, Search } from 'lucide-react'
+import { deleteAnalyticsView, getSavedAnalyticsViews, saveAnalyticsView } from '@services/analytics/teacher'
+import { useApiError } from '@/hooks/useApiError'
+import { Save, Search, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -29,6 +30,7 @@ const serializeQuery = (query: Record<string, unknown>) => {
 export default function SavedViewsBar({ query }: SavedViewsBarProps) {
   const router = useRouter()
   const t = useTranslations('Components.DashboardAnalytics')
+  const { toastApiError } = useApiError()
   const [name, setName] = useState('')
   const [views, setViews] = useState<SavedAnalyticsViewRow[]>([])
   const [isSaving, setIsSaving] = useState(false)
@@ -72,21 +74,43 @@ export default function SavedViewsBar({ query }: SavedViewsBarProps) {
     }
   }
 
+  const handleDelete = async (view: SavedAnalyticsViewRow) => {
+    try {
+      await deleteAnalyticsView(view.id, query)
+      setViews(current => current.filter(item => item.id !== view.id))
+      toast.success(t('savedViewsBar.deleted'))
+    } catch (error) {
+      toastApiError(error, { fallback: t('savedViewsBar.couldNotDelete') })
+    }
+  }
+
   return (
     <Card className="shadow-sm">
       <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-          {views.slice(0, 8).map(view => (
-            <Button
-              key={view.id}
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(serializeQuery(view.query))}
-            >
-              <Search className="h-3.5 w-3.5" />
-              {view.name}
-            </Button>
+          {views.map(view => (
+            <div key={view.id} className="inline-flex items-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-r-none"
+                onClick={() => router.push(serializeQuery(view.query))}
+              >
+                <Search className="h-3.5 w-3.5" />
+                {view.name}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-l-none border-l-0 px-2"
+                aria-label={t('savedViewsBar.deleteView', { name: view.name })}
+                onClick={() => handleDelete(view)}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           ))}
           {!views.length ? (
             <span className="text-muted-foreground text-sm">{t('savedViewsBar.noSavedViews')}</span>
