@@ -16,6 +16,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const mockRefresh = vi.fn()
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
+  usePathname: () => '/dash',
   useRouter: () => ({
     refresh: mockRefresh,
     push: mockPush,

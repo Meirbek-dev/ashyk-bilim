@@ -10,6 +10,7 @@ import type { Session } from '@/lib/auth/types'
 
 // Mock useRouter
 vi.mock('next/navigation', () => ({
+  usePathname: () => '/dash',
   useRouter: () => ({
     refresh: vi.fn(),
     push: vi.fn(),
