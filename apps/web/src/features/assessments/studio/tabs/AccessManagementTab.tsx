@@ -33,6 +33,15 @@ import { toUnix } from '@/lib/api/contract'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { collectGradebookPages } from '@/features/grading/queries/grading.query'
 import { useApiError } from '@/hooks/useApiError'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -41,7 +50,13 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { estimateAudiencePreviewCount, filterByQuery, getExcludedLoadedCount, uniqueById } from './accessBuilderUtils'
+import {
+  estimateAudiencePreviewCount,
+  filterByQuery,
+  getExcludedLoadedCount,
+  isLockout,
+  uniqueById,
+} from './accessBuilderUtils'
 import type { AccessGroupRow, AccessLearner, AccessMode } from './accessBuilderUtils'
 
 interface AccessManagementTabProps {
@@ -52,8 +67,9 @@ interface AccessManagementTabProps {
 
 export default function AccessManagementTab({ assessmentUuid, courseUuid, disabled }: AccessManagementTabProps) {
   const t = useTranslations('Features.Assessments.Studio.AccessManagement')
+  const tDialog = useTranslations('Components.AlertDialog')
   const queryClient = useQueryClient()
-  const { toastApiError } = useApiError()
+  const { handleApiError, toastApiError } = useApiError()
   const [mode, setMode] = useState<AccessMode>('all_course_learners')
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
@@ -66,6 +82,9 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   const [overrideNote, setOverrideNote] = useState('')
   const [lastSaveError, setLastSaveError] = useState<string | null>(null)
   const [lastOverrideError, setLastOverrideError] = useState<string | null>(null)
+  // UX-057: 422 field errors land on the chip / input they name, not in a toast.
+  const [fieldErrors, setFieldErrors] = useState<Map<string, string>>(new Map())
+  const [confirmLockout, setConfirmLockout] = useState(false)
 
   const accessKey = queryKeys.assessments.access(assessmentUuid)
   const overridesKey = queryKeys.assessments.overrides(assessmentUuid)
@@ -152,14 +171,31 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
         user_ids: mode === 'restricted' ? [...selectedUsers] : [],
         usergroup_ids: mode === 'restricted' ? [...selectedGroups] : [],
       }),
-    onMutate: () => setLastSaveError(null),
+    onMutate: () => {
+      setLastSaveError(null)
+      setFieldErrors(new Map())
+    },
     onSuccess: next => {
       queryClient.setQueryData(accessKey, next)
       toast.success(t('saved'))
     },
-    onError: error => setLastSaveError(toastApiError(error, { fallback: t('saveFailed') }).message),
+    onError: error => {
+      const byField = collectFieldErrors(error, handleApiError, t('saveFailed'))
+      if (byField.size === 0) {
+        setLastSaveError(toastApiError(error, { fallback: t('saveFailed') }).message)
+        return
+      }
+      setFieldErrors(byField)
+      setLastSaveError(t('fixHighlighted'))
+    },
   })
-  const save = () => saveMutation.mutate()
+  const save = () => {
+    if (isLockout(mode, selectedUsers.size, selectedGroups.size)) {
+      setConfirmLockout(true)
+      return
+    }
+    saveMutation.mutate()
+  }
 
   const overrideMutation = useMutation({
     mutationFn: () => {
@@ -177,7 +213,10 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
         ),
       )
     },
-    onMutate: () => setLastOverrideError(null),
+    onMutate: () => {
+      setLastOverrideError(null)
+      setFieldErrors(new Map())
+    },
     onSuccess: nextOverrides => {
       queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) => {
         const byUser = new Map(current.map(override => [override.user_id, override]))
@@ -186,7 +225,15 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       })
       toast.success(t('overrideSaved', { count: nextOverrides.length }))
     },
-    onError: error => setLastOverrideError(toastApiError(error, { fallback: t('overrideSaveFailed') }).message),
+    onError: error => {
+      const byField = collectFieldErrors(error, handleApiError, t('overrideSaveFailed'))
+      if (byField.size === 0) {
+        setLastOverrideError(toastApiError(error, { fallback: t('overrideSaveFailed') }).message)
+        return
+      }
+      setFieldErrors(byField)
+      setLastOverrideError(t('fixHighlighted'))
+    },
   })
   const applyOverrides = () => {
     if (selectedUsers.size === 0) {
@@ -272,6 +319,17 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
         {lastSaveError ? <RecoverableError message={lastSaveError} retryLabel={t('retrySave')} onRetry={save} /> : null}
       </section>
 
+      <AlertDialog open={confirmLockout} onOpenChange={setConfirmLockout}>
+        <AlertDialogContent size="sm">
+          <AlertDialogTitle>{t('lockoutTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('lockoutDesc')}</AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tDialog('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => saveMutation.mutate()}>{t('lockoutConfirm')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
         <main className={cn('grid gap-5 lg:grid-cols-2', mode !== 'restricted' && 'opacity-60')}>
           <AccessList
@@ -326,6 +384,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
             users={selectedUserRows}
             groups={selectedGroupRows}
             overrides={overrideByUserId}
+            errors={fieldErrors}
             disabled={disabled}
             onRemoveUser={id => toggleSet(setSelectedUsers, id)}
             onRemoveGroup={id => toggleSet(setSelectedGroups, id)}
@@ -340,6 +399,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
             isPending={isOverridePending}
             selectedCount={selectedUsers.size}
             lastError={lastOverrideError}
+            attemptsError={fieldErrors.get('max_attempts_override') ?? null}
             onAttemptsChange={setOverrideAttempts}
             onDueAtChange={setOverrideDueAt}
             onNoteChange={setOverrideNote}
@@ -556,6 +616,7 @@ function SelectedAudienceDrawer({
   users,
   groups,
   overrides,
+  errors,
   disabled,
   onRemoveUser,
   onRemoveGroup,
@@ -564,6 +625,8 @@ function SelectedAudienceDrawer({
   users: AccessLearner[]
   groups: AccessGroupRow[]
   overrides: Map<string, StudentOverride>
+  /** Server field errors keyed `user_ids.<id>` / `usergroup_ids.<id>`. */
+  errors: Map<string, string>
   disabled: boolean
   onRemoveUser: (id: string) => void
   onRemoveGroup: (id: string) => void
@@ -582,8 +645,9 @@ function SelectedAudienceDrawer({
         ) : null}
         {users.map(user => {
           const override = overrides.get(user.id)
+          const error = errors.get(`user_ids.${user.id}`)
           return (
-            <div key={user.id} className="rounded-md border p-2">
+            <div key={user.id} className={cn('rounded-md border p-2', error && 'border-destructive')}>
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{displayUser(user)}</p>
@@ -600,6 +664,7 @@ function SelectedAudienceDrawer({
                   <X className="size-4" />
                 </Button>
               </div>
+              {error ? <p className="text-destructive mt-1 text-xs">{error}</p> : null}
               {override ? (
                 <div className="bg-muted/50 mt-2 flex items-center justify-between gap-2 rounded-md px-2 py-1 text-xs">
                   <span>{describeOverride(override, t)}</span>
@@ -617,24 +682,34 @@ function SelectedAudienceDrawer({
             </div>
           )
         })}
-        {groups.map(group => (
-          <div key={group.id} className="flex items-center justify-between gap-2 rounded-md border p-2">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{group.name}</p>
-              <p className="text-muted-foreground text-xs">{t('groupMembers', { count: group.member_count })}</p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={disabled}
-              aria-label={t('removeSelected')}
-              onClick={() => onRemoveGroup(group.id)}
+        {groups.map(group => {
+          const error = errors.get(`usergroup_ids.${group.id}`)
+          return (
+            <div
+              key={group.id}
+              className={cn(
+                'flex items-center justify-between gap-2 rounded-md border p-2',
+                error && 'border-destructive',
+              )}
             >
-              <X className="size-4" />
-            </Button>
-          </div>
-        ))}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{group.name}</p>
+                <p className="text-muted-foreground text-xs">{t('groupMembers', { count: group.member_count })}</p>
+                {error ? <p className="text-destructive text-xs">{error}</p> : null}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={disabled}
+                aria-label={t('removeSelected')}
+                onClick={() => onRemoveGroup(group.id)}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+          )
+        })}
       </div>
     </section>
   )
@@ -649,6 +724,7 @@ function AccommodationPanel({
   isPending,
   selectedCount,
   lastError,
+  attemptsError,
   onAttemptsChange,
   onDueAtChange,
   onNoteChange,
@@ -663,6 +739,7 @@ function AccommodationPanel({
   isPending: boolean
   selectedCount: number
   lastError: string | null
+  attemptsError: string | null
   onAttemptsChange: (value: string) => void
   onDueAtChange: (value: string) => void
   onNoteChange: (value: string) => void
@@ -686,11 +763,14 @@ function AccommodationPanel({
             id="override-attempts"
             type="number"
             min={1}
+            max={10}
             value={attempts}
             disabled={disabled}
+            aria-invalid={attemptsError ? true : undefined}
             placeholder={t('policyDefault')}
             onChange={event => onAttemptsChange(event.target.value)}
           />
+          {attemptsError ? <p className="text-destructive text-xs">{attemptsError}</p> : null}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="override-due-at">{t('overrideDueAt')}</Label>
@@ -758,6 +838,20 @@ function RecoverableError({
       </Button>
     </div>
   )
+}
+
+/** Localized 422 field errors keyed by field; empty when the failure is not a validation one. */
+function collectFieldErrors(
+  error: unknown,
+  handleApiError: ReturnType<typeof useApiError>['handleApiError'],
+  fallback: string,
+): Map<string, string> {
+  const byField = new Map<string, string>()
+  handleApiError(error, {
+    fallback,
+    setError: (name, fieldError) => byField.set(name, fieldError.message ?? ''),
+  })
+  return byField
 }
 
 function toggleSet(setter: Dispatch<SetStateAction<Set<string>>>, id: string) {

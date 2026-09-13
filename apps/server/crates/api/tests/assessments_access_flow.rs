@@ -177,7 +177,16 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
         .iter()
         .map(|e| e["field"].as_str().unwrap().to_owned())
         .collect();
-    assert_eq!(fields, ["user_ids", "usergroup_ids"]);
+    assert_eq!(
+        fields,
+        [
+            format!("user_ids.{bob}"),
+            format!(
+                "usergroup_ids.{}",
+                other_group.json()["id"].as_str().unwrap()
+            )
+        ]
+    );
 
     // Restrict to nobody-but-a-second-cohort: Alice loses access.
     let cohort_b = app
@@ -444,7 +453,10 @@ async fn unknown_users_and_drafts_are_client_errors(pool: PgPool) {
         "{}",
         restricted.text()
     );
-    assert_eq!(restricted.json()["field_errors"][0]["field"], "user_ids");
+    assert_eq!(
+        restricted.json()["field_errors"][0]["field"],
+        format!("user_ids.{ghost}")
+    );
     assert_eq!(restricted.json()["field_errors"][0]["code"], "unknown");
 
     let overridden = app

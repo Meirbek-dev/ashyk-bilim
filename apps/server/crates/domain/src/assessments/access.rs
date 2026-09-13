@@ -229,11 +229,13 @@ impl AssessmentsService {
             AccessMode::Restricted => {
                 let mut errors = Vec::new();
                 for user_id in user_ids {
-                    if let Some(e) = self.unknown_user(*user_id, "user_ids").await? {
+                    // Addressable per id so the client can flag the chip.
+                    let field = format!("user_ids.{user_id}");
+                    if let Some(e) = self.unknown_user(*user_id, &field).await? {
                         errors.push(e);
                     } else if !self.user_has_course_access(&course, *user_id).await? {
                         errors.push(FieldError {
-                            field: "user_ids".into(),
+                            field,
                             code: "not-in-course".into(),
                             message: format!("user {user_id} has no access to this course"),
                         });
@@ -246,7 +248,7 @@ impl AssessmentsService {
                     .await?
                     {
                         errors.push(FieldError {
-                            field: "usergroup_ids".into(),
+                            field: format!("usergroup_ids.{group_id}"),
                             code: "not-in-course".into(),
                             message: format!("usergroup {group_id} is not linked to this course"),
                         });
