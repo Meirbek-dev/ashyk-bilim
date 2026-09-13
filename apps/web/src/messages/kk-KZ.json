@@ -1286,8 +1286,8 @@
       }
     },
     "Breadcrumb": {
-      "label": "Навигация",
-      "ariaLabel": "Навигация",
+      "label": "Шарлау",
+      "ariaLabel": "Шарлау",
       "more": "Көбірек"
     },
     "PolicyInspector": {
@@ -1809,7 +1809,7 @@
       "closeMenu": "Мәзірді жабыңыз",
       "language": "Тіл",
       "logoAlt": "Ashyk Bilim логотипі",
-      "navigation": "Навигация",
+      "navigation": "Шарлау",
       "openMenu": "Ашық мәзір",
       "overlayClose": "Мәзірді жабыңыз",
       "search": "Іздеу",
@@ -1819,7 +1819,7 @@
     "NavMenuLinks": {
       "collections": "Жинақтар",
       "courses": "Курстар",
-      "trail": "Прогресс"
+      "trail": "Үлгерім"
     },
     "Roles": {
       "userRolesTitle": "Пайдаланушы рөлдері",
@@ -6936,7 +6936,7 @@
     "submit": "Жіберу",
     "success": "Сәтті",
     "title": "Атау",
-    "trail": "Прогресс",
+    "trail": "Үлгерім",
     "true": "Шын",
     "type": "Түрі",
     "unlink": "Байланысты үзу",
