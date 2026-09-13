@@ -7384,7 +7384,7 @@
       "expandSidebar": "Бүйірлік панельді кеңейту",
       "goToHomepage": "Басты бетке өту",
       "home": "Басқару тақтасының басты бетіне өту",
-      "manageAnalytics": "Оқытушы аналитикасын ашу",
+      "manageAnalytics": "Мұғалім аналитикасын ашу",
       "manageCourses": "Курстарды басқару",
       "manageUsers": "Пайдаланушыларды басқару",
       "platformSettings": "Платформа параметрлері",
@@ -7415,7 +7415,7 @@
     "platformName": "Ashyk Bilim",
     "tooltips": {
       "admin": "Әкімші басқару тақтасы",
-      "analytics": "Оқытушы аналитикасы",
+      "analytics": "Аналитика",
       "courses": "Курстар",
       "home": "Басты басқару тақтасы",
       "logout": "Шығу",
