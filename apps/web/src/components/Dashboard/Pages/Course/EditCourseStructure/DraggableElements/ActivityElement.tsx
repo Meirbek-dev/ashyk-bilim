@@ -39,7 +39,6 @@ import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useSession } from '@/hooks/useSession'
 import { useApiError } from '@/hooks/useApiError'
-import { getAbsoluteUrl } from '@services/config/config'
 import AppLink from '@/components/ui/AppLink'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -324,14 +323,14 @@ function ActivityElement({
               nativeButton={false}
               aria-label={t('previewTooltip')}
               render={
-                <a
-                  href={`${getAbsoluteUrl('')}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`}
+                <AppLink
+                  href={`/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Eye className="h-4 w-4" />
                   <span className="sr-only">{t('previewTooltip')}</span>
-                </a>
+                </AppLink>
               }
             />
           </ToolTip>
@@ -421,7 +420,8 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
   const course = useCourse()
 
   if (activity.activity_type === 'TYPE_DYNAMIC') {
-    const editUrl = `/editor/course/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/edit`
+    // Straight to the studio: `/editor/…/edit` only redirects there (UX-029).
+    const editUrl = `/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`
     return (
       <ToolTip content={t('editPageButton')} side="top">
         <Button
