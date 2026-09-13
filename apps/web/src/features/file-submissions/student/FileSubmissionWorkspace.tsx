@@ -68,13 +68,20 @@ interface FileSubmissionWorkspaceProps {
 
 const queryKey = (activityUuid: string) => ['file-submission', 'activity', activityUuid] as const
 
-function fileSubmissionQueryOptions(activityUuid: string) {
+export function fileSubmissionQueryOptions(activityUuid: string) {
   return queryOptions({
     queryKey: queryKey(activityUuid),
     queryFn: () => getFileSubmissionByActivity(activityUuid),
     enabled: Boolean(activityUuid),
+    // UX-068: a hand-in waiting on the teacher (submitted, graded, or returned
+    // and then re-graded) polls for the release while the tab is visible.
+    refetchOnWindowFocus: true,
+    refetchInterval: query => (isAwaitingTeacher(query.state.data?.current_attempt?.status) ? 10_000 : false),
   })
 }
+
+const isAwaitingTeacher = (status: string | undefined) =>
+  status === 'submitted' || status === 'graded' || status === 'returned'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

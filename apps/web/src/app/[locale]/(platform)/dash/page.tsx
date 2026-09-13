@@ -6,7 +6,7 @@ import { sessionCan } from '@/lib/auth/permissions'
 import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeeUsers } from '@/lib/rbac/navigation-policy'
 import { getEditableCourses } from '@services/courses/editable'
 import { getAdminAnalyticsOverview, getTeacherOverview } from '@services/analytics/teacher'
-import { buildDashboardWorkQueue, DashboardWorkQueue } from '@/features/work-queue'
+import { buildDashboardWorkQueue, DashboardWorkQueue, WorkQueueAutoRefresh } from '@/features/work-queue'
 import { apiJson } from '@/lib/api-client'
 import { unixToIso } from '@/lib/api/contract'
 import type { WorkItem, WorkQueue } from '@/lib/api/generated/zod'
@@ -77,14 +77,14 @@ export default async function PlatformDashHomePage() {
 
   const [teacherOverviewResult, adminOverviewResult, aiUsageResult, learnerWorkResult, teacherWorkResult] =
     await Promise.all([
-    access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve({ data: null, error: null }),
-    access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve({ data: null, error: null }),
-    access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve({ data: null, error: null }),
-    getSafeLearnerWork(),
-    access.hasCoursesAccess || access.hasAnalyticsAccess
-      ? getSafeTeacherWork()
-      : Promise.resolve({ data: null, error: null }),
-  ])
+      access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve({ data: null, error: null }),
+      access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve({ data: null, error: null }),
+      access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve({ data: null, error: null }),
+      getSafeLearnerWork(),
+      access.hasCoursesAccess || access.hasAnalyticsAccess
+        ? getSafeTeacherWork()
+        : Promise.resolve({ data: null, error: null }),
+    ])
 
   const courseSummary = access.hasCoursesAccess ? courseSummaryResult.data : null
   const teacherOverview = teacherOverviewResult.data
@@ -244,6 +244,7 @@ export default async function PlatformDashHomePage() {
       <DashHeader title={tGeneral('dashboard')} description={tGeneral('dashboardWelcome')} />
 
       <main className="container mx-auto flex-1 px-4 py-8 md:py-10 lg:px-8">
+        <WorkQueueAutoRefresh />
         <DashboardWorkQueue
           sections={queue.sections}
           tools={queue.tools}
