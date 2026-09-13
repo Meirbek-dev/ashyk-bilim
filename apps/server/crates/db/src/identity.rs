@@ -23,7 +23,7 @@ pub async fn find_user_for_login(pool: &PgPool, login: &str) -> Result<Option<Au
         r#"SELECT id AS "id: UserId", zitadel_user_id, username, email,
                   display_name, locale, status, rbac_version
            FROM users
-           WHERE username = $1 OR email = $1"#,
+           WHERE lower(username) = lower($1) OR lower(email) = lower($1)"#,
         login
     )
     .fetch_optional(pool)
@@ -220,7 +220,7 @@ pub async fn find_user_id_by_google_sub(pool: &PgPool, sub: &str) -> Result<Opti
 }
 
 pub async fn find_user_id_by_email(pool: &PgPool, email: &str) -> Result<Option<UserId>> {
-    let id = sqlx::query_scalar!("SELECT id FROM users WHERE email = $1", email)
+    let id = sqlx::query_scalar!("SELECT id FROM users WHERE lower(email) = lower($1)", email)
         .fetch_optional(pool)
         .await?;
     Ok(id.map(UserId))
@@ -245,8 +245,11 @@ pub async fn link_google_account(
     Ok(())
 }
 
-/// Create a user with the default `user` role, atomically. Returns `None` on
-/// username/email collision (caller retries with a different username).
+/// Create a user with the default `user` role, atomically.
+///
+/// Returns `None` on username/email collision (caller retries with a
+/// different username). Emails are stored lower-cased (case-insensitive
+/// identity; unique on `lower(email)`).
 pub async fn create_user_with_default_role(
     pool: &PgPool,
     zitadel_user_id: &str,
@@ -262,7 +265,7 @@ pub async fn create_user_with_default_role(
            RETURNING id"#,
         zitadel_user_id,
         username,
-        email,
+        email.to_lowercase(),
         display_name
     )
     .fetch_optional(&mut *tx)

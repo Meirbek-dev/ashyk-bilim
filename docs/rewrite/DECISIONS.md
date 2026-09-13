@@ -943,3 +943,19 @@ Implements three more items of the owner answers above. Routes:
   the platform name.
 - **Public profile**: `GET /users/{username}` (card) and
   `GET /users/{username}/courses` answer anonymous callers with public data.
+- **Emails are case-insensitive identities** (BUG-093). Registration, the
+  admin path and the Google link store `lower(email)`; login, uniqueness and
+  the verification lookup compare `lower()` on both sides; migration
+  `20260913000001` adds unique indexes on `lower(email)` and
+  `lower(username)`. The ETL lowercases legacy emails (it already de-duplicated
+  them case-insensitively). Usernames were already compared
+  case-insensitively on register — now on login as well.
+- **Zitadel user mistakes are 422/400, never 503** (BUG-092/094/096). The
+  client maps: create-user code 3 with a plain password → 422 `password` /
+  `password-policy`; change-password code 3 plain → 422 `new_password` /
+  `password-policy`, code 13 `COMMAND-CahN2` (new == current) → 422
+  `new_password` / `password-unchanged`; session check code 9 with a TOTP
+  code ("Multifactor OTP isn't ready" — no authenticator enrolled) → 400
+  `invalid-totp-code`. `Retry-After` on identity 429s comes from the live
+  Redis window (`details.retry_after_seconds`), other limiters keep the
+  60 s default (UX-020). Session listing is a pure peek (BUG-095).

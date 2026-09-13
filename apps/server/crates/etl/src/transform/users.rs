@@ -51,7 +51,7 @@ pub fn user(u: &legacy::User) -> (UserRow, DroppedUserData) {
         .to_owned();
     let row = UserRow {
         username: u.username.trim().to_owned(),
-        email: u.email.trim().to_owned(),
+        email: u.email.trim().to_lowercase(),
         display_name,
         bio: u.bio.clone().unwrap_or_default(),
         locale,

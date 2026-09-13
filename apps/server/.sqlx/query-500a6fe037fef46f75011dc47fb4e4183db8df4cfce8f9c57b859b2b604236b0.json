@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: UserId\", zitadel_user_id, username, email,\n                  display_name, locale, status, rbac_version\n           FROM users\n           WHERE username = $1 OR email = $1",
+  "query": "SELECT id AS \"id: UserId\", zitadel_user_id, username, email,\n                  display_name, locale, status, rbac_version\n           FROM users\n           WHERE lower(username) = lower($1) OR lower(email) = lower($1)",
   "describe": {
     "columns": [
       {
@@ -108,5 +108,5 @@
       false
     ]
   },
-  "hash": "88a66854670a3acef6c390e1f57a8e19916339b9e0e45d0f821bbff57d3d8f4c"
+  "hash": "500a6fe037fef46f75011dc47fb4e4183db8df4cfce8f9c57b859b2b604236b0"
 }
