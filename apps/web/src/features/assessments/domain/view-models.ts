@@ -119,6 +119,14 @@ export interface AttemptViewModel {
   canStartRevision: boolean
   /** Score cap the next attempt would carry (`attempt_penalty_percent` × attempts used), null when uncapped. */
   nextAttemptCapPercent: number | null
+  /** Cap the shown attempt carried (`attempt_penalty_percent` × earlier attempts), null when uncapped or hidden. */
+  attemptCapPercent: number | null
+  /** Late penalty deducted from the shown attempt, null when none or hidden (UX-060). */
+  latePenaltyPct: number | null
+  /** Why the server closed the shown attempt; null when the learner submitted. */
+  autoSubmitReason: 'time_expired' | 'integrity_violation' | null
+  /** Teacher's overall comment on the shown attempt, null until released (UX-063). */
+  generalFeedback: string | null
   /**
    * Backend-recommended primary action for this student right now.
    * Drive the primary CTA from this value.

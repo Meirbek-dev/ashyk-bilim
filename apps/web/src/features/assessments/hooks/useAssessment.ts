@@ -12,7 +12,7 @@
  * fully-populated StudioViewModel / AttemptViewModel from the domain layer.
  */
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { apiJson } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -35,6 +35,11 @@ function readinessQueryOptions(assessmentUuid: string, enabled: boolean) {
     enabled,
     retry: false,
   })
+}
+
+/** A hand-in the teacher has not released yet (pending grading, or graded but unpublished). */
+export function isAwaitingRelease(row: { status: string; release_state: string } | undefined): boolean {
+  return row?.release_state === 'awaiting_release' || row?.status === 'PENDING'
 }
 
 // ── Public hook ───────────────────────────────────────────────────────────────
@@ -105,7 +110,21 @@ function useAssessment(
     queryKey: queryKeys.assessments.mySubmissions(assessment?.id),
     queryFn: () => getMyAssessmentSubmissions(assessment!.id),
     enabled: options.surface === 'ATTEMPT' && Boolean(assessment),
+    // UX-061: a hand-in waiting on the teacher polls for the release while the
+    // tab is visible (default `refetchIntervalInBackground: false`), stops once seen.
+    refetchInterval: query => (isAwaitingRelease(query.state.data?.[0]) ? 10_000 : false),
   })
+  // The release flipped under an open page: the outline/progress projection
+  // (passed, score) must follow, or the headline shows a stale verdict.
+  const queryClient = useQueryClient()
+  const awaiting = isAwaitingRelease(submissions.data?.[0])
+  const wasAwaitingRef = useRef(false)
+  useEffect(() => {
+    if (wasAwaitingRef.current && !awaiting) {
+      void queryClient.invalidateQueries({ queryKey: ['learner-course'] })
+    }
+    wasAwaitingRef.current = awaiting
+  }, [awaiting, queryClient])
 
   if (isLoading || !assessment) {
     return { vm: null, isLoading, error }
@@ -227,6 +246,13 @@ function useAssessment(
       assessment.policy.attempt_penalty_percent > 0 && state.attempts_used > 0
         ? Math.max(0, 100 - assessment.policy.attempt_penalty_percent * state.attempts_used)
         : null,
+    attemptCapPercent:
+      visible && assessment.policy.attempt_penalty_percent > 0 && (latest?.attempt_number ?? 1) > 1
+        ? Math.max(0, 100 - assessment.policy.attempt_penalty_percent * ((latest?.attempt_number ?? 1) - 1))
+        : null,
+    latePenaltyPct: visible && latest?.late_penalty_pct ? latest.late_penalty_pct : null,
+    autoSubmitReason: latest?.auto_submit_reason ?? null,
+    generalFeedback: visible && latest?.grading?.feedback?.trim() ? latest.grading.feedback : null,
     recommendedAction,
     primaryButtonLabelKey: recommendedAction,
     startedAt: unixToIso(startedAt),
@@ -253,7 +279,7 @@ export function recommendedActionFor(
   if (state.revision_requested && state.can_start) return 'startRevision'
   if (visible) return 'viewResult'
   if (state.can_start) return 'start'
-  if (latest?.release_state === 'awaiting_release' || latest?.status === 'PENDING') return 'waitForRelease'
+  if (isAwaitingRelease(latest)) return 'waitForRelease'
   return state.disabled_reasons.length ? 'blocked' : 'noAction'
 }
 

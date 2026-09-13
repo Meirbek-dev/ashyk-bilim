@@ -107,11 +107,17 @@ export default function AttemptResultCard({
           </p>
 
           {showLatest ? (
-            <p className="text-muted-foreground text-xs">{t('latestAttemptScore', { score: formatPercent(latestPct) })}</p>
+            <p className="text-muted-foreground text-xs">
+              {t('latestAttemptScore', { score: formatPercent(latestPct) })}
+            </p>
           ) : null}
 
           {vm.startedAt ? (
-            <p className="text-muted-foreground text-xs">{t('submittedOn', { date: format.dateTime(new Date(vm.startedAt), { dateStyle: 'medium', timeStyle: 'short' }) })}</p>
+            <p className="text-muted-foreground text-xs">
+              {t('submittedOn', {
+                date: format.dateTime(new Date(vm.startedAt), { dateStyle: 'medium', timeStyle: 'short' }),
+              })}
+            </p>
           ) : null}
         </div>
       </div>
@@ -119,6 +125,33 @@ export default function AttemptResultCard({
       {/* Grade not released note */}
       {!showScore && !isReturnedForRevision ? (
         <p className="text-muted-foreground mb-4 text-sm">{t('gradeNotYetReleased')}</p>
+      ) : null}
+
+      {/* UX-060: why the number is not the breakdown sum — auto-submit, late penalty, attempt cap. */}
+      {vm.autoSubmitReason || vm.latePenaltyPct !== null || vm.attemptCapPercent !== null ? (
+        <ul className="text-muted-foreground mb-4 space-y-1 text-sm" data-testid="score-adjustments">
+          {vm.autoSubmitReason ? (
+            <li>{t(vm.autoSubmitReason === 'time_expired' ? 'autoSubmittedTimeExpired' : 'autoSubmittedViolation')}</li>
+          ) : null}
+          {vm.latePenaltyPct !== null ? (
+            <li>
+              {t('latePenaltyApplied', { percent: format.number(vm.latePenaltyPct, { maximumFractionDigits: 2 }) })}
+            </li>
+          ) : null}
+          {vm.attemptCapPercent !== null ? (
+            <li>
+              {t('attemptCapApplied', { percent: format.number(vm.attemptCapPercent, { maximumFractionDigits: 2 }) })}
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+
+      {/* UX-063: the teacher's overall comment, next to the per-item prose. */}
+      {vm.generalFeedback ? (
+        <div className="border-border mb-4 rounded-lg border px-4 py-3 text-sm" data-testid="general-feedback">
+          <p className="text-muted-foreground mb-1 text-xs font-medium">{t('teacherFeedback')}</p>
+          <p className="whitespace-pre-wrap">{vm.generalFeedback}</p>
+        </div>
       ) : null}
 
       {/* Per-item breakdown — collapsible, auto-graded only */}

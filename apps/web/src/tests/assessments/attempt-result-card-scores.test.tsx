@@ -81,4 +81,40 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     )
     expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Максимальный балл за эту попытку: 80 %')
   })
+
+  // UX-060 / UX-063: a 48 % beside a full breakdown says why (late penalty,
+  // attempt cap, auto-submit), and the teacher's overall comment is shown.
+  it('explains penalties, auto-submit and renders the general feedback', () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+        <AttemptResultCard
+          vm={{
+            ...vm,
+            score: { percent: 48, source: 'final' },
+            latePenaltyPct: 20,
+            attemptCapPercent: 80,
+            autoSubmitReason: 'time_expired',
+            generalFeedback: 'Хорошо, но коротко',
+          }}
+        />
+      </NextIntlClientProvider>,
+    )
+    const notes = screen.getByTestId('score-adjustments')
+    expect(notes).toHaveTextContent('время истекло')
+    expect(notes).toHaveTextContent('Штраф за опоздание: −20 %')
+    expect(notes).toHaveTextContent('Максимальный балл за эту попытку: 80 %')
+    expect(screen.getByTestId('general-feedback')).toHaveTextContent('Хорошо, но коротко')
+  })
+
+  it('shows nothing extra for a plain released attempt', () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+        <AttemptResultCard
+          vm={{ ...vm, latePenaltyPct: null, attemptCapPercent: null, autoSubmitReason: null, generalFeedback: null }}
+        />
+      </NextIntlClientProvider>,
+    )
+    expect(screen.queryByTestId('score-adjustments')).toBeNull()
+    expect(screen.queryByTestId('general-feedback')).toBeNull()
+  })
 })

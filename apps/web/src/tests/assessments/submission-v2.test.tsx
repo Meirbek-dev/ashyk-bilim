@@ -231,6 +231,46 @@ describe('v2 learner submissions', () => {
     }
   })
 
+  // UX-061: the learner's open page polls a hand-in the teacher has not released
+  // (10 s) and stops once the grade is visible; the learner-state projection
+  // (passed/score headline) is refreshed on that flip.
+  it('polls an awaiting hand-in until the grade is released', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const invalidation = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    let listCalls = 0
+    try {
+      vi.mocked(apiJson).mockImplementation(async (path, _init, parse) => {
+        if (String(path).endsWith('/assessment')) return parse!(detail)
+        if (String(path).endsWith('/attempt-state')) {
+          return parse!({ ...attemptState, can_continue: false, can_start: false, draft_id: null })
+        }
+        listCalls += 1
+        const released = listCalls >= 3
+        return parse!([
+          {
+            ...fixture,
+            status: released ? 'published' : 'pending',
+            release_state: released ? 'visible' : 'awaiting_release',
+            final_score: released ? 86.67 : null,
+          },
+        ])
+      })
+      const { result } = renderHook(() => useAssessmentAttempt(activityId), { wrapper })
+      await waitFor(() => expect(result.current.vm?.surface).toBe('ATTEMPT'))
+      expect(result.current.vm).toMatchObject({ vm: { recommendedAction: 'waitForRelease' } })
+      await act(() => vi.advanceTimersByTimeAsync(10_500))
+      expect(listCalls).toBe(2)
+      await act(() => vi.advanceTimersByTimeAsync(10_500))
+      await waitFor(() => expect(result.current.vm).toMatchObject({ vm: { recommendedAction: 'viewResult' } }))
+      expect(invalidation).toHaveBeenCalledWith({ queryKey: ['learner-course'] })
+      await act(() => vi.advanceTimersByTimeAsync(30_000))
+      expect(listCalls).toBe(3)
+    } finally {
+      invalidation.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
   it('treats only missing drafts as empty and propagates access failures', async () => {
     vi.mocked(apiJson).mockRejectedValueOnce(new APIError({ code: 'not-found', status: 404, message: 'No draft' }))
     expect(await getAssessmentDraft(assessmentId)).toBeNull()
