@@ -58,6 +58,8 @@ function ManageUsers(props: ManageUsersProps) {
     onSuccess: async (_data, { link }) => {
       toast.success(link ? t('linkSuccess') : t('unlinkSuccess'))
       await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
+      // the groups table shows `member_count`
+      await queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all() })
     },
     onError: (error, { link }) => {
       const message = handleApiError(error, { fallback: t('unknownError') }).message

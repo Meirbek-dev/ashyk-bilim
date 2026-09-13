@@ -63,7 +63,6 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
         <CardHeader>
           <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs tracking-[0.18em] uppercase">
             <Badge variant="outline">{t('pages.courseDetailBadge')}</Badge>
-            <Badge variant="outline">{detail.course.id}</Badge>
           </div>
           <CardTitle className="mt-3 text-3xl">{detail.course.name}</CardTitle>
         </CardHeader>

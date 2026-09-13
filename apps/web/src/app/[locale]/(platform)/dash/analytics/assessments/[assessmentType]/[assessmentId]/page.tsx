@@ -6,7 +6,7 @@ import QuestionDifficultyRadar from '@components/Dashboard/Analytics/QuestionDif
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsAssessmentTypeLabel } from '@/lib/analytics/labels'
-import { getLocale, getTranslations } from 'next-intl/server'
+import { getFormatter, getLocale, getTranslations } from 'next-intl/server'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
 import type { AssessmentType } from '@/types/analytics'
 import { fromUnix } from '@/lib/api/contract'
@@ -35,12 +35,13 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const [{ assessmentType, assessmentId }, searchParams, locale, t, tErrors] = await Promise.all([
+  const [{ assessmentType, assessmentId }, searchParams, locale, t, tErrors, format] = await Promise.all([
     props.params,
     props.searchParams,
     getLocale(),
     getTranslations('TeacherAnalytics'),
     getTranslations('Errors'),
+    getFormatter(),
   ])
   if (!AssessmentKind.safeParse(assessmentType).success || !AssessmentId.safeParse(assessmentId).success) notFound()
   const query = normalizeAnalyticsQuery(searchParams)
@@ -88,8 +89,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatPassRate')}
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
-                {detail.summary.pass_rate ?? t('atRisk.na')}
-                {detail.summary.pass_rate != null ? '%' : ''}
+                {detail.summary.pass_rate == null ? t('atRisk.na') : `${format.number(detail.summary.pass_rate, { maximumFractionDigits: 1 })}%`}
               </div>
             </div>
             <div className="px-4 py-3">
@@ -97,8 +97,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatMedianScore')}
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
-                {detail.summary.median_score ?? t('atRisk.na')}
-                {detail.summary.median_score != null ? '%' : ''}
+                {detail.summary.median_score == null ? t('atRisk.na') : `${format.number(detail.summary.median_score, { maximumFractionDigits: 1 })}%`}
               </div>
             </div>
             <div className="px-4 py-3">

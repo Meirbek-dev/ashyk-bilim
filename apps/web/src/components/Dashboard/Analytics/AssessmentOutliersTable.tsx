@@ -6,7 +6,7 @@ import type { AssessmentOutlierRow } from '@/types/analytics'
 import AnalyticsDataTable from './AnalyticsDataTable'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
 interface AssessmentOutliersTableProps {
@@ -17,6 +17,7 @@ interface AssessmentOutliersTableProps {
 
 export default function AssessmentOutliersTable({ rows, storageKey, serverPaginated }: AssessmentOutliersTableProps) {
   const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
   const columns: DataTableColumnDef<AssessmentOutlierRow>[] = [
     {
       accessorKey: 'title',
@@ -47,12 +48,14 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
     {
       accessorKey: 'pass_rate',
       header: t('assessmentOutliers.colPass'),
-      cell: ({ row }) => (row.original.pass_rate === null ? t('atRisk.na') : `${row.original.pass_rate}%`),
+      cell: ({ row }) =>
+        row.original.pass_rate == null ? t('atRisk.na') : `${format.number(row.original.pass_rate, { maximumFractionDigits: 1 })}%`,
     },
     {
       accessorKey: 'median_score',
       header: t('assessmentOutliers.colMedian'),
-      cell: ({ row }) => (row.original.median_score === null ? t('atRisk.na') : `${row.original.median_score}%`),
+      cell: ({ row }) =>
+        row.original.median_score == null ? t('atRisk.na') : `${format.number(row.original.median_score, { maximumFractionDigits: 1 })}%`,
     },
     {
       accessorKey: 'difficulty_score',

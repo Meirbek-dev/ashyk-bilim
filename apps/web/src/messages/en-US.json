@@ -1868,6 +1868,7 @@
       "trail": "Progress"
     },
     "Roles": {
+      "rejectedGrant": "The server rejected the grant {grant}.",
       "userRolesTitle": "User roles",
       "userRolesDescription": "Assign and remove roles for platform members",
       "addRole": "Add role",
@@ -6727,6 +6728,7 @@
         "title": "Manage UserGroups & Users",
         "userGroupDeletedSuccess": "Deleted usergroup",
         "userGroupHeader": "UserGroup",
+        "membersHeader": "Members",
         "loading": "Loading groups…",
         "editUserGroupModalTitle": "Edit UserGroup",
         "editUserGroupModalDescription": "Change the name and description of this UserGroup"
@@ -7720,6 +7722,8 @@
       "overviewDisabledTitle": "Analytics unavailable",
       "overviewDisabledDesc": "This organization has analytics disabled or the current session cannot access analytics data.",
       "overviewLoadError": "The analytics service could not be loaded.",
+      "scopeDenied": "You do not have access to analytics for these courses.",
+      "invalidFilters": "The filters are invalid. Change the period or the course selection.",
       "assessmentsUnavailableTitle": "Assessment analytics unavailable",
       "assessmentsUnavailableDesc": "An authenticated session is required to inspect assessment analytics.",
       "assessmentsLoadError": "The assessment analytics view could not be loaded.",
