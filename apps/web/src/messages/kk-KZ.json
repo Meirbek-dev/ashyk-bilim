@@ -862,7 +862,7 @@
       "signInWithGoogle": "Google арқылы кіру",
       "signup": "Тіркелу",
       "title": "Кіру - Ashyk Bilim",
-      "wrongCredentials": "Қате электронды пошта немесе құпия сөз",
+      "wrongCredentials": "Логин немесе құпия сөз қате",
       "serviceUnavailable": "Қызмет уақытша қолжетімсіз. Қайталап көріңіз.",
       "rateLimited": "Тым көп әрекет жасалды. Кейінірек қайталап көріңіз.",
       "noAccount": "Аккаунтыңыз жоқ па?",

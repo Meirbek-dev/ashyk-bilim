@@ -8,7 +8,8 @@ vi.mock('next-intl', () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
   useLocale: () => 'ru-RU',
 }))
-vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }))
+let searchParams = new URLSearchParams()
+vi.mock('next/navigation', () => ({ useSearchParams: () => searchParams }))
 vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p, getPublicAPIUrl: () => '/api/v2/' }))
 vi.mock('@components/ui/AppLink', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
@@ -21,7 +22,10 @@ vi.mock('@/app/actions/auth', () => ({ loginAction: (...args: unknown[]) => logi
 
 const input = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]`)
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  searchParams = new URLSearchParams()
+})
 
 describe('/auth/login', () => {
   // UX-019: «Back to login» on the TOTP step was a Link — the URL changed
@@ -41,5 +45,20 @@ describe('/auth/login', () => {
     expect(input('totpCode')).toBeNull()
     expect(input('login')!.value).toBe('aigerim')
     expect(loginAction).toHaveBeenCalledTimes(1)
+  })
+
+  // UX-055: a Google `?error=` banner outlived the password step and sat
+  // above the one-time-code field as if the code had failed.
+  it('drops the redirect error banner once the TOTP step opens', async () => {
+    searchParams = new URLSearchParams('error=google-cancelled')
+    loginAction.mockResolvedValue({ ok: false, reason: 'mfa_required', code: 'mfa-required' })
+    const user = userEvent.setup()
+    render(<LoginClient />)
+    expect(screen.getByText('googleCancelled')).toBeDefined()
+    await user.type(input('login')!, 'aigerim')
+    await user.type(input('password')!, 'correct horse')
+    await user.click(screen.getByRole('button', { name: 'login' }))
+    await waitFor(() => expect(input('totpCode')).not.toBeNull())
+    expect(screen.queryByText('googleCancelled')).toBeNull()
   })
 })

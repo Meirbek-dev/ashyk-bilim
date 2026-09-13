@@ -191,7 +191,11 @@ function LoginClient() {
   }
 
   const anyPending = isPending || isPendingGoogle
-  const redirectError = state.error ? null : messageForCode(searchParams.get('error'))
+  // The Google `?error=` banner belongs to the credentials step only: once
+  // the password went through, a stale OAuth failure above the code field
+  // reads as if the code step failed.
+  const redirectError =
+    state.error || state.step !== 'credentials' ? null : messageForCode(searchParams.get('error'))
   const bannerError = state.error ?? redirectError
 
   return (

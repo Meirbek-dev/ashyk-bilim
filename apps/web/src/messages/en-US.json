@@ -863,7 +863,7 @@
       "signInWithGoogle": "Sign in with Google",
       "signup": "Sign up",
       "title": "Login - Ashyk Bilim",
-      "wrongCredentials": "Wrong email or password",
+      "wrongCredentials": "Wrong login or password",
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
       "rateLimited": "Too many attempts. Please try again later.",
       "noAccount": "No account yet?",

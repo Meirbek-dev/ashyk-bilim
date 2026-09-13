@@ -155,5 +155,8 @@ describe('UserSecuritySettings', () => {
     await user.click(within(dialog).getByRole('button', { name: 'disableTotp' }))
     await waitFor(() => expect(mockRemoveTotp).toHaveBeenCalledTimes(1))
     expect(await screen.findByText('enableTotp')).toBeDefined()
+    // UX-055: the trigger unmounted with the dialog — focus lands on the
+    // section heading, not <body>.
+    await waitFor(() => expect(document.activeElement?.id).toBe('totp-heading'))
   })
 })

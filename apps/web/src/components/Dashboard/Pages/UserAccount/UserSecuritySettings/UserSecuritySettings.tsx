@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { describeUserAgent } from '@/lib/user-agent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -73,6 +73,9 @@ function SessionsSection({ t }: { t: Translator }) {
   })
 
   const [revokeCandidate, setRevokeCandidate] = useState<string | null>(null)
+  // The confirm dialog opened from a row's button that is gone once the
+  // revoke lands; without a target focus would fall to <body>.
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const revokeMutation = useMutation({
     mutationFn: (handle: string) => revokeSession(handle),
     onSuccess: async () => {
@@ -85,7 +88,7 @@ function SessionsSection({ t }: { t: Translator }) {
   return (
     <section aria-labelledby="sessions-heading" className="flex flex-col gap-4">
       <div>
-        <h2 id="sessions-heading" className="flex items-center gap-2 text-lg font-semibold">
+        <h2 ref={headingRef} tabIndex={-1} id="sessions-heading" className="flex items-center gap-2 text-lg font-semibold">
           <MonitorSmartphone size={18} aria-hidden="true" />
           {t('sessionsTitle')}
         </h2>
@@ -142,7 +145,7 @@ function SessionsSection({ t }: { t: Translator }) {
         </ul>
       ) : null}
       <AlertDialog open={revokeCandidate !== null} onOpenChange={open => !open && setRevokeCandidate(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent finalFocus={headingRef}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('revokeConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>{t('revokeConfirmDescription')}</AlertDialogDescription>
@@ -263,6 +266,8 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
   const [codeError, setCodeError] = useState<string | null>(null)
   const [active, setActive] = useState(initialActive)
   const [confirmDisable, setConfirmDisable] = useState(false)
+  // Disabling unmounts the button that opened the dialog: focus the heading.
+  const headingRef = useRef<HTMLHeadingElement>(null)
 
   const enrollMutation = useMutation({
     mutationFn: startTotpEnrollment,
@@ -320,7 +325,7 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
   return (
     <section aria-labelledby="totp-heading" className="flex flex-col gap-4">
       <div>
-        <h2 id="totp-heading" className="flex items-center gap-2 text-lg font-semibold">
+        <h2 ref={headingRef} tabIndex={-1} id="totp-heading" className="flex items-center gap-2 text-lg font-semibold">
           <ShieldCheck size={18} aria-hidden="true" />
           {t('totpTitle')}
         </h2>
@@ -371,7 +376,7 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
             {t('disableTotp')}
           </Button>
           <AlertDialog open={confirmDisable} onOpenChange={setConfirmDisable}>
-            <AlertDialogContent>
+            <AlertDialogContent finalFocus={headingRef}>
               <AlertDialogHeader>
                 <AlertDialogTitle>{t('disableTotpConfirmTitle')}</AlertDialogTitle>
                 <AlertDialogDescription>{t('disableTotpConfirmDescription')}</AlertDialogDescription>
