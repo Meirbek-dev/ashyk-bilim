@@ -582,3 +582,45 @@ async fn learner_and_teacher_queues_follow_the_grading_lifecycle(pool: PgPool) {
     assert!(o["due_at_unix"].is_i64());
     assert_eq!(items(&overdue)[1]["priority"], "normal");
 }
+
+/// UX-046: a `pending` attempt (manual items in an auto-graded quiz) is
+/// teacher work in any grading mode. BUG-127: only roster members who may
+/// grade (creator, maintainer, contributor) get it — a reporter reads the
+/// course but has no review access, so its teacher queue stays empty.
+#[sqlx::test(migrations = "../../migrations")]
+async fn pending_manual_items_reach_graders_only(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    // Default grading mode (auto): the essay still leaves the attempt pending.
+    let (quiz_id, quiz_activity, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, "Quiz", serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let sub = start_draft(&app, &alice, &quiz_id).await;
+    submit(&app, &alice, &sub, &choice_id, &essay_id).await;
+    let grading = queue(&app, &teacher, "?role=teacher").await;
+    assert_eq!(grading["total"], 1, "{grading}");
+    let g = item_for(&grading, &quiz_activity).unwrap();
+    assert_eq!(g["kind"], "needs_grading");
+
+    let reporter = learner(&app, "reporter").await;
+    let contrib = learner(&app, "contrib").await;
+    for (name, role) in [("reporter", "reporter"), ("contrib", "contributor")] {
+        let added = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/courses/{course_id}/contributors"),
+                &serde_json::json!({ "username": name, "role": role }),
+            )
+            .await;
+        assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    }
+    assert_eq!(queue(&app, &reporter, "?role=teacher").await["total"], 0);
+    assert_eq!(
+        app.get_as(&reporter, &format!("/api/v2/submissions/{sub}/review"))
+            .await
+            .status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(queue(&app, &contrib, "?role=teacher").await["total"], 1);
+}

@@ -7,7 +7,7 @@
 //! explicit completions (trail steps).
 
 use ab_core::assessments::{
-    ActivityProgressState, CompletionRule, FileAttemptStatus, GradingMode, SubmissionStatus,
+    ActivityProgressState, CompletionRule, FileAttemptStatus, SubmissionStatus,
 };
 use ab_core::id::{ActivityId, AssessmentId, CourseId, FileSubmissionId, UserId};
 use ab_core::{Error, Result};
@@ -391,13 +391,12 @@ pub(crate) fn project_submissions(
                 status_reason = Some("returned_for_revision".to_owned());
                 ActivityProgressState::Returned
             }
+            // `pending` only ever means "a teacher must score this" (manual
+            // mode, or an auto-graded attempt with manual items), so it needs
+            // a teacher in any grading mode (DECISIONS 2026-09-13).
             SubmissionStatus::Pending => {
-                if assessment.grading_mode == GradingMode::Manual {
-                    teacher_action = true;
-                    ActivityProgressState::NeedsGrading
-                } else {
-                    ActivityProgressState::Submitted
-                }
+                teacher_action = true;
+                ActivityProgressState::NeedsGrading
             }
             // A saved-but-unreleased grade stays hidden (same as file attempts):
             // pass/fail is the learner's to see only once published.

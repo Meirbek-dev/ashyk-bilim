@@ -983,3 +983,24 @@ Implements three more items of the owner answers above. Routes:
   `teacher_user_id` naming someone else without `analytics:read:platform` is a
   403 instead of a filter that quietly does nothing (own id still passes).
 
+- **Pending attempts are teacher work in every grading mode** (UX-046, pass
+  11). Legacy flagged `teacher_action_required` only for `grading_mode:
+  manual`, so an auto-graded quiz whose essay items left the attempt `pending`
+  showed «2 работы требуют проверки» on the review page but nothing in the
+  teacher's work queue. `pending` is only ever set when a teacher must score
+  something (manual mode, or `needs_manual_review` items in auto mode), so the
+  projector now maps it to `needs_grading` + `teacher_action_required`
+  unconditionally. Work-queue grading items are also limited to roster members
+  who may grade (creator, maintainer, contributor — the `Course::is_author`
+  rule the review route enforces); reporters no longer see items whose href
+  answers 403 (BUG-127).
+- **File attempts follow the assessment transition table for published
+  grades** (BUG-128). A `published` file attempt can be re-published but not
+  returned or saved back to `graded` (422 `action`/`transition-not-allowed`,
+  same as `submissions/{id}/grade`); legacy allowed it and wiped the learner's
+  released score.
+- **Download URLs carry the original filename** (UX-047 server half). The
+  presigned GET is now hand-signed (same SigV4 code path as the PUT) with
+  `response-content-disposition=attachment; filename*=UTF-8''…`, so the browser
+  saves «проект.pdf» instead of the storage key. `object_store::Signer` cannot
+  sign `response-*` query parameters, hence the shared presigner.
