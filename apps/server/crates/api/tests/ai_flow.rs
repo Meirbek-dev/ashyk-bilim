@@ -1110,3 +1110,78 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         StatusCode::NOT_FOUND
     );
 }
+
+/// BUG-126: a gate-mode remediation blocks new attempts on the activity
+/// (`REMEDIATION_REQUIRED`, `can_start false`, start → 403) until the
+/// learner passes it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Gate").await;
+    let sub_id = submitted_essay(&app, &teacher, &alice, &course_id).await;
+    let assessment_id = app
+        .get_as(&alice, &format!("/api/v2/submissions/{sub_id}"))
+        .await
+        .json()["assessment_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let state_url = format!("/api/v2/assessments/{assessment_id}/attempt-state");
+    assert_eq!(
+        app.get_as(&alice, &state_url).await.json()["can_start"],
+        true
+    );
+
+    mount_json_reply(&app.llm, &analysis_reply(&sub_id)).await;
+    let analysed = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/analyze"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(analysed.status, StatusCode::OK, "{}", analysed.text());
+    app.llm.reset().await;
+    mount_json_reply(&app.llm, &remediation_reply()).await;
+    let session = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/remediation/{sub_id}/generate"),
+            &serde_json::json!({ "gate_mode": true }),
+        )
+        .await;
+    assert_eq!(session.status, StatusCode::OK, "{}", session.text());
+    assert_eq!(session.json()["status"], "assigned");
+    let session_id = session.json()["id"].as_str().unwrap().to_owned();
+
+    let blocked = app.get_as(&alice, &state_url).await;
+    assert_eq!(blocked.json()["can_start"], false, "{}", blocked.text());
+    assert_eq!(
+        blocked.json()["disabled_reasons"],
+        serde_json::json!(["REMEDIATION_REQUIRED"])
+    );
+    let refused = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{assessment_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+
+    let passed = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
+            &serde_json::json!({ "score": 80 }),
+        )
+        .await;
+    assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
+    assert_eq!(passed.json()["status"], "passed");
+    let open = app.get_as(&alice, &state_url).await;
+    assert_eq!(open.json()["can_start"], true, "{}", open.text());
+    assert_eq!(open.json()["disabled_reasons"], serde_json::json!([]));
+}
+

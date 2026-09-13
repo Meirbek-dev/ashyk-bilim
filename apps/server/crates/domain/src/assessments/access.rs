@@ -87,6 +87,8 @@ pub enum DisabledReason {
     PastDue,
     MaxAttemptsReached,
     TimeLimitExpired,
+    /// An unpassed gate-mode AI remediation session blocks new attempts.
+    RemediationRequired,
 }
 
 impl DisabledReason {
@@ -100,6 +102,7 @@ impl DisabledReason {
             Self::PastDue => "PAST_DUE",
             Self::MaxAttemptsReached => "MAX_ATTEMPTS_REACHED",
             Self::TimeLimitExpired => "TIME_LIMIT_EXPIRED",
+            Self::RemediationRequired => "REMEDIATION_REQUIRED",
         }
     }
 }
@@ -470,6 +473,20 @@ impl AssessmentsService {
                 && open.started_at.is_some_and(|s| now > s + i64::from(limit))
             {
                 reasons.push(DisabledReason::TimeLimitExpired);
+            }
+            // Legacy `remediation_required`: a gate-mode remediation the
+            // learner has not passed blocks a new attempt (an open draft may
+            // still be finished).
+            if draft.is_none()
+                && ab_db::ai::active_remediation_gate(
+                    &self.pool,
+                    actor.user_id,
+                    assessment.activity_id,
+                )
+                .await?
+                .is_some()
+            {
+                reasons.push(DisabledReason::RemediationRequired);
             }
         }
         let attempts_remaining = effective
