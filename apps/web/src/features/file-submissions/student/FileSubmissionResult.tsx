@@ -7,13 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
 import { MarkdownContent } from '@/features/content-markdown'
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatScore(score: number | null | undefined): string {
-  if (score === null || score === undefined) return '-'
-  return `${Math.round(score * 100) / 100}%`
-}
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -29,6 +23,7 @@ interface FileSubmissionResultProps {
  */
 export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissionResultProps) {
   const t = useTranslations('FileSubmission')
+  const formatPercent = usePercentFormat()
   const { status, final_score, late_penalty_pct, feedback } = attempt
   const isReturned = status === 'returned'
   const passing = final_score !== null && final_score !== undefined && final_score >= 60
@@ -40,7 +35,7 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
       <div className="bg-muted/30 border-border flex items-center justify-between gap-4 rounded-xl border p-6">
         <div>
           <p className="text-muted-foreground text-sm">{t('yourScore')}</p>
-          <p className="text-4xl font-bold tabular-nums">{formatScore(final_score)}</p>
+          <p className="text-4xl font-bold tabular-nums">{typeof final_score === 'number' ? formatPercent(final_score) : '-'}</p>
           {late_penalty_pct > 0 ? (
             <p className="text-muted-foreground mt-1 text-xs">{t('latePenalty', { percent: late_penalty_pct })}</p>
           ) : null}

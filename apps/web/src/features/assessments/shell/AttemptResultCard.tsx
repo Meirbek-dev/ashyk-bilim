@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { localizeItemFeedback } from '@/features/grading/domain/status'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import type { LearnerCourseState } from '@/features/learner-course/api'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -43,10 +44,8 @@ export default function AttemptResultCard({
   const tGrading = useTranslations('Features.Grading')
   const format = useFormatter()
   const [breakdownOpen, setBreakdownOpen] = useState(false)
-  // One number format on the card: the breakdown already goes through
-  // `format.number`, so the headline percent must too («66,67%», not «66.67%»).
-  const formatPercent = (percent: number | null) =>
-    percent === null ? '--' : `${format.number(percent, { maximumFractionDigits: 2 })}%`
+  const percent = usePercentFormat()
+  const formatPercent = (value: number | null) => (value === null ? '--' : percent(value))
 
   const { isResultVisible, score, isReturnedForRevision, canStartRevision, canSubmit } = vm
   const latestPct = score.percent
@@ -140,7 +139,10 @@ export default function AttemptResultCard({
             <div className="border-border divide-border divide-y border-t text-sm">
               {vm.items.map((item, i) => {
                 const graded = vm.itemScores[item.id]
-                const maxScore = graded?.max_score ?? item.max_score
+                // The wire breakdown is the item's share of 100; show it in the
+                // item's own points — the «10 баллов» the attempt card named (UX-035).
+                const maxScore = item.max_score
+                const earned = graded && graded.max_score > 0 ? (graded.score / graded.max_score) * maxScore : null
                 // The auto-grader's verdict (localized from `feedback_code`) or
                 // the teacher's prose — the same text the teacher review shows.
                 const verdict = graded ? localizeItemFeedback(graded, tGrading) : ''
@@ -171,7 +173,7 @@ export default function AttemptResultCard({
                       data-testid={`item-score-${item.id}`}
                     >
                       {maxScore > 0
-                        ? `${graded ? format.number(graded.score) : '—'} / ${format.number(maxScore)}`
+                        ? `${earned === null ? '—' : format.number(earned, { maximumFractionDigits: 2 })} / ${format.number(maxScore, { maximumFractionDigits: 2 })}`
                         : '—'}
                     </span>
                   </div>
@@ -198,6 +200,12 @@ export default function AttemptResultCard({
           </Button>
         ) : null}
       </div>
+      {/* UX-034: a capped retake says so before the learner spends the attempt. */}
+      {canSubmit && onRetry && typeof vm.nextAttemptCapPercent === 'number' ? (
+        <p className="text-muted-foreground mt-2 text-xs" data-testid="attempt-cap-note">
+          {t('attemptCapNote', { percent: format.number(vm.nextAttemptCapPercent, { maximumFractionDigits: 2 }) })}
+        </p>
+      ) : null}
     </div>
   )
 }

@@ -3,7 +3,10 @@
 // released `GradedItem`s and the timestamp is formatted for the app locale.
 // Critic 9 T5: each row also carries the localized verdict (`feedback_code`)
 // or the teacher's prose, and the headline percent uses the same number
-// format as the breakdown («66,67%» / «33,33 / 33,33», never «66.67%»).
+// format as the breakdown («66,67%» / «3,33 / 10», never «66.67%»).
+// UX-035: the wire breakdown is the item's share of 100; the row shows the
+// item's own points («1 / 1», «10 / 10»), the number the attempt card names.
+// UX-034: a capped retake carries the cap note next to the retry control.
 
 import { fireEvent, render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
@@ -55,8 +58,9 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
       </NextIntlClientProvider>,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Посмотреть ответы' }))
-    expect(screen.getByTestId(`item-score-${itemId}`)).toHaveTextContent('100 / 100')
-    expect(screen.getByTestId(`item-score-${prose}`)).toHaveTextContent('33,33 / 33,33')
+    expect(screen.getByTestId(`item-score-${itemId}`)).toHaveTextContent('1 / 1')
+    expect(screen.getByTestId(`item-score-${matchingId}`)).toHaveTextContent('2 / 3')
+    expect(screen.getByTestId(`item-score-${prose}`)).toHaveTextContent('10 / 10')
     // Headline and rows share one number format.
     expect(screen.getByText(/· 66,67%/)).toBeInTheDocument()
     expect(screen.queryByText(/66\.67/)).toBeNull()
@@ -67,5 +71,14 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     // ru date, not en-US "9/11/2026, 6:04:39 PM"
     expect(screen.queryByText(/9\/11\/2026/)).toBeNull()
     expect(screen.getByText(/11 сент\. 2026 г\./)).toBeInTheDocument()
+  })
+
+  it('names the score cap on a penalised retake (UX-034)', () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+        <AttemptResultCard vm={{ ...vm, canSubmit: true, nextAttemptCapPercent: 80 }} onRetry={() => undefined} />
+      </NextIntlClientProvider>,
+    )
+    expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Максимальный балл за эту попытку: 80 %')
   })
 })

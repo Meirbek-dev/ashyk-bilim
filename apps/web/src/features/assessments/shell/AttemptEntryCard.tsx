@@ -156,6 +156,11 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
                 <p className="text-muted-foreground mt-1 text-sm">
                   {isAwaitingRelease ? t('waitingForRelease') : t('readyToStartSubtitle')}
                 </p>
+                {typeof vm.nextAttemptCapPercent === 'number' ? (
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {t('attemptCapNote', { percent: vm.nextAttemptCapPercent })}
+                  </p>
+                ) : null}
               </>
             )}
           </div>

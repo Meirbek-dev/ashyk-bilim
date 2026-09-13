@@ -30,6 +30,7 @@ import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
 import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList'
 import type { AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList'
 import { useAttemptShellControls } from '@/features/assessments/shell'
@@ -48,6 +49,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
   const queryClient = useQueryClient()
   const { contributorStatus } = useContributorStatus(courseUuid)
   const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null)
+  const formatPercent = usePercentFormat()
   const [isStarting, setIsStarting] = useState(false)
   const policy = vm?.policy ?? DEFAULT_POLICY_VIEW
   const assessmentUuid = vm?.assessmentUuid ?? null
@@ -107,7 +109,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       label,
       submittedAt,
       status: submission.status ?? 'PENDING',
-      scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
+      scoreLabel: typeof submission.final_score === 'number' ? formatPercent(submission.final_score) : null,
       metaLabel: null,
     }
   }
@@ -262,6 +264,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       canSaveDraft={vm.canSaveDraft}
       canSubmit={vm.canSubmit}
       timerExpiresAt={vm.timerExpiresAt}
+      passingScore={vm.passingScore}
       latestCompletedSubmission={latestCompletedSubmission}
       historyItems={historyItems}
     />
@@ -278,6 +281,7 @@ function ExamTakingContent({
   canSaveDraft,
   canSubmit,
   timerExpiresAt,
+  passingScore,
   latestCompletedSubmission,
   historyItems,
 }: {
@@ -290,10 +294,12 @@ function ExamTakingContent({
   canSaveDraft: boolean
   canSubmit: boolean
   timerExpiresAt: string | null
+  passingScore: number | null
   latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission']
   historyItems: AttemptHistoryItem[]
 }) {
   const t = useTranslations('Activities.ExamActivity')
+  const formatPercent = usePercentFormat()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false)
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false)
@@ -422,19 +428,29 @@ function ExamTakingContent({
       setIsConfirmingSubmit(false)
 
       try {
-        await submissionState.submit({
+        const submitted = await submissionState.submit({
           violationCount: violationCountRef.current,
           autoSubmit: isAutoSubmit,
         })
         persistence.clearSavedAnswers()
-        toast.success(t('examSubmittedSuccessfully'))
+        // The toast states the verdict, never «успешно завершен» over «Не пройдено» (UX-035).
+        const score = submitted.release_state === 'visible' ? submitted.final_score : null
+        toast.success(
+          typeof score === 'number'
+            ? t(score >= (passingScore ?? 60) ? 'examSubmittedPassed' : 'examSubmittedFailed', {
+                score: formatPercent(score),
+              })
+            : submitted.status === 'PENDING'
+              ? t('examSubmittedPending')
+              : t('examSubmittedSuccessfully'),
+        )
         await onComplete()
       } catch (error) {
         console.error('Error submitting exam:', error)
         toast.error(t('errorSubmittingExam'))
       }
     },
-    [onComplete, persistence, submissionState, t],
+    [formatPercent, onComplete, passingScore, persistence, submissionState, t],
   )
 
   const handleViolation = useCallback(
@@ -792,6 +808,7 @@ function ExamSubmissionStatePanel({
   }
 }) {
   const t = useTranslations('Activities.ExamActivity')
+  const formatPercent = usePercentFormat()
   if (submission.status === 'PENDING') {
     return (
       <Alert>
@@ -823,7 +840,7 @@ function ExamSubmissionStatePanel({
         {typeof submission.final_score === 'number' ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
             <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">{t('scoreLabel')}</span>
-            {Math.round(submission.final_score)}%
+            {formatPercent(submission.final_score)}
           </span>
         ) : null}
         {submission.grading_json?.feedback ? (
