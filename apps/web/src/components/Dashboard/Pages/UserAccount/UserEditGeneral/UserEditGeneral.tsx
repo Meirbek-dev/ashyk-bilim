@@ -40,7 +40,8 @@ function UserEditGeneral() {
   const [initialLoading, setInitialLoading] = useState(true)
   const t = useTranslations('DashPage.Notifications')
   const tCommon = useTranslations('Common')
-  const validationSchema = createValidationSchema(t)
+  const tLabels = useTranslations('DashPage.UserAccountSettings.generalSection')
+  const validationSchema = createValidationSchema(t, tLabels)
 
   type UserEditFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>
   const { handleApiError, toastApiError } = useApiError<UserEditFormInput>()
