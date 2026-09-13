@@ -22,6 +22,8 @@ type ApiFetchInit = Omit<RequestInit, 'credentials'> & {
   baseUrl?: string
   /** Override the default request timeout. Use false for no client-side timeout. */
   timeoutMs?: number | false
+  /** Retries on 5xx/429 for idempotent methods (default 1 for GET/HEAD/OPTIONS). Pass 0 for a probe whose failure is the answer. */
+  retry?: 0 | 1
   next?:
     | {
         tags?: string[] | undefined
@@ -315,7 +317,7 @@ function buildApiTransportOptions<R extends ResponseType>(
     headers,
     ignoreResponseError: false,
     responseType,
-    retry: isRetryableMethod(method) ? 1 : 0,
+    retry: fetchInit.retry ?? (isRetryableMethod(method) ? 1 : 0),
     retryDelay,
     retryStatusCodes: RETRY_STATUS_CODES,
     ...(combinedSignal ? { signal: combinedSignal.signal } : callerSignal ? { signal: callerSignal } : {}),

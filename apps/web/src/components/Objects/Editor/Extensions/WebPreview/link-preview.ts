@@ -45,7 +45,8 @@ export function previewToAttrs(url: string, preview: LinkPreview | null): Partia
 function urlPreviewQueryOptions(url: string) {
   return queryOptions({
     queryKey: queryKeys.activities.linkPreview(url),
-    queryFn: () => linkPreview({ url }),
+    // A 502 means «the page did not answer» — that IS the preview result; never retry the probe.
+    queryFn: () => linkPreview({ url }, { retry: 0 }),
     refetchOnWindowFocus: false,
     retry: false,
     staleTime: 5 * 60 * 1000,

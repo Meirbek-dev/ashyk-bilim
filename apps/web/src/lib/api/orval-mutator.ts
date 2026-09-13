@@ -3,6 +3,7 @@ import type { APIError } from '@/lib/api/assertSuccess'
 
 type OrvalFetchOptions = Omit<RequestInit, 'body'> & {
   baseUrl?: string
+  retry?: 0 | 1
   body?: BodyInit | null
   data?: unknown
   next?:
