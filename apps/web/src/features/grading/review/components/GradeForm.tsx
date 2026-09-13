@@ -86,6 +86,9 @@ export default function GradeForm({
   // notice instead of silently replacing the drafts.
   const [dirty, setDirty] = useState(false)
   const [remoteUpdate, setRemoteUpdate] = useState(false)
+  // UX-049: `If-Match` carries the version the drafts were based on, not the
+  // latest refetch — a colleague's save is adopted only by an explicit choice.
+  const [baseVersion, setBaseVersion] = useState<number | null>(null)
 
   // Items from grading breakdown — may be empty for manual-only assessments.
   // An auto-grader verdict (`feedback_code`) is shown localized, read-only;
@@ -148,7 +151,7 @@ export default function GradeForm({
   )
   const hasInvalidScore = finalScoreInvalid || invalidItemIds.size > 0
 
-  const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.final_score ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
+  const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.version ?? ''}-${submission?.final_score ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
   const [lastSeed, setLastSeed] = useState({ uuid: '', trigger: '' })
 
   const seedDrafts = () => {
@@ -161,6 +164,7 @@ export default function GradeForm({
     setOverrideReason('')
     setDirty(false)
     setRemoteUpdate(false)
+    setBaseVersion(submission?.version ?? null)
 
     if (submission?.grading_json?.items) {
       const next: Record<string, ItemDraftEntry> = {}
@@ -205,7 +209,7 @@ export default function GradeForm({
   // New item-level save (via unified assessment API)
   const saveWithItemGrading = useCallback(
     (status: 'save' | 'publish' | 'return') => {
-      if (!submission || !assessmentUuid || !scaleReady) return
+      if (!submission || !assessmentUuid || !scaleReady || remoteUpdate) return
       if (hasInvalidScore) {
         toast.error(t('invalidScore'))
         return
@@ -266,8 +270,9 @@ export default function GradeForm({
               ...(overrideScore && finalScore !== undefined ? { final_score: finalScore } : {}),
               ...(overrideScore && overrideReason ? { override_reason: overrideReason } : {}),
             },
-            submission.version,
+            baseVersion ?? submission.version,
           )
+          setRemoteUpdate(false)
           toast.success(
             status === 'publish'
               ? tItemGrading('toasts.published')
@@ -311,6 +316,8 @@ export default function GradeForm({
       queryClient,
       itemScaleById,
       scaleReady,
+      remoteUpdate,
+      baseVersion,
     ],
   )
 
@@ -327,7 +334,7 @@ export default function GradeForm({
   // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
   const handleCtrlEnter = useCallback(
     (event: KeyboardEvent) => {
-      if (!editable || isSaving || hasInvalidScore || !scaleReady) return
+      if (!editable || isSaving || hasInvalidScore || !scaleReady || remoteUpdate) return
       const isCtrl = event.ctrlKey || event.metaKey
       if (!isCtrl || event.key !== 'Enter') return
       event.preventDefault()
@@ -337,7 +344,16 @@ export default function GradeForm({
         saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED')
       }
     },
-    [editable, isSaving, hasInvalidScore, hasItemGrading, saveWithItemGrading, saveOverallScore, scaleReady],
+    [
+      editable,
+      isSaving,
+      hasInvalidScore,
+      hasItemGrading,
+      saveWithItemGrading,
+      saveOverallScore,
+      scaleReady,
+      remoteUpdate,
+    ],
   )
 
   useEffect(() => {
@@ -372,7 +388,13 @@ export default function GradeForm({
   const canReturnNow = canReturnSubmission(submission.status)
   const canSaveDraftNow = canSaveGradeDraft(submission.status)
   const isRepublish = submission.status === 'PUBLISHED'
-  const actionHint = isRepublish ? t('republishHint') : canPublishNow ? null : t('publishPrerequisite')
+  const actionHint = remoteUpdate
+    ? t('staleDraftBlocked')
+    : isRepublish
+      ? t('republishHint')
+      : canPublishNow
+        ? null
+        : t('publishPrerequisite')
   const releaseState =
     'release_state' in submission && submission.release_state
       ? submission.release_state
@@ -418,7 +440,15 @@ export default function GradeForm({
               <Button size="sm" variant="outline" className="h-6 text-xs" onClick={seedDrafts}>
                 {t('useServerValues')}
               </Button>
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setRemoteUpdate(false)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 text-xs"
+                onClick={() => {
+                  setBaseVersion(submission.version ?? null)
+                  setRemoteUpdate(false)
+                }}
+              >
                 {t('keepMyDraft')}
               </Button>
             </div>
@@ -579,7 +609,7 @@ export default function GradeForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!editable || isSaving || !canSaveDraftNow || hasInvalidScore || !scaleReady}
+              disabled={!editable || isSaving || remoteUpdate || !canSaveDraftNow || hasInvalidScore || !scaleReady}
               onClick={() => saveWithItemGrading('save')}
             >
               {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
@@ -587,7 +617,7 @@ export default function GradeForm({
             </Button>
             <Button
               type="button"
-              disabled={!editable || isSaving || !canPublishNow || hasInvalidScore || !scaleReady}
+              disabled={!editable || isSaving || remoteUpdate || !canPublishNow || hasInvalidScore || !scaleReady}
               onClick={() => saveWithItemGrading('publish')}
             >
               <Send className="size-4" />
@@ -596,7 +626,7 @@ export default function GradeForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!editable || isSaving || !canReturnNow || !scaleReady}
+              disabled={!editable || isSaving || remoteUpdate || !canReturnNow || !scaleReady}
               onClick={() => saveWithItemGrading('return')}
             >
               <RotateCcw className="size-4" />
@@ -661,7 +691,7 @@ export default function GradeForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!editable || isSaving || !canSaveDraftNow || hasInvalidScore}
+              disabled={!editable || isSaving || remoteUpdate || !canSaveDraftNow || hasInvalidScore}
               onClick={() => saveOverallScore('GRADED')}
             >
               {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
@@ -669,7 +699,7 @@ export default function GradeForm({
             </Button>
             <Button
               type="button"
-              disabled={!editable || isSaving || !canPublishNow || hasInvalidScore}
+              disabled={!editable || isSaving || remoteUpdate || !canPublishNow || hasInvalidScore}
               onClick={() => saveOverallScore('PUBLISHED')}
             >
               <Send className="size-4" />
@@ -678,7 +708,7 @@ export default function GradeForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!editable || isSaving || !canReturnNow}
+              disabled={!editable || isSaving || remoteUpdate || !canReturnNow}
               onClick={() => saveOverallScore('RETURNED')}
             >
               <RotateCcw className="size-4" />

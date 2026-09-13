@@ -7119,6 +7119,7 @@
       },
       "useServerValues": "Олардың нұсқасын жүктеу",
       "keepMyDraft": "Жобамды сақтау",
+      "staleDraftBlocked": "Алдымен қай нұсқаны қалдыратыныңызды таңдаңыз.",
       "saveDraftGrade": "Жоба ретінде сақтау",
       "returnForRevision": "Қайта өңдеуге қайтару",
       "publishPrerequisite": "Жариялау алдында барлық элементке балл қойыңыз.",

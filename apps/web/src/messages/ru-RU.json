@@ -7104,6 +7104,7 @@
       },
       "useServerValues": "Загрузить их версию",
       "keepMyDraft": "Оставить мой черновик",
+      "staleDraftBlocked": "Сначала выберите, какую версию оставить.",
       "saveDraftGrade": "Сохранить как черновик",
       "returnForRevision": "Вернуть на доработку",
       "publishPrerequisite": "Перед публикацией выставьте баллы по всем элементам.",

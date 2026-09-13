@@ -7099,6 +7099,7 @@
       },
       "useServerValues": "Load their version",
       "keepMyDraft": "Keep my draft",
+      "staleDraftBlocked": "Choose which version to keep first.",
       "saveDraftGrade": "Save as draft",
       "returnForRevision": "Return for revision",
       "publishPrerequisite": "Score every item before publishing.",

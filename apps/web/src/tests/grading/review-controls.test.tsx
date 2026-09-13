@@ -443,6 +443,54 @@ describe('teacher review controls', () => {
     expect(screen.queryByText('staleDraftTitle')).toBeNull()
   })
 
+  // UX-049: while the notice is open nothing can be saved; «keep my draft»
+  // re-bases `If-Match` on the colleague's version and the publish clears it.
+  it('blocks save and publish behind the colleague notice and re-bases the version on keep', async () => {
+    mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+    mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 91, version: 3 })
+    const queryClient = new QueryClient()
+    const navigation = { hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }
+    const ui = () => (
+      <QueryClientProvider client={queryClient}>
+        <AnnotationProvider>
+          <GradeForm
+            submissionUuid="submission_review"
+            assessmentUuid="assessment_review"
+            onSaved={vi.fn().mockResolvedValue(undefined)}
+            navigation={navigation}
+          />
+        </AnnotationProvider>
+      </QueryClientProvider>
+    )
+    const { rerender } = render(ui())
+
+    fireEvent.change(screen.getByLabelText('finalScore'), { target: { value: '40' } })
+    mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 77, version: 4 })
+    rerender(ui())
+
+    expect(screen.getByText('staleDraftTitle')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'saveDraftGrade' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'returnForRevision' })).toBeDisabled()
+    expect(screen.getByText('staleDraftBlocked')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'keepMyDraft' }))
+    expect(screen.queryByText('staleDraftTitle')).toBeNull()
+    expect(screen.getByLabelText('finalScore')).toHaveValue(40)
+    expect(screen.getByRole('button', { name: 'publishGrade' })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'publishGrade' }))
+    await waitFor(() => {
+      expect(mocks.saveGradingDraftMock).toHaveBeenLastCalledWith(
+        'assessment_review',
+        'submission_review',
+        expect.objectContaining({ status: 'publish' }),
+        4,
+      )
+    })
+    expect(screen.queryByText('staleDraftTitle')).toBeNull()
+  })
+
   it('explains awaiting release state and publishes student-visible grades', async () => {
     const onSaved = vi.fn().mockResolvedValue(undefined)
     mocks.gradingPanelState.submission = createSubmission({
