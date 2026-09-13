@@ -54,6 +54,12 @@ export function useTestGuard({
   const violations = useRef<Violation[]>([])
   const locked = useRef(false)
   const blurTimeout = useRef<NodeJS.Timeout | null>(null)
+  // Callers pass inline lambdas; a new identity must not re-subscribe the
+  // effect (its cleanup cancels the pending blur debounce → lost reports, BUG-136).
+  const onViolationRef = useRef(onViolation)
+  useEffect(() => {
+    onViolationRef.current = onViolation
+  }, [onViolation])
 
   useEffect(() => {
     if (!enabled) return
@@ -88,7 +94,7 @@ export function useTestGuard({
       violations.current.push(violation)
       const count = violations.current.length
 
-      onViolation(type, count)
+      onViolationRef.current(type, count)
 
       if (count >= maxViolations) {
         locked.current = true
@@ -271,7 +277,6 @@ export function useTestGuard({
     trackBlur,
     trackDevTools,
     maxViolations,
-    onViolation,
     blurDebounceMs,
     devToolsThreshold,
     devToolsCheckIntervalMs,

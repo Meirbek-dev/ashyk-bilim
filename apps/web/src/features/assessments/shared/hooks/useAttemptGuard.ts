@@ -157,7 +157,8 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
     trackBlur: antiCheat.tabSwitchDetection,
     trackDevTools: antiCheat.devtoolsDetection,
     maxViolations: antiCheat.violationThreshold ?? 999,
-    onViolation: (type, count) => reportViolation(type, count),
+    // The guard counts from zero; a reload seeds `violationCount` from the server (UX-059).
+    onViolation: type => reportViolation(type),
     blurDebounceMs: 500,
     devToolsThreshold: 180,
     devToolsCheckIntervalMs: 2000,
