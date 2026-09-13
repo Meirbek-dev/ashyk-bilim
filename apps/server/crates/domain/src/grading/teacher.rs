@@ -28,7 +28,7 @@ use crate::catalog::courses::Course;
 use crate::events::GradingEvents;
 use crate::grading::answers::{Answers, parse_answers};
 use crate::grading::breakdown::{GradedItem, GradingBreakdown, round2};
-use crate::grading::penalties::apply_late;
+use crate::grading::penalties::{apply_late, attempt_cap};
 use crate::grading::submissions::{ReleaseState, release_state};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -944,7 +944,11 @@ impl GradingService {
             },
             round2,
         );
-        let final_score = apply_late(raw, row.late_penalty_pct);
+        // Same order as the auto path (`penalties::apply`): cap, then late.
+        let final_score = apply_late(
+            attempt_cap(raw, assessment.attempt_penalty_percent, row.attempt_number),
+            row.late_penalty_pct,
+        );
         let effective = breakdown.to_value();
         let written = ab_db::submissions::teacher_save(
             &self.pool,

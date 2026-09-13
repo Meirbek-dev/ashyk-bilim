@@ -605,6 +605,46 @@ async fn a_returned_attempt_can_be_handed_in_again_at_the_cap(pool: PgPool) {
     assert_eq!(third.status, StatusCode::FORBIDDEN, "{}", third.text());
 }
 
+/// BUG-111: the teacher's grade is capped by the attempt penalty exactly
+/// like the auto path — attempt 2 with a 20 % cap graded 100 lands at 80.
+#[sqlx::test(migrations = "../../migrations")]
+async fn teacher_grade_applies_the_attempt_cap(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2, "attempt_penalty_percent": 20 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    let first = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    let graded = app
+        .send(grade(
+            &teacher,
+            &first,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    assert_eq!(graded.json()["final_score"], 100.0, "attempt 1 is uncapped");
+    let second = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    let graded = app
+        .send(grade(
+            &teacher,
+            &second,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    assert_eq!(graded.json()["attempt_number"], 2);
+    assert_eq!(graded.json()["final_score"], 80.0, "capped at 100 − 20 × 1");
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn deadline_extension_is_a_queued_bulk_action(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
