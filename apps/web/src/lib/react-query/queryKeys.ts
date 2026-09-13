@@ -45,8 +45,8 @@ export const queryKeys = {
     updates: (courseUuid: string) => ['courses', 'updates', courseUuid] as const,
   },
   discussions: {
-    list: (courseUuid: string, includeReplies = false, limit = 50, offset = 0) =>
-      ['courses', 'discussions', courseUuid, { includeReplies, limit, offset }] as const,
+    list: (courseUuid: string, includeReplies = false) =>
+      ['courses', 'discussions', courseUuid, { includeReplies }] as const,
     replies: (courseUuid: string, discussionUuid: string, limit = 50, offset = 0) =>
       ['courses', 'discussion-replies', courseUuid, discussionUuid, { limit, offset }] as const,
   },

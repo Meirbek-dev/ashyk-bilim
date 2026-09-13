@@ -73,13 +73,7 @@ async function CoursePage(params: { params: Promise<{ courseuuid: string }> }) {
     // Prefetch data that CourseClient fetches client-side so the page renders
     // without loading spinners and avoids a client-side waterfall.
     await Promise.all([
-      queryClient.prefetchQuery(
-        courseDiscussionsQueryOptions(course_meta.course_uuid, {
-          includeReplies: true,
-          limit: 50,
-          offset: 0,
-        }),
-      ),
+      queryClient.prefetchQuery(courseDiscussionsQueryOptions(course_meta.course_uuid)),
       queryClient.prefetchQuery(trailCurrentQueryOptions()),
       queryClient.prefetchQuery(learnerCourseStateQueryOptions(course_meta.course_uuid)),
     ])

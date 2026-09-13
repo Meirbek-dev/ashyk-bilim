@@ -30,7 +30,6 @@ import PageLoading from '@components/Objects/Loaders/PageLoading'
 // Import the new discussions component
 import CourseDiscussions from '@/components/discussions'
 import { getAbsoluteUrl } from '@services/config/config'
-import { useRouter } from 'next/navigation'
 // Import UI components
 import { useMemo, useState } from 'react'
 // Import existing components and utilities
@@ -42,7 +41,8 @@ import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 import { CourseAIHub } from '@/features/course-qa'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { courseDiscussionsQueryOptions } from '@/features/courses/queries/course.query'
 import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 interface CourseClientProps {
@@ -127,13 +127,19 @@ function CourseClient(props: CourseClientProps) {
   const { courseuuid, course, initialDiscussions = [], trailData } = props
   const isMobile = useIsMobile()
   const { user: currentUser } = useSession()
-  const router = useRouter()
   const learnerStateQuery = useQuery(learnerCourseStateQueryOptions(courseuuid, Boolean(currentUser)))
   const learnerState = learnerStateQuery.data
   const progress = useMemo(() => learnerCourseProgress(learnerState), [learnerState])
 
+  // Server-rendered posts seed the query; it then polls while the page is open (UX-062).
+  const queryClient = useQueryClient()
+  const discussionsQuery = useQuery({
+    ...courseDiscussionsQueryOptions(courseuuid),
+    initialData: initialDiscussions,
+    enabled: Boolean(currentUser),
+  })
   const mutateDiscussions = () => {
-    router.refresh()
+    void queryClient.invalidateQueries({ queryKey: courseDiscussionsQueryOptions(courseuuid).queryKey })
   }
 
   // Normalizes various formats of `course.learnings` into an array that the UI can render
@@ -498,7 +504,7 @@ function CourseClient(props: CourseClientProps) {
 
                 {/* Discussions */}
                 <CourseDiscussions
-                  initialPosts={initialDiscussions as never}
+                  initialPosts={discussionsQuery.data}
                   currentUser={currentUser}
                   courseUuid={course?.course_uuid}
                   onMutate={mutateDiscussions}

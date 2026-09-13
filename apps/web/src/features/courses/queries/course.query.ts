@@ -1,5 +1,6 @@
 import { getCourseEditorBundle } from '@services/courses/editor'
 import { getCourseMetadata } from '@services/courses/courses'
+import { getCourseDiscussions } from '@services/courses/discussions'
 import { apiJson, apiResult } from '@/lib/api-client'
 import { queryOptions } from '@tanstack/react-query'
 import { z } from 'zod'
@@ -51,8 +52,7 @@ export function courseStructureQueryOptions<TCourseStructure = unknown>(
 ) {
   return queryOptions({
     queryKey: courseKeys.structure(courseUuid, withUnpublishedActivities),
-    queryFn: () =>
-      getCourseMetadata(courseUuid, undefined, withUnpublishedActivities) as Promise<TCourseStructure>,
+    queryFn: () => getCourseMetadata(courseUuid, undefined, withUnpublishedActivities) as Promise<TCourseStructure>,
     staleTime: 5000,
   })
 }
@@ -97,23 +97,15 @@ export function courseUpdatesQueryOptions(courseUuid: string) {
   })
 }
 
-export function courseDiscussionsQueryOptions(
-  courseUuid: string,
-  options: { includeReplies?: boolean; limit?: number; offset?: number } = {},
-) {
-  const { includeReplies = false, limit = 50, offset = 0 } = options
-
+export function courseDiscussionsQueryOptions(courseUuid: string) {
   return queryOptions({
-    queryKey: queryKeys.discussions.list(courseUuid, includeReplies, limit, offset),
-    queryFn: () => {
-      const queryString = new URLSearchParams({
-        include_replies: String(includeReplies),
-        limit: String(limit),
-        offset: String(offset),
-      }).toString()
-
-      return apiJson<unknown[]>(`${courseEndpoints.detail(courseUuid)}/discussions?${queryString}`)
-    },
+    queryKey: queryKeys.discussions.list(courseUuid, true),
+    queryFn: () => getCourseDiscussions(courseUuid, true, 50),
+    // UX-062: a thread left open follows the other side's posts and replies —
+    // refetch on focus and every 15 s while the tab is visible.
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 15_000,
   })
 }
 
@@ -135,7 +127,8 @@ export function trailLeaderboardQueryOptions(limit = 10) {
 export function userCertificatesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.certifications.userAll(),
-    queryFn: async () => (await apiJson('me/certificates', {}, z.array(IssuedCertificate).parse)).map(toAppCertification),
+    queryFn: async () =>
+      (await apiJson('me/certificates', {}, z.array(IssuedCertificate).parse)).map(toAppCertification),
   })
 }
 
