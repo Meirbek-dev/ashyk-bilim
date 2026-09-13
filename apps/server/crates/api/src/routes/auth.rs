@@ -1,7 +1,7 @@
 use ab_core::{Error, ErrorCode};
 use ab_domain::identity::{LoginInput, NewAccount};
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::Redirect;
 use axum_extra::extract::CookieJar;
@@ -15,7 +15,7 @@ use crate::dto::auth::{
 };
 use crate::dto::users::UserProfile;
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, SESSION_COOKIE, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, SESSION_COOKIE, ValidJson};
 use crate::state::AppState;
 
 /// Best-effort client IP behind nginx (`X-Forwarded-For` first hop).

@@ -2,7 +2,7 @@ use ab_core::id::{CourseId, UserId};
 use ab_domain::identity::NewAccount;
 use ab_domain::identity::users::ProfileChanges;
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use secrecy::SecretString;
 
@@ -13,7 +13,7 @@ use crate::dto::users::{
     UpdateProfileRequest, UserCoursesQuery, UserProfile,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson};
 use crate::routes::auth::{client_ip, user_agent};
 use crate::state::AppState;
 
