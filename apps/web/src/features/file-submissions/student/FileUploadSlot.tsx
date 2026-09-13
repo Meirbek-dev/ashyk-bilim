@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type FileSlotStatus = 'queued' | 'uploading' | 'saved' | 'failed'
+/** `rejected` = refused by the picker (size / type), never uploaded (UX-036). */
+export type FileSlotStatus = 'queued' | 'uploading' | 'saved' | 'failed' | 'rejected'
 
 export interface PendingFileSlot {
   id: string
@@ -44,7 +45,7 @@ export default function FileUploadSlot({ slot, onRemove, readonly = false }: Fil
   const t = useTranslations('FileSubmission')
   const isUploading = slot.status === 'uploading'
   const isSaved = slot.status === 'saved'
-  const isFailed = slot.status === 'failed'
+  const isFailed = slot.status === 'failed' || slot.status === 'rejected'
 
   return (
     <div className="group border-border flex flex-col gap-1.5 border-b p-3 last:border-b-0">

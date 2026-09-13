@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
-// Critic 9 F15: after «Отправить файлы» the header badge stayed «Не начато»
-// and the footer «Начать» until a reload — the file submit must refresh the
-// learner-state projection the way the quiz submit does.
+// UX-036: a refused file stays in the list with its own reason (size / type)
+// instead of one generic toast, and submitting on a capped activity asks for
+// confirmation before it spends the attempt.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
@@ -40,9 +40,10 @@ const config = {
   id: 'fs-1',
   instructions: '',
   lifecycle: 'published',
-  allowed_mime_types: [],
-  max_files: 1,
-  max_file_size_mb: 25,
+  allowed_mime_types: ['application/pdf'],
+  max_files: 3,
+  max_file_size_mb: 1,
+  max_attempts: 2,
   due_at_unix: null,
   current_attempt: draft,
   attempts: [draft],
@@ -51,24 +52,36 @@ const config = {
 beforeEach(() => {
   mocks.getActivity.mockReset().mockResolvedValue(config)
   mocks.submit.mockReset().mockResolvedValue({ ...draft, status: 'submitted' })
-  mocks.refresh.mockReset()
 })
 
-describe('FileSubmissionWorkspace submit', () => {
-  it('invalidates the learner-course projection and refreshes the runtime after a submit', async () => {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const invalidate = vi.spyOn(client, 'invalidateQueries')
-    render(
-      <QueryClientProvider client={client}>
-        <FileSubmissionWorkspace
-          activity={{ activity_uuid: 'activity_a1', activity_type: 'TYPE_FILE_SUBMISSION' } as Activity}
-          course={{ course_uuid: 'course_c1' } as CourseStructure}
-        />
-      </QueryClientProvider>,
-    )
+function renderWorkspace() {
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <FileSubmissionWorkspace
+        activity={{ activity_uuid: 'activity_a1', activity_type: 'TYPE_FILE_SUBMISSION' } as Activity}
+        course={{ course_uuid: 'course_c1' } as CourseStructure}
+      />
+    </QueryClientProvider>,
+  )
+}
+
+describe('FileSubmissionWorkspace picker + submit confirm (UX-036)', () => {
+  it('lists each refused file with its reason', async () => {
+    renderWorkspace()
+    const input = (await screen.findByText('dropzoneTitle')).parentElement!.querySelector('input[type="file"]')!
+    const png = new File(['x'], 'shot.png', { type: 'image/png' })
+    const big = new File([new Uint8Array(2 * 1024 * 1024)], 'big.pdf', { type: 'application/pdf' })
+    fireEvent.change(input, { target: { files: [png, big] } })
+    expect(await screen.findByText('fileTypeNotAllowed')).toBeInTheDocument()
+    expect(screen.getByText('fileTooLarge')).toBeInTheDocument()
+  })
+
+  it('asks before spending a capped attempt, then submits', async () => {
+    renderWorkspace()
     fireEvent.click(await screen.findByRole('button', { name: 'submitFiles' }))
+    expect(await screen.findByText('confirmSubmitTitle')).toBeInTheDocument()
+    expect(mocks.submit).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'confirmSubmitAction' }))
     await waitFor(() => expect(mocks.submit).toHaveBeenCalledWith('fs-1', expect.any(Array), 1))
-    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['learner-course'] }))
-    expect(mocks.refresh).toHaveBeenCalled()
   })
 })

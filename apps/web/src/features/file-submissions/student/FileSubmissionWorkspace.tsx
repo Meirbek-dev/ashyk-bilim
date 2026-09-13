@@ -17,6 +17,16 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
@@ -47,6 +57,7 @@ import FileSubmissionResult from './FileSubmissionResult'
 import { MarkdownContent } from '@/features/content-markdown'
 import { getMimeCategories } from '@/features/file-submissions/mime-categories'
 import { useApiError } from '@/hooks/useApiError'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -67,13 +78,18 @@ function fileSubmissionQueryOptions(activityUuid: string) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function isAllowedFile(file: File, allowedMimes: string[], maxMb?: number | null): boolean {
-  if (maxMb && file.size > maxMb * 1024 * 1024) return false
-  if (allowedMimes.length === 0) return true
-  return allowedMimes.some(mime => {
-    if (mime.endsWith('/*')) return file.type.startsWith(mime.slice(0, -1))
-    return file.type === mime
-  })
+/** Why the picker refuses a file (size, then type), null when it is fine. */
+export function fileRejection(
+  file: File,
+  allowedMimes: string[],
+  maxMb: number | null | undefined,
+): { key: 'fileTooLarge'; size: number } | { key: 'fileTypeNotAllowed'; type: string } | null {
+  if (maxMb && file.size > maxMb * 1024 * 1024) return { key: 'fileTooLarge', size: maxMb }
+  if (allowedMimes.length === 0) return null
+  const allowed = allowedMimes.some(mime =>
+    mime.endsWith('/*') ? file.type.startsWith(mime.slice(0, -1)) : file.type === mime,
+  )
+  return allowed ? null : { key: 'fileTypeNotAllowed', type: file.type || file.name.split('.').pop() || '?' }
 }
 
 function formatDueDate(unix: number): string {
@@ -120,6 +136,7 @@ const LIFECYCLE_BADGE: Record<string, BadgeVariant> = {
  */
 export default function FileSubmissionWorkspace({ activity, course }: FileSubmissionWorkspaceProps) {
   const t = useTranslations('FileSubmission')
+  const tCommon = useTranslations('Common')
   const activityUuid = activity.activity_uuid?.replace(/^activity_/, '') ?? ''
   const { can } = useSession()
   const canEditCourse =
@@ -128,6 +145,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [slots, setSlots] = useState<PendingFileSlot[]>([])
+  const [confirmSubmit, setConfirmSubmit] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const { handleApiError, toastApiError } = useApiError()
 
@@ -139,7 +157,9 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
   const status = activeAttempt?.status ?? null
   const attachedFiles = activeAttempt?.files ?? []
   const maxFiles = data?.max_files ?? 1
-  const totalSelected = attachedFiles.length + slots.length
+  // Rejected slots are shown with their reason but never count or upload.
+  const pendingSlots = useMemo(() => slots.filter(slot => slot.status !== 'rejected'), [slots])
+  const totalSelected = attachedFiles.length + pendingSlots.length
 
   const canEdit = !status || status === 'draft' || status === 'returned'
 
@@ -158,18 +178,21 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       const available = Math.max(maxFiles - totalSelected, 0)
       const accepted = [...fileList].slice(0, available)
       const rejected = [...fileList].slice(available)
-      const valid = accepted.filter(f => isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb))
-      const invalid = accepted.filter(f => !isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb))
       if (rejected.length) toast.error(t('maxFilesAllowed', { count: maxFiles }))
-      if (invalid.length) toast.error(t('invalidFiles'))
+      // Each refused file stays in the list with its own reason (UX-036).
       setSlots(prev => [
         ...prev,
-        ...valid.map(f => ({
-          id: `${f.name}-${f.size}-${f.lastModified}-${crypto.randomUUID()}`,
-          file: f,
-          status: 'queued' as const,
-          progress: 0,
-        })),
+        ...accepted.map((f): PendingFileSlot => {
+          const why = fileRejection(f, data.allowed_mime_types, data.max_file_size_mb)
+          const slot: PendingFileSlot = {
+            id: `${f.name}-${f.size}-${f.lastModified}-${crypto.randomUUID()}`,
+            file: f,
+            status: why ? 'rejected' : 'queued',
+            progress: 0,
+          }
+          if (why) slot.error = t(why.key, why)
+          return slot
+        }),
       ])
     },
     [data, maxFiles, t, totalSelected, setSlots],
@@ -216,7 +239,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         }
       }
 
-      for (const slot of slots) {
+      for (const slot of pendingSlots) {
         await uploadSlot(slot)
       }
 
@@ -245,6 +268,38 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       toastApiError(err, { fallback: t('saveFailed') })
     },
   })
+
+  // A capped submission spends an attempt: confirm first (UX-036).
+  const requestSubmit = () => {
+    if (data?.max_attempts) setConfirmSubmit(true)
+    else saveMutation.mutate({ submit: true })
+  }
+  const confirmDialog = data ? (
+    <AlertDialog open={confirmSubmit} onOpenChange={setConfirmSubmit}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('confirmSubmitTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('confirmSubmitDescription', {
+              number: activeAttempt?.attempt_number ?? data.attempts.length + 1,
+              max: data.max_attempts ?? 0,
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              setConfirmSubmit(false)
+              saveMutation.mutate({ submit: true })
+            }}
+          >
+            {t('confirmSubmitAction')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ) : null
 
   const startMutation = useMutation({
     mutationFn: async () => {
@@ -371,6 +426,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
               inputRef,
               saveMutation,
               startMutation,
+              requestSubmit,
               maxFiles,
               totalSelected,
               isUploading,
@@ -379,6 +435,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
             }}
           />
         ) : null}
+        {confirmDialog}
         <SubmissionHistory attempts={data.attempts} />
       </div>
     )
@@ -406,12 +463,14 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         inputRef={inputRef}
         saveMutation={saveMutation}
         startMutation={startMutation}
+        requestSubmit={requestSubmit}
         maxFiles={maxFiles}
         totalSelected={totalSelected}
         isUploading={isUploading}
         canEdit={canEdit}
         activeAttempt={activeAttempt}
       />
+      {confirmDialog}
       <SubmissionHistory attempts={data.attempts} />
     </div>
   )
@@ -522,6 +581,7 @@ function DraftEditor({
   inputRef,
   saveMutation,
   startMutation,
+  requestSubmit,
   maxFiles,
   totalSelected,
   isUploading,
@@ -536,6 +596,7 @@ function DraftEditor({
   inputRef: React.RefObject<HTMLInputElement | null>
   saveMutation: ReturnType<typeof useMutation<unknown, Error, { submit: boolean }>>
   startMutation: ReturnType<typeof useMutation<unknown, Error, void>>
+  requestSubmit: () => void
   maxFiles: number
   totalSelected: number
   isUploading: boolean
@@ -544,7 +605,8 @@ function DraftEditor({
 }) {
   const t = useTranslations('FileSubmission')
   const busy = saveMutation.isPending || startMutation.isPending || isUploading
-  const canSubmit = canEdit && (attachedFiles.length > 0 || slots.length > 0) && !busy
+  const hasPending = slots.some(slot => slot.status !== 'rejected')
+  const canSubmit = canEdit && (attachedFiles.length > 0 || hasPending) && !busy
 
   return (
     <>
@@ -636,13 +698,13 @@ function DraftEditor({
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
-            disabled={!canEdit || slots.length === 0 || busy}
+            disabled={!canEdit || !hasPending || busy}
             onClick={() => saveMutation.mutate({ submit: false })}
           >
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
             {t('saveDraft')}
           </Button>
-          <Button disabled={!canSubmit} onClick={() => saveMutation.mutate({ submit: true })}>
+          <Button disabled={!canSubmit} onClick={requestSubmit}>
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
             {t('submitFiles')}
           </Button>
@@ -656,6 +718,7 @@ function DraftEditor({
 
 function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) {
   const t = useTranslations('FileSubmission')
+  const formatPercent = usePercentFormat()
   if (attempts.length === 0) return null
   return (
     <section className="space-y-3">
@@ -677,7 +740,7 @@ function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) 
             </div>
             <div className="flex items-center gap-2">
               {attempt.final_score !== null && attempt.final_score !== undefined ? (
-                <Badge variant="outline">{attempt.final_score}%</Badge>
+                <Badge variant="outline">{formatPercent(attempt.final_score)}</Badge>
               ) : null}
               <StatusBadge status={attempt.status} />
             </div>

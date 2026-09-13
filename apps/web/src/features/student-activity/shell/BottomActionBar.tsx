@@ -153,18 +153,9 @@ function RuntimeCTA({
     )
   }
 
-  if (action.id !== 'none' && action.enabled) {
-    return (
-      <Button
-        className={PRIMARY_BUTTON_CLASSNAME}
-        onClick={() =>
-          document.getElementById('activity-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      >
-        <span className="min-w-0 truncate">{getPrimaryActionText(action.id, t)}</span>
-      </Button>
-    )
-  }
+  // start / continue / submit / revise: the inline workspace on this page
+  // owns the primary control — a second one here only scrolled to it (UX-036).
+  if (action.id !== 'none' && action.enabled) return null
 
   return (
     <Button
