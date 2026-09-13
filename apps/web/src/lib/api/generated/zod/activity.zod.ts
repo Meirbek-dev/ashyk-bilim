@@ -16,6 +16,7 @@ export const Activity = zod.object({
   name: zod.string(),
   position: zod.int().describe('1-based, contiguous within the chapter.'),
   published: zod.boolean(),
+  version: zod.int().describe('Optimistic lock — send back as `If-Match` on the content PATCH.'),
 })
 
 export type Activity = zod.input<typeof Activity>

@@ -52,6 +52,7 @@ export const Trail = zod
               name: zod.string(),
               position: zod.int().describe('1-based, contiguous within the chapter.'),
               published: zod.boolean(),
+              version: zod.int().describe('Optimistic lock — send back as `If-Match` on the content PATCH.'),
             }),
             activity_id: zod.uuid(),
             complete: zod.boolean(),

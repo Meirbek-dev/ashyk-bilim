@@ -14,7 +14,7 @@
         "tags": [
           "courses"
         ],
-        "summary": "Full activity including content/details/settings.",
+        "summary": "Full activity including content/details/settings. Unpublished\nactivities exist for course editors only (404 otherwise).",
         "operationId": "get_activity",
         "parameters": [
           {
@@ -30,6 +30,14 @@
         "responses": {
           "200": {
             "description": "Activity detail",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted version"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -88,6 +96,7 @@
           "courses"
         ],
         "summary": "Partial update: name, publish state, content/details/settings, or the\ntype pair (both `activity_type` and `activity_sub_type` together).",
+        "description": "A `content` write (the editor autosave) requires `If-Match: \"<version>\"`;\nother fields honour it when sent. A stale version is 412\n`precondition-failed` with `details {expected, actual}` — never a silent\noverwrite of another tab's save.",
         "operationId": "update_activity",
         "parameters": [
           {
@@ -97,6 +106,19 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/ActivityId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Current version (required with `content`)",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
             }
           }
         ],
@@ -113,6 +135,14 @@
         "responses": {
           "200": {
             "description": "Updated",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted new version"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -123,6 +153,16 @@
           },
           "403": {
             "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Stale version",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7838,7 +7878,7 @@
         "tags": [
           "courses"
         ],
-        "summary": "Remove a contributor (reject an application, or drop an active one).",
+        "summary": "Remove a contributor (reject an application, or drop an active one), or\nwithdraw one's own pending application.",
         "operationId": "remove_contributor",
         "parameters": [
           {
@@ -7961,7 +8001,7 @@
         "tags": [
           "courses"
         ],
-        "summary": "Chapters with nested activities, in course order.",
+        "summary": "Chapters with nested activities, in course order. Unpublished\nactivities are listed for course editors only.",
         "operationId": "get_curriculum",
         "parameters": [
           {
@@ -8400,6 +8440,16 @@
           },
           "403": {
             "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Publish blocked by readiness (`course-not-ready`,                                       `details.blockers`)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12092,7 +12142,8 @@
           "activity_type",
           "activity_sub_type",
           "published",
-          "position"
+          "position",
+          "version"
         ],
         "properties": {
           "activity_sub_type": {
@@ -12120,6 +12171,11 @@
           },
           "published": {
             "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Optimistic lock — send back as `If-Match` on the content PATCH."
           }
         }
       },
@@ -16862,6 +16918,8 @@
           "rate-limited",
           "payload-too-large",
           "activity-not-ready",
+          "course-not-ready",
+          "unsupported-media-type",
           "service-unavailable",
           "invalid-credentials",
           "mfa-required",

@@ -83,7 +83,8 @@ export const getGetActivityUrl = (id: ActivityId) => {
 }
 
 /**
- * @summary Full activity including content/details/settings.
+ * @summary Full activity including content/details/settings. Unpublished
+activities exist for course editors only (404 otherwise).
  */
 export const getActivity = async (
   id: ActivityId,
@@ -171,7 +172,8 @@ export function useGetActivity<TData = Awaited<ReturnType<typeof getActivity>>, 
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Full activity including content/details/settings.
+ * @summary Full activity including content/details/settings. Unpublished
+activities exist for course editors only (404 otherwise).
  */
 
 export function useGetActivity<TData = Awaited<ReturnType<typeof getActivity>>, TError = ErrorType<Problem>>(
@@ -243,7 +245,8 @@ export function useGetActivitySuspense<TData = Awaited<ReturnType<typeof getActi
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Full activity including content/details/settings.
+ * @summary Full activity including content/details/settings. Unpublished
+activities exist for course editors only (404 otherwise).
  */
 
 export function useGetActivitySuspense<TData = Awaited<ReturnType<typeof getActivity>>, TError = ErrorType<Problem>>(
@@ -343,6 +346,10 @@ export const getUpdateActivityUrl = (id: ActivityId) => {
 }
 
 /**
+ * A `content` write (the editor autosave) requires `If-Match: "<version>"`;
+ * other fields honour it when sent. A stale version is 412
+ * `precondition-failed` with `details {expected, actual}` — never a silent
+ * overwrite of another tab's save.
  * @summary Partial update: name, publish state, content/details/settings, or the
 type pair (both `activity_type` and `activity_sub_type` together).
  */
@@ -2556,7 +2563,8 @@ export const getRemoveContributorUrl = (id: CourseId, userId: UserId) => {
 }
 
 /**
- * @summary Remove a contributor (reject an application, or drop an active one).
+ * @summary Remove a contributor (reject an application, or drop an active one), or
+withdraw one's own pending application.
  */
 export const removeContributor = async (
   id: CourseId,
@@ -2614,7 +2622,8 @@ export type RemoveContributorMutationError = ErrorType<Problem>
 export type RemoveContributorMutationVariables = { id: CourseId; userId: UserId }
 
 /**
- * @summary Remove a contributor (reject an application, or drop an active one).
+ * @summary Remove a contributor (reject an application, or drop an active one), or
+withdraw one's own pending application.
  */
 export const useRemoveContributor = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
@@ -2739,7 +2748,8 @@ export const getGetCurriculumUrl = (id: CourseId) => {
 }
 
 /**
- * @summary Chapters with nested activities, in course order.
+ * @summary Chapters with nested activities, in course order. Unpublished
+activities are listed for course editors only.
  */
 export const getCurriculum = async (
   id: CourseId,
@@ -2827,7 +2837,8 @@ export function useGetCurriculum<TData = Awaited<ReturnType<typeof getCurriculum
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Chapters with nested activities, in course order.
+ * @summary Chapters with nested activities, in course order. Unpublished
+activities are listed for course editors only.
  */
 
 export function useGetCurriculum<TData = Awaited<ReturnType<typeof getCurriculum>>, TError = ErrorType<Problem>>(
@@ -2908,7 +2919,8 @@ export function useGetCurriculumSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Chapters with nested activities, in course order.
+ * @summary Chapters with nested activities, in course order. Unpublished
+activities are listed for course editors only.
  */
 
 export function useGetCurriculumSuspense<

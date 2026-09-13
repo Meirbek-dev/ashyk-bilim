@@ -19,6 +19,8 @@ export const ErrorCode = zod
     'rate-limited',
     'payload-too-large',
     'activity-not-ready',
+    'course-not-ready',
+    'unsupported-media-type',
     'service-unavailable',
     'invalid-credentials',
     'mfa-required',
