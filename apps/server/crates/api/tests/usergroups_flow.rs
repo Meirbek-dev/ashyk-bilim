@@ -117,3 +117,51 @@ async fn lifecycle_membership_and_course_links(pool: PgPool) {
         .await;
     assert_eq!(gone.status, StatusCode::NOT_FOUND);
 }
+
+/// BUG-109: unknown member / course ids are 422s, not FK 500s.
+#[sqlx::test(migrations = "../../migrations")]
+async fn unknown_member_and_course_ids_are_validation_errors(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = organizer(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "Cohort", "description": "" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let ghost = uuid::Uuid::now_v7();
+
+    let members = app
+        .post_as(
+            &owner,
+            &format!("/api/v2/usergroups/{id}/members"),
+            &serde_json::json!({ "user_ids": [ghost] }),
+        )
+        .await;
+    assert_eq!(
+        members.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        members.text()
+    );
+    assert_eq!(members.json()["field_errors"][0]["field"], "user_ids");
+    assert_eq!(members.json()["field_errors"][0]["code"], "unknown");
+
+    let courses = app
+        .post_as(
+            &owner,
+            &format!("/api/v2/usergroups/{id}/courses"),
+            &serde_json::json!({ "course_ids": [ghost] }),
+        )
+        .await;
+    assert_eq!(
+        courses.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        courses.text()
+    );
+    assert_eq!(courses.json()["field_errors"][0]["field"], "course_ids");
+    assert_eq!(courses.json()["field_errors"][0]["code"], "unknown");
+}

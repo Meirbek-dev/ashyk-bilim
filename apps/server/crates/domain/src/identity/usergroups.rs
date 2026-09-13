@@ -8,7 +8,7 @@
 
 use ab_core::id::{CourseId, UserId, UsergroupId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, Result};
+use ab_core::{Error, FieldError, Result};
 use sqlx::PgPool;
 
 pub use ab_db::usergroups::{MemberRow as Member, UsergroupRow as Usergroup};
@@ -20,6 +20,30 @@ const fn perm(action: Action) -> Permission {
         resource: ResourceType::Usergroup,
         action,
         scope: Some(Scope::Platform),
+    }
+}
+
+/// 422 `<field>`/`unknown` for every requested id that does not exist —
+/// the FK would otherwise surface as a 500 (BUG-109).
+pub(crate) fn reject_unknown<T: PartialEq + std::fmt::Display>(
+    field: &str,
+    what: &str,
+    requested: &[T],
+    known: &[T],
+) -> Result<()> {
+    let errors: Vec<FieldError> = requested
+        .iter()
+        .filter(|id| !known.contains(id))
+        .map(|id| FieldError {
+            field: field.into(),
+            code: "unknown".into(),
+            message: format!("{what} {id} does not exist"),
+        })
+        .collect();
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::validation(errors))
     }
 }
 
@@ -120,6 +144,12 @@ impl UsergroupsService {
         user_ids: &[UserId],
     ) -> Result<()> {
         self.writable(actor, id).await?;
+        let known: Vec<UserId> = ab_db::identity::list_user_summaries(&self.pool, user_ids)
+            .await?
+            .into_iter()
+            .map(|u| u.id)
+            .collect();
+        reject_unknown("user_ids", "user", user_ids, &known)?;
         ab_db::usergroups::add_members(&self.pool, id, user_ids).await
     }
 
@@ -145,6 +175,12 @@ impl UsergroupsService {
         course_ids: &[CourseId],
     ) -> Result<()> {
         self.writable(actor, id).await?;
+        let known: Vec<CourseId> = ab_db::analytics::list_courses(&self.pool, course_ids)
+            .await?
+            .into_iter()
+            .map(|c| c.id)
+            .collect();
+        reject_unknown("course_ids", "course", course_ids, &known)?;
         ab_db::usergroups::add_courses(&self.pool, id, course_ids).await
     }
 
