@@ -3,18 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import UserEditGeneral from '@/components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral'
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
+const t = (key: string) => key
+vi.mock('next-intl', () => ({ useTranslations: () => t }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 vi.mock('sonner', () => ({ toast: { loading: () => 'toast-1', success: vi.fn(), error: vi.fn(), dismiss: vi.fn() } }))
 vi.mock('@/i18n/locale', () => ({ getUserLocale: async () => 'ru-RU' }))
-vi.mock('@/hooks/useSession', () => ({
-  useSession: () => ({ user: { id: 'u1', username: 'learner', email: 'learner@ashyq.local', display_name: 'Aigerim', bio: '' } }),
-}))
+// Stable mocks: a fresh `t`/`user`/`handleApiError` per render re-runs the profile effect (`form.reset`) mid-submit.
+const me = { id: 'u1', username: 'learner', email: 'learner@ashyq.local', display_name: 'Aigerim', bio: '' }
+vi.mock('@/hooks/useSession', () => ({ useSession: () => ({ user: me }) }))
 vi.mock('@/lib/theme-system', () => ({ ThemeSelector: () => null }))
 vi.mock('@/components/theme-mode-toggle', () => ({ ThemeModeToggle: () => null }))
 vi.mock('@components/Objects/UserAvatar', () => ({ default: () => null }))
 const toastApiError = vi.fn()
-vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError, handleApiError: vi.fn() }) }))
+const handleApiError = vi.fn()
+vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError, handleApiError }) }))
 const updateProfile = vi.fn()
 vi.mock('@/lib/users/client', () => ({
   updateProfile: (...args: unknown[]) => updateProfile(...args),
@@ -37,5 +39,16 @@ describe('UserEditGeneral (v2)', () => {
       fallback: 'profileUpdateError',
       toastId: 'toast-1',
     })
+  })
+})
+
+describe('UX-070 blank display name', () => {
+  it('rejects a whitespace-only display name inline and never PATCHes', async () => {
+    render(<UserEditGeneral />)
+    const name = await screen.findByLabelText(/^displayName/)
+    fireEvent.change(name, { target: { value: '   ' } })
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(screen.getByText('Form.requiredField')).toBeTruthy())
+    expect(updateProfile).not.toHaveBeenCalled()
   })
 })
