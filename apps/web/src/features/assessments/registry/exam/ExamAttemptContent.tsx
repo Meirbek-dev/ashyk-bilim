@@ -309,7 +309,7 @@ function ExamTakingContent({
   // flip the banner on ~2 s into a brand-new attempt.
   const [resumedDraft] = useState(() => attempt.answered_count > 0)
   const [flaggedIndexes, setFlaggedIndexes] = useState<Set<number>>(new Set())
-  const violationCountRef = useRef(0)
+  const violationCountRef = useRef(attempt.violation_count)
 
   // View mode: CARD (one at a time) or SCROLL (all visible)
   const [viewMode, setViewMode] = useState<'CARD' | 'SCROLL'>(() => {
@@ -541,7 +541,7 @@ function ExamTakingContent({
           }
         : null,
       policy,
-      initialViolationCount: 0,
+      initialViolationCount: attempt.violation_count,
       onViolation: handleViolation,
       onGuardAutoSubmit: () => {
         toast.error(
@@ -588,6 +588,7 @@ function ExamTakingContent({
       canSubmit,
       answeredCount,
       attempt.created_at,
+      attempt.violation_count,
       attempt.started_at,
       currentIndex,
       handleOpenSubmitConfirmation,
