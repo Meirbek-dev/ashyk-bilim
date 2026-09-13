@@ -207,7 +207,7 @@ export default function AtRiskLearnersTable({
   )
 }
 
-function InterventionStateBadge({ row }: { row: EnhancedAtRiskLearnerRow }) {
+export function InterventionStateBadge({ row }: { row: EnhancedAtRiskLearnerRow }) {
   const t = useTranslations('TeacherAnalytics')
   if (row.risk_trend === 'recovered' || row.last_intervention_type === 'learner_recovered') {
     return (
@@ -225,8 +225,13 @@ function InterventionStateBadge({ row }: { row: EnhancedAtRiskLearnerRow }) {
     )
   }
 
-  if (row.intervention_count && row.intervention_count > 0) {
+  // Status is fixed at creation by the type (no PATCH on the wire): messages complete at once, meetings/drafts stay planned.
+  if (row.last_intervention_type === 'meeting_scheduled' || row.last_intervention_type === 'extension_granted') {
     return <Badge variant="warning">{t('intervention.open')}</Badge>
+  }
+
+  if (row.intervention_count && row.intervention_count > 0) {
+    return <Badge variant="outline">{t('intervention.completed')}</Badge>
   }
 
   return <Badge variant="outline">{t('intervention.none')}</Badge>
@@ -294,7 +299,7 @@ function LearnerInterventionDialog({
         intervention_type: 'message_sent',
         status: 'completed',
         outcome: 'learner_contacted',
-        notes: getAnalyticsCodeLabel(t, row.recommended_action),
+        notes: row.recommended_action,
       },
     },
     {
@@ -304,7 +309,7 @@ function LearnerInterventionDialog({
         intervention_type: 'meeting_scheduled',
         status: 'planned',
         outcome: 'check_in_scheduled',
-        notes: getAnalyticsCodeLabel(t, row.why_now ?? row.recommended_action),
+        notes: row.why_now ?? row.recommended_action,
       },
     },
     {
@@ -329,7 +334,7 @@ function LearnerInterventionDialog({
         intervention_type: 'learner_recovered',
         status: 'resolved',
         outcome: 'recovered_from_risk',
-        notes: t('codes.risk_resolved_after_review'),
+        notes: 'risk_resolved_after_review',
       },
     },
   ]
