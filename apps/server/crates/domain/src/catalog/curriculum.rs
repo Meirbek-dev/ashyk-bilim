@@ -13,9 +13,10 @@ pub use ab_db::catalog::{
     ChapterRow as Chapter,
 };
 
-use crate::catalog::courses::CoursesService;
+use crate::catalog::courses::{Course, CoursesService};
 use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::identity::Actor;
+use crate::progress::ProgressProjector;
 
 /// The legacy `_VALID_SUBTYPES` map, mirrored by the DB CHECK constraint.
 pub const TYPE_SUBTYPES: &[(&str, &[&str])] = &[
@@ -82,12 +83,37 @@ fn purpose_for_block(block_type: &str) -> Option<&'static str> {
 pub struct CurriculumService {
     pool: PgPool,
     courses: CoursesService,
+    projector: ProgressProjector,
 }
 
 impl CurriculumService {
     #[must_use]
-    pub const fn new(pool: PgPool, courses: CoursesService) -> Self {
-        Self { pool, courses }
+    pub fn new(pool: PgPool, courses: CoursesService) -> Self {
+        Self {
+            projector: ProgressProjector::new(pool.clone()),
+            pool,
+            courses,
+        }
+    }
+
+    /// Whether the actor may see draft (unpublished) activities: the
+    /// authoring gate (creator / active contributor / platform updater).
+    fn is_editor(actor: &Actor, course: &Course) -> bool {
+        CoursesService::require_write(actor, course).is_ok()
+    }
+
+    /// An activity the actor may read: the course must be visible and,
+    /// unless the actor edits the course, the activity published — drafts
+    /// do not exist for learners (404, no leak).
+    async fn readable_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Activity> {
+        let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
+            .await?
+            .ok_or_else(|| Error::not_found("activity"))?;
+        let course = self.courses.get(actor, activity.course_id).await?;
+        if !activity.published && !Self::is_editor(actor, &course) {
+            return Err(Error::not_found("activity"));
+        }
+        Ok(activity)
     }
 
     /// Load the course and require write access (shared authoring gate):
@@ -102,8 +128,10 @@ impl CurriculumService {
         actor: &Actor,
         course_id: CourseId,
     ) -> Result<Vec<CurriculumChapter>> {
-        // Read access via the courses service (404 semantics included).
-        self.courses.get(actor, course_id).await?;
+        // Read access via the courses service (404 semantics included);
+        // drafts are listed for editors only.
+        let course = self.courses.get(actor, course_id).await?;
+        let editor = Self::is_editor(actor, &course);
         let chapters = ab_db::catalog::list_chapters(&self.pool, course_id).await?;
         let activities = ab_db::catalog::list_activities(&self.pool, course_id).await?;
         let mut out: Vec<CurriculumChapter> = chapters
@@ -113,7 +141,7 @@ impl CurriculumService {
                 activities: Vec::new(),
             })
             .collect();
-        for activity in activities {
+        for activity in activities.into_iter().filter(|a| editor || a.published) {
             if let Some(entry) = out.iter_mut().find(|c| c.chapter.id == activity.chapter_id) {
                 entry.activities.push(activity);
             }
@@ -236,11 +264,7 @@ impl CurriculumService {
         actor: &Actor,
         activity_id: ActivityId,
     ) -> Result<ActivityDetail> {
-        let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
-            .await?
-            .ok_or_else(|| Error::not_found("activity"))?;
-        // Read access via the course (404 semantics included).
-        self.courses.get(actor, activity.course_id).await?;
+        let activity = self.readable_activity(actor, activity_id).await?;
         let content = ab_db::catalog::get_activity_content(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
@@ -285,6 +309,12 @@ impl CurriculumService {
         }
         ab_db::catalog::update_activity(&self.pool, activity_id, changes.name, changes.published)
             .await?;
+        if changes.published.is_some_and(|p| p != activity.published) {
+            // Learner totals count published activities only.
+            self.projector
+                .recalculate_course_for_all(activity.course_id)
+                .await?;
+        }
         if changes.content.is_some() || changes.details.is_some() || changes.settings.is_some() {
             ab_db::catalog::update_activity_content(
                 &self.pool,
@@ -303,7 +333,11 @@ impl CurriculumService {
         ab_db::catalog::delete_activity(&self.pool, activity_id).await?;
         let remaining =
             ab_db::catalog::list_chapter_activity_ids(&self.pool, activity.chapter_id).await?;
-        ab_db::catalog::renumber_activities(&self.pool, &remaining).await
+        ab_db::catalog::renumber_activities(&self.pool, &remaining).await?;
+        // Its progress rows cascaded away; refresh the learner totals.
+        self.projector
+            .recalculate_course_for_all(activity.course_id)
+            .await
     }
 
     /// Move within its chapter, or into another chapter of the SAME course.
@@ -401,10 +435,7 @@ impl CurriculumService {
     }
 
     pub async fn list_blocks(&self, actor: &Actor, activity_id: ActivityId) -> Result<Vec<Block>> {
-        let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
-            .await?
-            .ok_or_else(|| Error::not_found("activity"))?;
-        self.courses.get(actor, activity.course_id).await?;
+        self.readable_activity(actor, activity_id).await?;
         ab_db::catalog::list_blocks(&self.pool, activity_id).await
     }
 
@@ -412,10 +443,9 @@ impl CurriculumService {
         let block = ab_db::catalog::get_block(&self.pool, block_id)
             .await?
             .ok_or_else(|| Error::not_found("block"))?;
-        let activity = ab_db::catalog::get_activity(&self.pool, block.activity_id)
-            .await?
-            .ok_or_else(|| Error::not_found("block"))?;
-        self.courses.get(actor, activity.course_id).await?;
+        self.readable_activity(actor, block.activity_id)
+            .await
+            .map_err(|_| Error::not_found("block"))?;
         Ok(block)
     }
 

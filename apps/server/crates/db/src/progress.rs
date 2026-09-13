@@ -145,8 +145,9 @@ pub async fn get_activity_progress(
     Ok(row)
 }
 
-/// One learner's rows across a course (every published activity, once
-/// [`ensure_course_rows`] ran).
+/// One learner's rows across a course: every published activity (once
+/// [`ensure_course_rows`] ran) — rows of drafts and since-unpublished
+/// activities are excluded so totals follow the published set.
 pub async fn list_course_progress_rows(
     pool: &PgPool,
     course_id: CourseId,
@@ -167,7 +168,9 @@ pub async fn list_course_progress_rows(
                   (extract(epoch FROM due_at))::bigint AS "due_at?",
                   is_late, teacher_action_required, status_reason,
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM activity_progress WHERE course_id = $1 AND user_id = $2"#,
+           FROM activity_progress
+           WHERE course_id = $1 AND user_id = $2
+             AND activity_id IN (SELECT id FROM activities WHERE published)"#,
         course_id.0,
         user_id.0
     )

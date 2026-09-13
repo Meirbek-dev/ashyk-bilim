@@ -416,3 +416,94 @@ async fn assessment_submissions_project_into_progress(pool: PgPool) {
     assert_eq!(attempts, 1);
     assert_eq!(latest, Some(uuid::Uuid::parse_str(&sub_id).unwrap()));
 }
+
+/// Drafts never enter the denominator: marking one is a 404, and
+/// unpublishing / deleting an activity re-aggregates every learner so
+/// `total_required_count` follows the published set (BUG-098). Leaving an
+/// unknown or invisible course is a 404 like joining it (BUG-100).
+#[sqlx::test(migrations = "../../migrations")]
+async fn drafts_never_count_and_totals_follow_publishing(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Drafts 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let a2 = lesson(&app, &teacher, &chapter_id, "Deep dive").await;
+    let draft = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/chapters/{chapter_id}/activities"),
+            &serde_json::json!({ "name": "Draft", "activity_type": "dynamic",
+                                  "activity_sub_type": "dynamic_page" }),
+        )
+        .await
+        .json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let alice = learner(&app, "alice").await;
+    let learner_state = format!("/api/v2/courses/{course_id}/learner-state");
+    let progress = || async { app.get_as(&alice, &learner_state).await.json()["progress"].clone() };
+
+    let refused = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{draft}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::NOT_FOUND, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "not-found");
+
+    for id in [&a1, &a2] {
+        app.post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    }
+    let done = progress().await;
+    assert_eq!(done["total_required_count"], 2);
+    assert_eq!(done["progress_pct"], 100.0);
+
+    // Unpublish one: 1/1, still complete; republish: 2/2.
+    for (published, total) in [(false, 1), (true, 2)] {
+        let toggled = app
+            .patch_as(
+                &teacher,
+                &format!("/api/v2/activities/{a2}"),
+                &serde_json::json!({ "published": published }),
+            )
+            .await;
+        assert_eq!(toggled.status, StatusCode::OK, "{}", toggled.text());
+        let after = progress().await;
+        assert_eq!(after["total_required_count"], total);
+        assert_eq!(after["completed_required_count"], total);
+        assert_eq!(after["progress_pct"], 100.0);
+    }
+
+    // Delete one: its row cascades and the total follows.
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/activities/{a2}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    let after = progress().await;
+    assert_eq!(after["total_required_count"], 1);
+    assert_eq!(after["progress_pct"], 100.0);
+
+    // Leaving: unknown and invisible courses are 404s.
+    let private = app
+        .post_as(
+            &teacher,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": "Hidden" }),
+        )
+        .await;
+    let private_id = private.json()["id"].as_str().unwrap().to_owned();
+    for id in [private_id, uuid::Uuid::now_v7().to_string()] {
+        let gone = app
+            .delete_as(&alice, &format!("/api/v2/trail/courses/{id}"))
+            .await;
+        assert_eq!(gone.status, StatusCode::NOT_FOUND, "{}", gone.text());
+    }
+}

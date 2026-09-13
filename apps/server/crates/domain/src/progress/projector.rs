@@ -304,6 +304,16 @@ impl ProgressProjector {
             .ok_or_else(|| Error::not_found("course progress"))
     }
 
+    /// Re-aggregate every known learner of a course — after an activity is
+    /// (un)published or deleted, so `total_required_count` follows the
+    /// published set.
+    pub async fn recalculate_course_for_all(&self, course_id: CourseId) -> Result<()> {
+        for user_id in ab_db::progress::known_course_users(&self.pool, course_id).await? {
+            self.recalculate_course(course_id, user_id).await?;
+        }
+        Ok(())
+    }
+
     /// Repair projections for every known learner of one course (or all).
     pub async fn backfill(&self, course_id: Option<CourseId>) -> Result<BackfillReport> {
         let courses = match course_id {
@@ -532,7 +542,8 @@ pub(crate) const fn progress_is_completed(row: &ActivityProgressRow) -> bool {
         )
 }
 
-/// Legacy `recalculate_course_progress` arithmetic over the required rows.
+/// Legacy `recalculate_course_progress` arithmetic over the required rows
+/// (`rows` is the published set — `list_course_progress_rows` filters).
 pub(crate) fn aggregate_course(
     course_id: CourseId,
     user_id: UserId,

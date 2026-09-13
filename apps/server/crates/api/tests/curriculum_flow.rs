@@ -376,3 +376,66 @@ async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
         .await;
     assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
 }
+
+/// Unpublished activities exist for editors only: learners and anonymous
+/// callers get a curriculum without them and a 404 for the activity and
+/// its blocks (BUG-099).
+#[sqlx::test(migrations = "../../migrations")]
+async fn drafts_are_visible_to_editors_only(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Public").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let live = create_activity(&app, &teacher, &chapter, "Live").await;
+    let draft = create_activity(&app, &teacher, &chapter, "Draft").await;
+    let published = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{live}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/courses/{course}/lifecycle"),
+        &serde_json::json!({ "action": "publish" }),
+    )
+    .await;
+
+    let names = |res: ab_testkit::TestResponse| -> Vec<String> {
+        res.json()["chapters"][0]["activities"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| a["name"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let curriculum = format!("/api/v2/courses/{course}/curriculum");
+    let activity = format!("/api/v2/activities/{draft}");
+    let blocks = format!("/api/v2/activities/{draft}/blocks");
+
+    // Editor: everything.
+    assert_eq!(
+        names(app.get_as(&teacher, &curriculum).await),
+        ["Live", "Draft"]
+    );
+    assert_eq!(app.get_as(&teacher, &activity).await.status, StatusCode::OK);
+
+    // Learner: filtered + 404s.
+    let learner = app.mint_session(&[]).await;
+    assert_eq!(names(app.get_as(&learner, &curriculum).await), ["Live"]);
+    for path in [&activity, &blocks] {
+        let hidden = app.get_as(&learner, path).await;
+        assert_eq!(
+            hidden.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            hidden.text()
+        );
+        assert_eq!(hidden.json()["code"], "not-found");
+    }
+    // Anonymous: the same.
+    assert_eq!(names(app.get(&curriculum).await), ["Live"]);
+    assert_eq!(app.get(&activity).await.status, StatusCode::NOT_FOUND);
+}

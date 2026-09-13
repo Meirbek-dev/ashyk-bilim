@@ -174,10 +174,12 @@ impl TrailService {
     /// pipeline-owned and stay — the submissions still exist.
     pub async fn remove_course(&self, actor: &Actor, course_id: CourseId) -> Result<Trail> {
         Self::require_write(actor)?;
+        // Unknown or invisible course → 404, as on the way in.
+        let course = self.courses.get(actor, course_id).await?;
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("trail"))?;
-        ab_db::progress::delete_trail_run(&self.pool, trail.id, course_id).await?;
+        ab_db::progress::delete_trail_run(&self.pool, trail.id, course.id).await?;
         for activity in ab_db::catalog::list_activities(&self.pool, course_id).await? {
             self.projector
                 .unmark_complete(&activity, actor.user_id)
@@ -187,11 +189,13 @@ impl TrailService {
     }
 
     /// Mark an activity done: run + step, and an explicit completion for
-    /// lesson-type activities.
+    /// lesson-type activities. Drafts do not exist for learners (404): a
+    /// step on one would become a required row the course never counts.
     pub async fn add_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Trail> {
         Self::require_write(actor)?;
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
             .await?
+            .filter(|a| a.published)
             .ok_or_else(|| Error::not_found("activity"))?;
         let course = self.accessible_course(actor, activity.course_id).await?;
         let trail = ab_db::progress::ensure_trail(&self.pool, actor.user_id).await?;
