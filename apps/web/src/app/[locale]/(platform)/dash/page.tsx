@@ -243,7 +243,7 @@ export default async function PlatformDashHomePage() {
     <div className="bg-background flex min-h-screen w-full flex-col">
       <DashHeader title={tGeneral('dashboard')} description={tGeneral('dashboardWelcome')} />
 
-      <main className="container mx-auto flex-1 px-4 py-8 md:py-10 lg:px-8">
+      <section className="container mx-auto flex-1 px-4 py-8 md:py-10 lg:px-8">
         <WorkQueueAutoRefresh />
         <DashboardWorkQueue
           sections={queue.sections}
@@ -258,7 +258,7 @@ export default async function PlatformDashHomePage() {
             openLabel: tQueue('openLabel'),
           }}
         />
-      </main>
+      </section>
     </div>
   )
 }

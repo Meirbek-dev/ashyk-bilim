@@ -98,4 +98,16 @@ describe('NewCollection required fields', () => {
     expect(document.activeElement).toBe(name)
     expect(toast.error).not.toHaveBeenCalledWith(ruMessages.NewCollectionPage.toast.missingName)
   })
+
+  // UX-081: no course selected is inline too, not a toast.
+  it('shows the missing-course error inline and clears it on selection', async () => {
+    renderNewCollection()
+    fireEvent.change(screen.getByLabelText(/Название/), { target: { value: 'Моя коллекция' } })
+    fireEvent.change(screen.getByLabelText(/Описание/), { target: { value: 'Описание' } })
+    fireEvent.click(screen.getByRole('button', { name: ruMessages.NewCollectionPage.createButton }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(ruMessages.NewCollectionPage.toast.noCoursesSelected)
+    expect(toast.error).not.toHaveBeenCalledWith(ruMessages.NewCollectionPage.toast.noCoursesSelected)
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Python' }))
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+  })
 })

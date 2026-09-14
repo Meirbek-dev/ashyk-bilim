@@ -47,7 +47,7 @@ function NewCollection() {
   const { data: courses, error, isLoading } = useCourseList<CourseListItem>()
   const [isPublic, setIsPublic] = useState(true)
   // Inline field error on submit, cleared as the field changes (UX-051 / BUG-013).
-  const [fieldError, setFieldError] = useState<'name' | 'description' | null>(null)
+  const [fieldError, setFieldError] = useState<'name' | 'description' | 'courses' | null>(null)
 
   const filteredCourses = useMemo(() => {
     if (!courses || !searchQuery.trim()) return courses || []
@@ -88,7 +88,9 @@ function NewCollection() {
     }
 
     if (selectedCourses.length === 0) {
-      toast.error(t('toast.noCoursesSelected'))
+      // Inline like the other two required fields (UX-081).
+      setFieldError('courses')
+      document.getElementById('collection-courses-error')?.scrollIntoView({ block: 'nearest' })
       return
     }
 
@@ -123,12 +125,14 @@ function NewCollection() {
 
   const toggleCourse = (courseId: number) => {
     setSelectedCourses(prev => (prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId]))
+    setFieldError(null)
   }
 
   const selectAll = () => {
     if (filteredCourses.length === 0) return
     const allIds = filteredCourses.map((c: CourseListItem) => c.id)
     setSelectedCourses(allIds)
+    setFieldError(null)
   }
 
   const deselectAll = () => {
@@ -263,6 +267,11 @@ function NewCollection() {
                   {t('selectCoursesLabel')} <span className="text-red-500">*</span>
                 </CardTitle>
                 <CardDescription>{t('selectCoursesDescription')}</CardDescription>
+                {fieldError === 'courses' ? (
+                  <p id="collection-courses-error" role="alert" className="text-destructive mt-1 text-xs">
+                    {t('toast.noCoursesSelected')}
+                  </p>
+                ) : null}
               </div>
               {selectedCourses.length > 0 && (
                 <Badge variant="secondary" className="ml-auto">

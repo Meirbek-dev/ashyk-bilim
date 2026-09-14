@@ -71,7 +71,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
         </div>
       </header>
 
-      <main className="min-w-0 flex-1 space-y-6 px-4 py-8 lg:px-8">
+      <section className="min-w-0 flex-1 space-y-6 px-4 py-8 lg:px-8">
         <Card className="bg-card text-card-foreground border-border rounded-xl shadow-xs">
           <CardContent className="pt-6">
             <TeacherFilterBar
@@ -128,7 +128,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
             </Button>
           </div>
         ) : null}
-      </main>
+      </section>
     </div>
   )
 }

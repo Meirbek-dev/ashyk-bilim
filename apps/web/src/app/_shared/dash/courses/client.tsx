@@ -541,7 +541,7 @@ function CoursesHome({
         }
       />
 
-      <main className="container mx-auto flex-1 space-y-6 px-4 py-8 lg:px-8">
+      <section className="container mx-auto flex-1 space-y-6 px-4 py-8 lg:px-8">
         {/* Summary Cards */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map(card => (
@@ -730,7 +730,7 @@ function CoursesHome({
             </div>
           </div>
         ) : null}
-      </main>
+      </section>
 
       <AlertDialog
         open={pendingBulkAction !== null}

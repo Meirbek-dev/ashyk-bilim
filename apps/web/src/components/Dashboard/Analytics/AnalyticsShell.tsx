@@ -114,7 +114,7 @@ export default function AnalyticsShell({
       </DashHeader>
 
       {/* Main Content Area - Full width with padding */}
-      <main className="min-w-0 flex-1 space-y-6 px-4 py-6 lg:px-8">
+      <section className="min-w-0 flex-1 space-y-6 px-4 py-6 lg:px-8">
         {/* Global Filters Section (Above Tabs) */}
         <div className="w-full">
           <TeacherFilterBar
@@ -129,7 +129,7 @@ export default function AnalyticsShell({
 
         {/* Tab Panel content */}
         <div className="space-y-6">{children}</div>
-      </main>
+      </section>
     </div>
   )
 }

@@ -67,7 +67,7 @@ async function PlatformAdminContent() {
       {/* Standard Header */}
       <DashHeader breadcrumbType="admin" title={t('title')} description={t('description')} />
 
-      <main className="container mx-auto flex-1 space-y-8 px-4 py-8 lg:px-8">
+      <section className="container mx-auto flex-1 space-y-8 px-4 py-8 lg:px-8">
         {/* Core Administrative Sections */}
         <div className="space-y-4">
           <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{t('panelsTitle')}</h2>
@@ -98,7 +98,7 @@ async function PlatformAdminContent() {
           </div>
         </div>
         <AIAdminPanel />
-      </main>
+      </section>
     </div>
   )
 }

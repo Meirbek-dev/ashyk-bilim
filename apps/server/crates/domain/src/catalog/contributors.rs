@@ -125,6 +125,9 @@ impl CoursesService {
         course_id: CourseId,
         user_id: UserId,
     ) -> Result<()> {
+        // The creator is never a row: 409 before any lookup (UX-081).
+        let course = self.get(actor, course_id).await?;
+        Self::not_creator(&course, user_id)?;
         // Self-service: no row at all is a 404 (the application was already
         // decided or withdrawn), not a roster-manager 403 (UX-050).
         let own_pending = user_id == actor.user_id
@@ -133,12 +136,9 @@ impl CoursesService {
                 .ok_or_else(|| Error::not_found("contributor"))?
                 .status
                 == "pending";
-        let course = if own_pending {
-            self.get(actor, course_id).await?
-        } else {
-            self.manageable(actor, course_id).await?
-        };
-        Self::not_creator(&course, user_id)?;
+        if !own_pending {
+            self.manageable(actor, course_id).await?;
+        }
         if !ab_db::catalog::delete_contributor(&self.pool, course_id, user_id).await? {
             return Err(Error::not_found("contributor"));
         }

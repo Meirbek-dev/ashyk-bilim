@@ -28,9 +28,9 @@ function CourseWorkspacePageFallback() {
           ))}
         </div>
       </div>
-      <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">
+      <section className="min-w-0 flex-1 px-4 py-8 lg:px-8">
         <div className="bg-muted h-[420px] animate-pulse rounded-lg" />
-      </main>
+      </section>
     </div>
   )
 }

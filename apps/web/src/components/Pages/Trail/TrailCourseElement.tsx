@@ -53,10 +53,11 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
     mutationFn: () => removeCourse(course.course_uuid),
     onSuccess: async () => {
       setConfirmQuit(false)
+      // The card reads the trail query: drop it first so the card goes with the toast (UX-081).
+      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
       toast.success(t('quitCourseDone', { course: course.name ?? '' }))
       await revalidateTags(['courses'])
       router.refresh()
-      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
     },
     onError: error => toastApiError(error, { fallback: t('quitCourseFailed') }),
   })

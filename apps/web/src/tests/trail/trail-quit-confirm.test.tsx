@@ -44,11 +44,13 @@ function renderCard() {
       </NextIntlClientProvider>
     </QueryClientProvider>,
   )
+  return queryClient
 }
 
 describe('TrailCourseElement quit + certificate', () => {
   it('asks for confirmation, unenrols only on confirm and toasts', async () => {
-    renderCard()
+    const queryClient = renderCard()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
     fireEvent.click(screen.getByRole('button', { name: 'Покинуть курс' }))
     expect(removeCourse).not.toHaveBeenCalled()
     const dialog = await screen.findByRole('alertdialog')
@@ -62,6 +64,9 @@ describe('TrailCourseElement quit + certificate', () => {
     fireEvent.click(confirm)
     await waitFor(() => expect(removeCourse).toHaveBeenCalledWith(courseId))
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Вы покинули курс «Основы Python»'))
+    // The card goes with the toast: the trail query is dropped before it fires (UX-081).
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['trail', 'current'] })
+    expect(invalidate.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(toast.success).mock.invocationCallOrder[0]!)
   })
 
   it('labels the certificate control as "view", since nothing is downloaded', () => {
