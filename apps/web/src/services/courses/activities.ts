@@ -20,8 +20,10 @@ const json = (method: 'POST' | 'PATCH', body: unknown, headers: Record<string, s
 
 /**
  * Activities are optimistic-lock writes (UX-027): the server answers with
- * `ETag: "<version>"`, and a `content` PATCH must send it back as `If-Match`
- * (stale → 412 `precondition-failed`). The version rides on the app activity.
+ * `ETag: "<version>"` — or, on the 201 of `POST chapters/{id}/activities`,
+ * only with `version` in the body (BUG-149) — and a `content` PATCH must send
+ * it back as `If-Match` (stale → 412 `precondition-failed`). The version
+ * rides on the app activity.
  */
 async function withVersion<T extends WireActivity>(
   path: string,
@@ -29,7 +31,7 @@ async function withVersion<T extends WireActivity>(
   parse: (data: unknown) => T,
 ) {
   const { data, headers } = await apiResult(path, init, parse)
-  return { ...toAppActivity(data), version: parseEntityTagVersion(headers) }
+  return { ...toAppActivity(data), version: parseEntityTagVersion(headers) ?? data.version }
 }
 
 /** Closed v2 `UpdateActivityRequest` (`additionalProperties: false`), with `TYPE_*` tokens mapped to the wire. */
