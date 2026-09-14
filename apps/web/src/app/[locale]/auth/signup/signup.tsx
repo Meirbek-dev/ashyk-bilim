@@ -180,13 +180,25 @@ function SignupClient() {
         {field(
           'password',
           t('password'),
-          <PasswordInput name="password" autoComplete="new-password" placeholder={t('passwordPlaceholder')} className="w-full" />,
+          <PasswordInput
+            name="password"
+            autoComplete="new-password"
+            placeholder={t('passwordPlaceholder')}
+            // Kept across a validation round-trip like the other fields (never after a server error).
+            defaultValue={state.error ? '' : state.values.password}
+            className="w-full"
+          />,
           t('passwordRule'),
         )}
         {field(
           'confirmPassword',
           t('confirmPassword'),
-          <PasswordInput name="confirmPassword" autoComplete="new-password" className="w-full" />,
+          <PasswordInput
+            name="confirmPassword"
+            autoComplete="new-password"
+            defaultValue={state.error ? '' : state.values.confirmPassword}
+            className="w-full"
+          />,
         )}
 
         <AuthSubmitButton isPending={isPending} label={t('submit')} pendingLabel={t('submitting')} />
