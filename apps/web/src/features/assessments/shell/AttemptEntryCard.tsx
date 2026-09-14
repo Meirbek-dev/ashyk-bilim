@@ -35,7 +35,8 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
   const isRevision = recommendedAction === 'startRevision'
   // Unlimited attempts + batch release: the learner may start again, but the
   // last hand-in is still awaiting the teacher — say so instead of «Готовы начать».
-  const isAwaitingRelease = vm.releaseState === 'AWAITING_RELEASE'
+  // A PENDING hand-in (essay awaiting the teacher) is «received» too, even though its release state is still hidden.
+  const isAwaitingRelease = vm.releaseState === 'AWAITING_RELEASE' || vm.submissionStatus === 'PENDING'
 
   const questionCount = items.length
   const { timeLimitSeconds } = policy
