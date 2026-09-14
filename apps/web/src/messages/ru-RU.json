@@ -1550,12 +1550,12 @@
     "DocumentPdfModal": {
       "ariaLabel": "Выбрать PDF-документ для загрузки",
       "createActivity": "Создать активность",
-      "fileTooLarge": "Размер файла превышает лимит 100 МБ",
+      "fileTooLarge": "Размер файла превышает лимит {size} МБ",
       "noFileSelected": "Файл не выбран",
       "pdfDocumentFile": "Файл PDF документа",
       "pdfDocumentName": "Название PDF документа",
       "selectFile": "Выбрать PDF файл",
-      "supportedFormats": "Поддерживаемый формат: PDF • Максимальный размер: 100 МБ",
+      "supportedFormats": "Поддерживаемый формат: PDF • Максимальный размер: {size} МБ",
       "valueMissingFile": "Пожалуйста, предоставьте PDF-документ для активности",
       "valueMissingName": "Пожалуйста, укажите название для PDF-активности"
     },
@@ -1754,7 +1754,6 @@
       "instructions": "Инструкции",
       "maxFiles": "Максимум файлов",
       "maxSize": "Максимальный размер (МБ)",
-      "requiredFields": "Название и инструкции обязательны",
       "selectAll": "Выбрать все",
       "title": "Название"
     },
@@ -2223,7 +2222,7 @@
       "errorEndTimeGreaterThanStartTime": "Время окончания должно быть больше времени начала",
       "errorFailedToAddSubtitle": "Не удалось добавить файл субтитров",
       "errorFailedToCreateVideoActivity": "Не удалось создать видео активность. Попробуйте еще раз.",
-      "errorFileSizeLimit": "Размер файла должен быть менее 1000МБ",
+      "errorFileSizeLimit": "Размер файла должен быть менее {size} МБ",
       "errorFixErrorsBeforeSubmitting": "Пожалуйста, исправьте ошибки перед отправкой",
       "errorInvalidSubtitleFile": "Неверный файл субтитров",
       "errorInvalidVideoFileType": "Пожалуйста, выберите действительный видеофайл (MP4, WebM или MKV)",
@@ -2269,7 +2268,7 @@
       "successVideoActivityCreated": "Видео активность успешно создана!",
       "successVideoFileSelected": "Видеофайл успешно выбран",
       "successYouTubeVideoActivityCreated": "YouTube видео активность успешно создана!",
-      "supportedFormatsAndSize": "Поддерживаемые форматы: MP4, MKV, WebM • Макс размер: 1000МБ",
+      "supportedFormatsAndSize": "Поддерживаемые форматы: MP4, MKV, WebM • Макс размер: {size} МБ",
       "timingControls": "Управление временем",
       "uploadVideo": "Загрузить видео",
       "validYouTubeUrl": "Действительная YouTube ссылка",
@@ -3552,7 +3551,9 @@
           "titleWithQuery": "Ничего не найдено по запросу «{query}»",
           "title": "На этой странице нет подходящих курсов",
           "withQuery": "Измените поиск или пресет.",
-          "withoutQuery": "Создайте курс или расширьте текущий пресет."
+          "withoutQuery": "Создайте курс или расширьте текущий пресет.",
+          "titleWithPreset": "В этом разделе пока нет курсов",
+          "withPreset": "Выберите другой пресет или откройте «Все»."
         },
         "errors": {
           "cannotDeleteSelection": "Невозможно удалить выбранные курсы.",
@@ -3657,7 +3658,8 @@
         },
         "card": {
           "previewAsLearner": "Предпросмотр студента"
-        }
+        },
+        "resultsSummaryWithPreset": "В разделе «{preset}»: {total}, на этой странице {visible}."
       },
       "Overview": {
         "access": {
@@ -10250,7 +10252,8 @@
     "tagTooLong": "Тег не должен превышать 64 символа",
     "tooManyTags": "Не больше 20 тегов",
     "sourceCourseRequired": "Выберите исходный курс",
-    "learningsInvalid": "Неверный формат результатов обучения"
+    "learningsInvalid": "Неверный формат результатов обучения",
+    "instructionsRequired": "Требуются инструкции"
   },
   "activity": "Активность",
   "additionalSettings": "Дополнительные настройки",

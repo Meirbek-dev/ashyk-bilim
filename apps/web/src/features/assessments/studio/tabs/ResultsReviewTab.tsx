@@ -60,6 +60,11 @@ interface ResultsReviewTabProps {
 
 type StatusFilter = SubmissionStatus | 'NEEDS_GRADING' | 'ALL'
 
+// Hand-ins arrive while the teacher watches (UX-085): the queue and its
+// stats follow on focus and every 30 s while the tab is visible (the
+// grading SSE is course-scoped and not mounted here).
+const LIVE = { refetchOnWindowFocus: true, refetchInterval: 30_000, refetchIntervalInBackground: false } as const
+
 export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityUuid }: ResultsReviewTabProps) {
   const t = useTranslations('Features.Assessments.Studio.ResultsReview')
   const locale = useLocale()
@@ -76,11 +81,12 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
 
   // v2 queue: keyset `GET assessments/{id}/submissions` (status/search/cursor/limit)
   // walked page-by-page by the shared grading query; sort is applied client-side.
-  const statsQuery = useQuery(submissionStatsQueryOptions(assessmentUuid))
+  const statsQuery = useQuery({ ...submissionStatsQueryOptions(assessmentUuid), ...LIVE })
   const itemAnalyticsQuery = useQuery(itemAnalyticsQueryOptions(assessmentUuid))
-  const queueQuery = useQuery(
-    submissionsQueryOptions({ assessmentUuid, page, pageSize: 10, search, sortBy, sortDir, status: statusFilter }),
-  )
+  const queueQuery = useQuery({
+    ...submissionsQueryOptions({ assessmentUuid, page, pageSize: 10, search, sortBy, sortDir, status: statusFilter }),
+    ...LIVE,
+  })
 
   const stats = statsQuery.isSuccess ? statsQuery.data : null
   const itemAnalytics = itemAnalyticsQuery.isSuccess ? itemAnalyticsQuery.data : []

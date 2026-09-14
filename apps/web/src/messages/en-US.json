@@ -1566,12 +1566,12 @@
     "DocumentPdfModal": {
       "ariaLabel": "Choose PDF document file to upload",
       "createActivity": "Create Activity",
-      "fileTooLarge": "File size exceeds the 100MB limit",
+      "fileTooLarge": "File size exceeds the {size} MB limit",
       "noFileSelected": "No file selected",
       "pdfDocumentFile": "PDF Document File",
       "pdfDocumentName": "PDF Document Name",
       "selectFile": "Select PDF File",
-      "supportedFormats": "Supported format: PDF • Max size: 100MB",
+      "supportedFormats": "Supported format: PDF • Max size: {size} MB",
       "valueMissingFile": "Please provide a PDF document for your activity",
       "valueMissingName": "Please provide a name for your PDF activity"
     },
@@ -1770,7 +1770,6 @@
       "instructions": "Instructions",
       "maxFiles": "Max files",
       "maxSize": "Max size (MB)",
-      "requiredFields": "Title and instructions are required",
       "selectAll": "Select all",
       "title": "Title"
     },
@@ -2224,7 +2223,7 @@
       "errorEndTimeGreaterThanStartTime": "End time must be greater than start time",
       "errorFailedToAddSubtitle": "Failed to add subtitle file",
       "errorFailedToCreateVideoActivity": "Failed to create video activity. Please try again.",
-      "errorFileSizeLimit": "File size must be less than 1000MB",
+      "errorFileSizeLimit": "File size must be less than {size} MB",
       "errorFixErrorsBeforeSubmitting": "Please fix the errors before submitting",
       "errorInvalidSubtitleFile": "Invalid subtitle file",
       "errorInvalidVideoFileType": "Please select a valid video file (MP4, WebM, or MKV)",
@@ -2270,7 +2269,7 @@
       "successVideoActivityCreated": "Video activity created successfully!",
       "successVideoFileSelected": "Video file selected successfully",
       "successYouTubeVideoActivityCreated": "YouTube video activity created successfully!",
-      "supportedFormatsAndSize": "Supported formats: MP4, MKV, WebM • Max size: 1GB",
+      "supportedFormatsAndSize": "Supported formats: MP4, MKV, WebM • Max size: {size} MB",
       "timingControls": "Timing Controls",
       "uploadVideo": "Upload Video",
       "validYouTubeUrl": "Valid YouTube URL",
@@ -3540,7 +3539,9 @@
           "titleWithQuery": "Nothing found for “{query}”",
           "title": "No matching courses on this page",
           "withQuery": "Adjust the search or preset.",
-          "withoutQuery": "Create a course or widen the current preset."
+          "withoutQuery": "Create a course or widen the current preset.",
+          "titleWithPreset": "No courses in this section yet",
+          "withPreset": "Pick another preset or open “All”."
         },
         "errors": {
           "cannotDeleteSelection": "No selected courses can be deleted.",
@@ -3645,7 +3646,8 @@
         },
         "card": {
           "previewAsLearner": "Preview as learner"
-        }
+        },
+        "resultsSummaryWithPreset": "{total} in “{preset}”, {visible} on this page."
       },
       "Overview": {
         "access": {
@@ -10236,7 +10238,8 @@
     "tagTooLong": "A tag must not exceed 64 characters",
     "tooManyTags": "No more than 20 tags",
     "sourceCourseRequired": "Please select a source course",
-    "learningsInvalid": "Invalid format for learning outcomes"
+    "learningsInvalid": "Invalid format for learning outcomes",
+    "instructionsRequired": "Instructions are required"
   },
   "activity": "Activity",
   "additionalSettings": "Additional Settings",

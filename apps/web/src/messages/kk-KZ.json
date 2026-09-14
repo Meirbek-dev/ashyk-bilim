@@ -1549,12 +1549,12 @@
     "DocumentPdfModal": {
       "ariaLabel": "Жүктеу үшін PDF құжат файлын таңдаңыз",
       "createActivity": "Белсенділік жасау",
-      "fileTooLarge": "Файл өлшемі 100 МБ шегінен асады",
+      "fileTooLarge": "Файл өлшемі {size} МБ шегінен асады",
       "noFileSelected": "Ешқандай файл таңдалмады",
       "pdfDocumentFile": "PDF құжатының файлы",
       "pdfDocumentName": "PDF құжатының атауы",
       "selectFile": "PDF файлын таңдаңыз",
-      "supportedFormats": "Қолдау көрсетілетін формат: PDF • Максималды өлшемі: 100 МБ",
+      "supportedFormats": "Қолдау көрсетілетін формат: PDF • Максималды өлшемі: {size} МБ",
       "valueMissingFile": "Белсенділігіңіз үшін PDF құжатын беріңіз",
       "valueMissingName": "PDF белсенділігіңіз үшін атауды көрсетіңіз"
     },
@@ -1753,7 +1753,6 @@
       "instructions": "Нұсқаулар",
       "maxFiles": "Ең көп файл саны",
       "maxSize": "Ең үлкен өлшем (МБ)",
-      "requiredFields": "Атауы мен нұсқаулар міндетті",
       "selectAll": "Барлығын таңдау",
       "title": "Атауы"
     },
@@ -2223,7 +2222,7 @@
       "errorEndTimeGreaterThanStartTime": "Аяқталу уақыты бастау уақытынан көп болуы керек",
       "errorFailedToAddSubtitle": "Субтитр файлын қосу сәтсіз аяқталды",
       "errorFailedToCreateVideoActivity": "Бейне белсенділігін жасау сәтсіз аяқталды. Қайтадан көріңіз.",
-      "errorFileSizeLimit": "Файл өлшемі 1000МБ-тан кем болуы керек",
+      "errorFileSizeLimit": "Файл өлшемі {size} МБ-тан кем болуы керек",
       "errorFixErrorsBeforeSubmitting": "Жіберу алдында қателерді түзетіңіз",
       "errorInvalidSubtitleFile": "Жарамсыз субтитр файлы",
       "errorInvalidVideoFileType": "Жарамды бейне файлын таңдаңыз (MP4, WebM немесе MKV)",
@@ -2269,7 +2268,7 @@
       "successVideoActivityCreated": "Бейне белсенділігі сәтті жасалды!",
       "successVideoFileSelected": "Бейне файлы сәтті таңдалды",
       "successYouTubeVideoActivityCreated": "YouTube бейне белсенділігі сәтті жасалды!",
-      "supportedFormatsAndSize": "Қолдау көрсетілетін форматтар: MP4, MKV, WebM • Макс өлшем: 1000МБ",
+      "supportedFormatsAndSize": "Қолдау көрсетілетін форматтар: MP4, MKV, WebM • Макс өлшем: {size} МБ",
       "timingControls": "Уақытты басқару",
       "uploadVideo": "Бейнені жүктеу",
       "validYouTubeUrl": "Жарамды YouTube сілтемесі",
@@ -3555,7 +3554,9 @@
           "titleWithQuery": "«{query}» сұранысы бойынша ештеңе табылмады",
           "title": "Бұл бетте сәйкес курс табылмады",
           "withQuery": "Іздеуді немесе сүзгіні өзгертіңіз.",
-          "withoutQuery": "Курс жасаңыз немесе ағымдағы сүзгіні кеңейтіңіз."
+          "withoutQuery": "Курс жасаңыз немесе ағымдағы сүзгіні кеңейтіңіз.",
+          "titleWithPreset": "Бұл бөлімде әзірге курс жоқ",
+          "withPreset": "Басқа сүзгіні таңдаңыз немесе «Барлығы» бөлімін ашыңыз."
         },
         "errors": {
           "cannotDeleteSelection": "Таңдалған курстарды жою мүмкін емес.",
@@ -3660,7 +3661,8 @@
         },
         "card": {
           "previewAsLearner": "Студент ретінде қарау"
-        }
+        },
+        "resultsSummaryWithPreset": "«{preset}» бөлімінде: {total}, осы бетте {visible}."
       },
       "Overview": {
         "access": {
@@ -10420,7 +10422,8 @@
     "tagTooLong": "Тег 64 таңбадан аспауы керек",
     "tooManyTags": "20 тегтен артық болмауы керек",
     "sourceCourseRequired": "Бастапқы курсты таңдаңыз",
-    "learningsInvalid": "Оқу нәтижелерінің пішімі қате"
+    "learningsInvalid": "Оқу нәтижелерінің пішімі қате",
+    "instructionsRequired": "Нұсқаулар қажет"
   },
   "activity": "Белсенділік",
   "additionalSettings": "Қосымша параметрлер",

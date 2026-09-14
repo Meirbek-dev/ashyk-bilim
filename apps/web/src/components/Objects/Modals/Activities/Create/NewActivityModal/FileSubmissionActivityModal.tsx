@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Field, FieldContent, FieldLabel } from '@/components/ui/field'
+import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { CalendarDatePicker } from '@/components/ui/calendar'
 import { courseKeys } from '@/hooks/courses/courseKeys'
@@ -92,6 +92,8 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
   const [maxSize, setMaxSize] = useState<number | ''>(25)
   const [selectedMimes, setSelectedMimes] = useState<string[]>(() => MIME_PRESETS.flatMap(preset => preset.mimes))
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // `Validation.*` keys, rendered inline by `FieldError` (UX-084).
+  const [errors, setErrors] = useState<{ title?: string; instructions?: string }>({})
 
   const ALL_MIMES = MIME_PRESETS.flatMap(preset => preset.mimes)
   const allMimesSelected = ALL_MIMES.every(mime => selectedMimes.includes(mime))
@@ -118,10 +120,12 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!title.trim() || isMarkdownStructurallyEmpty(instructions)) {
-      toast.error(t('requiredFields'))
-      return
+    const nextErrors = {
+      ...(title.trim() ? {} : { title: 'titleRequired' }),
+      ...(isMarkdownStructurallyEmpty(instructions) ? { instructions: 'instructionsRequired' } : {}),
     }
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
     setIsSubmitting(true)
     try {
       await createFileSubmissionActivity({
@@ -152,8 +156,14 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       <Field>
         <FieldLabel htmlFor="file-submission-title">{t('title')}</FieldLabel>
         <FieldContent>
-          <Input id="file-submission-title" value={title} onChange={event => setTitle(event.target.value)} />
+          <Input
+            id="file-submission-title"
+            value={title}
+            aria-invalid={errors.title ? true : undefined}
+            onChange={event => setTitle(event.target.value)}
+          />
         </FieldContent>
+        <FieldError errors={[errors.title ? { message: errors.title } : undefined]} />
       </Field>
 
       <Field>
@@ -167,6 +177,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
             required
           />
         </FieldContent>
+        <FieldError errors={[errors.instructions ? { message: errors.instructions } : undefined]} />
       </Field>
 
       <div className="grid gap-3 sm:grid-cols-3">

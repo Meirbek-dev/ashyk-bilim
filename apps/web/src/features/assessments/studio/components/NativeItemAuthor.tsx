@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChartColumn, PanelLeft, Send, Settings2, UsersRound } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { apiJson } from '@/lib/api-client'
 import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
 import { toUnix } from '@/lib/api/contract'
+import { courseKeys } from '@/hooks/courses/courseKeys'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useAssessmentStudioContext } from '../context'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import {
@@ -263,6 +266,7 @@ export function NativeItemAuthor({
     [assessment.assessment_uuid, displayItemNoun, refresh, t],
   )
 
+  const queryClient = useQueryClient()
   const setLifecycle = useCallback(
     async (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => {
       try {
@@ -276,12 +280,21 @@ export function NativeItemAuthor({
           }),
         })
         await refresh()
+        // The transition (un)publishes the activity: the learner-facing
+        // outline, the curriculum and the course readiness verdict move (UX-085).
+        if (assessment.course_uuid) {
+          const courseUuid = assessment.course_uuid.replace(/^course_/, '')
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: courseKeys.structure(courseUuid).slice(0, 3) }),
+            queryClient.invalidateQueries({ queryKey: queryKeys.courses.readiness(courseUuid) }),
+          ])
+        }
         toast.success(tStudio('lifecycleChanged', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'))
       }
     },
-    [assessment.assessment_uuid, refresh, t, tStudio],
+    [assessment.assessment_uuid, assessment.course_uuid, queryClient, refresh, t, tStudio],
   )
 
   const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue)

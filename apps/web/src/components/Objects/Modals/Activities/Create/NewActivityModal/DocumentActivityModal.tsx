@@ -9,9 +9,12 @@ import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
 import { useRef } from 'react'
 import * as v from 'valibot'
+import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
 
 const SUPPORTED_FILES = constructAcceptValue(['pdf'])
-const MAX_PDF_FILE_SIZE = 100 * 1024 * 1024
+// The server's `block-pdf` policy (UX-084).
+const MAX_PDF_FILE_SIZE = UPLOAD_MAX_BYTES['block-pdf']
+const MAX_PDF_MB = uploadMaxMb('block-pdf')
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
@@ -89,7 +92,7 @@ function DocumentPdfModal({ submitFileActivity, chapterId }: AppActivityModalPro
                     if (nextFile.size > MAX_PDF_FILE_SIZE) {
                       form.setError('file', {
                         type: 'manual',
-                        message: t('fileTooLarge'),
+                        message: t('fileTooLarge', { size: MAX_PDF_MB }),
                       })
                       e.target.value = ''
                       onChange(undefined)
@@ -116,7 +119,7 @@ function DocumentPdfModal({ submitFileActivity, chapterId }: AppActivityModalPro
                     {value ? value.name : t('noFileSelected')}
                   </span>
                 </div>
-                <p className="text-muted-foreground mt-2 text-xs">{t('supportedFormats')}</p>
+                <p className="text-muted-foreground mt-2 text-xs">{t('supportedFormats', { size: MAX_PDF_MB })}</p>
               </div>
             </FieldContent>
             <FieldError errors={[fieldState.error]} />

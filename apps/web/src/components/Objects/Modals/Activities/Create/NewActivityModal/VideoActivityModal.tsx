@@ -14,10 +14,12 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { usePlatform } from '@/components/Contexts/PlatformContext'
+import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
 import { VideoSettingsForm } from './components/VideoSettingsForm'
 import type { SubtitleFile } from './components/SubtitleManager'
 
 const SUPPORTED_VIDEO_FILES = constructAcceptValue(['mp4', 'mkv', 'webm', 'mov', 'avi', 'flv'])
+const MAX_VIDEO_MB = uploadMaxMb('block-video')
 
 interface VideoDetails {
   startTime: number
@@ -110,9 +112,9 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
   const handleVideoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
-      // Validate file size (max 1000MB)
-      if (selectedFile.size > 1000 * 1024 * 1024) {
-        toast.error(t('errorFileSizeLimit'))
+      // The server's `block-video` policy (UX-084).
+      if (selectedFile.size > UPLOAD_MAX_BYTES['block-video']) {
+        toast.error(t('errorFileSizeLimit', { size: MAX_VIDEO_MB }))
         return
       }
 
@@ -339,7 +341,9 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
                     <Upload size={22} className="text-gray-300" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">{t('chooseVideoFile')}</p>
-                      <p className="mt-0.5 text-xs text-gray-400">{t('supportedFormatsAndSize')}</p>
+                      <p className="mt-0.5 text-xs text-gray-400">
+                        {t('supportedFormatsAndSize', { size: MAX_VIDEO_MB })}
+                      </p>
                     </div>
                   </Label>
                 )}

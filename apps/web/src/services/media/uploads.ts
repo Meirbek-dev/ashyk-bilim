@@ -12,7 +12,10 @@
 import { apiJson } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
 import { CreatedUpload, FinalizedUpload } from '@/lib/api/generated/zod'
-import type { CreatedUpload as CreatedUploadType, FinalizedUpload as FinalizedUploadType } from '@/lib/api/generated/zod'
+import type {
+  CreatedUpload as CreatedUploadType,
+  FinalizedUpload as FinalizedUploadType,
+} from '@/lib/api/generated/zod'
 
 export type UploadPurpose =
   | 'avatar'
@@ -23,6 +26,22 @@ export type UploadPurpose =
   | 'block-pdf'
   | 'block-video'
   | 'file-submission'
+
+const MB = 1024 * 1024
+
+/** The server's upload policies (`files/uploads.rs::policy`) — validate before `POST /uploads` 422s. */
+export const UPLOAD_MAX_BYTES: Record<UploadPurpose, number> = {
+  avatar: 5 * MB,
+  'course-thumbnail': 10 * MB,
+  'platform-logo': 10 * MB,
+  'platform-thumbnail': 10 * MB,
+  'block-image': 10 * MB,
+  'block-pdf': 50 * MB,
+  'block-video': 500 * MB,
+  'file-submission': 100 * MB,
+}
+
+export const uploadMaxMb = (purpose: UploadPurpose) => UPLOAD_MAX_BYTES[purpose] / MB
 
 export interface UploadProgress {
   uploadedBytes: number

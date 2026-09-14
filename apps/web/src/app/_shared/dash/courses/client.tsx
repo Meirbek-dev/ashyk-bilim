@@ -108,6 +108,10 @@ function CoursesHome({
   const totalPages = Math.max(1, Math.ceil(totalCourses / pageSize))
   const hasPagination = totalPages > 1
   const hasQuery = searchQuery.length > 0
+  // A preset scopes `totalCourses` like a query does (UX-086): its empty
+  // state names the section instead of «всего 0 / Создать первый курс».
+  const hasPreset = preset !== 'all'
+  const presetLabel = t(`presets.${preset}`)
 
   const updateRoute = (updates: Record<string, string | null>) => {
     const nextParams = new URLSearchParams(searchParams.toString())
@@ -631,9 +635,10 @@ function CoursesHome({
           </div>
 
           <div className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">
-            {t(hasQuery ? 'resultsSummaryWithQuery' : 'resultsSummary', {
+            {t(hasQuery ? 'resultsSummaryWithQuery' : hasPreset ? 'resultsSummaryWithPreset' : 'resultsSummary', {
               visible: optimisticCourses.length,
               total: totalCourses,
+              preset: presetLabel,
             })}
           </div>
         </div>
@@ -644,12 +649,16 @@ function CoursesHome({
             <div className="flex items-center justify-center">
               <div className="max-w-sm space-y-4 px-4 text-center">
                 <h2 className="text-foreground text-xl font-bold">
-                  {hasQuery ? t('empty.titleWithQuery', { query: searchQuery }) : t('empty.title')}
+                  {hasQuery
+                    ? t('empty.titleWithQuery', { query: searchQuery })
+                    : hasPreset
+                      ? t('empty.titleWithPreset')
+                      : t('empty.title')}
                 </h2>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  {hasQuery ? t('empty.withQuery') : t('empty.withoutQuery')}
+                  {hasQuery ? t('empty.withQuery') : hasPreset ? t('empty.withPreset') : t('empty.withoutQuery')}
                 </p>
-                {canCreateCourse && !hasQuery ? (
+                {canCreateCourse && !hasQuery && !hasPreset ? (
                   <div className="flex justify-center pt-2">
                     <Button
                       size="sm"
