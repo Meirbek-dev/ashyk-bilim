@@ -43,7 +43,6 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
   const [fullscreenRequestFailed, setFullscreenRequestFailed] = useState(false)
   const [fullscreenError, setFullscreenError] = useState<string | null>(null)
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
-  const [securityCountdown, setSecurityCountdown] = useState<number | null>(null)
 
   const fullscreenEnteredRef = useRef(false)
   const violationCountRef = useRef(violationCount)
@@ -51,7 +50,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
   const onThresholdReachedRef = useRef(options.onThresholdReached)
   const onExpireRef = useRef(options.timer?.onExpire)
   const expiredRef = useRef(false)
-  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const forfeitedRef = useRef(false)
 
   const [prevInitialViolationCount, setPrevInitialViolationCount] = useState(options.initialViolationCount)
   if (options.initialViolationCount !== prevInitialViolationCount) {
@@ -81,74 +80,18 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
       setViolationCount(nextCount)
       void onViolationRef.current?.(type, nextCount)
 
+      // UX-087: the server zeroes any submit at or past the threshold
+      // (`violation_exceeded`), so there is nothing to forgive — the attempt
+      // is forfeited and handed in at once, once.
       const threshold = antiCheat.violationThreshold
-      if (threshold && nextCount >= threshold) {
-        // Trigger countdown warning instead of immediate auto-submit
-        setSecurityCountdown(10)
+      if (threshold && nextCount >= threshold && !forfeitedRef.current) {
+        forfeitedRef.current = true
+        toast.error(t('violationThresholdForfeited', { count: nextCount }))
+        onThresholdReachedRef.current?.('SECURITY_LIMIT_EXCEEDED', nextCount)
       }
     },
-    [antiCheat.violationThreshold],
+    [antiCheat.violationThreshold, t],
   )
-
-  // Monitor security countdown and trigger auto-submit on completion
-  useEffect(() => {
-    if (securityCountdown === null) {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current)
-        countdownIntervalRef.current = null
-      }
-      return
-    }
-
-    if (securityCountdown <= 0) {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current)
-        countdownIntervalRef.current = null
-      }
-      onThresholdReachedRef.current?.('SECURITY_LIMIT_EXCEEDED', violationCountRef.current)
-      queueMicrotask(() => {
-        setSecurityCountdown(null)
-      })
-      return
-    }
-
-    if (!countdownIntervalRef.current) {
-      countdownIntervalRef.current = setInterval(() => {
-        setSecurityCountdown(prev => (prev !== null ? prev - 1 : null))
-      }, 1000)
-    }
-
-    return undefined
-  }, [securityCountdown])
-
-  // Forgiving: cancel countdown when focus and fullscreen are restored
-  useEffect(() => {
-    if (securityCountdown === null) return
-
-    const checkCompliance = () => {
-      const isFocused = document.hasFocus()
-      const inFullscreen = Boolean(getFullscreenElement())
-      const needsFullscreen = antiCheat.fullscreenEnforced
-
-      if (isFocused && (!needsFullscreen || inFullscreen)) {
-        setSecurityCountdown(null)
-        toast.success(t('focusRestoredResume'))
-      }
-    }
-
-    window.addEventListener('focus', checkCompliance)
-    document.addEventListener('fullscreenchange', checkCompliance)
-    document.addEventListener('webkitfullscreenchange', checkCompliance)
-
-    // Initial check
-    checkCompliance()
-
-    return () => {
-      window.removeEventListener('focus', checkCompliance)
-      document.removeEventListener('fullscreenchange', checkCompliance)
-      document.removeEventListener('webkitfullscreenchange', checkCompliance)
-    }
-  }, [securityCountdown, antiCheat.fullscreenEnforced, getFullscreenElement, t])
 
   useTestGuard({
     enabled,
@@ -303,7 +246,6 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
     fullscreenGateOpen,
     fullscreenError,
     remainingSeconds,
-    securityCountdown,
     requestFullscreen,
   }
 }

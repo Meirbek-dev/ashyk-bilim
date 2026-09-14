@@ -473,6 +473,30 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     return () => globalThis.removeEventListener('online', handleOnline)
   }, [save, saveState])
 
+  // UX-090: answers typed inside the 5 s throttle window must not die with
+  // the page. On unload / route change, send the pending draft straight
+  // away (`keepalive` outlives the document); the server's own 5 s window
+  // may still 429 it — the unsaved-changes guard is the learner's warning.
+  const dirtyRef = useRef(false)
+  dirtyRef.current = saveState === 'dirty' || pendingAnswersRef.current !== null
+  const flushPending = useCallback(() => {
+    if (!dirtyRef.current || !submissionIdRef.current || draftVersionRef.current === undefined) return
+    if (nextSaveTimeoutRef.current) clearTimeout(nextSaveTimeoutRef.current)
+    nextSaveTimeoutRef.current = null
+    pendingAnswersRef.current = null
+    dirtyRef.current = false
+    void saveAssessmentDraft(submissionIdRef.current, draftVersionRef.current, localAnswersRef.current, {
+      keepalive: true,
+    }).catch(() => undefined)
+  }, [])
+  useEffect(() => {
+    globalThis.addEventListener('pagehide', flushPending)
+    return () => {
+      globalThis.removeEventListener('pagehide', flushPending)
+      flushPending()
+    }
+  }, [flushPending])
+
   return useMemo(
     () => ({
       answers: localAnswers,

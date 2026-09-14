@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import FileSubmissionWorkspace from '@/features/file-submissions/student/FileSubmissionWorkspace'
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
 
-const mocks = vi.hoisted(() => ({ getActivity: vi.fn(), submit: vi.fn(), refresh: vi.fn() }))
+const mocks = vi.hoisted(() => ({ getActivity: vi.fn(), submit: vi.fn(), start: vi.fn(), refresh: vi.fn(), apiJson: vi.fn() }))
 
 vi.mock('next-intl', () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
@@ -17,7 +17,8 @@ vi.mock('next-intl', () => ({
 }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh, push: vi.fn() }) }))
 vi.mock('@components/ui/AppLink', () => ({ default: (props: React.ComponentProps<'a'>) => <a {...props} /> }))
-vi.mock('@/hooks/useSession', () => ({ useSession: () => ({ can: () => false }) }))
+vi.mock('@/hooks/useSession', () => ({ useSession: () => ({ can: () => false, user: { id: 'u-learner' } }) }))
+vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
 vi.mock('@/features/content-markdown', () => ({ MarkdownContent: () => null }))
 vi.mock('@/hooks/useApiError', () => ({
   useApiError: () => ({ toastApiError: vi.fn(), handleApiError: () => ({ message: '', showRetry: false }) }),
@@ -26,6 +27,7 @@ vi.mock('@/features/file-submissions/services/file-submissions', async importOri
   ...(await importOriginal<typeof import('@/features/file-submissions/services/file-submissions')>()),
   getFileSubmissionByActivity: (...args: unknown[]) => mocks.getActivity(...args),
   submitFileSubmission: (...args: unknown[]) => mocks.submit(...args),
+  startFileSubmissionDraft: (...args: unknown[]) => mocks.start(...args),
 }))
 
 const draft = {
@@ -51,7 +53,9 @@ const config = {
 beforeEach(() => {
   mocks.getActivity.mockReset().mockResolvedValue(config)
   mocks.submit.mockReset().mockResolvedValue({ ...draft, status: 'submitted' })
+  mocks.start.mockReset().mockResolvedValue({ ...draft, id: 'att-2', attempt_number: 2 })
   mocks.refresh.mockReset()
+  mocks.apiJson.mockReset().mockResolvedValue([])
 })
 
 describe('FileSubmissionWorkspace submit', () => {
@@ -70,5 +74,36 @@ describe('FileSubmissionWorkspace submit', () => {
     await waitFor(() => expect(mocks.submit).toHaveBeenCalledWith('fs-1', expect.any(Array), 1))
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['learner-course'] }))
     expect(mocks.refresh).toHaveBeenCalled()
+  })
+
+  // UX-089: a released attempt with attempts to spare offers the next one.
+  it('offers «Новая попытка» after a released grade while attempts remain', async () => {
+    const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
+    mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 2, current_attempt: published, attempts: [published] })
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <FileSubmissionWorkspace
+          activity={{ activity_uuid: 'activity_a1', activity_type: 'TYPE_FILE_SUBMISSION' } as Activity}
+          course={{ course_uuid: 'course_c1' } as CourseStructure}
+        />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(await screen.findByRole('button', { name: 'newAttempt' }))
+    await waitFor(() => expect(mocks.start).toHaveBeenCalledWith('fs-1'))
+  })
+
+  it('offers no new attempt once the cap is spent', async () => {
+    const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
+    mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 1, current_attempt: published, attempts: [published] })
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <FileSubmissionWorkspace
+          activity={{ activity_uuid: 'activity_a1', activity_type: 'TYPE_FILE_SUBMISSION' } as Activity}
+          course={{ course_uuid: 'course_c1' } as CourseStructure}
+        />
+      </QueryClientProvider>,
+    )
+    await screen.findByText('yourScore')
+    expect(screen.queryByRole('button', { name: 'newAttempt' })).toBeNull()
   })
 })

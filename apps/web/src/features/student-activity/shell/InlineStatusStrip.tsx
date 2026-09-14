@@ -124,7 +124,7 @@ function getStateChip(state: string, t: (key: string) => string): string | null 
     case 'not_started': {
       return t('notStarted')
     }
-    case 'draft': {
+    case 'in_progress': {
       return t('draft')
     }
     case 'submitted':

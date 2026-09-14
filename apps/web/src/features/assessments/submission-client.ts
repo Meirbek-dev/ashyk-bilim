@@ -33,10 +33,16 @@ export function startAssessmentSubmission(assessmentId: string) {
   return apiJson(`assessments/${AssessmentId.parse(assessmentId)}/submissions`, { method: 'POST' }, submissionFromWire)
 }
 
-export function saveAssessmentDraft(submissionId: string, version: number, answers: Record<string, ItemAnswer>) {
+export function saveAssessmentDraft(
+  submissionId: string,
+  version: number,
+  answers: Record<string, ItemAnswer>,
+  init?: { keepalive?: boolean },
+) {
   return apiJson(
     `submissions/${SubmissionId.parse(submissionId)}/draft`,
     {
+      ...init,
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...ifMatchHeaders(version) },
       body: JSON.stringify(SaveDraftRequest.parse({ answers: answersToWire(answers) })),

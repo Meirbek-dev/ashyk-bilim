@@ -999,7 +999,7 @@
       "courseName": "Название курса",
       "courseThumbnailAlt": "эскиз",
       "cryptographicallySecure": "ID сертификата защищен криптографически",
-      "differentOrganization": "Сертификат уже выдан",
+      "differentOrganization": "Сертификат выдан другой организацией",
       "downloadCertificate": "Скачать сертификат",
       "errorLoadingCertificate": "Ошибка при загрузке сертификата",
       "expiredCertificate": "Сертификат просрочен",
@@ -9417,11 +9417,6 @@
           "answered_short": "отв.",
           "resumedDraftDescription": "Последнее сохранение: {time}",
           "codeChallenge": "Задача по коду",
-          "securityViolationAlertTitle": "Обнаружено нарушение безопасности",
-          "securityViolationAlertDescription": "Пожалуйста, немедленно вернитесь в окно экзамена. Невыполнение этого требования приведет к автоматической отправке вашего экзамена.",
-          "secondsRemaining": "секунд осталось",
-          "reEnterFullscreen": "Вернуться в полноэкранный режим",
-          "clickBackToResume": "Вернитесь или сфокусируйтесь, чтобы продолжить.",
           "assessmentTitle": "Оценивание",
           "connectionLostTitle": "Подключение потеряно",
           "connectionLostDescription": "Пожалуйста, проверьте интернет-соединение. Ваш прогресс сохраняется локально и синхронизируется при восстановлении сети.",
@@ -9707,11 +9702,11 @@
       "latestAttemptScore": "Последняя попытка: {score}",
       "gradeNotYetReleased": "Оценка ещё не опубликована. Проверьте позже.",
       "retryAssessment": "Повторить учебную задачу",
-      "attemptCapNote": "Максимальный балл за эту попытку: {percent} %",
+      "attemptCapNote": "Максимальный балл за эту попытку: {percent}",
       "autoSubmittedTimeExpired": "Попытка завершена автоматически: время истекло.",
       "autoSubmittedViolation": "Попытка завершена автоматически из-за нарушений правил прохождения; балл обнулён.",
-      "latePenaltyApplied": "Штраф за опоздание: −{percent} %.",
-      "attemptCapApplied": "Максимальный балл за эту попытку: {percent} %.",
+      "latePenaltyApplied": "Штраф за опоздание: −{percent}.",
+      "attemptCapApplied": "Максимальный балл за эту попытку: {percent}.",
       "teacherFeedback": "Комментарий преподавателя",
       "nextActivity": "Следующая учебная задача",
       "breakdown": "Посмотреть ответы",
@@ -9735,7 +9730,6 @@
       "notConfiguredTitle": "Задание ещё не настроено",
       "notConfiguredDescription": "Преподаватель ещё не добавил условия этого задания. Загляните позже.",
       "openStudio": "Настроить в студии",
-      "focusRestoredResume": "Фокус и полноэкранный режим восстановлены. Экзамен продолжается.",
       "fullscreenUnsupported": "Полноэкранный режим не поддерживается в этом браузере.",
       "fullscreenRecommended": "Для этой попытки рекомендуется полноэкранный режим.",
       "fullscreenExited": "Выход из полноэкранного режима зафиксирован.",
@@ -9743,7 +9737,10 @@
       "submitFailed": "Не удалось отправить",
       "timeLimitMinutes": "{minutes} мин",
       "timeLimitHours": "{hours} ч",
-      "timeLimitHoursMinutes": "{hours} ч {minutes} мин"
+      "timeLimitHoursMinutes": "{hours} ч {minutes} мин",
+      "yourAnswer": "Ваш ответ",
+      "correctAnswer": "Правильный ответ",
+      "violationThresholdForfeited": "Порог нарушений достигнут ({count}): попытка аннулирована и отправлена с нулевым баллом."
     }
   },
   "Themes": {
@@ -10441,7 +10438,8 @@
       "graded": "Проверено",
       "published": "Опубликовано",
       "returned": "Возвращено"
-    }
+    },
+    "newAttempt": "Новая попытка ({number} из {max})"
   },
   "FileSubmissionReview": {
     "loadingSubmissions": "Загрузка отправок",
@@ -10786,7 +10784,16 @@
     "remediation": {
       "title": "Адаптивное исправление",
       "activeGate": "Режим барьера активен, пока учащийся не сдаст тест.",
-      "assigned": "Назначено исправление-практика."
+      "assigned": "Назначено исправление-практика.",
+      "open": "Пройти исправление",
+      "answer": "Ответ",
+      "revealAnswer": "Показать ответ",
+      "gotItRight": "Я ответил(а) верно",
+      "complete": "Завершить исправление",
+      "selfCheckNote": "Самопроверка: отметьте вопросы, на которые ответили верно. Проходной балл — {threshold}%.",
+      "completedPassed": "Исправление пройдено ({score}%). Попытка снова доступна.",
+      "completedFailed": "Исправление не пройдено ({score}%). Повторите материал и попробуйте снова.",
+      "completeFailed": "Не удалось завершить исправление"
     },
     "budgetStatus": {
       "label": "Ежемесячный бюджет токенов ИИ",

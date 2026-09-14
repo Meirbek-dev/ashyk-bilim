@@ -543,12 +543,8 @@ function ExamTakingContent({
       policy,
       initialViolationCount: attempt.violation_count,
       onViolation: handleViolation,
+      // UX-087: the guard already told the learner the attempt is forfeited.
       onGuardAutoSubmit: () => {
-        toast.error(
-          t('autoSubmitting', {
-            reason: t('autoSubmittingReason.violationThresholdExceeded'),
-          }),
-        )
         void handleSubmit(true)
       },
       recovery: showRecoveryDialog

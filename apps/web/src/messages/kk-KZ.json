@@ -9427,11 +9427,6 @@
           "answered_short": "жауап",
           "resumedDraftDescription": "Соңғы сақталған уақыты: {time}",
           "codeChallenge": "Код оқу әрекетісы",
-          "securityViolationAlertTitle": "Қауіпсіздік бұзушылығы анықталды",
-          "securityViolationAlertDescription": "Тезірек емтихан терезесіне оралыңыз. Бұл талапты орындамау емтиханның автоматты түрде тапсырылуына әкеп соғады.",
-          "secondsRemaining": "секунд қалды",
-          "reEnterFullscreen": "Толық экранға қайта өту",
-          "clickBackToResume": "Жалғастыру үшін кері басыңыз немесе терезеге фокустаңыз.",
           "assessmentTitle": "Бағалау",
           "connectionLostTitle": "Байланыс үзілді",
           "connectionLostDescription": "Интернет байланысын тексеріңіз. Прогресіңіз жергілікті түрде сақталып, желі қалпына келгенде синхрондалады.",
@@ -9878,11 +9873,11 @@
       "latestAttemptScore": "Соңғы әрекет: {score}",
       "gradeNotYetReleased": "Баға әлі жарияланған жоқ. Кейінірек тексеріңіз.",
       "retryAssessment": "Оқу әрекетін қайталау",
-      "attemptCapNote": "Бұл әрекет үшін ең жоғары балл: {percent} %",
+      "attemptCapNote": "Бұл әрекет үшін ең жоғары балл: {percent}",
       "autoSubmittedTimeExpired": "Әрекет автоматты түрде аяқталды: уақыт бітті.",
       "autoSubmittedViolation": "Әрекет өту ережелерін бұзғаны үшін автоматты түрде аяқталды; балл нөлге түсірілді.",
-      "latePenaltyApplied": "Кешігу айыппұлы: −{percent} %.",
-      "attemptCapApplied": "Осы әрекет үшін ең жоғары балл: {percent} %.",
+      "latePenaltyApplied": "Кешігу айыппұлы: −{percent}.",
+      "attemptCapApplied": "Осы әрекет үшін ең жоғары балл: {percent}.",
       "teacherFeedback": "Мұғалімнің пікірі",
       "nextActivity": "Келесі оқу әрекеті",
       "breakdown": "Жауаптарды қарау",
@@ -9906,7 +9901,6 @@
       "notConfiguredTitle": "Тапсырма әлі бапталмаған",
       "notConfiguredDescription": "Мұғалім бұл тапсырманың шарттарын әлі қоспаған. Кейінірек қайта кіріңіз.",
       "openStudio": "Студияда баптау",
-      "focusRestoredResume": "Фокус пен толық экран талаптары қалпына келтірілді. Емтихан жалғасады.",
       "fullscreenUnsupported": "Бұл браузерде толық экран режиміне қолдау жоқ.",
       "fullscreenRecommended": "Бұл әрекет үшін толық экран режимі ұсынылады.",
       "fullscreenExited": "Толық экран режимінен шығу тіркелді.",
@@ -9914,7 +9908,10 @@
       "submitFailed": "Тапсыру сәтсіз аяқталды",
       "timeLimitMinutes": "{minutes} мин",
       "timeLimitHours": "{hours} сағ",
-      "timeLimitHoursMinutes": "{hours} сағ {minutes} мин"
+      "timeLimitHoursMinutes": "{hours} сағ {minutes} мин",
+      "yourAnswer": "Сіздің жауабыңыз",
+      "correctAnswer": "Дұрыс жауап",
+      "violationThresholdForfeited": "Бұзушылық шегіне жетті ({count}): әрекет жойылып, нөл балмен жіберілді."
     }
   },
   "Themes": {
@@ -10611,7 +10608,8 @@
       "graded": "Бағаланды",
       "published": "Жарияланды",
       "returned": "Қайтарылды"
-    }
+    },
+    "newAttempt": "Жаңа әрекет ({number} / {max})"
   },
   "FileSubmissionReview": {
     "loadingSubmissions": "Тапсырылған файлдарды жүктеу",
@@ -10956,7 +10954,16 @@
     "remediation": {
       "title": "Бейімделген түзету жұмысы",
       "activeGate": "Оқушы өткенге дейін шектеу режимі белсенді.",
-      "assigned": "Жаттығу түзету жұмысы тағайындалды."
+      "assigned": "Жаттығу түзету жұмысы тағайындалды.",
+      "open": "Түзетуден өту",
+      "answer": "Жауап",
+      "revealAnswer": "Жауапты көрсету",
+      "gotItRight": "Мен дұрыс жауап бердім",
+      "complete": "Түзетуді аяқтау",
+      "selfCheckNote": "Өзін-өзі тексеру: дұрыс жауап берген сұрақтарды белгілеңіз. Өту балы — {threshold}%.",
+      "completedPassed": "Түзету өтілді ({score}%). Әрекет қайта қолжетімді.",
+      "completedFailed": "Түзету өтілмеді ({score}%). Материалды қайталап, қайта көріңіз.",
+      "completeFailed": "Түзетуді аяқтау мүмкін болмады"
     },
     "budgetStatus": {
       "label": "ЖИ айлық токен бюджеті",

@@ -19,6 +19,7 @@ const vm = {
   isReturnedForRevision: false,
   canStartRevision: false,
   canSubmit: true,
+  disabledActionReasons: [],
   passingScore: 60,
   score: { percent: 0, source: 'final' },
   startedAt: null,

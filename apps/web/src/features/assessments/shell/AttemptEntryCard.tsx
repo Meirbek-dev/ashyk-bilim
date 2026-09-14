@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
 import { useTimeLimitLabel } from '@/features/assessments/shared/useTimeLimitLabel'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
+import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
@@ -28,6 +30,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
   const tKinds = useTranslations('Features.Assessments.Studio.kinds')
   const tReasons = useTranslations('AttemptActions.blockedReasons')
   const formatTimeLimit = useTimeLimitLabel()
+  const percent = usePercentFormat()
 
   const { recommendedAction, policy, items } = vm
   const isBlocked = recommendedAction === 'blocked'
@@ -49,11 +52,15 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
           <Lock className="text-destructive size-8" />
         </div>
         <h2 className="text-xl font-semibold tracking-tight">{vm.title}</h2>
-        <p className="text-muted-foreground max-w-md text-sm">
-          {vm.disabledActionReasons.find((r) => tReasons.has(r))
-            ? tReasons(vm.disabledActionReasons.find((r) => tReasons.has(r)) as never)
-            : t('assessmentBlocked')}
-        </p>
+        {vm.disabledActionReasons.includes(REMEDIATION_REQUIRED) ? (
+          <RemediationGate activityId={vm.activityUuid} />
+        ) : (
+          <p className="text-muted-foreground max-w-md text-sm">
+            {vm.disabledActionReasons.find((r) => tReasons.has(r))
+              ? tReasons(vm.disabledActionReasons.find((r) => tReasons.has(r)) as never)
+              : t('assessmentBlocked')}
+          </p>
+        )}
       </div>
     )
   }
@@ -164,7 +171,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
                 </p>
                 {typeof vm.nextAttemptCapPercent === 'number' ? (
                   <p className="text-muted-foreground mt-1 text-sm">
-                    {t('attemptCapNote', { percent: vm.nextAttemptCapPercent })}
+                    {t('attemptCapNote', { percent: percent(vm.nextAttemptCapPercent) })}
                   </p>
                 ) : null}
               </>

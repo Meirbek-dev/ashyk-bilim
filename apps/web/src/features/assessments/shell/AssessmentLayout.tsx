@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import { useTranslations } from 'next-intl'
-import { AlertTriangle, LoaderCircle, Maximize2, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, LoaderCircle, Maximize2 } from 'lucide-react'
 
 import {
   AlertDialog,
@@ -24,6 +24,7 @@ import { useAssessmentAttempt as useAssessmentAttemptData } from '@/features/ass
 import { loadKindModule } from '@/features/assessments/registry'
 import type { KindModule } from '@/features/assessments/registry'
 import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptGuard'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 
 import { AssessmentChrome } from './AssessmentChrome'
 import { ActionBarContext, AssessmentActionBar, resolvePrimaryButtonLabelKey, useActionBarState } from './AssessmentActionBar'
@@ -109,6 +110,11 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
     ...(controls.onGuardAutoSubmit === undefined ? {} : { onThresholdReached: controls.onGuardAutoSubmit }),
   })
 
+  // UX-090: every attempt surface warns before leaving with unsaved answers
+  // (the draft autosave throttles to 5 s; a back-navigation inside that
+  // window used to lose the essay).
+  const unsavedGuard = useUnsavedChangesGuard(controls.saveState === 'unsaved', { interceptInAppNavigation: true })
+
   // ── Kind component ─────────────────────────────────────────────────────────
 
   const AttemptContent = kindModule
@@ -170,54 +176,15 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
         />
         <RecoveryDialog recovery={controls.recovery ?? null} />
         <ConflictDialog conflict={controls.conflict ?? null} />
+        <UnsavedDialog guard={unsavedGuard} />
       </ActionBarContext.Provider>
     )
   }
 
   return (
     <ActionBarContext.Provider value={contextValue}>
-      {/* ── Security countdown overlay ────────────────────────────────── */}
-      {guard.securityCountdown !== null ? (
-        <div className="bg-destructive/95 animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 text-white backdrop-blur-md">
-          <div className="bg-card text-card-foreground border-destructive/50 w-full max-w-md rounded-lg border p-6 shadow-2xl">
-            <div className="text-destructive flex items-center gap-3 text-lg font-semibold">
-              <ShieldAlert className="size-6 animate-pulse" />
-              {t('securityViolationAlertTitle', {
-                defaultValue: 'Security Violation Detected',
-              })}
-            </div>
-            <p className="text-muted-foreground mt-3 text-sm">
-              {t('securityViolationAlertDescription', {
-                defaultValue:
-                  'Please return focus to the exam window immediately. Failure to comply will result in automatic submission of your exam.',
-              })}
-            </p>
-            <div className="my-6 flex flex-col items-center justify-center gap-2">
-              <span className="text-destructive animate-pulse text-6xl font-extrabold tracking-tighter tabular-nums">
-                {guard.securityCountdown}
-              </span>
-              <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                {t('secondsRemaining', { defaultValue: 'seconds remaining' })}
-              </span>
-            </div>
-            {policy?.antiCheat.fullscreenEnforced && !guard.isFullscreen ? (
-              <Button type="button" variant="destructive" className="mt-2 w-full" onClick={guard.requestFullscreen}>
-                <Maximize2 className="size-4" />
-                {t('reEnterFullscreen', { defaultValue: 'Re-enter Fullscreen' })}
-              </Button>
-            ) : (
-              <p className="text-muted-foreground animate-pulse text-center text-xs">
-                {t('clickBackToResume', {
-                  defaultValue: 'Click back or refocus to resume.',
-                })}
-              </p>
-            )}
-          </div>
-        </div>
-      ) : null}
-
       {/* ── Fullscreen gate ─────────────────────────────────────────────── */}
-      {guard.fullscreenGateOpen && guard.securityCountdown === null ? (
+      {guard.fullscreenGateOpen ? (
         <div className="bg-background/95 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-card w-full max-w-md rounded-lg border p-6 shadow-lg">
             <div className="flex items-center gap-3 text-lg font-semibold">
@@ -262,9 +229,9 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
             </Alert>
           ) : null}
 
-          <main className="min-h-[420px]">
+          <section className="min-h-[420px]">
             <AttemptContent activityUuid={vm.activityUuid} courseUuid={courseUuid} vm={vm} />
-          </main>
+          </section>
         </div>
 
         <AssessmentActionBar
@@ -277,7 +244,31 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
       {/* ── Recovery dialog (driven by kind controls) ───────────────────── */}
       <RecoveryDialog recovery={controls.recovery ?? null} />
       <ConflictDialog conflict={controls.conflict ?? null} />
+      <UnsavedDialog guard={unsavedGuard} />
     </ActionBarContext.Provider>
+  )
+}
+
+function UnsavedDialog({ guard }: { guard: ReturnType<typeof useUnsavedChangesGuard> }) {
+  const tCommon = useTranslations('Common')
+  return (
+    <AlertDialog open={guard.isPromptOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogMedia>
+            <AlertTriangle className="size-6 text-orange-500" />
+          </AlertDialogMedia>
+          <AlertDialogTitle>{tCommon('unsavedChanges')}</AlertDialogTitle>
+          <AlertDialogDescription>{guard.promptMessage}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={guard.cancelNavigation}>{tCommon('cancel')}</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" onClick={guard.confirmNavigation}>
+            {tCommon('discard')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 

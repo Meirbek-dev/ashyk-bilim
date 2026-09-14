@@ -28,6 +28,7 @@ const vm = {
   isReturnedForRevision: false,
   canStartRevision: false,
   canSubmit: false,
+  disabledActionReasons: [],
   score: { percent: 66.67, source: 'final' },
   startedAt: '2026-09-11T18:04:39.000Z',
   policy: DEFAULT_POLICY_VIEW,
@@ -79,7 +80,7 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
         <AttemptResultCard vm={{ ...vm, canSubmit: true, nextAttemptCapPercent: 80 }} onRetry={() => undefined} />
       </NextIntlClientProvider>,
     )
-    expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Максимальный балл за эту попытку: 80 %')
+    expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Максимальный балл за эту попытку: 80%')
   })
 
   // UX-060 / UX-063: a 48 % beside a full breakdown says why (late penalty,
@@ -101,8 +102,9 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     )
     const notes = screen.getByTestId('score-adjustments')
     expect(notes).toHaveTextContent('время истекло')
-    expect(notes).toHaveTextContent('Штраф за опоздание: −20 %')
-    expect(notes).toHaveTextContent('Максимальный балл за эту попытку: 80 %')
+    // UX-088: one percent format on the card («83,33%» beside «80%», never «80 %»).
+    expect(notes).toHaveTextContent('Штраф за опоздание: −20%')
+    expect(notes).toHaveTextContent('Максимальный балл за эту попытку: 80%')
     expect(screen.getByTestId('general-feedback')).toHaveTextContent('Хорошо, но коротко')
   })
 
@@ -116,5 +118,47 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     )
     expect(screen.queryByTestId('score-adjustments')).toBeNull()
     expect(screen.queryByTestId('general-feedback')).toBeNull()
+  })
+
+  // UX-088: under `review_visibility: full` the wire carries the learner's
+  // answer and the key — the review prints them per kind.
+  it('renders user and correct answers per item under full review', () => {
+    const items = [
+      {
+        ...vm.items[0],
+        body: {
+          kind: 'CHOICE',
+          prompt: 'Столица?',
+          multiple: false,
+          options: [
+            { id: 'a', text: 'Астана', is_correct: true },
+            { id: 'b', text: 'Алматы', is_correct: false },
+          ],
+        },
+      },
+      { ...vm.items[1], body: { kind: 'MATCHING', prompt: '', pairs: [] } },
+      { ...vm.items[2], body: { kind: 'OPEN_TEXT', prompt: '' } },
+    ]
+    const itemScores = {
+      [itemId]: { ...vm.itemScores[itemId], correct: false, user_answer: { kind: 'choice', selected: ['b'] }, correct_answer: ['a'] },
+      [matchingId]: {
+        ...vm.itemScores[matchingId],
+        user_answer: { kind: 'matching', matches: [{ left: 'KZ', right: 'Астана' }] },
+        correct_answer: [{ left: 'KZ', right: 'Астана' }, { left: 'RU', right: 'Москва' }],
+      },
+      [prose]: { ...vm.itemScores[prose], user_answer: { kind: 'open_text', text: 'Мой вывод' }, correct_answer: null },
+    }
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+        <AttemptResultCard vm={{ ...vm, items, itemScores } as unknown as AttemptViewModel} />
+      </NextIntlClientProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Посмотреть ответы' }))
+    expect(screen.getByTestId(`item-answer-${itemId}`)).toHaveTextContent('Ваш ответ: Алматы')
+    expect(screen.getByTestId(`item-correct-answer-${itemId}`)).toHaveTextContent('Правильный ответ: Астана')
+    expect(screen.getByTestId(`item-answer-${matchingId}`)).toHaveTextContent('KZ → Астана')
+    expect(screen.getByTestId(`item-correct-answer-${matchingId}`)).toHaveTextContent('RU → Москва')
+    expect(screen.getByTestId(`item-answer-${prose}`)).toHaveTextContent('Ваш ответ: Мой вывод')
+    expect(screen.queryByTestId(`item-correct-answer-${prose}`)).toBeNull()
   })
 })

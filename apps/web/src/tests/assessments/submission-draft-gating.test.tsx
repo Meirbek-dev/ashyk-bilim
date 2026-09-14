@@ -94,4 +94,22 @@ describe('draft query gating', () => {
       invalidation.mockRestore()
     }
   })
+
+  // UX-090: an answer typed inside the 5 s throttle window is sent on
+  // unmount (route change) and on `pagehide`, with `keepalive`.
+  it('flushes the pending draft on unmount instead of losing it', async () => {
+    vi.mocked(apiJson).mockImplementation(async (path, _init, parse) =>
+      parse!(String(path).endsWith('/me') ? [draft] : draft),
+    )
+    const { result, unmount } = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+    await waitFor(() => expect(result.current.draft?.submission_uuid).toBe(submissionId))
+    act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'эссе' }))
+    expect(result.current.saveState).toBe('dirty')
+    unmount()
+    const flush = vi.mocked(apiJson).mock.calls.find(call => String(call[0]) === `submissions/${submissionId}/draft`)
+    expect(flush?.[1]).toMatchObject({ method: 'PATCH', keepalive: true })
+    expect(JSON.parse(String(flush?.[1]?.body))).toEqual({
+      answers: { [itemId]: { kind: 'open_text', text: 'эссе' } },
+    })
+  })
 })

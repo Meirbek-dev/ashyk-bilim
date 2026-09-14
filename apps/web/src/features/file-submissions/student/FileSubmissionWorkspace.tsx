@@ -10,6 +10,7 @@ import {
   FileArchive,
   LoaderCircle,
   Paperclip,
+  RotateCcw,
   Send,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -58,6 +59,7 @@ import { MarkdownContent } from '@/features/content-markdown'
 import { getMimeCategories } from '@/features/file-submissions/mime-categories'
 import { useApiError } from '@/hooks/useApiError'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
+import { RemediationGate, useRemediationGate } from '@/features/remediation'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -169,6 +171,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
   const totalSelected = attachedFiles.length + pendingSlots.length
 
   const canEdit = !status || status === 'draft' || status === 'returned'
+  // BUG-140/152: an unpassed gate-mode remediation blocks the next attempt server-side.
+  const { session: remediationGate } = useRemediationGate(activityUuid)
 
   // Invalidate trail XP when grade is published so the progress bar updates
   useEffect(() => {
@@ -268,7 +272,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       setIsUploading(false)
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
       toast.success(submit ? t('submittedToast') : t('draftSavedToast'))
-      if (submit) await refreshLearnerCourseState(queryClient, router)
+      // The header badge follows the learner-state projection (UX-089): a draft is «in progress» too.
+      await refreshLearnerCourseState(queryClient, router)
     },
     onError: err => {
       setIsUploading(false)
@@ -416,11 +421,23 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
           })
         }
       : undefined
+    // UX-089: attempts left after a released grade → the learner may open the next one.
+    const attemptsLeft = status === 'published' && (!data.max_attempts || data.attempts.length < data.max_attempts)
 
     return (
       <div className="space-y-6">
         {showResult ? (
           <FileSubmissionResult attempt={activeAttempt} {...(handleRevise ? { onRevise: handleRevise } : {})} />
+        ) : null}
+        {remediationGate ? (
+          <RemediationGate activityId={activityUuid} />
+        ) : attemptsLeft ? (
+          <div className="mx-auto max-w-2xl">
+            <Button variant="outline" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
+              {startMutation.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+              {t('newAttempt', { number: data.attempts.length + 1, max: data.max_attempts ?? 0 })}
+            </Button>
+          </div>
         ) : null}
         {canRevise ? (
           <DraftEditor

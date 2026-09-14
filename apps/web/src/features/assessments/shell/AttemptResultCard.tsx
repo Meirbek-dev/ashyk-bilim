@@ -8,9 +8,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { localizeItemFeedback } from '@/features/grading/domain/status'
+import { answerLines } from '@/features/assessments/domain/answer-lines'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import type { LearnerCourseState } from '@/features/learner-course/api'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
+import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -133,15 +135,9 @@ export default function AttemptResultCard({
           {vm.autoSubmitReason ? (
             <li>{t(vm.autoSubmitReason === 'time_expired' ? 'autoSubmittedTimeExpired' : 'autoSubmittedViolation')}</li>
           ) : null}
-          {vm.latePenaltyPct !== null ? (
-            <li>
-              {t('latePenaltyApplied', { percent: format.number(vm.latePenaltyPct, { maximumFractionDigits: 2 }) })}
-            </li>
-          ) : null}
+          {vm.latePenaltyPct !== null ? <li>{t('latePenaltyApplied', { percent: percent(vm.latePenaltyPct) })}</li> : null}
           {vm.attemptCapPercent !== null ? (
-            <li>
-              {t('attemptCapApplied', { percent: format.number(vm.attemptCapPercent, { maximumFractionDigits: 2 }) })}
-            </li>
+            <li>{t('attemptCapApplied', { percent: percent(vm.attemptCapPercent) })}</li>
           ) : null}
         </ul>
       ) : null}
@@ -179,12 +175,28 @@ export default function AttemptResultCard({
                 // The auto-grader's verdict (localized from `feedback_code`) or
                 // the teacher's prose — the same text the teacher review shows.
                 const verdict = graded ? localizeItemFeedback(graded, tGrading) : ''
+                // UX-088: under `review_visibility: full` the wire carries the answers — print them.
+                const userAnswer = graded ? answerLines(item, graded.user_answer) : []
+                const correctAnswer = graded ? answerLines(item, graded.correct_answer) : []
                 return (
                   <div key={item.id} className="flex items-center justify-between px-4 py-2">
                     <span className="min-w-0 flex-1 pr-4">
                       <span className="text-muted-foreground line-clamp-2">
                         {i + 1}. {item.title}
                       </span>
+                      {userAnswer.length > 0 ? (
+                        <span className="mt-0.5 block text-xs whitespace-pre-wrap" data-testid={`item-answer-${item.id}`}>
+                          {t('yourAnswer')}: {userAnswer.join('; ')}
+                        </span>
+                      ) : null}
+                      {correctAnswer.length > 0 && graded?.correct !== true ? (
+                        <span
+                          className="text-muted-foreground mt-0.5 block text-xs whitespace-pre-wrap"
+                          data-testid={`item-correct-answer-${item.id}`}
+                        >
+                          {t('correctAnswer')}: {correctAnswer.join('; ')}
+                        </span>
+                      ) : null}
                       {verdict ? (
                         <span
                           className={cn(
@@ -233,10 +245,14 @@ export default function AttemptResultCard({
           </Button>
         ) : null}
       </div>
+      {/* BUG-152: a gate-mode remediation blocks the retake — say so and open it here. */}
+      {!canSubmit && vm.disabledActionReasons.includes(REMEDIATION_REQUIRED) ? (
+        <RemediationGate activityId={vm.activityUuid} />
+      ) : null}
       {/* UX-034: a capped retake says so before the learner spends the attempt. */}
       {canSubmit && onRetry && typeof vm.nextAttemptCapPercent === 'number' ? (
         <p className="text-muted-foreground mt-2 text-xs" data-testid="attempt-cap-note">
-          {t('attemptCapNote', { percent: format.number(vm.nextAttemptCapPercent, { maximumFractionDigits: 2 }) })}
+          {t('attemptCapNote', { percent: percent(vm.nextAttemptCapPercent) })}
         </p>
       ) : null}
     </div>
