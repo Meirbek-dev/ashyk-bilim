@@ -113,6 +113,9 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 - **Stack rebuilt a third time 2026-09-14 19:55** (machine restart; same recipe, ~5 min).
   Start Zitadel only after Postgres is up for a few seconds — with `--rm` a race on pg
   readiness makes the container vanish silently; start it without `--rm` so the log survives.
+- **First e2e run after a cold `next dev` start can time out on the studio autosave** (the
+  first studio compile eats the 15 s «Activity saved» wait) and the chained specs 04–07
+  then cascade; rerun the suite before calling it red.
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
@@ -178,7 +181,7 @@ Regenerate this survey with `scratchpad/drift.py`.
 
 | pass | date | features probed | bugs found/fixed | gate | commit |
 |---|---|---|---|---|---|
-| 12 | 2026-09-13 | **in progress** — second full sweep (every row is stale after the pass-11 fixes): same six clusters at scopes A+B+C, each critic also re-drives the pass-11 bug symptoms of its cluster and the cross-role seams (learner action → teacher sees it → learner sees the result, no reloads); one builder converts the pass-11 `branches.md` test tasks on grade/permission paths into nextests | — | — | — |
+| 12 | 2026-09-13/14 | **second full sweep** (all 56 rows stale after pass 11): six critics at A+B+C + cross-role seams (two contexts, no reload); 648 branches inventoried, every uncovered grade/permission branch now has a test; seven builder batches; three re-verifiers flipped every row. Stack rebuilt once more after a machine restart; owner bumped web deps (cf1ca67). | BUG-130..145 (16) found, all fixed; UX-050..077 (28) found, all fixed; BUG-014 closed | `just check` green, nextest **367/367**, web typecheck 0, vitest **737/737**, error-codes 34/34 ×3, e2e **93 passed / 2 skipped** (first run: one cold-compile autosave timeout cascading into 4 more; clean on rerun) | see pass 12 commits |
 | 11 | 2026-09-13 | **full sweep, scopes A+B+C on all 56 non-blocked rows** in six critic clusters (identity, learner course, learner assessments, teacher authoring, teacher grading/AI, analytics/admin): 621 server branches inventoried, 255 uncovered (97 on money/grade/permission/deadline paths → findings or test tasks in `critic11/*/branches.md`); 14 builder batches; four re-verifiers flipped every row (F14 stays blocked). Machine restart mid-pass: stack + accounts rebuilt. | BUG-092..129 (38) found, all fixed; UX-015..049 (35) found, all fixed; BUG-010 closed | `just check` green, nextest **347/347**, web typecheck 0, vitest **705/705**, error-codes 34/34 ×3, e2e **93 passed / 2 skipped**; CI green (34762406308) | d1f4092 |
 | 0 | 2026-09-10 | setup only: stack, accounts, ledger | — | — | e654349 |
 | 10 | 2026-09-13 | confirmation critic on the five pass-9 fails (R1–R10): all pass; two late gaps fixed (reporter learner-state 403, link-preview refetch on learner view) | BUG-089..090 fixed | e2e 92/2 skipped (07 string fixed), vitest 681/681, typecheck 0, error-codes 32/32; nextest 319/319, `just check` green | 0946a2a |
