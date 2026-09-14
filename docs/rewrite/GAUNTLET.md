@@ -206,8 +206,8 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 12 (reverify-A): verify without enrolment → 409; enrol/login/disable with confirm; focus back to the heading |
 | F03 | Google login intent | `/ru/auth/login` → `/api/v2/auth/google` | any | pass | pass 6: Google → `/api/v2/auth/google` → 303 with `?error=service-unavailable`; host-relative redirect is correct behind the production nginx (Q-2026-09-12-2 #10) |
 | F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 12 (reverify-A): revoke seen by the revoked context without reload; password change limited (5/15 min) and revokes the other session |
-| F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 12 (reverify-C): ru/kz/en unauthorized + 404 |
-| F06 | locale switch ru/kz/en | all routes | any | pass | pass 12 (reverify-C): locale switcher on every /dash screen keeps the query and syncs users/me |
+| F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 13 (reverify-C) |
+| F06 | locale switch ru/kz/en | all routes | any | pass | pass 13 (reverify-C): dash switcher client-side, query kept |
 | F07 | home / landing | `/[locale]` | learner | pass | pass 12 (reverify-A): nav, cards, contributor roster; completed cards |
 | F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 12 (reverify-A): enrol → sidebar 0/2→1/2 without reload; completed course → «Посмотреть итоги курса» |
 | F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 12 (reverify-A): teacher creates with inline field errors + focus; checkbox itself, Space and label all toggle (BUG-014); learner → /unauthorized by design (BUG-027) |
@@ -231,21 +231,21 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F27 | grading SSE live updates | gradebook / review | teacher | pass | pass 12 (reverify-B): cell update 589 ms |
 | F28 | work queue | `/dash/courses/[uuid]/review` | teacher | pass | pass 12 (reverify-B): dashboard queue refreshes on focus / 30 s |
 | F29 | course collaboration/access | `/dash/courses/[uuid]/collaboration` | teacher | pass | pass 12 (reverify-B): contributor removal confirms (AlertDialog) |
-| F30 | search | `/ru/search?q=` | any | pass | pass 12 (reverify-C): facets/empty/odd chars ru/kz/en |
-| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass | pass 12 (reverify-C): saved views deletable; unknown teacher_user_id → 422; localized 422 filter sentence |
-| F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 12 (reverify-C): empty funnel/health copy; bad params → not-found page |
-| F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 12 (reverify-C): badge from the latest measure, kk notes as codes, sort applied, authors excluded, idempotent interventions |
-| F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 12 (reverify-C): exports + 401/403 branches |
+| F30 | search | `/ru/search?q=` | any | pass | pass 13 (reverify-C) |
+| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass | pass 13 (reverify-C): sort controls only where honoured; saved views delete |
+| F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 13 (reverify-C): empty course copy; bad params → not-found |
+| F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 13 (reverify-C): at-risk/watchlist sort applied; interventions need enrolment; badge from latest measure |
+| F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 13 (reverify-C) |
 | F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | pass | pass 12 (reverify-B): ru Q&A draft state after the rebuild |
 | F36 | AI agent: lecture authoring critique | `/dash/courses/[uuid]` | teacher | pass | pass 12 (reverify-B): unknown suggestion id → 422; attestation before publishing the AI score |
 | F37 | AI agents: remaining 4 | assorted | teacher | pass | pass 12 (reverify-B): learner cannot self-assign a gate (403) |
-| F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 12 (reverify-C): «Отключить пользователя» / «Включить» in the settings list; disabled admin loses the role while another is active |
-| F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 12 (reverify-C): blank name → 422 inline (server + dialog trim); «Участники» live |
-| F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 12 (reverify-C): whitespace name inline |
+| F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 13 (reverify-C): localized role names, unchanged submit sends nothing, one tab stop |
+| F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 13 (reverify-C): course link needs write access (404/403), blank name inline |
+| F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 13 (reverify-C) |
 | F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 12 (reverify-A): created-cap counts only created accounts; signup ru/kz inline errors |
 | F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 12 (reverify-A): wrong current password → 429 after 5; policy/unchanged inline |
-| F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 12 (reverify-C): password-less account login → 401 |
-| F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 12 (reverify-C): role revoke drops the sidebar entries after one client nav (no reload) |
+| F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 13 (reverify-C) |
+| F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 13 (reverify-C): taken slug inline; blank display name → 422 (fixed after the re-drive) |
 | F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
 | F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 12 (reverify-A): presets/sort/search; «Ничего не найдено по запросу» |
 | F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 12 (reverify-A): pending row appears on focus, stale withdraw → «Заявка уже рассмотрена», self-delete without a row → 404, «Вы являетесь автором» links to the workspace |
@@ -256,8 +256,8 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 12 (reverify-B): PDFs per locale |
 | F53 | AI on file-submission attempts | file review page | teacher | pass | pass 12 (reverify-B): learner file page follows the publish without reload |
 | F54 | link preview block | lecture editor | teacher | pass | pass 11 (reverify-A): one request per URL (no retry, no refetch on reload), inline scheme validation, cancel leaves nothing |
-| F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 12 (reverify-C): sentences localized, zero non-dev console errors |
-| F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 12 (reverify-C): kz dates, no hydration messages |
+| F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 13 (reverify-C): teacher-filter 403 named |
+| F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 13 (reverify-C): one kz date style |
 | F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 10 R7: 200 with the public course cards; unknown user → localized not-found |
 
 ## Bugs
