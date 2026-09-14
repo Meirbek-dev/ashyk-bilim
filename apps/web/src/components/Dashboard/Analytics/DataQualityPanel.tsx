@@ -1,6 +1,7 @@
 'use client'
 
 import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,7 +52,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
             {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
             <div className="mt-2 text-sm font-medium" suppressHydrationWarning>
               {quality.last_rollup_time_unix != null
-                ? fromUnix(quality.last_rollup_time_unix).toLocaleString(locale)
+                ? formatDate(fromUnix(quality.last_rollup_time_unix), locale, DATE_TIME_OPTIONS)
                 : t('dataQualityPanel.liveQuery')}
             </div>
           </div>

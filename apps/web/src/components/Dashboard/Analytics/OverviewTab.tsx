@@ -1,6 +1,7 @@
 'use client'
 
 import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 
 import { Suspense, lazy } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -187,7 +188,9 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                         {getAnalyticsSeverityLabel(t, alert.severity)}
                       </Badge>
                       <div className="min-w-0 flex-1">
-                        <div className="text-foreground text-sm font-semibold">{getAnalyticsMessage(t, alert).title}</div>
+                        <div className="text-foreground text-sm font-semibold">
+                          {getAnalyticsMessage(t, alert).title}
+                        </div>
                         <div className="text-muted-foreground mt-1 text-xs leading-relaxed">
                           {getAnalyticsMessage(t, alert).body}
                         </div>
@@ -236,7 +239,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
               </div>
               {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
               <div className="text-foreground mt-2 truncate text-sm font-semibold" suppressHydrationWarning>
-                {fromUnix(data.generated_at_unix).toLocaleString(locale)}
+                {formatDate(fromUnix(data.generated_at_unix), locale, DATE_TIME_OPTIONS)}
               </div>
             </div>
             <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between rounded-md border px-4 py-3 transition-colors">

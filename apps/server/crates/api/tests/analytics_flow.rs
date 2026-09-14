@@ -893,6 +893,8 @@ async fn cohort_and_teacher_filters_are_gated(pool: PgPool) {
         "{}",
         other_teacher.text()
     );
+    // UX-096: the refused filter is named for the client.
+    assert_eq!(other_teacher.json()["details"]["filter"], "teacher_user_id");
 
     let ghost_cohort = uuid::Uuid::now_v7();
     let no_usergroup_read = app

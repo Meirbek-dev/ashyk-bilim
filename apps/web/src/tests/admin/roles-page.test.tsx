@@ -16,22 +16,45 @@ vi.mock('next-intl', () => ({
 }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 vi.mock('@/hooks/useSession', () => ({
-  useSession: () => ({ session: { roles: ['admin'], permissions: ['*:*:*'] }, user: { id: 'admin-id' }, can: () => true }),
+  useSession: () => ({
+    session: { roles: ['admin'], permissions: ['*:*:*'] },
+    user: { id: 'admin-id' },
+    can: () => true,
+  }),
 }))
 
 const listRoles = vi.fn()
 const setRolePermissions = vi.fn()
+const createRole = vi.fn()
 vi.mock('@/services/rbac', () => ({
   listRoles: () => listRoles(),
-  createRole: vi.fn(),
+  createRole: (...args: unknown[]) => createRole(...args),
   updateRole: vi.fn(),
   deleteRole: vi.fn(),
   setRolePermissions: (...args: unknown[]) => setRolePermissions(...args),
 }))
 
 const roles = [
-  { slug: 'admin', display_name_key: 'roles.admin.name', description_key: 'roles.admin.description', display_name: null, description: null, priority: 100, is_system: true, permissions: ['*:*:*'] },
-  { slug: 'ta', display_name_key: 'roles.ta.name', description_key: 'roles.ta.description', display_name: 'Teaching assistant', description: 'helps out', priority: 20, is_system: false, permissions: ['course:read:all'] },
+  {
+    slug: 'admin',
+    display_name_key: 'roles.admin.name',
+    description_key: 'roles.admin.description',
+    display_name: null,
+    description: null,
+    priority: 100,
+    is_system: true,
+    permissions: ['*:*:*'],
+  },
+  {
+    slug: 'ta',
+    display_name_key: 'roles.ta.name',
+    description_key: 'roles.ta.description',
+    display_name: 'Teaching assistant',
+    description: 'helps out',
+    priority: 20,
+    is_system: false,
+    permissions: ['course:read:all'],
+  },
 ]
 
 function renderPage() {
@@ -114,5 +137,25 @@ describe('/dash/admin/roles (v2 Role wire)', () => {
 
     expect(await within(dialog).findByText('rejectedGrant')).toBeInTheDocument()
     expect(within(dialog).getByText('course:read:all')).toHaveAttribute('title', 'rejectedGrant')
+  })
+
+  it('puts a taken slug on the slug field instead of a toast (UX-096)', async () => {
+    const user = userEvent.setup()
+    createRole.mockRejectedValue(new APIError({ status: 409, code: 'role-slug-taken', message: 'taken' }))
+    renderPage()
+    await screen.findByText('Teaching assistant')
+    await user.click(screen.getByRole('button', { name: 'createRole' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('fieldName'), 'Helper')
+    const slug = within(dialog).getByLabelText('fieldSlug')
+    await user.type(slug, 'ta')
+    await user.click(within(dialog).getByRole('button', { name: 'save' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('codes.role-slug-taken')
+    expect(slug).toHaveAttribute('aria-invalid', 'true')
+    const { toast } = await import('sonner')
+    expect(toast.error).not.toHaveBeenCalled()
+    await user.type(slug, '2')
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
   })
 })

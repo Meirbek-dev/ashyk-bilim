@@ -1,6 +1,7 @@
 'use client'
 
 import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 
 import { getAnalyticsCodeLabel, getAnalyticsReasonCodeLabel, getAnalyticsRiskLevelLabel } from '@/lib/analytics/labels'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,7 +28,7 @@ import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import type React from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { ClipboardList, MessageSquare, Route, UserCheck } from 'lucide-react'
 
@@ -428,6 +429,7 @@ function InterventionAuditLog({
   rows: TeacherInterventionRow[]
 }) {
   const t = useTranslations('TeacherAnalytics')
+  const locale = useLocale()
   return (
     <aside className="rounded-lg border p-3">
       <div className="mb-3 text-sm font-medium">{t('intervention.auditLog')}</div>
@@ -443,7 +445,9 @@ function InterventionAuditLog({
               <Badge variant={row.status === 'resolved' ? 'secondary' : 'outline'}>
                 {getAnalyticsCodeLabel(t, row.status)}
               </Badge>
-              <span className="text-muted-foreground text-xs">{formatAuditDate(row.created_at_unix)}</span>
+              <span className="text-muted-foreground text-xs">
+                {formatDate(fromUnix(row.created_at_unix), locale, DATE_TIME_OPTIONS)}
+              </span>
             </div>
             <div className="text-sm font-medium">{getAnalyticsCodeLabel(t, row.intervention_type)}</div>
             {row.outcome ? (
@@ -458,14 +462,4 @@ function InterventionAuditLog({
       </div>
     </aside>
   )
-}
-
-function formatAuditDate(value: number) {
-  const date = fromUnix(value)
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
 }

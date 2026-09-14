@@ -40,7 +40,7 @@ import { useSession } from '@/hooks/useSession'
 import type { Role } from '@/lib/api/generated/zod'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { createRole, deleteRole, setRolePermissions, updateRole } from '@/services/rbac'
-import { isApiError } from '@/lib/api/assertSuccess'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import { KNOWN_GRANTS, isKnownGrant } from '@/types/permissions'
 
 type RoleDraft = { slug: string; display_name: string; description: string; priority: number }
@@ -78,6 +78,7 @@ function rejectedGrants(error: unknown): string[] {
 
 export default function RBACAdminClient() {
   const t = useTranslations('Components.Roles')
+  const tErrors = useTranslations('Errors')
   const { can } = useSession()
   const canManage = can(Resources.ROLE, Actions.MANAGE, Scopes.APP)
   const { data, isPending, isError } = useRoles()
@@ -90,14 +91,29 @@ export default function RBACAdminClient() {
   const [editing, setEditing] = useState<Role | 'new' | null>(null)
   const [grantsFor, setGrantsFor] = useState<Role | null>(null)
   const [rejected, setRejected] = useState<string[]>([])
+  const [slugError, setSlugError] = useState<string | null>(null)
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null)
   const closeDialogs = () => {
     setEditing(null)
     setGrantsFor(null)
   }
 
-  const create = useRoleMutation((draft: RoleDraft) => createRole(draft), t('createdRole'), closeDialogs)
-  const update = useRoleMutation(({ slug, ...body }: RoleDraft) => updateRole(slug, body), t('updatedRole'), closeDialogs)
+  const create = useRoleMutation(
+    (draft: RoleDraft) => createRole(draft),
+    t('createdRole'),
+    closeDialogs,
+    error => {
+      // A taken slug belongs on the slug field, not in a toast (UX-096).
+      if (!hasErrorCode(error, 'role-slug-taken')) return false
+      setSlugError(tErrors('codes.role-slug-taken'))
+      return true
+    },
+  )
+  const update = useRoleMutation(
+    ({ slug, ...body }: RoleDraft) => updateRole(slug, body),
+    t('updatedRole'),
+    closeDialogs,
+  )
   const remove = useRoleMutation((slug: string) => deleteRole(slug), t('deletedRole'), closeDialogs)
   const saveGrants = useRoleMutation(
     ({ slug, permissions }: { slug: string; permissions: string[] }) => setRolePermissions(slug, permissions),
@@ -229,7 +245,14 @@ export default function RBACAdminClient() {
         )}
       </Card>
 
-      <Dialog open={editing !== null} onOpenChange={open => !open && setEditing(null)}>
+      <Dialog
+        open={editing !== null}
+        onOpenChange={open => {
+          if (open) return
+          setEditing(null)
+          setSlugError(null)
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           {editing && (
             <RoleForm
@@ -237,6 +260,8 @@ export default function RBACAdminClient() {
               initialName={editing === 'new' ? '' : roleName(editing)}
               initialDescription={editing === 'new' ? '' : roleDescription(editing)}
               pending={create.isPending || update.isPending}
+              slugError={slugError}
+              onSlugChange={() => setSlugError(null)}
               onCancel={() => setEditing(null)}
               onSubmit={draft => (editing === 'new' ? create.mutate(draft) : update.mutate(draft))}
             />
@@ -294,6 +319,8 @@ function RoleForm({
   initialName,
   initialDescription,
   pending,
+  slugError,
+  onSlugChange,
   onCancel,
   onSubmit,
 }: {
@@ -301,6 +328,8 @@ function RoleForm({
   initialName: string
   initialDescription: string
   pending: boolean
+  slugError: string | null
+  onSlugChange: () => void
   onCancel: () => void
   onSubmit: (draft: RoleDraft) => void
 }) {
@@ -338,12 +367,23 @@ function RoleForm({
             <Input
               id="role-slug"
               value={slug}
-              onChange={e => setSlug(e.target.value)}
+              onChange={e => {
+                setSlug(e.target.value)
+                onSlugChange()
+              }}
               placeholder={t('slugPlaceholder')}
               pattern="[a-z0-9]+(-[a-z0-9]+)*"
               required
+              aria-invalid={slugError ? true : undefined}
+              aria-describedby={slugError ? 'role-slug-error' : undefined}
             />
-            <p className="text-muted-foreground text-xs">{t('slugHelp')}</p>
+            {slugError ? (
+              <p id="role-slug-error" role="alert" className="text-destructive text-xs">
+                {slugError}
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs">{t('slugHelp')}</p>
+            )}
           </div>
         )}
         <div className="grid gap-2">

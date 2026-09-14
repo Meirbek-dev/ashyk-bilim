@@ -88,8 +88,12 @@ pub async fn resolve(
     // Inspecting another teacher needs platform scope (DECISIONS: legacy
     // silently ignored the filter; a filter that does not apply is a 403).
     if !platform && filters.teacher_user_id.is_some_and(|t| t != actor.user_id) {
-        return Err(Error::forbidden(
+        // `details.filter` names the filter so the client can say which one
+        // does not apply (UX-096) without parsing the English message.
+        return Err(Error::app_with_details(
+            ab_core::ErrorCode::Forbidden,
             "teacher_user_id requires analytics:read:platform",
+            serde_json::json!({ "filter": "teacher_user_id" }),
         ));
     }
     let target = if platform {

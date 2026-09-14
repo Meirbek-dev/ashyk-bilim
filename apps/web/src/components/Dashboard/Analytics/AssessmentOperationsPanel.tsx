@@ -3,6 +3,7 @@
 import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
 
 import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -538,7 +539,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
                         <span>{event.actor_display_name || t('pages.assessmentOpsAuditSystem')}</span>
                         {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
-                        <span suppressHydrationWarning>{fromUnix(event.occurred_at_unix).toLocaleString(locale)}</span>
+                        <span suppressHydrationWarning>
+                          {formatDate(fromUnix(event.occurred_at_unix), locale, DATE_TIME_OPTIONS)}
+                        </span>
                         {event.affected_count !== null && event.affected_count !== undefined ? (
                           <span>
                             {t('pages.assessmentOpsAuditAffected')}: {event.affected_count}

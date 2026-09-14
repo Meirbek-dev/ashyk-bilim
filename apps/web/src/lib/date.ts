@@ -1,5 +1,13 @@
 const DEFAULT_OPTIONS: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
 
+/** One timestamp style for dashboard rows and journals (`14 қыр., 22:20`), whatever the surface (UX-096). */
+export const DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+}
+
 /**
  * Locale-aware `d MMM y` date for UI badges. `locale` is the app locale
  * (`ru-RU`, `kk-KZ`, `en-US`); invalid input renders as ''. Browsers without

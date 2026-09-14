@@ -5,6 +5,7 @@ import { APIError } from '@/lib/api/assertSuccess'
 
 const catalog: Record<string, string> = {
   'pages.scopeDenied': 'scope denied',
+  'pages.teacherFilterDenied': 'teacher filter denied',
   'pages.invalidFilters': 'invalid filters',
   'codes.not-found': 'not found (ru)',
   'codes.internal': 'internal (ru)',
@@ -21,6 +22,11 @@ describe('describeAnalyticsError', () => {
   ])('%s %s never renders the server detail', (status, code, message, expected) => {
     const error = new APIError({ status, code, message })
     expect(describeAnalyticsError(error, t, t, 'fallback')).toBe(expected)
+  })
+
+  it('names the teacher filter when the server refused it', () => {
+    const error = new APIError({ status: 403, code: 'forbidden', message: 'x', details: { filter: 'teacher_user_id' } })
+    expect(describeAnalyticsError(error, t, t, 'fallback')).toBe('teacher filter denied')
   })
 
   it('uses the fallback for non-API errors', () => {

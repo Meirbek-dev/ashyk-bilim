@@ -1,6 +1,7 @@
 'use client'
 
 import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsStatusLabel } from '@/lib/analytics/labels'
@@ -44,7 +45,7 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
       cell: ({ row }) => (
         <span suppressHydrationWarning>
           {row.original.submitted_at_unix
-            ? fromUnix(row.original.submitted_at_unix).toLocaleString(locale)
+            ? formatDate(fromUnix(row.original.submitted_at_unix), locale, DATE_TIME_OPTIONS)
             : t('atRisk.na')}
         </span>
       ),
