@@ -118,6 +118,16 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
     let empty = app.get_as(&alice, "/api/v2/trail").await;
     assert_eq!(empty.status, StatusCode::OK);
     assert!(empty.json()["id"].is_null());
+    // Leaving a course with no trail at all is a 404.
+    let no_trail = app
+        .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(
+        no_trail.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        no_trail.text()
+    );
 
     // Not enrolled yet: the state says so.
     let before = app

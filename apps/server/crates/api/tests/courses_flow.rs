@@ -106,6 +106,11 @@ async fn crud_lifecycle_and_visibility(pool: PgPool) {
         )
         .await;
     assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    // Nor may a non-creator with `course:delete:own` delete it.
+    let rival_delete = app
+        .delete_as(&rival, &format!("/api/v2/courses/{id}"))
+        .await;
+    assert_eq!(rival_delete.status, StatusCode::FORBIDDEN);
 
     // Delete by owner cascades away.
     let deleted = app

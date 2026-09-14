@@ -533,3 +533,85 @@ fn fallback_action(
         href: None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn act(state: WorkState, required: bool, complete: bool, due_in: Option<i64>) -> ActivityState {
+        ActivityState {
+            id: ActivityId::new(),
+            title: String::new(),
+            activity_type: "dynamic".to_owned(),
+            required,
+            state,
+            complete,
+            score: None,
+            passed: None,
+            due_at_unix: due_in.map(|d| now_unix() + d),
+            is_late: false,
+            available: true,
+            blocked_reason: None,
+            allowed_actions: vec![],
+        }
+    }
+
+    fn progress(pct: f64) -> ProgressState {
+        ProgressState {
+            completed_required_count: 0,
+            total_required_count: 1,
+            missing_required_count: 1,
+            needs_grading_count: 0,
+            progress_pct: pct,
+            grade_average: None,
+            completed_at_unix: None,
+        }
+    }
+
+    const NO_CERT: CertificateState = CertificateState {
+        configured: false,
+        eligible: false,
+        issued: false,
+        verify_code: None,
+        href: None,
+    };
+
+    /// Priority order: returned > overdue > in-progress > due-soon > next
+    /// required; with nothing left to start, awaiting grade → wait.
+    #[test]
+    fn next_action_priority_branches() {
+        let course = CourseId::new();
+        let returned = act(WorkState::Returned, true, false, None);
+        let overdue = act(WorkState::NotStarted, true, false, Some(-60));
+        let in_progress = act(WorkState::InProgress, true, false, None);
+        let due_soon = act(WorkState::NotStarted, true, false, Some(3 * 86_400));
+        let far = act(WorkState::NotStarted, true, false, Some(30 * 86_400));
+        let submitted = act(WorkState::Submitted, true, false, None);
+        let p = progress(0.0);
+
+        let pick = |acts: &[&ActivityState]| next_action(true, course, acts, &NO_CERT, &p);
+        let got = pick(&[&far, &due_soon, &in_progress, &overdue, &returned]);
+        assert_eq!(
+            (got.id, got.reason.as_str()),
+            (ActionId::Revise, "returned_for_revision")
+        );
+        assert_eq!(got.activity_id, Some(returned.id));
+        let got = pick(&[&far, &due_soon, &in_progress, &overdue]);
+        assert_eq!(
+            (got.id, got.reason.as_str()),
+            (ActionId::Continue, "overdue")
+        );
+        assert_eq!(got.activity_id, Some(overdue.id));
+        let got = pick(&[&far, &due_soon]);
+        assert_eq!((got.id, got.reason.as_str()), (ActionId::Start, "due_soon"));
+        assert_eq!(got.activity_id, Some(due_soon.id));
+        let got = pick(&[&far]);
+        assert_eq!(got.reason, "next_required");
+        let got = pick(&[&submitted]);
+        assert_eq!(
+            (got.id, got.reason.as_str()),
+            (ActionId::WaitForGrade, "waiting_for_grade")
+        );
+        assert!(!got.enabled);
+    }
+}
