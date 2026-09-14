@@ -22,7 +22,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   try {
     col = await getCollectionById(params.collectionid)
   } catch (error) {
-    if (isApiError(error) && error.status === 404) {
+    if (isApiError(error) && (error.status === 404 || error.status === 422)) {
       const tErrors = await getTranslations({ locale: params.locale, namespace: 'Errors' })
       return { title: `${tErrors('collectionNotFound')} - ${APP_NAME}`, robots: { index: false } }
     }
@@ -58,8 +58,8 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
   try {
     col = await getCollectionById(collectionid)
   } catch (error) {
-    // A plain not-found is a page state, not an error boundary.
-    if (isApiError(error) && error.status === 404) return <ResourceNotFound type="collection" />
+    // A plain not-found (or a malformed id, 422) is a page state, not an error boundary.
+    if (isApiError(error) && (error.status === 404 || error.status === 422)) return <ResourceNotFound type="collection" />
     throw error
   }
   const courses = (col.courses ?? []).filter(

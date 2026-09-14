@@ -37,10 +37,11 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   try {
     const course_meta = await fetchCourseMetadata(courseuuid)
     const isCourseEnd = activityid === 'end'
-    const [activity, runtime] = isCourseEnd
-      ? [null, null]
-      : await Promise.all([fetchActivity(activityid), fetchRuntime(courseuuid, activityid)])
-    if (!isCourseEnd && !runtime) {
+    const [activity, runtime] = await Promise.all([
+      isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
+      fetchRuntime(courseuuid, activityid),
+    ])
+    if (!runtime) {
       // Unpublished: the learner outline has no entry, so the title must not name it.
       const tErrors = await getTranslations('Errors')
       return { title: `${tErrors('activityUnavailable')} - ${APP_NAME}`, robots: { index: false } }
@@ -83,7 +84,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       const tUnauthorized = await getTranslations('UnauthorizedPage')
       return { title: `${tUnauthorized('title')} - ${APP_NAME}`, robots: { index: false } }
     }
-    if (apiError.status === 404) {
+    if (apiError.status === 404 || apiError.status === 422) {
       const tErrors = await getTranslations('Errors')
       return { title: `${tErrors('activityNotFound')} - ${APP_NAME}`, robots: { index: false } }
     }
@@ -128,7 +129,7 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
     ;[course_meta, activity, runtime] = await Promise.all([
       fetchCourseMetadata(courseuuid),
       isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
-      isCourseEnd ? Promise.resolve(null) : fetchRuntime(courseuuid, activityid),
+      fetchRuntime(courseuuid, activityid),
     ])
   } catch (error: unknown) {
     const apiError = error as AppApiError
@@ -143,7 +144,8 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
     }
-    if (apiError.status === 404) {
+    // A malformed id is a 422 that names nothing: not found, not an error (UX-078).
+    if (apiError.status === 404 || apiError.status === 422) {
       const activeSession = await getSession()
       return <ResourceNotFound type="activity" courseuuid={courseuuid} session={activeSession} />
     }
@@ -151,7 +153,7 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
   }
 
   // Unpublished (or foreign) activity: the learner outline has no entry for it.
-  if (!isCourseEnd && !runtime) {
+  if (!runtime) {
     const activeSession = await getSession()
     return <ResourceNotFound type="activity-unavailable" courseuuid={courseuuid} session={activeSession} />
   }

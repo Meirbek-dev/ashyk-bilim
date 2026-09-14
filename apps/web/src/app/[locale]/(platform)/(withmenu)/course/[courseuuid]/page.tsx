@@ -71,7 +71,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       const tUnauthorized = await getTranslations('UnauthorizedPage')
       return { title: `${tUnauthorized('title')} - ${APP_NAME}`, robots: { index: false } }
     }
-    if (apiError.status === 404) {
+    if (apiError.status === 404 || apiError.status === 422) {
       const tErrors = await getTranslations('Errors')
       return { title: `${tErrors('courseNotFound')} - ${APP_NAME}`, robots: { index: false } }
     }
@@ -100,7 +100,8 @@ export default async function PlatformCoursePage(props: { params: Promise<{ loca
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
     }
-    if (apiError.status === 404) {
+    // A malformed id is a 422 that names nothing: not found, not an error (UX-078).
+    if (apiError.status === 404 || apiError.status === 422) {
       const activeSession = await getSession()
       return <ResourceNotFound type="course" session={activeSession} />
     }
