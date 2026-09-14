@@ -81,8 +81,9 @@ async function ActivityPage(params: { params: Promise<{ courseuuid: string; acti
   const [course_meta, activity, runtime] = await Promise.all([
     fetchCourseMetadata(courseuuid),
     isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
-    isCourseEnd ? Promise.resolve(null) : getStudentActivityRuntime(courseuuid, activityid),
+    getStudentActivityRuntime(courseuuid, activityid),
   ])
+  if (!runtime) throw new Error(`Activity ${activityid} is not in course ${courseuuid}`)
 
   const course: CourseStructure = {
     ...course_meta,
@@ -92,9 +93,7 @@ async function ActivityPage(params: { params: Promise<{ courseuuid: string; acti
   }
 
   const queryClient = new QueryClient()
-  if (runtime) {
-    queryClient.setQueryData(queryKeys.studentActivity.runtime(courseuuid, activityid), runtime)
-  }
+  queryClient.setQueryData(queryKeys.studentActivity.runtime(courseuuid, activityid), runtime)
 
   return (
     <div className={jetBrainsMono.variable}>

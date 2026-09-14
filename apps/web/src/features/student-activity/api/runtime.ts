@@ -148,7 +148,10 @@ function primaryAction(current: OutlineActivity, next: RuntimeNavItem | null): S
   return { id, enabled: current.allowed_actions.includes(id) }
 }
 
-/** `null` when the activity is not in the learner outline (unpublished or foreign). */
+/**
+ * `null` when the activity is not in the learner outline (unpublished or
+ * foreign). `end` is the course-end page: no activity, the real outline.
+ */
 function toRuntime(state: LearnerCourseState, activityId: string): StudentActivityRuntime | null {
   const outline = state.outline.map(chapter => ({
     id: chapter.id,
@@ -156,6 +159,34 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     title: chapter.title,
     activities: chapter.activities.map(toNavItem),
   }))
+  const course = { id: state.course_id, uuid: state.course_id, title: state.title, public: state.public }
+  const permissions = {
+    is_authenticated: true,
+    can_view: state.permissions.can_access,
+    can_contribute: false,
+    can_update: false,
+  }
+  if (activityId === 'end') {
+    // The sidebar ticks come from learner-state, not a hard-coded «done» (UX-079).
+    return {
+      activity: null,
+      content: null,
+      course,
+      outline,
+      permissions,
+      policy: null,
+      previous: null,
+      next: null,
+      primary_action: { id: 'back_to_course', enabled: true },
+      progress: {
+        state: 'course_end',
+        complete: state.enrollment_state === 'completed',
+        is_late: false,
+        teacher_action_required: false,
+        attempt_count: 0,
+      },
+    }
+  }
   const flat = state.outline.flatMap(chapter =>
     chapter.activities.map((activity, index) => ({ activity, chapter, index })),
   )
@@ -177,14 +208,9 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
       subtype: '',
     },
     content: null,
-    course: { id: state.course_id, uuid: state.course_id, title: state.title, public: state.public },
+    course,
     outline,
-    permissions: {
-      is_authenticated: true,
-      can_view: state.permissions.can_access,
-      can_contribute: false,
-      can_update: false,
-    },
+    permissions,
     policy: { due_at: dueAt },
     previous,
     next,

@@ -55,6 +55,14 @@ describe('learner runtime v2 adapter', () => {
     })
   })
 
+  it('builds the course-end runtime from the real outline, not a hard-coded «done» (UX-079)', async () => {
+    const runtime = (await getStudentActivityRuntime(courseId, 'end'))!
+    expect(runtime.activity).toBeNull()
+    expect(runtime.primary_action).toEqual({ id: 'back_to_course', enabled: true })
+    expect(runtime.progress).toMatchObject({ state: 'course_end', complete: false })
+    expect(runtime.outline?.[0]?.activities?.[0]).toMatchObject({ id: activityId, complete: false, state: 'not_started' })
+  })
+
   it('returns null for an activity outside the learner outline (BUG-025: unpublished draft)', async () => {
     expect(await getStudentActivityRuntime(courseId, '01a091ab-fafa-7a48-a60b-650685fb0464')).toBeNull()
   })
