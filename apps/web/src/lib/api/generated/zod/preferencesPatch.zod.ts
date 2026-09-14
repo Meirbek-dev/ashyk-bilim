@@ -7,7 +7,7 @@
  */
 import * as zod from 'zod'
 
-export const UpdatePreferencesBody = zod
+export const PreferencesPatch = zod
   .object({
     display: zod
       .union([
@@ -42,5 +42,5 @@ export const UpdatePreferencesBody = zod
     '`PATCH /gamification/preferences`: the sections the settings form owns.\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase; anything else is 422.',
   )
 
-export type UpdatePreferencesBody = zod.input<typeof UpdatePreferencesBody>
-export type UpdatePreferencesBodyOutput = zod.output<typeof UpdatePreferencesBody>
+export type PreferencesPatch = zod.input<typeof PreferencesPatch>
+export type PreferencesPatchOutput = zod.output<typeof PreferencesPatch>

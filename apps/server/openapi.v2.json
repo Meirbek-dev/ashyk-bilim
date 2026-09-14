@@ -4458,7 +4458,7 @@
             "description": "Deleted"
           },
           "409": {
-            "description": "Content locked",
+            "description": "Content locked, or the last item of a live assessment",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7507,6 +7507,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Unknown or inaccessible",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         }
       },
@@ -7550,6 +7560,16 @@
           },
           "403": {
             "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8135,7 +8155,7 @@
         "tags": [
           "discussions"
         ],
-        "summary": "Post, or reply to a post (`parent_id`).",
+        "summary": "Post, or reply to a post (`parent_id`). With an `Idempotency-Key`, a\nretry with the same body replays the created post instead of posting\ntwice; the same key with a different body is 422.",
         "operationId": "create_discussion",
         "parameters": [
           {
@@ -8145,6 +8165,18 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client retry token (optional)",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -8170,7 +8202,7 @@
             }
           },
           "422": {
-            "description": "Empty content or nested reply",
+            "description": "Empty content, nested reply, or Idempotency-Key reused with a different body",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8452,6 +8484,16 @@
           },
           "403": {
             "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inaccessible",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9685,14 +9727,13 @@
         "tags": [
           "gamification"
         ],
-        "summary": "Merge preferences (`null` removes a key).",
+        "summary": "Merge preferences: a section absent from the patch is kept, `null`\nremoves it, an object replaces it. Unknown sections or keys are 422.",
         "operationId": "update_preferences",
         "requestBody": {
-          "description": "Preference patch",
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/PreferencesPatch"
               }
             }
           },
@@ -9705,6 +9746,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown section or key, or a null value",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -16798,6 +16849,24 @@
         },
         "additionalProperties": false
       },
+      "DisplayPreferences": {
+        "type": "object",
+        "properties": {
+          "animatedEffects": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "compactMode": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "DraftRequest": {
         "type": "object",
         "description": "The draft's complete file list (replaces what was attached before).",
@@ -19519,6 +19588,18 @@
           }
         }
       },
+      "NotificationPreferences": {
+        "type": "object",
+        "properties": {
+          "xpGain": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "OpenTextBody": {
         "type": "object",
         "properties": {
@@ -19732,6 +19813,56 @@
           "violation_threshold": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PreferencesPatch": {
+        "type": "object",
+        "description": "`PATCH /gamification/preferences`: the sections the settings form owns.\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase; anything else is 422.",
+        "properties": {
+          "display": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DisplayPreferences"
+              }
+            ]
+          },
+          "notifications": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NotificationPreferences"
+              }
+            ]
+          },
+          "privacy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PrivacyPreferences"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrivacyPreferences": {
+        "type": "object",
+        "properties": {
+          "showOnLeaderboard": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`false` hides the profile from the leaderboard (and its rank is `null`)."
           }
         },
         "additionalProperties": false

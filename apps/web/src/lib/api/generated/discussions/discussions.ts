@@ -281,7 +281,9 @@ export const getCreateDiscussionUrl = (id: CourseId) => {
 }
 
 /**
- * @summary Post, or reply to a post (`parent_id`).
+ * @summary Post, or reply to a post (`parent_id`). With an `Idempotency-Key`, a
+retry with the same body replays the created post instead of posting
+twice; the same key with a different body is 422.
  */
 export const createDiscussion = async (
   id: CourseId,
@@ -355,7 +357,9 @@ export type CreateDiscussionMutationError = ErrorType<Problem>
 export type CreateDiscussionMutationVariables = { id: CourseId; data: BodyType<CreateDiscussionRequest> }
 
 /**
- * @summary Post, or reply to a post (`parent_id`).
+ * @summary Post, or reply to a post (`parent_id`). With an `Idempotency-Key`, a
+retry with the same body replays the created post instead of posting
+twice; the same key with a different body is 422.
  */
 export const useCreateDiscussion = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

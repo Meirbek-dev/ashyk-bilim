@@ -30,12 +30,12 @@ import {
   GamificationConfig,
   Leaderboard,
   LeaderboardParams,
+  PreferencesPatch,
   Problem,
   Profile,
   StreakKind,
   StreakUpdate,
   UpdateGamificationConfigRequest,
-  UpdatePreferencesBody,
   UserRank,
 } from '../zod'
 
@@ -660,10 +660,11 @@ export const getUpdatePreferencesUrl = () => {
 }
 
 /**
- * @summary Merge preferences (`null` removes a key).
+ * @summary Merge preferences: a section absent from the patch is kept, `null`
+removes it, an object replaces it. Unknown sections or keys are 422.
  */
 export const updatePreferences = async (
-  updatePreferencesBody: UpdatePreferencesBody,
+  preferencesPatch: PreferencesPatch,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<Profile> => {
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
@@ -686,7 +687,7 @@ export const updatePreferences = async (
       ...options,
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-      body: JSON.stringify(updatePreferencesBody),
+      body: JSON.stringify(preferencesPatch),
     },
     Profile,
   )
@@ -694,7 +695,7 @@ export const updatePreferences = async (
 
 export const getUpdatePreferencesMutationKey = () => ['updatePreferences'] as const
 
-export const getUpdatePreferencesMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getUpdatePreferencesMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updatePreferences>>,
     TError,
@@ -728,14 +729,15 @@ export const getUpdatePreferencesMutationOptions = <TError = ErrorType<unknown>,
 }
 
 export type UpdatePreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updatePreferences>>>
-export type UpdatePreferencesMutationBody = BodyType<UpdatePreferencesBody>
-export type UpdatePreferencesMutationError = ErrorType<unknown>
-export type UpdatePreferencesMutationVariables = { data: BodyType<UpdatePreferencesBody> }
+export type UpdatePreferencesMutationBody = BodyType<PreferencesPatch>
+export type UpdatePreferencesMutationError = ErrorType<Problem>
+export type UpdatePreferencesMutationVariables = { data: BodyType<PreferencesPatch> }
 
 /**
- * @summary Merge preferences (`null` removes a key).
+ * @summary Merge preferences: a section absent from the patch is kept, `null`
+removes it, an object replaces it. Unknown sections or keys are 422.
  */
-export const useUpdatePreferences = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useUpdatePreferences = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof updatePreferences>>,

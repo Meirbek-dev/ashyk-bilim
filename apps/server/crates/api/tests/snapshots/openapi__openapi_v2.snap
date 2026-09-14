@@ -4723,6 +4723,24 @@ expression: json
         ],
         "type": "object"
       },
+      "DisplayPreferences": {
+        "additionalProperties": false,
+        "properties": {
+          "animatedEffects": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "compactMode": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "DraftRequest": {
         "additionalProperties": false,
         "description": "The draft's complete file list (replaces what was attached before).",
@@ -7444,6 +7462,18 @@ expression: json
         ],
         "type": "object"
       },
+      "NotificationPreferences": {
+        "additionalProperties": false,
+        "properties": {
+          "xpGain": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "OpenTextBody": {
         "properties": {
           "min_words": {
@@ -7659,6 +7689,56 @@ expression: json
           "violation_threshold",
           "attempt_penalty_percent"
         ],
+        "type": "object"
+      },
+      "PreferencesPatch": {
+        "additionalProperties": false,
+        "description": "`PATCH /gamification/preferences`: the sections the settings form owns.\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase; anything else is 422.",
+        "properties": {
+          "display": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DisplayPreferences"
+              }
+            ]
+          },
+          "notifications": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NotificationPreferences"
+              }
+            ]
+          },
+          "privacy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PrivacyPreferences"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "PrivacyPreferences": {
+        "additionalProperties": false,
+        "properties": {
+          "showOnLeaderboard": {
+            "description": "`false` hides the profile from the leaderboard (and its rank is `null`).",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       },
       "Problem": {
@@ -16556,7 +16636,7 @@ expression: json
                 }
               }
             },
-            "description": "Content locked"
+            "description": "Content locked, or the last item of a live assessment"
           }
         },
         "summary": "Delete an item; siblings renumber.",
@@ -19558,6 +19638,16 @@ expression: json
               }
             },
             "description": "No delete access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
           }
         },
         "summary": "Delete a course and everything under it (cascades).",
@@ -19648,6 +19738,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
           }
         },
         "summary": "Partial update (creator with `course:update:own` or platform updaters).",
@@ -20237,6 +20337,18 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/CourseId"
             }
+          },
+          {
+            "description": "Client retry token (optional)",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {
@@ -20268,10 +20380,10 @@ expression: json
                 }
               }
             },
-            "description": "Empty content or nested reply"
+            "description": "Empty content, nested reply, or Idempotency-Key reused with a different body"
           }
         },
-        "summary": "Post, or reply to a post (`parent_id`).",
+        "summary": "Post, or reply to a post (`parent_id`). With an `Idempotency-Key`, a\nretry with the same body replays the created post instead of posting\ntwice; the same key with a different body is 422.",
         "tags": [
           "discussions"
         ]
@@ -20550,6 +20662,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
           },
           "422": {
             "content": {
@@ -21782,11 +21904,10 @@ expression: json
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/PreferencesPatch"
               }
             }
           },
-          "description": "Preference patch",
           "required": true
         },
         "responses": {
@@ -21799,9 +21920,19 @@ expression: json
               }
             },
             "description": "Profile"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown section or key, or a null value"
           }
         },
-        "summary": "Merge preferences (`null` removes a key).",
+        "summary": "Merge preferences: a section absent from the patch is kept, `null`\nremoves it, an object replaces it. Unknown sections or keys are 422.",
         "tags": [
           "gamification"
         ]
