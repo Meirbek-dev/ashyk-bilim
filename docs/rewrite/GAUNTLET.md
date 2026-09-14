@@ -198,62 +198,62 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 
 | id | area | route(s) | roles | status | last critic verdict |
 |---|---|---|---|---|---|
-| F01 | login + session | `/ru/auth/login` | all | pass | pass 11 (reverify-A): login returnTo, signed-in redirects, back after logout stays out; login by email/username case-insensitive |
-| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 11 (reverify-A): enrol → TOTP login → back link resets the step → disable with confirm; unenrolled TOTP code → 400 |
+| F01 | login + session | `/ru/auth/login` | all | pass | pass 12 (reverify-A): IP limiter counts failures only, name limiter keyed per account, TOTP-step banner cleared, «Неверный логин или пароль» |
+| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 12 (reverify-A): verify without enrolment → 409; enrol/login/disable with confirm; focus back to the heading |
 | F03 | Google login intent | `/ru/auth/login` → `/api/v2/auth/google` | any | pass | pass 6: Google → `/api/v2/auth/google` → 303 with `?error=service-unavailable`; host-relative redirect is correct behind the production nginx (Q-2026-09-12-2 #10) |
-| F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 11 (reverify-A): sessions show distinct «Последняя активность» (pure peek), revoke without reload, list refreshed after a password change |
-| F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 11 (reverify-C): ru/kz/en unauthorized + 404 titled and localized |
-| F06 | locale switch ru/kz/en | all routes | any | pass | pass 11 (reverify-C): every visited screen titled per locale; switcher keeps the query |
-| F07 | home / landing | `/[locale]` | learner | pass | pass 11 (reverify-A): kz nav «Шарлау / Үлгерім», cards, contributors roster |
-| F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 11 (reverify-A): enrol toast → 1/2 → 2/2 → learner-state `completed`; draft activity 404 for learner/anon; anonymous «Начать курс» returns to the course |
-| F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner+teacher | pass | pass 3 critic: create/list/open collections, localized empty states |
-| F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | pass | pass 11 (reverify-A): mark complete updates the sidebar; drafts never count |
-| F11 | trail / progress | `/trail` | learner | pass | pass 11 (reverify-A): trail leave confirm + toast; unknown/private course leave → 404; «Учебная задача выполнена» |
-| F12 | user profile | `/ru/user/[username]` | learner | pass | pass 7: profile with authored courses, app-suffixed title, no 4xx |
+| F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 12 (reverify-A): revoke seen by the revoked context without reload; password change limited (5/15 min) and revokes the other session |
+| F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 12 (reverify-C): ru/kz/en unauthorized + 404 |
+| F06 | locale switch ru/kz/en | all routes | any | pass | pass 12 (reverify-C): locale switcher on every /dash screen keeps the query and syncs users/me |
+| F07 | home / landing | `/[locale]` | learner | pass | pass 12 (reverify-A): nav, cards, contributor roster; completed cards |
+| F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 12 (reverify-A): enrol → sidebar 0/2→1/2 without reload; completed course → «Посмотреть итоги курса» |
+| F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 12 (reverify-A): teacher creates with inline field errors + focus; checkbox itself, Space and label all toggle (BUG-014); learner → /unauthorized by design (BUG-027) |
+| F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | pass | pass 12 (reverify-A): title «… - Ashyk Bilim», single <main>; mark complete without reload |
+| F11 | trail / progress | `/trail` | learner | pass | pass 12 (reverify-A): anonymous /trail → login with returnTo, no 401 calls; leave confirm + toast |
+| F12 | user profile | `/ru/user/[username]` | learner | pass | pass 12 (reverify-A): profile cards share the progress label |
 | F13 | taking a quiz/exam | `/ru/course/[id]/activity/[id]` | learner | pass | pass 11 (reverify-B): choice + open_text + matching all answerable; cap note «80 %»; verdict toast; received state at the cap; REMEDIATION_REQUIRED named |
 | F14 | code arena run | `/assessments/[uuid]` (code item) | learner | blocked | Judge0 not in the local stack (`code/languages` 503); e2e code tests skip on the probe. Needs an environment with the executor |
 | F15 | file submission upload | `/assessments/[uuid]` (file item) | learner | pass | pass 11 (reverify-B): per-file reject reasons, attempt confirm, idempotent submit, draft PATCH 409 on unpublished; download «проект.pdf» |
 | F16 | discussions | course discussion surfaces | learner+teacher | pass | pass 11 (reverify-B): post/like/reply + kz; owner cannot un-hide a moderated post |
 | F17 | certificates + verify | `/certificates/[uuid]/verify`, `/dash/courses/[uuid]/certificate` | any | pass | pass 11 (reverify-B): verify ru/kz/lowercase/unknown; holder ids not exposed; PDF link locale-prefixed |
 | F18 | gamification | `/dash/user-account/settings/gamification` | learner | pass | pass 11 (reverify-B): toggle persists; preferences allowlisted/capped (422) |
-| F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 11 (reverify-A): create → details → review blocker links to curriculum → publish only after a live activity («Курс опубликован.») → catalogue |
-| F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 11 (reverify-A): chapter/activity CRUD toasts; draft quiz toggle → localized 409; «Тест» creates a quiz, «Экзамен» an exam |
-| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 11 (reverify-A): slash menu keyboard, web-preview cancel inserts nothing, two-tab conflict notice (412), locale-prefixed edit/preview links |
-| F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 11 (reverify-A): block image `/content/block-image/… 200`; content-type mismatch → 415, svg → 415 |
-| F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | pass | pass 11 (reverify-A): item autosave + publish «Этап изменён на Опубликовано»; learner attempt-state on a draft → 404 |
-| F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 11 (reverify-A): restricted access PUT persisted; unknown user ids → 422 |
+| F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 12 (reverify-A): create → thumbnail → review blockers → publish → catalogue; help «макс. 10 МБ» |
+| F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 12 (reverify-A): type change on a live activity → 409 activity-not-ready; unpublish → change → republish; kind-neutral copy |
+| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 12 (reverify-A): slash menu, web-preview cancel, PNG upload; SVG refused client-side |
+| F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 12 (reverify-A): finalize replay with Idempotency-Key → same 200 |
+| F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | pass | pass 12 (reverify-A): item autosave, publish; results tab without key warnings |
+| F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 12 (reverify-A): empty restricted list asks first; override out of range inline; per-id 422 on chips |
 | F25 | submission grading + item feedback | `/ru/dash/courses/[id]/activity/[id]/review` | teacher | pass | pass 11 (reverify-B): save/publish/return; unknown item id → 422 with no partial write; attempt cap applied to teacher grades; colleague-save keeps dirty drafts |
 | F26 | gradebook + bulk actions | `/ru/dash/courses/[id]/gradebook` | teacher | pass | pass 11 (reverify-B): «Продлить» → deadline-extensions + bulk-actions poll; bulk return skips published rows and keeps errors visible; CSV toast |
 | F27 | grading SSE live updates | gradebook / review | teacher | pass | pass 11 (reverify-B): live cell update 506 ms after a side publish |
 | F28 | work queue | `/dash/courses/[uuid]/review` | teacher | pass | pass 11 (reverify-B): «Оценить работу» → real review page; reporter sees no grading items; pending manual items reach graders in every mode |
 | F29 | course collaboration/access | `/dash/courses/[uuid]/collaboration` | teacher | pass | pass 11 (reverify-B): collaboration roles; reporter «Нет доступа» on dash pages |
-| F30 | search | `/ru/search?q=` | any | pass | pass 11 (reverify-C): facets, empty state, odd chars, disabled user hidden; ru/kz/en |
-| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass | pass 11 (reverify-C): localized 403/422 sentences (keys restored 843e662), learner → /unauthorized, empty course tiles, saved views trimmed/422 |
-| F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 11 (reverify-C): bad params → not-found page; drilldown ru/kz clean; heading case fixed 843e662 |
-| F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 11 (reverify-C): watchlist dialog, focus return, no uuid line; unknown intervention user → 422 |
-| F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 11 (reverify-C): at-risk.csv + grading-backlog.csv, learner 403, out-of-scope 403 |
+| F30 | search | `/ru/search?q=` | any | pass | pass 12 (reverify-C): facets/empty/odd chars ru/kz/en |
+| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass | pass 12 (reverify-C): saved views deletable; unknown teacher_user_id → 422; localized 422 filter sentence |
+| F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 12 (reverify-C): empty funnel/health copy; bad params → not-found page |
+| F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 12 (reverify-C): badge from the latest measure, kk notes as codes, sort applied, authors excluded, idempotent interventions |
+| F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 12 (reverify-C): exports + 401/403 branches |
 | F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | pass | pass 11 (reverify-D): ru «…еще не включены…», kz «…әлі қосылмаған…» |
 | F36 | AI agent: lecture authoring critique | `/dash/courses/[uuid]` | teacher | pass | pass 11 (reverify-B): course analysis accept + gate checkbox + «Оценка качества опубликована»; unknown language/finding → 422 |
 | F37 | AI agents: remaining 4 | assorted | teacher | pass | pass 11 (reverify-B): file/quiz analysis, feedback draft, remediation card; gate mode blocks the learner (REMEDIATION_REQUIRED) |
-| F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 11 (reverify-C): users create/dup/assign/remove, self-row 0 buttons; unknown user role assign → 404 |
-| F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 11 (reverify-D): create/link/unlink/edit/delete toasts; «Участники» 0→1→0 live; kz/en headers |
-| F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 11 (reverify-A): rename, blank name → 422 inline, avatar; localized field labels (route is `settings/general`, no `profile` page) |
-| F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 11 (reverify-A): policy error inline (ru/kz), verify keeps the email after a wrong code, upper-case email variant → 409 |
-| F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 11 (reverify-A): same-password → 422 inline, real policy hint, sessions list refreshed |
-| F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 11 (reverify-C): dialog inline errors → toast → row without reload; policy message without the Zitadel code |
-| F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 11 (reverify-C): bogus grant rejected inline; server 422 per grant; role not held → 404 |
+| F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 12 (reverify-C): «Отключить пользователя» / «Включить» in the settings list; disabled admin loses the role while another is active |
+| F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 12 (reverify-C): blank name → 422 inline (server + dialog trim); «Участники» live |
+| F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 12 (reverify-C): whitespace name inline |
+| F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 12 (reverify-A): created-cap counts only created accounts; signup ru/kz inline errors |
+| F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 12 (reverify-A): wrong current password → 429 after 5; policy/unchanged inline |
+| F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 12 (reverify-C): password-less account login → 401 |
+| F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 12 (reverify-C): role revoke drops the sidebar entries after one client nav (no reload) |
 | F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
-| F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 9 T1: presets/search/sort/pagination, summary counts match |
-| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 11 (reverify-A): apply → withdraw → apply → approve; reporter reads learner-state; removal |
-| F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 11 (reverify-A): server re-runs readiness on publish (422 course-not-ready), activity gate covers assessments |
+| F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 12 (reverify-A): presets/sort/search; «Ничего не найдено по запросу» |
+| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 12 (reverify-A): pending row appears on focus, stale withdraw → «Заявка уже рассмотрена», self-delete without a row → 404, «Вы являетесь автором» links to the workspace |
+| F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 12 (reverify-A): readiness blockers link, server 422 on publish |
 | F49 | gradebook: file cells, CSV export, live stream | `/dash/courses/[id]/gradebook` | teacher | pass | pass 11 (reverify-B): gradebook cell → file review; published file attempt cannot be returned |
 | F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 11 (reverify-B): «Верно / Ответ не дан / 10 / 10 / 0 / 9» ru+kz, one number format |
 | F51 | matching items (learner body) | quiz attempt + review | learner+teacher | pass | pass 11 (reverify-B): learner body left/right only; review shows pairs |
 | F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 11 (reverify-B): `certificate-NRWF-….pdf`, kz label, locale verify link |
 | F53 | AI on file-submission attempts | file review page | teacher | pass | pass 11 (reverify-B): file review save/publish/return toasts, inline score errors, AI draft; 1280 px stacked (reverify-D) |
 | F54 | link preview block | lecture editor | teacher | pass | pass 11 (reverify-A): one request per URL (no retry, no refetch on reload), inline scheme validation, cancel leaves nothing |
-| F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 11 (reverify-C): localized sentences, zero console errors, kz/en |
-| F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 11 (reverify-C): kz dates «13.09.2026, 17:37:03», no «M09», no hydration errors |
+| F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 12 (reverify-C): sentences localized, zero non-dev console errors |
+| F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 12 (reverify-C): kz dates, no hydration messages |
 | F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 10 R7: 200 with the public course cards; unknown user → localized not-found |
 
 ## Bugs
