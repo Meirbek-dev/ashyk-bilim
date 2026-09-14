@@ -1110,3 +1110,122 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
         foreign_export.text()
     );
 }
+
+/// BUG-157: an intervention targets a learner enrolled in the course (422
+/// `user_id`/`not-in-course` otherwise); rows are attributed to the acting
+/// user even when an admin inspects another teacher via `teacher_user_id`;
+/// the idempotent replay is gated by the analytics scope. Plus an unknown
+/// `sort_by` is a 422 instead of a silent default order.
+#[sqlx::test(migrations = "../../migrations")]
+async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, _) = public_course(&app, &teacher, "Analytics 101").await;
+    let alice = learner(&app, "alice").await;
+    let outsider = learner(&app, "outsider").await;
+    sqlx::query(
+        "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, $3)",
+    )
+    .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+    .bind(alice.user_id.0)
+    .bind(0.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let not_enrolled = app
+        .post_as(
+            &teacher,
+            "/api/v2/analytics/teacher/interventions",
+            &serde_json::json!({
+                "user_id": outsider.user_id, "course_id": course_id,
+                "intervention_type": "message_sent"
+            }),
+        )
+        .await;
+    assert_eq!(
+        not_enrolled.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        not_enrolled.text()
+    );
+    assert_eq!(not_enrolled.json()["field_errors"][0]["field"], "user_id");
+    assert_eq!(
+        not_enrolled.json()["field_errors"][0]["code"],
+        "not-in-course"
+    );
+
+    // An admin inspecting the teacher writes rows as themself.
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(boss, &["analytics:read:platform"])
+        .await;
+    let as_admin = app
+        .post_as(
+            &admin,
+            &format!(
+                "/api/v2/analytics/teacher/interventions?teacher_user_id={}",
+                teacher.user_id
+            ),
+            &serde_json::json!({
+                "user_id": alice.user_id, "course_id": course_id,
+                "intervention_type": "message_sent"
+            }),
+        )
+        .await;
+    assert_eq!(as_admin.status, StatusCode::CREATED, "{}", as_admin.text());
+    assert_eq!(as_admin.json()["teacher_user_id"], boss.to_string());
+    let teachers = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/interventions")
+        .await;
+    assert_eq!(teachers.json()["total"], 0, "{}", teachers.text());
+
+    // Replay under the same key needs the analytics grant.
+    let body = serde_json::json!({
+        "user_id": alice.user_id, "course_id": course_id,
+        "intervention_type": "message_sent"
+    });
+    let post = |session: &MintedSession| {
+        let app = &app;
+        let cookie = session.cookie.clone();
+        let body = body.to_string();
+        async move {
+            app.send(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/analytics/teacher/interventions")
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::COOKIE, cookie)
+                    .header("idempotency-key", "retry-2")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+        }
+    };
+    let first = post(&teacher).await;
+    assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
+    let revoked = app.mint_session_for(teacher.user_id, &[]).await;
+    let replay = post(&revoked).await;
+    assert_eq!(replay.status, StatusCode::FORBIDDEN, "{}", replay.text());
+
+    let bad_sort = app
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/learners/at-risk?sort_by=health",
+        )
+        .await;
+    assert_eq!(
+        bad_sort.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad_sort.text()
+    );
+    assert_eq!(bad_sort.json()["field_errors"][0]["field"], "sort_by");
+    let bad_course_sort = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/courses?sort_by=risky")
+        .await;
+    assert_eq!(bad_course_sort.status, StatusCode::UNPROCESSABLE_ENTITY);
+}

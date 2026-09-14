@@ -7,6 +7,7 @@
 
 use ab_core::assessments::AssessmentKind;
 use ab_core::id::{AssessmentId, CourseId, SavedViewId};
+use ab_core::permission::Action;
 use ab_core::{Error, FieldError};
 use ab_domain::analytics::{AnalyticsFilters, NewIntervention};
 use axum::Json;
@@ -238,6 +239,13 @@ pub async fn create_intervention(
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    let filters = filters(query)?;
+    // BUG-157: the scope gate runs before the idempotent replay — an actor
+    // who lost the grant does not get the stored 201 back.
+    state
+        .analytics
+        .resolve_scope(&actor, &filters, Action::Read)
+        .await?;
     let key = idempotency_key(&headers)?.map(|k| format!("intervention:{k}"));
     let request_hash = sha256_hex(&body);
     if let Some(key) = &key
@@ -257,7 +265,6 @@ pub async fn create_intervention(
         return Ok((status, Json(stored.response)).into_response());
     }
     let request = ValidJson::<CreateInterventionRequest>::parse(&body)?;
-    let filters = filters(query)?;
     let created = state
         .analytics
         .create_intervention(

@@ -399,3 +399,35 @@ async fn role_reads_are_gated_and_system_roles_are_undeletable(pool: PgPool) {
     let system = app.delete_as(&admin, "/api/v2/rbac/roles/admin").await;
     assert_eq!(system.status, StatusCode::FORBIDDEN, "{}", system.text());
 }
+
+/// `POST /rbac/roles` body validation: blank display name and an
+/// out-of-range priority are 422 field errors.
+#[sqlx::test(migrations = "../../migrations")]
+async fn create_role_rejects_bad_display_name_and_priority(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+    let bad = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({ "slug": "helper", "display_name": "", "priority": 100 }),
+        )
+        .await;
+    assert_eq!(
+        bad.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad.text()
+    );
+    let fields: Vec<String> = bad.json()["field_errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["field"].as_str().unwrap().to_owned())
+        .collect();
+    assert!(fields.contains(&"display_name".to_owned()), "{fields:?}");
+    assert!(fields.contains(&"priority".to_owned()), "{fields:?}");
+}

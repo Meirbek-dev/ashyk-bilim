@@ -248,6 +248,18 @@ pub fn build_course_rows(
     rows
 }
 
+/// `sort_by` keys the listing honours (`AnalyticsFilters::require_sort_key`).
+pub const SORT_KEYS: &[&str] = &[
+    "name",
+    "active",
+    "completion",
+    "risk",
+    "health",
+    "engagement",
+    "difficulty",
+    "signals",
+];
+
 pub fn sort_course_rows(rows: &mut [TeacherCourseRow], sort_by: Option<&str>, order: SortOrder) {
     let cmp = |a: &TeacherCourseRow, b: &TeacherCourseRow| match sort_by {
         Some("name") => a

@@ -253,6 +253,7 @@ impl AnalyticsService {
         filters: &AnalyticsFilters,
     ) -> Result<TeacherCourseListResponse> {
         let scope = self.read_scope(actor, filters).await?;
+        filters.require_sort_key(courses::SORT_KEYS)?;
         let ctx = self.windowed_context(&scope.course_ids, filters).await?;
         let (current_start, _) = filters.window_bounds(ctx.generated_at);
         let inputs = self.course_inputs(&scope, current_start).await?;
@@ -312,6 +313,7 @@ impl AnalyticsService {
         filters: &AnalyticsFilters,
     ) -> Result<TeacherAssessmentListResponse> {
         let scope = self.read_scope(actor, filters).await?;
+        filters.require_sort_key(assessments::SORT_KEYS)?;
         let ctx = self.windowed_context(&scope.course_ids, filters).await?;
         let rows = assessments::build_assessment_rows(&ctx, filters);
         Ok(TeacherAssessmentListResponse {
@@ -374,6 +376,7 @@ impl AnalyticsService {
         let scope = self.read_scope(actor, filters).await?;
         let ctx = AnalyticsContext::load(&self.pool, &scope.course_ids, None).await?;
         let mut rows = self.enriched_risk_rows(&ctx, &scope, filters).await?;
+        filters.require_sort_key(risk::SORT_KEYS)?;
         risk::sort_risk_rows(&mut rows, filters.sort_by.as_deref(), filters.sort_order);
         Ok(AtRiskLearnersResponse {
             generated_at_unix: ctx.generated_at,
@@ -456,6 +459,15 @@ impl AnalyticsService {
                 code: "unknown".into(),
                 message: format!("user {} does not exist", input.user_id),
             });
+        } else if !ab_db::analytics::learner_in_course(&self.pool, input.course_id, input.user_id)
+            .await?
+        {
+            // BUG-157: an intervention targets a learner of the course.
+            errors.push(FieldError {
+                field: "user_id".into(),
+                code: "not-in-course".into(),
+                message: format!("user {} is not enrolled in this course", input.user_id),
+            });
         }
         if !errors.is_empty() {
             return Err(Error::validation(errors));
@@ -466,7 +478,9 @@ impl AnalyticsService {
         let row = ab_db::analytics::insert_intervention(
             &self.pool,
             ab_db::analytics::NewIntervention {
-                teacher_user_id: scope.teacher_user_id,
+                // BUG-157: attributed to the acting user; `teacher_user_id`
+                // only scopes reads.
+                teacher_user_id: actor.user_id,
                 user_id: input.user_id,
                 course_id: input.course_id,
                 intervention_type: &input.intervention_type,

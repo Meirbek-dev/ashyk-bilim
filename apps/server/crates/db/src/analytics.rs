@@ -1160,6 +1160,26 @@ pub async fn latest_risk_score(
     Ok(score)
 }
 
+/// Whether the learner is enrolled in the course: a trail run (what
+/// `learner-state.enrolled` reads) or a course-progress projection.
+pub async fn learner_in_course(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
+    let exists = sqlx::query_scalar!(
+        r#"SELECT EXISTS(
+               SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2
+               UNION SELECT 1 FROM course_progress WHERE course_id = $1 AND user_id = $2
+           ) AS "exists!""#,
+        course_id.0,
+        user_id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(exists)
+}
+
 /// Number of rows the rollup produced for a date — for the admin command
 /// report and tests.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]

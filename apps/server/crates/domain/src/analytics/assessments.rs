@@ -406,6 +406,16 @@ fn opt_key(v: Option<f64>) -> f64 {
     v.unwrap_or(-1.0)
 }
 
+/// `sort_by` keys the listing honours (`AnalyticsFilters::require_sort_key`).
+pub const SORT_KEYS: &[&str] = &[
+    "title",
+    "submission",
+    "pass",
+    "difficulty",
+    "latency",
+    "signals",
+];
+
 pub fn sort_assessment_rows(
     rows: &mut [AssessmentOutlierRow],
     sort_by: Option<&str>,

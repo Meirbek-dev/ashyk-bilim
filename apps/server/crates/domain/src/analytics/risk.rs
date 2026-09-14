@@ -354,6 +354,9 @@ pub fn build_risk_rows(
     rows
 }
 
+/// `sort_by` keys the listing honours (`AnalyticsFilters::require_sort_key`).
+pub const SORT_KEYS: &[&str] = &["risk", "progress", "activity", "name"];
+
 /// `sort_by` for the at-risk list (`risk` = score, `progress`, `activity` =
 /// idle days, `name`); anything else keeps the worst-first default, which
 /// `sort_order=asc` reverses.

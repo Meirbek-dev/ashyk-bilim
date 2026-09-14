@@ -526,3 +526,61 @@ async fn claiming_a_foreign_upload_as_avatar_is_forbidden(pool: PgPool) {
         .await;
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
 }
+
+/// `GET /users` clamps `limit` to 1..=100 and walks by cursor; an unknown
+/// id on the status route is a 404.
+#[sqlx::test(migrations = "../../migrations")]
+async fn user_listing_clamps_limit_and_walks_the_cursor(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let admin_user = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(
+            admin_user,
+            &["platform:read:platform", "platform:manage:platform"],
+        )
+        .await;
+    for i in 0..3 {
+        app.create_user(&format!("u{i}"), &format!("u{i}@example.com"), &["user"])
+            .await;
+    }
+
+    let zero = app.get_as(&admin, "/api/v2/users?limit=0").await;
+    assert_eq!(zero.status, StatusCode::OK, "{}", zero.text());
+    assert_eq!(zero.json()["items"].as_array().unwrap().len(), 1);
+    let huge = app.get_as(&admin, "/api/v2/users?limit=1000").await;
+    assert_eq!(huge.status, StatusCode::OK);
+    assert_eq!(huge.json()["items"].as_array().unwrap().len(), 4);
+    assert!(huge.json()["next_cursor"].is_null());
+
+    let mut seen = Vec::new();
+    let mut cursor: Option<String> = None;
+    loop {
+        let path = match &cursor {
+            Some(c) => format!("/api/v2/users?limit=2&cursor={c}"),
+            None => "/api/v2/users?limit=2".to_owned(),
+        };
+        let page = app.get_as(&admin, &path).await;
+        assert_eq!(page.status, StatusCode::OK, "{}", page.text());
+        for item in page.json()["items"].as_array().unwrap() {
+            seen.push(item["id"].as_str().unwrap().to_owned());
+        }
+        match page.json()["next_cursor"].as_str() {
+            Some(next) => cursor = Some(next.to_owned()),
+            None => break,
+        }
+    }
+    seen.sort();
+    seen.dedup();
+    assert_eq!(seen.len(), 4, "every user exactly once: {seen:?}");
+
+    let ghost = app
+        .patch_as(
+            &admin,
+            &format!("/api/v2/users/{}/status", uuid::Uuid::now_v7()),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    assert_eq!(ghost.status, StatusCode::NOT_FOUND, "{}", ghost.text());
+}

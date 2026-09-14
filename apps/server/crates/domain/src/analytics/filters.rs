@@ -243,6 +243,18 @@ impl AnalyticsFilters {
         }
     }
 
+    /// 422 `sort_by`/`invalid` when the key is not one the listing honours
+    /// (an unknown key used to fall back silently to the default order).
+    pub fn require_sort_key(&self, allowed: &[&str]) -> Result<()> {
+        match self.sort_by.as_deref() {
+            Some(key) if !allowed.contains(&key) => Err(Error::validation(vec![invalid(
+                "sort_by",
+                format!("expected one of {}", allowed.join(", ")),
+            )])),
+            _ => Ok(()),
+        }
+    }
+
     #[must_use]
     pub const fn window_days(&self) -> i64 {
         self.window.days()
