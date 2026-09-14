@@ -33,6 +33,40 @@ const assessmentTypeKeys: Record<string, string> = {
   code_challenge: 'labels.assessmentType.codeChallenge',
 }
 
+/**
+ * `sort_by` keys each listing honours (the server 422s on any other key, and
+ * the overview endpoints do not sort at all — UX-095).
+ */
+export const AT_RISK_SORT_KEYS = ['risk', 'progress', 'activity', 'name'] as const
+export const COURSE_SORT_KEYS = [
+  'name',
+  'active',
+  'completion',
+  'risk',
+  'health',
+  'engagement',
+  'difficulty',
+  'signals',
+] as const
+export const ASSESSMENT_SORT_KEYS = ['title', 'submission', 'pass', 'difficulty', 'latency', 'signals'] as const
+
+const sortKeys: Record<string, string> = {
+  risk: 'filters.sortRisk',
+  progress: 'filters.sortProgress',
+  activity: 'filters.sortActivity',
+  name: 'filters.sortName',
+  active: 'filters.sortActiveLearners',
+  completion: 'filters.sortCompletion',
+  health: 'filters.sortHealth',
+  engagement: 'filters.sortEngagement',
+  difficulty: 'filters.sortDifficulty',
+  signals: 'filters.sortSignals',
+  title: 'filters.sortTitle',
+  submission: 'filters.sortSubmission',
+  pass: 'filters.sortPass',
+  latency: 'filters.sortLatency',
+}
+
 const bucketKeys: Record<string, string> = {
   day: 'labels.bucket.day',
   week: 'labels.bucket.week',
@@ -129,6 +163,10 @@ export function getAnalyticsCompareLabel(
   const lookup = normalizedCompare ?? 'none'
   const key = (compareKeys[lookup] ?? compareKeys.none)!
   return t(key)
+}
+
+export function getAnalyticsSortLabel(t: Translator, sortKey: string): string {
+  return resolveLabel(t, sortKeys, sortKey, sortKey)
 }
 
 export function getAnalyticsSeverityLabel(t: Translator, severity: string): string {

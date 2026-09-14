@@ -27,6 +27,8 @@ interface SharedAnalyticsPageProps extends AnalyticsPageProps {
   activeTab: ActiveTab
   renderTab: (data: AnalyticsTabData) => ReactNode
   requireAdmin?: boolean
+  /** `sort_by` keys the tab's listing honours (only the watchlist sorts, through `learners/at-risk`). */
+  sortKeys?: readonly string[]
 }
 
 export default function AnalyticsPage(props: SharedAnalyticsPageProps) {
@@ -49,9 +51,10 @@ export async function AnalyticsPageContent({
   activeTab,
   renderTab,
   requireAdmin = false,
+  sortKeys,
 }: SharedAnalyticsPageProps) {
   const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams])
-  const query = normalizeAnalyticsQuery(resolvedSearchParams)
+  const query = normalizeAnalyticsQuery(resolvedSearchParams, sortKeys)
   const [t, tErrors] = await Promise.all([
     getTranslations({ locale: resolvedParams.locale, namespace: 'TeacherAnalytics' }),
     getTranslations({ locale: resolvedParams.locale, namespace: 'Errors' }),
@@ -96,7 +99,7 @@ export async function AnalyticsPageContent({
   }
 
   return (
-    <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab={activeTab}>
+    <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab={activeTab} sortKeys={sortKeys}>
       {renderTab({ query, overview, adminData })}
     </AnalyticsShell>
   )

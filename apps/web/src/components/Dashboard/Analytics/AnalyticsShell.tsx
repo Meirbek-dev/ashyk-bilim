@@ -25,6 +25,7 @@ interface AnalyticsShellProps {
   activeTab: 'overview' | 'watchlist' | 'performance' | 'operations' | 'admin'
   courseOptions?: AnalyticsFilterOption[]
   cohortOptions?: AnalyticsFilterOption[]
+  sortKeys?: readonly string[] | undefined
   children: React.ReactNode
 }
 
@@ -40,6 +41,7 @@ export default function AnalyticsShell({
   activeTab,
   courseOptions = EMPTY_FILTER_OPTIONS,
   cohortOptions = EMPTY_FILTER_OPTIONS,
+  sortKeys,
   children,
 }: AnalyticsShellProps) {
   const t = useTranslations('TeacherAnalytics')
@@ -123,6 +125,7 @@ export default function AnalyticsShell({
             courseCount={overview.scope.course_ids.length}
             courseOptions={(courseOptions.length ? courseOptions : overview.course_options) ?? []}
             cohortOptions={(cohortOptions.length ? cohortOptions : overview.cohort_options) ?? []}
+            sortKeys={sortKeys}
           />
           <SavedViewsBar query={query} />
         </div>

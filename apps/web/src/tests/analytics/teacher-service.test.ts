@@ -28,6 +28,12 @@ describe('normalizeAnalyticsQuery', () => {
     expect(query.page_size).toBe(25)
   })
 
+  it('keeps sort_by only when the page honours it (UX-095)', () => {
+    expect(normalizeAnalyticsQuery({ sort_by: 'health' }).sort_by).toBeUndefined()
+    expect(normalizeAnalyticsQuery({ sort_by: 'health' }, ['risk', 'progress']).sort_by).toBeUndefined()
+    expect(normalizeAnalyticsQuery({ sort_by: 'risk' }, ['risk', 'progress']).sort_by).toBe('risk')
+  })
+
   it('preserves valid scope filters', () => {
     const query = normalizeAnalyticsQuery({
       course_ids: id,

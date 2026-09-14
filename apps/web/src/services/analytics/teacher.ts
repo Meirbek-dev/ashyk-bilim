@@ -55,14 +55,23 @@ async function analyticsRequest<T>(
   return apiJson(`analytics/${path}${buildQueryString(query)}`, init, parse)
 }
 
-export function normalizeAnalyticsQuery(searchParams: Record<string, string | string[] | undefined>): AnalyticsQuery {
+/**
+ * `sortKeys` are the `sort_by` values the page's endpoint honours; anything
+ * else (a stale bookmark, another page's key) is dropped rather than sent —
+ * the server answers 422 for unknown keys (UX-095).
+ */
+export function normalizeAnalyticsQuery(
+  searchParams: Record<string, string | string[] | undefined>,
+  sortKeys: readonly string[] = [],
+): AnalyticsQuery {
   const teacherUserId = getFirstQueryValue(searchParams.teacher_user_id)
   const page = getFirstQueryValue(searchParams.page)
   const pageSize = getFirstQueryValue(searchParams.page_size)
   const courseIds = getFirstQueryValue(searchParams.course_ids)
   const cohortIds = getFirstQueryValue(searchParams.cohort_ids)
   const timezone = getFirstQueryValue(searchParams.timezone)
-  const sortBy = getFirstQueryValue(searchParams.sort_by)
+  const rawSortBy = getFirstQueryValue(searchParams.sort_by)
+  const sortBy = rawSortBy && sortKeys.includes(rawSortBy) ? rawSortBy : undefined
   const bucketStart = getFirstQueryValue(searchParams.bucket_start)
 
   return {

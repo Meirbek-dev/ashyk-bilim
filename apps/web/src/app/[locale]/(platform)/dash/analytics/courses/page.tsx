@@ -5,6 +5,7 @@ import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar'
 import { Card, CardContent } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
+import { COURSE_SORT_KEYS } from '@/lib/analytics/labels'
 import { analyticsPageMetadata } from '../_components/metadata'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
@@ -21,7 +22,7 @@ export default function PlatformAnalyticsCoursesPage(props: {
 async function PlatformAnalyticsCoursesPageInner(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const query = normalizeAnalyticsQuery(await props.searchParams)
+  const query = normalizeAnalyticsQuery(await props.searchParams, COURSE_SORT_KEYS)
   const [t, tErrors] = await Promise.all([getTranslations('TeacherAnalytics'), getTranslations('Errors')])
 
   let courseList: Awaited<ReturnType<typeof getTeacherCourseList>>
@@ -80,6 +81,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
               courseCount={courseList.total ?? 0}
               courseOptions={courseList.course_options ?? []}
               cohortOptions={courseList.cohort_options ?? []}
+              sortKeys={COURSE_SORT_KEYS}
             />
           </CardContent>
         </Card>
