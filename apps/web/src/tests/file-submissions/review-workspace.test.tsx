@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
+import { APIError } from '@/lib/api/assertSuccess'
 import FileSubmissionReviewWorkspace from '@/features/file-submissions/review/FileSubmissionReviewWorkspace'
 import type {
   FileSubmissionAttempt,
@@ -169,6 +170,48 @@ describe('file submission review workspace', () => {
     await waitFor(() => expect(mocks.grade).toHaveBeenCalledTimes(1))
     expect(mocks.grade.mock.calls[0]?.[1]).toMatchObject({ action: 'save', final_score: 95 })
     await waitFor(() => expect(mocks.toastSuccess).toHaveBeenCalledWith('draftSaved'))
+  })
+
+  // BUG-154: a colleague's save (SSE refetch) or our own 412 must not be
+  // overwritten by the local draft — the notice blocks the actions until the
+  // teacher picks a version, and `If-Match` carries the version chosen.
+  it('blocks the actions when a colleague saves over a dirty draft and sends the chosen version', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <FileSubmissionReviewWorkspace activityUuid="activity_1" />
+      </QueryClientProvider>,
+    )
+    const feedback = await screen.findByDisplayValue('First learner feedback')
+    fireEvent.change(feedback, { target: { value: 'my draft' } })
+
+    const theirs = { ...attempt('attempt_first', 'Aruzhan', 66, 'their feedback'), version: 5 }
+    mocks.getAttempt.mockResolvedValue(theirs)
+    await queryClient.invalidateQueries({ queryKey: ['file-submission', 'review-attempt', 'attempt_first'] })
+
+    await screen.findByText('staleDraftTitle')
+    expect(screen.getByDisplayValue('my draft')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'saveGrade' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'publishResult' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'returnForRevision' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'keepMyDraft' }))
+    expect(screen.queryByText('staleDraftTitle')).toBeNull()
+    // A 412 (someone saved again) routes through the same notice; «load
+    // theirs» reseeds the editor from the refetched attempt.
+    mocks.grade.mockRejectedValueOnce(new APIError({ code: 'precondition-failed', message: 'stale', status: 412 }))
+    mocks.getAttempt.mockResolvedValue({ ...theirs, version: 6 })
+    fireEvent.click(screen.getByRole('button', { name: 'publishResult' }))
+    await waitFor(() => expect(mocks.grade).toHaveBeenCalledTimes(1))
+    expect(mocks.grade.mock.calls[0]?.[2]).toBe(5)
+    expect(mocks.grade.mock.calls[0]?.[1]).toMatchObject({ feedback: 'my draft' })
+
+    await screen.findByText('staleDraftTitle')
+    expect(screen.getByDisplayValue('my draft')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'useServerValues' }))
+    expect(screen.getByDisplayValue('their feedback')).not.toBeNull()
+    expect(screen.getByDisplayValue('66')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'saveGrade' })).toBeEnabled()
   })
 
   // UX-065: a released grade is final (BUG-128) — save/return are disabled with a hint.

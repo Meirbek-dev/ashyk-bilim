@@ -2,11 +2,24 @@
 
 import { useDeferredValue, useEffect, useState } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, ExternalLink, Eye, FileText, Loader2, RefreshCw, RotateCcw, Search, Send, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
+  Loader2,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  Send,
+  X,
+} from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import {
   AlertDialog,
@@ -50,6 +63,7 @@ import type {
   FileSubmissionGradePayload,
   FileSubmissionReviewItem,
 } from '@/features/file-submissions/services/file-submissions'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import { fromUnix } from '@/lib/api/contract'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { usePathname, useRouter } from '@/i18n/navigation'
@@ -122,10 +136,19 @@ export default function FileSubmissionReviewWorkspace({
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialAttemptUuid ?? null)
   const [pendingAttempt, setPendingAttempt] = useState<FileSubmissionReviewItem | null>(null)
   const [isGradeDirty, setIsGradeDirty] = useState(false)
+  // BUG-154 (mirrors GradeForm's BUG-123/UX-049 guard): `If-Match` carries the
+  // version the drafts were seeded from; a refetch that moves the version while
+  // the editor is dirty (colleague's save via SSE, or our own 412) raises a
+  // notice instead of silently sending the local draft over their grade.
+  const [baseVersion, setBaseVersion] = useState<number | null>(null)
+  const [remoteUpdate, setRemoteUpdate] = useState(false)
+  const [seenVersion, setSeenVersion] = useState('')
+  const [seedKey, setSeedKey] = useState(0)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewFilename, setPreviewFilename] = useState<string | null>(null)
   const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null) // attempt file id
   const t = useTranslations('FileSubmissionReview')
+  const tPanel = useTranslations('Grading.Panel')
   const { handleApiError, toastApiError } = useApiError()
   const navigationGuard = useUnsavedChangesGuard(isGradeDirty, {
     message: t('unsavedDescription'),
@@ -198,9 +221,15 @@ export default function FileSubmissionReviewWorkspace({
     }),
   )
 
+  if (selected && `${selected.id}:${selected.version}` !== seenVersion) {
+    setSeenVersion(`${selected.id}:${selected.version}`)
+    if (isGradeDirty && baseVersion !== null && seenVersion.startsWith(`${selected.id}:`)) setRemoteUpdate(true)
+    else setBaseVersion(selected.version)
+  }
+
   const gradeMutation = useMutation({
     mutationFn: async ({ attempt, payload }: { attempt: FileSubmissionAttempt; payload: FileSubmissionGradePayload }) =>
-      gradeFileSubmissionAttempt(attempt.id, payload, attempt.version),
+      gradeFileSubmissionAttempt(attempt.id, payload, baseVersion ?? attempt.version),
     onSuccess: async (_saved, { attempt, payload }) => {
       await Promise.all([
         config ? queryClient.invalidateQueries({ queryKey: queueQueryKey(config.id) }) : null,
@@ -216,8 +245,13 @@ export default function FileSubmissionReviewWorkspace({
             : t('draftSaved'),
       )
     },
-    onError: gradeError => {
+    onError: (gradeError, { attempt }) => {
       setIsGradeDirty(true)
+      if (hasErrorCode(gradeError, 'precondition-failed')) {
+        // Keep what was typed; the refetch raises the colleague notice.
+        void queryClient.invalidateQueries({ queryKey: attemptQueryKey(attempt.id) })
+        return
+      }
       toastApiError(gradeError, { fallback: t('updateSubmissionFailed') })
     },
   })
@@ -227,6 +261,7 @@ export default function FileSubmissionReviewWorkspace({
   function selectAttempt(attempt: FileSubmissionReviewItem) {
     setSelectedUuid(attempt.id)
     setIsGradeDirty(false)
+    setRemoteUpdate(false)
     setPreviewUrl(null)
     setPreviewFilename(null)
     const next = new URLSearchParams(urlSearchParams.toString())
@@ -540,11 +575,53 @@ export default function FileSubmissionReviewWorkspace({
             </section>
 
             <aside className="space-y-4">
+              {remoteUpdate ? (
+                <Alert
+                  role="status"
+                  className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                >
+                  <AlertTriangle className="size-4" />
+                  <AlertTitle>{tPanel('staleDraftTitle')}</AlertTitle>
+                  <AlertDescription className="mt-1 space-y-1 text-xs">
+                    <p>
+                      {tPanel('staleDraft.serverScoreLabel')} <strong>{selected.final_score ?? '—'}</strong>.{' '}
+                      {tPanel('staleDraftBlocked')}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-xs"
+                        onClick={() => {
+                          setSeedKey(key => key + 1)
+                          setBaseVersion(selected.version)
+                          setIsGradeDirty(false)
+                          setRemoteUpdate(false)
+                        }}
+                      >
+                        {tPanel('useServerValues')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 text-xs"
+                        onClick={() => {
+                          setBaseVersion(selected.version)
+                          setRemoteUpdate(false)
+                        }}
+                      >
+                        {tPanel('keepMyDraft')}
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
               <GradeEditor
-                key={selected.id}
+                key={`${selected.id}:${seedKey}`}
                 attempt={selected}
                 criteria={parsedCriteria}
                 isPending={gradeMutation.isPending}
+                disabled={remoteUpdate}
                 onDirtyChange={setIsGradeDirty}
                 onSubmit={payload => {
                   setIsGradeDirty(false)
@@ -631,12 +708,14 @@ function GradeEditor({
   attempt,
   criteria,
   isPending,
+  disabled,
   onDirtyChange,
   onSubmit,
 }: {
   attempt: FileSubmissionAttempt
   criteria: RubricCriterion[]
   isPending: boolean
+  disabled: boolean
   onDirtyChange: (dirty: boolean) => void
   onSubmit: (payload: FileSubmissionGradePayload) => void
 }) {
@@ -759,7 +838,7 @@ function GradeEditor({
         {/* UX-065: a released grade is final (BUG-128) — only a re-publish is offered. */}
         {isPublished ? <p className="text-muted-foreground text-xs">{t('publishedIsFinal')}</p> : null}
         <div className="grid gap-2">
-          <Button onClick={() => submit('GRADED')} disabled={isPending || isPublished}>
+          <Button onClick={() => submit('GRADED')} disabled={isPending || disabled || isPublished}>
             {isPending ? (
               <Loader2 data-icon="inline-start" className="animate-spin" />
             ) : (
@@ -767,11 +846,11 @@ function GradeEditor({
             )}
             {t('saveGrade')}
           </Button>
-          <Button variant="outline" onClick={() => submit('RETURNED')} disabled={isPending || isPublished}>
+          <Button variant="outline" onClick={() => submit('RETURNED')} disabled={isPending || disabled || isPublished}>
             <RotateCcw data-icon="inline-start" />
             {t('returnForRevision')}
           </Button>
-          <Button variant="outline" onClick={() => submit('PUBLISHED')} disabled={isPending}>
+          <Button variant="outline" onClick={() => submit('PUBLISHED')} disabled={isPending || disabled}>
             {t('publishResult')}
           </Button>
         </div>
