@@ -5,7 +5,10 @@ import userEvent from '@testing-library/user-event'
 import LoginClient from '@/app/[locale]/auth/login/login'
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
+  useTranslations: () =>
+    Object.assign((key: string, values?: Record<string, unknown>) => (values ? `${key}:${JSON.stringify(values)}` : key), {
+      has: () => false,
+    }),
   useLocale: () => 'ru-RU',
 }))
 let searchParams = new URLSearchParams()
@@ -60,5 +63,35 @@ describe('/auth/login', () => {
     await user.click(screen.getByRole('button', { name: 'login' }))
     await waitFor(() => expect(input('totpCode')).not.toBeNull())
     expect(screen.queryByText('googleCancelled')).toBeNull()
+  })
+
+  // UX-083: an empty submit left «required» under both fields; filling them
+  // and submitting again kept the stale errors for the whole pending window.
+  it('clears field errors while the next submit is pending', async () => {
+    let settle: (value: unknown) => void = () => {}
+    loginAction.mockImplementation(() => new Promise(resolve => (settle = resolve)))
+    const user = userEvent.setup()
+    render(<LoginClient />)
+    await user.click(screen.getByRole('button', { name: 'login' }))
+    await waitFor(() => expect(screen.getAllByText('required')).toHaveLength(2))
+
+    await user.type(input('login')!, 'aigerim')
+    await user.type(input('password')!, 'correct horse')
+    await user.click(screen.getByRole('button', { name: 'login' }))
+    await waitFor(() => expect(loginAction).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('required')).toBeNull()
+    settle({ ok: false, reason: 'invalid_credentials', code: 'invalid-credentials' })
+    expect(await screen.findByText('wrongCredentials')).toBeDefined()
+  })
+
+  // UX-083: the 429 banner names the retry window from `Retry-After`.
+  it('tells the user when to retry after a rate limit', async () => {
+    loginAction.mockResolvedValue({ ok: false, reason: 'rate_limited', code: 'rate-limited', retryAfterSeconds: 890 })
+    const user = userEvent.setup()
+    render(<LoginClient />)
+    await user.type(input('login')!, 'aigerim')
+    await user.type(input('password')!, 'x')
+    await user.click(screen.getByRole('button', { name: 'login' }))
+    expect(await screen.findByText('rateLimitedRetry:{"minutes":15}')).toBeDefined()
   })
 })

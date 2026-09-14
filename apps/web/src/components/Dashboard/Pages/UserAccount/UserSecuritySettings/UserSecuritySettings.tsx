@@ -26,13 +26,14 @@ import { fromUnix } from '@/lib/api/contract'
 import { APIError, hasErrorCode } from '@/lib/api/assertSuccess'
 import {
   changePassword,
+  getSessionInfo,
   listSessions,
   removeTotp,
   revokeSession,
   startTotpEnrollment,
   verifyTotpEnrollment,
 } from '@services/auth/auth'
-import type { TotpEnrollment } from '@/lib/api/generated/zod'
+import type { SessionInfo, TotpEnrollment } from '@/lib/api/generated/zod'
 
 /**
  * Security settings against the v2 BFF: the list of live sessions with
@@ -82,7 +83,16 @@ function SessionsSection({ t }: { t: Translator }) {
       toast.success(t('sessionRevoked'))
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.sessions() })
     },
-    onError: error => toastApiError(error),
+    onError: async error => {
+      // UX-082: ended elsewhere (logout, password change, another tab) —
+      // the row is stale, not the request.
+      if (hasErrorCode(error, 'not-found')) {
+        toast.info(t('sessionAlreadyEnded'))
+        await queryClient.invalidateQueries({ queryKey: queryKeys.auth.sessions() })
+        return
+      }
+      toastApiError(error)
+    },
   })
 
   return (
@@ -261,11 +271,26 @@ function PasswordSection({ t }: { t: Translator }) {
 
 function TotpSection({ t, initialActive }: { t: Translator; initialActive: boolean }) {
   const { toastApiError } = useApiError()
+  const queryClient = useQueryClient()
   const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null)
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
-  const [active, setActive] = useState(initialActive)
   const [confirmDisable, setConfirmDisable] = useState(false)
+  // UX-082: `initialActive` is the server render's snapshot; a disable in
+  // another tab must show here, so the live flag is re-read on focus.
+  const sessionQuery = useQuery({
+    queryKey: queryKeys.auth.session(),
+    queryFn: getSessionInfo,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    retry: 1,
+    retryDelay: 1_000,
+  })
+  const active = sessionQuery.data?.mfa_enabled ?? initialActive
+  const setActive = (mfa_enabled: boolean) => {
+    queryClient.setQueryData<SessionInfo>(queryKeys.auth.session(), prev => (prev ? { ...prev, mfa_enabled } : prev))
+    void queryClient.invalidateQueries({ queryKey: queryKeys.auth.session() })
+  }
   // Disabling unmounts the button that opened the dialog: focus the heading.
   const headingRef = useRef<HTMLHeadingElement>(null)
 

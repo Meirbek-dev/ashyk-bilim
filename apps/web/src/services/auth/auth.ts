@@ -1,8 +1,12 @@
 import { logoutAction } from '@/app/actions/auth'
 import { apiJson } from '@/lib/api-client'
 import { broadcastLogout } from '@/components/providers/session-provider'
-import { SessionSummary, TotpEnrollment } from '@/lib/api/generated/zod'
-import type { SessionSummary as SessionSummaryType, TotpEnrollment as TotpEnrollmentType } from '@/lib/api/generated/zod'
+import { SessionInfo, SessionSummary, TotpEnrollment } from '@/lib/api/generated/zod'
+import type {
+  SessionInfo as SessionInfoType,
+  SessionSummary as SessionSummaryType,
+  TotpEnrollment as TotpEnrollmentType,
+} from '@/lib/api/generated/zod'
 
 interface LogoutOptions {
   redirectTo?: string
@@ -14,6 +18,11 @@ export async function logout(options?: LogoutOptions): Promise<void> {
 }
 
 // ── Sessions (BFF) ─────────────────────────────────────────────────────────────
+
+/** The caller's current session (`GET /auth/session`): grants and `mfa_enabled`. */
+export async function getSessionInfo(): Promise<SessionInfoType> {
+  return apiJson('auth/session', {}, data => SessionInfo.parse(data))
+}
 
 /** All live sessions of the caller (`GET /auth/sessions`). */
 export async function listSessions(): Promise<SessionSummaryType[]> {

@@ -99,6 +99,7 @@ export const queryKeys = {
     users: (userGroupId: string | number) => ['user-groups', 'users', userGroupId] as const,
   },
   auth: {
+    session: () => ['auth', 'session'] as const,
     sessions: () => ['auth', 'sessions'] as const,
   },
   users: {

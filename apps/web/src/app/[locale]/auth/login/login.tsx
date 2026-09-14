@@ -84,7 +84,10 @@ function LoginClient() {
       case 'account_disabled':
         return t('accountDisabled')
       case 'rate_limited':
-        return t('rateLimited')
+        // UX-083: `Retry-After` is the live window TTL — say when to come back.
+        return result.retryAfterSeconds
+          ? t('rateLimitedRetry', { minutes: Math.max(1, Math.ceil(result.retryAfterSeconds / 60)) })
+          : t('rateLimited')
       case 'service_unavailable':
         return t('serviceUnavailable')
       case 'mfa_required':
@@ -191,6 +194,10 @@ function LoginClient() {
   }
 
   const anyPending = isPending || isPendingGoogle
+  // UX-083: `useActionState` keeps the previous result until the action
+  // settles — a submit after a validation miss must not show stale
+  // «required» under fields that are now filled.
+  const fieldErrors: LoginState['fieldErrors'] = isPending ? {} : state.fieldErrors
   // The Google `?error=` banner belongs to the credentials step only: once
   // the password went through, a stale OAuth failure above the code field
   // reads as if the code step failed.
@@ -245,7 +252,7 @@ function LoginClient() {
                   className="w-full"
                 />
               </FieldContent>
-              <FieldError>{state.fieldErrors.login}</FieldError>
+              <FieldError>{fieldErrors.login}</FieldError>
             </Field>
 
             <Field key="password">
@@ -258,7 +265,7 @@ function LoginClient() {
                   className="w-full"
                 />
               </FieldContent>
-              <FieldError>{state.fieldErrors.password}</FieldError>
+              <FieldError>{fieldErrors.password}</FieldError>
             </Field>
 
             <AuthSubmitButton isPending={anyPending} label={t('login')} pendingLabel={t('loading')} />
@@ -279,7 +286,7 @@ function LoginClient() {
                 />
               </FieldContent>
               <FieldDescription>{t('totpHint')}</FieldDescription>
-              <FieldError>{state.fieldErrors.totpCode}</FieldError>
+              <FieldError>{fieldErrors.totpCode}</FieldError>
             </Field>
 
             <AuthSubmitButton isPending={anyPending} label={t('verifyCode')} pendingLabel={t('loading')} />

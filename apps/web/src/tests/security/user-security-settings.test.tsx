@@ -10,8 +10,9 @@ vi.mock('next-intl', () => ({
   useFormatter: () => ({ dateTime: (date: Date) => date.toISOString() }),
 }))
 
+const toastInfo = vi.fn()
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), info: (...args: unknown[]) => toastInfo(...args) },
 }))
 
 vi.mock('@/hooks/useApiError', () => ({
@@ -21,18 +22,30 @@ vi.mock('@/hooks/useApiError', () => ({
 const mockListSessions = vi.fn()
 const mockChangePassword = vi.fn()
 const mockRemoveTotp = vi.fn()
+const mockRevokeSession = vi.fn()
+const mockGetSessionInfo = vi.fn()
 vi.mock('@services/auth/auth', () => ({
   changePassword: (...args: unknown[]) => mockChangePassword(...args),
+  getSessionInfo: (...args: unknown[]) => mockGetSessionInfo(...args),
   listSessions: (...args: unknown[]) => mockListSessions(...args),
   removeTotp: (...args: unknown[]) => mockRemoveTotp(...args),
-  revokeSession: vi.fn(),
+  revokeSession: (...args: unknown[]) => mockRevokeSession(...args),
   startTotpEnrollment: vi.fn(),
   verifyTotpEnrollment: vi.fn(),
 }))
 
+const sessionInfo = (mfa_enabled: boolean) => ({
+  session_id: 's1',
+  user_id: 'u1',
+  roles: ['user'],
+  permissions: [],
+  mfa_enabled,
+})
+
 describe('UserSecuritySettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetSessionInfo.mockImplementation(() => Promise.resolve(sessionInfo(false)))
   })
 
   afterEach(() => {
@@ -85,6 +98,7 @@ describe('UserSecuritySettings', () => {
   // of after a 409 from a probing enrol call.
   it('renders the enrolled state from mfa_enabled without probing the API', async () => {
     mockListSessions.mockResolvedValue([])
+    mockGetSessionInfo.mockResolvedValue(sessionInfo(true))
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={queryClient}>
@@ -134,7 +148,11 @@ describe('UserSecuritySettings', () => {
   // UX-018: «Disable» removed TOTP on the spot; revoke-session asks first.
   it('asks for confirmation before disabling TOTP', async () => {
     mockListSessions.mockResolvedValue([])
-    mockRemoveTotp.mockResolvedValue(undefined)
+    mockGetSessionInfo.mockResolvedValue(sessionInfo(true))
+    mockRemoveTotp.mockImplementation(() => {
+      mockGetSessionInfo.mockResolvedValue(sessionInfo(false))
+      return Promise.resolve(undefined)
+    })
     const user = userEvent.setup()
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
@@ -158,5 +176,44 @@ describe('UserSecuritySettings', () => {
     // UX-055: the trigger unmounted with the dialog — focus lands on the
     // section heading, not <body>.
     await waitFor(() => expect(document.activeElement?.id).toBe('totp-heading'))
+  })
+
+  // UX-082: a session ended elsewhere → DELETE 404 was a generic «not
+  // found» toast and the dead row stayed until a reload.
+  it('drops a session row that had already ended elsewhere', async () => {
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    const row = { handle: 'abcd', current: false, created_at_unix: 0, last_seen_unix: 0, ip: null, user_agent: null }
+    mockListSessions.mockResolvedValueOnce([{ ...row, current: true, handle: 'me' }, row]).mockResolvedValue([
+      { ...row, current: true, handle: 'me' },
+    ])
+    mockRevokeSession.mockRejectedValue(new APIError({ code: 'not-found', message: 'gone', status: 404 }))
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings />
+      </QueryClientProvider>,
+    )
+    await user.click(await screen.findByRole('button', { name: 'revoke' }))
+    const dialog = await screen.findByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: 'revoke' }))
+    await waitFor(() => expect(toastInfo).toHaveBeenCalledWith('sessionAlreadyEnded'))
+    await waitFor(() => expect(mockListSessions).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'revoke' })).toBeNull())
+  })
+
+  // UX-082: TOTP disabled in another tab — the server snapshot said
+  // «enabled»; the live session flag wins once it arrives.
+  it('reflects a TOTP disable made in another tab from the live session', async () => {
+    mockListSessions.mockResolvedValue([])
+    mockGetSessionInfo.mockResolvedValue(sessionInfo(false))
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings mfaEnabled />
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByText('enableTotp')).toBeDefined()
+    expect(screen.queryByText('disableTotp')).toBeNull()
   })
 })
