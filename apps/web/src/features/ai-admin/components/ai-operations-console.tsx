@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useCancelAIRun } from '@/features/ai-experience/api/use-cancel-ai-run'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 
 import { useAIOperationRunDetail, useAIOperationRuns } from '../api/use-ai-usage'
 import type { AIOperationFilters, AIOperationRun } from '../api/use-ai-usage'
@@ -28,13 +29,15 @@ export function AIOperationsConsole() {
   const t = useTranslations('AiExperience.operationsConsole')
   const tErrors = useTranslations('Errors')
   const locale = useLocale()
+  const featureLabel = (feature: string) => (t.has(`features.${feature}`) ? t(`features.${feature}`) : feature)
+  const modelLabel = (model: string | null | undefined) =>
+    model == null ? t('notAvailable') : model === 'draft-mode' ? t('draftModeModel') : model
   const [filters, setFilters] = useState<AIOperationFilters>({ days: 7 })
   const [selectedRun, setSelectedRun] = useState<string | null>(null)
   const runs = useAIOperationRuns(filters)
   const detail = useAIOperationRunDetail(selectedRun)
   const cancelRun = useCancelAIRun()
   const number = useMemo(() => new Intl.NumberFormat(locale), [locale])
-  const date = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }), [locale])
   const metrics = useMemo(() => summarizeRuns(runs.data ?? []), [runs.data])
   // `items` lets the closed triggers show labels instead of the raw "7" / "all".
   const dayItems = [1, 7, 30].map(count => ({ value: String(count), label: t('days', { count }) }))
@@ -179,14 +182,14 @@ export function AIOperationsConsole() {
             <TableBody>
               {(runs.data ?? []).map(run => (
                 <TableRow key={run.id}>
-                  <TableCell>{run.feature}</TableCell>
+                  <TableCell>{featureLabel(run.feature)}</TableCell>
                   <TableCell>
                     <Badge variant={run.status === 'failed' ? 'destructive' : run.stuck ? 'warning' : 'outline'}>
                       {run.stuck ? t('stuck') : t(`statuses.${run.status}`)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{date.format(new Date(run.started_at_unix * 1000))}</TableCell>
-                  <TableCell className="max-w-48 truncate">{run.model_name ?? t('notAvailable')}</TableCell>
+                  <TableCell>{formatDate(run.started_at_unix * 1000, locale, DATE_TIME_OPTIONS)}</TableCell>
+                  <TableCell className="max-w-48 truncate">{modelLabel(run.model_name)}</TableCell>
                   <TableCell>{run.error_code ?? t('notAvailable')}</TableCell>
                   <TableCell>
                     <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedRun(run.id)}>
@@ -249,8 +252,8 @@ export function AIOperationsConsole() {
                 ) : null}
                 <code className="break-all">{detail.data.run.id}</code>
                 <dl className="grid gap-2 sm:grid-cols-3">
-                  <Metric label={t('table.feature')} value={detail.data.run.feature} />
-                  <Metric label={t('table.model')} value={detail.data.run.model_name ?? t('notAvailable')} />
+                  <Metric label={t('table.feature')} value={featureLabel(detail.data.run.feature)} />
+                  <Metric label={t('table.model')} value={modelLabel(detail.data.run.model_name)} />
                   <Metric label={t('artifacts')} value={number.format(detail.data.artifacts.length)} />
                 </dl>
                 <ol className="flex flex-col gap-2">

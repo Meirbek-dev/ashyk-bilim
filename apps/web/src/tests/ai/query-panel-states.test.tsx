@@ -16,7 +16,8 @@ const queryMocks = vi.hoisted(() => ({
 
 vi.mock('next-intl', () => ({
   useLocale: () => 'en-US',
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
+  useTranslations: (namespace: string) =>
+    Object.assign((key: string) => `${namespace}.${key}`, { has: (key: string) => key.startsWith('features.') }),
 }))
 
 vi.mock('@/features/ai-admin/api/use-ai-usage', () => ({
@@ -117,7 +118,7 @@ describe('AIOperationsConsole query states', () => {
 
     render(<AIOperationsConsole />)
 
-    expect(screen.getByText('course_analysis')).toBeInTheDocument()
+    expect(screen.getByText('AiExperience.operationsConsole.features.course_analysis')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'AiExperience.operationsConsole.inspect' })).toBeInTheDocument()
   })
 
@@ -133,6 +134,8 @@ describe('AIOperationsConsole query states', () => {
       'AiExperience.operationsConsole.statuses.all',
     )
     expect(screen.getByText('AiExperience.operationsConsole.statuses.succeeded')).toBeInTheDocument()
+    // UX-094: feature codes and the draft-mode provider are localized.
+    expect(screen.getByText('AiExperience.operationsConsole.features.course_analysis')).toBeInTheDocument()
   })
 
   it('keeps stale data visible when a background refresh fails', () => {
@@ -145,7 +148,7 @@ describe('AIOperationsConsole query states', () => {
     render(<AIOperationsConsole />)
 
     expect(screen.getByRole('alert')).toHaveTextContent('Errors.somethingWentWrong')
-    expect(screen.getByText('course_analysis')).toBeInTheDocument()
+    expect(screen.getByText('AiExperience.operationsConsole.features.course_analysis')).toBeInTheDocument()
   })
 })
 

@@ -226,12 +226,10 @@ function Users() {
                     username: user.username,
                   })}
                   dialogTrigger={
-                    <span>
-                      <Button variant="outline" size="sm" onClick={() => handleRolesModal(user)}>
-                        <KeyRound className="size-3.5" />
-                        {t('editRoleButton')}
-                      </Button>
-                    </span>
+                    <Button variant="outline" size="sm" type="button" onClick={() => handleRolesModal(user)}>
+                      <KeyRound className="size-3.5" />
+                      {t('editRoleButton')}
+                    </Button>
                   }
                 />
               )}

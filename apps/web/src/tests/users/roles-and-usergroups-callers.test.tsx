@@ -14,7 +14,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vite-plus/test'
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
 }))
 
 vi.mock('sonner', () => ({
@@ -37,8 +37,24 @@ vi.mock('@/features/users/queries/users.query', () => ({
 vi.mock('@/features/users/hooks/useUsers', () => ({
   useRoles: () => ({
     data: [
-      { slug: 'user', priority: 10, is_system: true, permissions: [], display_name_key: '', description_key: '' },
-      { slug: 'admin', priority: 100, is_system: true, permissions: [], display_name_key: '', description_key: '' },
+      {
+        slug: 'user',
+        priority: 10,
+        is_system: true,
+        permissions: [],
+        display_name_key: '',
+        description_key: '',
+        display_name: 'Учащийся',
+      },
+      {
+        slug: 'admin',
+        priority: 100,
+        is_system: true,
+        permissions: [],
+        display_name_key: '',
+        description_key: '',
+        display_name: 'Администратор',
+      },
     ],
     error: undefined,
   }),
@@ -59,6 +75,8 @@ describe('RolesUpdate role-assignment payload (v2)', () => {
       />,
     )
 
+    // UX-094: options carry the localized role name, not the slug.
+    expect(screen.getByRole('option', { name: 'Администратор' })).toHaveValue('admin')
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } })
     fireEvent.click(screen.getByRole('button', { name: 'updateButton' }))
 
@@ -72,6 +90,28 @@ describe('RolesUpdate role-assignment payload (v2)', () => {
       expect(typeof call[0]).toBe('string')
       expect(typeof call[1]).toBe('string')
     }
+  })
+})
+
+describe('RolesUpdate unchanged role (UX-094)', () => {
+  it('closes without a DELETE + POST round-trip when the role did not change', async () => {
+    assignRoleToUser.mockClear()
+    removeRoleFromUser.mockClear()
+    const { default: RolesUpdate } = await import('@/components/Objects/Modals/Dash/Users/RolesUpdate')
+    const setRolesModal = vi.fn()
+
+    render(
+      <RolesUpdate
+        user={{ id: '0198c0ae-0000-7000-8000-000000000001', username: 'alice' }}
+        setRolesModal={setRolesModal}
+        alreadyAssignedRole="user"
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'updateButton' }))
+
+    await vi.waitFor(() => expect(setRolesModal).toHaveBeenCalledWith(false))
+    expect(assignRoleToUser).not.toHaveBeenCalled()
+    expect(removeRoleFromUser).not.toHaveBeenCalled()
   })
 })
 

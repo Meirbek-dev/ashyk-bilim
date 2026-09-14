@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@components/ui/alert'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { allMembersQueryOptions } from '@/features/users/queries/users.query'
 import { useRoles } from '@/features/users/hooks/useUsers'
+import { useRoleLabels } from '@/features/users/hooks/useRoleLabels'
 import { Controller, useForm } from 'react-hook-form'
 import { useState } from 'react'
 import { Button } from '@components/ui/button'
@@ -49,6 +50,7 @@ const RolesUpdate: FC<Props> = props => {
 
   // Fetch available platform roles and sort them by system flag + priority
   const { data: roles, error: rolesError } = useRoles()
+  const { roleName } = useRoleLabels(roles)
 
   const sortedRoles = (roles ?? []).toSorted((a: Role, b: Role) => {
     // System roles first, then by descending priority, then by name
@@ -62,6 +64,11 @@ const RolesUpdate: FC<Props> = props => {
   })
   const handleSubmit = async (values: FormData) => {
     setError(null)
+    // Same role as before: nothing to change, no DELETE + POST round-trip.
+    if (values.role === props.alreadyAssignedRole) {
+      props.setRolesModal(false)
+      return
+    }
 
     const toastId = toast.loading(t('toastLoading'))
     try {
@@ -121,7 +128,7 @@ const RolesUpdate: FC<Props> = props => {
                 ) : (
                   sortedRoles.map((role: Role) => (
                     <NativeSelectOption key={role.slug} value={role.slug}>
-                      {role.slug}
+                      {roleName(role)}
                     </NativeSelectOption>
                   ))
                 )}
