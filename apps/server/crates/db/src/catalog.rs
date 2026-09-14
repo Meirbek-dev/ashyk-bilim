@@ -130,7 +130,7 @@ pub async fn list_courses(
              AND (NOT $5 OR $1 OR creator_id = $2
                   OR EXISTS (SELECT 1 FROM resource_authors ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $2
-                               AND ra.status = 'active'))
+                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))
              AND ($6::text IS NULL OR name ILIKE '%' || $6 || '%'
                   OR description ILIKE '%' || $6 || '%')
              AND CASE $7::text
@@ -192,7 +192,7 @@ pub async fn summarize_courses(
            WHERE $1 OR creator_id = $2
               OR EXISTS (SELECT 1 FROM resource_authors ra
                          WHERE ra.course_id = courses.id AND ra.user_id = $2
-                           AND ra.status = 'active')"#,
+                           AND ra.status = 'active' AND ra.authorship <> 'reporter')"#,
         see_all,
         viewer.0
     )
@@ -225,7 +225,7 @@ pub async fn list_user_courses(
            WHERE (creator_id = $1
                   OR EXISTS (SELECT 1 FROM resource_authors ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $1
-                               AND ra.status = 'active'))
+                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))
              AND (public OR $2)
              AND ($3::uuid IS NULL OR id < $3)
            ORDER BY id DESC

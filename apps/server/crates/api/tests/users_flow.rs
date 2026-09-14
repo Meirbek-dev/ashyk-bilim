@@ -472,6 +472,21 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
     let helped = app.get_as(&stranger, "/api/v2/users/helper/courses").await;
     assert_eq!(helped.json()["items"].as_array().unwrap().len(), 1);
+    // A reporter (read-only roster role) is not an author (BUG-146).
+    let reporter = app
+        .create_user("reporter", "r@example.com", &["user"])
+        .await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{}/contributors", ids[0]),
+            &serde_json::json!({ "user_id": reporter, "role": "reporter" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let reported = app.get("/api/v2/users/reporter/courses").await;
+    assert_eq!(reported.status, StatusCode::OK, "{}", reported.text());
+    assert_eq!(reported.json()["items"].as_array().unwrap().len(), 0);
 
     let unknown = app.get_as(&stranger, "/api/v2/users/nobody/courses").await;
     assert_eq!(unknown.status, StatusCode::NOT_FOUND);

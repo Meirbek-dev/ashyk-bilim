@@ -266,6 +266,14 @@ async fn roster_management_rules(pool: PgPool) {
         )
         .await;
     assert_eq!(evict.status, StatusCode::CONFLICT);
+    // …the creator deleting their own id included (409, not 404 — UX-081).
+    let self_evict = app
+        .delete_as(
+            &teacher,
+            &format!("/api/v2/courses/{course}/contributors/{creator_id}"),
+        )
+        .await;
+    assert_eq!(self_evict.status, StatusCode::CONFLICT);
 
     // Remove → 204, then 404; a platform manager may do it anywhere.
     let removed = app
@@ -412,6 +420,11 @@ async fn user_role_authors_write_reporters_read(pool: PgPool) {
         )
         .await;
     assert_eq!(state.status, StatusCode::OK, "{}", state.text());
+    // …but is not an author: `mine` and its summary exclude the course (BUG-146).
+    let mine = app.get_as(&reporter, "/api/v2/courses?mine=true").await;
+    assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
+    assert_eq!(mine.json()["items"].as_array().unwrap().len(), 0);
+    assert_eq!(mine.json()["summary"]["total"], 0);
     assert_eq!(
         add_chapter(&app, &reporter, &course).await,
         StatusCode::FORBIDDEN
