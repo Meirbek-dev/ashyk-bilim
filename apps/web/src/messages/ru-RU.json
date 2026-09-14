@@ -7498,7 +7498,15 @@
         "7d": "7 дней",
         "28d": "28 дней",
         "90d": "90 дней"
-      }
+      },
+      "sortProgress": "Прогресс",
+      "sortActivity": "Активность",
+      "sortName": "Имя",
+      "sortEngagement": "Вовлечённость",
+      "sortTitle": "Название",
+      "sortSubmission": "Доля сдавших",
+      "sortPass": "Доля успешных",
+      "sortLatency": "Задержка проверки"
     },
     "labels": {
       "bucket": {
@@ -7890,7 +7898,8 @@
       "assessmentStatGenerated": "Сформировано",
       "assessmentOpsAuditBulkSummary": "{action} для {count, plural, one {# учащегося} few {# учащихся} other {# учащихся}}",
       "assessmentItemAccuracy": "Точность {value}%",
-      "courseContentHealthNoLearners": "Пока нет данных: в курсе ещё нет учащихся."
+      "courseContentHealthNoLearners": "Пока нет данных: в курсе ещё нет учащихся.",
+      "teacherFilterDenied": "Фильтр по преподавателю недоступен: просмотр аналитики другого преподавателя требует платформенного доступа."
     },
     "codes": {
       "active_learners": "Активные учащиеся",
@@ -10863,7 +10872,16 @@
       "detailTitle": "Очищенные данные запуска",
       "close": "Закрыть",
       "artifacts": "Артефакты",
-      "notAvailable": "Нет данных"
+      "notAvailable": "Нет данных",
+      "features": {
+        "course_analysis": "Анализ курса",
+        "submission_analysis": "Анализ отправки",
+        "remediation": "Коррекция",
+        "study_companion": "Учебный помощник",
+        "lecture_review": "Проверка лекции",
+        "course_qa": "Вопросы по курсу"
+      },
+      "draftModeModel": "черновой режим (без модели)"
     },
     "tokenUsageChart": {
       "title": "ИИ-использование",

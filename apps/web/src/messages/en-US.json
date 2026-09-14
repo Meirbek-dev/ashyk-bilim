@@ -7493,7 +7493,15 @@
         "7d": "7 days",
         "28d": "28 days",
         "90d": "90 days"
-      }
+      },
+      "sortProgress": "Progress",
+      "sortActivity": "Activity",
+      "sortName": "Name",
+      "sortEngagement": "Engagement",
+      "sortTitle": "Title",
+      "sortSubmission": "Submission rate",
+      "sortPass": "Pass rate",
+      "sortLatency": "Grading latency"
     },
     "labels": {
       "bucket": {
@@ -7875,7 +7883,8 @@
       "assessmentStatGenerated": "Generated",
       "assessmentOpsAuditBulkSummary": "{action} for {count, plural, one {# learner} other {# learners}}",
       "assessmentItemAccuracy": "Accuracy {value}%",
-      "courseContentHealthNoLearners": "No data yet: the course has no learners."
+      "courseContentHealthNoLearners": "No data yet: the course has no learners.",
+      "teacherFilterDenied": "The teacher filter is unavailable: viewing another teacher’s analytics needs platform-wide access."
     },
     "codes": {
       "active_learners": "Active learners",
@@ -10849,7 +10858,16 @@
       "detailTitle": "Redacted run detail",
       "close": "Close",
       "artifacts": "Artifacts",
-      "notAvailable": "Not available"
+      "notAvailable": "Not available",
+      "features": {
+        "course_analysis": "Course analysis",
+        "submission_analysis": "Submission analysis",
+        "remediation": "Remediation",
+        "study_companion": "Study companion",
+        "lecture_review": "Lecture review",
+        "course_qa": "Course Q&A"
+      },
+      "draftModeModel": "draft mode (no model)"
     },
     "tokenUsageChart": {
       "title": "AI usage",
