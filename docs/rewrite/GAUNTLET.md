@@ -110,6 +110,9 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   `src/messages/*.json` concurrently lost one side's keys (pass 11: `scopeDenied`,
   `membersHeader`, …). Give at most one builder per batch catalog write access, or have
   builders re-read the file immediately before every catalog edit and commit right away.
+- **Stack rebuilt a third time 2026-09-14 19:55** (machine restart; same recipe, ~5 min).
+  Start Zitadel only after Postgres is up for a few seconds — with `--rm` a race on pg
+  readiness makes the container vanish silently; start it without `--rm` so the log survives.
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
