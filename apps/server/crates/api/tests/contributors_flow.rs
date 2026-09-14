@@ -204,7 +204,12 @@ async fn roster_management_rules(pool: PgPool) {
             &serde_json::json!({ "user_id": "01900000-0000-7000-8000-000000000000" }),
         )
         .await;
-    assert_eq!(unknown_id.status, StatusCode::NOT_FOUND, "{}", unknown_id.text());
+    assert_eq!(
+        unknown_id.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        unknown_id.text()
+    );
     let dup = app
         .post_as(
             &teacher,
