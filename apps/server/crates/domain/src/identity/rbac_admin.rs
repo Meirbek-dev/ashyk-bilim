@@ -6,7 +6,7 @@
 
 use ab_core::id::UserId;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, ErrorCode, Result};
+use ab_core::{Error, ErrorCode, FieldError, Result};
 use sqlx::PgPool;
 
 use crate::identity::Actor;
@@ -147,6 +147,7 @@ impl RbacAdminService {
         priority: i32,
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
+        let display_name = trimmed_display_name(display_name)?;
         let created =
             ab_db::identity::insert_role(&self.pool, slug, display_name, description, priority)
                 .await?;
@@ -174,6 +175,7 @@ impl RbacAdminService {
         priority: Option<i32>,
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
+        let display_name = display_name.map(trimmed_display_name).transpose()?;
         if !ab_db::identity::update_role(&self.pool, slug, display_name, description, priority)
             .await?
         {
@@ -349,4 +351,17 @@ impl RbacAdminService {
         tracing::info!(%user_id, rbac_version, sessions = updated, "rbac change propagated");
         Ok(())
     }
+}
+
+/// Trimmed display name, or 422 `display_name`/`required` when blank (like usergroups).
+fn trimmed_display_name(name: &str) -> Result<&str> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(Error::validation(vec![FieldError {
+            field: "display_name".into(),
+            code: "required".into(),
+            message: "display_name must not be blank".into(),
+        }]));
+    }
+    Ok(name)
 }
