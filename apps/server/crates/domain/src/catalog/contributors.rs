@@ -81,7 +81,10 @@ impl CoursesService {
     ) -> Result<Contributor> {
         let course = self.manageable(actor, course_id).await?;
         let user_id = match target {
-            Target::UserId(id) => id,
+            Target::UserId(id) => ab_db::identity::user_status(&self.pool, id)
+                .await?
+                .map(|_| id)
+                .ok_or_else(|| Error::not_found("user"))?,
             Target::Username(name) => ab_db::identity::find_user_id_by_username(&self.pool, &name)
                 .await?
                 .ok_or_else(|| Error::not_found("user"))?,
