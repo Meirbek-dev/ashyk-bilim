@@ -62,6 +62,46 @@ fn put(session: &MintedSession, uri: String) -> Request<Body> {
         .unwrap()
 }
 
+/// BUG-153: a post retried with the same `Idempotency-Key` replays the
+/// created post instead of posting twice; the key with another body is 422.
+#[sqlx::test(migrations = "../../migrations")]
+async fn create_replays_under_an_idempotency_key(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = public_course(&app, &teacher, "Forum retry").await;
+    let alice = learner(&app, "alice").await;
+    let post = |key: &str, body: serde_json::Value| {
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/v2/courses/{course_id}/discussions"))
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &alice.cookie)
+            .header("idempotency-key", key)
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    };
+    let body = serde_json::json!({ "content": "<p>once</p>" });
+    let first = app.send(post("k1", body.clone())).await;
+    assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
+    let replay = app.send(post("k1", body)).await;
+    assert_eq!(replay.status, StatusCode::CREATED, "{}", replay.text());
+    assert_eq!(replay.json(), first.json(), "the stored response, verbatim");
+    let reused = app
+        .send(post("k1", serde_json::json!({ "content": "<p>twice</p>" })))
+        .await;
+    assert_eq!(reused.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(reused.json()["field_errors"][0]["code"], "reused");
+    let list = app
+        .get_as(&alice, &format!("/api/v2/courses/{course_id}/discussions"))
+        .await;
+    assert_eq!(
+        list.json()["items"].as_array().unwrap().len(),
+        1,
+        "{}",
+        list.text()
+    );
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn posts_replies_reactions_and_moderation(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

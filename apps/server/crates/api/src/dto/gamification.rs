@@ -1,4 +1,7 @@
-//! Gamification DTOs: profile, ledger, leaderboard, dashboard, admin award.
+//! Gamification DTOs: profile, ledger, leaderboard, dashboard, admin award,
+//! the preferences patch.
+// The patch needs three states per section: absent (keep), `null` (remove), value.
+#![allow(clippy::option_option)]
 
 use ab_core::assessments::{StreakKind, XpSource};
 use ab_core::id::{UserId, XpTransactionId};
@@ -255,4 +258,94 @@ pub struct UpdateGamificationConfigRequest {
 
 fn empty_object() -> serde_json::Value {
     serde_json::Value::Object(serde_json::Map::new())
+}
+
+/// Distinguish an absent section (keep) from an explicit `null` (remove).
+fn double_option<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: serde::Deserializer<'de>,
+{
+    Option::<T>::deserialize(deserializer).map(Some)
+}
+
+/// A preference value is a boolean or absent — `null` is neither an opt-in
+/// nor an opt-out (BUG-137); remove the whole section with `"privacy": null`.
+fn bool_not_null<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    bool::deserialize(deserializer).map(Some)
+}
+
+/// `PATCH /gamification/preferences`: the sections the settings form owns.
+/// A section absent from the patch is kept, `null` removes it, an object
+/// replaces it. Keys are camelCase; anything else is 422.
+#[derive(Debug, Default, Deserialize, Serialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PreferencesPatch {
+    #[garde(skip)]
+    #[serde(
+        default,
+        deserialize_with = "double_option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schema(value_type = Option<PrivacyPreferences>)]
+    pub privacy: Option<Option<PrivacyPreferences>>,
+    #[garde(skip)]
+    #[serde(
+        default,
+        deserialize_with = "double_option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schema(value_type = Option<NotificationPreferences>)]
+    pub notifications: Option<Option<NotificationPreferences>>,
+    #[garde(skip)]
+    #[serde(
+        default,
+        deserialize_with = "double_option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schema(value_type = Option<DisplayPreferences>)]
+    pub display: Option<Option<DisplayPreferences>>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, ToSchema)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct PrivacyPreferences {
+    /// `false` hides the profile from the leaderboard (and its rank is `null`).
+    #[serde(
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub show_on_leaderboard: Option<bool>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, ToSchema)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct NotificationPreferences {
+    #[serde(
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub xp_gain: Option<bool>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, ToSchema)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct DisplayPreferences {
+    #[serde(
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub animated_effects: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub compact_mode: Option<bool>,
 }

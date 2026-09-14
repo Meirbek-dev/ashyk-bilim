@@ -257,52 +257,24 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
         .await;
     assert_eq!(prefs.json()["preferences"]["display"]["compactMode"], true);
     assert!(prefs.json()["preferences"].get("notifications").is_none());
-    // BUG-117: unknown keys, non-object sections and oversize blobs are 422.
-    let unknown = app
-        .patch_as(
-            &bob,
-            "/api/v2/gamification/preferences",
-            &serde_json::json!({ "theme": "dark", "display": true }),
-        )
-        .await;
-    assert_eq!(
-        unknown.status,
-        StatusCode::UNPROCESSABLE_ENTITY,
-        "{}",
-        unknown.text()
-    );
-    let codes: Vec<(String, String)> = unknown.json()["field_errors"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|e| {
-            (
-                e["field"].as_str().unwrap().into(),
-                e["code"].as_str().unwrap().into(),
-            )
-        })
-        .collect();
-    assert_eq!(
-        codes,
-        [
-            ("preferences.display".to_owned(), "invalid".to_owned()),
-            ("preferences.theme".to_owned(), "unknown".to_owned())
-        ]
-    );
-    let oversize = app
-        .patch_as(
-            &bob,
-            "/api/v2/gamification/preferences",
-            &serde_json::json!({ "display": { "note": "x".repeat(5_000) } }),
-        )
-        .await;
-    assert_eq!(
-        oversize.status,
-        StatusCode::UNPROCESSABLE_ENTITY,
-        "{}",
-        oversize.text()
-    );
-    assert_eq!(oversize.json()["field_errors"][0]["code"], "too-large");
+    // BUG-117 / BUG-153: unknown sections, non-object sections and unknown keys
+    // inside a section (snake_case included) are 422 — nothing is stored silently.
+    for body in [
+        serde_json::json!({ "theme": "dark" }),
+        serde_json::json!({ "display": true }),
+        serde_json::json!({ "privacy": { "show_on_leaderboard": false } }),
+        serde_json::json!({ "display": { "note": "x" } }),
+    ] {
+        let refused = app
+            .patch_as(&bob, "/api/v2/gamification/preferences", &body)
+            .await;
+        assert_eq!(
+            refused.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{body} → {}",
+            refused.text()
+        );
+    }
     let prefs = app.get_as(&bob, "/api/v2/gamification").await;
     assert_eq!(
         prefs.json()["profile"]["preferences"]["display"]["compactMode"],

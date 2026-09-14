@@ -4,14 +4,15 @@ use ab_core::assessments::ReactionKind;
 use ab_core::id::{CourseId, DiscussionId};
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::Response;
 
 use crate::dto::discussions::{
     CreateDiscussionRequest, Discussion, DiscussionListQuery, DiscussionPage, ReactionState,
     RepliesQuery, UpdateDiscussionRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
 use crate::state::AppState;
 
 const DEFAULT_PAGE: i64 = 50;
@@ -45,28 +46,45 @@ pub async fn list_discussions(
     Ok(Json(page.into()))
 }
 
-/// Post, or reply to a post (`parent_id`).
+/// Post, or reply to a post (`parent_id`). With an `Idempotency-Key`, a
+/// retry with the same body replays the created post instead of posting
+/// twice; the same key with a different body is 422.
 #[utoipa::path(
     post, path = "/courses/{id}/discussions", tag = "discussions",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(
+        ("id" = CourseId, Path, description = "Course id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Client retry token (optional)"),
+    ),
     request_body = CreateDiscussionRequest,
     responses(
         (status = 201, description = "Created", body = Discussion),
-        (status = 422, description = "Empty content or nested reply", body = Problem,
-         content_type = "application/problem+json"),
+        (status = 422, description = "Empty content, nested reply, or Idempotency-Key reused with a different body",
+         body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn create_discussion(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
-    ValidJson(request): ValidJson<CreateDiscussionRequest>,
-) -> ApiResult<(StatusCode, Json<Discussion>)> {
-    let created = state
-        .discussions
-        .create(&actor, id, request.parent_id, &request.content)
-        .await?;
-    Ok((StatusCode::CREATED, Json(created.into())))
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    let request = ValidJson::<CreateDiscussionRequest>::parse(&body)?;
+    idempotent(
+        &state.pool,
+        actor.user_id,
+        &format!("discussion:{id}"),
+        &headers,
+        &body,
+        || async {
+            let created = state
+                .discussions
+                .create(&actor, id, request.parent_id, &request.content)
+                .await?;
+            Ok((StatusCode::CREATED, Discussion::from(created)))
+        },
+    )
+    .await
 }
 
 /// Edit content (owner, or a moderator); only a moderator may change

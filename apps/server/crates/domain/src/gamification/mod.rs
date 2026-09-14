@@ -23,11 +23,6 @@ pub const MAX_LEVEL: i32 = 100;
 pub const DEFAULT_DAILY_XP_LIMIT: i32 = 500;
 pub const MAX_LEADERBOARD_PAGE: i64 = 100;
 const RECENT_TRANSACTIONS: i64 = 10;
-/// The sections the client's settings form owns (`privacy.showOnLeaderboard`,
-/// `notifications.xpGain`, `display.animatedEffects` / `compactMode`).
-pub const PREFERENCE_KEYS: &[&str] = &["privacy", "notifications", "display"];
-/// Cap on the stored preferences JSON.
-pub const PREFERENCES_MAX_BYTES: usize = 4 * 1024;
 
 const MANAGE_PLATFORM: Permission = Permission {
     resource: ResourceType::Platform,
@@ -355,9 +350,9 @@ impl GamificationService {
         })
     }
 
-    /// Merge a preferences patch; `null` removes a key. Only the client's
-    /// known sections are accepted, each an object, and the stored blob
-    /// stays under [`PREFERENCES_MAX_BYTES`].
+    /// Merge a validated preferences patch (the API's typed
+    /// `PreferencesPatch`, serialised): a section absent is kept, `null`
+    /// removes it, an object replaces it.
     pub async fn update_preferences(
         &self,
         actor: &Actor,
@@ -370,39 +365,6 @@ impl GamificationService {
                 message: "preferences must be a JSON object".into(),
             }]));
         };
-        let errors: Vec<FieldError> = patch
-            .iter()
-            .filter_map(|(key, value)| {
-                if !PREFERENCE_KEYS.contains(&key.as_str()) {
-                    Some(("unknown", format!("unknown preferences key `{key}`")))
-                } else if !(value.is_null() || value.is_object()) {
-                    Some((
-                        "invalid",
-                        format!("preferences.{key} must be an object or null"),
-                    ))
-                } else if value
-                    .as_object()
-                    .is_some_and(|section| section.values().any(serde_json::Value::is_null))
-                {
-                    // `{"privacy": {"showOnLeaderboard": null}}` is neither an opt-in nor an
-                    // opt-out; drop the key with `"privacy": null` instead (BUG-137).
-                    Some((
-                        "invalid",
-                        format!("preferences.{key} values must not be null"),
-                    ))
-                } else {
-                    None
-                }
-                .map(|(code, message)| FieldError {
-                    field: format!("preferences.{key}"),
-                    code: code.into(),
-                    message,
-                })
-            })
-            .collect();
-        if !errors.is_empty() {
-            return Err(Error::validation(errors));
-        }
         let profile = ab_db::gamification::ensure_profile(&self.pool, actor.user_id).await?;
         let mut merged = profile.preferences.as_object().cloned().unwrap_or_default();
         for (key, value) in patch {
@@ -411,14 +373,6 @@ impl GamificationService {
             } else {
                 merged.insert(key.clone(), value.clone());
             }
-        }
-        let size = serde_json::to_vec(&merged).map_or(usize::MAX, |b| b.len());
-        if size > PREFERENCES_MAX_BYTES {
-            return Err(Error::validation(vec![FieldError {
-                field: "preferences".into(),
-                code: "too-large".into(),
-                message: format!("preferences must stay under {PREFERENCES_MAX_BYTES} bytes"),
-            }]));
         }
         ab_db::gamification::set_preferences(
             &self.pool,

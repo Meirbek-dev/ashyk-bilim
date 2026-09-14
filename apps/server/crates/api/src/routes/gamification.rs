@@ -8,7 +8,7 @@ use axum::http::StatusCode;
 
 use crate::dto::gamification::{
     AdminAwardRequest, AwardResponse, Dashboard, GamificationConfig, Leaderboard, LeaderboardQuery,
-    Profile, StreakUpdate, UpdateGamificationConfigRequest, UserRank,
+    PreferencesPatch, Profile, StreakUpdate, UpdateGamificationConfigRequest, UserRank,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson};
@@ -80,17 +80,24 @@ pub async fn record_streak(
     ))
 }
 
-/// Merge preferences (`null` removes a key).
+/// Merge preferences: a section absent from the patch is kept, `null`
+/// removes it, an object replaces it. Unknown sections or keys are 422.
 #[utoipa::path(
     patch, path = "/gamification/preferences", tag = "gamification",
-    request_body(content = Object, description = "Preference patch"),
-    responses((status = 200, description = "Profile", body = Profile)),
+    request_body = PreferencesPatch,
+    responses(
+        (status = 200, description = "Profile", body = Profile),
+        (status = 422, description = "Unknown section or key, or a null value", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn update_preferences(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Json(patch): Json<serde_json::Value>,
+    ValidJson(patch): ValidJson<PreferencesPatch>,
 ) -> ApiResult<Json<Profile>> {
+    let patch = serde_json::to_value(&patch)
+        .map_err(|err| ab_core::Error::internal("serialize preferences patch", err))?;
     Ok(Json(
         state
             .gamification

@@ -1,12 +1,14 @@
 //! Request extractors. [`CurrentActor`] is the authenticated-caller gate:
 //! handlers that take it are unreachable without a live session.
 
+use ab_core::id::UserId;
 use ab_core::{Error, ErrorCode, FieldError};
 use ab_domain::identity::Actor;
 use axum::Json;
 use axum::extract::{ConnectInfo, FromRequest, FromRequestParts, Request};
-use axum::http::HeaderMap;
 use axum::http::request::Parts;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use serde::de::DeserializeOwned;
 use std::convert::Infallible;
@@ -251,4 +253,55 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
         let _ = write!(out, "{b:02x}");
     }
     out
+}
+
+/// `Idempotency-Key` replay around a create.
+///
+/// The reply stored for `{scope}:{key}` is returned again for the same body,
+/// the same key with a different body is 422 `reused`, and a first call runs
+/// `fresh` and stores its reply (24h) for the retry. Without the header
+/// `fresh` simply runs.
+pub async fn idempotent<T, Fut>(
+    pool: &sqlx::PgPool,
+    user_id: UserId,
+    scope: &str,
+    headers: &HeaderMap,
+    body: &[u8],
+    fresh: impl FnOnce() -> Fut,
+) -> Result<Response, ApiError>
+where
+    T: serde::Serialize,
+    Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
+{
+    let key = idempotency_key(headers)?.map(|k| format!("{scope}:{k}"));
+    let request_hash = sha256_hex(body);
+    if let Some(key) = &key
+        && let Some(stored) = ab_db::submissions::get_idempotent(pool, user_id, key).await?
+    {
+        if stored.request_hash != request_hash {
+            return Err(ApiError(Error::validation(vec![FieldError {
+                field: "Idempotency-Key".into(),
+                code: "reused".into(),
+                message: "Idempotency-Key was already used with a different request body".into(),
+            }])));
+        }
+        let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
+            .unwrap_or(StatusCode::OK);
+        return Ok((status, Json(stored.response)).into_response());
+    }
+    let (status, dto) = fresh().await?;
+    let value = serde_json::to_value(&dto)
+        .map_err(|err| Error::internal("serialize idempotent reply", err))?;
+    if let Some(key) = &key {
+        ab_db::submissions::store_idempotent(
+            pool,
+            user_id,
+            key,
+            &request_hash,
+            i32::from(status.as_u16()),
+            &value,
+        )
+        .await?;
+    }
+    Ok((status, Json(value)).into_response())
 }
