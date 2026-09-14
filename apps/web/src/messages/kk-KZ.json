@@ -4236,6 +4236,7 @@
       "removeSelectedConfirmMessage": "Бұл курстан {count, plural, one {# қатысушыны} other {# қатысушыларды}} жояды.",
       "removeSelectedConfirmTitle": "{count, plural, one {# қатысушыны} other {# қатысушыларды}} жою керек пе?",
       "failedToUpdateContributor": "Қатысушыны жаңарту сәтсіз аяқталды",
+      "rowAlreadyGone": "Өтінім қайтарып алынған — тізім жаңартылды",
       "inactive": "Белсенді емес",
       "maintainer": "Қолдаушы",
       "manageContributorsTitle": "Қатысушыларды басқару",

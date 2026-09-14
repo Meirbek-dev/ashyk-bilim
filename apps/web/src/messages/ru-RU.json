@@ -4233,6 +4233,7 @@
       "removeSelectedConfirmMessage": "Это удалит {count, plural, one {# соавтора} few {# соавторов} many {# соавторов} other {# соавторов}} из курса.",
       "removeSelectedConfirmTitle": "Удалить {count, plural, one {# соавтора} few {# соавторов} many {# соавторов} other {# соавторов}}?",
       "failedToUpdateContributor": "Не удалось обновить соавтора",
+      "rowAlreadyGone": "Заявка уже отозвана — список обновлён",
       "inactive": "Неактивный",
       "maintainer": "Модератор",
       "manageContributorsTitle": "Управление соавторами",

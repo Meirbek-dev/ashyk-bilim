@@ -20,7 +20,7 @@ const api = vi.hoisted(() => ({
   applyContributor: vi.fn(),
 }))
 const harness = vi.hoisted(() => ({ userId: 'creator-1', permissions: new Set<string>() }))
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), loading: vi.fn(), dismiss: vi.fn() }))
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn(), loading: vi.fn(), dismiss: vi.fn() }))
 
 vi.mock('@/lib/api/generated/courses/courses', () => api)
 vi.mock('next-intl', () => ({
@@ -54,6 +54,7 @@ vi.mock('@/components/ui/scroll-area', () => ({
   ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
+import { APIError } from '@/lib/api/assertSuccess'
 import EditCourseContributors from '@/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
 
@@ -99,6 +100,16 @@ describe('course collaboration (v2 roster)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'approveButton' }))
     await waitFor(() => expect(api.updateContributor).toHaveBeenCalledWith('course-1', 'helper-1', { status: 'active' }))
     expect(toast.success).toHaveBeenCalledWith('successfullyUpdatedContributor')
+  })
+
+  // UX-092: approving a row withdrawn elsewhere → 404 → a calm info toast, not the generic not-found.
+  it('tells the manager when the application is already gone', async () => {
+    api.updateContributor.mockRejectedValue(new APIError({ code: 'not-found', message: 'contributor not found', status: 404 }))
+    renderWithClient(<EditCourseContributors />)
+    await screen.findByTestId('contributor-helper')
+    fireEvent.click(screen.getByRole('button', { name: 'approveButton' }))
+    await waitFor(() => expect(toast.info).toHaveBeenCalledWith('rowAlreadyGone'))
+    expect(toast.error).not.toHaveBeenCalled()
   })
 
   it('a plain contributor gets a read-only roster', async () => {

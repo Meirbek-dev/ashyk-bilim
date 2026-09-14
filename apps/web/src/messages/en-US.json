@@ -4221,6 +4221,7 @@
       "removeSelectedConfirmMessage": "This will remove {count, plural, one {# contributor} other {# contributors}} from the course.",
       "removeSelectedConfirmTitle": "Remove {count, plural, one {# contributor} other {# contributors}}?",
       "failedToUpdateContributor": "Failed to update contributor",
+      "rowAlreadyGone": "The application was already withdrawn — the list has been refreshed",
       "inactive": "Inactive",
       "maintainer": "Maintainer",
       "manageContributorsTitle": "Manage Contributors",

@@ -110,7 +110,9 @@ function EditCourseContributors() {
       await update(row.user_id, body)
       toast.success(t('successfullyUpdatedContributor'))
     } catch (error) {
-      toastApiError(error, undefined, t('failedToUpdateContributor'))
+      // UX-092: the row was withdrawn/removed elsewhere; `onSettled` already refetched.
+      if (hasErrorCode(error, 'not-found')) toast.info(t('rowAlreadyGone'))
+      else toastApiError(error, undefined, t('failedToUpdateContributor'))
     }
   }
 
@@ -122,7 +124,8 @@ function EditCourseContributors() {
       await remove(target.user_id)
       toast.success(t('removedContributor', { username: target.username }))
     } catch (error) {
-      toastApiError(error, undefined, t('failedToRemoveContributorsGeneral'))
+      if (hasErrorCode(error, 'not-found')) toast.info(t('rowAlreadyGone'))
+      else toastApiError(error, undefined, t('failedToRemoveContributorsGeneral'))
     }
   }
 

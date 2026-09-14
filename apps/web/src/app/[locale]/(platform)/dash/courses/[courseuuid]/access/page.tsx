@@ -1,7 +1,6 @@
 import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import { courseWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
-import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
 import { Suspense } from 'react'
 
 interface PlatformCourseAccessPageProps {
@@ -22,12 +21,9 @@ export default function PlatformCourseAccessPage(props: PlatformCourseAccessPage
 
 async function PlatformCourseAccessContent({ params }: PlatformCourseAccessPageProps) {
   const { courseuuid } = await params
-  const capabilities = await requireCourseWorkspaceStageAccess(courseuuid, 'access')
-
   return renderCourseWorkspacePage({
     courseuuid,
     activeStage: 'access',
-    capabilities,
     children: (
 <EditCourseAccess />
     ),

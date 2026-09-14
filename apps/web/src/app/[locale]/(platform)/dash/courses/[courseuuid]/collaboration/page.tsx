@@ -1,7 +1,6 @@
 import EditCourseContributors from '@components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import { courseWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
-import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
 import { Suspense } from 'react'
 
 interface PlatformCourseCollaborationPageProps {
@@ -22,12 +21,9 @@ export default function PlatformCourseCollaborationPage(props: PlatformCourseCol
 
 async function PlatformCourseCollaborationContent({ params }: PlatformCourseCollaborationPageProps) {
   const { courseuuid } = await params
-  const capabilities = await requireCourseWorkspaceStageAccess(courseuuid, 'collaboration')
-
   return renderCourseWorkspacePage({
     courseuuid,
     activeStage: 'collaboration',
-    capabilities,
     children: <EditCourseContributors />,
   })
 }

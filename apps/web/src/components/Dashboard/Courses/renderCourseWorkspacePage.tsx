@@ -1,4 +1,5 @@
 import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
+import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
 import type { CourseWorkspaceStage } from '@/lib/course-management'
 import CourseWorkspacePageShell from './CourseWorkspacePageShell'
 import { getCourseMetadata } from '@services/courses/courses'
@@ -13,8 +14,9 @@ import { redirect } from '@/i18n/navigation'
 interface RenderCourseWorkspacePageOptions {
   courseuuid: string
   activeStage: CourseWorkspaceStage
-  children: ReactNode
-  capabilities?: Awaited<ReturnType<typeof requireCourseWorkspaceStageAccess>>
+  // A function gets the resolved capabilities; resolving them in the page
+  // itself would throw a course 404 past the not-found mapping below (UX-092).
+  children: ReactNode | ((capabilities: CourseWorkspaceCapabilities) => ReactNode)
 }
 
 function CourseWorkspacePageFallback() {
@@ -43,17 +45,12 @@ export function renderCourseWorkspacePage(options: RenderCourseWorkspacePageOpti
   )
 }
 
-async function CourseWorkspacePageContent({
-  courseuuid,
-  activeStage,
-  children,
-  capabilities,
-}: RenderCourseWorkspacePageOptions) {
+async function CourseWorkspacePageContent({ courseuuid, activeStage, children }: RenderCourseWorkspacePageOptions) {
   const data = await (async () => {
     try {
       const [initialCourse, resolvedCapabilities] = await Promise.all([
         getCourseMetadata(courseuuid, undefined, true),
-        capabilities ? Promise.resolve(capabilities) : requireCourseWorkspaceStageAccess(courseuuid, activeStage),
+        requireCourseWorkspaceStageAccess(courseuuid, activeStage),
       ])
       return { initialCourse, resolvedCapabilities }
     } catch (error: unknown) {
@@ -93,7 +90,7 @@ async function CourseWorkspacePageContent({
       initialCourse={initialCourse}
       capabilities={resolvedCapabilities}
     >
-      {children}
+      {typeof children === 'function' ? children(resolvedCapabilities) : children}
     </CourseWorkspacePageShell>
   )
 }
