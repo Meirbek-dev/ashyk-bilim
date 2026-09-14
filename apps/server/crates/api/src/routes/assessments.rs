@@ -338,7 +338,7 @@ pub async fn update_item(
     params(("id" = AssessmentItemId, Path, description = "Item id")),
     responses(
         (status = 204, description = "Deleted"),
-        (status = 409, description = "Content locked", body = Problem,
+        (status = 409, description = "Content locked, or the last item of a live assessment", body = Problem,
          content_type = "application/problem+json"),
     )
 )]

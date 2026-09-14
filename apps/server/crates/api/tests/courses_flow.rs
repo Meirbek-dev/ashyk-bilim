@@ -528,3 +528,50 @@ async fn readiness_reports_blockers_and_warnings(pool: PgPool) {
         .await;
     assert_eq!(forbidden.status, StatusCode::FORBIDDEN);
 }
+
+/// Writes on an invisible course are 404s like the read (no existence
+/// leak), and delete needs `course:delete:own` even for the creator.
+#[sqlx::test(migrations = "../../migrations")]
+async fn invisible_course_writes_are_404s_and_delete_needs_the_grant(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let id = create_course(&app, &teacher, "Hidden").await;
+    let learner = app.mint_session(&[]).await;
+    let patched = app
+        .patch_as(
+            &learner,
+            &format!("/api/v2/courses/{id}"),
+            &serde_json::json!({ "name": "Hijacked" }),
+        )
+        .await;
+    assert_eq!(patched.status, StatusCode::NOT_FOUND, "{}", patched.text());
+    let unpublished = app
+        .post_as(
+            &learner,
+            &format!("/api/v2/courses/{id}/lifecycle"),
+            &serde_json::json!({ "action": "unpublish" }),
+        )
+        .await;
+    assert_eq!(
+        unpublished.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        unpublished.text()
+    );
+    let deleted = app
+        .delete_as(&learner, &format!("/api/v2/courses/{id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NOT_FOUND, "{}", deleted.text());
+
+    let creator = app
+        .create_user("creator", "creator@example.com", &["instructor"])
+        .await;
+    let creator = app
+        .mint_session_for(creator, &["course:create:platform", "course:update:own"])
+        .await;
+    let own = create_course(&app, &creator, "Mine").await;
+    let refused = app
+        .delete_as(&creator, &format!("/api/v2/courses/{own}"))
+        .await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+}

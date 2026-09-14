@@ -435,7 +435,7 @@ impl AssessmentsService {
         let course = self.courses.get(actor, assessment.course_id).await?;
         // Same existence rule as `get`: an unpublished assessment does not
         // exist for anyone but its authors.
-        if assessment.lifecycle != Lifecycle::Published && !Self::is_teacher_preview(actor, &course)
+        if !self.live_for_learners(&assessment).await? && !Self::is_teacher_preview(actor, &course)
         {
             return Err(Error::not_found("assessment"));
         }

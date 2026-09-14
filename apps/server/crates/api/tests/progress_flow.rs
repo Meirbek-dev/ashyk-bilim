@@ -512,3 +512,65 @@ async fn drafts_never_count_and_totals_follow_publishing(pool: PgPool) {
         assert_eq!(gone.status, StatusCode::NOT_FOUND, "{}", gone.text());
     }
 }
+
+/// Studio lifecycle transitions flip the activity like the curriculum
+/// toggle does, so persisted totals follow (BUG-150): a learner at 3/3 goes
+/// to 3/4 when the studio publishes a quiz and back to 3/3 on unpublish.
+#[sqlx::test(migrations = "../../migrations")]
+async fn studio_publish_and_unpublish_follow_into_totals(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Studio 101").await;
+    let alice = learner(&app, "alice").await;
+    for name in ["A", "B", "C"] {
+        let id = lesson(&app, &teacher, &chapter_id, name).await;
+        app.post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    }
+    let learner_state = format!("/api/v2/courses/{course_id}/learner-state");
+    let progress = || async { app.get_as(&alice, &learner_state).await.json()["progress"].clone() };
+    let done = progress().await;
+    assert_eq!(done["total_required_count"], 3);
+    assert_eq!(done["progress_pct"], 100.0);
+
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" }),
+        )
+        .await;
+    let assessment_id = created.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{assessment_id}/items"),
+        &serde_json::json!({
+            "title": "Q1", "max_score": 10,
+            "body": { "kind": "choice", "prompt": "Q1",
+                      "options": [{ "id": "a", "text": "yes", "is_correct": true },
+                                  { "id": "b", "text": "no", "is_correct": false }] }
+        }),
+    )
+    .await;
+    // Draft: nothing changes.
+    assert_eq!(progress().await["total_required_count"], 3);
+
+    for (to, total, pct) in [("published", 4, 75.0), ("draft", 3, 100.0)] {
+        let moved = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{assessment_id}/lifecycle"),
+                &serde_json::json!({ "to": to }),
+            )
+            .await;
+        assert_eq!(moved.status, StatusCode::OK, "{}", moved.text());
+        let after = progress().await;
+        assert_eq!(after["total_required_count"], total, "{after}");
+        assert_eq!(after["completed_required_count"], 3, "{after}");
+        assert_eq!(after["progress_pct"], pct, "{after}");
+    }
+}

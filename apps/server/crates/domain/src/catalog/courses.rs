@@ -191,9 +191,8 @@ impl CoursesService {
         id: CourseId,
         changes: CourseChanges,
     ) -> Result<Course> {
-        let course = ab_db::catalog::get_course(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("course"))?;
+        // Invisible courses do not exist (404), even to would-be writers.
+        let course = self.get(actor, id).await?;
         Self::require_write(actor, &course)?;
         let thumbnail_key = match changes.thumbnail_upload_id {
             Some(upload_id) => Some(
@@ -237,9 +236,8 @@ impl CoursesService {
 
     /// Publish/unpublish (legacy `CourseLifecycleUpdate` semantics).
     pub async fn set_public(&self, actor: &Actor, id: CourseId, public: bool) -> Result<Course> {
-        let course = ab_db::catalog::get_course(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("course"))?;
+        // Invisible courses do not exist (404), even to would-be writers.
+        let course = self.get(actor, id).await?;
         Self::require_write(actor, &course)?;
         ab_db::catalog::set_course_public(&self.pool, id, public).await?;
         ab_db::catalog::get_course(&self.pool, id)
@@ -300,9 +298,7 @@ impl CoursesService {
     }
 
     pub async fn delete(&self, actor: &Actor, id: CourseId) -> Result<()> {
-        let course = ab_db::catalog::get_course(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("course"))?;
+        let course = self.get(actor, id).await?;
         // Delete is stricter than update: platform deleters, or creators with
         // the delete grant (legacy matrix: course:delete:own).
         if !(actor.has(perm(Action::Delete, Scope::Platform))

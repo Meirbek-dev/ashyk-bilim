@@ -22,6 +22,7 @@ pub use ab_db::assessments::{AssessmentRow as Assessment, AuditEventRow as Audit
 use crate::assessments::items::{ItemBody, ReadinessIssue, normalize_tags};
 use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
+use crate::progress::ProgressProjector;
 
 /// Legacy `ITEM_LIMIT_EXCEEDED` ceiling.
 pub const MAX_ITEMS: i64 = 200;
@@ -479,6 +480,16 @@ impl AssessmentsService {
         Ok(assessment)
     }
 
+    /// Existence for non-authors: published AND the activity is live — the
+    /// curriculum toggle can hide a published assessment (same 404 as the
+    /// activity read).
+    pub(crate) async fn live_for_learners(&self, assessment: &Assessment) -> Result<bool> {
+        Ok(assessment.lifecycle == Lifecycle::Published
+            && ab_db::catalog::get_activity(&self.pool, assessment.activity_id)
+                .await?
+                .is_some_and(|a| a.published))
+    }
+
     /// Legacy `_ensure_authorable`: archived is read-only; a published
     /// assessment with any submission cannot be edited.
     async fn ensure_editable(&self, assessment: &Assessment) -> Result<()> {
@@ -611,7 +622,7 @@ impl AssessmentsService {
         let course = self.courses.get(actor, assessment.course_id).await?;
         let author = Self::require_scoped(actor, &course, Action::Author, "read").is_ok();
         if !author {
-            let readable = assessment.lifecycle == Lifecycle::Published
+            let readable = self.live_for_learners(&assessment).await?
                 && (actor.has(perm(Action::Read, Scope::Assigned))
                     || actor.has(perm(Action::Read, Scope::Platform)));
             if !readable {
@@ -878,13 +889,9 @@ impl AssessmentsService {
         };
         ab_db::assessments::set_lifecycle(&self.pool, id, to, scheduled, published, archived)
             .await?;
-        ab_db::catalog::update_activity(
-            &self.pool,
-            assessment.activity_id,
-            None,
-            Some(activity_live),
-        )
-        .await?;
+        ProgressProjector::new(self.pool.clone())
+            .set_activity_published(assessment.activity_id, assessment.course_id, activity_live)
+            .await?;
         ab_db::assessments::insert_audit_event(
             &self.pool,
             id,
@@ -904,7 +911,8 @@ impl AssessmentsService {
         let ids = ab_db::assessments::publish_due(pool).await?;
         for id in &ids {
             if let Some(assessment) = ab_db::assessments::get_assessment(pool, *id).await? {
-                ab_db::catalog::update_activity(pool, assessment.activity_id, None, Some(true))
+                ProgressProjector::new(pool.clone())
+                    .set_activity_published(assessment.activity_id, assessment.course_id, true)
                     .await?;
             }
             ab_db::assessments::insert_audit_event(
@@ -1116,6 +1124,20 @@ impl AssessmentsService {
         let (assessment, row) = self.item_for_author(actor, item_id).await?;
         self.ensure_editable(&assessment).await?;
         self.ensure_content_unlocked(&assessment).await?;
+        // A live (or scheduled) assessment keeps at least one item: readiness
+        // gated the publish, a delete must not undo it.
+        if matches!(
+            assessment.lifecycle,
+            Lifecycle::Published | Lifecycle::Scheduled
+        ) && ab_db::assessments::list_item_ids(&self.pool, row.assessment_id)
+            .await?
+            .len()
+            == 1
+        {
+            return Err(Error::conflict(
+                "a published assessment needs at least one item; unpublish first",
+            ));
+        }
         ab_db::assessments::delete_item(&self.pool, item_id).await?;
         let remaining = ab_db::assessments::list_item_ids(&self.pool, row.assessment_id).await?;
         ab_db::assessments::renumber_items(&self.pool, &remaining).await?;

@@ -357,12 +357,12 @@ impl CurriculumService {
             ab_db::catalog::set_activity_type(&self.pool, activity_id, activity_type, sub_type)
                 .await?;
         }
-        ab_db::catalog::update_activity(&self.pool, activity_id, changes.name, changes.published)
-            .await?;
-        if changes.published.is_some_and(|p| p != activity.published) {
-            // Learner totals count published activities only.
+        ab_db::catalog::update_activity(&self.pool, activity_id, changes.name, None).await?;
+        if let Some(published) = changes.published
+            && published != activity.published
+        {
             self.projector
-                .recalculate_course_for_all(activity.course_id)
+                .set_activity_published(activity_id, activity.course_id, published)
                 .await?;
         }
         if changes.content.is_some() || changes.details.is_some() || changes.settings.is_some() {

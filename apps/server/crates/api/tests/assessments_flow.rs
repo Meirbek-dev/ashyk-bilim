@@ -899,3 +899,100 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
     );
     assert_eq!(capped.json()["field_errors"][0]["code"], "limit-exceeded");
 }
+
+/// A live assessment keeps at least one item (409 on the last delete);
+/// a visible non-author cannot transition it (403); the curriculum toggle
+/// hides a published assessment from learners exactly like the activity
+/// read (404 on get / attempt-state / start — BUG-151).
+#[sqlx::test(migrations = "../../migrations")]
+async fn live_assessments_keep_an_item_and_hide_with_their_activity(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Q" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("1+1?"),
+        )
+        .await;
+    let item_id = item.json()["id"].as_str().unwrap().to_owned();
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    let last = app
+        .delete_as(&teacher, &format!("/api/v2/assessment-items/{item_id}"))
+        .await;
+    assert_eq!(last.status, StatusCode::CONFLICT, "{}", last.text());
+    assert_eq!(last.json()["code"], "conflict");
+
+    let learner = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            learner,
+            &["assessment:submit:assigned", "assessment:read:assigned"],
+        )
+        .await;
+    let hijack = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "draft" }),
+        )
+        .await;
+    assert_eq!(hijack.status, StatusCode::FORBIDDEN, "{}", hijack.text());
+    let state = app
+        .get_as(&alice, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(state.status, StatusCode::OK, "{}", state.text());
+
+    // Curriculum unpublish of the activity: the assessment stays
+    // `published` but no longer exists for learners.
+    let hidden = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": false }),
+        )
+        .await;
+    assert_eq!(hidden.status, StatusCode::OK, "{}", hidden.text());
+    let read = app
+        .get_as(&alice, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(read.status, StatusCode::NOT_FOUND, "{}", read.text());
+    let state = app
+        .get_as(&alice, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(state.status, StatusCode::NOT_FOUND, "{}", state.text());
+    let started = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::NOT_FOUND, "{}", started.text());
+    // Authors still see it.
+    let own = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(own.status, StatusCode::OK, "{}", own.text());
+}

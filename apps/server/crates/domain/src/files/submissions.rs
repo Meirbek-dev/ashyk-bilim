@@ -340,7 +340,10 @@ impl FileSubmissionsService {
         if Self::is_author(actor, &course) {
             return Ok(course);
         }
+        // The curriculum toggle can hide a published config: same 404 as
+        // the activity read.
         let readable = row.lifecycle == FileSubmissionLifecycle::Published
+            && self.activity_published(row).await?
             && (actor.has(perm(Action::Read, Scope::Assigned))
                 || actor.has(perm(Action::Read, Scope::Platform))
                 || actor.has(perm(Action::Read, Scope::All)));
@@ -586,7 +589,9 @@ impl FileSubmissionsService {
             FileSubmissionLifecycle::Published,
         )
         .await?;
-        ab_db::catalog::update_activity(&self.pool, row.activity_id, None, Some(true)).await?;
+        self.projector
+            .set_activity_published(row.activity_id, row.course_id, true)
+            .await?;
         let row = self.load(id).await?;
         self.view(None, row).await
     }

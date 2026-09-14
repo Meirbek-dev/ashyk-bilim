@@ -311,6 +311,8 @@ pub async fn get_course(
         (status = 200, description = "Updated", body = Course),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
     )
 )]
 pub async fn update_course(
@@ -348,6 +350,8 @@ pub async fn update_course(
         (status = 200, description = "Visibility changed", body = Course),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
         (status = 422, description = "Publish blocked by readiness (`course-not-ready`,                                       `details.blockers`)", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -377,6 +381,8 @@ pub async fn course_lifecycle(
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No delete access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
