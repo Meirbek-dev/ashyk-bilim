@@ -2,7 +2,8 @@
 //!
 //! Gates: read/list = `usergroup:read:platform`; create =
 //! `usergroup:create:platform`; update/delete/membership = creator with
-//! `usergroup:create:platform`, or `usergroup:manage:platform`. Legacy
+//! `usergroup:create:platform`, or `usergroup:manage:platform`. Linking a
+//! course additionally needs write access on that course (BUG-156). Legacy
 //! seeds give instructors create+read only, so in practice creators manage
 //! their own groups and admins (wildcard) manage everything.
 
@@ -13,6 +14,7 @@ use sqlx::PgPool;
 
 pub use ab_db::usergroups::{MemberRow as Member, UsergroupRow as Usergroup};
 
+use crate::catalog::courses::CoursesService;
 use crate::identity::Actor;
 
 const fn perm(action: Action) -> Permission {
@@ -190,11 +192,17 @@ impl UsergroupsService {
         course_ids: &[CourseId],
     ) -> Result<()> {
         self.writable(actor, id).await?;
-        let known: Vec<CourseId> = ab_db::analytics::list_courses(&self.pool, course_ids)
-            .await?
-            .into_iter()
-            .map(|c| c.id)
-            .collect();
+        // BUG-156: linking grants every member read access to the course, so
+        // the linker needs write access on it — invisible 404, visible 403.
+        let courses = CoursesService::new(self.pool.clone());
+        let mut known = Vec::with_capacity(course_ids.len());
+        for &course_id in course_ids {
+            if let Some(course) = ab_db::catalog::get_course(&self.pool, course_id).await? {
+                courses.require_read(actor, &course).await?;
+                CoursesService::require_write(actor, &course)?;
+                known.push(course_id);
+            }
+        }
         reject_unknown("course_ids", "course", course_ids, &known)?;
         ab_db::usergroups::add_courses(&self.pool, id, course_ids).await
     }

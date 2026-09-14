@@ -1084,3 +1084,23 @@ Implements three more items of the owner answers above. Routes:
   «Отключить пользователя» / «Включить» and list disabled users with a badge —
   no «удалить» wording, no hidden rows. A GDPR-style erasure, if ever needed,
   is a separate anonymisation job, not a row delete.
+
+## Usergroup course links need course write access (2026-09-14, gauntlet pass 13)
+
+- **`POST /usergroups/{id}/courses` requires write access on every course**
+  (BUG-156). Linking grants every member (and the linker) cohort read access
+  through `courses::require_read` → `user_in_course_group`, so the linker must
+  be the course author (creator / active co-author) or a platform course
+  updater — `CoursesService::require_write`. An invisible course is a 404, a
+  visible one the caller does not author a 403, an unknown id stays the
+  BUG-109 422 `course_ids/unknown`. Deviation from the legacy
+  `add_resources_to_usergroup`, which checked existence only and let any
+  instructor expose any private course by id.
+- **Interventions belong to the acting user** (BUG-157): `teacher_user_id` on
+  a stored row is the actor, never the inspected teacher — the query param
+  only scopes reads (legacy wrote rows as the inspected teacher). The learner
+  must be enrolled in `course_id` (trail run or course-progress row; 422
+  `user_id/not-in-course`), and the scope gate runs before the
+  `Idempotency-Key` replay. An unknown `sort_by` on the at-risk / courses /
+  assessments listings is a 422 `sort_by/invalid` (it used to fall back to
+  the default order silently).

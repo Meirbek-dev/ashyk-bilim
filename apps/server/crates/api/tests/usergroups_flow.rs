@@ -229,3 +229,142 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
         .await;
     assert_eq!(deleted.status, StatusCode::NO_CONTENT);
 }
+
+/// BUG-156: linking a course grants every member read access, so the link
+/// needs write access on the course — an invisible private course is a 404,
+/// a visible one the caller does not author is a 403, and the private course
+/// never becomes readable through the group. Plus the `writable` miss (404
+/// before the write check) and the members/courses read gate (403).
+#[sqlx::test(migrations = "../../migrations")]
+async fn linking_a_course_requires_write_access_on_it(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let admin_user = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(admin_user, &["*:*:*"]).await;
+    let private_course = app
+        .post_as(
+            &admin,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": "Admin only" }),
+        )
+        .await;
+    assert_eq!(private_course.status, StatusCode::CREATED);
+    let private_id = private_course.json()["id"].as_str().unwrap().to_owned();
+    let public_course = app
+        .post_as(
+            &admin,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": "Public but not mine" }),
+        )
+        .await;
+    let public_id = public_course.json()["id"].as_str().unwrap().to_owned();
+    app.publish_course(&public_id).await;
+
+    let teacher = organizer(&app, "teacher").await;
+    let invisible = app
+        .get_as(&teacher, &format!("/api/v2/courses/{private_id}"))
+        .await;
+    assert_eq!(invisible.status, StatusCode::NOT_FOUND);
+    let group = app
+        .post_as(
+            &teacher,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "leak" }),
+        )
+        .await;
+    let group_id = group.json()["id"].as_str().unwrap().to_owned();
+
+    let leak = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/usergroups/{group_id}/courses"),
+            &serde_json::json!({ "course_ids": [private_id] }),
+        )
+        .await;
+    assert_eq!(leak.status, StatusCode::NOT_FOUND, "{}", leak.text());
+    let foreign = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/usergroups/{group_id}/courses"),
+            &serde_json::json!({ "course_ids": [public_id] }),
+        )
+        .await;
+    assert_eq!(foreign.status, StatusCode::FORBIDDEN, "{}", foreign.text());
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/usergroups/{group_id}/members"),
+        &serde_json::json!({ "user_ids": [teacher.user_id] }),
+    )
+    .await;
+    let still_invisible = app
+        .get_as(&teacher, &format!("/api/v2/courses/{private_id}"))
+        .await;
+    assert_eq!(still_invisible.status, StatusCode::NOT_FOUND);
+
+    // Own course links fine; the admin (platform updater) links anything.
+    let own = app
+        .post_as(
+            &teacher,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": "Mine" }),
+        )
+        .await;
+    let own_id = own.json()["id"].as_str().unwrap().to_owned();
+    let linked = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/usergroups/{group_id}/courses"),
+            &serde_json::json!({ "course_ids": [own_id] }),
+        )
+        .await;
+    assert_eq!(linked.status, StatusCode::NO_CONTENT, "{}", linked.text());
+    let admin_group = app
+        .post_as(
+            &admin,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "staff" }),
+        )
+        .await;
+    let admin_group_id = admin_group.json()["id"].as_str().unwrap().to_owned();
+    let by_admin = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/usergroups/{admin_group_id}/courses"),
+            &serde_json::json!({ "course_ids": [private_id] }),
+        )
+        .await;
+    assert_eq!(
+        by_admin.status,
+        StatusCode::NO_CONTENT,
+        "{}",
+        by_admin.text()
+    );
+
+    // A missing group is a 404 before any write check.
+    let ghost = uuid::Uuid::now_v7();
+    let missing = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/usergroups/{ghost}/members"),
+            &serde_json::json!({ "user_ids": [teacher.user_id] }),
+        )
+        .await;
+    assert_eq!(missing.status, StatusCode::NOT_FOUND, "{}", missing.text());
+
+    // Members / linked courses need the read grant.
+    let pleb = app.mint_session(&[]).await;
+    let members = app
+        .get_as(&pleb, &format!("/api/v2/usergroups/{group_id}/members"))
+        .await;
+    assert_eq!(members.status, StatusCode::FORBIDDEN);
+    let courses = app
+        .get_as(&pleb, &format!("/api/v2/usergroups/{group_id}/courses"))
+        .await;
+    assert_eq!(courses.status, StatusCode::FORBIDDEN, "{}", courses.text());
+    let reader = app.mint_session(&["usergroup:read:platform"]).await;
+    let visible = app
+        .get_as(&reader, &format!("/api/v2/usergroups/{group_id}/courses"))
+        .await;
+    assert_eq!(visible.status, StatusCode::OK, "{}", visible.text());
+}
