@@ -15,23 +15,8 @@ use crate::dto::auth::{
 };
 use crate::dto::users::UserProfile;
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, SESSION_COOKIE, ValidJson};
+use crate::extract::{ClientIp, CurrentActor, Path, Query, SESSION_COOKIE, ValidJson};
 use crate::state::AppState;
-
-/// Best-effort client IP behind nginx (`X-Forwarded-For` first hop).
-pub(crate) fn client_ip(headers: &HeaderMap) -> Option<String> {
-    headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.split(',').next())
-        .map(|v| v.trim().to_owned())
-        .or_else(|| {
-            headers
-                .get("x-real-ip")
-                .and_then(|v| v.to_str().ok())
-                .map(ToOwned::to_owned)
-        })
-}
 
 pub(crate) fn user_agent(headers: &HeaderMap) -> Option<String> {
     headers
@@ -76,6 +61,7 @@ pub async fn login(
     State(state): State<AppState>,
     jar: CookieJar,
     headers: HeaderMap,
+    ClientIp(ip): ClientIp,
     ValidJson(request): ValidJson<LoginRequest>,
 ) -> ApiResult<(CookieJar, Json<SessionInfo>)> {
     let ok = state
@@ -84,7 +70,7 @@ pub async fn login(
             login: request.login,
             password: SecretString::from(request.password),
             totp_code: request.totp_code,
-            ip: client_ip(&headers),
+            ip,
             user_agent: user_agent(&headers),
         })
         .await?;
@@ -120,6 +106,7 @@ pub async fn login(
 pub async fn register(
     State(state): State<AppState>,
     headers: HeaderMap,
+    ClientIp(ip): ClientIp,
     ValidJson(request): ValidJson<RegisterRequest>,
 ) -> ApiResult<(StatusCode, Json<UserProfile>)> {
     let profile = state
@@ -130,7 +117,7 @@ pub async fn register(
             password: Some(SecretString::from(request.password)),
             first_name: request.first_name,
             last_name: request.last_name,
-            ip: client_ip(&headers),
+            ip,
             user_agent: user_agent(&headers),
         })
         .await?;
@@ -153,16 +140,12 @@ pub async fn register(
 )]
 pub async fn verify_email(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    ClientIp(ip): ClientIp,
     ValidJson(request): ValidJson<VerifyEmailRequest>,
 ) -> ApiResult<StatusCode> {
     state
         .identity
-        .verify_email(
-            &request.email,
-            &request.code,
-            client_ip(&headers).as_deref(),
-        )
+        .verify_email(&request.email, &request.code, ip.as_deref())
         .await?;
     Ok(StatusCode::NO_CONTENT)
 }
@@ -388,6 +371,7 @@ pub async fn google_callback(
     State(state): State<AppState>,
     jar: CookieJar,
     headers: HeaderMap,
+    ClientIp(ip): ClientIp,
     Query(query): Query<GoogleCallbackQuery>,
 ) -> (CookieJar, Redirect) {
     let Some(google) = &state.google else {
@@ -401,7 +385,7 @@ pub async fn google_callback(
         return (jar, login_error_redirect(&state, "google-oauth-expired"));
     };
     match google
-        .callback(code, oauth_state, client_ip(&headers), user_agent(&headers))
+        .callback(code, oauth_state, ip, user_agent(&headers))
         .await
     {
         Ok(ok) => {

@@ -59,6 +59,40 @@ async fn totp_enrolled_login_requires_second_factor(pool: PgPool) {
     assert!(res.session_cookie().is_none());
 }
 
+/// Branch #13: discarding the pre-MFA Zitadel session is best effort — a
+/// Zitadel failure there is logged, and the caller still gets `mfa-required`
+/// with no cookie (never a 503 that would leak the enrolment state).
+#[sqlx::test(migrations = "../../migrations")]
+async fn pre_mfa_session_discard_failure_still_demands_the_code(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("mfauser", "mfa@example.com", &["user"])
+        .await;
+    mock_session_ok(&app).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-mfauser/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(true)))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("DELETE"))
+        .and(path("/v2/sessions/zit-session-1"))
+        .respond_with(ResponseTemplate::new(500).set_body_json(serde_json::json!({
+            "code": 13, "message": "boom"
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::UNAUTHORIZED, "{}", res.text());
+    assert_eq!(res.json()["code"], "mfa-required");
+    assert!(res.session_cookie().is_none());
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn totp_code_completes_the_login_in_one_shot(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

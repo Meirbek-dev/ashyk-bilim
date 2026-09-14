@@ -112,15 +112,19 @@ impl ZitadelErrorBody {
 /// 422 on `field` for a password Zitadel's complexity policy rejects; the
 /// web catalog renders `password-policy` as the localized rule. The trailing
 /// Zitadel error id («… (COMMA-VoaRj)») is dropped from the message.
-fn password_policy_error(field: &str, message: &str) -> Error {
-    let message = message
+/// Zitadel messages end in their error id: "… is empty (USER-UCej2)".
+fn strip_error_id(message: &str) -> &str {
+    message
         .rsplit_once(" (")
         .filter(|(_, tail)| tail.ends_with(')') && tail.contains('-'))
-        .map_or(message, |(head, _)| head);
+        .map_or(message, |(head, _)| head)
+}
+
+fn password_policy_error(field: &str, message: &str) -> Error {
     Error::validation(vec![ab_core::FieldError {
         field: field.into(),
         code: "password-policy".into(),
-        message: message.to_owned(),
+        message: strip_error_id(message).to_owned(),
     }])
 }
 
@@ -490,9 +494,29 @@ impl ZitadelClient {
             )));
         }
         // 3 = InvalidArgument: the password fails Zitadel's complexity policy
-        // (captured live: "Password must contain upper case", COMMA-VoaRj).
-        if err.code == 3 && matches!(user.password, PasswordSpec::Plain(_)) {
-            return Err(password_policy_error("password", &err.message));
+        // (captured live: "Password must contain upper case", COMMA-VoaRj) —
+        // or, without a password in play, some other field of ours
+        // ("First name in profile is empty", USER-UCej2). Either way it is
+        // our input, never an outage (BUG-148).
+        if err.code == 3 {
+            let message = err.message.to_ascii_lowercase();
+            if matches!(user.password, PasswordSpec::Plain(_)) && message.contains("password") {
+                return Err(password_policy_error("password", &err.message));
+            }
+            let field = if message.contains("first name") || message.contains("given name") {
+                "first_name"
+            } else if message.contains("last name") || message.contains("family name") {
+                "last_name"
+            } else if message.contains("email") {
+                "email"
+            } else {
+                "username"
+            };
+            return Err(Error::validation(vec![ab_core::FieldError {
+                field: field.into(),
+                code: "invalid".into(),
+                message: strip_error_id(&err.message).to_owned(),
+            }]));
         }
         Err(Error::app(
             ErrorCode::ServiceUnavailable,

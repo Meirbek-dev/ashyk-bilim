@@ -168,6 +168,19 @@ pub struct NewAccount {
 
 pub use ab_db::identity::ProfileRow as Profile;
 
+/// A profile name trimmed, or 422 `required` when nothing is left.
+fn required_name<'a>(field: &str, value: &'a str) -> Result<&'a str> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Err(Error::validation(vec![FieldError {
+            field: field.into(),
+            code: "required".into(),
+            message: format!("{field} must not be blank"),
+        }]));
+    }
+    Ok(value)
+}
+
 #[derive(Debug)]
 pub struct SessionSummary {
     pub handle: String,
@@ -500,14 +513,18 @@ impl IdentityService {
         account: &NewAccount,
         email_verified: bool,
     ) -> Result<(Profile, Option<String>)> {
+        // BUG-148: `length(min = 1)` lets whitespace through; Zitadel then
+        // rejects the empty profile name with a generic code 3.
+        let first_name = required_name("first_name", &account.first_name)?;
+        let last_name = required_name("last_name", &account.last_name)?;
         self.require_unique(&account.username, &account.email)
             .await?;
         let created = self
             .zitadel
             .create_human_user_with_email_code(&NewHumanUser {
                 username: account.username.clone(),
-                given_name: account.first_name.clone(),
-                family_name: account.last_name.clone(),
+                given_name: first_name.to_owned(),
+                family_name: last_name.to_owned(),
                 email: account.email.clone(),
                 email_verified,
                 password: match &account.password {
@@ -525,13 +542,12 @@ impl IdentityService {
                     err
                 }
             })?;
-        let display_name = format!("{} {}", account.first_name, account.last_name);
         let inserted = ab_db::identity::create_user_with_default_role(
             &self.pool,
             &created.user_id,
             &account.username,
             &account.email,
-            display_name.trim(),
+            &format!("{first_name} {last_name}"),
         )
         .await?;
         let Some(user_id) = inserted else {

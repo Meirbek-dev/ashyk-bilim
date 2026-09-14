@@ -4,12 +4,14 @@
 use ab_core::{Error, ErrorCode, FieldError};
 use ab_domain::identity::Actor;
 use axum::Json;
-use axum::extract::{FromRequest, FromRequestParts, Request};
+use axum::extract::{ConnectInfo, FromRequest, FromRequestParts, Request};
 use axum::http::HeaderMap;
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use serde::de::DeserializeOwned;
+use std::convert::Infallible;
 use std::fmt::Display;
+use std::net::SocketAddr;
 
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -71,6 +73,44 @@ impl FromRequestParts<AppState> for MaybeActor {
             _ => Actor::anonymous(),
         };
         Ok(Self(actor))
+    }
+}
+
+/// Client address for rate limiting and the session audit trail (BUG-147).
+///
+/// Trust order: `X-Real-IP` (our nginx sets it from the socket peer), then
+/// the LAST `X-Forwarded-For` hop (the one nginx appended — earlier hops are
+/// client-supplied and spoofable), then the TCP peer. Never the first hop.
+pub struct ClientIp(pub Option<String>);
+
+fn client_ip(parts: &Parts) -> Option<String> {
+    let header = |name: &str| parts.headers.get(name).and_then(|v| v.to_str().ok());
+    header("x-real-ip")
+        .into_iter()
+        .chain(
+            header("x-forwarded-for")
+                .into_iter()
+                .flat_map(|v| v.split(',').rev()),
+        )
+        .map(str::trim)
+        .find(|v| !v.is_empty())
+        .map(ToOwned::to_owned)
+        .or_else(|| {
+            parts
+                .extensions
+                .get::<ConnectInfo<SocketAddr>>()
+                .map(|peer| peer.0.ip().to_string())
+        })
+}
+
+impl<S: Send + Sync> FromRequestParts<S> for ClientIp {
+    type Rejection = Infallible;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
+        std::future::ready(Ok(Self(client_ip(parts))))
     }
 }
 

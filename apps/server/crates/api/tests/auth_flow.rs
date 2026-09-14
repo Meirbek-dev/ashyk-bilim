@@ -1023,3 +1023,207 @@ async fn passwordless_account_login_is_invalid_credentials(pool: PgPool) {
     assert_eq!(res.json()["code"], "invalid-credentials");
     assert!(!res.text().contains("COMMAND"), "{}", res.text());
 }
+
+// ── Client address trust (BUG-147) ─────────────────────────────────────────
+
+/// BUG-147: the client controls the leading `X-Forwarded-For` hops; only the
+/// one our proxy appended (the last) is trusted, and `X-Real-IP` wins over
+/// both. A rotating spoofed first hop must not dodge the IP limiter.
+#[sqlx::test(migrations = "../../migrations")]
+async fn spoofed_forwarded_for_first_hop_is_ignored(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("proxied", "proxied@example.com", &["user"])
+        .await;
+    mock_password_ok(&app.zitadel).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-proxied/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": { "totalResult": "1" },
+            "authMethodTypes": ["AUTHENTICATION_METHOD_TYPE_PASSWORD"]
+        })))
+        .mount(&app.zitadel)
+        .await;
+    let proxy_hop = unique_ip();
+
+    // The session records the proxy-appended hop, not the forged one.
+    let login = app
+        .send(
+            Request::builder()
+                .method("POST")
+                .uri("/api/v2/auth/login")
+                .header(header::CONTENT_TYPE, "application/json")
+                .header("x-forwarded-for", format!("203.0.113.7, {proxy_hop}"))
+                .body(Body::from(
+                    serde_json::json!({ "login": "proxied", "password": "correct horse" })
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(login.status, StatusCode::OK, "{}", login.text());
+    let cookie = login.session_cookie().unwrap();
+    let list_sessions = || async {
+        app.send(
+            Request::builder()
+                .uri("/api/v2/auth/sessions")
+                .header(header::COOKIE, &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+    };
+    let list = list_sessions().await;
+    assert_eq!(list.json()[0]["ip"], proxy_hop, "{}", list.text());
+
+    // `X-Real-IP` (set by nginx) beats every forwarded hop.
+    let real_ip = unique_ip();
+    let login = app
+        .send(
+            Request::builder()
+                .method("POST")
+                .uri("/api/v2/auth/login")
+                .header(header::CONTENT_TYPE, "application/json")
+                .header("x-real-ip", &real_ip)
+                .header("x-forwarded-for", format!("203.0.113.7, {proxy_hop}"))
+                .body(Body::from(
+                    serde_json::json!({ "login": "proxied", "password": "correct horse" })
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(login.status, StatusCode::OK, "{}", login.text());
+    let list = list_sessions().await;
+    let ips: Vec<_> = list
+        .json()
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["ip"].clone())
+        .collect();
+    assert!(ips.contains(&serde_json::json!(real_ip)), "{ips:?}");
+
+    // Twenty failures behind a rotating forged first hop still fill the
+    // window keyed on the proxy hop; the 21st is throttled.
+    let limited_hop = unique_ip();
+    for i in 0..20 {
+        let body = serde_json::json!({ "login": format!("ghost-{i}"), "password": "x" });
+        let res = login_from(&app, &format!("198.51.100.{i}, {limited_hop}"), &body).await;
+        assert_eq!(res.status, StatusCode::UNAUTHORIZED, "{}", res.text());
+    }
+    let body = serde_json::json!({ "login": "ghost-21", "password": "x" });
+    let res = login_from(&app, &format!("198.51.100.99, {limited_hop}"), &body).await;
+    assert_eq!(res.status, StatusCode::TOO_MANY_REQUESTS, "{}", res.text());
+}
+
+// ── Profile names (BUG-148) ────────────────────────────────────────────────
+
+/// BUG-148: whitespace-only names are rejected on our side as `required`
+/// before Zitadel sees them — on self-registration and on the admin path,
+/// which used to surface Zitadel's code 3 as a 503.
+#[sqlx::test(migrations = "../../migrations")]
+async fn blank_names_are_required_field_errors_on_register_and_admin_create(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .respond_with(ResponseTemplate::new(500))
+        .expect(0)
+        .mount(&app.zitadel)
+        .await;
+
+    let mut body = register_body("blank", "blank@example.com");
+    body["first_name"] = serde_json::json!("   ");
+    let res = app.post_json("/api/v2/auth/register", &body).await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "first_name");
+    assert_eq!(res.json()["field_errors"][0]["code"], "required");
+
+    let admin_user = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(admin_user, &["platform:manage:platform"])
+        .await;
+    let res = app
+        .post_as(
+            &admin,
+            "/api/v2/users",
+            &serde_json::json!({
+                "username": "blankadmin",
+                "email": "blankadmin@example.com",
+                "first_name": "A",
+                "last_name": "\t ",
+            }),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "last_name");
+    assert_eq!(res.json()["field_errors"][0]["code"], "required");
+}
+
+/// BUG-148: a Zitadel code 3 that is not about the password is a 422 on the
+/// named field — never `password-policy`, never a 503 (admin path).
+#[sqlx::test(migrations = "../../migrations")]
+async fn zitadel_profile_rejection_maps_to_the_named_field(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "First name in profile is empty (USER-UCej2)",
+            "details": [{ "id": "USER-UCej2", "message": "First name in profile is empty" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/register",
+            &register_body("zprofile", "zprofile@example.com"),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "first_name");
+    assert_eq!(res.json()["field_errors"][0]["code"], "invalid");
+
+    let admin_user = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(admin_user, &["platform:manage:platform"])
+        .await;
+    let res = app
+        .post_as(
+            &admin,
+            "/api/v2/users",
+            &serde_json::json!({
+                "username": "zadmin",
+                "email": "zadmin@example.com",
+                "first_name": "A",
+                "last_name": "B",
+            }),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "first_name");
+}

@@ -389,9 +389,13 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     )?)?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
-    axum::serve(listener, router)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    // The TCP peer is the last-resort client address (`ClientIp`, BUG-147).
+    axum::serve(
+        listener,
+        router.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
     tracing::info!("server drained and stopped");
     Ok(())
 }

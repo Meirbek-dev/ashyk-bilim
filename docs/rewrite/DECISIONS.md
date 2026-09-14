@@ -1036,6 +1036,18 @@ Implements three more items of the owner answers above. Routes:
 - **The registration `created` cap counts accounts Zitadel actually created**
   (BUG-133): read before, counted after the 201 — a policy-rejected password no
   longer eats the 10-per-hour budget.
+- **The client address trusts the proxy, never the caller** (BUG-147, pass 13):
+  `ClientIp` (`crates/api/src/extract.rs`) reads `X-Real-IP` (our nginx sets it
+  from the socket peer), else the LAST `X-Forwarded-For` hop (the one nginx
+  appended via `$proxy_add_x_forwarded_for`; Next only fills the header when it
+  is absent), else the TCP peer (`into_make_service_with_connect_info`). The
+  first hop is client-supplied and was letting a rotating spoofed XFF dodge
+  every IP limiter and forge the session list. A constant, not config: there is
+  exactly one proxy topology (`extra/nginx.v2.conf.template`).
+- **Profile names are trimmed and required on our side** (BUG-148): whitespace
+  `first_name`/`last_name` → 422 `required` before Zitadel; a Zitadel code 3 on
+  user creation maps to `password-policy` only when its message is about the
+  password, otherwise to a 422 `invalid` on the named field — never a 503.
 
 
 ## Teacher grading (2026-09-13, gauntlet pass 12)

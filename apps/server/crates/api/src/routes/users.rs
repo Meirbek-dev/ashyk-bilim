@@ -13,8 +13,8 @@ use crate::dto::users::{
     UpdateProfileRequest, UserCoursesQuery, UserProfile,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson};
-use crate::routes::auth::{client_ip, user_agent};
+use crate::extract::{ClientIp, CurrentActor, MaybeActor, Path, Query, ValidJson};
+use crate::routes::auth::user_agent;
 use crate::state::AppState;
 
 /// The caller's own profile.
@@ -92,6 +92,7 @@ pub async fn create_user(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     headers: HeaderMap,
+    ClientIp(ip): ClientIp,
     ValidJson(request): ValidJson<CreateUserRequest>,
 ) -> ApiResult<(StatusCode, Json<AdminUser>)> {
     let user = state
@@ -104,7 +105,7 @@ pub async fn create_user(
                 password: request.password.map(SecretString::from),
                 first_name: request.first_name,
                 last_name: request.last_name,
-                ip: client_ip(&headers),
+                ip,
                 user_agent: user_agent(&headers),
             },
             request.roles.as_deref().unwrap_or_default(),
