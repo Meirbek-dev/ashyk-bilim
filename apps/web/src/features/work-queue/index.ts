@@ -6,7 +6,6 @@ export type {
   DashboardToolItem,
   WorkQueueAudience,
   WorkQueueItem,
-  WorkQueueMetric,
   WorkQueuePriority,
   WorkQueueSection,
   WorkQueueSource,

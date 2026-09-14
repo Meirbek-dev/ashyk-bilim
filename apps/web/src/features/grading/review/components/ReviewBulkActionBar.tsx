@@ -259,6 +259,10 @@ export default function ReviewBulkActionBar({
         <RotateCcw className="size-4" />
         {t('returnSelected')}
       </Button>
+      {/* UX-093: the bulk return takes saved scores only — say so instead of a mute disabled button. */}
+      {submissions.length > 0 && returnable.length === 0 && ungraded.length > 0 ? (
+        <span className="text-muted-foreground text-xs">{t('returnNeedsSavedScore')}</span>
+      ) : null}
       <Button variant="outline" size="sm" disabled={isPending} onClick={() => setPendingAction('release-hidden')}>
         <Send className="size-4" />
         {t('releaseHidden')}

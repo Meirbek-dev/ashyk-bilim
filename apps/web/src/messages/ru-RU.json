@@ -8278,6 +8278,7 @@
           "running": "Выполняется массовое действие",
           "publishSelected": "Опубликовать выбранное",
           "returnSelected": "Вернуть выбранное",
+          "returnNeedsSavedScore": "Сначала сохраните оценку",
           "releaseHidden": "Открыть скрытые оценки",
           "deadlinePlaceholder": "Выберите дату и время",
           "reasonPlaceholder": "Причина",
@@ -10757,6 +10758,10 @@
       "description": "Пробелы в знаниях, подтверждения и адаптивное исправление по выбору.",
       "analyze": "Анализировать",
       "draftFeedback": "Подготовить отзыв",
+      "replaceFeedbackTitle": "Заменить отзыв?",
+      "replaceFeedbackDescription": "В поле отзыва уже есть текст. Черновик ИИ заменит его.",
+      "replaceFeedbackCancel": "Отмена",
+      "replaceFeedbackConfirm": "Заменить",
       "generateGate": "Создать барьер исправления",
       "emptyTitle": "Анализ еще не выполнялся",
       "emptyDescription": "Запустите анализ, чтобы увидеть пробелы в знаниях и подтверждения по этой работе."
@@ -11100,13 +11105,13 @@
       }
     },
     "metrics": {
-      "courses": "курсов",
-      "breaches": "нарушений",
-      "submissions": "работ",
-      "awaitingReview": "ожидают проверки",
-      "forecast": "прогноз",
-      "learners": "учащихся",
-      "percentUsed": "% использовано"
+      "courses": "{count, plural, one {# курс} few {# курса} many {# курсов} other {# курса}}",
+      "breaches": "{count, plural, one {# нарушение} few {# нарушения} many {# нарушений} other {# нарушения}}",
+      "submissions": "{count, plural, one {# работа} few {# работы} many {# работ} other {# работы}}",
+      "awaitingReview": "{count, plural, one {# ожидает проверки} other {# ожидают проверки}}",
+      "forecast": "прогноз: {count}",
+      "learners": "{count, plural, one {# учащийся} few {# учащихся} many {# учащихся} other {# учащегося}}",
+      "percentUsed": "{count} % использовано"
     },
     "tools": {
       "browseCourses": {

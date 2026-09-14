@@ -27,7 +27,10 @@ import { AIArtifactLifecycle } from '@/features/ai-experience/components/ai-arti
 import { AIErrorRecovery } from '@/features/ai-experience/components/ai-error-recovery'
 import { isTerminalRunStatus } from '@/features/ai-experience/api/use-ai-run-status'
 import { toRunStreamEvent, useAIRunStream } from '@/features/ai-experience/api/use-ai-run-stream'
-import { runStatusToWorkState } from '@/features/ai-experience/workspace/use-ai-run-controller'
+import { runStatusToWorkState, useAIRunController } from '@/features/ai-experience/workspace/use-ai-run-controller'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { UseMutationResult } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 
 type AgentOptions = { headers?: Record<string, string>; onEventId?: (id: string) => void }
 
@@ -105,6 +108,32 @@ describe('useAIRunStream reconnect', () => {
     expect(transport.createAGUIAgent).toHaveBeenCalledTimes(1)
     expect(result.current.state).toBe('failed')
     expect(result.current.error).toBeInstanceOf(APIError)
+  })
+})
+
+describe('useAIRunController', () => {
+  // UX-093: the 429 hourly limit is rendered by the panel; `start` must not also reject.
+  it('swallows a refused queue instead of rejecting the fire-and-forget start', async () => {
+    const error = new APIError({ code: 'ai-rate-limited', message: 'Hourly AI request limit reached', status: 429 })
+    const queue = {
+      error,
+      isPending: false,
+      mutateAsync: vi.fn().mockRejectedValue(error),
+    } as unknown as UseMutationResult<never, Error, string>
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    )
+
+    const { result } = renderHook(() => useAIRunController({ queue }), { wrapper })
+    let started: unknown = 'unset'
+    await act(async () => {
+      started = await result.current.start('auto')
+    })
+
+    expect(started).toBeNull()
+    expect(result.current.error).toBe(error)
+    expect(result.current.runId).toBeNull()
   })
 })
 

@@ -174,7 +174,7 @@ function WorkQueueRow({ item }: { item: WorkQueueItem }) {
             <LmsStatusBadge status={item.status} />
             {item.metric ? (
               <Badge variant="secondary" className="font-mono tabular-nums">
-                {item.metric.value} {item.metric.label}
+                {item.metric}
               </Badge>
             ) : null}
           </div>

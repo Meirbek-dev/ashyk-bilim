@@ -857,6 +857,7 @@ function GradeEditor({
         {/* The analyst and the remediation generator take a file attempt id (DECISIONS 2026-09-12). */}
         <SubmissionAIEntry
           submissionUuid={attempt.id}
+          hasFeedback={feedback.trim() !== ''}
           onDraftFeedback={draft => {
             setFeedback(draft)
             onDirtyChange(true)

@@ -115,6 +115,21 @@ describe('SubmissionAIEntry on the v2 wire', () => {
     )
   })
 
+  // UX-093: a non-empty feedback box is not replaced without a confirmation.
+  it('asks before replacing existing feedback with the AI draft', async () => {
+    answerLatest(parse => parse(wire))
+    const onDraftFeedback = vi.fn()
+
+    render(<SubmissionAIEntry submissionUuid={SUBMISSION_ID} hasFeedback onDraftFeedback={onDraftFeedback} />, {
+      wrapper,
+    })
+
+    fireEvent.click(await screen.findByText('AiExperience.submissionAIEntry.draftFeedback'))
+    expect(onDraftFeedback).not.toHaveBeenCalled()
+    fireEvent.click(await screen.findByRole('button', { name: 'AiExperience.submissionAIEntry.replaceFeedbackConfirm' }))
+    expect(onDraftFeedback).toHaveBeenCalledTimes(1)
+  })
+
   it.each([
     ['null body', () => null],
     [

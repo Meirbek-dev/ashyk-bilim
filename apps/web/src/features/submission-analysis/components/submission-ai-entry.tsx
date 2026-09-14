@@ -1,10 +1,20 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { aiLanguageFor } from '@/i18n/config'
 import { BrainCircuit, FilePenLine, RefreshCw, Route } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -26,13 +36,17 @@ import type { SubmissionAnalysisView } from '../api/use-submission-analysis'
 import { SubmissionAnalysisResultShell } from './submission-analysis-result-shell'
 
 export function SubmissionAIEntry({
+  hasFeedback = false,
   onDraftFeedback,
   submissionUuid,
 }: {
+  /** The feedback box already holds text — «Подготовить отзыв» asks before replacing it (UX-093). */
+  hasFeedback?: boolean
   onDraftFeedback?: (feedback: string) => void
   submissionUuid: string | null
 }) {
   const t = useTranslations('AiExperience.submissionAIEntry')
+  const [confirmReplace, setConfirmReplace] = useState(false)
   const locale = useLocale()
   const latest = useLatestSubmissionAnalysis(submissionUuid ?? '')
   const queueAnalysis = useQueueSubmissionAnalysis(submissionUuid ?? '')
@@ -90,13 +104,33 @@ export function SubmissionAIEntry({
             type="button"
             variant="outline"
             onClick={() => {
-              if (latest.data) onDraftFeedback(buildFeedbackDraft(latest.data))
+              if (!latest.data) return
+              if (hasFeedback) setConfirmReplace(true)
+              else onDraftFeedback(buildFeedbackDraft(latest.data))
             }}
           >
             <FilePenLine data-icon="inline-start" aria-hidden="true" />
             {t('draftFeedback')}
           </Button>
         ) : null}
+        <AlertDialog open={confirmReplace} onOpenChange={setConfirmReplace}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('replaceFeedbackTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>{t('replaceFeedbackDescription')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('replaceFeedbackCancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (latest.data && onDraftFeedback) onDraftFeedback(buildFeedbackDraft(latest.data))
+                }}
+              >
+                {t('replaceFeedbackConfirm')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <Button
           className="w-full"
           variant="secondary"

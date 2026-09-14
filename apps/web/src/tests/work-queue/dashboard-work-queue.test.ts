@@ -48,6 +48,29 @@ describe('buildDashboardWorkQueue', () => {
     expect(queue.sections.map(section => section.audience)).toEqual(['teacher'])
   })
 
+  // UX-093: the count badge is one ICU plural message («1 работа», not «1 работ»).
+  it('passes the count into the metric message', () => {
+    const queue = buildDashboardWorkQueue({
+      access: { hasCoursesAccess: true, hasAnalyticsAccess: true, hasUsersAccess: true, hasAdminAccess: false },
+      courseSummary: null,
+      teacherSignal: {
+        atRiskTotal: 0,
+        gradingBacklogTotal: 1,
+        slaBreaches: 0,
+        forecastBacklog7d: 0,
+        medianFeedbackLatencyHours: null,
+        backlogItems: [],
+        signalAvailable: true,
+      },
+      adminSignal: null,
+      learnerSignal: null,
+      t: (key, values) => `t:${key}:${values?.count ?? ''}`,
+    })
+
+    const backlog = queue.sections.flatMap(section => section.items).find(item => item.id === 'grading-backlog')
+    expect(backlog?.metric).toBe('t:metrics.submissions:1')
+  })
+
   it('gives admins the admin section with the user directory item', () => {
     const queue = buildDashboardWorkQueue({
       access: { hasCoursesAccess: true, hasAnalyticsAccess: true, hasUsersAccess: true, hasAdminAccess: true },

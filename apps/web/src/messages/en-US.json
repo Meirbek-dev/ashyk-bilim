@@ -8263,6 +8263,7 @@
           "running": "Running bulk action",
           "publishSelected": "Publish selected",
           "returnSelected": "Return selected",
+          "returnNeedsSavedScore": "Save a grade first",
           "releaseHidden": "Release hidden grades",
           "deadlinePlaceholder": "Pick date and time",
           "reasonPlaceholder": "Reason",
@@ -10743,6 +10744,10 @@
       "description": "Knowledge gaps, evidence, and optional adaptive remediation.",
       "analyze": "Analyze",
       "draftFeedback": "Draft feedback",
+      "replaceFeedbackTitle": "Replace the feedback?",
+      "replaceFeedbackDescription": "The feedback box already has text. The AI draft will replace it.",
+      "replaceFeedbackCancel": "Cancel",
+      "replaceFeedbackConfirm": "Replace",
       "generateGate": "Generate remediation gate",
       "emptyTitle": "No analysis yet",
       "emptyDescription": "Run an analysis to see knowledge gaps and evidence for this submission."
@@ -11086,13 +11091,13 @@
       }
     },
     "metrics": {
-      "courses": "courses",
-      "breaches": "breaches",
-      "submissions": "submissions",
-      "awaitingReview": "awaiting review",
-      "forecast": "forecast",
-      "learners": "learners",
-      "percentUsed": "% used"
+      "courses": "{count, plural, one {# course} other {# courses}}",
+      "breaches": "{count, plural, one {# breach} other {# breaches}}",
+      "submissions": "{count, plural, one {# submission} other {# submissions}}",
+      "awaitingReview": "{count} awaiting review",
+      "forecast": "forecast: {count}",
+      "learners": "{count, plural, one {# learner} other {# learners}}",
+      "percentUsed": "{count}% used"
     },
     "tools": {
       "browseCourses": {

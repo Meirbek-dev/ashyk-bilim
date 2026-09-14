@@ -8260,6 +8260,7 @@
           "running": "Жаппай әрекет орындалуда",
           "publishSelected": "Таңдалғанын жариялау",
           "returnSelected": "Таңдалғанын қайтару",
+          "returnNeedsSavedScore": "Алдымен бағаны сақтаңыз",
           "releaseHidden": "Жасырын бағаларды жариялау",
           "deadlinePlaceholder": "Күн мен уақытты таңдаңыз",
           "reasonPlaceholder": "Себебі",
@@ -10927,6 +10928,10 @@
       "description": "Білімдегі олқылықтар, дәлелдер және міндетті емес бейімделген түзету жұмыстары.",
       "analyze": "Талдау",
       "draftFeedback": "Кері байланыс жобасы",
+      "replaceFeedbackTitle": "Кері байланысты ауыстыру керек пе?",
+      "replaceFeedbackDescription": "Кері байланыс өрісінде мәтін бар. ЖИ жобасы оны ауыстырады.",
+      "replaceFeedbackCancel": "Болдырмау",
+      "replaceFeedbackConfirm": "Ауыстыру",
       "generateGate": "Түзету шегін құру",
       "emptyTitle": "Талдау әлі жүргізілмеген",
       "emptyDescription": "Осы жұмыс бойынша білім олқылықтары мен дәлелдерді көру үшін талдауды іске қосыңыз."
@@ -11270,13 +11275,13 @@
       }
     },
     "metrics": {
-      "courses": "курс",
-      "breaches": "бұзушылық",
-      "submissions": "жұмыс",
-      "awaitingReview": "тексеруді күтуде",
-      "forecast": "болжам",
-      "learners": "білім алушы",
-      "percentUsed": "% пайдаланылды"
+      "courses": "{count} курс",
+      "breaches": "{count} бұзушылық",
+      "submissions": "{count} жұмыс",
+      "awaitingReview": "{count} тексеруді күтуде",
+      "forecast": "болжам: {count}",
+      "learners": "{count} білім алушы",
+      "percentUsed": "{count} % пайдаланылды"
     },
     "tools": {
       "browseCourses": {

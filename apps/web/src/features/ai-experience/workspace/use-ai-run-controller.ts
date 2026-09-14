@@ -91,8 +91,16 @@ export function useAIRunController<Payload, Artifact = unknown>({
   )
 
   async function start(payload: Payload) {
+    // A refused queue (429 hourly limit, 503) is surfaced through `error`;
+    // rejecting here turned every `void start()` into an uncaught page error (UX-093).
+    let queued: AIRunStatusPayload
+    try {
+      queued = await queue.mutateAsync(payload)
+    } catch {
+      return null
+    }
     // The queue hooks read `POST …/queue` untyped; the contract answers `RunStatus`.
-    const run = RunStatus.parse(await queue.mutateAsync(payload))
+    const run = RunStatus.parse(queued)
     setRunId(run.id)
     return run
   }

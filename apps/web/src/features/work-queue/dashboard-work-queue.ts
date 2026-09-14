@@ -83,11 +83,6 @@ export interface DashboardWorkQueueModel {
   tools: DashboardToolItem[]
 }
 
-const countMetric = (value: number, label: string) => ({
-  value,
-  label,
-})
-
 export function buildDashboardWorkQueue({
   access,
   courseSummary,
@@ -230,7 +225,7 @@ function buildTeacherSection({ access, courseSummary, teacherSignal, t }: Teache
         sourceLabel: t('sourceLabels.courseManagement'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'high',
-        metric: countMetric(courseSummary.attention, t('metrics.courses')),
+        metric: t('metrics.courses', { count: courseSummary.attention }),
       })
     }
 
@@ -278,7 +273,7 @@ function buildTeacherSection({ access, courseSummary, teacherSignal, t }: Teache
         sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'critical',
-        metric: countMetric(teacherSignal.slaBreaches, t('metrics.breaches')),
+        metric: t('metrics.breaches', { count: teacherSignal.slaBreaches }),
       })
     }
 
@@ -294,7 +289,7 @@ function buildTeacherSection({ access, courseSummary, teacherSignal, t }: Teache
         sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: teacherSignal.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
         priority: teacherSignal.slaBreaches > 0 ? 'critical' : 'high',
-        metric: countMetric(teacherSignal.gradingBacklogTotal, t('metrics.submissions')),
+        metric: t('metrics.submissions', { count: teacherSignal.gradingBacklogTotal }),
       })
     }
 
@@ -310,7 +305,7 @@ function buildTeacherSection({ access, courseSummary, teacherSignal, t }: Teache
         sourceLabel: t('sourceLabels.crossCourseQueue'),
         status: item.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
         priority: item.slaBreaches > 0 ? 'critical' : 'high',
-        metric: countMetric(item.awaitingReview, t('metrics.awaitingReview')),
+        metric: t('metrics.awaitingReview', { count: item.awaitingReview }),
       })
     })
 
@@ -326,7 +321,7 @@ function buildTeacherSection({ access, courseSummary, teacherSignal, t }: Teache
         sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: LmsStatuses.IN_PROGRESS,
         priority: 'normal',
-        metric: countMetric(teacherSignal.forecastBacklog7d, t('metrics.forecast')),
+        metric: t('metrics.forecast', { count: teacherSignal.forecastBacklog7d }),
       })
     }
 
@@ -342,7 +337,7 @@ function buildTeacherSection({ access, courseSummary, teacherSignal, t }: Teache
         sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'high',
-        metric: countMetric(teacherSignal.atRiskTotal, t('metrics.learners')),
+        metric: t('metrics.learners', { count: teacherSignal.atRiskTotal }),
       })
     }
   }
@@ -401,7 +396,7 @@ function buildAdminSection({ access, adminSignal, t }: AdminSectionInput): WorkQ
         sourceLabel: t('sourceLabels.aiOperations'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'critical',
-        metric: countMetric(aiBudgetUsage, t('metrics.percentUsed')),
+        metric: t('metrics.percentUsed', { count: aiBudgetUsage }),
       })
     } else if (aiBudgetUsage !== null && aiBudgetUsage >= 75) {
       items.push({
@@ -415,7 +410,7 @@ function buildAdminSection({ access, adminSignal, t }: AdminSectionInput): WorkQ
         sourceLabel: t('sourceLabels.aiOperations'),
         status: LmsStatuses.IN_PROGRESS,
         priority: 'high',
-        metric: countMetric(aiBudgetUsage, t('metrics.percentUsed')),
+        metric: t('metrics.percentUsed', { count: aiBudgetUsage }),
       })
     }
   }
@@ -432,7 +427,7 @@ function buildAdminSection({ access, adminSignal, t }: AdminSectionInput): WorkQ
       sourceLabel: t('sourceLabels.adminAnalytics'),
       status: LmsStatuses.NEEDS_ATTENTION,
       priority: 'critical',
-      metric: countMetric(adminSignal.teacherSlaBreaches, t('metrics.breaches')),
+      metric: t('metrics.breaches', { count: adminSignal.teacherSlaBreaches }),
     })
   }
 
@@ -448,7 +443,7 @@ function buildAdminSection({ access, adminSignal, t }: AdminSectionInput): WorkQ
       sourceLabel: t('sourceLabels.adminAnalytics'),
       status: LmsStatuses.READY,
       priority: 'high',
-      metric: countMetric(adminSignal.teacherBacklogTotal, t('metrics.submissions')),
+      metric: t('metrics.submissions', { count: adminSignal.teacherBacklogTotal }),
     })
   }
 

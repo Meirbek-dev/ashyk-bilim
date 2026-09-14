@@ -247,6 +247,21 @@ describe('teacher review controls', () => {
     expect(screen.queryByText('summaries.returnFinished')).toBeNull()
   })
 
+  // UX-093: a selection of unscored rows explains the disabled bulk return.
+  it('hints that the bulk return needs a saved score', () => {
+    render(
+      <ReviewBulkActionBar
+        activityId={42}
+        assessmentUuid="assessment_review"
+        disabled={false}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        submissions={[createSubmission({ submission_uuid: 'submission_pending', status: 'PENDING', final_score: null })]}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'returnSelected' })).toBeDisabled()
+    expect(screen.getByText('returnNeedsSavedScore')).toBeInTheDocument()
+  })
+
   it('shows deadline extension preview and runs the deadline-extensions bulk action', async () => {
     const onRefresh = vi.fn().mockResolvedValue(undefined)
     const dueDate = new Date()

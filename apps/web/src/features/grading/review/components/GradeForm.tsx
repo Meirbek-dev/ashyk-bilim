@@ -434,8 +434,15 @@ export default function GradeForm({
           <AlertTitle>{t('staleDraftTitle')}</AlertTitle>
           <AlertDescription className="mt-1 space-y-1 text-xs">
             <p>
-              {t('staleDraft.serverScoreLabel')} <strong>{submission.final_score ?? '—'}</strong>.{' '}
-              {t('staleDraft.yourDraftLabel')} <strong>{calculatedTotal ?? draft.score}</strong>.
+              {t('staleDraft.serverScoreLabel')}{' '}
+              <strong>
+                {submission.final_score != null ? format.number(submission.final_score, { maximumFractionDigits: 2 }) : '—'}
+              </strong>
+              . {t('staleDraft.yourDraftLabel')}{' '}
+              <strong>
+                {calculatedTotal !== null ? format.number(calculatedTotal, { maximumFractionDigits: 2 }) : draft.score}
+              </strong>
+              .
             </p>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" className="h-6 text-xs" onClick={seedDrafts}>
@@ -476,8 +483,8 @@ export default function GradeForm({
             {calculatedTotal !== null && (
               <span className="text-muted-foreground text-xs">
                 {tItemGrading('scoreSummary', {
-                  earned: calculatedTotal,
-                  possible: maxPossible,
+                  earned: format.number(calculatedTotal, { maximumFractionDigits: 2 }),
+                  possible: format.number(maxPossible, { maximumFractionDigits: 2 }),
                   percentage: maxPossible > 0 ? Math.round((calculatedTotal / maxPossible) * 100) : 0,
                 })}
               </span>
@@ -721,7 +728,11 @@ export default function GradeForm({
       )}
 
       <div className="border-t pt-4">
-        <SubmissionAIEntry submissionUuid={submissionUuid} onDraftFeedback={feedback => editDraft({ feedback })} />
+        <SubmissionAIEntry
+          submissionUuid={submissionUuid}
+          hasFeedback={draft.feedback.trim() !== ''}
+          onDraftFeedback={feedback => editDraft({ feedback })}
+        />
       </div>
 
       {/* ── Keyboard legend ────────────────────────────────────────────── */}

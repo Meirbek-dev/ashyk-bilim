@@ -1,7 +1,7 @@
 'use client'
 
 import { BookOpenCheck, Clock4, TrendingUp, Users } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 import type { Submission, SubmissionStats } from '@/features/grading/domain'
@@ -79,6 +79,7 @@ function StatsGrid({
   reviewQueueSummary: ReviewQueueSummary
 }) {
   const t = useTranslations('Features.Grading.Review')
+  const format = useFormatter()
   if (!stats) return null
 
   return (
@@ -95,13 +96,13 @@ function StatsGrid({
       />
       <StatTile
         label={t('layout.stats.avgScore')}
-        value={stats.avg_score != null ? `${stats.avg_score.toFixed(1)}%` : '--'}
+        value={stats.avg_score != null ? `${format.number(stats.avg_score, { maximumFractionDigits: 1 })}%` : '--'}
         icon={TrendingUp}
         accent="blue"
       />
       <StatTile
         label={t('layout.stats.passRate')}
-        value={stats.pass_rate != null ? `${stats.pass_rate.toFixed(0)}%` : '--'}
+        value={stats.pass_rate != null ? `${format.number(stats.pass_rate, { maximumFractionDigits: 0 })}%` : '--'}
         icon={BookOpenCheck}
         accent="lime"
       />

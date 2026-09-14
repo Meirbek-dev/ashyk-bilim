@@ -11,11 +11,6 @@ export type WorkQueueSource =
   | 'access-control'
   | 'account'
 
-export interface WorkQueueMetric {
-  value: number
-  label: string
-}
-
 export interface WorkQueueItem {
   id: string
   audience: WorkQueueAudience
@@ -30,7 +25,8 @@ export interface WorkQueueItem {
   dueAt?: string | null
   createdAt?: string | null
   groupLabel?: string
-  metric?: WorkQueueMetric
+  /** Localized count badge («3 работы») — ICU plurals, UX-093. */
+  metric?: string
 }
 
 export interface WorkQueueSection {
