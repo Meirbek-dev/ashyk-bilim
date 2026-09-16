@@ -508,7 +508,8 @@ function CourseClient(props: CourseClientProps) {
                   </div>
                 </div>
 
-                <CourseAIHub courseUuid={course.course_uuid} />
+                {/* BUG-159: every AI call needs a session — anonymous visitors get no hub (and no 401 redirect). */}
+                {currentUser ? <CourseAIHub courseUuid={course.course_uuid} /> : null}
 
                 {/* Discussions */}
                 <CourseDiscussions

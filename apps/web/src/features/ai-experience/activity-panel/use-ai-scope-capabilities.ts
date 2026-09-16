@@ -1,6 +1,7 @@
 'use client'
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
+import { useSessionContext } from '@/components/providers/session-provider'
 
 import { apiJson } from '@/lib/api-client'
 
@@ -57,5 +58,7 @@ export function aiScopeCapabilitiesQueryOptions(scope: AIScope) {
 }
 
 export function useAIScopeCapabilities(scope: AIScope) {
-  return useQuery(aiScopeCapabilitiesQueryOptions(scope))
+  // Capabilities are per-session; an anonymous fetch would 401 and redirect (BUG-159).
+  const { isAuthenticated } = useSessionContext()
+  return useQuery({ ...aiScopeCapabilitiesQueryOptions(scope), enabled: isAuthenticated && Boolean(scope.courseUuid) })
 }
