@@ -34,14 +34,20 @@ function activeGateFor(sessions: RemediationSessionView[], activityId: string) {
   return sessions.find(s => s.activity_id === activityId && s.gate_mode && s.status !== 'passed') ?? null
 }
 
-/** The signed-in learner's unpassed gate-mode session on `activityId`, `null` when none (or not loaded yet). */
-export function useRemediationGate(activityId: string) {
+/**
+ * The signed-in learner's unpassed gate-mode session on `activityId`, `null` when none (or not loaded yet).
+ * `poll` — the learner sits on a released result: a gate assigned meanwhile must show without a reload (BUG-158).
+ */
+export function useRemediationGate(activityId: string, { poll = false } = {}) {
   const { user } = useSession()
   const userId = user?.id ?? ''
   const sessions = useQuery({
     queryKey: mySessionsQueryKey(userId),
     queryFn: () => apiJson(`ai/remediation/student/${userId}`, undefined, value => RemediationSessionView.array().parse(value)),
     enabled: Boolean(userId),
+    staleTime: 0,
+    refetchOnWindowFocus: 'always',
+    refetchInterval: poll ? 15_000 : false,
   })
   const session = useMemo(() => (sessions.data ? activeGateFor(sessions.data, activityId) : null), [sessions.data, activityId])
   return { session, userId }

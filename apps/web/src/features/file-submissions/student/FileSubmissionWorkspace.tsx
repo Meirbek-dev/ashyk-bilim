@@ -60,6 +60,7 @@ import { getMimeCategories } from '@/features/file-submissions/mime-categories'
 import { useApiError } from '@/hooks/useApiError'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { RemediationGate, useRemediationGate } from '@/features/remediation'
+import { disabledReasonOf } from '@/features/assessments/domain/disabled-reason'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -77,8 +78,12 @@ export function fileSubmissionQueryOptions(activityUuid: string) {
     enabled: Boolean(activityUuid),
     // UX-068: a hand-in waiting on the teacher (submitted, graded, or returned
     // and then re-graded) polls for the release while the tab is visible.
-    refetchOnWindowFocus: true,
-    refetchInterval: query => (isAwaitingTeacher(query.state.data?.current_attempt?.status) ? 10_000 : false),
+    // BUG-158: a released result keeps following the server too (a gate assigned meanwhile).
+    refetchOnWindowFocus: 'always',
+    refetchInterval: query => {
+      const status = query.state.data?.current_attempt?.status
+      return isAwaitingTeacher(status) ? 10_000 : status === 'published' ? 15_000 : false
+    },
   })
 }
 
@@ -172,12 +177,15 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
 
   const canEdit = !status || status === 'draft' || status === 'returned'
   // BUG-140/152: an unpassed gate-mode remediation blocks the next attempt server-side.
-  const { session: remediationGate } = useRemediationGate(activityUuid)
+  const { session: remediationGate } = useRemediationGate(activityUuid, { poll: status === 'published' })
 
-  // Invalidate trail XP when grade is published so the progress bar updates
+  // The teacher published under the open page (the poll saw it): trail XP,
+  // the header chip and the outline follow the projection (UX-097).
   useEffect(() => {
     if (status === 'published') {
       queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+      queryClient.invalidateQueries({ queryKey: ['learner-course'] })
+      queryClient.invalidateQueries({ queryKey: ['student-activity'] })
     }
   }, [status, queryClient])
 
@@ -322,7 +330,15 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
       inputRef.current?.click()
     },
-    onError: err => {
+    onError: async err => {
+      if (disabledReasonOf(err)) {
+        // BUG-158: the gate landed while the result was open — show it instead of «no permission».
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) }),
+          queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
+        ])
+        return
+      }
       toastApiError(err, { fallback: t('startDraftFailed') })
     },
   })

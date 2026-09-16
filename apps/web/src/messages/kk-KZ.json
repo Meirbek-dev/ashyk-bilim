@@ -9884,11 +9884,11 @@
       "latestAttemptScore": "Соңғы әрекет: {score}",
       "gradeNotYetReleased": "Баға әлі жарияланған жоқ. Кейінірек тексеріңіз.",
       "retryAssessment": "Оқу әрекетін қайталау",
-      "attemptCapNote": "Бұл әрекет үшін ең жоғары балл: {percent}",
+      "attemptCapNote": "Келесі әрекет: {percent}-тен аспайды",
       "autoSubmittedTimeExpired": "Әрекет автоматты түрде аяқталды: уақыт бітті.",
       "autoSubmittedViolation": "Әрекет өту ережелерін бұзғаны үшін автоматты түрде аяқталды; балл нөлге түсірілді.",
       "latePenaltyApplied": "Кешігу айыппұлы: −{percent}.",
-      "attemptCapApplied": "Осы әрекет үшін ең жоғары балл: {percent}.",
+      "attemptCapApplied": "Осы әрекетке шектеу қолданылды: {percent}.",
       "teacherFeedback": "Мұғалімнің пікірі",
       "nextActivity": "Келесі оқу әрекеті",
       "breakdown": "Жауаптарды қарау",
@@ -9922,7 +9922,8 @@
       "timeLimitHoursMinutes": "{hours} сағ {minutes} мин",
       "yourAnswer": "Сіздің жауабыңыз",
       "correctAnswer": "Дұрыс жауап",
-      "violationThresholdForfeited": "Бұзушылық шегіне жетті ({count}): әрекет жойылып, нөл балмен жіберілді."
+      "violationThresholdForfeited": "Бұзушылық шегіне жетті ({count}): әрекет жойылып, нөл балмен жіберілді.",
+      "startNewAttempt": "Жаңа әрекетті бастау"
     }
   },
   "Themes": {

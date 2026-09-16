@@ -22,7 +22,12 @@ export const learnerCourseStateQueryOptions = (courseUuid: string, enabled = tru
  * the client query here plus the server-rendered activity runtime.
  */
 export async function refreshLearnerCourseState(queryClient: QueryClient, router: { refresh: () => void }) {
-  await queryClient.invalidateQueries({ queryKey: ['learner-course'] })
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['learner-course'] }),
+    // UX-097: the activity page seeds its runtime query from the server prop
+    // (`initialData`), so a `router.refresh()` alone never reaches the header chip.
+    queryClient.invalidateQueries({ queryKey: ['student-activity'] }),
+  ])
   router.refresh()
 }
 

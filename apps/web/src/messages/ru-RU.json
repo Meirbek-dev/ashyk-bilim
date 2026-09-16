@@ -9713,11 +9713,11 @@
       "latestAttemptScore": "Последняя попытка: {score}",
       "gradeNotYetReleased": "Оценка ещё не опубликована. Проверьте позже.",
       "retryAssessment": "Повторить учебную задачу",
-      "attemptCapNote": "Максимальный балл за эту попытку: {percent}",
+      "attemptCapNote": "Следующая попытка: не более {percent}",
       "autoSubmittedTimeExpired": "Попытка завершена автоматически: время истекло.",
       "autoSubmittedViolation": "Попытка завершена автоматически из-за нарушений правил прохождения; балл обнулён.",
       "latePenaltyApplied": "Штраф за опоздание: −{percent}.",
-      "attemptCapApplied": "Максимальный балл за эту попытку: {percent}.",
+      "attemptCapApplied": "Применён лимит для этой попытки: {percent}.",
       "teacherFeedback": "Комментарий преподавателя",
       "nextActivity": "Следующая учебная задача",
       "breakdown": "Посмотреть ответы",
@@ -9751,7 +9751,8 @@
       "timeLimitHoursMinutes": "{hours} ч {minutes} мин",
       "yourAnswer": "Ваш ответ",
       "correctAnswer": "Правильный ответ",
-      "violationThresholdForfeited": "Порог нарушений достигнут ({count}): попытка аннулирована и отправлена с нулевым баллом."
+      "violationThresholdForfeited": "Порог нарушений достигнут ({count}): попытка аннулирована и отправлена с нулевым баллом.",
+      "startNewAttempt": "Начать новую попытку"
     }
   },
   "Themes": {

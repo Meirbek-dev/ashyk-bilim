@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 
 import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment'
+import { disabledReasonOf } from '@/features/assessments/domain/disabled-reason'
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
 import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout'
@@ -84,6 +85,10 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   const canAct =
     (recommendedAction === 'start' || recommendedAction === 'startRevision') && (vm?.items?.length ?? 0) > 0
+  // UX-097: the last hand-in still awaits the teacher — the bar says so; the
+  // retake is the entry card's secondary «Начать новую попытку».
+  const awaitingRelease =
+    recommendedAction === 'start' && (vm?.releaseState === 'AWAITING_RELEASE' || vm?.submissionStatus === 'PENDING')
 
   // ── Derive layout mode ──────────────────────────────────────────────────────
 
@@ -131,6 +136,16 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       setMode('ACTIVE_ATTEMPT')
       router.refresh()
     } catch (error) {
+      if (disabledReasonOf(error)) {
+        // BUG-158: the server's attempt-state moved under us (a gate was
+        // assigned, the last attempt was spent) — show it, don't toast «no permission».
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKeys.assessments.attemptState(vm.assessmentUuid) }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.assessments.mySubmissions(vm.assessmentUuid) }),
+          queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
+        ])
+        return
+      }
       toastApiError(error, { fallback: t('startActivityFailed') })
     } finally {
       setIsPending(false)
@@ -159,6 +174,13 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       return
     }
 
+    if (awaitingRelease) {
+      setBottomBarAction({ label: t('pendingGrade'), handler: () => undefined, disabled: true })
+      return () => {
+        setBottomBarAction(null)
+      }
+    }
+
     const label = recommendedAction === 'startRevision' ? t('startRevision') : t('startAssessment')
 
     setBottomBarAction({ label, handler: startAttempt, isPending })
@@ -166,7 +188,18 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     return () => {
       setBottomBarAction(null)
     }
-  }, [isNotConfigured, isPreflightMode, canAct, recommendedAction, vm, isPending, setBottomBarAction, startAttempt, t])
+  }, [
+    isNotConfigured,
+    isPreflightMode,
+    canAct,
+    awaitingRelease,
+    recommendedAction,
+    vm,
+    isPending,
+    setBottomBarAction,
+    startAttempt,
+    t,
+  ])
 
   // ── Loading ─────────────────────────────────────────────────────────────────
 
@@ -224,7 +257,20 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   // Entry card (pre-flight) — no CTA inside, it lives in BottomActionBar
   if (isPreflightMode) {
-    return <AttemptEntryCard vm={vm} isTeacher={isTeacher} />
+    return (
+      <AttemptEntryCard
+        vm={vm}
+        isTeacher={isTeacher}
+        {...(awaitingRelease && canAct
+          ? {
+              onStartNewAttempt: () => {
+                void startAttempt()
+              },
+              startPending: isPending,
+            }
+          : {})}
+      />
+    )
   }
 
   // Result card (post-submit)

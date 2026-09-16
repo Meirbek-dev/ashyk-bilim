@@ -9700,11 +9700,11 @@
       "latestAttemptScore": "Latest attempt: {score}",
       "gradeNotYetReleased": "Your grade has not been released yet. Check back later.",
       "retryAssessment": "Retry assessment",
-      "attemptCapNote": "Maximum score for this attempt: {percent}",
+      "attemptCapNote": "Next attempt: capped at {percent}",
       "autoSubmittedTimeExpired": "The attempt was closed automatically: time ran out.",
       "autoSubmittedViolation": "The attempt was closed automatically because of integrity violations; the score is zero.",
       "latePenaltyApplied": "Late penalty: −{percent}.",
-      "attemptCapApplied": "Maximum score for this attempt: {percent}.",
+      "attemptCapApplied": "Cap applied to this attempt: {percent}.",
       "teacherFeedback": "Teacher feedback",
       "nextActivity": "Next activity",
       "breakdown": "View answers",
@@ -9738,7 +9738,8 @@
       "timeLimitHoursMinutes": "{hours} h {minutes} min",
       "yourAnswer": "Your answer",
       "correctAnswer": "Correct answer",
-      "violationThresholdForfeited": "Violation threshold reached ({count}): the attempt is forfeited and handed in with a zero score."
+      "violationThresholdForfeited": "Violation threshold reached ({count}): the attempt is forfeited and handed in with a zero score.",
+      "startNewAttempt": "Start a new attempt"
     }
   },
   "Themes": {

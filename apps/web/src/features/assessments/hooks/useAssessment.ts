@@ -105,6 +105,14 @@ function useAssessment(
     queryFn: () =>
       apiJson(`assessments/${assessment!.id}/attempt-state`, undefined, value => AttemptState.parse(value)),
     enabled: options.surface === 'ATTEMPT' && Boolean(assessment),
+    // BUG-158: a teacher may gate the retake (or spend the last attempt) while
+    // the learner sits on the result page — follow the server on focus and
+    // every 15 s once a hand-in exists, the same policy as the release poll.
+    refetchOnWindowFocus: 'always',
+    refetchInterval: query => {
+      const state = query.state.data
+      return state && !state.can_continue && state.attempts_used > 0 ? 15_000 : false
+    },
   })
   const submissions = useQuery({
     queryKey: queryKeys.assessments.mySubmissions(assessment?.id),
@@ -122,6 +130,7 @@ function useAssessment(
   useEffect(() => {
     if (wasAwaitingRef.current && !awaiting) {
       void queryClient.invalidateQueries({ queryKey: ['learner-course'] })
+      void queryClient.invalidateQueries({ queryKey: ['student-activity'] })
     }
     wasAwaitingRef.current = awaiting
   }, [awaiting, queryClient])

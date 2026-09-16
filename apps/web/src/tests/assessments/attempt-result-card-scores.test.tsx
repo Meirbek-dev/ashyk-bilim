@@ -80,7 +80,22 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
         <AttemptResultCard vm={{ ...vm, canSubmit: true, nextAttemptCapPercent: 80 }} onRetry={() => undefined} />
       </NextIntlClientProvider>,
     )
-    expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Максимальный балл за эту попытку: 80%')
+    // UX-098: the retake note names the *next* cap, distinct from the applied one.
+    expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Следующая попытка: не более 80%')
+  })
+
+  it('tells the applied cap apart from the next-attempt cap (UX-098)', () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+        <AttemptResultCard
+          vm={{ ...vm, canSubmit: true, attemptCapPercent: 80, nextAttemptCapPercent: 60 }}
+          onRetry={() => undefined}
+        />
+      </NextIntlClientProvider>,
+    )
+    expect(screen.getByTestId('score-adjustments')).toHaveTextContent('Применён лимит для этой попытки: 80%')
+    expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Следующая попытка: не более 60%')
+    expect(screen.queryByText(/Максимальный балл за эту попытку/)).toBeNull()
   })
 
   // UX-060 / UX-063: a 48 % beside a full breakdown says why (late penalty,
@@ -104,7 +119,7 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     expect(notes).toHaveTextContent('время истекло')
     // UX-088: one percent format on the card («83,33%» beside «80%», never «80 %»).
     expect(notes).toHaveTextContent('Штраф за опоздание: −20%')
-    expect(notes).toHaveTextContent('Максимальный балл за эту попытку: 80%')
+    expect(notes).toHaveTextContent('Применён лимит для этой попытки: 80%')
     expect(screen.getByTestId('general-feedback')).toHaveTextContent('Хорошо, но коротко')
   })
 

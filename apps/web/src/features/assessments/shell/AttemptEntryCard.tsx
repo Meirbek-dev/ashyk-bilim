@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
@@ -23,9 +24,17 @@ function formatDate(value: string) {
 interface AttemptEntryCardProps {
   vm: AttemptViewModel
   isTeacher?: boolean
+  /** UX-097: the retake while the last hand-in awaits the teacher — secondary here, the bar stays neutral. */
+  onStartNewAttempt?: () => void
+  startPending?: boolean
 }
 
-export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntryCardProps) {
+export default function AttemptEntryCard({
+  vm,
+  isTeacher = false,
+  onStartNewAttempt,
+  startPending = false,
+}: AttemptEntryCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
   const tKinds = useTranslations('Features.Assessments.Studio.kinds')
   const tReasons = useTranslations('AttemptActions.blockedReasons')
@@ -170,9 +179,22 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
                   {isAwaitingRelease ? t('waitingForRelease') : t('readyToStartSubtitle')}
                 </p>
                 {typeof vm.nextAttemptCapPercent === 'number' ? (
-                  <p className="text-muted-foreground mt-1 text-sm">
+                  <p className="text-muted-foreground mt-1 text-sm" data-testid="attempt-cap-note">
                     {t('attemptCapNote', { percent: percent(vm.nextAttemptCapPercent) })}
                   </p>
+                ) : null}
+                {onStartNewAttempt ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    disabled={startPending}
+                    onClick={onStartNewAttempt}
+                    data-testid="start-new-attempt"
+                  >
+                    <RotateCcw className="size-4" />
+                    {t('startNewAttempt')}
+                  </Button>
                 ) : null}
               </>
             )}

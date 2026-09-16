@@ -45,6 +45,24 @@ describe('attempt surface i18n (UX-010)', () => {
     expect(screen.queryByText('Готовы начать')).toBeNull()
   })
 
+  // UX-097/UX-098: the pending entry card offers the retake as a secondary
+  // control and names only the *next* cap (ru/kk/en), never the applied one.
+  it('offers «Начать новую попытку» and the next-cap note on a pending retake', () => {
+    const pending = { ...vm, releaseState: 'AWAITING_RELEASE', nextAttemptCapPercent: 60 } as AttemptViewModel
+    const { unmount } = renderRu(<AttemptEntryCard vm={pending} onStartNewAttempt={() => undefined} />)
+    expect(screen.getByTestId('start-new-attempt')).toHaveTextContent('Начать новую попытку')
+    expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Следующая попытка: не более 60%')
+    expect(screen.queryByText(/Применён лимит/)).toBeNull()
+    unmount()
+    render(
+      <NextIntlClientProvider locale="kk" messages={kkMessages}>
+        <AttemptEntryCard vm={pending} />
+      </NextIntlClientProvider>,
+    )
+    expect(screen.getByTestId('attempt-cap-note')).toHaveTextContent('Келесі әрекет: 60%-тен аспайды')
+    expect(screen.queryByTestId('start-new-attempt')).toBeNull()
+  })
+
   it('renders the answered counter with a Russian plural in the action bar', () => {
     const navigation = {
       current: 1,

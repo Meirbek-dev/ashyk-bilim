@@ -73,7 +73,34 @@ describe('FileSubmissionWorkspace submit', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'submitFiles' }))
     await waitFor(() => expect(mocks.submit).toHaveBeenCalledWith('fs-1', expect.any(Array), 1))
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['learner-course'] }))
+    // UX-097: the activity runtime is seeded from the server prop (`initialData`),
+    // so `router.refresh()` alone never reached the header chip — invalidate it too.
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['student-activity'] })
     expect(mocks.refresh).toHaveBeenCalled()
+  })
+
+  // BUG-158: a gate assigned while the result was open — the new-attempt 403
+  // names the reason; refetch the attempt and the learner's sessions, no toast.
+  it('refetches the attempt and the gate on a gated new attempt', async () => {
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
+    mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 2, current_attempt: published, attempts: [published] })
+    mocks.start.mockRejectedValue(
+      new APIError({ code: 'forbidden', status: 403, message: 'cannot start: REMEDIATION_REQUIRED' }),
+    )
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    render(
+      <QueryClientProvider client={client}>
+        <FileSubmissionWorkspace
+          activity={{ activity_uuid: 'activity_a1', activity_type: 'TYPE_FILE_SUBMISSION' } as Activity}
+          course={{ course_uuid: 'course_c1' } as CourseStructure}
+        />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(await screen.findByRole('button', { name: 'newAttempt' }))
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['remediation-sessions'] }))
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['file-submission', 'activity', 'a1'] })
   })
 
   // UX-089: a released attempt with attempts to spare offers the next one.
