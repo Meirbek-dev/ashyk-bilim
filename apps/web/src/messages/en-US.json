@@ -10448,7 +10448,7 @@
     "openButton": "Open",
     "downloadButton": "Download",
     "noSubmissions": "No submissions match this view.",
-    "attemptInfo": "Attempt {attemptNumber} · {count, plural, one {# file} other {# files}}",
+    "attemptInfo": "Attempt #{attemptNumber} · {count, plural, one {# file} other {# files}}",
     "submittedAt": "Submitted {date}",
     "submittedAsDraft": "Submitted as draft",
     "late": "Late",

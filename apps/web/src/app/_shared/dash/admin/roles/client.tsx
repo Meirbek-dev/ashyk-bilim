@@ -92,27 +92,30 @@ export default function RBACAdminClient() {
   const [grantsFor, setGrantsFor] = useState<Role | null>(null)
   const [rejected, setRejected] = useState<string[]>([])
   const [slugError, setSlugError] = useState<string | null>(null)
+  const [nameError, setNameError] = useState<string | null>(null)
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null)
   const closeDialogs = () => {
     setEditing(null)
     setGrantsFor(null)
   }
 
-  const create = useRoleMutation(
-    (draft: RoleDraft) => createRole(draft),
-    t('createdRole'),
-    closeDialogs,
-    error => {
-      // A taken slug belongs on the slug field, not in a toast (UX-096).
-      if (!hasErrorCode(error, 'role-slug-taken')) return false
+  /** A taken slug (409, UX-096) or a blank name (422 `display_name`, UX-100) lands on its field, not in a toast. */
+  const inlineRoleError = (error: unknown) => {
+    if (hasErrorCode(error, 'role-slug-taken')) {
       setSlugError(tErrors('codes.role-slug-taken'))
       return true
-    },
-  )
+    }
+    const name = isApiError(error) ? error.fieldErrors.find(item => item.field === 'display_name') : undefined
+    if (!name) return false
+    setNameError(tErrors.has(`fields.${name.code}`) ? tErrors(`fields.${name.code}`) : name.message)
+    return true
+  }
+  const create = useRoleMutation((draft: RoleDraft) => createRole(draft), t('createdRole'), closeDialogs, inlineRoleError)
   const update = useRoleMutation(
     ({ slug, ...body }: RoleDraft) => updateRole(slug, body),
     t('updatedRole'),
     closeDialogs,
+    inlineRoleError,
   )
   const remove = useRoleMutation((slug: string) => deleteRole(slug), t('deletedRole'), closeDialogs)
   const saveGrants = useRoleMutation(
@@ -251,6 +254,7 @@ export default function RBACAdminClient() {
           if (open) return
           setEditing(null)
           setSlugError(null)
+          setNameError(null)
         }}
       >
         <DialogContent className="sm:max-w-md">
@@ -261,7 +265,9 @@ export default function RBACAdminClient() {
               initialDescription={editing === 'new' ? '' : roleDescription(editing)}
               pending={create.isPending || update.isPending}
               slugError={slugError}
+              nameError={nameError}
               onSlugChange={() => setSlugError(null)}
+              onNameChange={() => setNameError(null)}
               onCancel={() => setEditing(null)}
               onSubmit={draft => (editing === 'new' ? create.mutate(draft) : update.mutate(draft))}
             />
@@ -320,7 +326,9 @@ function RoleForm({
   initialDescription,
   pending,
   slugError,
+  nameError,
   onSlugChange,
+  onNameChange,
   onCancel,
   onSubmit,
 }: {
@@ -329,7 +337,9 @@ function RoleForm({
   initialDescription: string
   pending: boolean
   slugError: string | null
+  nameError: string | null
   onSlugChange: () => void
+  onNameChange: () => void
   onCancel: () => void
   onSubmit: (draft: RoleDraft) => void
 }) {
@@ -356,10 +366,20 @@ function RoleForm({
           <Input
             id="role-name"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => {
+              setName(e.target.value)
+              onNameChange()
+            }}
             placeholder={t('namePlaceholder')}
             required
+            aria-invalid={nameError ? true : undefined}
+            aria-describedby={nameError ? 'role-name-error' : undefined}
           />
+          {nameError ? (
+            <p id="role-name-error" role="alert" className="text-destructive text-xs">
+              {nameError}
+            </p>
+          ) : null}
         </div>
         {!role && (
           <div className="grid gap-2">

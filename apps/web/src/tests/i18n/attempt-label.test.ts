@@ -26,6 +26,15 @@ describe('attempt label (UX-099)', () => {
     expect(new Set(attemptLabels(messages))).toEqual(new Set([expected]))
   })
 
+  // UX-100: teacher file review rows («Попытка 2 · 1 файл») used a third spelling.
+  it.each([
+    ['ru', ruMessages, 'Попытка №{attemptNumber} · '],
+    ['kk', kkMessages as unknown as Catalog, '№{attemptNumber} әрекет · '],
+    ['en', enMessages as unknown as Catalog, 'Attempt #{attemptNumber} · '],
+  ])('%s file review rows start with the same label', (_locale, messages, prefix) => {
+    expect(messages.FileSubmissionReview.attemptInfo.startsWith(prefix)).toBe(true)
+  })
+
   it('names the unsaved-changes dialog with ё and a «leave» verb', () => {
     expect(ruMessages.Common.unsavedChanges).toBe('Несохранённые изменения')
     expect(ruMessages.Common.leaveWithoutSaving).toBe('Выйти без сохранения')

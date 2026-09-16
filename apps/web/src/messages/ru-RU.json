@@ -10462,7 +10462,7 @@
     "openButton": "Открыть",
     "downloadButton": "Скачать",
     "noSubmissions": "Нет отправок, соответствующих этому фильтру.",
-    "attemptInfo": "Попытка {attemptNumber} · {count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
+    "attemptInfo": "Попытка №{attemptNumber} · {count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
     "submittedAt": "Отправлено {date}",
     "submittedAsDraft": "Сохранено как черновик",
     "late": "С опозданием",

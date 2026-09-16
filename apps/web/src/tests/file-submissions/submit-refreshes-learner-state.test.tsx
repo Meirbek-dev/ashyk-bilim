@@ -119,6 +119,26 @@ describe('FileSubmissionWorkspace submit', () => {
     await waitFor(() => expect(mocks.start).toHaveBeenCalledWith('fs-1'))
   })
 
+  // UX-100: the header chip kept «Завершено»/«Не пройдено» after «Новая попытка» until a reload.
+  it('refreshes the learner-state projection after a new attempt', async () => {
+    const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
+    mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 2, current_attempt: published, attempts: [published] })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    render(
+      <QueryClientProvider client={client}>
+        <FileSubmissionWorkspace
+          activity={{ activity_uuid: 'activity_a1', activity_type: 'TYPE_FILE_SUBMISSION' } as Activity}
+          course={{ course_uuid: 'course_c1' } as CourseStructure}
+        />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(await screen.findByRole('button', { name: 'newAttempt' }))
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['student-activity'] }))
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['learner-course'] })
+    expect(mocks.refresh).toHaveBeenCalled()
+  })
+
   it('offers no new attempt once the cap is spent', async () => {
     const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
     mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 1, current_attempt: published, attempts: [published] })

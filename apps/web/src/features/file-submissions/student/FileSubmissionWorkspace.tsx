@@ -328,6 +328,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
+      // UX-100: the header chip read the previous result until a reload.
+      await refreshLearnerCourseState(queryClient, router)
       inputRef.current?.click()
     },
     onError: async err => {

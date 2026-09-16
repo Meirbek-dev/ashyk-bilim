@@ -10632,7 +10632,7 @@
     "openButton": "Ашу",
     "downloadButton": "Жүктеп алу",
     "noSubmissions": "Бұл көрініске сәйкес келетін тапсырыстар жоқ.",
-    "attemptInfo": "{attemptNumber}-әрекет · {count, plural, one {# файл} other {# файл}}",
+    "attemptInfo": "№{attemptNumber} әрекет · {count, plural, one {# файл} other {# файл}}",
     "submittedAt": "Тапсырылды: {date}",
     "submittedAsDraft": "Нобай ретінде сақталды",
     "late": "Кешікті",

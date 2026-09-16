@@ -9,6 +9,7 @@ import { APIError } from '@/lib/api/assertSuccess'
 const catalog: Record<string, string> = {
   'roles.admin.name': 'Administrator',
   'roles.admin.description': 'Full access',
+  'fields.required': 'required',
 }
 vi.mock('next-intl', () => ({
   useTranslations: (ns?: string) =>
@@ -156,6 +157,35 @@ describe('/dash/admin/roles (v2 Role wire)', () => {
     const { toast } = await import('sonner')
     expect(toast.error).not.toHaveBeenCalled()
     await user.type(slug, '2')
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('puts a blank display name on the name field instead of a toast (UX-100)', async () => {
+    const user = userEvent.setup()
+    createRole.mockRejectedValue(
+      new APIError({
+        status: 422,
+        code: 'validation-failed',
+        message: 'invalid',
+        fieldErrors: [{ field: 'display_name', code: 'required', message: 'display_name must not be blank' }],
+      }),
+    )
+    renderPage()
+    await screen.findByText('Teaching assistant')
+    await user.click(screen.getByRole('button', { name: 'createRole' }))
+    const dialog = await screen.findByRole('dialog')
+    const name = within(dialog).getByLabelText('fieldName')
+    await user.type(name, '   ')
+    await user.type(within(dialog).getByLabelText('fieldSlug'), 'helper')
+    await user.click(within(dialog).getByRole('button', { name: 'save' }))
+
+    // The client trims before sending; the server's 422 lands on the field.
+    await waitFor(() => expect(createRole).toHaveBeenCalledWith(expect.objectContaining({ display_name: '' })))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('fields.required')
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+    const { toast } = await import('sonner')
+    expect(toast.error).not.toHaveBeenCalled()
+    await user.type(name, 'H')
     expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
   })
 })

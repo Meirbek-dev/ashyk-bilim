@@ -431,3 +431,45 @@ async fn create_role_rejects_bad_display_name_and_priority(pool: PgPool) {
     assert!(fields.contains(&"display_name".to_owned()), "{fields:?}");
     assert!(fields.contains(&"priority".to_owned()), "{fields:?}");
 }
+
+/// A whitespace-only display name is blank after trimming: 422
+/// `display_name`/`required` on create and on rename alike (UX-100).
+#[sqlx::test(migrations = "../../migrations")]
+async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let admin = app.mint_session(&["role:manage:platform"]).await;
+    let created = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({ "slug": "helper", "display_name": "Helper", "priority": 10 }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::NO_CONTENT, "{}", created.text());
+
+    let blank_create = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({ "slug": "helper-2", "display_name": "   ", "priority": 10 }),
+        )
+        .await;
+    let blank_rename = app
+        .patch_as(
+            &admin,
+            "/api/v2/rbac/roles/helper",
+            &serde_json::json!({ "display_name": "   " }),
+        )
+        .await;
+    for response in [blank_create, blank_rename] {
+        assert_eq!(
+            response.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            response.text()
+        );
+        let field = &response.json()["field_errors"][0];
+        assert_eq!(field["field"], "display_name", "{field}");
+        assert_eq!(field["code"], "required", "{field}");
+    }
+}
