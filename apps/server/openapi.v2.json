@@ -1379,6 +1379,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "The session is already passed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         }
       }
@@ -1388,7 +1398,7 @@
         "tags": [
           "ai"
         ],
-        "summary": "A learner's sessions: their own, or anyone's with `platform:read`.",
+        "summary": "A learner's sessions: their own, or anyone's with the platform-scoped\n`platform:read` (platform admins). Course staff — instructors,\ncontributors — do not have it and get 403 for another learner.",
         "operationId": "student_remediation",
         "parameters": [
           {
@@ -1411,6 +1421,16 @@
                   "items": {
                     "$ref": "#/components/schemas/RemediationSession"
                   }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Another learner's sessions without `platform:read`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }

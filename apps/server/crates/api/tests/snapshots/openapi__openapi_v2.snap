@@ -13550,6 +13550,16 @@ expression: json
               }
             },
             "description": "Not the learner of this session"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The session is already passed"
           }
         },
         "summary": "The learner records a score; 70 or more passes (and lifts a gate).",
@@ -13585,9 +13595,19 @@ expression: json
               }
             },
             "description": "Sessions, newest first"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Another learner's sessions without `platform:read`"
           }
         },
-        "summary": "A learner's sessions: their own, or anyone's with `platform:read`.",
+        "summary": "A learner's sessions: their own, or anyone's with the platform-scoped\n`platform:read` (platform admins). Course staff — instructors,\ncontributors — do not have it and get 403 for another learner.",
         "tags": [
           "ai"
         ]

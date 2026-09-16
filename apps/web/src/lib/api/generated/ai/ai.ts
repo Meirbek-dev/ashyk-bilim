@@ -2918,7 +2918,9 @@ export const getStudentRemediationUrl = (userId: UserId) => {
 }
 
 /**
- * @summary A learner's sessions: their own, or anyone's with `platform:read`.
+ * @summary A learner's sessions: their own, or anyone's with the platform-scoped
+`platform:read` (platform admins). Course staff — instructors,
+contributors — do not have it and get 403 for another learner.
  */
 export const studentRemediation = async (
   userId: UserId,
@@ -2940,7 +2942,7 @@ export const getStudentRemediationQueryKey = (userId: UserId) => {
 
 export const getStudentRemediationQueryOptions = <
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options?: {
@@ -2963,11 +2965,11 @@ export const getStudentRemediationQueryOptions = <
 }
 
 export type StudentRemediationQueryResult = NonNullable<Awaited<ReturnType<typeof studentRemediation>>>
-export type StudentRemediationQueryError = ErrorType<unknown>
+export type StudentRemediationQueryError = ErrorType<Problem>
 
 export function useStudentRemediation<
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options: {
@@ -2986,7 +2988,7 @@ export function useStudentRemediation<
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useStudentRemediation<
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options?: {
@@ -3005,7 +3007,7 @@ export function useStudentRemediation<
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useStudentRemediation<
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options?: {
@@ -3015,12 +3017,14 @@ export function useStudentRemediation<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary A learner's sessions: their own, or anyone's with `platform:read`.
+ * @summary A learner's sessions: their own, or anyone's with the platform-scoped
+`platform:read` (platform admins). Course staff — instructors,
+contributors — do not have it and get 403 for another learner.
  */
 
 export function useStudentRemediation<
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options?: {
@@ -3040,7 +3044,7 @@ export function useStudentRemediation<
 
 export const getStudentRemediationSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options?: {
@@ -3063,11 +3067,11 @@ export const getStudentRemediationSuspenseQueryOptions = <
 }
 
 export type StudentRemediationSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof studentRemediation>>>
-export type StudentRemediationSuspenseQueryError = ErrorType<unknown>
+export type StudentRemediationSuspenseQueryError = ErrorType<Problem>
 
 export function useStudentRemediationSuspense<
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options: {
@@ -3078,7 +3082,7 @@ export function useStudentRemediationSuspense<
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useStudentRemediationSuspense<
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options?: {
@@ -3089,7 +3093,7 @@ export function useStudentRemediationSuspense<
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useStudentRemediationSuspense<
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options?: {
@@ -3099,12 +3103,14 @@ export function useStudentRemediationSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary A learner's sessions: their own, or anyone's with `platform:read`.
+ * @summary A learner's sessions: their own, or anyone's with the platform-scoped
+`platform:read` (platform admins). Course staff — instructors,
+contributors — do not have it and get 403 for another learner.
  */
 
 export function useStudentRemediationSuspense<
   TData = Awaited<ReturnType<typeof studentRemediation>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   userId: UserId,
   options?: {
