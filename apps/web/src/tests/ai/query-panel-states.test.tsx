@@ -209,3 +209,19 @@ describe('CourseAIHub panel query states', () => {
     expect(screen.getByText('qa-panel')).toBeInTheDocument()
   })
 })
+
+// UX-099: the inline hub on the course overview hides the course-review tab
+// (and its «Анализировать» that 403s for learners) unless the scope offers `analyze`.
+describe('CourseAIHub inline review tab', () => {
+  it('hides the review tab for a learner scope', () => {
+    queryMocks.capabilities = queryState({ modes: ['ask', 'explain', 'practice'] })
+    render(<CourseAIHub courseUuid="course-1" />)
+    expect(screen.queryByRole('tab', { name: /tabReview/ })).toBeNull()
+  })
+
+  it('shows the review tab when the scope offers analyze', () => {
+    queryMocks.capabilities = queryState({ modes: ['ask', 'analyze'] })
+    render(<CourseAIHub courseUuid="course-1" />)
+    expect(screen.getByRole('tab', { name: /tabReview/ })).toBeInTheDocument()
+  })
+})

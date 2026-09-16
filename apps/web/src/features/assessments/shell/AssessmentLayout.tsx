@@ -264,7 +264,7 @@ function UnsavedDialog({ guard }: { guard: ReturnType<typeof useUnsavedChangesGu
         <AlertDialogFooter>
           <AlertDialogCancel onClick={guard.cancelNavigation}>{tCommon('cancel')}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={guard.confirmNavigation}>
-            {tCommon('discard')}
+            {tCommon('leaveWithoutSaving')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

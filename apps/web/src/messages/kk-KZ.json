@@ -549,7 +549,7 @@
       "antiCheatingDescription": "Бұзушылықтар бақыланады. {threshold} бұзушылықтан кейін емтиханыңыз автоматты түрде тапсырылады.",
       "antiCheatingEnabled": "Алаяқтыққа қарсы қорғау қосылды",
       "appealLinkText": "Шағым беру немесе мұғаліммен байланысу",
-      "attemptNumber": "Әрекет #{number}",
+      "attemptNumber": "№{number} әрекет",
       "attemptsRemaining": "Қалған әрекеттер",
       "noEditableDraft": "Өңделетін жоба қолжетімді емес",
       "autoSubmitting": "Емтиханды автоматты тапсыру: {reason}",
@@ -1230,7 +1230,8 @@
     "discard": "Болдырмау",
     "unsavedChanges": "Сақталмаған өзгерістер",
     "notifications": "Хабарландырулар",
-    "unsavedChangesPrompt": "Сақталмаған өзгерістер бар. Беттен шыққыңыз келетініне сенімдісіз бе?"
+    "unsavedChangesPrompt": "Сақталмаған өзгерістер бар. Беттен шыққыңыз келетініне сенімдісіз бе?",
+    "leaveWithoutSaving": "Сақтамай шығу"
   },
   "Components": {
     "WidgetErrorBoundary": {
@@ -8253,7 +8254,7 @@
           "loading": "Жүктелуде",
           "empty": "Жіберілген жұмыстар табылмады.",
           "selectSubmission": "{name} таңдау",
-          "attemptNumber": "Әрекет №{number}",
+          "attemptNumber": "№{number} әрекет",
           "late": "Кеш",
           "action": "Әрекет",
           "unsubmitted": "Тапсырылмаған",
@@ -8430,7 +8431,7 @@
           "selectSubmission": "Тексеруді бастау үшін жіберімді таңдаңыз.",
           "loadingSubmission": "Жіберім жүктелуде...",
           "unavailable": "Жіберім деректері қолжетімді емес.",
-          "attemptNumber": "#{number} әрекет",
+          "attemptNumber": "№{number} әрекет",
           "late": "Кешіктірілген",
           "releaseState": "Жарияланым күйі",
           "studentVisibility": "Студентке көрінуі",
@@ -10597,7 +10598,7 @@
     "saveDraft": "Нобайды сақтау",
     "submitFiles": "Файлдарды тапсыру",
     "submissionHistory": "Тапсыру тарихы",
-    "attemptNumber": "{number}-әрекет",
+    "attemptNumber": "№{number} әрекет",
     "draft": "Нобай",
     "fileCount": "{count, plural, one {# файл} other {# файл}}",
     "submissionReceived": "Тапсыру қабылданды",

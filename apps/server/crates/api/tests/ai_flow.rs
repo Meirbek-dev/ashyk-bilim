@@ -1114,6 +1114,26 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         )
         .await;
     assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
+    // UX-099: a passed session is final — a lower re-completion is 409, the gate stays lifted.
+    let again = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
+            &serde_json::json!({ "score": 40 }),
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::CONFLICT, "{}", again.text());
+    assert_eq!(again.json()["code"], "conflict");
+    // Course staff without the platform-scoped `platform:read` get 403 on another learner's list.
+    assert_eq!(
+        app.get_as(
+            &teacher,
+            &format!("/api/v2/ai/remediation/student/{}", alice.user_id)
+        )
+        .await
+        .status,
+        StatusCode::FORBIDDEN
+    );
     let reopened = app
         .post_as(
             &alice,

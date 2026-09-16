@@ -1231,7 +1231,8 @@
     "discard": "Discard",
     "unsavedChanges": "Unsaved changes",
     "notifications": "Notifications",
-    "unsavedChangesPrompt": "You have unsaved changes. Are you sure you want to leave this page?"
+    "unsavedChangesPrompt": "You have unsaved changes. Are you sure you want to leave this page?",
+    "leaveWithoutSaving": "Leave without saving"
   },
   "Components": {
     "WidgetErrorBoundary": {
@@ -10413,7 +10414,7 @@
     "saveDraft": "Save draft",
     "submitFiles": "Submit files",
     "submissionHistory": "Submission history",
-    "attemptNumber": "Attempt {number}",
+    "attemptNumber": "Attempt #{number}",
     "draft": "Draft",
     "fileCount": "{count, plural, one {# file} other {# files}}",
     "submissionReceived": "Submission received",

@@ -4,6 +4,7 @@ import type { ComponentType } from 'react'
 import { LoaderCircle, ShieldAlert } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { buildSubmissionReviewViewModel, getSubmissionDisplayName } from '@/features/grading/domain'
 import type { Submission } from '@/features/grading/domain'
 import { getSubmissionPlagiarismState, getSubmissionViolations } from '@/features/grading/domain/types'
@@ -37,6 +38,7 @@ export default function SubmissionInspector({
   const { submission, isLoading } = useGradingPanel(selectedUuid, assessmentUuid)
   const t = useTranslations('Features.Grading.Review')
   const format = useFormatter()
+  const percent = usePercentFormat()
   const current = submission ?? fallbackSubmission
 
   if (!selectedUuid) {
@@ -134,7 +136,7 @@ export default function SubmissionInspector({
             />
             <HistoryItem
               label={t('submissionInspector.score')}
-              value={typeof current.final_score === 'number' ? `${Math.round(current.final_score)}%` : '--'}
+              value={typeof current.final_score === 'number' ? percent(current.final_score) : '--'}
             />
           </div>
         </div>

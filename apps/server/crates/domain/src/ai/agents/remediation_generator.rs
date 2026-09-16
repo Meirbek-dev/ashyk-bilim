@@ -354,8 +354,8 @@ impl AiService {
         self.accessible_remediation(actor, id).await
     }
 
-    /// `GET /ai/remediation/student/{user}`: own sessions, or any with
-    /// `platform:read`.
+    /// `GET /ai/remediation/student/{user}`: own sessions, or any with the
+    /// platform-scoped `platform:read` (admins only — course staff get 403).
     pub async fn student_remediation_sessions(
         &self,
         actor: &Actor,
@@ -389,6 +389,11 @@ impl AiService {
             return Err(Error::forbidden(
                 "cannot complete another learner's remediation",
             ));
+        }
+        // UX-099: a passed session is final — re-completing it with a lower
+        // score must not re-lock the gate.
+        if session.status == RemediationStatus::Passed {
+            return Err(Error::conflict("remediation session already passed"));
         }
         let status = if score >= PASS_SCORE {
             RemediationStatus::Passed

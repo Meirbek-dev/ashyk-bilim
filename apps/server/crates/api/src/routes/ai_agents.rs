@@ -626,6 +626,8 @@ pub async fn remediation_session(
         (status = 200, description = "The session", body = RemediationSession),
         (status = 403, description = "Not the learner of this session", body = Problem,
          content_type = "application/problem+json"),
+        (status = 409, description = "The session is already passed", body = Problem,
+         content_type = "application/problem+json"),
     )
 )]
 pub async fn complete_remediation(
@@ -643,11 +645,17 @@ pub async fn complete_remediation(
     ))
 }
 
-/// A learner's sessions: their own, or anyone's with `platform:read`.
+/// A learner's sessions: their own, or anyone's with the platform-scoped
+/// `platform:read` (platform admins). Course staff — instructors,
+/// contributors — do not have it and get 403 for another learner.
 #[utoipa::path(
     get, path = "/ai/remediation/student/{user_id}", tag = "ai",
     params(("user_id" = UserId, Path, description = "Learner id")),
-    responses((status = 200, description = "Sessions, newest first", body = Vec<RemediationSession>)),
+    responses(
+        (status = 200, description = "Sessions, newest first", body = Vec<RemediationSession>),
+        (status = 403, description = "Another learner's sessions without `platform:read`", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn student_remediation(
     State(state): State<AppState>,

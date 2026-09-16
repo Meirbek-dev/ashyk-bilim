@@ -550,7 +550,7 @@
       "antiCheatingDescription": "Нарушения отслеживаются. После {threshold} нарушений ваш тест будет автоматически завершён.",
       "antiCheatingEnabled": "Включена защита от списывания",
       "appealLinkText": "Подайте апелляцию или свяжитесь со своим учителем",
-      "attemptNumber": "Попытка #{number}",
+      "attemptNumber": "Попытка №{number}",
       "attemptsRemaining": "Осталось попыток",
       "noEditableDraft": "Нет доступного для редактирования черновика",
       "autoSubmitting": "Автоматическая отправка теста: {reason}",
@@ -1229,9 +1229,10 @@
     "saved": "Сохранено",
     "saving": "Сохранение...",
     "discard": "Сбросить",
-    "unsavedChanges": "Несохраненные изменения",
+    "unsavedChanges": "Несохранённые изменения",
     "notifications": "Уведомления",
-    "unsavedChangesPrompt": "У вас есть несохранённые изменения. Вы уверены, что хотите покинуть страницу?"
+    "unsavedChangesPrompt": "У вас есть несохранённые изменения. Вы уверены, что хотите покинуть страницу?",
+    "leaveWithoutSaving": "Выйти без сохранения"
   },
   "Components": {
     "WidgetErrorBoundary": {
@@ -8238,7 +8239,7 @@
           "loading": "Загрузка",
           "empty": "Работы не найдены.",
           "selectSubmission": "Выбрать {name}",
-          "attemptNumber": "Попытка #{number}",
+          "attemptNumber": "Попытка №{number}",
           "late": "Просрочено",
           "action": "Действие",
           "unsubmitted": "Не отправлено",
@@ -10427,7 +10428,7 @@
     "saveDraft": "Сохранить черновик",
     "submitFiles": "Отправить файлы",
     "submissionHistory": "История отправок",
-    "attemptNumber": "Попытка {number}",
+    "attemptNumber": "Попытка №{number}",
     "draft": "Черновик",
     "fileCount": "{count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
     "submissionReceived": "Отправка получена",

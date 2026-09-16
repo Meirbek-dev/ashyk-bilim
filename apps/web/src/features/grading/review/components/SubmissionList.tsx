@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import type { StatusFilter, SubmissionListProps } from '../types'
 
 export default function SubmissionList({
@@ -34,6 +35,8 @@ export default function SubmissionList({
   const t = useTranslations('Features.Grading.Review.submissionList')
   const tReview = useTranslations('Features.Grading.Review')
   const tTable = useTranslations('Grading.Table')
+  // UX-099: the same «79,96 %» the learner sees, not a rounded «80%».
+  const percent = usePercentFormat()
   const locale = useLocale()
 
   return (
@@ -119,7 +122,7 @@ export default function SubmissionList({
                       </span>
                       <span>{formatDate(submission.submitted_at ?? submission.updated_at, locale, t)}</span>
                       {typeof submission.final_score === 'number' ? (
-                        <span>{Math.round(submission.final_score)}%</span>
+                        <span>{percent(submission.final_score)}</span>
                       ) : null}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
