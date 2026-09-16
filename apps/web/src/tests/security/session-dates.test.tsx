@@ -11,6 +11,7 @@ import ruMessages from '@/messages/ru-RU.json'
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }))
 vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: vi.fn() }) }))
 vi.mock('@services/auth/auth', () => ({
+  getSessionInfo: async () => ({ session_id: 's1', user_id: 'u1', roles: ['user'], permissions: [], mfa_enabled: false }),
   listSessions: async () => [
     { handle: 'h1', user_agent: 'Chrome', ip: '127.0.0.1', current: true, last_seen_unix: 1789173397 },
   ],
