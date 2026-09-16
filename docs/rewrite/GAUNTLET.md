@@ -116,6 +116,8 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 - **First e2e run after a cold `next dev` start can time out on the studio autosave** (the
   first studio compile eats the 15 s «Activity saved» wait) and the chained specs 04–07
   then cascade; rerun the suite before calling it red.
+- **Stack rebuilt a fourth time 2026-09-16 13:30** (machine restart). A stopped `ashyq-zitadel`
+  container (started without `--rm`) must be `podman rm -f`'d before the run; ~6 min total.
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
