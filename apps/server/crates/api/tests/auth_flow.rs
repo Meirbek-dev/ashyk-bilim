@@ -951,6 +951,9 @@ async fn eleventh_session_evicts_the_oldest(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("many", "many@example.com", &["user"]).await;
     let first = app.mint_session_for(user, &[]).await;
+    // The eviction order is the millisecond zset score; make `first` strictly older
+    // than the rest so CI's fast minting cannot tie it with a newer session.
+    tokio::time::sleep(std::time::Duration::from_millis(5)).await;
     for _ in 0..9 {
         app.mint_session_for(user, &[]).await;
     }
