@@ -19,7 +19,7 @@ use sqlx::PgPool;
 
 pub use ab_db::assessments::{AssessmentRow as Assessment, AuditEventRow as AuditEvent};
 
-use crate::assessments::items::{ItemBody, ReadinessIssue, normalize_tags};
+use crate::assessments::items::{self, ItemBody, ReadinessIssue, normalize_tags};
 use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -33,11 +33,11 @@ fn now_unix() -> i64 {
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
 }
 
-/// The viewer and item ids folded into 64 bits: enough for a per-learner
-/// column order that survives reloads.
+/// The viewer and an item/assessment id folded into 64 bits: enough for a
+/// per-learner order that survives reloads.
 #[allow(clippy::cast_possible_truncation, reason = "a seed, not a value")]
-const fn shuffle_seed(user_id: UserId, item_id: AssessmentItemId) -> u64 {
-    let mix = user_id.0.as_u128() ^ item_id.0.as_u128().rotate_left(64);
+const fn shuffle_seed(user_id: UserId, id: uuid::Uuid) -> u64 {
+    let mix = user_id.0.as_u128() ^ id.as_u128().rotate_left(64);
     (mix ^ (mix >> 64)) as u64
 }
 
@@ -631,10 +631,14 @@ impl AssessmentsService {
         }
         let mut detail = self.detail(id).await?;
         if !author {
+            let shuffle_options = detail.assessment.randomize_options;
             for item in &mut detail.items {
-                // Stable per (viewer, item): a reload keeps the column order.
+                // Stable per (viewer, item): a reload keeps the order.
                 item.body
-                    .redact_for_learner(shuffle_seed(actor.user_id, item.id));
+                    .redact_for_learner(shuffle_seed(actor.user_id, item.id.0), shuffle_options);
+            }
+            if detail.assessment.randomize_questions {
+                items::shuffle(&mut detail.items, shuffle_seed(actor.user_id, id.0));
             }
         }
         Ok(detail)

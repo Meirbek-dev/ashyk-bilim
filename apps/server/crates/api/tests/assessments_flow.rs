@@ -996,3 +996,97 @@ async fn live_assessments_keep_an_item_and_hide_with_their_activity(pool: PgPool
         .await;
     assert_eq!(own.status, StatusCode::OK, "{}", own.text());
 }
+
+/// BUG-160: `randomize_questions` / `randomize_options` are applied on the
+/// learner read — a stable order per learner (reload keeps it), a different
+/// one for another learner; authors keep the authored order.
+#[sqlx::test(migrations = "../../migrations")]
+async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Shuffled" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let options: Vec<serde_json::Value> = (0..8)
+        .map(|n| serde_json::json!({ "id": format!("o{n}"), "text": format!("{n}"), "is_correct": n == 0 }))
+        .collect();
+    for n in 0..8 {
+        let item = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/items"),
+                &serde_json::json!({
+                    "title": format!("q{n}"), "max_score": 1,
+                    "body": { "kind": "choice", "prompt": format!("q{n}"), "options": options }
+                }),
+            )
+            .await;
+        assert_eq!(item.status, StatusCode::CREATED, "{}", item.text());
+    }
+    let mut policy = created.json()["policy"].clone();
+    policy["randomize_questions"] = serde_json::json!(true);
+    policy["randomize_options"] = serde_json::json!(true);
+    let saved = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/policy"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(policy.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    let app = &app;
+    let learner = |name: &'static str| async move {
+        let user = app
+            .create_user(name, &format!("{name}@example.com"), &["user"])
+            .await;
+        app.mint_session_for(user, &["assessment:read:assigned"]).await
+    };
+    let alice = learner("alice").await;
+    let bob = learner("bob").await;
+    let orders = |json: &serde_json::Value| -> (Vec<String>, Vec<String>) {
+        let items = json["items"].as_array().unwrap();
+        (
+            items.iter().map(|i| i["title"].as_str().unwrap().to_owned()).collect(),
+            items[0]["body"]["options"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|o| o["id"].as_str().unwrap().to_owned())
+                .collect(),
+        )
+    };
+    let authored: Vec<String> = (0..8).map(|n| format!("q{n}")).collect();
+    let authored_options: Vec<String> = (0..8).map(|n| format!("o{n}")).collect();
+    let alice_read = orders(&app.get_as(&alice, &format!("/api/v2/assessments/{id}")).await.json());
+    let alice_again = orders(&app.get_as(&alice, &format!("/api/v2/assessments/{id}")).await.json());
+    let bob_read = orders(&app.get_as(&bob, &format!("/api/v2/assessments/{id}")).await.json());
+    assert_eq!(alice_read, alice_again, "a reload keeps the order");
+    assert_ne!(alice_read.0, authored, "questions shuffled");
+    assert_ne!(alice_read.1, authored_options, "options shuffled");
+    assert_ne!(alice_read, bob_read, "another learner gets another order");
+    let mut sorted = alice_read.0.clone();
+    sorted.sort();
+    assert_eq!(sorted, authored);
+    let teacher_read = orders(&app.get_as(&teacher, &format!("/api/v2/assessments/{id}")).await.json());
+    assert_eq!(teacher_read, (authored, authored_options));
+}

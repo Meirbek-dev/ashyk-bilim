@@ -245,7 +245,7 @@ const fn next_random(state: &mut u64) -> u64 {
 }
 
 /// Fisher-Yates with a fixed seed: the same seed gives the same order.
-fn shuffle<T>(items: &mut [T], seed: u64) {
+pub(crate) fn shuffle<T>(items: &mut [T], seed: u64) {
     let mut state = seed;
     for i in (1..items.len()).rev() {
         let j = usize::try_from(next_random(&mut state) % (i as u64 + 1)).unwrap_or(0);
@@ -257,14 +257,19 @@ impl ItemBody {
     /// Strip everything a learner must not see while attempting: the answer
     /// key on choices, rubrics and explanations, reference solutions and
     /// hidden tests; a matching item becomes its two columns with the right
-    /// one shuffled by `seed`. Authors read the full body; learners read this.
-    pub fn redact_for_learner(&mut self, seed: u64) {
+    /// one shuffled by `seed`, and choice options are shuffled by `seed` when
+    /// `shuffle_options` (policy `randomize_options`). Authors read the full
+    /// body; learners read this.
+    pub fn redact_for_learner(&mut self, seed: u64, shuffle_options: bool) {
         match self {
             Self::Choice(body) => {
                 for option in &mut body.options {
                     option.is_correct = false;
                 }
                 body.explanation = None;
+                if shuffle_options {
+                    shuffle(&mut body.options, seed);
+                }
             }
             Self::OpenText(body) => body.rubric = None,
             Self::Code(body) => {
@@ -697,11 +702,11 @@ mod tests {
             explanation: Some("key".into()),
         });
         let mut first = body.clone();
-        first.redact_for_learner(7);
+        first.redact_for_learner(7, false);
         let mut again = body.clone();
-        again.redact_for_learner(7);
+        again.redact_for_learner(7, false);
         let mut other = body;
-        other.redact_for_learner(8);
+        other.redact_for_learner(8, false);
         let ItemBody::MatchingLearner(learner) = &first else {
             panic!("learner shape")
         };
