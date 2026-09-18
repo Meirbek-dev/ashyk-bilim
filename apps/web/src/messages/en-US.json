@@ -9011,7 +9011,7 @@
           "published": "Published",
           "archived": "Archived"
         },
-        "lifecycleChanged": "Lifecycle changed to {state}",
+        "lifecycleChanged": "Lifecycle changed: {state}",
         "updateLifecycleFailed": "Failed to update lifecycle",
         "breadcrumb": {
           "curriculum": "Curriculum",

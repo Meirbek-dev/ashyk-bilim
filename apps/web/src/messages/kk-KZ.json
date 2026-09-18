@@ -9063,7 +9063,7 @@
           "published": "Жарияланған",
           "archived": "Мұрағатталған"
         },
-        "lifecycleChanged": "Кезең {state} күйіне ауысты",
+        "lifecycleChanged": "Кезең өзгертілді: {state}",
         "updateLifecycleFailed": "Кезеңді жаңарту сәтсіз аяқталды",
         "breadcrumb": {
           "curriculum": "Оқу жоспары",

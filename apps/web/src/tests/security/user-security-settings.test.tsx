@@ -216,4 +216,19 @@ describe('UserSecuritySettings', () => {
     expect(await screen.findByText('enableTotp')).toBeDefined()
     expect(screen.queryByText('disableTotp')).toBeNull()
   })
+
+  // UX-107: the app default is `refetchOnWindowFocus: false`, so `staleTime: 5 s`
+  // alone never refetched — a session revoked in another tab stayed listed.
+  it('refetches the sessions list on window focus', async () => {
+    mockListSessions.mockResolvedValue([])
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings />
+      </QueryClientProvider>,
+    )
+    await waitFor(() => expect(mockListSessions).toHaveBeenCalledTimes(1))
+    const query = queryClient.getQueryCache().find({ queryKey: ['auth', 'sessions'] })
+    expect(query?.options).toMatchObject({ staleTime: 5_000, refetchOnWindowFocus: true })
+  })
 })

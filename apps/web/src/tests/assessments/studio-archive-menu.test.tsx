@@ -73,9 +73,11 @@ vi.mock('@/features/assessments/hooks/useAssessment', () => ({
 import AssessmentStudioWorkspace from '@/features/assessments/studio/AssessmentStudioWorkspace'
 
 describe('studio archive menu item', () => {
-  it('fires on click and posts the lowercase lifecycle body', async () => {
+  it('fires on click, posts the lowercase lifecycle body and refreshes the header badge (UX-107)', async () => {
+    const queryClient = new QueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={queryClient}>
         <AssessmentStudioWorkspace courseUuid="course-1" activityUuid="act-1" />
       </QueryClientProvider>,
     )
@@ -86,5 +88,7 @@ describe('studio archive menu item', () => {
     const [path, init] = mocks.apiJson.mock.calls[0] as unknown as [string, RequestInit]
     expect(path).toBe('assessments/asm-1/lifecycle')
     expect(JSON.parse(String(init.body))).toEqual({ to: 'archived', scheduled_at_unix: null })
+    // The badge's vm query lives under `assessments.activity(id)`; `studio(id)` is only a child key.
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['assessments', 'activity', 'act-1'] })
   })
 })

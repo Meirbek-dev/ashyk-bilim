@@ -103,8 +103,10 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ to: 'archived', scheduled_at_unix: null }),
         })
+        // The header badge reads the `activity` key; `studio` is a child of
+        // that prefix, so this refreshes both (UX-107).
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.assessments.studio(activityUuid.replace(/^activity_/, '')),
+          queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
         })
         toast.success(t('lifecycleChanged', { state: lifecycleLabels.ARCHIVED }))
       } catch (updateError) {

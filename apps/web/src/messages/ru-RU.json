@@ -8484,7 +8484,7 @@
           "published": "Опубликовано",
           "archived": "В архиве"
         },
-        "lifecycleChanged": "Этап изменён на {state}",
+        "lifecycleChanged": "Этап изменён: {state}",
         "updateLifecycleFailed": "Не удалось обновить этап",
         "breadcrumb": {
           "curriculum": "Учебный план",
