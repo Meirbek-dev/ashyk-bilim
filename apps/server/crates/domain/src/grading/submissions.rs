@@ -876,6 +876,13 @@ impl SubmissionsService {
         if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
             return Err(Error::forbidden("PAST_DUE"));
         }
+        // UX-105: the remediation gate holds at submit too, not only at start.
+        if ab_db::ai::active_remediation_gate(pool, submission.user_id, assessment.activity_id)
+            .await?
+            .is_some()
+        {
+            return Err(Error::forbidden("REMEDIATION_REQUIRED"));
+        }
         Ok(())
     }
 

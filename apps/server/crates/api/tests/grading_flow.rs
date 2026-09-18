@@ -540,15 +540,38 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
             .unwrap()
             .starts_with("text/csv")
     );
+    // UX-105: localized like the gradebook CSV — Russian by default, BOM first.
     let text = csv.text();
-    let lines: Vec<&str> = text.lines().collect();
+    assert!(text.starts_with('\u{feff}'), "BOM first");
+    let lines: Vec<&str> = text.trim_start_matches('\u{feff}').lines().collect();
     assert_eq!(
         lines[0],
-        "student,email,attempt,status,late,submitted_at,auto_score,final_score,item: Q1,item: Essay"
+        "Студент,Email,Попытка,Статус,Просрочено,Отправлено,Автооценка,Итоговый балл,Задание: Q1,Задание: Essay"
     );
     assert_eq!(lines.len(), 4);
-    assert!(lines[1].starts_with("alice,alice@example.com,1,published,no,"));
+    assert!(
+        lines[1].starts_with("alice,alice@example.com,1,Опубликовано,Нет,"),
+        "{}",
+        lines[1]
+    );
     assert!(lines[1].ends_with(",95,10,8"), "{}", lines[1]);
+    let english = app
+        .send(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/v2/assessments/{id}/submissions/export"))
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    let english = english.text();
+    assert!(
+        english.contains("Learner,Email,Attempt,Status,Late,Submitted at,Auto score,Final score,Item: Q1,Item: Essay"),
+        "{english}"
+    );
+    assert!(english.contains(",1,Published,No,"), "{english}");
     let gradebook = app
         .get_as(
             &teacher,
@@ -1193,4 +1216,123 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
         .status,
         StatusCode::FORBIDDEN
     );
+}
+
+/// Grade-path edges over HTTP: a negative item score and a final score
+/// above 100 are 422s; `user_ids` empty or above 500 is a 422; a garbage
+/// gradebook cursor is 422 `cursor`/`invalid`; a publish-only save of a
+/// never-graded attempt scores the breakdown (choice 10/20 → 50); the
+/// attempt cap and the late penalty compose (100 → 80 → 72).
+#[sqlx::test(migrations = "../../migrations")]
+async fn grade_path_edges_over_http(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2, "attempt_penalty_percent": 20,
+                             "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let first = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+
+    let negative_item = app
+        .send(grade(
+            &teacher,
+            &first,
+            Some("1"),
+            &serde_json::json!({ "action": "save",
+                                  "item_grades": [{ "item_id": &essay_id, "score": -1 }] }),
+        ))
+        .await;
+    assert_eq!(negative_item.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(
+        negative_item.json()["field_errors"][0]["field"],
+        "item_grades[0].score"
+    );
+    let over_final = app
+        .send(grade(
+            &teacher,
+            &first,
+            Some("1"),
+            &serde_json::json!({ "action": "save", "final_score": 101 }),
+        ))
+        .await;
+    assert_eq!(over_final.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(over_final.json()["field_errors"][0]["field"], "final_score");
+    assert_eq!(over_final.json()["field_errors"][0]["code"], "invalid");
+
+    let due = now_unix() + 86_400;
+    let no_users = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [], "new_due_at_unix": due }),
+        )
+        .await;
+    assert_eq!(no_users.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(no_users.json()["field_errors"][0]["field"], "user_ids");
+    let crowd: Vec<String> = (0..501).map(|_| alice.user_id.to_string()).collect();
+    let too_many = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": crowd, "new_due_at_unix": due }),
+        )
+        .await;
+    assert_eq!(too_many.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(too_many.json()["field_errors"][0]["field"], "user_ids");
+
+    let bad_cursor = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/gradebook?cursor=garbage"),
+        )
+        .await;
+    assert_eq!(
+        bad_cursor.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad_cursor.text()
+    );
+    assert_eq!(bad_cursor.json()["field_errors"][0]["field"], "cursor");
+    assert_eq!(bad_cursor.json()["field_errors"][0]["code"], "invalid");
+
+    // Publish-only on a never-graded attempt: the breakdown (10 of 20) is
+    // the raw score; attempt 1 is uncapped; 10 % late.
+    let published = app
+        .send(grade(
+            &teacher,
+            &first,
+            Some("1"),
+            &serde_json::json!({ "action": "publish" }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["final_score"], 45.0, "50 − 10 % late");
+    let history = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/submissions/{first}/grading-history"),
+        )
+        .await;
+    assert_eq!(history.json()[0]["raw_score"], 50.0);
+
+    // Cap then late on the second attempt.
+    let second = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let graded = app
+        .send(grade(
+            &teacher,
+            &second,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    assert_eq!(graded.json()["attempt_number"], 2);
+    assert_eq!(graded.json()["final_score"], 72.0, "(100 − 20 %) − 10 %");
 }

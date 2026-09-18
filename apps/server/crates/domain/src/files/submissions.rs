@@ -598,11 +598,33 @@ impl FileSubmissionsService {
 
     // ── Learner attempts ────────────────────────────────────────────────
 
-    fn require_published(row: &FileSubmissionRow, published: bool) -> Result<()> {
-        if published && row.lifecycle == FileSubmissionLifecycle::Published {
-            return Ok(());
+    /// Learner-write gate: an unpublished config is a 409 (BUG-114); a
+    /// published one whose activity the curriculum toggle hid is 404 for
+    /// non-authors, same as the read (UX-105).
+    async fn require_open(&self, row: &FileSubmissionRow, is_author: bool) -> Result<()> {
+        if row.lifecycle != FileSubmissionLifecycle::Published {
+            return Err(Error::conflict("file submission is not published"));
         }
-        Err(Error::conflict("file submission is not published"))
+        if !is_author && !self.activity_published(row).await? {
+            return Err(Error::not_found("file submission"));
+        }
+        Ok(())
+    }
+
+    /// BUG-140 / UX-105: an unpassed gate-mode remediation blocks a new
+    /// attempt and the submit of an open one.
+    async fn require_no_remediation_gate(
+        &self,
+        user_id: UserId,
+        row: &FileSubmissionRow,
+    ) -> Result<()> {
+        if ab_db::ai::active_remediation_gate(&self.pool, user_id, row.activity_id)
+            .await?
+            .is_some()
+        {
+            return Err(Error::forbidden("cannot start: REMEDIATION_REQUIRED"));
+        }
+        Ok(())
     }
 
     async fn activity_published(&self, row: &FileSubmissionRow) -> Result<bool> {
@@ -624,8 +646,12 @@ impl FileSubmissionsService {
     /// Open a draft (idempotent). Returns (attempt, created).
     pub async fn start(&self, actor: &Actor, id: FileSubmissionId) -> Result<(Attempt, bool)> {
         let row = self.load(id).await?;
-        self.require_submit_access(actor, &row).await?;
-        Self::require_published(&row, self.activity_published(&row).await?)?;
+        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        self.require_open(&row, is_author).await?;
+        // Gated learners neither open nor resume a draft (the web shows the
+        // remediation gate on this 403).
+        self.require_no_remediation_gate(actor.user_id, &row)
+            .await?;
         if let Some(open) =
             ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?
         {
@@ -643,14 +669,7 @@ impl FileSubmissionsService {
         row: &FileSubmissionRow,
         user_id: UserId,
     ) -> Result<AttemptRow> {
-        // BUG-140: same gate as `assessments/access.rs` — an unpassed
-        // gate-mode remediation blocks a new attempt on this activity.
-        if ab_db::ai::active_remediation_gate(&self.pool, user_id, row.activity_id)
-            .await?
-            .is_some()
-        {
-            return Err(Error::forbidden("cannot start: REMEDIATION_REQUIRED"));
-        }
+        self.require_no_remediation_gate(user_id, row).await?;
         let completed =
             ab_db::file_submissions::count_completed_attempts(&self.pool, row.id, user_id).await?;
         if let Some(max) = row.max_attempts
@@ -692,8 +711,8 @@ impl FileSubmissionsService {
         expected_version: Option<i64>,
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
-        self.require_submit_access(actor, &row).await?;
-        Self::require_published(&row, self.activity_published(&row).await?)?;
+        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        self.require_open(&row, is_author).await?;
         let attempt =
             match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
                 Some(a) => a,
@@ -834,8 +853,10 @@ impl FileSubmissionsService {
         expected_version: Option<i64>,
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
-        self.require_submit_access(actor, &row).await?;
-        Self::require_published(&row, self.activity_published(&row).await?)?;
+        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        self.require_open(&row, is_author).await?;
+        self.require_no_remediation_gate(actor.user_id, &row)
+            .await?;
         let files_required =
             || Error::validation(vec![field("files", "required", "attach at least one file")]);
         let mut attempt =

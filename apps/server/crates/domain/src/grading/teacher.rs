@@ -276,7 +276,7 @@ pub struct GradebookPage {
     pub next_cursor: Option<String>,
 }
 
-/// Header + status words of the gradebook CSV, by `Accept-Language`.
+/// Header + status words of the CSV exports, by `Accept-Language`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CsvLanguage {
     Ru,
@@ -308,6 +308,85 @@ impl CsvLanguage {
             Self::Ru => "Студент",
             Self::Kk => "Білім алушы",
             Self::En => "Learner",
+        }
+    }
+
+    /// Per-assessment export header (UX-105): learner, email, attempt,
+    /// status, late, submitted at, auto score, final score.
+    const fn submission_header(self) -> [&'static str; 8] {
+        match self {
+            Self::Ru => [
+                "Студент",
+                "Email",
+                "Попытка",
+                "Статус",
+                "Просрочено",
+                "Отправлено",
+                "Автооценка",
+                "Итоговый балл",
+            ],
+            Self::Kk => [
+                "Білім алушы",
+                "Email",
+                "Әрекет",
+                "Мәртебе",
+                "Кеш",
+                "Тапсырылған",
+                "Автобаға",
+                "Қорытынды балл",
+            ],
+            Self::En => [
+                "Learner",
+                "Email",
+                "Attempt",
+                "Status",
+                "Late",
+                "Submitted at",
+                "Auto score",
+                "Final score",
+            ],
+        }
+    }
+
+    /// Item column prefix of the per-assessment export.
+    const fn item_prefix(self) -> &'static str {
+        match self {
+            Self::Ru => "Задание",
+            Self::Kk => "Тапсырма",
+            Self::En => "Item",
+        }
+    }
+
+    /// A submission's own status word (per-assessment export).
+    const fn submission_status(self, status: SubmissionStatus) -> &'static str {
+        use SubmissionStatus as S;
+        match (self, status) {
+            (Self::Ru, S::Draft) => "Черновик",
+            (Self::Kk, S::Draft) => "Жоба",
+            (Self::En, S::Draft) => "Draft",
+            (Self::Ru, S::Pending) => "На проверке",
+            (Self::Kk, S::Pending) => "Тексеру керек",
+            (Self::En, S::Pending) => "Needs grading",
+            (Self::Ru, S::Graded) => "Проверено",
+            (Self::Kk, S::Graded) => "Тексерілді",
+            (Self::En, S::Graded) => "Graded",
+            (Self::Ru, S::Published) => "Опубликовано",
+            (Self::Kk, S::Published) => "Жарияланды",
+            (Self::En, S::Published) => "Published",
+            (Self::Ru, S::Returned) => "Возвращено",
+            (Self::Kk, S::Returned) => "Қайтарылған",
+            (Self::En, S::Returned) => "Returned",
+        }
+    }
+
+    const fn yes_no(self, yes: bool) -> &'static str {
+        match (self, yes) {
+            (Self::Ru, true) => "Да",
+            (Self::Ru, false) => "Нет",
+            (Self::Kk, true) => "Иә",
+            (Self::Kk, false) => "Жоқ",
+            (Self::En, true) => "Yes",
+            (Self::En, false) => "No",
         }
     }
 
@@ -683,26 +762,33 @@ impl GradingService {
     }
 
     /// Every non-draft submission as CSV: learner, email, attempt, status,
-    /// late, submitted, auto score, final score, one column per item.
-    pub async fn export_csv(&self, actor: &Actor, assessment_id: AssessmentId) -> Result<String> {
+    /// late, submitted, auto score, final score, one column per item. The
+    /// header and status / yes-no words follow `language` (UX-105, like
+    /// the gradebook CSV).
+    pub async fn export_csv(
+        &self,
+        actor: &Actor,
+        assessment_id: AssessmentId,
+        language: CsvLanguage,
+    ) -> Result<String> {
         self.grader_context(actor, assessment_id).await?;
         let items = self.items(assessment_id).await?;
         let rows = ab_db::submissions::list_non_draft(&self.pool, assessment_id).await?;
         let ids: Vec<UserId> = rows.iter().map(|r| r.user_id).collect();
         let users = users_by_id(&self.pool, &ids).await?;
 
-        let mut header = vec![
-            "student".to_owned(),
-            "email".to_owned(),
-            "attempt".to_owned(),
-            "status".to_owned(),
-            "late".to_owned(),
-            "submitted_at".to_owned(),
-            "auto_score".to_owned(),
-            "final_score".to_owned(),
-        ];
-        header.extend(items.iter().map(|i| format!("item: {}", i.title)));
-        let mut out = csv_row(&header);
+        let mut header: Vec<String> = language
+            .submission_header()
+            .iter()
+            .map(|s| (*s).to_owned())
+            .collect();
+        header.extend(
+            items
+                .iter()
+                .map(|i| format!("{}: {}", language.item_prefix(), i.title)),
+        );
+        let mut out = String::from("\u{feff}");
+        out.push_str(&csv_row(&header));
         for row in rows {
             let user = user_or_placeholder(&users, row.user_id);
             let breakdown = GradingBreakdown::from_value(&row.grading);
@@ -732,8 +818,8 @@ impl GradingService {
                 },
                 user.email.clone(),
                 row.attempt_number.to_string(),
-                row.status.as_str().to_owned(),
-                if row.is_late { "yes" } else { "no" }.to_owned(),
+                language.submission_status(row.status).to_owned(),
+                language.yes_no(row.is_late).to_owned(),
                 row.submitted_at.map(iso8601).unwrap_or_default(),
                 row.auto_score.map(|s| s.to_string()).unwrap_or_default(),
                 row.final_score.map(|s| s.to_string()).unwrap_or_default(),

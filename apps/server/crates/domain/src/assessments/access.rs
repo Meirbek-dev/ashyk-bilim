@@ -477,14 +477,9 @@ impl AssessmentsService {
                 reasons.push(DisabledReason::TimeLimitExpired);
             }
             // Legacy `remediation_required`: a gate-mode remediation the
-            // learner has not passed blocks a new attempt (an open draft may
-            // still be finished).
-            if draft.is_none()
-                && ab_db::ai::active_remediation_gate(
-                    &self.pool,
-                    actor.user_id,
-                    assessment.activity_id,
-                )
+            // learner has not passed blocks a new attempt and (UX-105) the
+            // submit of an open draft.
+            if ab_db::ai::active_remediation_gate(&self.pool, actor.user_id, assessment.activity_id)
                 .await?
                 .is_some()
             {

@@ -798,3 +798,63 @@ async fn a_pending_reattempt_keeps_the_course_completed(pool: PgPool) {
     assert_eq!(state.json()["certificate"]["verify_code"], code);
     assert_eq!(state.json()["next_action"]["id"], "view_certificate");
 }
+
+/// UX-105: a published config whose activity the curriculum toggle hid is
+/// 404 for a learner on the config read AND on the draft (no existence
+/// leak, no misleading 409); the author still sees it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn hidden_activity_is_404_for_learner_writes_too(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let seen = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+        .await;
+    assert_eq!(seen.status, StatusCode::OK, "{}", seen.text());
+    let activity_id = seen.json()["activity_id"].as_str().unwrap().to_owned();
+    let hidden = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": false }),
+        )
+        .await;
+    assert_eq!(hidden.status, StatusCode::OK, "{}", hidden.text());
+    assert_eq!(
+        app.get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::NOT_FOUND, "{}", draft.text());
+    let submit = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(submit.status, StatusCode::NOT_FOUND, "{}", submit.text());
+    let by_author = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        by_author.status,
+        StatusCode::CREATED,
+        "{}",
+        by_author.text()
+    );
+}

@@ -115,17 +115,25 @@ pub async fn item_analytics(
 }
 
 /// Every submitted attempt as CSV (one column per item).
+///
+/// The header and status words follow `Accept-Language` (`ru` default,
+/// `kk`, `en`), like the gradebook CSV.
 #[utoipa::path(
     get, path = "/assessments/{id}/submissions/export", tag = "grading",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    params(
+        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+    ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
 pub async fn export_csv(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    headers: HeaderMap,
 ) -> ApiResult<Response> {
-    let csv = state.grading.export_csv(&actor, id).await?;
+    let language = csv_language(&headers);
+    let csv = state.grading.export_csv(&actor, id, language).await?;
     let mut response = (StatusCode::OK, csv).into_response();
     response.headers_mut().insert(
         header::CONTENT_TYPE,
@@ -329,11 +337,7 @@ pub async fn export_gradebook_csv(
     Path(id): Path<CourseId>,
     headers: HeaderMap,
 ) -> ApiResult<Response> {
-    let language = CsvLanguage::from_accept_language(
-        headers
-            .get(header::ACCEPT_LANGUAGE)
-            .and_then(|v| v.to_str().ok()),
-    );
+    let language = csv_language(&headers);
     let csv = state.grading.gradebook_csv(&actor, id, language).await?;
     let mut response = (StatusCode::OK, csv).into_response();
     response.headers_mut().insert(
@@ -371,4 +375,12 @@ pub async fn gradebook(
         )
         .await?;
     Ok(Json(page.into()))
+}
+
+fn csv_language(headers: &HeaderMap) -> CsvLanguage {
+    CsvLanguage::from_accept_language(
+        headers
+            .get(header::ACCEPT_LANGUAGE)
+            .and_then(|v| v.to_str().ok()),
+    )
 }

@@ -974,6 +974,21 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
     let course_id = published_course(&app, &teacher, "Files").await;
     let (attempt_id, activity_id, fs_id) =
         submitted_file_attempt(&app, &teacher, &alice, &course_id).await;
+    // A second draft, opened before any gate exists (UX-105 below).
+    let second_draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{fs_id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        second_draft.status,
+        StatusCode::CREATED,
+        "{}",
+        second_draft.text()
+    );
+    let upload2 = finalized_upload(&app, &alice, "text/markdown", b"# v2").await;
     mount_json_reply(&app.llm, &analysis_reply(&attempt_id)).await;
 
     // Nothing yet, for the teacher; a stranger cannot even ask.
@@ -1106,6 +1121,21 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
             .unwrap()
             .contains("REMEDIATION_REQUIRED")
     );
+    // UX-105: a draft opened before the gate cannot be handed in while gated.
+    let gated_submit = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{fs_id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": upload2, "display_name": "v2.md" }] }),
+        )
+        .await;
+    assert_eq!(
+        gated_submit.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        gated_submit.text()
+    );
+    assert!(gated_submit.text().contains("REMEDIATION_REQUIRED"));
     let passed = app
         .post_as(
             &alice,
@@ -1141,7 +1171,15 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
             &serde_json::json!({}),
         )
         .await;
-    assert_eq!(reopened.status, StatusCode::CREATED, "{}", reopened.text());
+    assert_eq!(reopened.status, StatusCode::OK, "{}", reopened.text());
+    let handed_in = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{fs_id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": upload2, "display_name": "v2.md" }] }),
+        )
+        .await;
+    assert_eq!(handed_in.status, StatusCode::OK, "{}", handed_in.text());
 
     // Queued analysis: the worker re-derives the attempt from the run.
     app.llm.reset().await;
@@ -1208,6 +1246,21 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
         app.get_as(&alice, &state_url).await.json()["can_start"],
         true
     );
+    // A draft opened before the gate (UX-105: it cannot be handed in while gated).
+    let open_draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{assessment_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        open_draft.status,
+        StatusCode::CREATED,
+        "{}",
+        open_draft.text()
+    );
+    let draft_id = open_draft.json()["id"].as_str().unwrap().to_owned();
 
     mount_json_reply(&app.llm, &analysis_reply(&sub_id)).await;
     let analysed = app
@@ -1233,6 +1286,7 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
 
     let blocked = app.get_as(&alice, &state_url).await;
     assert_eq!(blocked.json()["can_start"], false, "{}", blocked.text());
+    assert_eq!(blocked.json()["can_continue"], false, "{}", blocked.text());
     assert_eq!(
         blocked.json()["disabled_reasons"],
         serde_json::json!(["REMEDIATION_REQUIRED"])
@@ -1240,11 +1294,12 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
     let refused = app
         .post_as(
             &alice,
-            &format!("/api/v2/assessments/{assessment_id}/submissions"),
-            &serde_json::json!({}),
+            &format!("/api/v2/submissions/{draft_id}/submit"),
+            &serde_json::json!({ "answers": {} }),
         )
         .await;
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+    assert!(refused.text().contains("REMEDIATION_REQUIRED"));
 
     let passed = app
         .post_as(
@@ -1256,8 +1311,50 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
     assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
     assert_eq!(passed.json()["status"], "passed");
     let open = app.get_as(&alice, &state_url).await;
-    assert_eq!(open.json()["can_start"], true, "{}", open.text());
+    assert_eq!(open.json()["can_continue"], true, "{}", open.text());
     assert_eq!(open.json()["disabled_reasons"], serde_json::json!([]));
+    let handed_in = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{draft_id}/submit"),
+            &serde_json::json!({ "answers": {} }),
+        )
+        .await;
+    assert_eq!(handed_in.status, StatusCode::OK, "{}", handed_in.text());
+}
+
+/// The hourly AI limiter over HTTP: past `analysis_requests_per_hour_per_user`
+/// the analyst answers 429 `ai-rate-limited` with the limit in `details`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn hourly_limit_answers_429(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.ai.analysis_requests_per_hour_per_user = 0;
+    })
+    .await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Hourly").await;
+    let sub_id = submitted_essay(&app, &teacher, &alice, &course_id).await;
+    let limited = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/analyze"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        limited.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        limited.text()
+    );
+    assert_eq!(limited.json()["code"], "ai-rate-limited");
+    assert_eq!(limited.json()["details"]["limit"], 0);
+    assert!(
+        limited
+            .headers
+            .contains_key(axum::http::header::RETRY_AFTER)
+    );
 }
 
 /// BUG-128: `language` is `auto`/ru/kk/en (422 otherwise) and a finding
