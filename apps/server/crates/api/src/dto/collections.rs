@@ -42,7 +42,7 @@ pub struct CollectionPage {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CreateCollectionRequest {
-    #[garde(length(min = 1, max = 500))]
+    #[garde(length(max = 500))]
     pub name: String,
     #[garde(length(max = 5000))]
     pub description: Option<String>,
@@ -56,7 +56,7 @@ pub struct CreateCollectionRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateCollectionRequest {
-    #[garde(inner(length(min = 1, max = 500)))]
+    #[garde(inner(length(max = 500)))]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
     pub description: Option<String>,

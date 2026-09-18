@@ -101,6 +101,8 @@ impl CoursesService {
         tags: Vec<String>,
     ) -> Result<Course> {
         actor.require(perm(Action::Create, Scope::Platform))?;
+        // BUG-168: names are trimmed and never blank (shared rule, UX-106).
+        let name = ab_core::required_str("name", name)?;
         let id = ab_db::catalog::insert_course(
             &self.pool,
             name,
@@ -194,6 +196,11 @@ impl CoursesService {
         // Invisible courses do not exist (404), even to would-be writers.
         let course = self.get(actor, id).await?;
         Self::require_write(actor, &course)?;
+        let name = changes
+            .name
+            .as_deref()
+            .map(|n| ab_core::required_str("name", n))
+            .transpose()?;
         let thumbnail_key = match changes.thumbnail_upload_id {
             Some(upload_id) => Some(
                 claim_upload(
@@ -211,7 +218,7 @@ impl CoursesService {
             &self.pool,
             id,
             ab_db::catalog::CourseChanges {
-                name: changes.name.as_deref(),
+                name,
                 description: changes.description.as_deref(),
                 about: changes.about.as_deref(),
                 tags: changes.tags.as_deref(),

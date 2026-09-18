@@ -180,3 +180,37 @@ async fn attaching_unreadable_courses_is_refused(pool: PgPool) {
         .await;
     assert_eq!(refused.status, StatusCode::NOT_FOUND);
 }
+
+/// BUG-168: a whitespace-only name is 422 `name`/`required` on create and
+/// update; stored names are trimmed.
+#[sqlx::test(migrations = "../../migrations")]
+async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "  Pack  " }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    assert_eq!(created.json()["name"], "Pack");
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let blank = serde_json::json!({ "name": "   " });
+    for res in [
+        app.post_as(&owner, "/api/v2/collections", &blank).await,
+        app.patch_as(&owner, &format!("/api/v2/collections/{id}"), &blank)
+            .await,
+    ] {
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+        assert_eq!(res.json()["field_errors"][0]["field"], "name");
+        assert_eq!(res.json()["field_errors"][0]["code"], "required");
+    }
+}

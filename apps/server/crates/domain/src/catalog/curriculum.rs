@@ -159,6 +159,8 @@ impl CurriculumService {
         description: &str,
     ) -> Result<Chapter> {
         self.writable_course(actor, course_id).await?;
+        // BUG-168: names are trimmed and never blank (shared rule, UX-106).
+        let name = ab_core::required_str("name", name)?;
         let id =
             ab_db::catalog::insert_chapter(&self.pool, course_id, name, description, actor.user_id)
                 .await?;
@@ -183,6 +185,9 @@ impl CurriculumService {
         description: Option<&str>,
     ) -> Result<Chapter> {
         self.writable_chapter(actor, chapter_id).await?;
+        let name = name
+            .map(|n| ab_core::required_str("name", n))
+            .transpose()?;
         ab_db::catalog::update_chapter(&self.pool, chapter_id, name, description).await?;
         ab_db::catalog::get_chapter(&self.pool, chapter_id)
             .await?
@@ -240,6 +245,7 @@ impl CurriculumService {
                 message: format!("'{activity_sub_type}' is not valid for '{activity_type}'"),
             }]));
         }
+        let name = ab_core::required_str("name", name)?;
         let chapter = self.writable_chapter(actor, chapter_id).await?;
         let id = ab_db::catalog::insert_activity(
             &self.pool,
@@ -376,7 +382,11 @@ impl CurriculumService {
             ab_db::catalog::set_activity_type(&self.pool, activity_id, activity_type, sub_type)
                 .await?;
         }
-        ab_db::catalog::update_activity(&self.pool, activity_id, changes.name, None).await?;
+        let name = changes
+            .name
+            .map(|n| ab_core::required_str("name", n))
+            .transpose()?;
+        ab_db::catalog::update_activity(&self.pool, activity_id, name, None).await?;
         if let Some(published) = changes.published
             && published != activity.published
         {

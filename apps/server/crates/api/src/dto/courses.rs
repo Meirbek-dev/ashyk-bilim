@@ -79,7 +79,7 @@ pub struct CoursePage {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CreateCourseRequest {
-    #[garde(length(min = 1, max = 500))]
+    #[garde(length(max = 500))]
     pub name: String,
     #[garde(length(max = 5000))]
     pub description: Option<String>,
@@ -92,7 +92,7 @@ pub struct CreateCourseRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateCourseRequest {
-    #[garde(inner(length(min = 1, max = 500)))]
+    #[garde(inner(length(max = 500)))]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
     pub description: Option<String>,

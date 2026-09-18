@@ -639,3 +639,59 @@ async fn content_writes_are_version_locked(pool: PgPool) {
     assert_eq!(rename.status, StatusCode::OK, "{}", rename.text());
     assert_eq!(rename.json()["version"], 2);
 }
+
+/// BUG-168: blank names (`""` / `"   "`) are 422 `name`/`required` on
+/// create and update, and stored names are trimmed.
+#[sqlx::test(migrations = "../../migrations")]
+async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = create_course(&app, &teacher, "  Trim me  ").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Ch").await;
+    let activity_id = create_activity(&app, &teacher, &chapter_id, "Act").await;
+    let course = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}"))
+        .await;
+    assert_eq!(course.json()["name"], "Trim me");
+
+    let blank = serde_json::json!({ "name": "   " });
+    let creates = [
+        app.post_as(&teacher, "/api/v2/courses", &blank).await,
+        app.post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &blank,
+        )
+        .await,
+        app.post_as(
+            &teacher,
+            &format!("/api/v2/chapters/{chapter_id}/activities"),
+            &serde_json::json!({
+                "name": "",
+                "activity_type": "video",
+                "activity_sub_type": "video_youtube",
+            }),
+        )
+        .await,
+        app.patch_as(&teacher, &format!("/api/v2/courses/{course_id}"), &blank)
+            .await,
+        app.patch_as(&teacher, &format!("/api/v2/chapters/{chapter_id}"), &blank)
+            .await,
+        app.patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &blank,
+        )
+        .await,
+    ];
+    for res in creates {
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+        assert_eq!(res.json()["field_errors"][0]["field"], "name");
+        assert_eq!(res.json()["field_errors"][0]["code"], "required");
+    }
+}
