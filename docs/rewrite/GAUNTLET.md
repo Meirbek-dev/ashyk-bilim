@@ -209,30 +209,30 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 
 | id | area | route(s) | roles | status | last critic verdict |
 |---|---|---|---|---|---|
-| F01 | login + session | `/ru/auth/login` | all | pass | pass 14 (reverify-A): 429 banner ru/kz |
-| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 14 (reverify-A) |
+| F01 | login + session | `/ru/auth/login` | all | pass | pass 15 (reverify-A) |
+| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 15 (reverify-A): verify-after-activation re-sync |
 | F03 | Google login intent | `/ru/auth/login` → `/api/v2/auth/google` | any | pass | pass 6: Google → `/api/v2/auth/google` → 303 with `?error=service-unavailable`; host-relative redirect is correct behind the production nginx (Q-2026-09-12-2 #10) |
-| F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 14 (reverify-A): stale revoke; second-tab refetch carried as UX-107 |
+| F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 15 (reverify-A) |
 | F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 15 (reverify-C) |
 | F06 | locale switch ru/kz/en | all routes | any | pass | pass 15 (reverify-C) |
-| F07 | home / landing | `/[locale]` | learner | pass | pass 14 (reverify-A) |
-| F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 14 (reverify-A): anonymous landing renders (BUG-159); empty chapters hidden |
-| F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 14 (reverify-A): idempotent create |
-| F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | pass | pass 14 (reverify-A) mark/sidebar; **fail** — course-end view counts lesson steps only (BUG-165 fixed f7ffea8; pass 15 re-drive: «Поздравляем! … 5 из 5») |
-| F11 | trail / progress | `/trail` | learner | pass | pass 14 (reverify-A) |
-| F12 | user profile | `/ru/user/[username]` | learner | pass | pass 14 (reverify-A) |
+| F07 | home / landing | `/[locale]` | learner | pass | pass 15 (reverify-A) |
+| F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 15 (reverify-A): anonymous composer → login link |
+| F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 15 (reverify-A): whitespace names 422, list refetch on focus |
+| F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | pass | pass 15 (reverify-A): «Готовы начать?» when not enrolled |
+| F11 | trail / progress | `/trail` | learner | pass | pass 15 (reverify-A) |
+| F12 | user profile | `/ru/user/[username]` | learner | pass | pass 15 (reverify-A) |
 | F13 | taking a quiz/exam | `/ru/course/[id]/activity/[id]` | learner | pass | pass 15 (reverify-B): perfect attempt = 100 % (BUG-169), localized 429, PAST_DUE card |
 | F14 | code arena run | `/assessments/[uuid]` (code item) | learner | blocked | Judge0 not in the local stack (`code/languages` 503); e2e code tests skip on the probe. Needs an environment with the executor |
 | F15 | file submission upload | `/assessments/[uuid]` (file item) | learner | pass | pass 15 (reverify-B): file deadline enforced (BUG-166), gate over an open draft (BUG-167); draft PATCH past due carried as UX-115 |
 | F16 | discussions | course discussion surfaces | learner+teacher | pass | pass 15 (reverify-B) |
 | F17 | certificates + verify | `/certificates/[uuid]/verify`, `/dash/courses/[uuid]/certificate` | any | pass | pass 15 (reverify-B) |
 | F18 | gamification | `/dash/user-account/settings/gamification` | learner | pass | pass 15 (reverify-B) |
-| F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 14 (reverify-A) |
-| F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 14 (reverify-A): «Запланировано» row; type change off a live assessment → 409; one YouTube toast |
-| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 14 (reverify-A) |
-| F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 14 (reverify-A) |
-| F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | pass | pass 14 (reverify-A): scheduled edits → 409; worker skips not-ready; archive click works (badge refresh carried as UX-107) |
-| F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 14 (reverify-A) |
+| F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 15 (reverify-A) |
+| F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 15 (reverify-A): one name, live fs type change refused |
+| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 15 (reverify-A) |
+| F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 15 (reverify-A) |
+| F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | pass | pass 15 (reverify-A): unlimited attempts stay unlimited, archived/scheduled arms, restore |
+| F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 15 (reverify-A) |
 | F25 | submission grading + item feedback | `/ru/dash/courses/[id]/activity/[id]/review` | teacher | pass | pass 15 (reverify-B): CSV BOM, past deadline field error |
 | F26 | gradebook + bulk actions | `/ru/dash/courses/[id]/gradebook` | teacher | fail | pass 15 (reverify-B) bulk/extend/overdue; **fail** — gradebook grade of record is the latest attempt, not the best published (BUG-173) |
 | F27 | grading SSE live updates | gradebook / review | teacher | pass | pass 15 (reverify-B) |
@@ -249,23 +249,23 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 15 (reverify-C): one disable-confirm wording |
 | F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 15 (reverify-C): unlink needs course read; «Отвязать» |
 | F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 15 (reverify-C) |
-| F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 14 (reverify-A): idempotent register, kk verify link |
-| F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 14 (reverify-A): 429 toast with minutes |
+| F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 15 (reverify-A) |
+| F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 15 (reverify-A) |
 | F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 15 (reverify-C) |
 | F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 15 (reverify-C) |
 | F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
-| F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 14 (reverify-A) |
-| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 14 (reverify-A): 403 before 409 |
-| F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 14 (reverify-A): chapter delete recalculates |
+| F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 15 (reverify-A) |
+| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 15 (reverify-A) |
+| F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 15 (reverify-A) |
 | F49 | gradebook: file cells, CSV export, live stream | `/dash/courses/[id]/gradebook` | teacher | pass | pass 15 (reverify-B): feedback kept on publish; latest-vs-best carried as BUG-173 |
 | F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 15 (reverify-B): verdicts/answers; markdown feedback carried as UX-115 |
 | F51 | matching items (learner body) | quiz attempt + review | learner+teacher | pass | pass 15 (reverify-B) |
 | F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 15 (reverify-B) |
 | F53 | AI on file-submission attempts | file review page | teacher | pass | pass 15 (reverify-B): «Заменить» closes the dialog (BUG-172), localized file CSV; teacher gate copy carried as UX-115 |
-| F54 | link preview block | lecture editor | teacher | pass | pass 14 (reverify-A) |
+| F54 | link preview block | lecture editor | teacher | pass | pass 15 (reverify-A) |
 | F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 15 (reverify-C) |
 | F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 15 (reverify-C) |
-| F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 14 (reverify-A): anonymous profile → landing |
+| F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 15 (reverify-A) |
 
 ## Bugs
 
