@@ -350,8 +350,10 @@ pub async fn export_gradebook_csv(
     Ok(response)
 }
 
-/// Course gradebook: the latest submitted attempt per (learner, graded
-/// activity) — assessment submissions and file-submission attempts.
+/// Course gradebook: the grade-of-record attempt per (learner, graded
+/// activity) — the attempt learner progress scores (best-scored submission,
+/// latest scored file attempt) — assessment submissions and file-submission
+/// attempts.
 #[utoipa::path(
     get, path = "/courses/{id}/gradebook", tag = "grading",
     params(("id" = CourseId, Path, description = "Course id"), GradebookQuery),

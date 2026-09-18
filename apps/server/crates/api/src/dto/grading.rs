@@ -332,7 +332,8 @@ pub struct GradebookQuery {
     pub limit: Option<i64>,
 }
 
-/// One learner's latest non-draft attempt on one graded activity.
+/// One learner's grade-of-record attempt on one graded activity (the
+/// projector's best-scored submission or latest scored file attempt).
 ///
 /// Exactly one id pair is set: `assessment_id` + `submission_id` for an
 /// assessment, `file_submission_id` + `attempt_id` for a file submission

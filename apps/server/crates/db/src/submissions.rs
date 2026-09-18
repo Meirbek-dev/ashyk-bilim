@@ -392,7 +392,11 @@ pub async fn list_non_draft(
 
 // ── Course gradebook ────────────────────────────────────────────────────────
 
-/// The latest submitted attempt of one learner on one graded activity.
+/// The grade-of-record attempt of one learner on one graded activity — the
+/// attempt `progress::projector` scores (BUG-173): the best-scored non-draft
+/// submission (`COALESCE(final_score, auto_score)`, latest on ties) or, on a
+/// file submission, the latest scored attempt; the latest one when nothing
+/// is scored yet.
 ///
 /// An assessment submission or a file-submission attempt: exactly one of
 /// the id pairs is set, and a file attempt `submitted` maps to `pending`.
@@ -416,8 +420,9 @@ pub struct GradebookCellRow {
     pub graded_at: Option<i64>,
 }
 
-/// Latest non-draft attempt per (learner, activity) in a course, over both
+/// Grade-of-record attempt per (learner, activity) in a course, over both
 /// assessment submissions and file-submission attempts, keyset on that pair.
+/// `rank` mirrors `project_submissions` / `project_file_attempts`.
 pub async fn gradebook_cells(
     pool: &PgPool,
     course_id: CourseId,
@@ -442,7 +447,10 @@ pub async fn gradebook_cells(
                SELECT s.user_id, a.activity_id, s.assessment_id, s.id AS submission_id,
                       NULL::uuid AS file_submission_id, NULL::uuid AS attempt_id,
                       s.status, s.attempt_number, s.final_score, s.is_late,
-                      o.due_at_override, s.submitted_at, s.graded_at
+                      o.due_at_override, s.submitted_at, s.graded_at,
+                      row_number() OVER (PARTITION BY s.user_id, s.assessment_id
+                          ORDER BY COALESCE(s.final_score, s.auto_score) DESC NULLS LAST,
+                                   s.attempt_number DESC) AS rank
                FROM submissions s JOIN assessments a ON a.id = s.assessment_id
                LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id
                     AND o.user_id = s.user_id
@@ -452,13 +460,15 @@ pub async fn gradebook_cells(
                SELECT fa.user_id, f.activity_id, NULL::uuid, NULL::uuid, f.id, fa.id,
                       CASE WHEN fa.status = 'submitted' THEN 'pending' ELSE fa.status END,
                       fa.attempt_number, fa.final_score, fa.is_late, NULL::timestamptz,
-                      fa.submitted_at, fa.graded_at
+                      fa.submitted_at, fa.graded_at,
+                      row_number() OVER (PARTITION BY fa.user_id, fa.file_submission_id
+                          ORDER BY (fa.final_score IS NOT NULL) DESC, fa.attempt_number DESC)
                FROM file_submission_attempts fa
                JOIN file_submissions f ON f.id = fa.file_submission_id
                WHERE fa.course_id = $1 AND fa.status <> 'draft'
            ) c
            WHERE ($2::uuid IS NULL OR (c.user_id, c.activity_id) > ($2::uuid, $3::uuid))
-           ORDER BY c.user_id, c.activity_id, c.attempt_number DESC
+           ORDER BY c.user_id, c.activity_id, c.rank
            LIMIT $4"#,
         course_id.0,
         after.map(|(u, _)| u.0),

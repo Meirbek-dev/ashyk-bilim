@@ -1138,6 +1138,15 @@ Implements three more items of the owner answers above. Routes:
 - **The submit limiter counts accepted submits only** (UX-111): like
   `save_draft`, the 3/10 s budget is spent after ownership, status, version
   and answer validation — a 409/422 never locks the learner out.
+- **One grade of record** (BUG-173): the gradebook cell and the gradebook
+  CSV report the attempt `progress::projector` scores — the best-scored
+  non-draft submission (`COALESCE(final_score, auto_score)`, the latest on
+  ties; `activity_progress.best_submission_id`), and for file submissions
+  the latest scored attempt — instead of the latest non-draft attempt. A
+  learner whose attempt 3 was zeroed after a published 76 % is «Пройдено ·
+  76 %» on the card and in the gradebook alike; `attempts` still counts
+  every hand-in and the review queue lists a newer pending attempt.
+  `gradebook_cells` ranks per (learner, activity) with the same ordering.
 - **Wrong verbs answer problem+json** (UX-110): `method-not-allowed` (405)
   joins the registry via axum's `method_not_allowed_fallback`; API `login`
   trims the identifier (the name-limit key already did).

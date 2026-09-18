@@ -704,6 +704,59 @@ async fn teacher_grade_applies_the_attempt_cap(pool: PgPool) {
     assert_eq!(graded.json()["final_score"], 80.0, "capped at 100 − 20 × 1");
 }
 
+/// BUG-173: one grade of record — the gradebook cell (and the CSV) reports
+/// the attempt learner progress scores: the best published attempt, not
+/// the latest one. Attempt 2 published 76 %, attempt 3 zeroed → the cell
+/// is attempt 2, 76 %, passed; the CSV says `76`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn gradebook_reports_the_best_published_attempt(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 3, "passing_score": 60 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    for score in [40, 76, 0] {
+        let sub = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+        let published = app
+            .send(grade(
+                &teacher,
+                &sub,
+                Some("1"),
+                &serde_json::json!({ "action": "publish", "final_score": score }),
+            ))
+            .await;
+        assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    }
+    let state = app
+        .get_as(&bob, &format!("/api/v2/courses/{course_id}/learner-state"))
+        .await;
+    let entry = &state.json()["outline"][0]["activities"][0];
+    assert_eq!(entry["score"], 76.0, "{entry}");
+    assert_eq!(entry["passed"], true, "{entry}");
+    let gradebook = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook"))
+        .await;
+    assert_eq!(gradebook.status, StatusCode::OK, "{}", gradebook.text());
+    let cell = &gradebook.json()["cells"][0];
+    assert_eq!(cell["attempt_number"], 2, "{cell}");
+    assert_eq!(cell["attempts"], 3, "{cell}");
+    assert_eq!(cell["status"], "published", "{cell}");
+    assert_eq!(cell["final_score"], 76.0, "{cell}");
+    let csv = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook/export"))
+        .await;
+    assert_eq!(csv.status, StatusCode::OK, "{}", csv.text());
+    let text = csv.text();
+    let row = text.lines().find(|l| l.starts_with("bob")).unwrap();
+    assert!(row.ends_with(",76"), "{row}");
+}
+
 /// BUG-138: a publish-only save (no score, no item grades) keeps the raw
 /// score of the latest entry — the late penalty is not applied twice — and
 /// an omitted `feedback` keeps the stored one; `audit_note` lands in the

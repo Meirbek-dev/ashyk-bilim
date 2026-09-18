@@ -1388,9 +1388,9 @@ impl GradingService {
 
     // ── Course gradebook ────────────────────────────────────────────────
 
-    /// Latest non-draft attempt per (learner, activity) of a course —
-    /// assessment submissions and file-submission attempts alike — keyset
-    /// on that pair.
+    /// Grade-of-record attempt per (learner, activity) of a course (the
+    /// projector's attempt, BUG-173) — assessment submissions and
+    /// file-submission attempts alike — keyset on that pair.
     pub async fn gradebook(
         &self,
         actor: &Actor,
