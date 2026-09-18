@@ -59,7 +59,7 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
     // BUG-162: the sweep re-checks readiness — a schedule with no items stays scheduled.
     sqlx::query(
         "INSERT INTO assessment_items (assessment_id, kind, title, body, max_score)
-         VALUES ($1, 'open_text', 'q', '{\"prompt\":\"say hi\"}'::jsonb, 1)",
+         VALUES ($1, 'open_text', 'q', '{\"kind\":\"open_text\",\"prompt\":\"say hi\"}'::jsonb, 1)",
     )
     .bind(assessment)
     .execute(pool)
