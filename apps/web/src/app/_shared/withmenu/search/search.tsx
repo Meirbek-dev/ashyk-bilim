@@ -27,7 +27,8 @@ function FilterButton({
   t,
 }: {
   type: ContentType
-  count: number
+  /** `null` while the first result set is loading (no false «(0)»). */
+  count: number | null
   icon: AppIcon
   selectedType: ContentType
   onTypeChange: (type: ContentType) => void
@@ -45,7 +46,9 @@ function FilterButton({
     >
       <Icon data-icon="inline-start" />
       <span>{t(`filter${type.charAt(0).toUpperCase() + type.slice(1)}`)}</span>
-      <span className={selectedType === type ? 'text-primary/70' : 'text-muted-foreground/60'}>({count})</span>
+      {count === null ? null : (
+        <span className={selectedType === type ? 'text-primary/70' : 'text-muted-foreground/60'}>({count})</span>
+      )}
     </Button>
   )
 }
@@ -121,6 +124,8 @@ function SearchPage() {
   }
 
   const totalResults = searchResults.courses.length + searchResults.collections.length + searchResults.users.length
+  // UX-109: no «Найдено 0 результатов» / «(0)» before the first result set.
+  const countOf = (n: number) => (isLoading ? null : n)
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -157,7 +162,7 @@ function SearchPage() {
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
               <FilterButton
                 type="all"
-                count={totalResults}
+                count={countOf(totalResults)}
                 icon={Search}
                 selectedType={selectedType}
                 onTypeChange={selectedTypeKey => {
@@ -170,7 +175,7 @@ function SearchPage() {
               />
               <FilterButton
                 type="courses"
-                count={searchResults.courses.length}
+                count={countOf(searchResults.courses.length)}
                 icon={GraduationCap}
                 selectedType={selectedType}
                 onTypeChange={selectedTypeKey => {
@@ -183,7 +188,7 @@ function SearchPage() {
               />
               <FilterButton
                 type="collections"
-                count={searchResults.collections.length}
+                count={countOf(searchResults.collections.length)}
                 icon={Book}
                 selectedType={selectedType}
                 onTypeChange={selectedTypeKey => {
@@ -196,7 +201,7 @@ function SearchPage() {
               />
               <FilterButton
                 type="users"
-                count={searchResults.users.length}
+                count={countOf(searchResults.users.length)}
                 icon={Users}
                 selectedType={selectedType}
                 onTypeChange={selectedTypeKey => {
@@ -216,8 +221,8 @@ function SearchPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-7xl">
           {query ? (
-            <div className="text-muted-foreground mb-6 text-sm">
-              {t('resultsFound', { count: totalResults, query })}
+            <div className="text-muted-foreground mb-6 text-sm" aria-live="polite">
+              {isLoading ? t('searching', { query }) : t('resultsFound', { count: totalResults, query })}
             </div>
           ) : null}
 
@@ -307,18 +312,14 @@ function SearchPage() {
                       >
                         <UserAvatar
                           size="lg"
-                          avatar_url={
-                            user.avatar_key ? getContentUrl(user.avatar_key) : ''
-                          }
+                          avatar_url={user.avatar_key ? getContentUrl(user.avatar_key) : ''}
                           {...(!user.avatar_key ? { predefined_avatar: 'empty' } : {})}
                           user={user}
                           use_with_session={false}
                           showProfilePopup={false}
                         />
                         <div>
-                          <h3 className="text-foreground text-sm font-medium">
-                            {user.display_name}
-                          </h3>
+                          <h3 className="text-foreground text-sm font-medium">{user.display_name}</h3>
                           <p className="text-muted-foreground text-xs">@{user.username}</p>
                         </div>
                       </Link>

@@ -15,6 +15,7 @@ vi.mock('next/dynamic', () => ({
   ),
 }))
 vi.mock('@components/Objects/UserAvatar', () => ({ default: () => null }))
+vi.mock('@components/ui/AppLink', () => ({ default: (props: React.ComponentProps<'a'>) => <a {...props} /> }))
 vi.mock('@/components/Utils/PermissionTooltip', () => ({
   PermissionTooltip: ({ children }: { children: React.ReactNode }) => children,
 }))
@@ -59,7 +60,9 @@ describe('DiscussionList (v2)', () => {
   it('derives reply actions from the wire can_update/can_delete instead of the viewer username', () => {
     const trashButtons = () => document.querySelectorAll('button:has(svg.lucide-trash)')
     // Same username as the author, but the server says the viewer may not touch it.
-    const first = render(<DiscussionList initialPosts={[post]} currentUser={{ username: 'other' }} courseUuid={courseId} />)
+    const first = render(
+      <DiscussionList initialPosts={[post]} currentUser={{ username: 'other' }} courseUuid={courseId} />,
+    )
     expect(trashButtons()).toHaveLength(0)
     first.unmount()
 
@@ -68,12 +71,22 @@ describe('DiscussionList (v2)', () => {
     expect(trashButtons()).toHaveLength(1)
   })
 
+  // UX-109: posting needs a session — anonymous visitors get a sign-in link,
+  // not a composer whose «Опубликовать» ends in a 401 and loses the text.
+  it('shows a sign-in prompt instead of the composer for anonymous visitors', () => {
+    render(<DiscussionList initialPosts={[post]} currentUser={null} courseUuid={courseId} />)
+    expect(screen.queryByTestId('editor')).toBeNull()
+    expect(screen.getByRole('link', { name: 'signInToParticipate' }).getAttribute('href')).toContain('/login')
+  })
+
   it('surfaces a failed post through the localized API error toast', async () => {
     createDiscussion.mockRejectedValueOnce(new Error('boom'))
     render(<DiscussionList initialPosts={[]} currentUser={{ username: 'me' }} courseUuid={courseId} />)
     fireEvent.change(screen.getAllByTestId('editor')[0]!, { target: { value: '<p>new post</p>' } })
     fireEvent.click(screen.getByText('postDiscussion'))
-    await waitFor(() => expect(toastApiError).toHaveBeenCalledWith(expect.any(Error), { fallback: 'errors.createFailed' }))
+    await waitFor(() =>
+      expect(toastApiError).toHaveBeenCalledWith(expect.any(Error), { fallback: 'errors.createFailed' }),
+    )
     expect(createDiscussion).toHaveBeenCalledWith(courseId, { content: '<p>new post</p>', type: 'post' })
   })
 })

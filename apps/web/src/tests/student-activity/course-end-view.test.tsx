@@ -11,31 +11,62 @@ import { learnerCourseStateQueryOptions, type LearnerCourseState } from '@/featu
 import ruMessages from '@/messages/ru-RU.json'
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }))
-vi.mock('@/stores/gamification', () => ({ useGamificationStore: (selector: (s: unknown) => unknown) =>
-  selector({ profile: null, refetch: null, dashboard: null }) }))
+vi.mock('@/stores/gamification', () => ({
+  useGamificationStore: (selector: (s: unknown) => unknown) =>
+    selector({ profile: null, refetch: null, dashboard: null }),
+}))
 vi.mock('@/features/certifications/hooks/useCertifications', () => ({
   useUserCertificateByCourse: () => ({ data: null, isPending: false, error: null }),
 }))
 vi.mock('@/features/certifications/utils/pdfmeCertificate', () => ({}))
-vi.mock('@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview', () => ({ default: () => null }))
+vi.mock('@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview', () => ({
+  default: () => null,
+}))
 
 const courseId = '11111111-1111-4111-8111-111111111111'
 function state(): LearnerCourseState {
   const activity = (id: string, activity_type: 'dynamic' | 'quiz') => ({
-    id, title: id, activity_type, available: true, required: true, complete: true, is_late: false,
-    state: 'complete' as const, allowed_actions: [],
+    id,
+    title: id,
+    activity_type,
+    available: true,
+    required: true,
+    complete: true,
+    is_late: false,
+    state: 'complete' as const,
+    allowed_actions: [],
   })
   return {
-    course_id: courseId, title: 'Course', public: true, enrolled: true, enrollment_state: 'completed',
+    course_id: courseId,
+    title: 'Course',
+    public: true,
+    enrolled: true,
+    enrollment_state: 'completed',
     certificate: { configured: false, eligible: true, issued: false },
     next_action: { id: 'review_completion', enabled: true, label: '', reason: '' },
     permissions: { can_access: true, can_discover: true, can_enroll: false },
-    progress: { completed_at_unix: 1_700_000_000, completed_required_count: 5, missing_required_count: 0,
-      needs_grading_count: 0, progress_pct: 100, total_required_count: 5 },
-    outline: [{ id: 'ch', index: 0, title: 'Chapter', activities: [
-      activity('l1', 'dynamic'), activity('l2', 'dynamic'), activity('l3', 'dynamic'),
-      activity('q1', 'quiz'), activity('q2', 'quiz'),
-    ] }],
+    progress: {
+      completed_at_unix: 1_700_000_000,
+      completed_required_count: 5,
+      missing_required_count: 0,
+      needs_grading_count: 0,
+      progress_pct: 100,
+      total_required_count: 5,
+    },
+    outline: [
+      {
+        id: 'ch',
+        index: 0,
+        title: 'Chapter',
+        activities: [
+          activity('l1', 'dynamic'),
+          activity('l2', 'dynamic'),
+          activity('l3', 'dynamic'),
+          activity('q1', 'quiz'),
+          activity('q2', 'quiz'),
+        ],
+      },
+    ],
   }
 }
 
@@ -67,5 +98,25 @@ describe('CourseEndView (BUG-165)', () => {
     expect(screen.getByText(/Так держать!/)).toBeInTheDocument()
     expect(screen.getByText('3 из 5 учебных задач выполнено')).toBeInTheDocument()
     expect(screen.getByText('60%')).toBeInTheDocument()
+  })
+
+  // UX-109: after «Покинуть курс» the page reads like the landing («Готовы
+  // начать?»), not «Так держать! 40 %» over kept submissions; one «Назад к курсу».
+  it('not enrolled → landing-style copy without the stale progress', () => {
+    const s = state()
+    s.enrolled = false
+    s.enrollment_state = 'not_enrolled'
+    s.progress = { ...s.progress, completed_at_unix: null, completed_required_count: 2, progress_pct: 40 }
+    renderView(s)
+    expect(screen.getByText('Готовы начать?')).toBeInTheDocument()
+    expect(screen.getByText('Начать обучение')).toBeInTheDocument()
+    expect(screen.queryByText(/Так держать!/)).toBeNull()
+    expect(screen.queryByText('40%')).toBeNull()
+  })
+
+  it('completed → the single «Назад к курсу» label', () => {
+    renderView(state())
+    expect(screen.getByText('Назад к курсу')).toBeInTheDocument()
+    expect(screen.queryByText('Вернуться к курсу')).toBeNull()
   })
 })

@@ -36,6 +36,9 @@ export const queryKeys = {
     detail: (certificateUuid: string) => ['certifications', 'detail', certificateUuid] as const,
     userAll: () => ['certifications', 'user-all'] as const,
   },
+  collections: {
+    list: () => ['collections', 'list'] as const,
+  },
   courses: {
     contributors: (courseUuid: string) => ['courses', 'contributors', courseUuid] as const,
     readiness: (courseUuid: string) => ['courses', courseUuid, 'readiness'] as const,

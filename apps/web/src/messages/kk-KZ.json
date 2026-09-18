@@ -1082,7 +1082,10 @@
       "viewCertificate": "Сертификатты көру",
       "xpBonusMessage": "Курсты аяқтағаны үшін +{xp} ТӨ!",
       "youAreAlmostThere": "Сіз жетуге жақынсыз!",
-      "youAreMakingProgress": "Сіз үлкен прогресс жасаудасыз"
+      "youAreMakingProgress": "Сіз үлкен прогресс жасаудасыз",
+      "readyToBegin": "Бастауға дайынсыз ба?",
+      "notEnrolledMessage": "Прогресті бақылап, сертификат алу үшін курсты бастаңыз:",
+      "startLearning": "Оқуды бастау"
     },
     "EditCourseCertification": {
       "basicInfo": "Негізгі ақпарат",
@@ -2788,6 +2791,7 @@
     "contributors": "Қатысушылар",
     "courseContent": "Курс мазмұны",
     "courseDiscussions": "Курс талқылауы",
+    "signInToParticipate": "Қатысу үшін кіріңіз",
     "courseLessons": "Курс сабақтары",
     "courseThumbnailAlt": "Курс кескіні",
     "current": "Ағымдағы",
@@ -5971,6 +5975,7 @@
           "yourRank": "Сіздің орныңыз"
         },
         "levelIndicators": {
+          "compactProgress": "{xp} ТӨ · {level}-деңгейге дейін {remaining}",
           "congratsMaxLevel": "Құттықтаймыз! Сіз ең жоғарғы деңгейге жеттіңіз!",
           "currentLevel": "Ағымдағы деңгей",
           "experienceBar": "Тәжірибе жолағы",
@@ -7372,6 +7377,7 @@
     "filterUsers": "Пайдаланушылар",
     "noResultsMessage": "\"{query}\" үшін ешқандай нәтиже табылмады. Іздеу шарттарын өзгертіп көріңіз немесе ұсынылған мазмұнды шолыңыз.",
     "noResultsTitle": "Нәтижелер табылмады",
+    "searching": "«{query}» ізделуде…",
     "resultsFound": "\"{query}\" үшін {count} нәтиже табылды",
     "searchButton": "Іздеу",
     "searchInputPlaceholder": "Курстарды, жинақтарды, пайдаланушыларды іздеу...",
@@ -10344,7 +10350,7 @@
   "Trail": {
     "courseLabel": "Курс",
     "loadingCertificate": "Жүктелуде...",
-    "noCertificateAvailable": "Сертификат қолжетімді емес",
+    "noCertificateAvailable": "Сертификат қолжетімсіз",
     "quitCourseButton": "Курстан шығу",
     "stepsLabel": "қадам",
     "stepsProgress": "{completed} / {total} қадам",

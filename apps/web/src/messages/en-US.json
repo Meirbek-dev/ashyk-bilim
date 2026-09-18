@@ -1036,7 +1036,7 @@
     },
     "CourseEndView": {
       "authRequired": "Authentication required to view certificate",
-      "backToCourse": "Back to Course",
+      "backToCourse": "Back to course",
       "backToDashboard": "Back to Dashboard",
       "badgeCheckIcon": "✓",
       "certificate": "Certificate",
@@ -1083,7 +1083,10 @@
       "viewCertificate": "View Certificate",
       "xpBonusMessage": "+{xp} XP for completing the course!",
       "youAreAlmostThere": "You're almost there!",
-      "youAreMakingProgress": "You're making great progress in"
+      "youAreMakingProgress": "You're making great progress in",
+      "readyToBegin": "Ready to begin?",
+      "notEnrolledMessage": "Start the course to track your progress and earn a certificate:",
+      "startLearning": "Start learning"
     },
     "EditCourseCertification": {
       "basicInfo": "Basic Information",
@@ -2789,6 +2792,7 @@
     "contributors": "Contributors",
     "courseContent": "Course Content",
     "courseDiscussions": "Course Discussion",
+    "signInToParticipate": "Sign in to participate",
     "courseLessons": "Course Lessons",
     "courseThumbnailAlt": "Course Thumbnail",
     "current": "Current",
@@ -5956,6 +5960,7 @@
           "yourRank": "Your Rank"
         },
         "levelIndicators": {
+          "compactProgress": "{xp} XP · {remaining} to level {level}",
           "congratsMaxLevel": "Congratulations! You've reached the maximum level!",
           "currentLevel": "Current Level",
           "experienceBar": "Experience Bar",
@@ -7352,6 +7357,7 @@
     "filterUsers": "Users",
     "noResultsMessage": "We couldn't find any results for \"{query}\". Try adjusting your search terms or browse our featured content.",
     "noResultsTitle": "No results found",
+    "searching": "Searching for \"{query}\"…",
     "resultsFound": "{count, plural, one {# result} other {# results}} found for \"{query}\"",
     "searchButton": "Search",
     "searchInputPlaceholder": "Search for courses, collections, users...",

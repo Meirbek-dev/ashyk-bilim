@@ -1036,7 +1036,7 @@
     },
     "CourseEndView": {
       "authRequired": "Для просмотра сертификата необходима авторизация",
-      "backToCourse": "Вернуться к курсу",
+      "backToCourse": "Назад к курсу",
       "backToDashboard": "Вернуться в панель",
       "badgeCheckIcon": "✓",
       "certificate": "Сертификат",
@@ -1083,7 +1083,10 @@
       "viewCertificate": "Просмотреть сертификат",
       "xpBonusMessage": "+{xp} ОП за завершение курса!",
       "youAreAlmostThere": "Вы почти у цели!",
-      "youAreMakingProgress": "Вы отлично продвигаетесь в"
+      "youAreMakingProgress": "Вы отлично продвигаетесь в",
+      "readyToBegin": "Готовы начать?",
+      "notEnrolledMessage": "Начните курс, чтобы отслеживать прогресс и получить сертификат:",
+      "startLearning": "Начать обучение"
     },
     "EditCourseCertification": {
       "basicInfo": "Основная информация",
@@ -2787,6 +2790,7 @@
     "contributors": "Участники",
     "courseContent": "Содержание курса",
     "courseDiscussions": "Обсуждения курса",
+    "signInToParticipate": "Войдите, чтобы участвовать",
     "courseLessons": "Уроки курса",
     "courseThumbnailAlt": "Миниатюра курса",
     "current": "Текущий",
@@ -5956,6 +5960,7 @@
           "yourRank": "Ваше место"
         },
         "levelIndicators": {
+          "compactProgress": "{xp} ОП · {remaining} до уровня {level}",
           "congratsMaxLevel": "Поздравляем! Вы достигли максимального уровня!",
           "currentLevel": "Текущий уровень",
           "experienceBar": "Полоса опыта",
@@ -7357,6 +7362,7 @@
     "filterUsers": "Пользователи",
     "noResultsMessage": "Мы не смогли найти результаты для \"{query}\". Попробуйте изменить поисковые термины или просмотреть наш рекомендуемый контент.",
     "noResultsTitle": "Результаты не найдены",
+    "searching": "Ищем «{query}»…",
     "resultsFound": "Найдено {count, plural, one {# результат} few {# результата} other {# результатов}} для \"{query}\"",
     "searchButton": "Поиск",
     "searchInputPlaceholder": "Поиск курсов, коллекций, пользователей...",

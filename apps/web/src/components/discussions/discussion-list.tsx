@@ -27,6 +27,9 @@ import { Badge } from '@/components/ui/badge'
 import { MessageCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useApiError } from '@/hooks/useApiError'
+import { buildLoginRedirect } from '@/lib/auth/redirect'
+import { buttonVariants } from '@/components/ui/button'
+import Link from '@components/ui/AppLink'
 import type { DiscussionPostData, DiscussionReplyData } from './types'
 
 interface DiscussionListProps {
@@ -433,7 +436,19 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         </Badge>
       </div>
 
-      <DiscussionForm currentUser={discussionUser} onSubmit={handleSubmitDiscussion} />
+      {currentUser ? (
+        <DiscussionForm currentUser={discussionUser} onSubmit={handleSubmitDiscussion} />
+      ) : (
+        // UX-109: posting needs a session — a sign-in prompt instead of a
+        // form whose «Опубликовать» ends in a 401 and loses the text.
+        <Card>
+          <CardContent className="p-6">
+            <Link href={buildLoginRedirect(`/course/${courseUuid}`)} className={buttonVariants({ variant: 'outline' })}>
+              {t('signInToParticipate')}
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-4">
         {posts.map(post => (

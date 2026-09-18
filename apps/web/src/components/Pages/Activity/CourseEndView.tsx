@@ -394,7 +394,10 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     )
   }
 
-  const keepGoingText = `${t('keepGoing')} 💪`
+  // UX-109: after «Покинуть курс» the landing says «Готовы начать?» — the
+  // end page must not keep celebrating a stale «40 %».
+  const notEnrolled = learnerState?.enrollment_state === 'not_enrolled'
+  const keepGoingText = notEnrolled ? t('readyToBegin') : `${t('keepGoing')} 💪`
 
   // Show progress and encouragement for incomplete course
   return (
@@ -422,11 +425,11 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         <h1 className="text-4xl font-bold text-gray-900">{keepGoingText}</h1>
 
         <p className="text-xl text-gray-600">
-          {t('youAreMakingProgress')}
+          {notEnrolled ? t('notEnrolledMessage') : t('youAreMakingProgress')}
           <span className="font-semibold text-gray-900"> {courseName}</span>
         </p>
 
-        {progressInfo ? (
+        {progressInfo && !notEnrolled ? (
           <div className="space-y-4 rounded-lg bg-gray-50 p-6">
             <div className="flex items-center justify-center space-x-2">
               <BookOpen className="h-5 w-5 text-gray-600" />
@@ -456,7 +459,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </div>
         ) : null}
 
-        <p className="text-gray-500">{t('encouragementMessage')}</p>
+        {notEnrolled ? null : <p className="text-gray-500">{t('encouragementMessage')}</p>}
 
         <div className="pt-6">
           <AppLink
@@ -464,7 +467,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             className="inline-flex items-center space-x-2 rounded-full bg-blue-600 px-6 py-3 text-white transition duration-200 hover:bg-blue-700"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span>{t('continueActivity')}</span>
+            <span>{notEnrolled ? t('startLearning') : t('continueActivity')}</span>
           </AppLink>
         </div>
       </div>
