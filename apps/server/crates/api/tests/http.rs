@@ -40,6 +40,26 @@ async fn unknown_routes_answer_problem_json(pool: PgPool) {
     assert!(body["type"].as_str().unwrap().ends_with("/not-found"));
 }
 
+/// UX-110: a known route with the wrong verb answers in the envelope too.
+#[sqlx::test(migrations = "../../migrations")]
+async fn wrong_verbs_answer_problem_json(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let res = app
+        .send(
+            Request::builder()
+                .method("PUT")
+                .uri("/api/v2/auth/login")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+
+    assert_eq!(res.status, StatusCode::METHOD_NOT_ALLOWED);
+    assert_eq!(res.content_type(), "application/problem+json");
+    assert_eq!(res.json()["code"], "method-not-allowed");
+    assert_eq!(res.json()["status"], 405);
+}
+
 /// The problem+json body carries the same correlation id as the header —
 /// a user copying the JSON gets something support can grep for.
 #[sqlx::test(migrations = "../../migrations")]

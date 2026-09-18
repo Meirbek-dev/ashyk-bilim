@@ -297,6 +297,14 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
   // Disabling unmounts the button that opened the dialog: focus the heading.
   const headingRef = useRef<HTMLHeadingElement>(null)
 
+  // A 409 from enrol or verify means TOTP was activated elsewhere (another
+  // tab): drop the form and show the live state (UX-110).
+  const resyncActive = () => {
+    setEnrollment(null)
+    setActive(true)
+    toast.info(t('totpAlreadyActive'))
+  }
+
   const enrollMutation = useMutation({
     mutationFn: startTotpEnrollment,
     onSuccess: data => {
@@ -306,8 +314,7 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
     },
     onError: error => {
       if (hasErrorCode(error, 'conflict')) {
-        setActive(true)
-        toast.info(t('totpAlreadyActive'))
+        resyncActive()
         return
       }
       toastApiError(error)
@@ -324,6 +331,10 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
     onError: error => {
       if (hasErrorCode(error, 'invalid-totp-code')) {
         setCodeError(t('invalidCode'))
+        return
+      }
+      if (hasErrorCode(error, 'conflict')) {
+        resyncActive()
         return
       }
       toastApiError(error)

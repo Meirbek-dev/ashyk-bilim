@@ -47,6 +47,7 @@ error_codes! {
     // Generic
     Internal => ("internal", 500, "Internal server error"),
     NotFound => ("not-found", 404, "Not found"),
+    MethodNotAllowed => ("method-not-allowed", 405, "Method not allowed"),
     Forbidden => ("forbidden", 403, "Forbidden"),
     Unauthenticated => ("unauthenticated", 401, "Authentication required"),
     Conflict => ("conflict", 409, "Conflict"),

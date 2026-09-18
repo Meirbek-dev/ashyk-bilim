@@ -88,6 +88,10 @@ expression: registry
     502,
     "Could not fetch a preview for the link"
   ],
+  "method-not-allowed": [
+    405,
+    "Method not allowed"
+  ],
   "mfa-required": [
     401,
     "Multi-factor authentication required"

@@ -557,7 +557,8 @@ async fn email_and_username_are_case_insensitive(pool: PgPool) {
         .await;
     assert_eq!(res.json()["code"], "username-taken");
 
-    for login in ["CASEY@EXAMPLE.COM", "Casey"] {
+    // UX-110: surrounding whitespace is trimmed before the lookup.
+    for login in ["CASEY@EXAMPLE.COM", "Casey", "  casey  "] {
         let res = app
             .post_json(
                 "/api/v2/auth/login",

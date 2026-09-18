@@ -6823,6 +6823,7 @@
     "codes": {
       "internal": "Internal server error. Please try again later.",
       "not-found": "The requested resource was not found.",
+      "method-not-allowed": "This request method is not supported.",
       "forbidden": "You do not have permission to perform this action.",
       "unauthenticated": "Please sign in to continue.",
       "conflict": "The data was changed elsewhere. Reload the page and try again.",

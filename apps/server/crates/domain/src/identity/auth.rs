@@ -358,6 +358,11 @@ impl IdentityService {
     }
 
     pub async fn login(&self, input: LoginInput) -> Result<LoginOk> {
+        // UX-110: the name-limit key already trimmed; the lookup must too.
+        let input = LoginInput {
+            login: input.login.trim().to_owned(),
+            ..input
+        };
         let ip_key = self.enforce_login_ip_limit(&input).await?;
 
         // Our row first (username or email, legacy semantics), then the

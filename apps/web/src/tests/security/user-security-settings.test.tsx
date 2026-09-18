@@ -24,14 +24,16 @@ const mockChangePassword = vi.fn()
 const mockRemoveTotp = vi.fn()
 const mockRevokeSession = vi.fn()
 const mockGetSessionInfo = vi.fn()
+const mockStartTotpEnrollment = vi.fn()
+const mockVerifyTotpEnrollment = vi.fn()
 vi.mock('@services/auth/auth', () => ({
   changePassword: (...args: unknown[]) => mockChangePassword(...args),
   getSessionInfo: (...args: unknown[]) => mockGetSessionInfo(...args),
   listSessions: (...args: unknown[]) => mockListSessions(...args),
   removeTotp: (...args: unknown[]) => mockRemoveTotp(...args),
   revokeSession: (...args: unknown[]) => mockRevokeSession(...args),
-  startTotpEnrollment: vi.fn(),
-  verifyTotpEnrollment: vi.fn(),
+  startTotpEnrollment: (...args: unknown[]) => mockStartTotpEnrollment(...args),
+  verifyTotpEnrollment: (...args: unknown[]) => mockVerifyTotpEnrollment(...args),
 }))
 
 const sessionInfo = (mfa_enabled: boolean) => ({
@@ -215,6 +217,29 @@ describe('UserSecuritySettings', () => {
     )
     expect(await screen.findByText('enableTotp')).toBeDefined()
     expect(screen.queryByText('disableTotp')).toBeNull()
+  })
+
+  // UX-110: the enrolment was activated in another tab — verify's 409 is the
+  // same «already active» re-sync as enrol's, not a generic conflict toast.
+  it('re-syncs to the active state when verify answers 409', async () => {
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    mockListSessions.mockResolvedValue([])
+    mockStartTotpEnrollment.mockResolvedValue({ secret: 'ABC', uri: 'otpauth://x' })
+    mockVerifyTotpEnrollment.mockRejectedValue(new APIError({ code: 'conflict', message: 'active', status: 409 }))
+    mockGetSessionInfo.mockResolvedValueOnce(sessionInfo(false)).mockResolvedValue(sessionInfo(true))
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const user = userEvent.setup()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings />
+      </QueryClientProvider>,
+    )
+    await user.click(await screen.findByText('enableTotp'))
+    await user.type(await screen.findByRole('textbox'), '123456')
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(toastInfo).toHaveBeenCalledWith('totpAlreadyActive'))
+    expect(await screen.findByText('disableTotp')).toBeDefined()
+    expect(screen.queryByText('totpScanHint')).toBeNull()
   })
 
   // UX-107: the app default is `refetchOnWindowFocus: false`, so `staleTime: 5 s`

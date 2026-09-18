@@ -426,6 +426,13 @@ pub fn build_router(state: AppState) -> Result<Router> {
         .fallback(async || {
             crate::error::ApiError(Error::app(ab_core::ErrorCode::NotFound, "no such route"))
         })
+        // UX-110: a known route with the wrong verb, same envelope.
+        .method_not_allowed_fallback(async || {
+            crate::error::ApiError(Error::app(
+                ab_core::ErrorCode::MethodNotAllowed,
+                "method not allowed on this route",
+            ))
+        })
         .layer(axum::middleware::from_fn(crate::middleware::csrf_guard))
         // Inside `SetRequestIdLayer`: makes the id reachable from
         // `ApiError::into_response` (problem+json `request_id`).
