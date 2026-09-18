@@ -43,7 +43,7 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
     .fetch_one(pool)
     .await
     .unwrap();
-    sqlx::query_scalar(
+    let assessment: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle, scheduled_at,
                                   grading_mode, grade_release_mode, completion_rule)
          VALUES ($1, $2, 'quiz', $3, 'scheduled', now() + $4::interval,
@@ -55,7 +55,17 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
     .bind(offset)
     .fetch_one(pool)
     .await
-    .unwrap()
+    .unwrap();
+    // BUG-162: the sweep re-checks readiness — a schedule with no items stays scheduled.
+    sqlx::query(
+        "INSERT INTO assessment_items (assessment_id, kind, title, body, max_score)
+         VALUES ($1, 'open_text', 'q', '{\"prompt\":\"say hi\"}'::jsonb, 1)",
+    )
+    .bind(assessment)
+    .execute(pool)
+    .await
+    .unwrap();
+    assessment
 }
 
 #[sqlx::test(migrations = "../../migrations")]
