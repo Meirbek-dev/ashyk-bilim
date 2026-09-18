@@ -1267,7 +1267,7 @@
       "descriptionLabel": "Описание",
       "loadingButton": "Загрузка...",
       "nameLabel": "Название",
-      "nameRequiredError": "Введите название",
+      "nameRequiredError": "Требуется название",
       "toastError": "Не удалось создать новую группу",
       "toastLoading": "Создание...",
       "toastSuccess": "Новая группа создана"

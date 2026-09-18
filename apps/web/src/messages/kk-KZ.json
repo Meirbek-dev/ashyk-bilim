@@ -1266,7 +1266,7 @@
       "descriptionLabel": "Сипаттамасы",
       "loadingButton": "Жүктелуде...",
       "nameLabel": "Атауы",
-      "nameRequiredError": "Атауын енгізіңіз",
+      "nameRequiredError": "Атауы қажет",
       "toastError": "Жаңа топты жасау мүмкін болмады",
       "toastLoading": "Жасалуда...",
       "toastSuccess": "Жаңа топ жасалды"

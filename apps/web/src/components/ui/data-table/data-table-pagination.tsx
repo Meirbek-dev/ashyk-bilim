@@ -39,6 +39,7 @@ export function DataTablePagination<TData extends RowData, TSelected = unknown>(
   const t = useTranslations('Common.DataTable')
 
   const rowsPerPageLabel = labels?.rowsPerPage ?? t('rowsPerPage')
+  const rowsPerPageId = React.useId()
   const prevLabel = labels?.prev ?? t('prev')
   const nextLabel = labels?.next ?? t('next')
   const pageLabel = labels?.page ?? (args => t('page', args))
@@ -79,14 +80,16 @@ export function DataTablePagination<TData extends RowData, TSelected = unknown>(
       </div>
       <div className="flex flex-col-reverse items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8">
         <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium whitespace-nowrap">{rowsPerPageLabel}</p>
+          <p id={rowsPerPageId} className="text-sm font-medium whitespace-nowrap">
+            {rowsPerPageLabel}
+          </p>
           <Select
             value={`${paginationState.pageSize}`}
             onValueChange={value => {
               setPagination({ pageIndex: 0, pageSize: Number(value) })
             }}
           >
-            <SelectTrigger size="sm" className="h-8 min-w-16">
+            <SelectTrigger size="sm" className="h-8 min-w-16" aria-labelledby={rowsPerPageId}>
               <SelectValue placeholder={paginationState.pageSize} />
             </SelectTrigger>
             <SelectContent className="min-w-16">

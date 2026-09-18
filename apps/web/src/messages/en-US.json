@@ -1470,7 +1470,7 @@
         "couldNotSave": "Could not save view.",
         "noSavedViews": "No saved views yet.",
         "namePlaceholder": "Save current filters",
-        "save": "Save draft",
+        "save": "Save",
         "deleted": "View deleted.",
         "couldNotDelete": "Could not delete the view.",
         "deleteView": "Delete the “{name}” view"
