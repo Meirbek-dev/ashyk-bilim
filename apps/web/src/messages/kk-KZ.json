@@ -756,10 +756,6 @@
     "markAsComplete": "Аяқталды деп белгілеу",
     "finishReadingBeforeComplete": "Аяқталды деп белгілеу үшін мазмұнды соңына дейін оқыңыз",
     "markCompleteError": "Белсенділікті аяқталды деп белгілеу мүмкін болмады",
-    "markStatus": {
-      "markTooltipMessage": "Бұл белсенділікті аяқталды деп белгілеу үшін құсбелгіні басыңыз",
-      "unmarkTooltipMessage": "Қажет болса, аяқтау белгісін алып тастау үшін құсбелгіні басыңыз"
-    },
     "marking": "Белгіленуде...",
     "next": "Келесі",
     "nextActivityTitle": "Келесі: {name}",
@@ -1076,7 +1072,7 @@
       "loadingCertificate": "Сертификатыңыз жүктелуде...",
       "loadingError": "Сертификатты жүктеу қатесі. Кейінірек қайталап көріңіз.",
       "noCertificateAvailable": "Сертификат жоқ",
-      "noCertificateFound": "Бұл курсқа сертификат табылмады",
+      "noCertificateFound": "Сертификат қолжетімсіз",
       "progress": "Прогресс",
       "progressCompleted": "{completed} / {total} оқу әрекеті аяқталды",
       "progressPercentage": "{percentage}% аяқталды",
@@ -1084,7 +1080,7 @@
       "shareAchievement": "Жетістігіңізбен бөлісіңіз",
       "verifyCertificate": "Сертификатты тексеру",
       "viewCertificate": "Сертификатты көру",
-      "xpBonusMessage": "+100 XP курсын аяқтау бонусы!",
+      "xpBonusMessage": "Курсты аяқтағаны үшін +{xp} ТӨ!",
       "youAreAlmostThere": "Сіз жетуге жақынсыз!",
       "youAreMakingProgress": "Сіз үлкен прогресс жасаудасыз"
     },

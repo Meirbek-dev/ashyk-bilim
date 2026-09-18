@@ -39,3 +39,53 @@ describe('getCourseMetadata (BUG-011)', () => {
     expect(course).toMatchObject({ course_uuid: courseId, name: 'Основы Python', chapters: [] })
   })
 })
+
+// UX-102: the learner shape drops chapters with no published lesson («Глава 2 —
+// Черновики · 0 учебных задач»); the author shape keeps every chapter.
+describe('getCourseMetadata learner shape', () => {
+  const chapter = (id: string, published: boolean[]) => ({
+    id,
+    course_id: courseId,
+    name: id,
+    description: '',
+    position: 1,
+    activities: published.map((flag, index) => ({
+      id: `${id.slice(0, 35)}${index}`,
+      chapter_id: id,
+      course_id: courseId,
+      name: `a${index}`,
+      position: index + 1,
+      published: flag,
+      activity_type: 'dynamic',
+      activity_sub_type: 'dynamic_page',
+      version: 1,
+    })),
+  })
+  const curriculum = {
+    chapters: [
+      chapter('01a08bfb-2c9b-71b3-8985-d541d2b1716c', [true, false]),
+      chapter('01a08bfb-2c9b-71b3-8985-d541d2b1716d', [false]),
+      chapter('01a08bfb-2c9b-71b3-8985-d541d2b1716e', []),
+    ],
+  }
+  beforeEach(() => {
+    vi.mocked(apiJson).mockImplementation(async (path: unknown, _init: unknown, parse?: (value: unknown) => unknown) => {
+      const value =
+        path === `courses/${courseId}`
+          ? { id: courseId, name: 'C', description: '', about: '', tags: [], public: true, contributor_ids: [],
+              open_to_contributors: false, created_at_unix: 1, updated_at_unix: 1 }
+          : curriculum
+      return parse ? parse(value) : value
+    })
+  })
+
+  it('hides chapters without a published lesson for learners', async () => {
+    const course = await getCourseMetadata(courseId)
+    expect(course.chapters?.map(c => c.activities?.length)).toEqual([1])
+  })
+
+  it('keeps every chapter and draft for authors', async () => {
+    const course = await getCourseMetadata(courseId, undefined, true)
+    expect(course.chapters?.map(c => c.activities?.length)).toEqual([2, 1, 0])
+  })
+})

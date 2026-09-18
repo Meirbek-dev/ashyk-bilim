@@ -35,6 +35,15 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
 
   const gamificationProfile = useGamificationStore(s => s.profile)
   const gamificationRefetch = useGamificationStore(s => s.refetch)
+  // The real award, not a hard-coded «+100 XP» (UX-102): the server grants
+  // `course_completion` XP once per course (and none past the daily cap).
+  const cleanCourseId = courseUuid.replace('course_', '')
+  const courseCompletionXp = useGamificationStore(
+    s =>
+      s.dashboard?.recent_transactions.find(
+        transaction => transaction.source === 'course_completion' && transaction.source_id === cleanCourseId,
+      )?.amount ?? null,
+  )
 
   const refetchedOnMountRef = useRef(false)
   const refetchedOnCertificateRef = useRef(false)
@@ -345,10 +354,12 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-center space-x-2 text-green-600">
-                    <Target className="h-5 w-5" />
-                    <span className="font-semibold">{t('xpBonusMessage')}</span>
-                  </div>
+                  {courseCompletionXp !== null && (
+                    <div className="flex items-center justify-center space-x-2 text-green-600">
+                      <Target className="h-5 w-5" />
+                      <span className="font-semibold">{t('xpBonusMessage', { xp: courseCompletionXp })}</span>
+                    </div>
+                  )}
                   <div className="text-center text-sm text-gray-600">{t('keepLearningMessage')}</div>
                 </div>
               </div>

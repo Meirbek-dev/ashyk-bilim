@@ -757,10 +757,6 @@
     "markAsComplete": "Mark as complete",
     "finishReadingBeforeComplete": "Finish reading the content before marking it complete",
     "markCompleteError": "Failed to mark activity as complete",
-    "markStatus": {
-      "markTooltipMessage": "Click the checkbox to mark this activity as complete",
-      "unmarkTooltipMessage": "Click the checkbox to unmark as complete if needed"
-    },
     "marking": "Marking...",
     "next": "Next",
     "nextActivityTitle": "Next: {name}",
@@ -1077,7 +1073,7 @@
       "loadingCertificate": "Loading your certificate...",
       "loadingError": "Failed to load certificate. Please try again later.",
       "noCertificateAvailable": "No certificate available",
-      "noCertificateFound": "No certificate found for this course",
+      "noCertificateFound": "Certificate not available",
       "progress": "Progress",
       "progressCompleted": "{completed} of {total} activities completed",
       "progressPercentage": "{percentage}% Complete",
@@ -1085,7 +1081,7 @@
       "shareAchievement": "Share Your Achievement",
       "verifyCertificate": "Verify Certificate",
       "viewCertificate": "View Certificate",
-      "xpBonusMessage": "+100 XP Course Completion Bonus!",
+      "xpBonusMessage": "+{xp} XP for completing the course!",
       "youAreAlmostThere": "You're almost there!",
       "youAreMakingProgress": "You're making great progress in"
     },

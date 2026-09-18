@@ -1,22 +1,25 @@
 use ab_core::id::CollectionId;
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::Response;
 
 use crate::dto::collections::{
     Collection, CollectionListQuery, CollectionPage, CreateCollectionRequest,
     UpdateCollectionRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson, idempotent};
 use crate::state::AppState;
 
 /// Create a collection (requires `collection:create:platform`); every
-/// attached course must be readable by the caller.
+/// attached course must be readable by the caller. Honours
+/// `Idempotency-Key` (a retry replays the 201 instead of a second row).
 #[utoipa::path(
     post,
     path = "/collections",
     tag = "collections",
+    params(("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key")),
     request_body = CreateCollectionRequest,
     responses(
         (status = 201, description = "Created", body = Collection),
@@ -27,19 +30,31 @@ use crate::state::AppState;
 pub async fn create_collection(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<CreateCollectionRequest>,
-) -> ApiResult<(StatusCode, Json<Collection>)> {
-    let collection = state
-        .collections
-        .create(
-            &actor,
-            &request.name,
-            request.description.as_deref().unwrap_or(""),
-            request.public.unwrap_or(false),
-            request.courses.unwrap_or_default(),
-        )
-        .await?;
-    Ok((StatusCode::CREATED, Json(collection.into())))
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    let request = ValidJson::<CreateCollectionRequest>::parse(&body)?;
+    idempotent(
+        &state.pool,
+        actor.user_id,
+        "collection",
+        &headers,
+        &body,
+        || async {
+            let collection = state
+                .collections
+                .create(
+                    &actor,
+                    &request.name,
+                    request.description.as_deref().unwrap_or(""),
+                    request.public.unwrap_or(false),
+                    request.courses.unwrap_or_default(),
+                )
+                .await?;
+            Ok((StatusCode::CREATED, Collection::from(collection)))
+        },
+    )
+    .await
 }
 
 /// Newest-first collection listing: public plus the caller's own.

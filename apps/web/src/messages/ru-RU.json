@@ -757,10 +757,6 @@
     "markAsComplete": "Отметить как завершенное",
     "finishReadingBeforeComplete": "Дочитайте материал до конца, чтобы отметить его как завершенный",
     "markCompleteError": "Не удалось отметить активность как завершенную",
-    "markStatus": {
-      "markTooltipMessage": "Нажмите на флажок, чтобы отметить эту активность как завершенную",
-      "unmarkTooltipMessage": "Нажмите на флажок, чтобы снять отметку о завершении, если необходимо"
-    },
     "marking": "Отмечается...",
     "next": "Далее",
     "nextActivityTitle": "Далее: {name}",
@@ -1077,7 +1073,7 @@
       "loadingCertificate": "Загрузка вашего сертификата...",
       "loadingError": "Не удалось загрузить сертификат. Повторите попытку позже.",
       "noCertificateAvailable": "Нет сертификата",
-      "noCertificateFound": "Сертификат для этого курса не найден",
+      "noCertificateFound": "Сертификат недоступен",
       "progress": "Прогресс",
       "progressCompleted": "{completed} из {total} учебных задач выполнено",
       "progressPercentage": "{percentage}% завершено",
@@ -1085,7 +1081,7 @@
       "shareAchievement": "Поделитесь своим достижением",
       "verifyCertificate": "Проверить сертификат",
       "viewCertificate": "Просмотреть сертификат",
-      "xpBonusMessage": "+100 XP за завершение курса!",
+      "xpBonusMessage": "+{xp} ОП за завершение курса!",
       "youAreAlmostThere": "Вы почти у цели!",
       "youAreMakingProgress": "Вы отлично продвигаетесь в"
     },

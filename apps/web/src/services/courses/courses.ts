@@ -82,13 +82,14 @@ export async function getCourseMetadata(
     apiJson(`courses/${id}`, serverGet(), Course.parse),
     apiJson(`courses/${id}/curriculum`, serverGet(), Curriculum.parse),
   ])
-  const chapters = curriculum.chapters.map(chapter =>
-    toAppChapter(
-      withUnpublishedActivities
-        ? chapter
-        : { ...chapter, activities: chapter.activities.filter(activity => activity.published) },
-    ),
-  )
+  // Learner shape: only published lessons, and no chapter without one — an
+  // empty «Глава 2 — 0 учебных задач» is the author's business (UX-102).
+  const chapters = withUnpublishedActivities
+    ? curriculum.chapters.map(chapter => toAppChapter(chapter))
+    : curriculum.chapters
+        .map(chapter => ({ ...chapter, activities: chapter.activities.filter(activity => activity.published) }))
+        .filter(chapter => chapter.activities.length > 0)
+        .map(chapter => toAppChapter(chapter))
   return { ...toAppCourse(course), chapters }
 }
 

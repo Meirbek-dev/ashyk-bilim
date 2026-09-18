@@ -1,5 +1,6 @@
 import type { StreakInfo, UserGamificationProfile } from './profile'
 import type { PlatformLeaderboard } from './leaderboard'
+import type { XPTransaction } from './transactions'
 
 /**
  * Dashboard and Aggregate Types
@@ -9,7 +10,7 @@ import type { PlatformLeaderboard } from './leaderboard'
 // Main dashboard data
 export interface DashboardData {
   profile: UserGamificationProfile
-  recent_transactions: unknown[]
+  recent_transactions: XPTransaction[]
   leaderboard: PlatformLeaderboard
   user_rank: number | null
   streak_info: StreakInfo

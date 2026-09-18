@@ -56,7 +56,7 @@ function Trail() {
 
   const gamificationProfile = useGamificationStore(s => s.profile)
   const recentTransactions = useGamificationStore(
-    s => (s.dashboard?.recent_transactions as XPTransaction[] | undefined) ?? EMPTY_RECENT_TRANSACTIONS,
+    s => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS,
   )
   const userRank = useGamificationStore(s => s.dashboard?.user_rank)
   const isGamificationLoading = useGamificationStore(s => s.isLoading)

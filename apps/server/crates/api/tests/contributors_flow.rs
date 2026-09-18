@@ -280,6 +280,19 @@ async fn roster_management_rules(pool: PgPool) {
         )
         .await;
     assert_eq!(evict.status, StatusCode::CONFLICT);
+    // A non-manager gets the 403 before the creator 409 (UX-102).
+    let by_learner = app
+        .delete_as(
+            &learner,
+            &format!("/api/v2/courses/{course}/contributors/{creator_id}"),
+        )
+        .await;
+    assert_eq!(
+        by_learner.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        by_learner.text()
+    );
     // …the creator deleting their own id included (409, not 404 — UX-081).
     let self_evict = app
         .delete_as(

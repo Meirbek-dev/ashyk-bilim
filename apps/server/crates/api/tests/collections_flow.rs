@@ -62,6 +62,26 @@ async fn crud_membership_and_visibility(pool: PgPool) {
     let id = created.json()["id"].as_str().unwrap().to_owned();
     assert_eq!(created.json()["courses"].as_array().unwrap().len(), 2);
 
+    // UX-102: `Idempotency-Key` replays the 201 — one row, not two.
+    let keyed = serde_json::json!({ "name": "Keyed", "public": false });
+    let send = || {
+        app.send(
+            axum::http::Request::builder()
+                .method("POST")
+                .uri("/api/v2/collections")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &owner.cookie)
+                .header("Idempotency-Key", "collection-keyed-1")
+                .body(axum::body::Body::from(keyed.to_string()))
+                .unwrap(),
+        )
+    };
+    let first = send().await;
+    assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
+    let replay = send().await;
+    assert_eq!(replay.status, StatusCode::CREATED, "{}", replay.text());
+    assert_eq!(replay.json()["id"], first.json()["id"]);
+
     // A learner sees the public collection but only its public courses.
     let learner = app.mint_session(&[]).await;
     let seen = app
