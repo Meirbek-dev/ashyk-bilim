@@ -90,6 +90,11 @@ impl PlatformService {
         thumbnail_upload_id: Option<Uuid>,
     ) -> Result<Platform> {
         actor.require(UPDATE)?;
+        // BUG-164: the name feeds the landing page and every title — never blank.
+        let name = changes
+            .name
+            .map(|n| ab_core::required_str("name", n))
+            .transpose()?;
         let previous = self.get().await?;
 
         let logo_key = match logo_upload_id {
@@ -104,7 +109,7 @@ impl PlatformService {
         ab_db::platform::update_platform(
             &self.pool,
             ab_db::platform::PlatformChanges {
-                name: changes.name,
+                name,
                 description: changes.description,
                 about: changes.about,
                 email: changes.email,

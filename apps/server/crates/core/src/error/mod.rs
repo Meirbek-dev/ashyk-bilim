@@ -21,6 +21,31 @@ pub struct FieldError {
     pub message: String,
 }
 
+impl FieldError {
+    /// `{field}`/`required` — the field is blank.
+    #[must_use]
+    pub fn required(field: &str) -> Self {
+        Self {
+            field: field.into(),
+            code: "required".into(),
+            message: format!("{field} must not be blank"),
+        }
+    }
+}
+
+/// The shared "blank string" rule (UX-106).
+///
+/// `value` trimmed, or 422 `{field}`/`required` when nothing is left —
+/// `""` and `"   "` answer the same code. DTOs that route a name through
+/// it carry no garde `min = 1`.
+pub fn required_str<'a>(field: &str, value: &'a str) -> Result<&'a str> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Err(Error::required(field));
+    }
+    Ok(value)
+}
+
 /// The workspace error type.
 ///
 /// - `App` carries a stable [`ErrorCode`] and is safe to show to clients.
@@ -107,6 +132,11 @@ impl Error {
 
     pub const fn validation(field_errors: Vec<FieldError>) -> Self {
         Self::Validation { field_errors }
+    }
+
+    /// 422 `{field}`/`required` for a blank string.
+    pub fn required(field: &str) -> Self {
+        Self::validation(vec![FieldError::required(field)])
     }
 
     /// The stable wire code for this error.

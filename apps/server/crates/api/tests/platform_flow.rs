@@ -74,6 +74,45 @@ async fn read_is_public_and_update_is_gated(pool: PgPool) {
     // The public read reflects it.
     let after = app.get("/api/v2/platform").await;
     assert_eq!(after.json()["name"], "Ashyq Bilim 2");
+
+    // BUG-164: the name is trimmed and never blank; the email is an email.
+    for empty in ["", "   "] {
+        let blank = app
+            .patch_as(
+                &admin,
+                "/api/v2/platform",
+                &serde_json::json!({ "name": empty }),
+            )
+            .await;
+        assert_eq!(
+            blank.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            blank.text()
+        );
+        assert_eq!(blank.json()["field_errors"][0]["field"], "name");
+        assert_eq!(blank.json()["field_errors"][0]["code"], "required");
+    }
+    let bad_email = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "email": "not-an-email" }),
+        )
+        .await;
+    assert_eq!(bad_email.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(bad_email.json()["field_errors"][0]["field"], "email");
+    assert_eq!(bad_email.json()["field_errors"][0]["code"], "invalid");
+    let trimmed = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "name": "  Ashyq  ", "email": "hello@ashyq.local" }),
+        )
+        .await;
+    assert_eq!(trimmed.status, StatusCode::OK, "{}", trimmed.text());
+    assert_eq!(trimmed.json()["name"], "Ashyq");
+    assert_eq!(app.get("/api/v2/platform").await.json()["name"], "Ashyq");
 }
 
 #[sqlx::test(migrations = "../../migrations")]

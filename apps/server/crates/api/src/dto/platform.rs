@@ -30,13 +30,14 @@ impl From<ab_domain::catalog::platform::Platform> for Platform {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdatePlatformRequest {
-    #[garde(inner(length(min = 1, max = 500)))]
+    /// Blank → 422 `required` (trimmed in the service).
+    #[garde(inner(length(max = 500)))]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
     pub description: Option<String>,
     #[garde(inner(length(max = 20_000)))]
     pub about: Option<String>,
-    #[garde(inner(length(min = 3, max = 320)))]
+    #[garde(inner(email, length(max = 320)))]
     pub email: Option<String>,
     #[garde(inner(length(max = 500)))]
     pub label: Option<String>,

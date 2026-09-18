@@ -14,4 +14,4 @@ pub mod permission;
 pub mod telemetry;
 pub mod time;
 
-pub use error::{Error, ErrorCode, FieldError, Result};
+pub use error::{Error, ErrorCode, FieldError, Result, required_str};
