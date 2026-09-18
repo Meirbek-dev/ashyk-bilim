@@ -15,6 +15,7 @@ export const Problem = zod
       .enum([
         'internal',
         'not-found',
+        'method-not-allowed',
         'forbidden',
         'unauthenticated',
         'conflict',

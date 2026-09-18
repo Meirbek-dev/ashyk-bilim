@@ -38,7 +38,9 @@ export const ItemAnswer = zod
         .optional(),
     }),
   ])
-  .describe('Internally tagged on `kind`, mirroring the item body kinds.')
+  .describe(
+    'Internally tagged on `kind`, mirroring the item body kinds. Unknown\nfields are refused (UX-108: a `pairs` matching answer used to be\naccepted and stored empty).',
+  )
 
 export type ItemAnswer = zod.input<typeof ItemAnswer>
 export type ItemAnswerOutput = zod.output<typeof ItemAnswer>

@@ -11,6 +11,7 @@ export const ErrorCode = zod
   .enum([
     'internal',
     'not-found',
+    'method-not-allowed',
     'forbidden',
     'unauthenticated',
     'conflict',

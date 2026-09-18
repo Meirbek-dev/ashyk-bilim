@@ -123,6 +123,25 @@ export const FileSubmission = zod.object({
         .describe("The caller's newest attempt (learners)."),
     ])
     .optional(),
+  disabled_reasons: zod
+    .array(
+      zod
+        .enum([
+          'NOT_PUBLISHED',
+          'SCHEDULED_NOT_OPEN',
+          'ARCHIVED',
+          'PAST_DUE',
+          'MAX_ATTEMPTS_REACHED',
+          'TIME_LIMIT_EXPIRED',
+          'REMEDIATION_REQUIRED',
+        ])
+        .describe(
+          'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).',
+        ),
+    )
+    .describe(
+      'Why the caller cannot open or submit right now (quiz vocabulary:\n`PAST_DUE`, `REMEDIATION_REQUIRED`); empty for authors.',
+    ),
   due_at_unix: zod.int().nullish(),
   grade_release_mode: zod.enum(['immediate', 'batch']),
   id: zod.uuid(),

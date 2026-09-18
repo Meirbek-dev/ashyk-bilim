@@ -42,7 +42,9 @@ export const SaveDraftRequest = zod
               .optional(),
           }),
         ])
-        .describe('Internally tagged on `kind`, mirroring the item body kinds.'),
+        .describe(
+          'Internally tagged on `kind`, mirroring the item body kinds. Unknown\nfields are refused (UX-108: a `pairs` matching answer used to be\naccepted and stored empty).',
+        ),
     ),
   })
   .describe('Partial answers; items not mentioned keep their current answer.')

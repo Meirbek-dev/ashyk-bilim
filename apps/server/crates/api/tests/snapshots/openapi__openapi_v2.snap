@@ -5137,7 +5137,11 @@ expression: json
             "$ref": "#/components/schemas/FileGradeAction"
           },
           "feedback": {
-            "type": "string"
+            "description": "Omit to keep the stored feedback (UX-113; same rule as quiz grades).",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "final_score": {
             "description": "Required for save/publish; 0..=100.",
@@ -5304,6 +5308,13 @@ expression: json
               }
             ]
           },
+          "disabled_reasons": {
+            "description": "Why the caller cannot open or submit right now (quiz vocabulary:\n`PAST_DUE`, `REMEDIATION_REQUIRED`); empty for authors.",
+            "items": {
+              "$ref": "#/components/schemas/DisabledReason"
+            },
+            "type": "array"
+          },
           "due_at_unix": {
             "format": "int64",
             "type": [
@@ -5386,6 +5397,7 @@ expression: json
           "rubric",
           "settings",
           "attempts",
+          "disabled_reasons",
           "created_at_unix",
           "updated_at_unix"
         ],
@@ -5803,6 +5815,14 @@ expression: json
           "attempts": {
             "format": "int64",
             "type": "integer"
+          },
+          "due_at_override_unix": {
+            "description": "The learner's active due-date override for this assessment (UX-113):\n«overdue» is judged against it, not the assessment `due_at_unix`.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "file_submission_id": {
             "oneOf": [
@@ -6469,7 +6489,7 @@ expression: json
         "type": "object"
       },
       "ItemAnswer": {
-        "description": "Internally tagged on `kind`, mirroring the item body kinds.",
+        "description": "Internally tagged on `kind`, mirroring the item body kinds. Unknown\nfields are refused (UX-108: a `pairs` matching answer used to be\naccepted and stored empty).",
         "oneOf": [
           {
             "properties": {
@@ -15224,6 +15244,18 @@ expression: json
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "ru (default), kk or en",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -15354,6 +15386,18 @@ expression: json
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "ru (default), kk or en",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -15486,6 +15530,18 @@ expression: json
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "ru (default), kk or en",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -15616,6 +15672,18 @@ expression: json
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "ru (default), kk or en",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -21761,6 +21829,18 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/FileSubmissionId"
             }
+          },
+          {
+            "description": "ru / kk / en (default ru)",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -21775,7 +21855,7 @@ expression: json
             "description": "CSV"
           }
         },
-        "summary": "Every attempt as CSV (graders).",
+        "summary": "Every attempt as CSV (graders). Header and status words follow\n`Accept-Language` (ru / kk / en, Russian by default); UTF-8 with BOM.",
         "tags": [
           "file-submissions"
         ]

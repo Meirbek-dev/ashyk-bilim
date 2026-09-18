@@ -29,7 +29,12 @@ export const GradebookPage = zod
           attempt_id: zod.union([zod.null(), zod.uuid()]).optional(),
           attempt_number: zod.int(),
           attempts: zod.int(),
-          due_at_override_unix: zod.int().nullish(),
+          due_at_override_unix: zod
+            .int()
+            .nullish()
+            .describe(
+              "The learner's active due-date override for this assessment (UX-113):\n«overdue» is judged against it, not the assessment `due_at_unix`.",
+            ),
           file_submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
           final_score: zod.number().nullish(),
           graded_at_unix: zod.int().nullish(),

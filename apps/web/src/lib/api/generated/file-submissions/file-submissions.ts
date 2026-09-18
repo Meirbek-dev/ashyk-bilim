@@ -1969,7 +1969,8 @@ export const getFileSubmissionsExportCsvUrl = (id: FileSubmissionId) => {
 }
 
 /**
- * @summary Every attempt as CSV (graders).
+ * @summary Every attempt as CSV (graders). Header and status words follow
+`Accept-Language` (ru / kk / en, Russian by default); UTF-8 with BOM.
  */
 export const fileSubmissionsExportCsv = async (
   id: FileSubmissionId,
@@ -2066,7 +2067,8 @@ export function useFileSubmissionsExportCsv<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Every attempt as CSV (graders).
+ * @summary Every attempt as CSV (graders). Header and status words follow
+`Accept-Language` (ru / kk / en, Russian by default); UTF-8 with BOM.
  */
 
 export function useFileSubmissionsExportCsv<
@@ -2152,7 +2154,8 @@ export function useFileSubmissionsExportCsvSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Every attempt as CSV (graders).
+ * @summary Every attempt as CSV (graders). Header and status words follow
+`Accept-Language` (ru / kk / en, Russian by default); UTF-8 with BOM.
  */
 
 export function useFileSubmissionsExportCsvSuspense<
