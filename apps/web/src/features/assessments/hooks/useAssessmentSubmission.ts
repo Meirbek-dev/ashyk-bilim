@@ -17,6 +17,7 @@ import {
 } from '../submission-client'
 import type { AssessmentSubmissionRead } from '../domain/submission-wire'
 import { isApiError } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
 import { disabledReasonOf } from '../domain/disabled-reason'
 import { cloneJsonValue } from '@/lib/json-clone'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -54,6 +55,7 @@ function isOfflineRecoverable(error: unknown): boolean {
 export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
   const t = useTranslations('Features.ActivityWorkspace')
   const tReasons = useTranslations('AttemptActions.blockedReasons')
+  const { toastApiError } = useApiError()
   const queryClient = useQueryClient()
   const router = useRouter()
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({})
@@ -264,7 +266,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         error: error instanceof Error ? error.message : 'Failed to save draft',
         ...(isApiError(error) ? { code: error.code, requestId: error.requestId } : {}),
       }).catch(() => undefined)
-      toast.error(error instanceof Error ? error.message : 'Failed to save draft')
+      toastApiError(error)
     },
   })
 
@@ -330,7 +332,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           ...(isApiError(error) ? { code: error.code, requestId: error.requestId } : {}),
         }).catch(() => undefined)
       }
-      toast.error(error instanceof Error ? error.message : t('submitFailed'))
+      // UX-111: every remaining failure is localized by code — a 429 says
+      // «Слишком много попыток…» with the Retry-After window, never the
+      // server's English detail.
+      toastApiError(error, { fallback: t('submitFailed') })
     },
   })
 

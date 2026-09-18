@@ -968,6 +968,8 @@ async fn submit_limiter_counts_only_accepted_submits(pool: PgPool) {
         spam.text()
     );
     assert_eq!(spam.json()["code"], "rate-limited");
+    let retry_after: u64 = spam.headers["retry-after"].to_str().unwrap().parse().unwrap();
+    assert!((1..=10).contains(&retry_after), "{retry_after}");
 }
 
 /// BUG-169: a perfect attempt is exactly 100 whatever the item count

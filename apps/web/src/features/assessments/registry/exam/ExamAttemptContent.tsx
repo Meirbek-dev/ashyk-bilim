@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
+import { useApiError } from '@/hooks/useApiError'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
 import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
@@ -47,6 +48,7 @@ import ExamSubmitDialog from './ExamSubmitDialog'
 export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps) {
   const t = useTranslations('Activities.ExamActivity')
   const queryClient = useQueryClient()
+  const { toastApiError } = useApiError()
   const { contributorStatus } = useContributorStatus(courseUuid)
   const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null)
   const formatPercent = usePercentFormat()
@@ -128,7 +130,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('examStarted'))
       await handleComplete()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('errorStartingExam'))
+      toastApiError(error, { fallback: t('errorStartingExam') })
     }
     setIsStarting(false)
   }
@@ -445,9 +447,8 @@ function ExamTakingContent({
               : t('examSubmittedSuccessfully'),
         )
         await onComplete()
-      } catch (error) {
-        console.error('Error submitting exam:', error)
-        toast.error(t('errorSubmittingExam'))
+      } catch {
+        // The submission hook has already toasted the localized reason.
       }
     },
     [formatPercent, onComplete, passingScore, persistence, submissionState, t],

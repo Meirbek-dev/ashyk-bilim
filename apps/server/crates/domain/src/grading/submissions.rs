@@ -676,18 +676,17 @@ impl SubmissionsService {
         };
         // UX-111: like `save_draft`, only a submit that passed validation
         // spends the budget — a 409/422 must not lock the learner out.
+        let submit_key = format!("submit_rl:{}", actor.user_id);
         if !self
             .limiter
-            .check(
-                &format!("submit_rl:{}", actor.user_id),
-                SUBMIT_LIMIT,
-                SUBMIT_WINDOW,
-            )
+            .check(&submit_key, SUBMIT_LIMIT, SUBMIT_WINDOW)
             .await?
         {
-            return Err(Error::app(
+            let retry_after = self.limiter.retry_after(&submit_key, SUBMIT_WINDOW).await?;
+            return Err(Error::app_with_details(
                 ErrorCode::RateLimited,
                 "too many submit attempts; slow down",
+                serde_json::json!({ "retry_after_seconds": retry_after }),
             ));
         }
         let fresh = Self::finalize(
