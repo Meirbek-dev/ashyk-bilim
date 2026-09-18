@@ -370,6 +370,18 @@ async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
         )
         .await;
     assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+
+    // UX-112: the published config keeps the type attached (the UX-104
+    // guard covers file submissions too) — 409 `conflict`.
+    let detached = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    assert_eq!(detached.status, StatusCode::CONFLICT, "{}", detached.text());
+    assert_eq!(detached.json()["code"], "conflict");
 }
 
 /// The raw publish toggle refuses an assessment-backed activity whose
@@ -462,6 +474,22 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
             .await
             .json()["activity_type"],
         "exam"
+    );
+
+    // UX-112: one name — a curriculum rename also renames the assessment.
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "name": "Final v2" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/assessments/{assessment_id}"))
+            .await
+            .json()["title"],
+        "Final v2"
     );
 
     // Type change + publish in one body: the gate sees the NEW type.

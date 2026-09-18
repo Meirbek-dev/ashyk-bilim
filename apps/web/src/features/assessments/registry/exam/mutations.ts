@@ -9,9 +9,9 @@ import { buildExamPolicyPatch } from './policySettings'
 
 export interface CreateExamWithActivityInput {
   kind: 'quiz' | 'exam'
+  /** One name (UX-112): the assessment title and the activity name are the same string. */
   activityName: string
   chapterId: string
-  examTitle: string
   examDescription: string
   settings: Record<string, unknown>
 }
@@ -43,7 +43,7 @@ async function createExamWithActivityRequest(
     json('POST', {
       kind: input.kind,
       chapter_id: input.chapterId,
-      title: input.examTitle,
+      title: input.activityName,
       description: input.examDescription || null,
       grading_type: 'percentage',
     }),
@@ -62,10 +62,6 @@ async function createExamWithActivityRequest(
       review_visibility: input.settings.allow_result_review === true ? 'full' : 'none',
     }),
   )
-
-  if (input.activityName && input.activityName !== input.examTitle) {
-    await apiJson(`activities/${created.activity_id}`, json('PATCH', { name: input.activityName }))
-  }
 
   return { exam_uuid: created.id, activity_uuid: created.activity_id }
 }

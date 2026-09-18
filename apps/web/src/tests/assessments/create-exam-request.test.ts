@@ -24,19 +24,20 @@ describe('createExamWithActivity (v2)', () => {
     const queryClient = { invalidateQueries: vi.fn() } as never
     const opts = createExamWithActivityMutationOptions(queryClient, 'course-1')
     const result = await opts.mutationFn!({
-      kind: 'exam', activityName: 'Тест по введению', chapterId: 'ch-1', examTitle: 'Тест 1', examDescription: 'Основы',
+      kind: 'exam', activityName: 'Тест по введению', chapterId: 'ch-1', examDescription: 'Основы',
       settings: { time_limit: 30, shuffle_questions: true, allow_result_review: false, attempt_limit: 1, violation_threshold: 3 },
     } as never, undefined as never)
 
     const calls = mocks.apiJson.mock.calls as [string, { body: string }][]
-    const [create, policy, rename] = [calls[0]!, calls[1]!, calls[2]!]
+    const [create, policy] = [calls[0]!, calls[1]!]
     expect(create[0]).toBe('assessments')
-    expect(JSON.parse(create[1].body)).toEqual({ kind: 'exam', chapter_id: 'ch-1', title: 'Тест 1', description: 'Основы', grading_type: 'percentage' })
+    // UX-112: one name — the activity name is the assessment title; no separate rename PATCH.
+    expect(JSON.parse(create[1].body)).toEqual({ kind: 'exam', chapter_id: 'ch-1', title: 'Тест по введению', description: 'Основы', grading_type: 'percentage' })
     expect(policy[0]).toBe('assessments/asm-1/policy')
     const put = JSON.parse(policy[1].body)
     expect(put).toMatchObject({ ...preset, time_limit_seconds: 1800, randomize_questions: true, review_visibility: 'none', max_attempts: 1 })
     expect(Object.keys(put)).toEqual(expect.arrayContaining(Object.keys(preset)))
-    expect(rename[0]).toBe('activities/act-1')
+    expect(calls).toHaveLength(2)
     expect(result).toEqual({ exam_uuid: 'asm-1', activity_uuid: 'act-1' })
   })
 
@@ -49,7 +50,7 @@ describe('createExamWithActivity (v2)', () => {
     })
     const opts = createExamWithActivityMutationOptions({ invalidateQueries: vi.fn() } as never, 'course-1')
     await opts.mutationFn!({
-      kind: 'quiz', activityName: 'Quiz', chapterId: 'ch-1', examTitle: 'Quiz', examDescription: 'Basics',
+      kind: 'quiz', activityName: 'Quiz', chapterId: 'ch-1', examDescription: 'Basics',
       settings: { time_limit: 10, shuffle_questions: false, shuffle_answers: true, allow_result_review: true },
     } as never, undefined as never)
 

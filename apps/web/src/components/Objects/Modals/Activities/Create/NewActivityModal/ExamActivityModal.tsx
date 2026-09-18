@@ -22,7 +22,6 @@ const DEFAULT_TIME_LIMIT = 50
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
-    exam_title: v.pipe(v.string(), v.minLength(1, t('examTitleRequired'))),
     activity_name: v.pipe(v.string(), v.minLength(1, t('activityNameRequired'))),
     exam_description: v.pipe(v.string(), v.minLength(1, t('examDescriptionRequired'))),
     time_limit: v.optional(v.pipe(v.number(), v.minValue(TIME_LIMIT_MIN), v.maxValue(TIME_LIMIT_MAX))),
@@ -70,7 +69,6 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
   const form = useForm<FormValues, unknown, SubmitValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
-      exam_title: '',
       activity_name: '',
       exam_description: '',
       has_time_limit: true,
@@ -112,7 +110,6 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
         kind,
         activityName: values.activity_name,
         chapterId,
-        examTitle: values.exam_title,
         examDescription: values.exam_description,
         settings,
       })
@@ -160,12 +157,6 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
         <Input id="activity_name" placeholder={tk('activityNamePlaceholder')} {...form.register('activity_name')} />
         <FieldDescription>{t('activityNameDescription')}</FieldDescription>
         <FieldError errors={[form.formState.errors.activity_name]} />
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="exam_title">{tk('examTitle')}</FieldLabel>
-        <Input id="exam_title" placeholder={tk('examTitlePlaceholder')} {...form.register('exam_title')} />
-        <FieldError errors={[form.formState.errors.exam_title]} />
       </Field>
 
       <Field>

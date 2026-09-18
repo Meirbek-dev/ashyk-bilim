@@ -603,10 +603,7 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         text.starts_with("\u{feff}ID попытки,Студент,Email,Статус"),
         "{text}"
     );
-    assert!(
-        text.contains("alice@example.com,Опубликовано,1,"),
-        "{text}"
-    );
+    assert!(text.contains("alice@example.com,Опубликовано,1,"), "{text}");
     let kk = app
         .send(
             Request::builder()
@@ -703,7 +700,12 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
             &serde_json::json!({}),
         )
         .await;
-    assert_eq!(no_draft.status, StatusCode::FORBIDDEN, "{}", no_draft.text());
+    assert_eq!(
+        no_draft.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        no_draft.text()
+    );
     assert_eq!(no_draft.json()["detail"], "cannot start: PAST_DUE");
     let projection = app
         .get_as(&alice, &format!("/api/v2/file-submissions/{closed}"))
@@ -945,7 +947,12 @@ async fn hidden_activity_is_404_for_learner_writes_too(pool: PgPool) {
         let read = app
             .get_as(&alice, &format!("/api/v2/file-submissions/{id}/{path}"))
             .await;
-        assert_eq!(read.status, StatusCode::NOT_FOUND, "{path}: {}", read.text());
+        assert_eq!(
+            read.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            read.text()
+        );
     }
     let by_author = app
         .post_as(

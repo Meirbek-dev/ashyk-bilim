@@ -324,6 +324,45 @@ impl CurriculumService {
         }
     }
 
+    /// A published/scheduled assessment or a published file-submission
+    /// config: content learners can reach through this activity.
+    async fn has_live_content(&self, activity_id: ActivityId, activity_type: &str) -> Result<bool> {
+        Ok(match activity_type {
+            "quiz" | "exam" | "code_challenge" => {
+                ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id)
+                    .await?
+                    .is_some_and(|a| {
+                        matches!(a.lifecycle, Lifecycle::Published | Lifecycle::Scheduled)
+                    })
+            }
+            "file_submission" => {
+                ab_db::file_submissions::get_file_submission_by_activity(&self.pool, activity_id)
+                    .await?
+                    .is_some_and(|c| c.lifecycle == FileSubmissionLifecycle::Published)
+            }
+            _ => false,
+        })
+    }
+
+    /// UX-112: one name — the assessment title follows the activity name
+    /// (the reverse already holds in `AssessmentsService::update`).
+    async fn sync_assessment_title(&self, activity_id: ActivityId, name: &str) -> Result<()> {
+        if let Some(assessment) =
+            ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id).await?
+        {
+            ab_db::assessments::update_assessment_details(
+                &self.pool,
+                assessment.id,
+                Some(name),
+                None,
+                None,
+                None,
+            )
+            .await?;
+        }
+        Ok(())
+    }
+
     pub async fn update_activity(
         &self,
         actor: &Actor,
@@ -361,16 +400,13 @@ impl CurriculumService {
         if merged_published && (type_changes || !activity.published) {
             self.require_publishable(activity_id, merged_type).await?;
         }
-        // UX-104: a live (or scheduled) assessment stays attached to its
-        // activity; the type cannot move away from it until it is unpublished.
+        // UX-104/UX-112: a live (or scheduled) assessment — or a published
+        // file-submission config — stays attached to its activity; the type
+        // cannot move away from it until it is unpublished.
         if type_changes
-            && matches!(
-                activity.activity_type.as_str(),
-                "quiz" | "exam" | "code_challenge"
-            )
-            && ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id)
+            && self
+                .has_live_content(activity_id, &activity.activity_type)
                 .await?
-                .is_some_and(|a| matches!(a.lifecycle, Lifecycle::Published | Lifecycle::Scheduled))
         {
             return Err(Error::conflict(
                 "the activity has a live assessment; unpublish it before changing the type",
@@ -385,6 +421,9 @@ impl CurriculumService {
             .map(|n| ab_core::required_str("name", n))
             .transpose()?;
         ab_db::catalog::update_activity(&self.pool, activity_id, name, None).await?;
+        if let Some(name) = name {
+            self.sync_assessment_title(activity_id, name).await?;
+        }
         if let Some(published) = changes.published
             && published != activity.published
         {
