@@ -574,3 +574,48 @@ async fn studio_publish_and_unpublish_follow_into_totals(pool: PgPool) {
         assert_eq!(after["progress_pct"], pct, "{after}");
     }
 }
+
+/// BUG-161: deleting a chapter cascades its activities, so the learner
+/// totals are recalculated like `delete_activity` does: 2/3 with the
+/// completed lecture in the deleted chapter → 1/2.
+#[sqlx::test(migrations = "../../migrations")]
+async fn chapter_delete_recalculates_totals(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Chapters 101").await;
+    let other = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &serde_json::json!({ "name": "Week 2" }),
+        )
+        .await;
+    let other_id = other.json()["id"].as_str().unwrap().to_owned();
+    let alice = learner(&app, "alice").await;
+    let a = lesson(&app, &teacher, &chapter_id, "A").await;
+    let b = lesson(&app, &teacher, &chapter_id, "B").await;
+    let c = lesson(&app, &teacher, &other_id, "C").await;
+    for id in [&a, &c] {
+        app.post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    }
+    let _ = b;
+    let learner_state = format!("/api/v2/courses/{course_id}/learner-state");
+    let progress = || async { app.get_as(&alice, &learner_state).await.json()["progress"].clone() };
+    let before = progress().await;
+    assert_eq!(before["total_required_count"], 3, "{before}");
+    assert_eq!(before["completed_required_count"], 2, "{before}");
+
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/chapters/{other_id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    let after = progress().await;
+    assert_eq!(after["total_required_count"], 2, "{after}");
+    assert_eq!(after["completed_required_count"], 1, "{after}");
+    assert_eq!(after["progress_pct"], 50.0, "{after}");
+}

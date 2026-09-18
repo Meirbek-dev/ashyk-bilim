@@ -199,7 +199,11 @@ impl CurriculumService {
                 .into_iter()
                 .map(|c| c.id)
                 .collect();
-        ab_db::catalog::renumber_chapters(&self.pool, &remaining).await
+        ab_db::catalog::renumber_chapters(&self.pool, &remaining).await?;
+        // Its activities' progress rows cascaded away; refresh the totals.
+        self.projector
+            .recalculate_course_for_all(chapter.course_id)
+            .await
     }
 
     /// Move a chapter to a 1-based position (clamped), renumbering siblings.
