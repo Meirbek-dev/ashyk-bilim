@@ -9,6 +9,8 @@ import { ArrowLeft, BookOpen, Download, Loader2, Shield, Target, Trophy } from '
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import SimpleAlertDialog from '@/components/ui/alert-dialog-simple'
 import { useGamificationStore } from '@/stores/gamification'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
+import { useQuery } from '@tanstack/react-query'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
@@ -23,11 +25,9 @@ interface CourseEndViewProps {
   courseName: string
   courseUuid: string
   thumbnailImage: string
-  course: AppCourse
-  trailData: AppTrailData
 }
 
-const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage, course, trailData }) => {
+const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage }) => {
   const locale = useLocale()
   const t = useTranslations('Certificates.CourseEndView')
   const [dialogAlertOpen, setDialogAlertOpen] = useState(false)
@@ -48,35 +48,12 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   const refetchedOnMountRef = useRef(false)
   const refetchedOnCertificateRef = useRef(false)
 
-  // Check if course is actually completed
-  const isCourseCompleted = (() => {
-    if (!(trailData && course)) return false
-
-    // Flatten all activities
-    const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
-      (chapter.activities ?? []).map((activity: AppActivity) => Object.assign(activity, { chapterId: chapter.id })),
-    )
-
-    // Check if all activities are completed
-    const isActivityDone = (activity: AppActivity) => {
-      const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-      const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
-        const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-        return cleanRunCourseUuid === cleanCourseUuid
-      })
-
-      if (run) {
-        return (run.steps ?? []).find(
-          (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
-        )
-      }
-      return false
-    }
-
-    const totalActivities = allActivities.length
-    const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
-    return totalActivities > 0 && completedActivities === totalActivities
-  })()
+  // Completed + «N из M» come from learner-state, the same projection the
+  // sidebar and course page read (BUG-165): trail runs only carry lesson-type
+  // steps, so a course with a quiz never reached the completed view.
+  const { data: learnerState } = useQuery(learnerCourseStateQueryOptions(courseUuid.replace('course_', '')))
+  const isCourseCompleted =
+    learnerState?.enrollment_state === 'completed' || learnerState?.progress.completed_at_unix != null
   const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
   const certificateQuery = useUserCertificateByCourse(isCourseCompleted ? normalizedCourseUuid : null)
   const userCertificate = certificateQuery.data?.data?.[0] ?? null
@@ -267,40 +244,14 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     }
   }
 
-  // Calculate progress for incomplete courses
-  const progressInfo = (() => {
-    if (!(trailData && course) || isCourseCompleted) return null
-
-    const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
-      (chapter.activities ?? []).map((activity: AppActivity) => Object.assign(activity, { chapterId: chapter.id })),
-    )
-
-    const isActivityDone = (activity: AppActivity) => {
-      const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-      const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
-        const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-        return cleanRunCourseUuid === cleanCourseUuid
-      })
-
-      if (run) {
-        return (run.steps ?? []).find(
-          (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
-        )
+  const progressInfo = learnerState
+    ? {
+        completed: learnerState.progress.completed_required_count,
+        total: learnerState.progress.total_required_count,
+        percentage: Math.round(learnerState.progress.progress_pct),
+        percentageString: `${Math.round(learnerState.progress.progress_pct)}%`,
       }
-      return false
-    }
-
-    const totalActivities = allActivities.length
-    const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
-    const progressPercentage = Math.round((completedActivities / totalActivities) * 100)
-
-    return {
-      completed: completedActivities,
-      total: totalActivities,
-      percentage: progressPercentage,
-      percentageString: `${progressPercentage}%`,
-    }
-  })()
+    : null
 
   if (isCourseCompleted) {
     const congratsText = `${t('congratulations')} 🎉`
@@ -335,6 +286,11 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </p>
 
           <p className="text-gray-500">{t('completionDescription')}</p>
+          {progressInfo ? (
+            <p className="text-sm text-gray-500">
+              {t('progressCompleted', { completed: progressInfo.completed, total: progressInfo.total })}
+            </p>
+          ) : null}
 
           {/* Gamification Celebration */}
           {gamificationProfile && (

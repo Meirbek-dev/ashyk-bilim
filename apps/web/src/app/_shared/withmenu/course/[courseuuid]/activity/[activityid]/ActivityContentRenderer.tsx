@@ -7,7 +7,6 @@ import { useTranslations } from 'next-intl'
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
 import { normalizeTiptapJsonContent } from '@components/Objects/Editor/core/editor-content'
 import CourseEndView from '@components/Pages/Activity/CourseEndView'
-import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
 
 const InteractiveViewer = dynamic(
   () =>
@@ -53,7 +52,7 @@ export function ActivityContentRenderer({
   const t = useTranslations('ActivityPage')
 
   if (isCourseEnd) {
-    return <CourseEndPanel course={course} courseuuid={courseuuid} />
+    return <CourseEndView courseName={course.name ?? ''} courseUuid={courseuuid} thumbnailImage={course.thumbnail_image ?? ''} />
   }
 
   if (!activity || !canView) {
@@ -109,19 +108,6 @@ export function ActivityContentRenderer({
       )
     }
   }
-}
-
-function CourseEndPanel({ course, courseuuid }: { course: CourseStructure; courseuuid: string }) {
-  const { data: trailData } = useTrailCurrent()
-  return (
-    <CourseEndView
-      courseName={course.name ?? ''}
-      courseUuid={courseuuid}
-      thumbnailImage={course.thumbnail_image ?? ''}
-      course={course}
-      trailData={trailData ?? { runs: [] }}
-    />
-  )
 }
 
 export function LoadingFallback() {
