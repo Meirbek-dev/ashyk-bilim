@@ -213,8 +213,8 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 14 (reverify-A) |
 | F03 | Google login intent | `/ru/auth/login` → `/api/v2/auth/google` | any | pass | pass 6: Google → `/api/v2/auth/google` → 303 with `?error=service-unavailable`; host-relative redirect is correct behind the production nginx (Q-2026-09-12-2 #10) |
 | F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 14 (reverify-A): stale revoke; second-tab refetch carried as UX-107 |
-| F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 14 (reverify-C) |
-| F06 | locale switch ru/kz/en | all routes | any | pass | pass 14 (reverify-C) |
+| F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 15 (reverify-C) |
+| F06 | locale switch ru/kz/en | all routes | any | pass | pass 15 (reverify-C) |
 | F07 | home / landing | `/[locale]` | learner | pass | pass 14 (reverify-A) |
 | F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 14 (reverify-A): anonymous landing renders (BUG-159); empty chapters hidden |
 | F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 14 (reverify-A): idempotent create |
@@ -238,21 +238,21 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F27 | grading SSE live updates | gradebook / review | teacher | pass | pass 14 (reverify-B) |
 | F28 | work queue | `/dash/courses/[uuid]/review` | teacher | pass | pass 14 (reverify-B) |
 | F29 | course collaboration/access | `/dash/courses/[uuid]/collaboration` | teacher | pass | pass 14 (reverify-B) |
-| F30 | search | `/ru/search?q=` | any | pass | pass 14 (reverify-C) |
-| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass | pass 14 (reverify-C): saved views keep the page + sort; labelled selects |
-| F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 14 (reverify-C) |
-| F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 14 (reverify-C): interventions paged; reporters out of scope |
-| F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 14 (reverify-C) |
+| F30 | search | `/ru/search?q=` | any | pass | pass 15 (reverify-C) |
+| F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass | pass 15 (reverify-C) |
+| F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 15 (reverify-C) |
+| F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 15 (reverify-C): localized intervention errors; focus kept after a logged measure (fdd6600, probed) |
+| F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 15 (reverify-C): export gated on the grant, localized CSVs with BOM |
 | F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | pass | pass 14 (reverify-B): gate at submit → surface → pass |
 | F36 | AI agent: lecture authoring critique | `/dash/courses/[uuid]` | teacher | pass | pass 14 (reverify-B) |
 | F37 | AI agents: remaining 4 | assorted | teacher | pass | pass 14 (reverify-B) |
-| F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 14 (reverify-C): platform name/email validated |
-| F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 14 (reverify-C): picker lists writable groups only; usergroups read gated |
-| F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 14 (reverify-C) |
+| F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 15 (reverify-C): one disable-confirm wording |
+| F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 15 (reverify-C): unlink needs course read; «Отвязать» |
+| F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 15 (reverify-C) |
 | F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 14 (reverify-A): idempotent register, kk verify link |
 | F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 14 (reverify-A): 429 toast with minutes |
-| F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 14 (reverify-C) |
-| F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 14 (reverify-C): blank name inline |
+| F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 15 (reverify-C) |
+| F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 15 (reverify-C) |
 | F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
 | F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 14 (reverify-A) |
 | F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 14 (reverify-A): 403 before 409 |
@@ -263,8 +263,8 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 14 (reverify-B) |
 | F53 | AI on file-submission attempts | file review page | teacher | fail | pass 14 (reverify-B) analyse/confirm/gate; **fail** — file CSV English (UX-108), gate surface (BUG-167) |
 | F54 | link preview block | lecture editor | teacher | pass | pass 14 (reverify-A) |
-| F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 14 (reverify-C) |
-| F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 14 (reverify-C) |
+| F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 15 (reverify-C) |
+| F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 15 (reverify-C) |
 | F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 14 (reverify-A): anonymous profile → landing |
 
 ## Bugs
