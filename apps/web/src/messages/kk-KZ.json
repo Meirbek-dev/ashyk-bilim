@@ -571,9 +571,9 @@
       "current": "Ағымдағы",
       "devToolsDetected": "Әзірлеуші құралдары анықталды - бұзушылық тіркелді",
       "downloadCsv": "CSV жүктеу",
-      "errorLoadingExam": "Емтиханды жүктеу сәтсіз аяқталды",
-      "errorStartingExam": "Емтиханды бастау сәтсіз аяқталды",
-      "errorSubmittingExam": "Емтиханды тапсыру сәтсіз аяқталды",
+      "errorLoadingExam": "Тестті жүктеу сәтсіз аяқталды",
+      "errorStartingExam": "Тестті бастау сәтсіз аяқталды",
+      "errorSubmittingExam": "Тестті тапсыру сәтсіз аяқталды",
       "examCompleted": "Емтихан аяқталды!",
       "examStarted": "Емтихан сәтті басталды",
       "examSubmittedSuccessfully": "Жауаптар жіберілді",
@@ -8171,7 +8171,7 @@
         "refresh": "Жаңарту",
         "export": "Экспорт",
         "noScore": "Баға әлі жоқ",
-        "averageScore": "Орташа {score}%",
+        "averageScore": "Орташа {score}",
         "defaultCohort": "Курс тізімі",
         "summary": {
           "learners": "Білім алушылар",
@@ -10619,7 +10619,14 @@
       "published": "Жарияланды",
       "returned": "Қайтарылды"
     },
-    "newAttempt": "Жаңа әрекет ({number} / {max})"
+    "newAttempt": "Жаңа әрекет ({number} / {max})",
+    "bytes": {
+      "B": "{value} Б",
+      "KB": "{value} КБ",
+      "MB": "{value} МБ",
+      "GB": "{value} ГБ"
+    },
+    "blocked": "Тапсыру қазір қолжетімсіз."
   },
   "FileSubmissionReview": {
     "loadingSubmissions": "Тапсырылған файлдарды жүктеу",
@@ -10979,7 +10986,8 @@
       "selfCheckNote": "Өзін-өзі тексеру: дұрыс жауап берген сұрақтарды белгілеңіз. Өту балы — {threshold}%.",
       "completedPassed": "Түзету өтілді ({score}%). Әрекет қайта қолжетімді.",
       "completedFailed": "Түзету өтілмеді ({score}%). Материалды қайталап, қайта көріңіз.",
-      "completeFailed": "Түзетуді аяқтау мүмкін болмады"
+      "completeFailed": "Түзетуді аяқтау мүмкін болмады",
+      "gatePassed": "Түзету өтілді."
     },
     "budgetStatus": {
       "label": "ЖИ айлық токен бюджеті",

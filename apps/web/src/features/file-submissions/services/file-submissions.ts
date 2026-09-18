@@ -7,9 +7,11 @@
  * Attempt `version` is the optimistic lock: optional `If-Match` on learner
  * saves/submits (412 when stale), required on grader writes.
  */
+import type * as zod from 'zod'
+
 import { apiJson } from '@/lib/api-client'
 import { idempotencyHeaders, ifMatchHeaders } from '@/lib/api/headers'
-import { Attempt, FileReviewPage, FileSubmission, SignedDownload } from '@/lib/api/generated/zod'
+import { Attempt, DisabledReason, FileReviewPage, FileSubmission, SignedDownload } from '@/lib/api/generated/zod'
 import type {
   AttachedFile,
   Attempt as AttemptType,
@@ -19,7 +21,6 @@ import type {
   FileRefRequest,
   FileReviewItem,
   FileReviewPage as FileReviewPageType,
-  FileSubmission as FileSubmissionType,
   SignedDownload as SignedDownloadType,
   UpdateFileSubmissionBody,
 } from '@/lib/api/generated/zod'
@@ -27,7 +28,13 @@ import { getAPIUrl } from '@services/config/config'
 import { uploadFile } from '@services/media/uploads'
 import type { UploadProgress } from '@services/media/uploads'
 
-export type FileSubmissionActivity = FileSubmissionType
+/**
+ * BUG-166: `disabled_reasons` — the quiz `attempt-state` vocabulary (`PAST_DUE`,
+ * `REMEDIATION_REQUIRED`) on the learner's file projection. Declared here until
+ * the regenerated contract carries it; empty for authors.
+ */
+const FileSubmissionView = FileSubmission.extend({ disabled_reasons: DisabledReason.array().default([]) })
+export type FileSubmissionActivity = zod.output<typeof FileSubmissionView>
 export type FileSubmissionAttempt = AttemptType
 export type FileSubmissionAttemptFile = AttachedFile
 export type FileSubmissionAttemptStatus = FileAttemptStatus
@@ -46,7 +53,7 @@ const json = (method: 'POST' | 'PATCH', body: unknown, headers: Record<string, s
 
 const id = (value: string) => encodeURIComponent(value)
 
-const parseFileSubmission = (data: unknown) => FileSubmission.parse(data)
+const parseFileSubmission = (data: unknown) => FileSubmissionView.parse(data)
 const parseAttempt = (data: unknown) => Attempt.parse(data)
 const parseAttempts = (data: unknown) => Attempt.array().parse(data)
 const parseReviewPage = (data: unknown) => FileReviewPage.parse(data)

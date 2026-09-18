@@ -572,9 +572,9 @@
       "current": "Current",
       "devToolsDetected": "Developer tools detected - violation recorded",
       "downloadCsv": "Download CSV",
-      "errorLoadingExam": "Failed to load exam",
-      "errorStartingExam": "Failed to start exam",
-      "errorSubmittingExam": "Failed to submit exam",
+      "errorLoadingExam": "Failed to load the test",
+      "errorStartingExam": "Failed to start the test",
+      "errorSubmittingExam": "Failed to submit the test",
       "examCompleted": "Exam Completed!",
       "examStarted": "Exam started successfully",
       "examSubmittedSuccessfully": "Answers submitted",
@@ -8141,7 +8141,7 @@
         "refresh": "Refresh",
         "export": "Export",
         "noScore": "No score yet",
-        "averageScore": "Average {score}%",
+        "averageScore": "Average {score}",
         "defaultCohort": "Course roster",
         "summary": {
           "learners": "Learners",
@@ -10435,7 +10435,14 @@
       "published": "Published",
       "returned": "Returned"
     },
-    "newAttempt": "New attempt ({number} of {max})"
+    "newAttempt": "New attempt ({number} of {max})",
+    "bytes": {
+      "B": "{value} B",
+      "KB": "{value} KB",
+      "MB": "{value} MB",
+      "GB": "{value} GB"
+    },
+    "blocked": "Submitting is not available right now."
   },
   "FileSubmissionReview": {
     "loadingSubmissions": "Loading submissions",
@@ -10795,7 +10802,8 @@
       "selfCheckNote": "Self-check: tick the questions you answered correctly. Passing score is {threshold}%.",
       "completedPassed": "Remediation passed ({score}%). You can attempt again.",
       "completedFailed": "Remediation not passed ({score}%). Review the material and try again.",
-      "completeFailed": "Could not complete the remediation"
+      "completeFailed": "Could not complete the remediation",
+      "gatePassed": "Remediation passed."
     },
     "budgetStatus": {
       "label": "Monthly AI token budget",

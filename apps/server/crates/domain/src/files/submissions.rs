@@ -28,12 +28,13 @@ use serde::Serialize;
 use sqlx::PgPool;
 use utoipa::ToSchema;
 
+use crate::assessments::access::DisabledReason;
 use crate::assessments::service::{AssessmentsService, LatePolicy, perm};
 use crate::catalog::courses::Course;
 use crate::events::GradingEvents;
 use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::grading::penalties::late_penalty_pct;
-use crate::grading::teacher::{UserSummary, course_event_name};
+use crate::grading::teacher::{CsvLanguage, UserSummary, course_event_name, csv_row, iso8601};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
 
@@ -77,6 +78,9 @@ pub struct FileSubmission {
     pub late_policy: LatePolicy,
     /// The caller's attempts (newest first) when they are a learner here.
     pub attempts: Vec<Attempt>,
+    /// Why the caller may not open or submit right now (quiz vocabulary;
+    /// empty for authors).
+    pub disabled_reasons: Vec<DisabledReason>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -119,7 +123,8 @@ pub struct FileGradeInput {
     pub feedback: String,
     /// `None` keeps the stored rubric scores.
     pub rubric_scores: Option<serde_json::Value>,
-    pub expected_version: i64,
+    /// From `If-Match`; checked after the grading gate (UX-108).
+    pub expected_version: Option<i64>,
 }
 
 pub struct ReviewFilter<'a> {
@@ -354,7 +359,12 @@ impl FileSubmissionsService {
         }
     }
 
-    async fn view(&self, actor: Option<&Actor>, row: FileSubmissionRow) -> Result<FileSubmission> {
+    async fn view(
+        &self,
+        actor: Option<&Actor>,
+        row: FileSubmissionRow,
+        disabled_reasons: Vec<DisabledReason>,
+    ) -> Result<FileSubmission> {
         let activity = ab_db::catalog::get_activity(&self.pool, row.activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
@@ -374,6 +384,7 @@ impl FileSubmissionsService {
             published: activity.published,
             row,
             attempts,
+            disabled_reasons,
         })
     }
 
@@ -507,14 +518,15 @@ impl FileSubmissionsService {
         )
         .await?;
         let row = self.load(id).await?;
-        self.view(None, row).await
+        self.view(None, row, Vec::new()).await
     }
 
     /// Authors always; learners a published activity on a visible course.
     pub async fn get(&self, actor: &Actor, id: FileSubmissionId) -> Result<FileSubmission> {
         let row = self.load(id).await?;
-        self.require_read(actor, &row).await?;
-        self.view(Some(actor), row).await
+        let course = self.require_read(actor, &row).await?;
+        let reasons = self.disabled_reasons(actor, &course, &row).await?;
+        self.view(Some(actor), row, reasons).await
     }
 
     pub async fn get_by_activity(
@@ -525,8 +537,9 @@ impl FileSubmissionsService {
         let row = ab_db::file_submissions::get_file_submission_by_activity(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("file submission"))?;
-        self.require_read(actor, &row).await?;
-        self.view(Some(actor), row).await
+        let course = self.require_read(actor, &row).await?;
+        let reasons = self.disabled_reasons(actor, &course, &row).await?;
+        self.view(Some(actor), row, reasons).await
     }
 
     /// Partial update (authors); archived activities are read-only.
@@ -558,7 +571,7 @@ impl FileSubmissionsService {
         validate_config(&values)?;
         ab_db::file_submissions::update_file_submission(&self.pool, id, values).await?;
         let row = self.load(id).await?;
-        self.view(None, row).await
+        self.view(None, row, Vec::new()).await
     }
 
     /// Publish: title and instructions required; the activity goes live.
@@ -593,7 +606,7 @@ impl FileSubmissionsService {
             .set_activity_published(row.activity_id, row.course_id, true)
             .await?;
         let row = self.load(id).await?;
-        self.view(None, row).await
+        self.view(None, row, Vec::new()).await
     }
 
     // ── Learner attempts ────────────────────────────────────────────────
@@ -605,26 +618,63 @@ impl FileSubmissionsService {
         if row.lifecycle != FileSubmissionLifecycle::Published {
             return Err(Error::conflict("file submission is not published"));
         }
+        self.require_visible(row, is_author).await
+    }
+
+    /// A hidden activity does not exist for learners — reads and writes
+    /// alike (UX-108).
+    async fn require_visible(&self, row: &FileSubmissionRow, is_author: bool) -> Result<()> {
         if !is_author && !self.activity_published(row).await? {
             return Err(Error::not_found("file submission"));
         }
         Ok(())
     }
 
-    /// BUG-140 / UX-105: an unpassed gate-mode remediation blocks a new
-    /// attempt and the submit of an open one.
-    async fn require_no_remediation_gate(
+    /// Why a learner cannot open or submit right now — the quiz rules
+    /// (`attempt_state`): a closed deadline (BUG-166) and an unpassed
+    /// gate-mode remediation (BUG-140 / UX-105). Authors are never blocked.
+    async fn disabled_reasons(
         &self,
-        user_id: UserId,
+        actor: &Actor,
+        course: &Course,
         row: &FileSubmissionRow,
-    ) -> Result<()> {
-        if ab_db::ai::active_remediation_gate(&self.pool, user_id, row.activity_id)
+    ) -> Result<Vec<DisabledReason>> {
+        if Self::is_author(actor, course) {
+            return Ok(Vec::new());
+        }
+        let mut reasons = Vec::new();
+        if !row.allow_late && row.due_at.is_some_and(|due| now_unix() > due) {
+            reasons.push(DisabledReason::PastDue);
+        }
+        if ab_db::ai::active_remediation_gate(&self.pool, actor.user_id, row.activity_id)
             .await?
             .is_some()
         {
-            return Err(Error::forbidden("cannot start: REMEDIATION_REQUIRED"));
+            reasons.push(DisabledReason::RemediationRequired);
         }
-        Ok(())
+        Ok(reasons)
+    }
+
+    /// 403 `cannot start: <REASONS>` — the same vocabulary as the quiz
+    /// start/submit, so the web renders the localized blocked card.
+    async fn require_can_act(
+        &self,
+        actor: &Actor,
+        course: &Course,
+        row: &FileSubmissionRow,
+    ) -> Result<()> {
+        let reasons = self.disabled_reasons(actor, course, row).await?;
+        if reasons.is_empty() {
+            return Ok(());
+        }
+        Err(Error::forbidden(format!(
+            "cannot start: {}",
+            reasons
+                .iter()
+                .map(|r| r.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )))
     }
 
     async fn activity_published(&self, row: &FileSubmissionRow) -> Result<bool> {
@@ -636,7 +686,8 @@ impl FileSubmissionsService {
     /// The learner's open attempt (draft or returned), if any.
     pub async fn draft(&self, actor: &Actor, id: FileSubmissionId) -> Result<Option<Attempt>> {
         let row = self.load(id).await?;
-        self.require_submit_access(actor, &row).await?;
+        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        self.require_visible(&row, is_author).await?;
         match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
             Some(attempt) => Ok(Some(self.attempt_view(attempt, false, true).await?)),
             None => Ok(None),
@@ -646,18 +697,17 @@ impl FileSubmissionsService {
     /// Open a draft (idempotent). Returns (attempt, created).
     pub async fn start(&self, actor: &Actor, id: FileSubmissionId) -> Result<(Attempt, bool)> {
         let row = self.load(id).await?;
-        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        let (course, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
-        // Gated learners neither open nor resume a draft (the web shows the
-        // remediation gate on this 403).
-        self.require_no_remediation_gate(actor.user_id, &row)
-            .await?;
+        // Blocked learners neither open nor resume a draft (the web shows
+        // the blocked card / remediation gate on this 403).
+        self.require_can_act(actor, &course, &row).await?;
         if let Some(open) =
             ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?
         {
             return Ok((self.attempt_view(open, false, true).await?, false));
         }
-        let attempt = self.open_new_attempt(&row, actor.user_id).await?;
+        let attempt = self.open_new_attempt(&row, actor, &course).await?;
         self.projector
             .after_file_attempt(row.id, actor.user_id)
             .await;
@@ -667,9 +717,11 @@ impl FileSubmissionsService {
     async fn open_new_attempt(
         &self,
         row: &FileSubmissionRow,
-        user_id: UserId,
+        actor: &Actor,
+        course: &Course,
     ) -> Result<AttemptRow> {
-        self.require_no_remediation_gate(user_id, row).await?;
+        self.require_can_act(actor, course, row).await?;
+        let user_id = actor.user_id;
         let completed =
             ab_db::file_submissions::count_completed_attempts(&self.pool, row.id, user_id).await?;
         if let Some(max) = row.max_attempts
@@ -711,12 +763,12 @@ impl FileSubmissionsService {
         expected_version: Option<i64>,
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
-        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        let (course, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
         let attempt =
             match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
                 Some(a) => a,
-                None => self.open_new_attempt(&row, actor.user_id).await?,
+                None => self.open_new_attempt(&row, actor, &course).await?,
             };
         if let Some(expected) = expected_version
             && expected != attempt.version
@@ -853,10 +905,11 @@ impl FileSubmissionsService {
         expected_version: Option<i64>,
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
-        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        let (course, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
-        self.require_no_remediation_gate(actor.user_id, &row)
-            .await?;
+        // BUG-166: a closed deadline (or a gate) refuses the submit with the
+        // quiz's 403 vocabulary; the draft stays intact.
+        self.require_can_act(actor, &course, &row).await?;
         let files_required =
             || Error::validation(vec![field("files", "required", "attach at least one file")]);
         let mut attempt =
@@ -864,7 +917,7 @@ impl FileSubmissionsService {
                 Some(a) => a,
                 // A bare submit must not spend an attempt on an empty draft (BUG-137).
                 None if files.is_none_or(<[FileRef]>::is_empty) => return Err(files_required()),
-                None => self.open_new_attempt(&row, actor.user_id).await?,
+                None => self.open_new_attempt(&row, actor, &course).await?,
             };
         if let Some(expected) = expected_version
             && expected != attempt.version
@@ -882,13 +935,6 @@ impl FileSubmissionsService {
         }
         let now = now_unix();
         let is_late = row.due_at.is_some_and(|due| now > due);
-        if is_late && !row.allow_late {
-            return Err(Error::app_with_details(
-                ErrorCode::Conflict,
-                "late submissions are closed",
-                serde_json::json!({ "due_at": row.due_at, "submitted_at": now }),
-            ));
-        }
         let penalty = late_penalty_pct(late_policy_of(&row), row.due_at, now, row.allow_late);
         if !ab_db::file_submissions::submit_attempt(
             &self.pool,
@@ -917,7 +963,8 @@ impl FileSubmissionsService {
     /// Every attempt of the caller, newest first.
     pub async fn my_attempts(&self, actor: &Actor, id: FileSubmissionId) -> Result<Vec<Attempt>> {
         let row = self.load(id).await?;
-        self.require_submit_access(actor, &row).await?;
+        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        self.require_visible(&row, is_author).await?;
         let rows =
             ab_db::file_submissions::list_user_attempts(&self.pool, id, actor.user_id).await?;
         self.attempts_with_files(rows, false, true).await
@@ -1004,11 +1051,19 @@ impl FileSubmissionsService {
             .ok_or_else(|| Error::not_found("attempt"))?;
         let row = self.load(attempt.file_submission_id).await?;
         self.scoped(actor, &row, Action::Grade, "grading").await?;
+        // UX-108: the grading gate answers before the header is validated.
+        let expected_version = input.expected_version.ok_or_else(|| {
+            Error::validation(vec![field(
+                "If-Match",
+                "required",
+                "If-Match with the attempt's current version is required",
+            )])
+        })?;
         if attempt.status == FileAttemptStatus::Draft {
             return Err(Error::conflict("an open draft cannot be graded"));
         }
-        if attempt.version != input.expected_version {
-            return Err(stale(input.expected_version, attempt.version));
+        if attempt.version != expected_version {
+            return Err(stale(expected_version, attempt.version));
         }
         let status = match input.action {
             FileGradeAction::Save => FileAttemptStatus::Graded,
@@ -1049,13 +1104,11 @@ impl FileSubmissionsService {
             rubric_scores: input.rubric_scores.as_ref(),
             graded_by: actor.user_id,
         };
-        if !ab_db::file_submissions::grade_attempt(&self.pool, id, input.expected_version, write)
-            .await?
-        {
+        if !ab_db::file_submissions::grade_attempt(&self.pool, id, expected_version, write).await? {
             let latest = ab_db::file_submissions::get_attempt(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("attempt"))?;
-            return Err(stale(input.expected_version, latest.version));
+            return Err(stale(expected_version, latest.version));
         }
         self.projector
             .after_file_attempt(attempt.file_submission_id, attempt.user_id)
@@ -1067,15 +1120,25 @@ impl FileSubmissionsService {
         self.attempt_view(fresh, true, false).await
     }
 
-    /// CSV of every attempt (graders).
-    pub async fn export_csv(&self, actor: &Actor, id: FileSubmissionId) -> Result<String> {
+    /// CSV of every attempt (graders); header and status / yes-no words
+    /// follow `language`, BOM first (UX-108, like the grading exports).
+    pub async fn export_csv(
+        &self,
+        actor: &Actor,
+        id: FileSubmissionId,
+        language: CsvLanguage,
+    ) -> Result<String> {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Grade, "grading").await?;
         let attempts = ab_db::file_submissions::list_attempts(&self.pool, id).await?;
         let views = self.attempts_with_files(attempts, true, false).await?;
-        let mut out = String::from(
-            "attempt_id,student,email,status,attempt,submitted_at,late,late_penalty_pct,final_score,file_count\r\n",
-        );
+        let header: Vec<String> = language
+            .file_header()
+            .iter()
+            .map(|s| (*s).to_owned())
+            .collect();
+        let mut out = String::from("\u{feff}");
+        out.push_str(&csv_row(&header));
         for a in views {
             let user = a.user.unwrap_or(UserSummary {
                 id: a.row.user_id,
@@ -1091,32 +1154,15 @@ impl FileSubmissionsService {
                     user.display_name
                 },
                 user.email,
-                a.row.status.as_str().to_owned(),
+                language.file_status(a.row.status).to_owned(),
                 a.row.attempt_number.to_string(),
-                a.row
-                    .submitted_at
-                    .map(|s| {
-                        jiff::Timestamp::from_second(s)
-                            .map_or_else(|_| s.to_string(), |t| t.to_string())
-                    })
-                    .unwrap_or_default(),
-                if a.row.is_late { "yes" } else { "no" }.to_owned(),
+                a.row.submitted_at.map(iso8601).unwrap_or_default(),
+                language.yes_no(a.row.is_late).to_owned(),
                 a.row.late_penalty_pct.to_string(),
                 a.row.final_score.map(|s| s.to_string()).unwrap_or_default(),
                 a.files.len().to_string(),
             ];
-            let line: Vec<String> = fields
-                .iter()
-                .map(|f| {
-                    if f.contains([',', '"', '\n', '\r']) {
-                        format!("\"{}\"", f.replace('"', "\"\""))
-                    } else {
-                        f.clone()
-                    }
-                })
-                .collect();
-            out.push_str(&line.join(","));
-            out.push_str("\r\n");
+            out.push_str(&csv_row(&fields));
         }
         Ok(out)
     }

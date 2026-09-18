@@ -27,19 +27,17 @@ use crate::state::AppState;
 const DEFAULT_REVIEW_PAGE: i64 = 25;
 const DEFAULT_GRADEBOOK_PAGE: i64 = 200;
 
-fn require_if_match(headers: &HeaderMap) -> ApiResult<i64> {
+/// `If-Match` as the expected version; `None` when absent (the domain
+/// requires it after its authz gate — UX-108), 422 when not an integer.
+pub(crate) fn if_match(headers: &HeaderMap) -> ApiResult<Option<i64>> {
     let Some(raw) = headers.get(header::IF_MATCH) else {
-        return Err(Error::validation(vec![FieldError {
-            field: "If-Match".into(),
-            code: "required".into(),
-            message: "If-Match with the submission's current version is required".into(),
-        }])
-        .into());
+        return Ok(None);
     };
     raw.to_str()
         .ok()
         .map(|s| s.trim().trim_matches('"'))
         .and_then(|s| s.parse::<i64>().ok())
+        .map(Some)
         .ok_or_else(|| {
             Error::validation(vec![FieldError {
                 field: "If-Match".into(),
@@ -195,7 +193,7 @@ pub async fn save_grade(
     headers: HeaderMap,
     ValidJson(request): ValidJson<GradeRequest>,
 ) -> ApiResult<Json<TeacherSubmission>> {
-    let expected_version = require_if_match(&headers)?;
+    let expected_version = if_match(&headers)?;
     let saved = state
         .grading
         .save_grade(
@@ -377,7 +375,7 @@ pub async fn gradebook(
     Ok(Json(page.into()))
 }
 
-fn csv_language(headers: &HeaderMap) -> CsvLanguage {
+pub(crate) fn csv_language(headers: &HeaderMap) -> CsvLanguage {
     CsvLanguage::from_accept_language(
         headers
             .get(header::ACCEPT_LANGUAGE)

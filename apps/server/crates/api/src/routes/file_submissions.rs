@@ -19,39 +19,10 @@ use crate::dto::file_submissions::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotency_key, sha256_hex};
+use crate::routes::grading::{csv_language, if_match};
 use crate::state::AppState;
 
 const DEFAULT_REVIEW_PAGE: i64 = 25;
-
-fn if_match(headers: &HeaderMap) -> ApiResult<Option<i64>> {
-    let Some(raw) = headers.get(header::IF_MATCH) else {
-        return Ok(None);
-    };
-    raw.to_str()
-        .ok()
-        .map(|s| s.trim().trim_matches('"'))
-        .and_then(|s| s.parse::<i64>().ok())
-        .map(Some)
-        .ok_or_else(|| {
-            Error::validation(vec![FieldError {
-                field: "If-Match".into(),
-                code: "invalid".into(),
-                message: "If-Match must carry the version as an integer".into(),
-            }])
-            .into()
-        })
-}
-
-fn require_if_match(headers: &HeaderMap) -> ApiResult<i64> {
-    if_match(headers)?.ok_or_else(|| {
-        Error::validation(vec![FieldError {
-            field: "If-Match".into(),
-            code: "required".into(),
-            message: "If-Match with the attempt's current version is required".into(),
-        }])
-        .into()
-    })
-}
 
 fn refs(files: Vec<FileRefRequest>) -> Vec<FileRef> {
     files
@@ -370,18 +341,26 @@ pub async fn review_queue(
     Ok(Json(page.into()))
 }
 
-/// Every attempt as CSV (graders).
+/// Every attempt as CSV (graders). Header and status words follow
+/// `Accept-Language` (ru / kk / en, Russian by default); UTF-8 with BOM.
 #[utoipa::path(
     get, path = "/file-submissions/{id}/submissions/export", tag = "file-submissions",
-    params(("id" = FileSubmissionId, Path, description = "File submission id")),
+    params(
+        ("id" = FileSubmissionId, Path, description = "File submission id"),
+        ("Accept-Language" = Option<String>, Header, description = "ru / kk / en (default ru)"),
+    ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
 pub async fn export_csv(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileSubmissionId>,
+    headers: HeaderMap,
 ) -> ApiResult<Response> {
-    let csv = state.file_submissions.export_csv(&actor, id).await?;
+    let csv = state
+        .file_submissions
+        .export_csv(&actor, id, csv_language(&headers))
+        .await?;
     let mut response = (StatusCode::OK, csv).into_response();
     response.headers_mut().insert(
         header::CONTENT_TYPE,
@@ -436,7 +415,7 @@ pub async fn grade_attempt(
     headers: HeaderMap,
     ValidJson(request): ValidJson<FileGradeRequest>,
 ) -> ApiResult<Json<Attempt>> {
-    let expected_version = require_if_match(&headers)?;
+    let expected_version = if_match(&headers)?;
     let graded = state
         .file_submissions
         .grade(

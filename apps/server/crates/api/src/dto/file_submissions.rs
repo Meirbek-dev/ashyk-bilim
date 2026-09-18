@@ -121,6 +121,9 @@ pub struct FileSubmission {
     pub current_attempt: Option<Attempt>,
     /// The caller's attempts, newest first (learners).
     pub attempts: Vec<Attempt>,
+    /// Why the caller cannot open or submit right now (quiz vocabulary:
+    /// `PAST_DUE`, `REMEDIATION_REQUIRED`); empty for authors.
+    pub disabled_reasons: Vec<ab_domain::assessments::access::DisabledReason>,
     pub published_at_unix: Option<i64>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
@@ -167,6 +170,7 @@ impl From<domain::FileSubmission> for FileSubmission {
                 user: a.user.clone(),
             }),
             attempts,
+            disabled_reasons: s.disabled_reasons,
             published_at_unix: s.row.published_at,
             created_at_unix: s.row.created_at,
             updated_at_unix: s.row.updated_at,

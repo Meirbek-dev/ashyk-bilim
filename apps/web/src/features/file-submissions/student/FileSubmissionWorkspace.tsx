@@ -9,6 +9,7 @@ import {
   Clock,
   FileArchive,
   LoaderCircle,
+  Lock,
   Paperclip,
   RotateCcw,
   Send,
@@ -59,7 +60,7 @@ import { MarkdownContent } from '@/features/content-markdown'
 import { getMimeCategories } from '@/features/file-submissions/mime-categories'
 import { useApiError } from '@/hooks/useApiError'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
-import { RemediationGate, useRemediationGate } from '@/features/remediation'
+import { REMEDIATION_REQUIRED, RemediationGate, useRemediationGate } from '@/features/remediation'
 import { disabledReasonOf } from '@/features/assessments/domain/disabled-reason'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -177,8 +178,15 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
   const totalSelected = attachedFiles.length + pendingSlots.length
 
   const canEdit = !status || status === 'draft' || status === 'returned'
-  // BUG-140/152: an unpassed gate-mode remediation blocks the next attempt server-side.
-  const { session: remediationGate } = useRemediationGate(activityUuid, { poll: status === 'published' })
+  // BUG-140/152/167: an unpassed gate-mode remediation blocks the next attempt
+  // and the submit of an open draft server-side — the page follows it live.
+  const { session: remediationGate } = useRemediationGate(activityUuid, { poll: true })
+  // BUG-166: the server's blocked reasons (quiz vocabulary) plus the gate the
+  // sessions query saw first; non-empty replaces the editor with the blocked card.
+  const blockedReasons = useMemo(() => {
+    const reasons = data?.disabled_reasons ?? []
+    return remediationGate && !reasons.includes(REMEDIATION_REQUIRED) ? [...reasons, REMEDIATION_REQUIRED] : reasons
+  }, [data?.disabled_reasons, remediationGate])
 
   // The teacher published under the open page (the poll saw it): trail XP,
   // the header chip and the outline follow the projection (UX-097).
@@ -291,7 +299,10 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         // UX-103: the window closed under the open draft (PAST_DUE, …) —
         // refetch so the blocked state replaces the form, and say why.
         toast.error(tReasons.has(reason) ? tReasons(reason) : tReasons('UNKNOWN'))
-        await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) }),
+          queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
+        ])
         await refreshLearnerCourseState(queryClient, router)
         return
       }
@@ -457,8 +468,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         {showResult ? (
           <FileSubmissionResult attempt={activeAttempt} {...(handleRevise ? { onRevise: handleRevise } : {})} />
         ) : null}
-        {remediationGate ? (
-          <RemediationGate activityId={activityUuid} />
+        {blockedReasons.length > 0 ? (
+          <Blocked reasons={blockedReasons} activityUuid={activityUuid} />
         ) : attemptsLeft ? (
           <div className="mx-auto max-w-2xl">
             <Button variant="outline" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
@@ -467,7 +478,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
             </Button>
           </div>
         ) : null}
-        {canRevise ? (
+        {canRevise && blockedReasons.length === 0 ? (
           <DraftEditor
             {...{
               data,
@@ -506,24 +517,52 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         dueAt={data.due_at_unix ?? null}
         maxFileSizeMb={data.max_file_size_mb ?? null}
       />
-      <DraftEditor
-        data={data}
-        attachedFiles={attachedFiles}
-        slots={slots}
-        setSlots={setSlots}
-        addFiles={addFiles}
-        inputRef={inputRef}
-        saveMutation={saveMutation}
-        startMutation={startMutation}
-        requestSubmit={requestSubmit}
-        maxFiles={maxFiles}
-        totalSelected={totalSelected}
-        isUploading={isUploading}
-        canEdit={canEdit}
-        activeAttempt={activeAttempt}
-      />
+      {blockedReasons.length > 0 ? (
+        <Blocked reasons={blockedReasons} activityUuid={activityUuid} />
+      ) : (
+        <DraftEditor
+          data={data}
+          attachedFiles={attachedFiles}
+          slots={slots}
+          setSlots={setSlots}
+          addFiles={addFiles}
+          inputRef={inputRef}
+          saveMutation={saveMutation}
+          startMutation={startMutation}
+          requestSubmit={requestSubmit}
+          maxFiles={maxFiles}
+          totalSelected={totalSelected}
+          isUploading={isUploading}
+          canEdit={canEdit}
+          activeAttempt={activeAttempt}
+        />
+      )}
       {confirmDialog}
       <SubmissionHistory attempts={data.attempts} />
+    </div>
+  )
+}
+
+// ── Blocked ────────────────────────────────────────────────────────────────────
+
+/** The quiz's blocked card (AttemptEntryCard): the gate with «Пройти исправление», or the localized reason. */
+function Blocked({ reasons, activityUuid }: { reasons: string[]; activityUuid: string }) {
+  const t = useTranslations('FileSubmission')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
+  const known = reasons.find(reason => tReasons.has(reason))
+  return (
+    <div
+      className="mx-auto flex max-w-2xl flex-col items-center gap-4 py-8 text-center"
+      data-testid="file-submission-blocked"
+    >
+      <div className="bg-destructive/10 flex size-14 items-center justify-center rounded-lg">
+        <Lock className="text-destructive size-7" />
+      </div>
+      {reasons.includes(REMEDIATION_REQUIRED) ? (
+        <RemediationGate activityId={activityUuid} />
+      ) : (
+        <p className="text-muted-foreground max-w-md text-sm">{known ? tReasons(known as never) : t('blocked')}</p>
+      )}
     </div>
   )
 }

@@ -11,7 +11,9 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use ab_core::assessments::{AssessmentKind, AutoSubmitReason, ItemKind, SubmissionStatus};
+use ab_core::assessments::{
+    AssessmentKind, AutoSubmitReason, FileAttemptStatus, ItemKind, SubmissionStatus,
+};
 use ab_core::id::{
     ActivityId, AssessmentId, AssessmentItemId, CourseId, FileAttemptId, FileSubmissionId,
     GradingEntryId, SubmissionId, UserId,
@@ -194,8 +196,8 @@ pub struct GradeInput {
     pub item_grades: Vec<ItemGrade>,
     /// Grader's note for the audit trail only (never shown to the learner).
     pub audit_note: Option<String>,
-    /// From `If-Match`; the current `version`.
-    pub expected_version: i64,
+    /// From `If-Match`; the current `version` (checked after the grading gate, UX-108).
+    pub expected_version: Option<i64>,
 }
 
 #[derive(Debug, Clone)]
@@ -379,7 +381,71 @@ impl CsvLanguage {
         }
     }
 
-    const fn yes_no(self, yes: bool) -> &'static str {
+    /// File-submission export header (UX-108).
+    pub(crate) const fn file_header(self) -> [&'static str; 10] {
+        match self {
+            Self::Ru => [
+                "ID попытки",
+                "Студент",
+                "Email",
+                "Статус",
+                "Попытка",
+                "Отправлено",
+                "Просрочено",
+                "Штраф за опоздание, %",
+                "Итоговый балл",
+                "Файлов",
+            ],
+            Self::Kk => [
+                "Әрекет ID",
+                "Білім алушы",
+                "Email",
+                "Мәртебе",
+                "Әрекет",
+                "Тапсырылған",
+                "Кеш",
+                "Кешігу айыппұлы, %",
+                "Қорытынды балл",
+                "Файлдар",
+            ],
+            Self::En => [
+                "Attempt id",
+                "Learner",
+                "Email",
+                "Status",
+                "Attempt",
+                "Submitted at",
+                "Late",
+                "Late penalty, %",
+                "Final score",
+                "Files",
+            ],
+        }
+    }
+
+    /// A file attempt's status word (file-submission export).
+    pub(crate) const fn file_status(self, status: FileAttemptStatus) -> &'static str {
+        use FileAttemptStatus as S;
+        match (self, status) {
+            (Self::Ru, S::Draft) => "Черновик",
+            (Self::Kk, S::Draft) => "Жоба",
+            (Self::En, S::Draft) => "Draft",
+            (Self::Ru, S::Submitted) => "На проверке",
+            (Self::Kk, S::Submitted) => "Тексеру керек",
+            (Self::En, S::Submitted) => "Needs grading",
+            (Self::Ru, S::Graded) => "Проверено",
+            (Self::Kk, S::Graded) => "Тексерілді",
+            (Self::En, S::Graded) => "Graded",
+            (Self::Ru, S::Published) => "Опубликовано",
+            (Self::Kk, S::Published) => "Жарияланды",
+            (Self::En, S::Published) => "Published",
+            (Self::Ru, S::Returned) => "Возвращено",
+            (Self::Kk, S::Returned) => "Қайтарылған",
+            (Self::En, S::Returned) => "Returned",
+        }
+    }
+
+    pub(crate) const fn yes_no(self, yes: bool) -> &'static str {
         match (self, yes) {
             (Self::Ru, true) => "Да",
             (Self::Ru, false) => "Нет",
@@ -457,7 +523,7 @@ fn user_or_placeholder(map: &HashMap<UserId, UserSummary>, id: UserId) -> UserSu
 }
 
 /// RFC 3339 for the CSV export.
-fn iso8601(unix: i64) -> String {
+pub(crate) fn iso8601(unix: i64) -> String {
     jiff::Timestamp::from_second(unix).map_or_else(|_| unix.to_string(), |t| t.to_string())
 }
 
@@ -470,7 +536,7 @@ fn csv_field(value: &str) -> String {
     }
 }
 
-fn csv_row(fields: &[String]) -> String {
+pub(crate) fn csv_row(fields: &[String]) -> String {
     let mut line = fields
         .iter()
         .map(|f| csv_field(f))
@@ -972,11 +1038,18 @@ impl GradingService {
     ) -> Result<TeacherSubmission> {
         let row = self.load_submission(id).await?;
         let (assessment, _) = self.grader_context(actor, row.assessment_id).await?;
+        let expected_version = input.expected_version.ok_or_else(|| {
+            Error::validation(vec![FieldError {
+                field: "If-Match".into(),
+                code: "required".into(),
+                message: "If-Match with the submission's current version is required".into(),
+            }])
+        })?;
         if row.status == SubmissionStatus::Draft {
             return Err(Error::conflict("an open draft cannot be graded"));
         }
-        if row.version != input.expected_version {
-            return Err(stale_version(input.expected_version, row.version));
+        if row.version != expected_version {
+            return Err(stale_version(expected_version, row.version));
         }
         let target = input.action.target();
         if !transition_allowed(row.status, target) {
@@ -1070,7 +1143,7 @@ impl GradingService {
         let written = ab_db::submissions::teacher_save(
             &mut *tx,
             id,
-            input.expected_version,
+            expected_version,
             target,
             &effective,
             final_score,
@@ -1079,7 +1152,7 @@ impl GradingService {
         if !written {
             drop(tx);
             let latest = self.load_submission(id).await?;
-            return Err(stale_version(input.expected_version, latest.version));
+            return Err(stale_version(expected_version, latest.version));
         }
         Self::record_grade(
             &mut tx,

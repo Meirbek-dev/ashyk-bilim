@@ -475,6 +475,16 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         )
         .await;
     assert_eq!(no_lock.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(no_lock.json()["field_errors"][0]["field"], "If-Match");
+    // UX-108: the grading gate answers before the header is validated.
+    let learner_no_lock = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            &serde_json::json!({ "action": "save", "final_score": 90 }),
+        )
+        .await;
+    assert_eq!(learner_no_lock.status, StatusCode::FORBIDDEN);
     let saved_grade = app
         .send(with_if_match(
             &teacher,
@@ -588,11 +598,32 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
     assert_eq!(csv.status, StatusCode::OK);
     assert!(csv.content_type().starts_with("text/csv"));
     let text = csv.text();
+    // UX-108: BOM + Russian by default, like the grading exports.
     assert!(
-        text.starts_with("attempt_id,student,email,status"),
+        text.starts_with("\u{feff}ID попытки,Студент,Email,Статус"),
         "{text}"
     );
-    assert!(text.contains("alice@example.com,published,1,"), "{text}");
+    assert!(
+        text.contains("alice@example.com,Опубликовано,1,"),
+        "{text}"
+    );
+    let kk = app
+        .send(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/v2/file-submissions/{id}/submissions/export"))
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::ACCEPT_LANGUAGE, "kk-KZ,ru;q=0.8")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    let kk_text = kk.text();
+    assert!(
+        kk_text.starts_with("\u{feff}Әрекет ID,Білім алушы,Email,Мәртебе"),
+        "{kk_text}"
+    );
+    assert!(kk_text.contains(",Жарияланды,1,"), "{kk_text}");
 }
 
 /// BUG-113: a submit retried with the same `Idempotency-Key` replays the
@@ -662,7 +693,72 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
             &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
         )
         .await;
-    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    // BUG-166: the quiz vocabulary (403 `cannot start: PAST_DUE`), not 409.
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+    assert_eq!(refused.json()["detail"], "cannot start: PAST_DUE");
+    let no_draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closed}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(no_draft.status, StatusCode::FORBIDDEN, "{}", no_draft.text());
+    assert_eq!(no_draft.json()["detail"], "cannot start: PAST_DUE");
+    let projection = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{closed}"))
+        .await;
+    assert_eq!(
+        projection.json()["disabled_reasons"],
+        serde_json::json!(["PAST_DUE"]),
+        "{}",
+        projection.text()
+    );
+
+    // The deadline closes under an open draft: submit is 403, the draft stays.
+    let closing = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600, "allow_late": false }),
+    )
+    .await;
+    let draft = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closing}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::OK, "{}", draft.text());
+    let moved = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{closing}"),
+            &serde_json::json!({ "due_at_unix": now_unix() - 60 }),
+        )
+        .await;
+    assert_eq!(moved.status, StatusCode::OK, "{}", moved.text());
+    let late_submit = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closing}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        late_submit.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        late_submit.text()
+    );
+    assert_eq!(late_submit.json()["detail"], "cannot start: PAST_DUE");
+    let still_draft = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{closing}/draft"))
+        .await;
+    assert_eq!(still_draft.status, StatusCode::OK, "{}", still_draft.text());
+    assert_eq!(still_draft.json()["status"], "draft");
+    assert_eq!(still_draft.json()["files"].as_array().unwrap().len(), 1);
     // Nothing attached is a validation error even when open.
     let empty_target = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
     let empty = app
@@ -844,6 +940,13 @@ async fn hidden_activity_is_404_for_learner_writes_too(pool: PgPool) {
         )
         .await;
     assert_eq!(submit.status, StatusCode::NOT_FOUND, "{}", submit.text());
+    // UX-108: the learner reads are hidden the same way.
+    for path in ["draft", "me"] {
+        let read = app
+            .get_as(&alice, &format!("/api/v2/file-submissions/{id}/{path}"))
+            .await;
+        assert_eq!(read.status, StatusCode::NOT_FOUND, "{path}: {}", read.text());
+    }
     let by_author = app
         .post_as(
             &teacher,

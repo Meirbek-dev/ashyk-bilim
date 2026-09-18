@@ -8156,7 +8156,7 @@
         "refresh": "Обновить",
         "export": "Экспорт",
         "noScore": "Оценки пока нет",
-        "averageScore": "Средний балл {score}%",
+        "averageScore": "Средний балл {score}",
         "defaultCohort": "Список курса",
         "summary": {
           "learners": "Студенты",
@@ -10449,7 +10449,14 @@
       "published": "Опубликовано",
       "returned": "Возвращено"
     },
-    "newAttempt": "Новая попытка ({number} из {max})"
+    "newAttempt": "Новая попытка ({number} из {max})",
+    "bytes": {
+      "B": "{value} Б",
+      "KB": "{value} КБ",
+      "MB": "{value} МБ",
+      "GB": "{value} ГБ"
+    },
+    "blocked": "Отправка сейчас недоступна."
   },
   "FileSubmissionReview": {
     "loadingSubmissions": "Загрузка отправок",
@@ -10809,7 +10816,8 @@
       "selfCheckNote": "Самопроверка: отметьте вопросы, на которые ответили верно. Проходной балл — {threshold}%.",
       "completedPassed": "Исправление пройдено ({score}%). Попытка снова доступна.",
       "completedFailed": "Исправление не пройдено ({score}%). Повторите материал и попробуйте снова.",
-      "completeFailed": "Не удалось завершить исправление"
+      "completeFailed": "Не удалось завершить исправление",
+      "gatePassed": "Исправление пройдено."
     },
     "budgetStatus": {
       "label": "Ежемесячный бюджет токенов ИИ",
