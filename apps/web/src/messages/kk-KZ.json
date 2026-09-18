@@ -4013,6 +4013,7 @@
           "private": "Жабық",
           "public": "Жария",
           "ready": "Дайын",
+          "archived": "Мұрағатта",
           "scheduled": "Жоспарланған",
           "unsavedChanges": "Сақталмаған өзгерістер"
         }
@@ -8547,6 +8548,7 @@
           "gradingModePercentage": "Проценттік",
           "examPolicyTitle": "Емтихан саясаты",
           "attemptLimitLabel": "Әрекет шегі",
+          "attemptLimitUnlimited": "Шектеусіз",
           "timeLimitLabel": "Уақыт шегі, мин.",
           "violationThresholdLabel": "Бұзушылық шегі",
           "copyPasteProtectionLabel": "Көшіруден/қоюдан қорғау",
@@ -8678,7 +8680,7 @@
         },
         "GeneralSettingsTab": {
           "detailsTitle": "Толықтырулар мен сипаттама",
-          "detailsDescription": "Бұл емтихан туралы жалпы ақпарат.",
+          "detailsDescription": "Бұл оқу тапсырмасы туралы жалпы ақпарат.",
           "impactTitle": "Студентке әсері",
           "impactTiming": "Уақыт",
           "impactAttempts": "Әрекеттер",
@@ -8838,6 +8840,9 @@
           "statusHasIssuesDesc": "Жариялауды ашу үшін тізімдегі барлық мәселелерді шешіңіз.",
           "statusReadyToPublish": "Жариялауға дайын",
           "statusReadyDesc": "Барлық тексерулер сәтті. Қазір жариялауға немесе жоспарлауға болады.",
+          "statusArchived": "Мұрағатта",
+          "statusArchivedDesc": "Оқу тапсырмасы студенттерден жасырылған және тек оқуға арналған. Өңдеу немесе қайта жариялау үшін нобайға қайтарыңыз.",
+          "restoreToDraft": "Нобайға қайтару",
           "revertToDraft": "Нобайға қайтару",
           "publishNow": "Жариялау",
           "schedulePublication": "Жариялауды жоспарлау",
@@ -9073,6 +9078,10 @@
         },
         "lifecycleChanged": "Кезең өзгертілді: {state}",
         "updateLifecycleFailed": "Кезеңді жаңарту сәтсіз аяқталды",
+        "restore": "Қалпына келтіру",
+        "unschedule": "Жоспардан алу",
+        "scheduledReadOnly": "Өңдеу үшін жоспардан алыңыз",
+        "lifecycleConflict": "Ағымдағы кезеңнен «{state}» кезеңіне өту мүмкін емес. Деректер жаңартылды.",
         "breadcrumb": {
           "curriculum": "Оқу жоспары",
           "studio": "Студия"

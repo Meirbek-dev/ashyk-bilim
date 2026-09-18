@@ -3998,6 +3998,7 @@
           "private": "Private",
           "public": "Public",
           "ready": "Ready",
+          "archived": "Archived",
           "scheduled": "Scheduled",
           "unsavedChanges": "Unsaved changes"
         }
@@ -9021,6 +9022,10 @@
         },
         "lifecycleChanged": "Lifecycle changed: {state}",
         "updateLifecycleFailed": "Failed to update lifecycle",
+        "restore": "Restore",
+        "unschedule": "Unschedule",
+        "scheduledReadOnly": "Unschedule to edit",
+        "lifecycleConflict": "Cannot move to “{state}” from the current stage. Data refreshed.",
         "breadcrumb": {
           "curriculum": "Curriculum",
           "studio": "Studio"
@@ -9090,6 +9095,7 @@
           "gradingModePercentage": "Percentage",
           "examPolicyTitle": "Exam policy",
           "attemptLimitLabel": "Attempt limit",
+          "attemptLimitUnlimited": "Unlimited",
           "timeLimitLabel": "Time limit, minutes",
           "violationThresholdLabel": "Violation threshold",
           "copyPasteProtectionLabel": "Copy/paste protection",
@@ -9221,7 +9227,7 @@
         },
         "GeneralSettingsTab": {
           "detailsTitle": "Details & Description",
-          "detailsDescription": "General information about this exam.",
+          "detailsDescription": "General information about this assessment.",
           "impactTitle": "Student impact",
           "impactTiming": "Time",
           "impactAttempts": "Attempts",
@@ -9386,6 +9392,9 @@
           "statusHasIssuesDesc": "Resolve all issues in the checklist to unlock publishing.",
           "statusReadyToPublish": "Ready to Publish",
           "statusReadyDesc": "All checks passed. You can publish now or schedule.",
+          "statusArchived": "Archived",
+          "statusArchivedDesc": "This assessment is hidden from students and read-only. Restore it to draft to edit or publish again.",
+          "restoreToDraft": "Restore to draft",
           "revertToDraft": "Revert to Draft",
           "publishNow": "Publish Now",
           "schedulePublication": "Schedule Publication",

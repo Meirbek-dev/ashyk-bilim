@@ -160,6 +160,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                   type="number"
                   min={1}
                   value={state.maxAttempts}
+                  placeholder={t('attemptLimitUnlimited')}
                   disabled={disabled}
                   aria-invalid={hasIssue('maxAttempts')}
                   className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}

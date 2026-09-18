@@ -4010,6 +4010,7 @@
           "private": "Приватный",
           "public": "Публичный",
           "ready": "Готов",
+          "archived": "В архиве",
           "scheduled": "Запланировано",
           "unsavedChanges": "Несохранённые изменения"
         }
@@ -8494,6 +8495,10 @@
         },
         "lifecycleChanged": "Этап изменён: {state}",
         "updateLifecycleFailed": "Не удалось обновить этап",
+        "restore": "Восстановить",
+        "unschedule": "Снять с расписания",
+        "scheduledReadOnly": "Снимите с расписания, чтобы редактировать",
+        "lifecycleConflict": "Перевести в «{state}» из текущего этапа нельзя. Данные обновлены.",
         "breadcrumb": {
           "curriculum": "Учебный план",
           "studio": "Студия"
@@ -8564,6 +8569,7 @@
           "gradingModePercentage": "Процентный",
           "examPolicyTitle": "Политика экзамена",
           "attemptLimitLabel": "Лимит попыток",
+          "attemptLimitUnlimited": "Без ограничений",
           "timeLimitLabel": "Лимит времени, мин.",
           "violationThresholdLabel": "Порог нарушений",
           "copyPasteProtectionLabel": "Защита от копирования/вставки",
@@ -8695,7 +8701,7 @@
         },
         "GeneralSettingsTab": {
           "detailsTitle": "Детали и описание",
-          "detailsDescription": "Общая информация об этом экзамене.",
+          "detailsDescription": "Общая информация об этой учебной задаче.",
           "impactTitle": "Влияние на студента",
           "impactTiming": "Время",
           "impactAttempts": "Попытки",
@@ -8860,6 +8866,9 @@
           "statusHasIssuesDesc": "Устраните все проблемы в списке для разблокировки публикации.",
           "statusReadyToPublish": "Готов к публикации",
           "statusReadyDesc": "Все проверки пройдены. Вы можете опубликовать сейчас или запланировать.",
+          "statusArchived": "В архиве",
+          "statusArchivedDesc": "Учебная задача скрыта от студентов и доступна только для чтения. Верните её в черновики, чтобы редактировать или опубликовать снова.",
+          "restoreToDraft": "Вернуть в черновики",
           "revertToDraft": "Вернуть в черновики",
           "publishNow": "Опубликовать",
           "schedulePublication": "Запланировать публикацию",

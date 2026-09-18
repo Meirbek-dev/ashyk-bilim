@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChartColumn, PanelLeft, Send, Settings2, UsersRound } from 'lucide-react'
+import { CalendarOff, ChartColumn, PanelLeft, Send, Settings2, UsersRound } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { apiJson } from '@/lib/api-client'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
 import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
 import { toUnix } from '@/lib/api/contract'
 import { courseKeys } from '@/hooks/courses/courseKeys'
@@ -25,6 +27,8 @@ import ResultsReviewTab from '../tabs/ResultsReviewTab'
 import type { AssessmentEditorState, EditableItem, StudioTab } from '../studioTypes'
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
 import { AssessmentWorkspaceShell } from '../workspace/AssessmentWorkspaceShell'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import type { AssessmentWorkspaceNavItem } from '../workspace/AssessmentWorkspaceShell'
 import {
   buildAssessmentPatch,
@@ -68,6 +72,7 @@ export function NativeItemAuthor({
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tStudio = useTranslations('Features.Assessments.Studio')
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs')
+  const { toastApiError } = useApiError()
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
 
   const [prevItems, setPrevItems] = useState(items)
@@ -141,11 +146,13 @@ export function NativeItemAuthor({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(details),
           }),
-          apiJson(`assessments/${assessment.assessment_uuid}/policy`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(policy),
-          }),
+          policy
+            ? apiJson(`assessments/${assessment.assessment_uuid}/policy`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(policy),
+              })
+            : null,
         ])
         lastSavedAssessmentRef.current = serializeAssessmentState(nextState)
         setAssessmentSaveState('saved')
@@ -291,10 +298,16 @@ export function NativeItemAuthor({
         }
         toast.success(tStudio('lifecycleChanged', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'))
+        // BUG-171: a 409 names the refused stage in the page language and re-syncs the view.
+        if (hasErrorCode(error, 'conflict')) {
+          await refresh()
+          toast.error(tStudio('lifecycleConflict', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
+          return
+        }
+        toastApiError(error, { fallback: t('updateLifecycleFailed') })
       }
     },
-    [assessment.assessment_uuid, assessment.course_uuid, queryClient, refresh, t, tStudio],
+    [assessment.assessment_uuid, assessment.course_uuid, queryClient, refresh, t, tStudio, toastApiError],
   )
 
   const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue)
@@ -418,5 +431,20 @@ export function NativeItemAuthor({
     </>
   )
 
-  return <AssessmentWorkspaceShell navItems={navItems} renderView={view => renderView(view)} />
+  // BUG-171: a scheduled assessment is read-only on the server — say so
+  // instead of letting every autosave 409.
+  const banner =
+    assessment.lifecycle === 'SCHEDULED' ? (
+      <Alert className="rounded-none border-x-0 border-t-0">
+        <CalendarOff className="size-4" />
+        <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+          <span>{tStudio('scheduledReadOnly')}</span>
+          <Button size="sm" variant="outline" onClick={() => void setLifecycle('DRAFT')}>
+            {tStudio('unschedule')}
+          </Button>
+        </AlertDescription>
+      </Alert>
+    ) : null
+
+  return <AssessmentWorkspaceShell navItems={navItems} banner={banner} renderView={view => renderView(view)} />
 }

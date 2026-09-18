@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { itemBodyToWire, itemFromWire } from '@/features/assessments/domain/assessment-wire'
-import { buildAssessmentPatch, studioDetailFromWire } from '@/features/assessments/studio/utils'
+import { buildAssessmentPatch, studioDetailFromWire, toAssessmentEditorState } from '@/features/assessments/studio/utils'
 import type { AssessmentDetail } from '@/lib/api/generated/zod'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
 
@@ -124,11 +124,27 @@ describe('buildAssessmentPatch', () => {
 
     expect(details).toEqual({ title: 'Midterm (updated)', description: 'Covers ch. 1-6' })
     // Edited field:
-    expect(policy.passing_score).toBe(70)
+    expect(policy?.passing_score).toBe(70)
     // Not exposed by the editor — carried forward from raw_policy, not dropped:
-    expect(policy.grading_mode).toBe('auto')
-    expect(policy.late_policy).toEqual({ kind: 'none' })
-    expect(policy.allow_late).toBe(false)
+    expect(policy?.grading_mode).toBe('auto')
+    expect(policy?.late_policy).toEqual({ kind: 'none' })
+    expect(policy?.allow_late).toBe(false)
+  })
+
+  // BUG-170: `max_attempts: null` (unlimited) stays unlimited — the editor
+  // state is an empty field, and a description-only edit sends no policy.
+  it('keeps an unlimited quiz unlimited and sends no policy for a description-only edit', () => {
+    const assessment = studioDetailFromWire(
+      wireAssessment({ policy: { ...wireAssessment().policy, max_attempts: null, time_limit_seconds: null } }),
+    )
+    const state = toAssessmentEditorState(assessment)
+    expect(state.maxAttempts).toBe('')
+
+    const { details, policy } = buildAssessmentPatch('exam', assessment, { ...state, description: 'Covers ch. 1-6' })
+    expect(details.description).toBe('Covers ch. 1-6')
+    expect(policy).toBeNull()
+
+    expect(buildAssessmentPatch('exam', assessment, { ...state, maxAttempts: '3' }).policy?.max_attempts).toBe(3)
   })
 })
 

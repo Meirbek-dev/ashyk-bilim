@@ -224,7 +224,9 @@ export function buildAssessmentPatch(_mode: StudioMode, assessment: AssessmentSt
     violation_threshold: state.violationThreshold ? Number(state.violationThreshold) : base.violation_threshold,
   }
 
-  return { details, policy }
+  // BUG-170: `policy` is null when nothing in it changed — a description-only
+  // edit must not PUT the policy (and never a value the teacher did not set).
+  return { details, policy: JSON.stringify(policy) === JSON.stringify(base) ? null : policy }
 }
 
 export function toAssessmentEditorState(assessment: AssessmentStudioDetail): AssessmentEditorState {
@@ -240,7 +242,8 @@ export function toAssessmentEditorState(assessment: AssessmentStudioDetail): Ass
     description: assessment.description ?? '',
     dueAt: toDateTimeLocal(dueAt),
     gradingType: assessment.grading_type ?? 'PERCENTAGE',
-    maxAttempts: typeof maxAttempts === 'number' ? String(maxAttempts) : '1',
+    // BUG-170: `null` is unlimited — an empty field, never a silent «1».
+    maxAttempts: typeof maxAttempts === 'number' ? String(maxAttempts) : '',
     timeLimitMinutes: typeof timeLimitSeconds === 'number' ? String(Math.max(1, Math.ceil(timeLimitSeconds / 60))) : '',
     copyPasteProtection: canonicalIntegrity?.copy_paste_protection === true,
     tabSwitchDetection: canonicalIntegrity?.tab_switch_detection === true,
