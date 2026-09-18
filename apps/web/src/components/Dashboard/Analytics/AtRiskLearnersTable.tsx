@@ -26,7 +26,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type React from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
@@ -82,12 +82,20 @@ export default function AtRiskLearnersTable({
   // columns array on every render remounted every cell — the intervention
   // dialog's trigger included, which dropped focus to <body> after
   // `router.refresh()`. Memoized, the rows update in place.
+  // `t` and `percent` are re-created when `router.refresh()` re-runs the layout
+  // (new messages object) — read them through refs so the memo never invalidates.
+  const tRef = useRef(t)
+  tRef.current = t
+  const percentRef = useRef(percent)
+  percentRef.current = percent
   const columns = useMemo((): DataTableColumnDef<AtRiskLearnerRow>[] => {
     const memoQuery: AnalyticsQuery | undefined = queryKey === 'null' ? undefined : JSON.parse(queryKey)
+    const t = (key: string, values?: Record<string, string | number>) => (values ? tRef.current(key, values) : tRef.current(key))
+    const percent = (value: number) => percentRef.current(value)
     return [
       {
         accessorKey: 'user_display_name',
-        header: t('atRisk.colLearner'),
+        header: () => t('atRisk.colLearner'),
         cell: ({ row }) => {
           const courseHref = row.original.course_id ? `/dash/analytics/courses/${row.original.course_id}` : undefined
           return (
@@ -102,15 +110,15 @@ export default function AtRiskLearnersTable({
           )
         },
       },
-      { accessorKey: 'course_name', header: t('atRisk.colCourse') },
+      { accessorKey: 'course_name', header: () => t('atRisk.colCourse') },
       {
         accessorKey: 'progress_pct',
-        header: t('atRisk.colProgress'),
+        header: () => t('atRisk.colProgress'),
         cell: ({ row }) => percent(row.original.progress_pct),
       },
       {
         accessorKey: 'days_since_last_activity',
-        header: t('atRisk.colInactivity'),
+        header: () => t('atRisk.colInactivity'),
         cell: ({ row }) =>
           row.original.days_since_last_activity == null
             ? t('atRisk.na')
@@ -118,7 +126,7 @@ export default function AtRiskLearnersTable({
       },
       {
         accessorKey: 'risk_score',
-        header: t('atRisk.colRisk'),
+        header: () => t('atRisk.colRisk'),
         cell: ({ row }) => {
           const riskRow = row.original
           const c = riskRow.risk_components ?? {
@@ -160,7 +168,7 @@ export default function AtRiskLearnersTable({
       },
       {
         accessorKey: 'reason_codes',
-        header: t('atRisk.colReasons'),
+        header: () => t('atRisk.colReasons'),
         cell: ({ row }) => (
           <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
             {row.original.reason_codes.map((code: string) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
@@ -172,7 +180,7 @@ export default function AtRiskLearnersTable({
       },
       {
         accessorKey: 'recommended_action',
-        header: t('atRisk.colAction'),
+        header: () => t('atRisk.colAction'),
         cell: ({ row }) => {
           const riskRow = row.original
           const hasGradingBlock = riskRow.open_grading_blocks > 0
@@ -200,7 +208,7 @@ export default function AtRiskLearnersTable({
         },
       },
     ]
-  }, [percent, queryKey, t])
+  }, [queryKey])
 
   return (
     <Card className="shadow-sm">

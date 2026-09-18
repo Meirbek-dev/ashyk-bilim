@@ -2390,7 +2390,7 @@
       "urlPlaceholder": "https://example.com or /relative/path",
       "urlError": "Please enter a safe URL (https, http, mailto, or relative path).",
       "openNewTab": "Open in new tab",
-      "removeLink": "Remove link",
+      "removeLink": "Unlink",
       "cancel": "Cancel",
       "insert": "Insert",
       "update": "Update"
@@ -4035,7 +4035,7 @@
         "changeToUsersOnlyButton": "Change to Users Only",
         "changeToUsersOnlyConfirmMsg": "Are you sure you want this course to be only accessible to signed in users?",
         "changeToUsersOnlyConfirmTitle": "Change to Users Only?",
-        "deleteLinkButton": "Delete link",
+        "deleteLinkButton": "Unlink",
         "deleting": "Deleting...",
         "description": "You can choose to give access to this course to specific groups of users only by linking it to a UserGroup",
         "linkModalDescription": "Choose a UserGroup to link this course to. Users from this UserGroup will have access to this course.",
@@ -6455,7 +6455,7 @@
         },
         "links": {
           "addLink": "Add Link",
-          "removeLink": "Remove Link",
+          "removeLink": "Unlink",
           "selectIcon": "Select Icon",
           "titleLabel": "Link Title",
           "urlLabel": "Link URL"

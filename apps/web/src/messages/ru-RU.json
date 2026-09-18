@@ -2389,7 +2389,7 @@
       "urlPlaceholder": "https://example.com или /relative/path",
       "urlError": "Введите безопасный URL (https, http, mailto или относительный путь).",
       "openNewTab": "Открыть в новой вкладке",
-      "removeLink": "Удалить ссылку",
+      "removeLink": "Отвязать",
       "cancel": "Отмена",
       "insert": "Вставить",
       "update": "Обновить"
@@ -4047,7 +4047,7 @@
         "changeToUsersOnlyButton": "Сделать только для пользователей",
         "changeToUsersOnlyConfirmMsg": "Вы уверены, что хотите ограничить доступ только для авторизованных пользователей?",
         "changeToUsersOnlyConfirmTitle": "Сделать только для пользователей?",
-        "deleteLinkButton": "Удалить ссылку",
+        "deleteLinkButton": "Отвязать",
         "deleting": "Удаление...",
         "description": "Вы можете открыть доступ к курсу только для определённых групп пользователей, связав его с группой",
         "linkModalDescription": "Выберите группу пользователей, которой будет доступен этот курс.",
@@ -6455,7 +6455,7 @@
         },
         "links": {
           "addLink": "Добавить ссылку",
-          "removeLink": "Удалить ссылку",
+          "removeLink": "Отвязать",
           "selectIcon": "Выбрать значок",
           "titleLabel": "Название ссылки",
           "urlLabel": "URL ссылки"

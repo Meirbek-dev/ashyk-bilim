@@ -2389,7 +2389,7 @@
       "urlPlaceholder": "https://example.com немесе /relative/path",
       "urlError": "Қауіпсіз URL енгізіңіз (https, http, mailto немесе салыстырмалы жол).",
       "openNewTab": "Жаңа қойындыда ашу",
-      "removeLink": "Сілтемені жою",
+      "removeLink": "Ажырату",
       "cancel": "Болдырмау",
       "insert": "Кірістіру",
       "update": "Жаңарту"
@@ -4050,7 +4050,7 @@
         "changeToUsersOnlyButton": "Тек пайдаланушыларға қылу",
         "changeToUsersOnlyConfirmMsg": "Бұл курсты тек тіркелген пайдаланушыларға қолжетімді еткіңіз келетініне сенімдісіз бе?",
         "changeToUsersOnlyConfirmTitle": "Тек пайдаланушыларға қылу?",
-        "deleteLinkButton": "Сілтемені жою",
+        "deleteLinkButton": "Ажырату",
         "deleting": "Жойылуда...",
         "description": "Курсты тек белгілі бір пайдаланушылар тобына қолжетімді ету үшін топқа байланыстыруға болады",
         "linkModalDescription": "Бұл курсқа қолжетімді болатын пайдаланушылар тобын таңдаңыз.",
@@ -6470,7 +6470,7 @@
         },
         "links": {
           "addLink": "Сілтеме қосу",
-          "removeLink": "Сілтемені жою",
+          "removeLink": "Ажырату",
           "selectIcon": "Белгішені таңдау",
           "titleLabel": "Сілтеме атауы",
           "urlLabel": "Сілтеме URL"
