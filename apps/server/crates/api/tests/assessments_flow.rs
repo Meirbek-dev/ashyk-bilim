@@ -1090,3 +1090,103 @@ async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
     let teacher_read = orders(&app.get_as(&teacher, &format!("/api/v2/assessments/{id}")).await.json());
     assert_eq!(teacher_read, (authored, authored_options));
 }
+
+/// BUG-162: a scheduled assessment is read-only (409 `conflict`, unschedule
+/// first) — its readiness was gated at schedule time; and the auto-publish
+/// sweep re-checks readiness, leaving a blocked schedule `scheduled` with
+/// an audit row instead of going live past due.
+#[sqlx::test(migrations = "../../migrations")]
+async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
+    pool: PgPool,
+) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Timed" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("Q1"),
+        )
+        .await;
+    let item_id = item.json()["id"].as_str().unwrap().to_owned();
+    let scheduled = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "scheduled", "scheduled_at_unix": far_future() }),
+        )
+        .await;
+    assert_eq!(scheduled.status, StatusCode::OK, "{}", scheduled.text());
+
+    // Every edit path is refused while scheduled.
+    let policy = created.json()["policy"].clone();
+    let edit = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/policy"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(policy.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(edit.status, StatusCode::CONFLICT, "{}", edit.text());
+    assert_eq!(edit.json()["code"], "conflict");
+    let item_edit = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{item_id}"),
+            &serde_json::json!({ "title": "" }),
+        )
+        .await;
+    assert_eq!(item_edit.status, StatusCode::CONFLICT, "{}", item_edit.text());
+
+    // The world moves: the schedule is now due and after the due date.
+    sqlx::query(
+        "UPDATE assessments SET scheduled_at = now() - interval '1 minute',
+                                due_at = now() - interval '1 hour' WHERE id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&id).unwrap())
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let published = ab_domain::assessments::AssessmentsService::publish_due(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(published, 0);
+    let detail = app.get_as(&teacher, &format!("/api/v2/assessments/{id}")).await;
+    assert_eq!(detail.json()["lifecycle"], "scheduled", "{}", detail.text());
+    let audit = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/audit"))
+        .await;
+    assert!(
+        audit.text().contains("auto-publish-skipped")
+            && audit.text().contains("schedule.after_due_at"),
+        "{}",
+        audit.text()
+    );
+
+    // Ready again → the sweep publishes it.
+    sqlx::query("UPDATE assessments SET due_at = NULL WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let published = ab_domain::assessments::AssessmentsService::publish_due(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(published, 1);
+    let detail = app.get_as(&teacher, &format!("/api/v2/assessments/{id}")).await;
+    assert_eq!(detail.json()["lifecycle"], "published", "{}", detail.text());
+}

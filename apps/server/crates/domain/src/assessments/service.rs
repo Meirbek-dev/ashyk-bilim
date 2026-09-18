@@ -505,7 +505,12 @@ impl AssessmentsService {
                 }
                 Ok(())
             }
-            Lifecycle::Draft | Lifecycle::Scheduled => Ok(()),
+            // BUG-162: a schedule was readiness-checked at schedule time;
+            // edits would bypass that gate, so it is read-only until unscheduled.
+            Lifecycle::Scheduled => Err(Error::conflict(
+                "scheduled assessments are read-only; unschedule first",
+            )),
+            Lifecycle::Draft => Ok(()),
         }
     }
 
@@ -909,26 +914,58 @@ impl AssessmentsService {
         self.detail(id).await
     }
 
-    /// Called by the auto-publish job: flips due schedules and brings their
-    /// activities live (the legacy cron forgot the activity flag).
+    /// Called by the auto-publish job: re-checks readiness (BUG-162 — the
+    /// schedule was gated at schedule time, the world may have moved since),
+    /// flips due schedules and brings their activities live (the legacy cron
+    /// forgot the activity flag). A blocked one stays `scheduled`, logged and
+    /// audited with its readiness codes.
     pub async fn publish_due(pool: &PgPool) -> Result<usize> {
-        let ids = ab_db::assessments::publish_due(pool).await?;
-        for id in &ids {
-            if let Some(assessment) = ab_db::assessments::get_assessment(pool, *id).await? {
-                ProgressProjector::new(pool.clone())
-                    .set_activity_published(assessment.activity_id, assessment.course_id, true)
-                    .await?;
+        let mut published = 0;
+        for id in ab_db::assessments::list_due(pool).await? {
+            let Some(assessment) = ab_db::assessments::get_assessment(pool, id).await? else {
+                continue;
+            };
+            let items = ab_db::assessments::list_items(pool, id)
+                .await?
+                .into_iter()
+                .map(Item::try_from)
+                .collect::<Result<Vec<_>>>()?;
+            let readiness = Self::build_readiness(&assessment, &items, assessment.scheduled_at);
+            if !readiness.ok {
+                let codes: Vec<&str> = readiness
+                    .issues
+                    .iter()
+                    .filter(|i| i.severity == "blocker")
+                    .map(|i| i.code.as_str())
+                    .collect();
+                tracing::warn!(%id, ?codes, "scheduled assessment not ready; left scheduled");
+                ab_db::assessments::insert_audit_event(
+                    pool,
+                    id,
+                    None,
+                    "auto-publish-skipped",
+                    serde_json::json!({ "by": "scheduler", "readiness": codes }),
+                )
+                .await?;
+                continue;
             }
+            if !ab_db::assessments::publish_due(pool, id).await? {
+                continue;
+            }
+            ProgressProjector::new(pool.clone())
+                .set_activity_published(assessment.activity_id, assessment.course_id, true)
+                .await?;
             ab_db::assessments::insert_audit_event(
                 pool,
-                *id,
+                id,
                 None,
                 "lifecycle-transition",
                 serde_json::json!({ "from": "scheduled", "to": "published", "by": "scheduler" }),
             )
             .await?;
+            published += 1;
         }
-        Ok(ids.len())
+        Ok(published)
     }
 
     /// Deep copy as a fresh draft: new activity appended to the (same or

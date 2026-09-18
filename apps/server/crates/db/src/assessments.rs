@@ -437,16 +437,29 @@ pub async fn set_lifecycle(
 }
 
 /// Auto-publish sweep: every scheduled assessment whose time has come.
-pub async fn publish_due(pool: &PgPool) -> Result<Vec<AssessmentId>> {
+pub async fn list_due(pool: &PgPool) -> Result<Vec<AssessmentId>> {
     let ids = sqlx::query_scalar!(
-        r#"UPDATE assessments
-           SET lifecycle = 'published', published_at = now(), scheduled_at = NULL
+        r#"SELECT id AS "id: AssessmentId" FROM assessments
            WHERE lifecycle = 'scheduled' AND scheduled_at <= now()
-           RETURNING id AS "id: AssessmentId""#
+           ORDER BY scheduled_at"#
     )
     .fetch_all(pool)
     .await?;
     Ok(ids)
+}
+
+/// Flip one due schedule live; `false` when it is no longer due (unscheduled
+/// or published by hand since [`list_due`]).
+pub async fn publish_due(pool: &PgPool, id: AssessmentId) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE assessments
+           SET lifecycle = 'published', published_at = now(), scheduled_at = NULL
+           WHERE id = $1 AND lifecycle = 'scheduled' AND scheduled_at <= now()"#,
+        id.0
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
 }
 
 pub async fn bump_content_version(pool: &PgPool, id: AssessmentId) -> Result<()> {
