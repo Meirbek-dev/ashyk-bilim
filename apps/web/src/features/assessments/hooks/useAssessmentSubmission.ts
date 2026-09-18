@@ -17,6 +17,7 @@ import {
 } from '../submission-client'
 import type { AssessmentSubmissionRead } from '../domain/submission-wire'
 import { isApiError } from '@/lib/api/assertSuccess'
+import { disabledReasonOf } from '../domain/disabled-reason'
 import { cloneJsonValue } from '@/lib/json-clone'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { refreshLearnerCourseState } from '@/features/learner-course/api'
@@ -52,6 +53,7 @@ function isOfflineRecoverable(error: unknown): boolean {
 
 export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
   const t = useTranslations('Features.ActivityWorkspace')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
   const queryClient = useQueryClient()
   const router = useRouter()
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({})
@@ -306,6 +308,16 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           openConflict(latest)
         }
         toast.error(t('answersUpdatedElsewhere'))
+        return
+      }
+      const reason = disabledReasonOf(error)
+      if (reason) {
+        // UX-103: the window closed under the open attempt (PAST_DUE, …) —
+        // refetch attempt-state so the blocked card replaces the attempt,
+        // and say why instead of a raw «PAST_DUE».
+        toast.error(tReasons.has(reason) ? tReasons(reason) : tReasons('UNKNOWN'))
+        await invalidateAssessmentState()
+        await refreshLearnerCourseState(queryClient, router)
         return
       }
       setSaveState('error')

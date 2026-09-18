@@ -132,7 +132,7 @@
       "authRequired": "Авторизация қажет",
       "bestSubmission": "Ең жақсы жіберу",
       "complete": "Аяқталды",
-      "draftNeedsWork": "Жоба түзетуді қажет етеді",
+      "draftNeedsWork": "Нобай түзетуді қажет етеді",
       "incomplete": "Аяқталмады",
       "cancel": "Болдырмау",
       "challengeSaved": "Оқу әрекеті сәтті сақталды",
@@ -527,7 +527,7 @@
       "studentSubmission": "Студенттің шешімі",
       "languagesUnavailable": "Код орындау ортасы қолжетімсіз: тесттерді іске қосу уақытша мүмкін емес, бірақ шешімді өңдеп, сақтай аласыз.",
       "attemptStatus": {
-        "draft": "Жоба",
+        "draft": "Нобай",
         "pending": "Тексеруде",
         "graded": "Тексерілді",
         "published": "Бағаланды",
@@ -551,7 +551,7 @@
       "appealLinkText": "Шағым беру немесе мұғаліммен байланысу",
       "attemptNumber": "№{number} әрекет",
       "attemptsRemaining": "Қалған әрекеттер",
-      "noEditableDraft": "Өңделетін жоба қолжетімді емес",
+      "noEditableDraft": "Өңделетін нобай қолжетімді емес",
       "autoSubmitting": "Емтиханды автоматты тапсыру: {reason}",
       "autoSubmittingReason": {
         "timeExpired": "Уақыт аяқталды",
@@ -805,7 +805,7 @@
     "continueActivity": "Жалғастыру",
     "submitButton": "Жіберу",
     "viewReceipt": "Түбіртекті көру",
-    "draft": "Жоба",
+    "draft": "Нобай",
     "failed": "Өтпеді",
     "accessBlocked": "Қолжетімділік бұғатталған",
     "attemptExhausted": "Әрекеттер аяқталды",
@@ -2581,7 +2581,7 @@
       "updateFailed": "Белсенділікті жаңарту мүмкін болмады",
       "updating": "Белсенділік жаңартылуда...",
       "editButton": "Өңдеу",
-      "draftBadge": "Жоба",
+      "draftBadge": "Нобай",
       "liveBadge": "Жарияланған",
       "save": "Сақтау",
       "cancel": "Болдырмау"
@@ -2736,7 +2736,7 @@
       "emptyServerSummary": "Курстың соңғы күйі әлі қолжетімді емес.",
       "reloadButton": "Соңғы нұсқасын жүктеу",
       "saveAnywayButton": "Дегенмен сақтау",
-      "reviewDraftButton": "Жобамды қарап шығуды жалғастыру"
+      "reviewDraftButton": "Нобайымды қарап шығуды жалғастыру"
     },
     "activityNamePlaceholder": "Белсенділік атауы",
     "activityTypes": {
@@ -2762,7 +2762,7 @@
     "edit": "Өңдеу",
     "editButton": "Өңдеу",
     "noActivities": "Белсенділіктер әлі жоқ",
-    "deleteChapterConfirmationBreakdown": "Бұл тарауды және оның {count, plural, =0 {0 сабақты} one {# сабақты} other {# сабақты}} ({published} жарияланған, {drafts} жоба) біржола жояды.",
+    "deleteChapterConfirmationBreakdown": "Бұл тарауды және оның {count, plural, =0 {0 сабақты} one {# сабақты} other {# сабақты}} ({published} жарияланған, {drafts} нобай) біржола жояды.",
     "noActivitiesHint": "Төменде бірінші оқу әрекетін қосыңыз",
     "save": "Сақтау",
     "cancel": "Болдырмау",
@@ -7041,7 +7041,7 @@
       "attempt": "Әрекет",
       "submitted": "Жіберілді",
       "status": "Күй",
-      "statusDraft": "Жоба",
+      "statusDraft": "Нобай",
       "statusPending": "Бағалауды күтуде",
       "statusGraded": "Бағаланды",
       "statusPublished": "Жарияланды",
@@ -7105,7 +7105,7 @@
       "confirmReturnDesc": "Жұмыс студентке қайтарылады. Студент жұмысты қайта жіберуге мүмкіндік алады.",
       "cancel": "Болдырмау",
       "confirm": "Растау",
-      "saveDraft": "Жобаны сақтау",
+      "saveDraft": "Нобайды сақтау",
       "publishGrade": "Бағаны жариялау",
       "gradePublished": "Баға студентке жарияланды",
       "confirmPublishTitle": "Бағаны жариялау керек пе?",
@@ -7132,12 +7132,12 @@
       "staleDraftTitle": "Бағаны әріптесіңіз жаңартты",
       "staleDraft": {
         "serverScoreLabel": "Сервер баллы:",
-        "yourDraftLabel": "Сіздің жобаңыз:"
+        "yourDraftLabel": "Сіздің нобайыңыз:"
       },
       "useServerValues": "Олардың нұсқасын жүктеу",
-      "keepMyDraft": "Жобамды сақтау",
+      "keepMyDraft": "Нобайымды сақтау",
       "staleDraftBlocked": "Алдымен қай нұсқаны қалдыратыныңызды таңдаңыз.",
-      "saveDraftGrade": "Жоба ретінде сақтау",
+      "saveDraftGrade": "Нобай ретінде сақтау",
       "returnForRevision": "Қайта өңдеуге қайтару",
       "publishPrerequisite": "Жариялау алдында барлық элементке балл қойыңыз.",
       "keyboardHintNextKey": "j",
@@ -7145,7 +7145,7 @@
       "keyboardHintForward": "Келесі студент",
       "keyboardHintBackward": "Алдыңғы студент",
       "keyboardHintFocusGrade": "Баға енгізу өрісіне өту",
-      "keyboardHintSave": "Жобаны сақтау",
+      "keyboardHintSave": "Нобайды сақтау",
       "keyboardHintPublish": "Жариялау",
       "keyboardHint": "Пернелер тіркесімі",
       "shortcutSave": "Ctrl↵",
@@ -7158,13 +7158,13 @@
     },
     "Batch": {
       "title": "Топпен бағалау ({count} жұмыс)",
-      "subtitle": "{count} жергілікті жоба өзгертілді",
+      "subtitle": "{count} жергілікті нобай өзгертілді",
       "close": "Топтық бағалау панелін жабу",
       "position": "Студент {current}/{total}: {student}",
       "indicatorNotEdited": "Өзгертілмеген",
       "indicatorEdited": "Өзгертілген",
-      "saveDraft": "Жобаны сақтау",
-      "draftSaved": "Жоба өзгерістері жіберілгенге дейін жергілікті сақталады",
+      "saveDraft": "Нобайды сақтау",
+      "draftSaved": "Нобай өзгерістері жіберілгенге дейін жергілікті сақталады",
       "submitAll": "Барлығын жіберу ({count})",
       "submitting": "Жіберілуде...",
       "confirmSubmitTitle": "Таңдалған студенттердің бағаларын жіберу керек пе?",
@@ -7175,8 +7175,8 @@
       "submitSummary": "{succeeded} баға жіберілді, {failed} сәтсіз аяқталды",
       "submitFailed": "Топтық бағаларды жіберу сәтсіз аяқталды",
       "unknownError": "Белгісіз қате",
-      "unsavedTitle": "Жіберілмеген жергілікті жобалар",
-      "unsavedDesc": "Жіберілмеген жергілікті бағалау жобалары бар. Оларды жойып, панельді жабу керек пе?"
+      "unsavedTitle": "Жіберілмеген жергілікті нобайлар",
+      "unsavedDesc": "Жіберілмеген жергілікті бағалау нобайлары бар. Оларды жойып, панельді жабу керек пе?"
     },
     "Result": {
       "score": "Баға",
@@ -7588,7 +7588,7 @@
         "failed": "Қате",
         "processing": "Өңделуде",
         "pendingJudge0": "Judge0 күтілуде",
-        "draft": "Жоба",
+        "draft": "Нобай",
         "published": "Жарияланды",
         "returned": "Қайтарылды"
       }
@@ -7985,7 +7985,7 @@
       "publish_grade": "Баға жарияланды",
       "save_grade": "Баға сақталды",
       "published": "Жарияланды",
-      "draft_saved": "Жоба сақталды",
+      "draft_saved": "Нобай сақталды",
       "extend_deadline": "Мерзімді ұзарту",
       "release_grades": "Бағаларды жариялау",
       "return_all": "Барлық жұмыстарды қайтару",
@@ -8354,9 +8354,9 @@
           "serverHeader": "Сервер (ағымдағы)",
           "scoreLabel": "Баға: ",
           "feedbackLabel": "Кері байланыс: ",
-          "localHeader": "Сіздің жобаңыз",
+          "localHeader": "Сіздің нобайыңыз",
           "useServer": "Сервер мәндерін пайдалану",
-          "keepLocal": "Менің жобамды қалдыру және қайталау"
+          "keepLocal": "Менің нобайымды қалдыру және қайталау"
         },
         "Panel": {
           "selectSubmission": "Тексеруді бастау үшін жіберімді таңдаңыз.",
@@ -8385,7 +8385,7 @@
           "confirmReturnDesc": "Жұмыс студентке қайтарылады. Студент жұмысты қайта жіберуге мүмкіндік алады.",
           "cancel": "Болдырмау",
           "confirm": "Растау",
-          "saveDraft": "Жобаны сақтау",
+          "saveDraft": "Нобайды сақтау",
           "publishGrade": "Бағаны жариялау",
           "gradePublished": "Баға студентке жарияланды",
           "confirmPublishTitle": "Бағаны жариялау керек пе?",
@@ -8409,14 +8409,14 @@
           "releaseStateAwaitingRelease": "Жарияланым күтуде",
           "releaseStateVisible": "Студентке көрінеді",
           "releaseStateReturned": "Қайтарылды",
-          "staleDraftTitle": "Сақталмаған жергілікті жоба",
+          "staleDraftTitle": "Сақталмаған жергілікті нобай",
           "staleDraft": {
             "serverScoreLabel": "Сервер баллы:",
-            "yourDraftLabel": "Сіздің жобаңыз:"
+            "yourDraftLabel": "Сіздің нобайыңыз:"
           },
           "useServerValues": "Сервер мәндерін пайдалану",
-          "keepMyDraft": "Жобамды сақтау",
-          "saveDraftGrade": "Жоба ретінде сақтау",
+          "keepMyDraft": "Нобайымды сақтау",
+          "saveDraftGrade": "Нобай ретінде сақтау",
           "returnForRevision": "Қайта өңдеуге қайтару",
           "publishPrerequisite": "Жариялау алдында кем дегенде бір элементке баға қойылуы керек.",
           "keyboardHintNextKey": "j",
@@ -9202,11 +9202,11 @@
           },
           "referenceFile": "Анықтамалық файл",
           "currentFile": "Ағымдағы файл",
-          "verifiedBeforeAttach": "Файл жобаға тіркелмес бұрын тексеріледі.",
+          "verifiedBeforeAttach": "Файл нобайға тіркелмес бұрын тексеріледі.",
           "uploadedFile": "Жүктелген файл",
           "noFileRecorded": "Файл тіркелмеген",
           "toasts": {
-            "attached": "Файл жобаға тіркелді."
+            "attached": "Файл нобайға тіркелді."
           },
           "errors": {
             "fileTooLarge": "Файл {size} МБ-тан асып кетті",
@@ -9275,7 +9275,7 @@
           "appealLinkText": "Шағым беру немесе мұғаліммен байланысу",
           "attemptNumber": "№{number} әрекет",
           "attemptsRemaining": "Қалған әрекеттер",
-          "noEditableDraft": "Өңдеуге болатын жоба жоқ",
+          "noEditableDraft": "Өңдеуге болатын нобай жоқ",
           "autoSubmitting": "Емтиханды автоматты тапсыру: {reason}",
           "autoSubmittingReason": {
             "timeExpired": "Уақыт аяқталды",
@@ -9412,9 +9412,9 @@
           "saveStateUnsaved": "Сақталмады",
           "saveStateError": "Сақтау қатесі",
           "saveStateReturned": "Қайтарылды",
-          "recoverLocalDraft": "Жергілікті жобаны қалпына келтіру",
-          "recoverLocalDraftWithTime": "{time} уақытындағы жергілікті жобаны қалпына келтіру",
-          "resolveDraftConflict": "Жобалар қайшылығын шешу",
+          "recoverLocalDraft": "Жергілікті нобайды қалпына келтіру",
+          "recoverLocalDraftWithTime": "{time} уақытындағы жергілікті нобайды қалпына келтіру",
+          "resolveDraftConflict": "Нобайлар қайшылығын шешу",
           "draftConflictAvailable": "Серверде жауаптарыңыздың жаңа нұсқасы табылды.",
           "keepMyLocalVersion": "Менің жергілікті нұсқамды қалдыру",
           "useLatestSavedVersion": "Соңғы сақталған нұсқаны пайдалану",
@@ -10479,11 +10479,11 @@
     "blocked": "Қол жеткізу бұғатталды",
     "blockedReasons": {
       "NOT_PUBLISHED": "Оқу әрекеті әлі жарияланмаған.",
-      "BEFORE_WINDOW": "Оқу әрекеті әлі қолжетімді емес.",
-      "AFTER_WINDOW": "Тапсыру терезесі жабылды.",
+      "SCHEDULED_NOT_OPEN": "Оқу әрекеті әлі ашылмаған.",
+      "ARCHIVED": "Оқу әрекеті мұрағатталған.",
+      "PAST_DUE": "Тапсыру мерзімі өтті.",
       "MAX_ATTEMPTS_REACHED": "Сіз барлық мүмкіндіктерді пайдаландыңыз.",
-      "NOT_ENROLLED": "Сіз бұл курсқа жазылмаған.",
-      "AWAITING_GRADE": "Жұмысыңыз тексерілуде.",
+      "TIME_LIMIT_EXPIRED": "Әрекетке берілген уақыт бітті.",
       "REMEDIATION_REQUIRED": "Алдымен тағайындалған түзету жұмысын аяқтаңыз.",
       "UNKNOWN": "Іс-әрекет қолжетімсіз."
     }
@@ -10540,14 +10540,14 @@
     "rubricScore": "Балл",
     "rubricMaxScore": "Макс. балл",
     "rubricComment": "Пікір",
-    "saveDraft": "Жоба сақтау",
+    "saveDraft": "Нобай сақтау",
     "publish": "Бағаны жариялау",
     "returnForRevision": "Қайта өңдеуге қайтару",
     "scoreSummary": "{earned} / {possible} ({percentage}%)",
     "latePenalty": "Кешіктіру айыбы: -{penalty}%",
     "noItems": "Бағаланатын элементтер жоқ.",
     "toasts": {
-      "saved": "Бағалау жобасы сақталды",
+      "saved": "Бағалау нобайы сақталды",
       "published": "Баға жарияланды",
       "returned": "Қайта өңдеуге қайтарылды",
       "failed": "Бағалауды сақтау сәтсіз болды"
@@ -10599,6 +10599,7 @@
     "submitFiles": "Файлдарды тапсыру",
     "submissionHistory": "Тапсыру тарихы",
     "attemptNumber": "№{number} әрекет",
+    "attemptOrdinal": "№{number}",
     "draft": "Нобай",
     "fileCount": "{count, plural, one {# файл} other {# файл}}",
     "submissionReceived": "Тапсыру қабылданды",
@@ -10647,7 +10648,7 @@
     "publishResult": "Нәтижені жариялау",
     "selectSubmission": "Тапсырманы таңдаңыз.",
     "rubric": "Рубрика",
-    "draftSaved": "Жоба сақталды",
+    "draftSaved": "Нобай сақталды",
     "gradePublished": "Баға жарияланды",
     "gradeReturned": "Жұмыс қайта өңдеуге қайтарылды",
     "scoreInvalid": "Балл 0 мен 100 аралығында болуы керек",
@@ -10720,7 +10721,7 @@
     "fixInstructionsBeforePublishing": "Жарияламас бұрын нұсқаулықты түзетіңіз",
     "published": "Жарияланды",
     "lifecycle": {
-      "draft": "Жоба",
+      "draft": "Нобай",
       "published": "Жарияланды",
       "archived": "Мұрағатта"
     }
@@ -10803,7 +10804,7 @@
       "modelRecorded": "Модель: {name}",
       "modelNotRecorded": "Модель: жазылмаған",
       "citationsCount": "Дәйексөздер: {count}",
-      "draftModeModel": "жоба режимі (модельсіз)"
+      "draftModeModel": "нобай режимі (модельсіз)"
     },
     "states": {
       "labels": {
@@ -10828,7 +10829,7 @@
       "title": "ЖИ-мен дәрісті шолу",
       "description": "Түсініксіз түсіндірмелерді, жетіспейтін мысалдарды және бағалау сәйкессіздіктерін табу.",
       "review": "Шолу",
-      "defaultStatus": "Дәріс жобасын сақтағаннан кейін шолуды іске қосыңыз. Ұсыныстар тексеру күйінде қалады."
+      "defaultStatus": "Дәріс нобайын сақтағаннан кейін шолуды іске қосыңыз. Ұсыныстар тексеру күйінде қалады."
     },
     "qaInput": {
       "label": "Сұрақ",
@@ -10882,7 +10883,7 @@
       "description": "Осы курс үшін сапа ұпайы, айғақтар және түзету тәуекелдері.",
       "rerun": "Қайта қосу",
       "analyze": "Талдау",
-      "draftFeedback": "Кері байланыс жобасы",
+      "draftFeedback": "Кері байланыс нобайы",
       "defaultStatus": "ЖИ-ге көрінетін нұсқаулықты жарияламас бұрын мұғалім тексерген сапа есебін дайындау үшін талдауды іске қосыңыз.",
       "publishedToast": "Сапа бағасы жарияланды",
       "publishFailed": "Бағаны жариялау мүмкін болмады",
@@ -10932,15 +10933,15 @@
       "confirmPublish": "Ұпайды жариялау",
       "contentChanged": "Осы тексерістен кейін курс материалдары өзгерді",
       "previousScore": "Алдыңғы тексеріс ұпайы: {score}",
-      "draftModeModel": "жоба режимі (модельсіз)"
+      "draftModeModel": "нобай режимі (модельсіз)"
     },
     "submissionAIEntry": {
       "title": "Тапсырманы ЖИ талдауы",
       "description": "Білімдегі олқылықтар, дәлелдер және міндетті емес бейімделген түзету жұмыстары.",
       "analyze": "Талдау",
-      "draftFeedback": "Кері байланыс жобасы",
+      "draftFeedback": "Кері байланыс нобайы",
       "replaceFeedbackTitle": "Кері байланысты ауыстыру керек пе?",
-      "replaceFeedbackDescription": "Кері байланыс өрісінде мәтін бар. ЖИ жобасы оны ауыстырады.",
+      "replaceFeedbackDescription": "Кері байланыс өрісінде мәтін бар. ЖИ нобайы оны ауыстырады.",
       "replaceFeedbackCancel": "Болдырмау",
       "replaceFeedbackConfirm": "Ауыстыру",
       "generateGate": "Түзету шегін құру",
@@ -10998,7 +10999,7 @@
       "aiDisabled": "ЖИ өшірулі",
       "providerReady": "Провайдер дайын",
       "providerMissing": "Провайдер бапталмаған",
-      "draftMode": "Жоба режимі",
+      "draftMode": "Нобай режимі",
       "modelLabel": "Модель",
       "requestLimitLabel": "Сұрау токендерінің шегі",
       "outputLimitLabel": "Жауап токендерінің шегі"
@@ -11111,7 +11112,7 @@
     "artifactLifecycle": {
       "queued": "Кезекте",
       "evidenceChecked": "Дереккөздер тексерілді",
-      "draftArtifact": "Нәтиженің жобасы",
+      "draftArtifact": "Нәтиженің нобайы",
       "finalArtifact": "Қорытынды нәтиже",
       "ready": "Дайын"
     }

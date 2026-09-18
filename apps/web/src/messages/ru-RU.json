@@ -10309,11 +10309,11 @@
     "blocked": "Доступ заблокирован",
     "blockedReasons": {
       "NOT_PUBLISHED": "Учебная задача ещё не опубликована.",
-      "BEFORE_WINDOW": "Учебная задача ещё не доступна.",
-      "AFTER_WINDOW": "Окно сдачи закрыто.",
+      "SCHEDULED_NOT_OPEN": "Учебная задача ещё не открыта.",
+      "ARCHIVED": "Учебная задача архивирована.",
+      "PAST_DUE": "Срок сдачи истёк.",
       "MAX_ATTEMPTS_REACHED": "Вы использовали все попытки.",
-      "NOT_ENROLLED": "Вы не записаны на этот курс.",
-      "AWAITING_GRADE": "Ваша работа проверяется.",
+      "TIME_LIMIT_EXPIRED": "Время на попытку истекло.",
       "REMEDIATION_REQUIRED": "Сначала завершите назначенное исправление.",
       "UNKNOWN": "Действие недоступно."
     }
@@ -10429,6 +10429,7 @@
     "submitFiles": "Отправить файлы",
     "submissionHistory": "История отправок",
     "attemptNumber": "Попытка №{number}",
+    "attemptOrdinal": "№{number}",
     "draft": "Черновик",
     "fileCount": "{count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
     "submissionReceived": "Отправка получена",

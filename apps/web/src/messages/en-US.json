@@ -10295,11 +10295,11 @@
     "blocked": "Access blocked",
     "blockedReasons": {
       "NOT_PUBLISHED": "This assessment is not yet published.",
-      "BEFORE_WINDOW": "This assessment is not yet available.",
-      "AFTER_WINDOW": "The submission window has closed.",
+      "SCHEDULED_NOT_OPEN": "This assessment has not opened yet.",
+      "ARCHIVED": "This assessment has been archived.",
+      "PAST_DUE": "The due date has passed.",
       "MAX_ATTEMPTS_REACHED": "You have used all your allowed attempts.",
-      "NOT_ENROLLED": "You are not enrolled in this course.",
-      "AWAITING_GRADE": "Your submission is being graded. Please check back later.",
+      "TIME_LIMIT_EXPIRED": "The time limit for this attempt has expired.",
       "REMEDIATION_REQUIRED": "Finish the assigned remediation first.",
       "UNKNOWN": "Action unavailable."
     }
@@ -10415,6 +10415,7 @@
     "submitFiles": "Submit files",
     "submissionHistory": "Submission history",
     "attemptNumber": "Attempt #{number}",
+    "attemptOrdinal": "#{number}",
     "draft": "Draft",
     "fileCount": "{count, plural, one {# file} other {# files}}",
     "submissionReceived": "Submission received",

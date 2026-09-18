@@ -48,7 +48,11 @@ export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceipt
 
       {/* Metadata */}
       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-        <MetaCell icon={<Hash className="size-4" />} label={t('attempt')} value={`#${attempt.attempt_number}`} />
+        <MetaCell
+          icon={<Hash className="size-4" />}
+          label={t('attempt')}
+          value={t('attemptOrdinal', { number: attempt.attempt_number })}
+        />
         <MetaCell icon={<Files className="size-4" />} label={t('files')} value={String(attempt.files.length)} />
         <MetaCell icon={<Clock className="size-4" />} label={t('statusLabel')} value={t('awaitingReview')} />
       </div>

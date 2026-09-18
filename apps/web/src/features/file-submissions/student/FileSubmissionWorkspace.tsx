@@ -150,6 +150,7 @@ const LIFECYCLE_BADGE: Record<string, BadgeVariant> = {
  */
 export default function FileSubmissionWorkspace({ activity, course }: FileSubmissionWorkspaceProps) {
   const t = useTranslations('FileSubmission')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
   const tCommon = useTranslations('Common')
   const activityUuid = activity.activity_uuid?.replace(/^activity_/, '') ?? ''
   const { can } = useSession()
@@ -283,8 +284,17 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       // The header badge follows the learner-state projection (UX-089): a draft is «in progress» too.
       await refreshLearnerCourseState(queryClient, router)
     },
-    onError: err => {
+    onError: async err => {
       setIsUploading(false)
+      const reason = disabledReasonOf(err)
+      if (reason) {
+        // UX-103: the window closed under the open draft (PAST_DUE, …) —
+        // refetch so the blocked state replaces the form, and say why.
+        toast.error(tReasons.has(reason) ? tReasons(reason) : tReasons('UNKNOWN'))
+        await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
+        await refreshLearnerCourseState(queryClient, router)
+        return
+      }
       toastApiError(err, { fallback: t('saveFailed') })
     },
   })
