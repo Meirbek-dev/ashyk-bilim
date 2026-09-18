@@ -101,7 +101,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
         await apiJson(`assessments/${studio.assessmentUuid}/lifecycle`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: 'ARCHIVED', scheduled_at: null }),
+          body: JSON.stringify({ to: 'archived', scheduled_at_unix: null }),
         })
         await queryClient.invalidateQueries({
           queryKey: queryKeys.assessments.studio(activityUuid.replace(/^activity_/, '')),
@@ -171,7 +171,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   disabled={isPending || !studio.canArchive}
-                  onSelect={archiveAssessment}
+                  onClick={archiveAssessment}
                   className="text-destructive focus:text-destructive"
                 >
                   <Archive className="mr-2 size-4" />
