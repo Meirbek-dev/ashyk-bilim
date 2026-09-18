@@ -5857,6 +5857,7 @@
           "grading"
         ],
         "summary": "Every submitted attempt as CSV (one column per item).",
+        "description": "The header and status words follow `Accept-Language` (`ru` default,\n`kk`, `en`), like the gradebook CSV.",
         "operationId": "export_csv",
         "parameters": [
           {
@@ -5866,6 +5867,18 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "ru (default), kk or en",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -6239,8 +6252,35 @@
         "tags": [
           "auth"
         ],
-        "summary": "Self-registration: creates the account (default `user` role) and emails\na verification code. No session is opened — the client logs in next.",
+        "summary": "Self-registration: creates the account (default `user` role) and emails\na verification code.",
+        "description": "The link opens the web app under the `Accept-Language` locale (`/ru`,\n`/kz`, `/en`). No session is opened — the client logs in next. Honours\n`Idempotency-Key` (a retry replays the 201 instead of 409\n`username-taken`).",
         "operationId": "register",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Retry-safe replay key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "ru, kk or en — the locale of the verification link",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -7092,8 +7132,22 @@
         "tags": [
           "collections"
         ],
-        "summary": "Create a collection (requires `collection:create:platform`); every\nattached course must be readable by the caller.",
+        "summary": "Create a collection (requires `collection:create:platform`); every\nattached course must be readable by the caller. Honours\n`Idempotency-Key` (a retry replays the 201 instead of a second row).",
         "operationId": "create_collection",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Retry-safe replay key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -16423,7 +16477,8 @@
             ]
           },
           "display_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Blank → 422 `required` (trimmed in the service)."
           },
           "priority": {
             "type": "integer",
@@ -16513,7 +16568,8 @@
             ]
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Blank → 422 `required` (trimmed in the service)."
           }
         },
         "additionalProperties": false
@@ -18477,6 +18533,8 @@
         "required": [
           "generated_at_unix",
           "total",
+          "page",
+          "page_size",
           "items"
         ],
         "properties": {
@@ -18489,6 +18547,14 @@
             "items": {
               "$ref": "#/components/schemas/Intervention"
             }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64"
           },
           "total": {
             "type": "integer",
@@ -21345,7 +21411,8 @@
         ],
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Blank → 422 `required` (trimmed in the service)."
           },
           "query": {
             "type": "object",
@@ -23632,7 +23699,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Blank → 422 `required` (trimmed in the service)."
           },
           "thumbnail_upload_id": {
             "type": [

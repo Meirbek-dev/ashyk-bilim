@@ -669,6 +669,8 @@ export const getGradingExportCsvUrl = (id: AssessmentId) => {
 }
 
 /**
+ * The header and status words follow `Accept-Language` (`ru` default,
+ * `kk`, `en`), like the gradebook CSV.
  * @summary Every submitted attempt as CSV (one column per item).
  */
 export const gradingExportCsv = async (

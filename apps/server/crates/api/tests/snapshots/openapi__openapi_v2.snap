@@ -4272,6 +4272,7 @@ expression: json
             ]
           },
           "display_name": {
+            "description": "Blank → 422 `required` (trimmed in the service).",
             "type": "string"
           },
           "priority": {
@@ -4364,6 +4365,7 @@ expression: json
             ]
           },
           "name": {
+            "description": "Blank → 422 `required` (trimmed in the service).",
             "type": "string"
           }
         },
@@ -6338,6 +6340,14 @@ expression: json
             },
             "type": "array"
           },
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "page_size": {
+            "format": "int64",
+            "type": "integer"
+          },
           "total": {
             "format": "int64",
             "type": "integer"
@@ -6346,6 +6356,8 @@ expression: json
         "required": [
           "generated_at_unix",
           "total",
+          "page",
+          "page_size",
           "items"
         ],
         "type": "object"
@@ -9196,6 +9208,7 @@ expression: json
         "description": "Save (or overwrite by name + type) a dashboard view.",
         "properties": {
           "name": {
+            "description": "Blank → 422 `required` (trimmed in the service).",
             "type": "string"
           },
           "query": {
@@ -11483,6 +11496,7 @@ expression: json
             ]
           },
           "name": {
+            "description": "Blank → 422 `required` (trimmed in the service).",
             "type": [
               "string",
               "null"
@@ -18028,6 +18042,7 @@ expression: json
     },
     "/api/v2/assessments/{id}/submissions/export": {
       "get": {
+        "description": "The header and status words follow `Accept-Language` (`ru` default,\n`kk`, `en`), like the gradebook CSV.",
         "operationId": "export_csv",
         "parameters": [
           {
@@ -18037,6 +18052,18 @@ expression: json
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "description": "ru (default), kk or en",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -18411,7 +18438,34 @@ expression: json
     },
     "/api/v2/auth/register": {
       "post": {
+        "description": "The link opens the web app under the `Accept-Language` locale (`/ru`,\n`/kz`, `/en`). No session is opened — the client logs in next. Honours\n`Idempotency-Key` (a retry replays the 201 instead of 409\n`username-taken`).",
         "operationId": "register",
+        "parameters": [
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "ru, kk or en — the locale of the verification link",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -18464,7 +18518,7 @@ expression: json
             "description": "Too many attempts"
           }
         },
-        "summary": "Self-registration: creates the account (default `user` role) and emails\na verification code. No session is opened — the client logs in next.",
+        "summary": "Self-registration: creates the account (default `user` role) and emails\na verification code.",
         "tags": [
           "auth"
         ]
@@ -19265,6 +19319,20 @@ expression: json
       },
       "post": {
         "operationId": "create_collection",
+        "parameters": [
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -19297,7 +19365,7 @@ expression: json
             "description": "Missing permission"
           }
         },
-        "summary": "Create a collection (requires `collection:create:platform`); every\nattached course must be readable by the caller.",
+        "summary": "Create a collection (requires `collection:create:platform`); every\nattached course must be readable by the caller. Honours\n`Idempotency-Key` (a retry replays the 201 instead of a second row).",
         "tags": [
           "collections"
         ]

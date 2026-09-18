@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const CreateUsergroupBody = zod.object({
   description: zod.string().nullish(),
-  name: zod.string(),
+  name: zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
 })
 
 export type CreateUsergroupBody = zod.input<typeof CreateUsergroupBody>

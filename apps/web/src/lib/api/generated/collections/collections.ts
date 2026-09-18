@@ -266,7 +266,8 @@ export const getCreateCollectionUrl = () => {
 
 /**
  * @summary Create a collection (requires `collection:create:platform`); every
-attached course must be readable by the caller.
+attached course must be readable by the caller. Honours
+`Idempotency-Key` (a retry replays the 201 instead of a second row).
  */
 export const createCollection = async (
   createCollectionRequest: CreateCollectionRequest,
@@ -340,7 +341,8 @@ export type CreateCollectionMutationVariables = { data: BodyType<CreateCollectio
 
 /**
  * @summary Create a collection (requires `collection:create:platform`); every
-attached course must be readable by the caller.
+attached course must be readable by the caller. Honours
+`Idempotency-Key` (a retry replays the 201 instead of a second row).
  */
 export const useCreateCollection = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

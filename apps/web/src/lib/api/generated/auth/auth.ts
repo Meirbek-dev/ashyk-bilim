@@ -865,8 +865,12 @@ export const getRegisterUrl = () => {
 }
 
 /**
+ * The link opens the web app under the `Accept-Language` locale (`/ru`,
+ * `/kz`, `/en`). No session is opened — the client logs in next. Honours
+ * `Idempotency-Key` (a retry replays the 201 instead of 409
+ * `username-taken`).
  * @summary Self-registration: creates the account (default `user` role) and emails
-a verification code. No session is opened — the client logs in next.
+a verification code.
  */
 export const register = async (
   registerRequest: RegisterRequest,
@@ -927,7 +931,7 @@ export type RegisterMutationVariables = { data: BodyType<RegisterRequest> }
 
 /**
  * @summary Self-registration: creates the account (default `user` role) and emails
-a verification code. No session is opened — the client logs in next.
+a verification code.
  */
 export const useRegister = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

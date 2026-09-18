@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const SaveViewBody = zod
   .object({
-    name: zod.string(),
+    name: zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
     query: zod.looseObject({}).optional().describe('The saved filter state (an object).'),
     view_type: zod.string().optional().describe('Defaults to `overview`.'),
   })

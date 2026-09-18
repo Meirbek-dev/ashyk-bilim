@@ -27,6 +27,8 @@ export const InterventionList = zod.object({
       user_id: zod.uuid(),
     }),
   ),
+  page: zod.int(),
+  page_size: zod.int(),
   total: zod.int(),
 })
 

@@ -13,7 +13,7 @@ export const UpdatePlatformBody = zod.object({
   email: zod.string().nullish(),
   label: zod.string().nullish(),
   logo_upload_id: zod.uuid().nullish().describe('Finalized `platform-logo` upload to claim as the new logo.'),
-  name: zod.string().nullish(),
+  name: zod.string().nullish().describe('Blank → 422 `required` (trimmed in the service).'),
   thumbnail_upload_id: zod.uuid().nullish().describe('Finalized `platform-thumbnail` upload to claim.'),
 })
 

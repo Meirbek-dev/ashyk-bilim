@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const CreateRoleBody = zod.object({
   description: zod.string().nullish(),
-  display_name: zod.string(),
+  display_name: zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
   priority: zod.int().describe('Ordering weight (system roles: guest 0 … admin 100).'),
   slug: zod.string().describe('Kebab-case slug, e.g. `teaching-assistant`.'),
 })
