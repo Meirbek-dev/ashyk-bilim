@@ -217,7 +217,7 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F07 | home / landing | `/[locale]` | learner | pass | pass 14 (reverify-A) |
 | F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 14 (reverify-A): anonymous landing renders (BUG-159); empty chapters hidden |
 | F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 14 (reverify-A): idempotent create |
-| F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | fail | pass 14 (reverify-A) mark/sidebar; **fail** — course-end view counts lesson steps only (BUG-165, builder running) |
+| F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | fail | pass 14 (reverify-A) mark/sidebar; **fail** — course-end view counts lesson steps only (BUG-165 fixed f7ffea8, re-drive in pass 15) |
 | F11 | trail / progress | `/trail` | learner | pass | pass 14 (reverify-A) |
 | F12 | user profile | `/ru/user/[username]` | learner | pass | pass 14 (reverify-A) |
 | F13 | taking a quiz/exam | `/ru/course/[id]/activity/[id]` | learner | pass | pass 14 (reverify-B): shuffled per learner (BUG-160), PAST_DUE card |
