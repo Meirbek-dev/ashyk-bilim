@@ -12,22 +12,32 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 
+export const ANALYTICS_VIEW_TYPES = ['overview', 'watchlist', 'performance', 'operations', 'admin'] as const
+export type AnalyticsViewType = (typeof ANALYTICS_VIEW_TYPES)[number]
+
 interface SavedViewsBarProps {
   query: AnalyticsQuery
+  /** The page the view is saved from and restored to (UX-106). */
+  viewType: AnalyticsViewType
 }
 
-const serializeQuery = (query: Record<string, unknown>) => {
+/**
+ * UX-106: a chip restores the page it was saved on (`view_type`) with its
+ * whole query, `sort_by` included — the page normalizes the keys it honours.
+ */
+export const savedViewHref = (view: Pick<SavedAnalyticsViewRow, 'view_type' | 'query'>) => {
   const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(query)) {
+  for (const [key, value] of Object.entries(view.query)) {
     if (value !== undefined && value !== null && value !== '') {
       params.set(key, String(value))
     }
   }
+  const tab = (ANALYTICS_VIEW_TYPES as readonly string[]).includes(view.view_type) ? view.view_type : 'overview'
   const serialized = params.toString()
-  return serialized ? `/dash/analytics?${serialized}` : '/dash/analytics'
+  return `/dash/analytics/${tab}${serialized ? `?${serialized}` : ''}`
 }
 
-export default function SavedViewsBar({ query }: SavedViewsBarProps) {
+export default function SavedViewsBar({ query, viewType }: SavedViewsBarProps) {
   const router = useRouter()
   const t = useTranslations('Components.DashboardAnalytics')
   const { toastApiError } = useApiError()
@@ -59,7 +69,7 @@ export default function SavedViewsBar({ query }: SavedViewsBarProps) {
       const saved = await saveAnalyticsView(
         {
           name: trimmedName,
-          view_type: 'overview',
+          view_type: viewType,
           query: { ...query },
         },
         query,
@@ -95,7 +105,7 @@ export default function SavedViewsBar({ query }: SavedViewsBarProps) {
                 variant="outline"
                 size="sm"
                 className="rounded-r-none"
-                onClick={() => router.push(serializeQuery(view.query))}
+                onClick={() => router.push(savedViewHref(view))}
               >
                 <Search className="h-3.5 w-3.5" />
                 {view.name}

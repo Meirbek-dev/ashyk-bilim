@@ -127,7 +127,7 @@ export default function AnalyticsShell({
             cohortOptions={(cohortOptions.length ? cohortOptions : overview.cohort_options) ?? []}
             sortKeys={sortKeys}
           />
-          <SavedViewsBar query={query} />
+          <SavedViewsBar query={query} viewType={activeTab} />
         </div>
 
         {/* Tab Panel content */}

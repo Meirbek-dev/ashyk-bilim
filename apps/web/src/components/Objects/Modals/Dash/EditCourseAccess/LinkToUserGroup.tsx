@@ -11,6 +11,8 @@ import Link from '@components/ui/AppLink'
 import { ExternalLink, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -21,10 +23,13 @@ interface LinkToUserGroupProps {
 
 function LinkToUserGroup(props: LinkToUserGroupProps) {
   const t = useTranslations('Components.LinkToUserGroup')
+  const { handleApiError } = useApiError()
   const course = useCourse()
   const { courseStructure } = course
 
-  const { data: usergroups } = useUserGroups({ enabled: Boolean(courseStructure) })
+  // UX-106: linking writes the group — only groups the user may write are offered.
+  const { data: allGroups } = useUserGroups({ enabled: Boolean(courseStructure) })
+  const usergroups = allGroups?.filter(group => group.can_write)
   const [selectedUserGroup, setSelectedUserGroup] = useState<string | null>(null)
 
   const effectiveUserGroup = selectedUserGroup ?? usergroups?.[0]?.id ?? null
@@ -47,8 +52,12 @@ function LinkToUserGroup(props: LinkToUserGroupProps) {
       props.setUserGroupModal(false)
       toast.success(t('linkSuccess'))
       await course.refreshEditorData()
-    } catch {
-      toast.error(t('linkError', { error: t('unknownError') }))
+    } catch (error) {
+      if (isApiError(error) && error.status === 403) {
+        toast.error(t('noRightsOnGroup'))
+        return
+      }
+      toast.error(t('linkError', { error: handleApiError(error, { fallback: t('unknownError') }).message }))
     }
   }
 
