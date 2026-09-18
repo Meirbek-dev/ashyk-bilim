@@ -15,7 +15,7 @@ import {
   Send,
   X,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -47,10 +47,11 @@ import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import { MarkdownEditor } from '@/features/content-markdown'
 import { SubmissionAIEntry } from '@/features/submission-analysis'
 import { useApiError } from '@/hooks/useApiError'
+import { saveBlob } from '@/lib/download'
 import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import {
-  fileSubmissionExportUrl,
+  downloadFileSubmissionCsv,
   getFileSubmissionByActivity,
   getFileSubmissionFileUrl,
   getFileSubmissionReviewAttempt,
@@ -149,6 +150,7 @@ export default function FileSubmissionReviewWorkspace({
   const [previewFilename, setPreviewFilename] = useState<string | null>(null)
   const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null) // attempt file id
   const t = useTranslations('FileSubmissionReview')
+  const locale = useLocale()
   const formatBytes = useFormatBytes()
   const tPanel = useTranslations('Grading.Panel')
   const { handleApiError, toastApiError } = useApiError()
@@ -421,13 +423,14 @@ export default function FileSubmissionReviewWorkspace({
             <Button
               size="sm"
               variant="outline"
-              nativeButton={false}
-              render={
-                <a
-                  href={fileSubmissionExportUrl(config.id)}
-                  aria-label={t('downloadCsv')}
-                  onClick={() => toast.success(t('csvSaved'))}
-                />
+              aria-label={t('downloadCsv')}
+              onClick={() =>
+                void downloadFileSubmissionCsv(config.id, locale)
+                  .then(blob => {
+                    saveBlob(blob, `file-submission-${config.id}.csv`)
+                    toast.success(t('csvSaved'))
+                  })
+                  .catch(error => toastApiError(error, { fallback: t('csvFailed') }))
               }
             >
               <Download data-icon="inline-start" />

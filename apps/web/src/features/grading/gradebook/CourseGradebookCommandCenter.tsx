@@ -9,6 +9,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { courseGradebookQueryOptions, downloadGradebookCsv } from '@/features/grading/queries/grading.query'
 import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
 import { useApiError } from '@/hooks/useApiError'
+import { saveBlob } from '@/lib/download'
 import {
   buildGradebookRollups,
   emptyGradebookCell,
@@ -171,12 +172,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
         onExport={() => {
           void downloadGradebookCsv(courseUuid, locale)
             .then(blob => {
-              const url = URL.createObjectURL(blob)
-              const link = document.createElement('a')
-              link.href = url
-              link.download = `gradebook-${courseUuid}.csv`
-              link.click()
-              URL.revokeObjectURL(url)
+              saveBlob(blob, `gradebook-${courseUuid}.csv`)
               toast.success(t('exportDone', { count: data.students.length }))
             })
             .catch(toastApiError)

@@ -814,7 +814,7 @@ async fn publish_only_keeps_the_stored_raw_score_and_feedback(pool: PgPool) {
 async fn deadline_extension_clears_the_late_penalty_of_graded_work(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
-    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
     let (id, choice_id, essay_id) = quiz_with_essay(
         &app,
         &teacher,
@@ -860,6 +860,18 @@ async fn deadline_extension_clears_the_late_penalty_of_graded_work(pool: PgPool)
         review.json()["final_score"],
         100.0,
         "re-scored without the penalty"
+    );
+    // UX-113: the gradebook cell carries the active override so «overdue»
+    // is judged against the learner's own deadline.
+    let gradebook = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook"))
+        .await;
+    assert_eq!(gradebook.status, StatusCode::OK, "{}", gradebook.text());
+    let cell = &gradebook.json()["cells"][0];
+    assert_eq!(cell["user_id"], alice.user_id.to_string());
+    assert!(
+        cell["due_at_override_unix"].as_i64().unwrap() > now_unix() + 80_000,
+        "{cell}"
     );
     let mine = app
         .get_as(&alice, &format!("/api/v2/submissions/{alice_sub}"))

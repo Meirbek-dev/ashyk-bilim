@@ -120,7 +120,8 @@ pub enum FileGradeAction {
 pub struct FileGradeInput {
     pub action: FileGradeAction,
     pub final_score: Option<f64>,
-    pub feedback: String,
+    /// `None` keeps the stored feedback.
+    pub feedback: Option<String>,
     /// `None` keeps the stored rubric scores.
     pub rubric_scores: Option<serde_json::Value>,
     /// From `If-Match`; checked after the grading gate (UX-108).
@@ -1100,7 +1101,7 @@ impl FileSubmissionsService {
         let write = GradeWrite {
             status,
             final_score: input.final_score,
-            feedback: input.feedback.trim(),
+            feedback: input.feedback.as_deref().map(str::trim),
             rubric_scores: input.rubric_scores.as_ref(),
             graded_by: actor.user_id,
         };

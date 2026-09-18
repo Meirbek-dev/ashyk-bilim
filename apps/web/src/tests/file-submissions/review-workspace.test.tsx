@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   grade: vi.fn(),
   replace: vi.fn(),
   toastSuccess: vi.fn(),
+  downloadCsv: vi.fn(),
   toastWarning: vi.fn(),
 }))
 
@@ -30,6 +31,7 @@ vi.mock('sonner', () => ({
 }))
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'kk-KZ',
   useTranslations: () => (key: string) => key,
   useFormatter: () => ({ number: (n: number) => String(n) }),
 }))
@@ -60,7 +62,7 @@ vi.mock('@/features/file-submissions/services/file-submissions', async importOri
     getFileSubmissionReviewQueue: (...args: unknown[]) => mocks.getQueue(...args),
     getFileSubmissionReviewAttempt: (...args: unknown[]) => mocks.getAttempt(...args),
     gradeFileSubmissionAttempt: (...args: unknown[]) => mocks.grade(...args),
-    fileSubmissionExportUrl: () => '/file-submissions/export.csv',
+    downloadFileSubmissionCsv: (...args: unknown[]) => mocks.downloadCsv(...args),
   }
 })
 
@@ -146,8 +148,17 @@ describe('file submission review workspace', () => {
     expect(mocks.replace).toHaveBeenCalledWith('/dash/courses/course/activity/activity/review', { scroll: false })
     expect(await screen.findByDisplayValue('92')).not.toBeNull()
 
+    // UX-113: the CSV goes through the localized fetch (page locale, bytes untouched).
+    const csv = new Blob(['﻿Студент'])
+    mocks.downloadCsv.mockResolvedValue(csv)
+    const createObjectURL = vi.fn((_blob: Blob) => 'blob:csv')
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
     fireEvent.click(screen.getByRole('button', { name: 'downloadCsv' }))
-    expect(mocks.toastSuccess).toHaveBeenCalledWith('csvSaved')
+    expect(mocks.downloadCsv).toHaveBeenCalledWith('file_submission_1', 'kk-KZ')
+    await waitFor(() => expect(mocks.toastSuccess).toHaveBeenCalledWith('csvSaved'))
+    expect(createObjectURL).toHaveBeenCalledWith(csv)
+    click.mockRestore()
   })
 
   it('requires confirmation before discarding an edited learner draft', async () => {

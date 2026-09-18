@@ -8,6 +8,7 @@ import GradeForm from '@/features/grading/review/components/GradeForm'
 import type { Submission } from '@/features/grading/domain'
 import { AnnotationProvider } from '@/features/grading/review/AnnotationContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { APIError } from '@/lib/api/assertSuccess'
 
 const mocks = vi.hoisted(() => ({
   publishAssessmentGradesMock: vi.fn(),
@@ -55,7 +56,10 @@ vi.mock('sonner', () => ({
 
 vi.mock('@/hooks/useApiError', () => ({
   useApiError: () => ({
-    handleApiError: (error: unknown) => ({ message: error instanceof Error ? error.message : 'unknown' }),
+    handleApiError: (error: unknown) => ({
+      message: error instanceof Error ? error.message : 'unknown',
+      fieldErrors: error instanceof APIError ? error.fieldErrors : [],
+    }),
   }),
 }))
 
@@ -140,7 +144,7 @@ describe('teacher review controls', () => {
       affected_count: 2,
       error_log: '',
     })
-    mocks.exportGradesCsvMock.mockResolvedValue('header\nvalue')
+    mocks.exportGradesCsvMock.mockResolvedValue(new Blob(['﻿header\nvalue']))
     mocks.saveGradeMock.mockResolvedValue(createSubmission({ status: 'PUBLISHED' }))
     mocks.saveGradingDraftMock.mockResolvedValue(createSubmission({ status: 'PUBLISHED' }))
     mocks.mutateMock.mockResolvedValue(undefined)
@@ -340,6 +344,43 @@ describe('teacher review controls', () => {
     await waitFor(() => expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineExtended'))
     expect(mocks.getBulkActionMock).not.toHaveBeenCalled()
     expect(onRefresh).toHaveBeenCalledTimes(1)
+  })
+
+  // UX-113: the server's 422 `new_due_at_unix`/`past` is shown on the field; the dialog stays open.
+  it('shows a past new due date as a field error instead of a generic toast', async () => {
+    mocks.extendDeadlineMock.mockRejectedValue(
+      new APIError({
+        code: 'validation-failed',
+        message: 'validation failed',
+        status: 422,
+        fieldErrors: [{ field: 'new_due_at_unix', code: 'past', message: 'the new due date must be in the future' }],
+      }),
+    )
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 1)
+    const dueDateName = new RegExp(
+      `${dueDate.toLocaleString('en-US', { month: 'long' })} ${dueDate.getDate()}(?:st|nd|rd|th), ${dueDate.getFullYear()}`,
+      'i',
+    )
+    render(
+      <ReviewBulkActionBar
+        activityId={77}
+        assessmentUuid="assessment_review"
+        disabled={false}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        submissions={[createSubmission({ submission_uuid: 'submission_a' })]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'deadlinePlaceholder' }))
+    const dueAtDialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: dueDateName }))
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /set/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'extend' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('preview.dueDatePast')
+    expect(mocks.toastErrorMock).not.toHaveBeenCalled()
   })
 
   it('shows hidden-grade release preview and summarizes the activity-wide publish result', async () => {

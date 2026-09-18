@@ -464,7 +464,8 @@ pub async fn submit_attempt(
 pub struct GradeWrite<'a> {
     pub status: FileAttemptStatus,
     pub final_score: Option<f64>,
-    pub feedback: &'a str,
+    /// `None` keeps the stored feedback.
+    pub feedback: Option<&'a str>,
     /// `None` keeps the stored rubric scores.
     pub rubric_scores: Option<&'a serde_json::Value>,
     pub graded_by: UserId,
@@ -479,7 +480,7 @@ pub async fn grade_attempt(
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE file_submission_attempts SET
-               status = $3, final_score = $4, feedback = $5,
+               status = $3, final_score = $4, feedback = COALESCE($5, feedback),
                rubric_scores = COALESCE($6, rubric_scores),
                graded_by = $7, graded_at = now(), version = version + 1
            WHERE id = $1 AND version = $2"#,

@@ -30,8 +30,9 @@ import { getSubmissionViolations } from '@/features/grading/domain/types'
 import type { ReleaseState, Submission, SubmissionStatus } from '@/features/grading/domain'
 import { submissionStatsQueryOptions, submissionsQueryOptions } from '@/features/grading/queries/grading.query'
 import { cn } from '@/lib/utils'
+import { saveBlob } from '@/lib/download'
+import { exportGradesCSV } from '@/services/grading/grading'
 import { itemAnalytics as fetchItemAnalytics } from '@/lib/api/generated/grading/grading'
-import { apiBody } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import Link from '@components/ui/AppLink'
 import { Badge } from '@/components/ui/badge'
@@ -126,17 +127,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   const exportCsv = () => {
     startExportTransition(async () => {
       try {
-        const csv = await apiBody<string, 'text'>(`assessments/${assessmentUuid}/submissions/export`, {
-          responseType: 'text',
-          headers: { 'Accept-Language': locale },
-        })
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const anchor = document.createElement('a')
-        anchor.href = url
-        anchor.download = `assessment-${assessmentUuid}-results.csv`
-        anchor.click()
-        URL.revokeObjectURL(url)
+        saveBlob(await exportGradesCSV(assessmentUuid, locale), `assessment-${assessmentUuid}-results.csv`)
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('exportFailed'))
       }

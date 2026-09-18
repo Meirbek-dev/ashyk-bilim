@@ -247,6 +247,9 @@ pub struct GradebookCell {
     pub attempts: i64,
     pub final_score: Option<f64>,
     pub is_late: bool,
+    /// UX-113: the learner's active due-date override (the gradebook's
+    /// «overdue» reads this before the assessment due).
+    pub due_at_override: Option<i64>,
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
 }
@@ -1440,6 +1443,7 @@ impl GradingService {
                     attempts: r.attempts,
                     final_score: r.final_score,
                     is_late: r.is_late,
+                    due_at_override: r.due_at_override,
                     submitted_at: r.submitted_at,
                     graded_at: r.graded_at,
                 })

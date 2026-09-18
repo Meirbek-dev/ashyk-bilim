@@ -9,7 +9,7 @@
  */
 import type * as zod from 'zod'
 
-import { apiJson } from '@/lib/api-client'
+import { apiBody, apiJson } from '@/lib/api-client'
 import { idempotencyHeaders, ifMatchHeaders } from '@/lib/api/headers'
 import { Attempt, DisabledReason, FileReviewPage, FileSubmission, SignedDownload } from '@/lib/api/generated/zod'
 import type {
@@ -24,7 +24,6 @@ import type {
   SignedDownload as SignedDownloadType,
   UpdateFileSubmissionBody,
 } from '@/lib/api/generated/zod'
-import { getAPIUrl } from '@services/config/config'
 import { uploadFile } from '@services/media/uploads'
 import type { UploadProgress } from '@services/media/uploads'
 
@@ -152,8 +151,12 @@ export async function getFileSubmissionFileUrl(fileId: string): Promise<SignedDo
   return apiJson(`file-submission-files/${id(fileId)}/url`, {}, parseSignedDownload)
 }
 
-export function fileSubmissionExportUrl(fileSubmissionId: string): string {
-  return `${getAPIUrl().replace(/\/+$/, '')}/file-submissions/${id(fileSubmissionId)}/submissions/export`
+/** The server's per-config CSV as bytes (UTF-8 + BOM), in the page locale (UX-113). */
+export async function downloadFileSubmissionCsv(fileSubmissionId: string, locale: string): Promise<Blob> {
+  return apiBody<Blob, 'blob'>(`file-submissions/${id(fileSubmissionId)}/submissions/export`, {
+    responseType: 'blob',
+    headers: { 'Accept-Language': locale },
+  })
 }
 
 /** Save/publish/return a grade. `If-Match` with the attempt's current `version` is required (412 when stale). */

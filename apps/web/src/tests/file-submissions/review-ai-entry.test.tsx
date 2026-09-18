@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'ru-RU',
   useTranslations: () => (key: string) => key,
   useFormatter: () => ({ number: (n: number) => String(n) }),
 }))
@@ -59,7 +60,7 @@ vi.mock('@/features/file-submissions/services/file-submissions', async importOri
     getFileSubmissionReviewQueue: (...args: unknown[]) => mocks.getQueue(...args),
     getFileSubmissionReviewAttempt: (...args: unknown[]) => mocks.getAttempt(...args),
     gradeFileSubmissionAttempt: (...args: unknown[]) => mocks.grade(...args),
-    fileSubmissionExportUrl: () => '/file-submissions/export.csv',
+    downloadFileSubmissionCsv: vi.fn(),
   }
 })
 

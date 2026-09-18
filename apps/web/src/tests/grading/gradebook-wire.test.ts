@@ -76,6 +76,22 @@ describe('gradebookFromWire (UX-013)', () => {
     expect(pending.teacher_actions.map(action => action.activity_name)).toEqual(['Project Upload'])
   })
 
+  // UX-113: «Просрочено» honours the learner's active deadline override.
+  it("judges overdue against the cell's deadline override before the assessment due", () => {
+    const past = Math.floor(Date.now() / 1000) - 3600
+    const future = past + 86_400
+    const overdue = gradebookFromWire([{ ...page([examCell('pending', null)]), assessments: [{ ...exam, due_at_unix: past }] }], course)
+    expect(overdue.summary.overdue_count).toBe(1)
+    expect(matchesGradebookSavedFilter(overdue.cells[0]!, 'overdue')).toBe(true)
+
+    const extended = gradebookFromWire(
+      [{ ...page([{ ...examCell('pending', null), due_at_override_unix: future }]), assessments: [{ ...exam, due_at_unix: past }] }],
+      course,
+    )
+    expect(extended.summary.overdue_count).toBe(0)
+    expect(matchesGradebookSavedFilter(extended.cells[0]!, 'overdue')).toBe(false)
+  })
+
   it('leaves published work out of the teacher queue', () => {
     const data = gradebookFromWire([page([examCell('published')])], course)
     expect(data.cells[0]!.teacher_action_required).toBe(false)

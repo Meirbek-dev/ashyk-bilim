@@ -14,6 +14,7 @@ export const GradebookCell = zod
     attempt_id: zod.union([zod.null(), zod.uuid()]).optional(),
     attempt_number: zod.int(),
     attempts: zod.int(),
+    due_at_override_unix: zod.int().nullish(),
     file_submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
     final_score: zod.number().nullish(),
     graded_at_unix: zod.int().nullish(),

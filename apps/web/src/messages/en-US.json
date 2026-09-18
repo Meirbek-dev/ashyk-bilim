@@ -8328,6 +8328,7 @@
             "reason": "Reason",
             "notSet": "Not set",
             "noReason": "No reason provided",
+            "dueDatePast": "The new due date must be in the future.",
             "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned — skipped.",
             "releaseHiddenDescription": "Every graded submission of this activity that is still hidden will be released — regardless of what is selected in the list.",
             "notGraded": "{count, plural, one {# ungraded submission is skipped} other {# ungraded submissions are skipped}}: {names}"
@@ -10505,7 +10506,8 @@
     "scan_error": "scan error",
     "publishedIsFinal": "The grade is published and final: the score cannot be changed and the work cannot be returned — only a re-publish is possible.",
     "unknownSubmissionParam": "The submission from the link was not found — the first one in the list is shown.",
-    "csvSaved": "CSV saved"
+    "csvSaved": "CSV saved",
+    "csvFailed": "Could not download the CSV."
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Loading file submission studio",

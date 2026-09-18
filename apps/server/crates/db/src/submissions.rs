@@ -410,6 +410,8 @@ pub struct GradebookCellRow {
     pub attempts: i64,
     pub final_score: Option<f64>,
     pub is_late: bool,
+    /// The learner's active (unexpired) per-assessment due-date override, if any.
+    pub due_at_override: Option<i64>,
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
 }
@@ -433,19 +435,24 @@ pub async fn gradebook_cells(
                   c.status AS "status!: SubmissionStatus", c.attempt_number AS "attempt_number!",
                   count(*) OVER (PARTITION BY c.user_id, c.activity_id) AS "attempts!",
                   c.final_score AS "final_score?", c.is_late AS "is_late!",
+                  (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
                   (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM c.graded_at))::bigint AS "graded_at?"
            FROM (
                SELECT s.user_id, a.activity_id, s.assessment_id, s.id AS submission_id,
                       NULL::uuid AS file_submission_id, NULL::uuid AS attempt_id,
                       s.status, s.attempt_number, s.final_score, s.is_late,
-                      s.submitted_at, s.graded_at
+                      o.due_at_override, s.submitted_at, s.graded_at
                FROM submissions s JOIN assessments a ON a.id = s.assessment_id
+               LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id
+                    AND o.user_id = s.user_id
+                    AND (o.expires_at IS NULL OR o.expires_at > now())
                WHERE s.course_id = $1 AND s.status <> 'draft'
                UNION ALL
                SELECT fa.user_id, f.activity_id, NULL::uuid, NULL::uuid, f.id, fa.id,
                       CASE WHEN fa.status = 'submitted' THEN 'pending' ELSE fa.status END,
-                      fa.attempt_number, fa.final_score, fa.is_late, fa.submitted_at, fa.graded_at
+                      fa.attempt_number, fa.final_score, fa.is_late, NULL::timestamptz,
+                      fa.submitted_at, fa.graded_at
                FROM file_submission_attempts fa
                JOIN file_submissions f ON f.id = fa.file_submission_id
                WHERE fa.course_id = $1 AND fa.status <> 'draft'

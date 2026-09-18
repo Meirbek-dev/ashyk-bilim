@@ -8,15 +8,16 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 const mocks = vi.hoisted(() => ({
   apiJson: vi.fn(),
+  apiBody: vi.fn(),
   uploadFile: vi.fn(),
 }))
 
-vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
+vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson, apiBody: mocks.apiBody }))
 vi.mock('@services/media/uploads', () => ({ uploadFile: mocks.uploadFile }))
 vi.mock('@services/config/config', () => ({ getAPIUrl: () => 'http://api.test/api/v2/' }))
 
 import {
-  fileSubmissionExportUrl,
+  downloadFileSubmissionCsv,
   getFileSubmissionByActivity,
   getFileSubmissionFileUrl,
   getFileSubmissionReviewAttempt,
@@ -163,6 +164,13 @@ describe('file-submissions service (v2)', () => {
     const signed = await getFileSubmissionFileUrl(FILE_ID)
     expect(lastCall().path).toBe(`file-submission-files/${FILE_ID}/url`)
     expect(signed.url).toBe('http://storage/x')
-    expect(fileSubmissionExportUrl(FS_ID)).toBe(`http://api.test/api/v2/file-submissions/${FS_ID}/submissions/export`)
+    // UX-113: the CSV is fetched as bytes (BOM intact) in the page locale.
+    const csv = new Blob(['﻿Студент'])
+    mocks.apiBody.mockResolvedValueOnce(csv)
+    expect(await downloadFileSubmissionCsv(FS_ID, 'kk-KZ')).toBe(csv)
+    expect(mocks.apiBody).toHaveBeenCalledWith(`file-submissions/${FS_ID}/submissions/export`, {
+      responseType: 'blob',
+      headers: { 'Accept-Language': 'kk-KZ' },
+    })
   })
 })

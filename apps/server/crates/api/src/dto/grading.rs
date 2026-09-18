@@ -350,6 +350,9 @@ pub struct GradebookCell {
     pub attempts: i64,
     pub final_score: Option<f64>,
     pub is_late: bool,
+    /// The learner's active due-date override for this assessment (UX-113):
+    /// «overdue» is judged against it, not the assessment `due_at_unix`.
+    pub due_at_override_unix: Option<i64>,
     pub submitted_at_unix: Option<i64>,
     pub graded_at_unix: Option<i64>,
 }
@@ -402,6 +405,7 @@ impl From<domain::GradebookPage> for GradebookPage {
                     attempts: c.attempts,
                     final_score: c.final_score,
                     is_late: c.is_late,
+                    due_at_override_unix: c.due_at_override,
                     submitted_at_unix: c.submitted_at,
                     graded_at_unix: c.graded_at,
                 })

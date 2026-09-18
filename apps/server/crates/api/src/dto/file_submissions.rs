@@ -271,9 +271,9 @@ pub struct FileGradeRequest {
     /// Required for save/publish; 0..=100.
     #[garde(range(min = 0.0, max = 100.0))]
     pub final_score: Option<f64>,
-    #[garde(length(max = 10_000))]
-    #[serde(default)]
-    pub feedback: String,
+    /// Omit to keep the stored feedback (UX-113; same rule as quiz grades).
+    #[garde(inner(length(max = 10_000)))]
+    pub feedback: Option<String>,
     /// Omit to keep the stored rubric scores.
     #[garde(skip)]
     #[schema(value_type = Option<Object>)]

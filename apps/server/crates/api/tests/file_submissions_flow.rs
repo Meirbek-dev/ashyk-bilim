@@ -524,8 +524,8 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
             "PATCH",
             format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
             Some("4"),
-            &serde_json::json!({ "action": "publish", "final_score": 90,
-                                  "feedback": "Solid." }),
+            // UX-113: no `feedback` key keeps the stored text (asserted below).
+            &serde_json::json!({ "action": "publish", "final_score": 90 }),
         ))
         .await;
     assert_eq!(

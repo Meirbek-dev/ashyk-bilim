@@ -69,7 +69,8 @@ export function gradebookFromWire(pages: GradebookPage[], course: Course, curric
       activity_id: c.activity_id, user_id: c.user_id, attempt_count: c.attempts,
       latest_submission_uuid: c.submission_id ?? c.attempt_id ?? null, latest_submission_status: status,
       state, score: c.final_score ?? null, passed,
-      due_at: unixToIso(assessment?.due_at_unix ?? file?.due_at_unix), is_late: c.is_late,
+      // UX-113: a learner's active deadline override is their due date (the server joins it per cell).
+      due_at: unixToIso(c.due_at_override_unix ?? assessment?.due_at_unix ?? file?.due_at_unix), is_late: c.is_late,
       // `graded` = scored but unreleased (batch release mode): the teacher still owes a publish.
       teacher_action_required: c.status === 'pending' || c.status === 'graded',
     }

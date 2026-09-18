@@ -12,6 +12,7 @@ import { extendDeadline, getBulkAction, saveGrade } from '@/lib/api/generated/gr
 import type { BulkAction, GradeRequest } from '@/lib/api/generated/zod'
 import { toUnix } from '@/lib/api/contract'
 import { ifMatchHeaders } from '@/lib/api/headers'
+import { saveBlob } from '@/lib/download'
 import { useApiError } from '@/hooks/useApiError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,6 +58,7 @@ export default function ReviewBulkActionBar({
   const [auditNote, setAuditNote] = useState('')
   const [pendingAction, setPendingAction] = useState<PendingAction>(null)
   const [lastSummary, setLastSummary] = useState<BulkActionSummary | null>(null)
+  const [deadlineError, setDeadlineError] = useState<string | null>(null)
   const [failedSubmissions, setFailedSubmissions] = useState<{ name: string; error: string }[]>([])
 
   const gradeable = submissions.filter(submission => submission.final_score !== null)
@@ -171,7 +173,13 @@ export default function ReviewBulkActionBar({
         setPendingAction(null)
         await onRefresh()
       } catch (error) {
-        toast.error(handleApiError(error, { fallback: t('toasts.extendFailed') }).message)
+        const processed = handleApiError(error, { fallback: t('toasts.extendFailed') })
+        // UX-113: the server's 422 `new_due_at_unix`/`past` lands on the field, not in a generic toast.
+        if (processed.fieldErrors.some(fieldError => fieldError.field === 'new_due_at_unix')) {
+          setDeadlineError(t('preview.dueDatePast'))
+          return
+        }
+        toast.error(processed.message)
       }
     })
   }
@@ -209,14 +217,7 @@ export default function ReviewBulkActionBar({
     }
     startTransition(async () => {
       try {
-        const csv = await exportGradesCSV(assessmentUuid, locale)
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const anchor = document.createElement('a')
-        anchor.href = url
-        anchor.download = `grades-assessment-${assessmentUuid}.csv`
-        anchor.click()
-        URL.revokeObjectURL(url)
+        saveBlob(await exportGradesCSV(assessmentUuid, locale), `grades-assessment-${assessmentUuid}.csv`)
         toast.success(t('toasts.exported'))
       } catch (error) {
         toast.error(handleApiError(error, { fallback: t('toasts.exportFailed') }).message)
@@ -270,12 +271,15 @@ export default function ReviewBulkActionBar({
       </Button>
       <CalendarDateTimePicker
         value={deadlineLocal}
-        onChange={setDeadlineLocal}
+        onChange={value => {
+          setDeadlineLocal(value)
+          setDeadlineError(null)
+        }}
         disabled={disabled || isPending}
         placeholder={t('deadlinePlaceholder')}
         className="w-48"
-        // UX-105: a new deadline is in the future — the year list starts this year, not 1900.
-        minDate={new Date(new Date().getFullYear(), 0, 1)}
+        // UX-113: a new deadline is in the future — past days are hidden (UX-105 only trimmed the year list).
+        minDate={new Date(new Date().setHours(0, 0, 0, 0))}
       />
       <Button
         variant="outline"
@@ -332,6 +336,11 @@ export default function ReviewBulkActionBar({
                       : t('preview.notSet')
                   }
                 />
+                {deadlineError ? (
+                  <p role="alert" className="text-destructive text-xs">
+                    {deadlineError}
+                  </p>
+                ) : null}
                 <div className="space-y-2 rounded-md border p-3">
                   <label htmlFor="bulk-extend-reason" className="text-sm font-medium">
                     {t('preview.reason')}

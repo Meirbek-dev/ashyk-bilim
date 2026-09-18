@@ -70,10 +70,13 @@ export async function publishAssessmentGrades(assessmentUuid: string): Promise<B
   return response
 }
 
-/** The server's per-assessment CSV (UTF-8 + BOM, header and status words in `locale` — UX-105). */
-export async function exportGradesCSV(assessmentUuid: string, locale: string): Promise<string> {
-  return apiBody<string, 'text'>(`assessments/${assessmentUuid}/submissions/export`, {
-    responseType: 'text',
+/**
+ * The server's per-assessment CSV (UTF-8 + BOM, header and status words in `locale` — UX-105).
+ * Returned as bytes: `Response.text()` strips the BOM (UX-113).
+ */
+export async function exportGradesCSV(assessmentUuid: string, locale: string): Promise<Blob> {
+  return apiBody<Blob, 'blob'>(`assessments/${assessmentUuid}/submissions/export`, {
+    responseType: 'blob',
     headers: { 'Accept-Language': locale },
   })
 }
