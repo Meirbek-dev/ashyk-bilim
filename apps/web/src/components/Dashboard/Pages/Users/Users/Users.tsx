@@ -22,7 +22,7 @@ import { Actions, Resources, Scopes } from '@/components/Security'
 import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate'
 import { useSession } from '@/hooks/useSession'
 import { useAllMembers, useRoles } from '@/features/users/hooks/useUsers'
-import { useRoleLabels } from '@/features/users/hooks/useRoleLabels'
+import { accountLabel, useRoleLabels } from '@/features/users/hooks/useRoleLabels'
 import { hasErrorCode } from '@/lib/api/assertSuccess'
 import type { AdminUser } from '@/lib/api/generated/zod'
 import DataTable from '@/components/ui/data-table'
@@ -45,14 +45,14 @@ const USERS_PER_PAGE = 20
 
 interface RemoveUserButtonProps {
   userId: string
-  username: string
+  name: string
   onRemove: (userId: string) => Promise<void>
   t: (key: string, values?: Record<string, string>) => string
 }
 
 type UserRow = AdminUser
 
-function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonProps) {
+function RemoveUserButton({ userId, name, onRemove, t }: RemoveUserButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -78,7 +78,7 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
           <AlertDialogMedia>
             <AlertTriangle className="text-destructive size-6" />
           </AlertDialogMedia>
-          <AlertDialogTitle>{t('removeUserModalTitle', { username })}</AlertDialogTitle>
+          <AlertDialogTitle>{t('removeUserModalTitle', { name })}</AlertDialogTitle>
           <AlertDialogDescription>{t('removeUserModalMessage')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -240,7 +240,7 @@ function Users() {
                     {t('enableUserButton')}
                   </Button>
                 ) : (
-                  <RemoveUserButton userId={user.id} username={user.username} onRemove={handleRemoveUser} t={t} />
+                  <RemoveUserButton userId={user.id} name={accountLabel(user)} onRemove={handleRemoveUser} t={t} />
                 ))}
             </div>
           )

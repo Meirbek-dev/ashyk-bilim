@@ -2,7 +2,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_testkit::{MintedSession, TestApp};
-use axum::http::StatusCode;
+use axum::body::Body;
+use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
 
 async fn organizer(app: &TestApp, name: &str) -> MintedSession {
@@ -294,6 +295,26 @@ async fn linking_a_course_requires_write_access_on_it(pool: PgPool) {
         )
         .await;
     assert_eq!(foreign.status, StatusCode::FORBIDDEN, "{}", foreign.text());
+    // UX-114: unlinking is gated on course read like linking.
+    let unlink_invisible = app
+        .send(
+            Request::builder()
+                .method("DELETE")
+                .uri(format!("/api/v2/usergroups/{group_id}/courses"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .body(Body::from(
+                    serde_json::json!({ "course_ids": [private_id] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(
+        unlink_invisible.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        unlink_invisible.text()
+    );
     app.post_as(
         &teacher,
         &format!("/api/v2/usergroups/{group_id}/members"),

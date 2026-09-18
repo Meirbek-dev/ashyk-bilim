@@ -78,7 +78,7 @@ export default function SavedViewsBar({ query, viewType }: SavedViewsBarProps) {
       setName('')
       toast.success(t('savedViewsBar.saved'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('savedViewsBar.couldNotSave'))
+      toastApiError(error, { fallback: t('savedViewsBar.couldNotSave') })
     } finally {
       setIsSaving(false)
     }

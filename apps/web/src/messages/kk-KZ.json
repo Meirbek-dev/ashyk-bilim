@@ -4070,7 +4070,7 @@
         "usersOnlyDescription": "Курс тек тіркелген пайдаланушыларға қолжетімді. Қай топтар кіре алатынын таңдай аласыз",
         "usersOnlyLabel": "Тек пайдаланушылар",
         "accessPolicyStagedTitle": "Қолжетімділік саясаты Сақтау басқанша сақталмайды",
-        "accessPolicyStagedDescription": "Көрінерлік өзгерістері бұл бөлімді сақтағанша дейін локалды болып қалады. Төмендегі пайдаланушылар тобын байланыстыру бірден қолданылады.",
+        "accessPolicyStagedDescription": "Көрінерлік өзгерістері бұл бөлімді сақтағанша дейін локалды болып қалады.",
         "readinessReadyTitle": "Жариялауға дайын",
         "readinessReadyDescription": "Сервер жариялауға кедергі келтіретін нақты мәселе таппады.",
         "readinessBlockedTitle": "Жариялауды {count} мәселе бұғаттап тұр",
@@ -6782,8 +6782,8 @@
         "paginationInfo": "{total} пайдаланушыдан {start}-{end} көрсетілуде",
         "removeFromOrgButton": "Пайдаланушыны өшіру",
         "removeUserButton": "Пайдаланушыны өшіру",
-        "removeUserModalMessage": "Пайдаланушы қайта қосылғанша Ashyk Bilim жүйесіне кіре алмайды. Деректер мен прогресс сақталады.",
-        "removeUserModalTitle": "{username} өшіру керек пе?",
+        "removeUserModalMessage": "Пайдаланушының барлық белсенді сессиялары аяқталады. Аккаунтты қайта қосуға болады.",
+        "removeUserModalTitle": "{name} аккаунтын өшіру керек пе?",
         "removingUser": "Өшірілуде...",
         "roleHeader": "Рөл",
         "searchPlaceholder": "Аты, логині немесе эл. поштасы бойынша іздеу…",
@@ -7483,7 +7483,9 @@
         "recovered": "Қалпына келтірілді"
       },
       "viewAllAtRisk": "Тәуекелдегі оқушылардың толық тізімі →",
-      "contentFriction": "Контенттегі қиындықтар"
+      "contentFriction": "Контенттегі қиындықтар",
+      "exportSaved": "CSV сақталды",
+      "exportFailed": "CSV жүктеу мүмкін болмады"
     },
     "filters": {
       "label": "Мұғалімнің аналитикасы",
@@ -7755,7 +7757,8 @@
         "failures": "Сәтсіздіктер",
         "missing": "Жіберілген",
         "grading": "Тексеру күтілуде"
-      }
+      },
+      "learnerNotEnrolled": "Білім алушы курсқа енді жазылмаған"
     },
     "gradingBacklog": {
       "title": "Бағалау кезегі",

@@ -5,6 +5,7 @@ import {
   canSeeUsers,
   canSeeAdmin,
   canAccessDashboard,
+  canExportAnalytics,
 } from '@/lib/rbac/navigation-policy'
 
 describe('Navigation Policy', () => {
@@ -45,6 +46,12 @@ describe('Navigation Policy', () => {
     it('should return true for analytics:export:all', () => {
       const can = mockCan(new Set(['analytics:export:all']))
       expect(canSeeAnalytics(can)).toBe(true)
+    })
+
+    // UX-114: the export buttons need the export grant, not just read.
+    it('canExportAnalytics is false for a read-only grant', () => {
+      expect(canExportAnalytics(mockCan(new Set(['analytics:read:assigned'])))).toBe(false)
+      expect(canExportAnalytics(mockCan(new Set(['analytics:export:assigned'])))).toBe(true)
     })
   })
 

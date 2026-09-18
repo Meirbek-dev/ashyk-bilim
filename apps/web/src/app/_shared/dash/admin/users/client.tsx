@@ -44,7 +44,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Actions, Resources, Scopes } from '@/components/Security'
 import { useAdminUsers, useAllMembers, useRoles } from '@/features/users/hooks/useUsers'
-import { useRoleLabels } from '@/features/users/hooks/useRoleLabels'
+import { accountLabel, useRoleLabels } from '@/features/users/hooks/useRoleLabels'
 import { useApiError } from '@/hooks/useApiError'
 import { useSession } from '@/hooks/useSession'
 import { hasErrorCode } from '@/lib/api/assertSuccess'
@@ -310,7 +310,7 @@ export default function UserRolesClient() {
               <AlertTriangle />
             </AlertDialogMedia>
             <AlertDialogTitle>
-              {t('disableConfirmTitle', { name: userToDisable?.display_name || userToDisable?.username || '' })}
+              {t('disableConfirmTitle', { name: userToDisable ? accountLabel(userToDisable) : '' })}
             </AlertDialogTitle>
             <AlertDialogDescription>{t('disableConfirmDescription')}</AlertDialogDescription>
           </AlertDialogHeader>

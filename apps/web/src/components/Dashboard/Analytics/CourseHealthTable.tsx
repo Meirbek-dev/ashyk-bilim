@@ -9,6 +9,7 @@ import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 interface CourseHealthTableProps {
   rows: TeacherCourseRow[]
@@ -18,6 +19,7 @@ interface CourseHealthTableProps {
 
 export default function CourseHealthTable({ rows, storageKey, serverPaginated }: CourseHealthTableProps) {
   const t = useTranslations('TeacherAnalytics')
+  const percent = usePercentFormat()
   const columns: DataTableColumnDef<TeacherCourseRow>[] = [
     {
       accessorKey: 'course_name',
@@ -39,7 +41,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
         const course = row.original
         return (
           <div>
-            <div>{course.completion_rate}%</div>
+            <div>{percent(course.completion_rate)}</div>
             <div className="text-muted-foreground text-[11px]">
               {course.teacher_completion_delta_pct !== null && course.teacher_completion_delta_pct !== undefined
                 ? `${course.teacher_completion_delta_pct > 0 ? '+' : ''}${course.teacher_completion_delta_pct} ${t('courseHealth.vsTeacherAvg')}`
@@ -64,7 +66,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
         // Score is already on a 0–100 scale (freshness × 0.55 + avg_progress × 0.45).
         return (
           <div>
-            <div>{Math.round(v)}%</div>
+            <div>{percent(Math.round(v))}</div>
             {course.historical_completion_delta_pct !== null &&
               course.historical_completion_delta_pct !== undefined && (
                 <div className="text-muted-foreground text-[11px]">

@@ -45,6 +45,7 @@ use types::{
     TeacherOverviewResponse,
 };
 
+use crate::grading::teacher::CsvLanguage;
 use crate::identity::Actor;
 
 pub const INTERVENTION_TYPES: &[&str] = &[
@@ -622,36 +623,40 @@ impl AnalyticsService {
         &self,
         actor: &Actor,
         filters: &AnalyticsFilters,
+        language: CsvLanguage,
     ) -> Result<String> {
         let ctx = self.export_context(actor, filters).await?;
-        Ok(exports::at_risk_csv(&ctx, filters))
+        Ok(exports::at_risk_csv(&ctx, filters, language))
     }
 
     pub async fn export_grading_backlog_csv(
         &self,
         actor: &Actor,
         filters: &AnalyticsFilters,
+        language: CsvLanguage,
     ) -> Result<String> {
         let ctx = self.export_context(actor, filters).await?;
-        Ok(exports::grading_backlog_csv(&ctx, filters))
+        Ok(exports::grading_backlog_csv(&ctx, filters, language))
     }
 
     pub async fn export_course_progress_csv(
         &self,
         actor: &Actor,
         filters: &AnalyticsFilters,
+        language: CsvLanguage,
     ) -> Result<String> {
         let ctx = self.export_context(actor, filters).await?;
-        Ok(exports::course_progress_csv(&ctx, filters))
+        Ok(exports::course_progress_csv(&ctx, filters, language))
     }
 
     pub async fn export_assessment_outcomes_csv(
         &self,
         actor: &Actor,
         filters: &AnalyticsFilters,
+        language: CsvLanguage,
     ) -> Result<String> {
         let ctx = self.export_context(actor, filters).await?;
-        Ok(exports::assessment_outcomes_csv(&ctx, filters))
+        Ok(exports::assessment_outcomes_csv(&ctx, filters, language))
     }
 
     // ── Rollups ─────────────────────────────────────────────────────────

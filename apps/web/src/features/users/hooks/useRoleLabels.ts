@@ -28,3 +28,9 @@ export function useRoleLabels(roles: readonly Role[] | undefined) {
 
   return { roleName, roleDescription }
 }
+
+/** One account label for the disable confirms (UX-114): «Имя Фамилия (login)», or the login alone. */
+export function accountLabel(user: { display_name: string; username: string }): string {
+  const name = user.display_name.trim()
+  return name && name !== user.username ? `${name} (${user.username})` : user.username
+}

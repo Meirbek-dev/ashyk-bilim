@@ -25,6 +25,16 @@ export function canSeeAnalytics(can: CanCheck): boolean {
   )
 }
 
+// The CSV exports are `analytics:export:*` only (UX-114): a read-only grant
+// sees the dashboards but not the export buttons.
+export function canExportAnalytics(can: CanCheck): boolean {
+  return (
+    can(Resources.ANALYTICS, Actions.EXPORT, Scopes.ASSIGNED) ||
+    can(Resources.ANALYTICS, Actions.EXPORT, Scopes.APP) ||
+    can(Resources.ANALYTICS, Actions.EXPORT, Scopes.ALL)
+  )
+}
+
 // The users area holds the admin directory (`GET /users`, which the server
 // gates on `platform:read:platform`) and the usergroups tab (`GET /usergroups`,
 // `usergroup:read:platform`). It must NOT key off `user:read:platform` — every

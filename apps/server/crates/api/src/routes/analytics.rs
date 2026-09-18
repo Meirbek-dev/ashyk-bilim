@@ -24,6 +24,7 @@ use crate::dto::analytics::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotency_key, sha256_hex};
+use crate::routes::grading::csv_language;
 use crate::state::AppState;
 
 fn filters(query: AnalyticsQuery) -> ApiResult<AnalyticsFilters> {
@@ -401,72 +402,94 @@ pub async fn drill_through(
 }
 
 // ── CSV exports (analytics:export) ──────────────────────────────────────
+//
+// UTF-8 with BOM; headers and enum cells follow `Accept-Language` (`ru`
+// default, `kk`, `en`) like the grading CSVs (UX-114).
 
 #[utoipa::path(
     get, path = "/analytics/teacher/exports/at-risk.csv", tag = "analytics",
-    params(AnalyticsQuery),
+    params(
+        AnalyticsQuery,
+        ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+    ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
 pub async fn export_at_risk(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Query(query): Query<AnalyticsQuery>,
-) -> ApiResult<Response> {
-    let filters = filters(query)?;
-    let csv = state.analytics.export_at_risk_csv(&actor, &filters).await?;
-    csv_response(csv, "teacher-at-risk.csv")
-}
-
-#[utoipa::path(
-    get, path = "/analytics/teacher/exports/grading-backlog.csv", tag = "analytics",
-    params(AnalyticsQuery),
-    responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
-)]
-pub async fn export_grading_backlog(
-    State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<Response> {
     let filters = filters(query)?;
     let csv = state
         .analytics
-        .export_grading_backlog_csv(&actor, &filters)
+        .export_at_risk_csv(&actor, &filters, csv_language(&headers))
+        .await?;
+    csv_response(csv, "teacher-at-risk.csv")
+}
+
+#[utoipa::path(
+    get, path = "/analytics/teacher/exports/grading-backlog.csv", tag = "analytics",
+    params(
+        AnalyticsQuery,
+        ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+    ),
+    responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
+)]
+pub async fn export_grading_backlog(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
+    Query(query): Query<AnalyticsQuery>,
+) -> ApiResult<Response> {
+    let filters = filters(query)?;
+    let csv = state
+        .analytics
+        .export_grading_backlog_csv(&actor, &filters, csv_language(&headers))
         .await?;
     csv_response(csv, "teacher-grading-backlog.csv")
 }
 
 #[utoipa::path(
     get, path = "/analytics/teacher/exports/course-progress.csv", tag = "analytics",
-    params(AnalyticsQuery),
+    params(
+        AnalyticsQuery,
+        ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+    ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
 pub async fn export_course_progress(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<Response> {
     let filters = filters(query)?;
     let csv = state
         .analytics
-        .export_course_progress_csv(&actor, &filters)
+        .export_course_progress_csv(&actor, &filters, csv_language(&headers))
         .await?;
     csv_response(csv, "teacher-course-progress.csv")
 }
 
 #[utoipa::path(
     get, path = "/analytics/teacher/exports/assessment-outcomes.csv", tag = "analytics",
-    params(AnalyticsQuery),
+    params(
+        AnalyticsQuery,
+        ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+    ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
 pub async fn export_assessment_outcomes(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
     Query(query): Query<AnalyticsQuery>,
 ) -> ApiResult<Response> {
     let filters = filters(query)?;
     let csv = state
         .analytics
-        .export_assessment_outcomes_csv(&actor, &filters)
+        .export_assessment_outcomes_csv(&actor, &filters, csv_language(&headers))
         .await?;
     csv_response(csv, "teacher-assessment-outcomes.csv")
 }

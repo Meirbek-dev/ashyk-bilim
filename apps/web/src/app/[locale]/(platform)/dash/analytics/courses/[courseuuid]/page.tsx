@@ -7,7 +7,8 @@ import EngagementAreaChart from '@components/Dashboard/Analytics/EngagementAreaC
 import AtRiskLearnersTable from '@components/Dashboard/Analytics/AtRiskLearnersTable'
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getTranslations } from 'next-intl/server'
+import { getFormatter, getTranslations } from 'next-intl/server'
+import { formatPercent } from '@/features/assessments/shared/usePercentFormat'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
 import { getCourseMetadata } from '@services/courses/courses'
 import type { Metadata } from 'next'
@@ -34,11 +35,12 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
   params: Promise<{ courseuuid: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const [{ courseuuid }, searchParams, t, tErrors] = await Promise.all([
+  const [{ courseuuid }, searchParams, t, tErrors, format] = await Promise.all([
     props.params,
     props.searchParams,
     getTranslations('TeacherAnalytics'),
     getTranslations('Errors'),
+    getFormatter(),
   ])
   if (!CourseId.safeParse(courseuuid).success) notFound()
   const query = normalizeAnalyticsQuery(searchParams)
@@ -71,13 +73,13 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
             <div className="text-muted-foreground text-xs tracking-wide uppercase">
               {t('pages.courseStatCompletion')}
             </div>
-            <div className="mt-2 text-3xl font-semibold">{detail.summary.completion_rate}%</div>
+            <div className="mt-2 text-3xl font-semibold">{formatPercent(format, detail.summary.completion_rate)}</div>
           </div>
           <div className="border-border/60 bg-muted/20 rounded-xl border p-4">
             <div className="text-muted-foreground text-xs tracking-wide uppercase">
               {t('pages.courseStatAvgProgress')}
             </div>
-            <div className="mt-2 text-3xl font-semibold">{detail.summary.avg_progress_pct}%</div>
+            <div className="mt-2 text-3xl font-semibold">{formatPercent(format, detail.summary.avg_progress_pct)}</div>
           </div>
           <div className="border-border/60 bg-muted/20 rounded-xl border p-4">
             <div className="text-muted-foreground text-xs tracking-wide uppercase">{t('pages.courseStatUngraded')}</div>

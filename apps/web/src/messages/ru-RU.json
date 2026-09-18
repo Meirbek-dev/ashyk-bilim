@@ -4067,7 +4067,7 @@
         "usersOnlyDescription": "Курс доступен только авторизованным пользователям. Можно выбрать, какие группы получат доступ",
         "usersOnlyLabel": "Только пользователи",
         "accessPolicyStagedTitle": "Политика доступа не сохраняется до нажатия кнопки «Сохранить»",
-        "accessPolicyStagedDescription": "Изменения видимости остаются локальными до сохранения этого раздела. Привязка групп пользователей ниже применяется немедленно и намеренно отделена от черновика политики.",
+        "accessPolicyStagedDescription": "Изменения видимости остаются локальными до сохранения этого раздела.",
         "readinessReadyTitle": "Готово к публикации",
         "readinessReadyDescription": "Сервер не обнаружил проверяемых блокеров публикации.",
         "readinessBlockedTitle": "Публикацию блокирует {count, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
@@ -6767,8 +6767,8 @@
         "paginationInfo": "Показано {start}-{end} из {total} пользователей",
         "removeFromOrgButton": "Отключить пользователя",
         "removeUserButton": "Отключить пользователя",
-        "removeUserModalMessage": "Пользователь не сможет войти в Ashyk Bilim, пока его не включат снова. Данные и прогресс сохраняются.",
-        "removeUserModalTitle": "Отключить {username}?",
+        "removeUserModalMessage": "Все активные сессии пользователя будут завершены. Аккаунт можно включить снова.",
+        "removeUserModalTitle": "Отключить аккаунт {name}?",
         "removingUser": "Отключение...",
         "roleHeader": "Роль",
         "searchPlaceholder": "Поиск по имени, логину или эл. почте...",
@@ -7468,7 +7468,9 @@
         "recovered": "Восстановлено"
       },
       "viewAllAtRisk": "Полный список учащихся в зоне риска →",
-      "contentFriction": "Трудности с контентом"
+      "contentFriction": "Трудности с контентом",
+      "exportSaved": "CSV сохранён",
+      "exportFailed": "Не удалось скачать CSV"
     },
     "filters": {
       "label": "Аналитика",
@@ -7740,7 +7742,8 @@
         "failures": "Неудачи",
         "missing": "Пропущено",
         "grading": "Ожидает проверки"
-      }
+      },
+      "learnerNotEnrolled": "Учащийся больше не записан на курс"
     },
     "gradingBacklog": {
       "title": "Очередь проверки",

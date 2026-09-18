@@ -206,6 +206,14 @@ impl UsergroupsService {
         course_ids: &[CourseId],
     ) -> Result<()> {
         self.writable(actor, id).await?;
+        // UX-114: like `add_courses`, a course the actor cannot read is 404
+        // (an unknown id stays an idempotent no-op).
+        let courses = CoursesService::new(self.pool.clone());
+        for &course_id in course_ids {
+            if let Some(course) = ab_db::catalog::get_course(&self.pool, course_id).await? {
+                courses.require_read(actor, &course).await?;
+            }
+        }
         ab_db::usergroups::remove_courses(&self.pool, id, course_ids).await
     }
 

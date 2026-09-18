@@ -316,6 +316,20 @@ impl CsvLanguage {
         }
     }
 
+    /// Assessment kind word (analytics exports).
+    pub(crate) const fn assessment_kind(self, kind: AssessmentKind) -> &'static str {
+        match (self, kind) {
+            (Self::Ru | Self::Kk, AssessmentKind::Quiz) => "Тест",
+            (Self::Ru, AssessmentKind::Exam) => "Экзамен",
+            (Self::Ru, AssessmentKind::CodeChallenge) => "Код-зона",
+            (Self::Kk, AssessmentKind::Exam) => "Емтихан",
+            (Self::Kk, AssessmentKind::CodeChallenge) => "Код-аймақ",
+            (Self::En, AssessmentKind::Quiz) => "Quiz",
+            (Self::En, AssessmentKind::Exam) => "Exam",
+            (Self::En, AssessmentKind::CodeChallenge) => "Code challenge",
+        }
+    }
+
     /// Per-assessment export header (UX-105): learner, email, attempt,
     /// status, late, submitted at, auto score, final score.
     const fn submission_header(self) -> [&'static str; 8] {
@@ -363,7 +377,7 @@ impl CsvLanguage {
     }
 
     /// A submission's own status word (per-assessment export).
-    const fn submission_status(self, status: SubmissionStatus) -> &'static str {
+    pub(crate) const fn submission_status(self, status: SubmissionStatus) -> &'static str {
         use SubmissionStatus as S;
         match (self, status) {
             (Self::Ru, S::Draft) => "Черновик",

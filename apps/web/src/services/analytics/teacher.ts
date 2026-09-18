@@ -192,8 +192,12 @@ export function getAnalyticsExportUrl(
   return `${getAPIUrl()}analytics/teacher/exports/${exportName}.csv${buildQueryString(query)}`
 }
 
-export async function downloadAnalyticsExport(exportUrl: string): Promise<{ blob: Blob; filename: string }> {
-  const blob = await apiBody<Blob, 'blob'>(exportUrl, { responseType: 'blob' })
+/** UTF-8 + BOM CSV in `locale` (UX-114); bytes, since `Response.text()` strips the BOM. */
+export async function downloadAnalyticsExport(
+  exportUrl: string,
+  locale: string,
+): Promise<{ blob: Blob; filename: string }> {
+  const blob = await apiBody<Blob, 'blob'>(exportUrl, { responseType: 'blob', headers: { 'Accept-Language': locale } })
   const pathWithoutQuery = exportUrl.split('?').shift() ?? exportUrl
 
   return {

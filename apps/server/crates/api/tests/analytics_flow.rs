@@ -756,7 +756,14 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let text = csv.text();
     let lines: Vec<&str> = text.split("\r\n").filter(|l| !l.is_empty()).collect();
     assert_eq!(lines.len(), 2, "header + the pending submission: {text}");
+    // UX-114: BOM + Russian by default, enum cells localized too.
+    assert!(
+        lines[0].starts_with("\u{feff}ID учащегося,Логин,"),
+        "{text}"
+    );
     assert!(lines[1].contains("bob"), "{text}");
+    assert!(lines[1].contains(",Тест,"), "{text}");
+    assert!(lines[1].contains(",На проверке,"), "{text}");
     for name in ["at-risk", "course-progress", "assessment-outcomes"] {
         let res = app
             .get_as(
@@ -765,8 +772,29 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             )
             .await;
         assert_eq!(res.status, StatusCode::OK, "{name}: {}", res.text());
+        assert!(res.text().starts_with("\u{feff}"), "{name}");
         assert!(res.text().contains("\r\n"), "{name}");
     }
+    let kk = app
+        .send(
+            Request::builder()
+                .method("GET")
+                .uri("/api/v2/analytics/teacher/exports/course-progress.csv")
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::ACCEPT_LANGUAGE, "kk-KZ,ru;q=0.8")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    let kk_text = kk.text();
+    assert!(kk_text.starts_with("\u{feff}Курс ID,Курс,"), "{kk_text}");
+    assert!(
+        kk_text
+            .lines()
+            .skip(1)
+            .all(|l| l.ends_with(",Иә") || l.ends_with(",Жоқ")),
+        "{kk_text}"
+    );
     let no_export = app.mint_session(&["analytics:read:assigned"]).await;
     let refused = app
         .get_as(&no_export, "/api/v2/analytics/teacher/exports/at-risk.csv")

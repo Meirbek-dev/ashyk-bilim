@@ -4055,7 +4055,7 @@
         "usersOnlyDescription": "The Course is only accessible to signed in users, additionally you can choose which UserGroups can access this course",
         "usersOnlyLabel": "Users Only",
         "accessPolicyStagedTitle": "Access policy is staged until you save",
-        "accessPolicyStagedDescription": "Visibility changes stay local until you save this section. User-group linking below applies immediately and is intentionally isolated from the policy draft.",
+        "accessPolicyStagedDescription": "Visibility changes stay local until you save this section.",
         "readinessReadyTitle": "Ready to publish",
         "readinessReadyDescription": "The server found no deterministic publish blockers.",
         "readinessBlockedTitle": "Publishing blocked by {count, plural, one {# issue} other {# issues}}",
@@ -6767,8 +6767,8 @@
         "paginationInfo": "Showing {start}-{end} of {total} users",
         "removeFromOrgButton": "Disable user",
         "removeUserButton": "Disable user",
-        "removeUserModalMessage": "The user will not be able to sign in to Ashyk Bilim until re-enabled. Data and progress are kept.",
-        "removeUserModalTitle": "Disable {username}?",
+        "removeUserModalMessage": "Every live session of this user is revoked. The account can be re-enabled later.",
+        "removeUserModalTitle": "Disable the account of {name}?",
         "removingUser": "Disabling...",
         "roleHeader": "Role",
         "searchPlaceholder": "Search by name, username, or email...",
@@ -7463,7 +7463,9 @@
         "recovered": "Recovered"
       },
       "viewAllAtRisk": "View full at-risk list →",
-      "contentFriction": "Content Friction"
+      "contentFriction": "Content Friction",
+      "exportSaved": "CSV saved",
+      "exportFailed": "Could not download the CSV"
     },
     "filters": {
       "label": "Teacher Analytics",
@@ -7725,7 +7727,8 @@
         "failures": "Failures",
         "missing": "Missing",
         "grading": "Awaiting grade"
-      }
+      },
+      "learnerNotEnrolled": "The learner is no longer enrolled in the course"
     },
     "gradingBacklog": {
       "title": "Grading backlog",
