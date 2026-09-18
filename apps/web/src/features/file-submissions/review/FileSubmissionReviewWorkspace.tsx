@@ -63,7 +63,7 @@ import type {
   FileSubmissionGradePayload,
   FileSubmissionReviewItem,
 } from '@/features/file-submissions/services/file-submissions'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import { fromUnix } from '@/lib/api/contract'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { usePathname, useRouter } from '@/i18n/navigation'
@@ -213,13 +213,29 @@ export default function FileSubmissionReviewWorkspace({
 
   // The queue carries summaries only; files, feedback and rubric scores come
   // from `GET file-submission-attempts/{id}`.
-  const { data: selected } = useQuery(
+  const { data: selected, error: selectedError } = useQuery(
     queryOptions({
       queryKey: selectedId ? attemptQueryKey(selectedId) : ['file-submission', 'review-attempt', 'pending'],
       queryFn: () => getFileSubmissionReviewAttempt(selectedId!),
       enabled: Boolean(selectedId),
     }),
   )
+  // UX-105 (mirrors the quiz review): an unknown `?submission=` says so and is
+  // dropped from the URL instead of silently showing the first row.
+  const initialUnknown =
+    Boolean(initialAttemptUuid) &&
+    selectedUuid === initialAttemptUuid &&
+    isApiError(selectedError) &&
+    selectedError.status === 404
+  useEffect(() => {
+    if (!initialUnknown) return
+    toast.warning(t('unknownSubmissionParam'))
+    setSelectedUuid(null)
+    const next = new URLSearchParams(urlSearchParams.toString())
+    next.delete('submission')
+    const serialized = next.toString()
+    router.replace(serialized ? `${pathname}?${serialized}` : pathname, { scroll: false })
+  }, [initialUnknown, pathname, router, t, urlSearchParams])
 
   if (selected && `${selected.id}:${selected.version}` !== seenVersion) {
     setSeenVersion(`${selected.id}:${selected.version}`)
@@ -404,7 +420,13 @@ export default function FileSubmissionReviewWorkspace({
               size="sm"
               variant="outline"
               nativeButton={false}
-              render={<a href={fileSubmissionExportUrl(config.id)} aria-label={t('downloadCsv')} />}
+              render={
+                <a
+                  href={fileSubmissionExportUrl(config.id)}
+                  aria-label={t('downloadCsv')}
+                  onClick={() => toast.success(t('csvSaved'))}
+                />
+              }
             >
               <Download data-icon="inline-start" />
               CSV

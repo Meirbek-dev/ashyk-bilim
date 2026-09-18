@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import { formatGradebookStateKey } from '@/features/grading/domain'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import type { ActivityProgressCell, SubmissionStatus } from '@/features/grading/domain'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +27,9 @@ export default function ProgressCell({
   stateLabel,
   onOpen,
 }: ProgressCellProps) {
+  // UX-105: one score, one rendering — the shared percent format («90,25%»)
+  // the review list and the CSV agree on, not a rounded «90%».
+  const percent = usePercentFormat()
   const canOpen = Boolean(cell.latest_submission_uuid)
   // The submission badge adds nothing when it names the same state as the
   // progress badge («Оценено Оценено» on a graded exam).
@@ -60,7 +64,7 @@ export default function ProgressCell({
         <LmsStatusBadge status={mapProgressStateToLmsStatus(cell.state)} label={stateLabel} />
       </div>
       <div className="mt-1 flex items-center gap-2 text-xs">
-        <span>{cell.score === null || cell.score === undefined ? '--' : `${Math.round(cell.score)}%`}</span>
+        <span>{cell.score === null || cell.score === undefined ? '--' : percent(cell.score)}</span>
         {cell.is_late ? <Badge variant="destructive">{lateLabel}</Badge> : null}
       </div>
       <div className="mt-1 text-[11px] opacity-80">{attemptsLabel}</div>

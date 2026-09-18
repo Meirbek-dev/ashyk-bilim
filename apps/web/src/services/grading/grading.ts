@@ -70,6 +70,10 @@ export async function publishAssessmentGrades(assessmentUuid: string): Promise<B
   return response
 }
 
-export async function exportGradesCSV(assessmentUuid: string): Promise<string> {
-  return apiBody<string, 'text'>(`assessments/${assessmentUuid}/submissions/export`, { responseType: 'text' })
+/** The server's per-assessment CSV (UTF-8 + BOM, header and status words in `locale` — UX-105). */
+export async function exportGradesCSV(assessmentUuid: string, locale: string): Promise<string> {
+  return apiBody<string, 'text'>(`assessments/${assessmentUuid}/submissions/export`, {
+    responseType: 'text',
+    headers: { 'Accept-Language': locale },
+  })
 }

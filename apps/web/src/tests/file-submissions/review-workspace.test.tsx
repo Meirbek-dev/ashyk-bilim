@@ -18,10 +18,15 @@ const mocks = vi.hoisted(() => ({
   grade: vi.fn(),
   replace: vi.fn(),
   toastSuccess: vi.fn(),
+  toastWarning: vi.fn(),
 }))
 
 vi.mock('sonner', () => ({
-  toast: { success: (...args: unknown[]) => mocks.toastSuccess(...args), error: vi.fn() },
+  toast: {
+    success: (...args: unknown[]) => mocks.toastSuccess(...args),
+    warning: (...args: unknown[]) => mocks.toastWarning(...args),
+    error: vi.fn(),
+  },
 }))
 
 vi.mock('next-intl', () => ({
@@ -120,6 +125,28 @@ describe('file submission review workspace', () => {
       expect(screen.getByDisplayValue('Second learner feedback')).not.toBeNull()
     })
     expect(screen.queryByDisplayValue('First learner feedback')).toBeNull()
+  })
+
+  // UX-105 (mirrors the quiz review): an unknown `?submission=` toasts and is
+  // dropped from the URL; the CSV button toasts «CSV сохранён».
+  it('drops an unknown ?submission= with a notice and toasts the CSV download', async () => {
+    mocks.getAttempt.mockImplementation(async (id: string) => {
+      if (id === 'attempt_ghost') throw new APIError({ code: 'not-found', message: 'not found', status: 404 })
+      return attempt('attempt_first', 'Aruzhan', 92, 'First learner feedback')
+    })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <FileSubmissionReviewWorkspace activityUuid="activity_1" initialAttemptUuid="attempt_ghost" />
+      </QueryClientProvider>,
+    )
+
+    await waitFor(() => expect(mocks.toastWarning).toHaveBeenCalledWith('unknownSubmissionParam'))
+    expect(mocks.replace).toHaveBeenCalledWith('/dash/courses/course/activity/activity/review', { scroll: false })
+    expect(await screen.findByDisplayValue('92')).not.toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'downloadCsv' }))
+    expect(mocks.toastSuccess).toHaveBeenCalledWith('csvSaved')
   })
 
   it('requires confirmation before discarding an edited learner draft', async () => {

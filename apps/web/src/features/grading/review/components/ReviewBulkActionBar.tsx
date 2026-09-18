@@ -1,7 +1,7 @@
 'use client'
 
 import { CalendarClock, Clock3, Download, RotateCcw, Send } from 'lucide-react'
-import { useFormatter, useTranslations } from 'next-intl'
+import { useFormatter, useLocale, useTranslations } from 'next-intl'
 import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
@@ -49,6 +49,7 @@ export default function ReviewBulkActionBar({
 }) {
   const t = useTranslations('Features.Grading.Review.bulkActions')
   const format = useFormatter()
+  const locale = useLocale()
   const { handleApiError } = useApiError()
   const [isPending, startTransition] = useTransition()
   const [deadlineLocal, setDeadlineLocal] = useState('')
@@ -208,7 +209,7 @@ export default function ReviewBulkActionBar({
     }
     startTransition(async () => {
       try {
-        const csv = await exportGradesCSV(assessmentUuid)
+        const csv = await exportGradesCSV(assessmentUuid, locale)
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
         const anchor = document.createElement('a')
@@ -273,6 +274,8 @@ export default function ReviewBulkActionBar({
         disabled={disabled || isPending}
         placeholder={t('deadlinePlaceholder')}
         className="w-48"
+        // UX-105: a new deadline is in the future — the year list starts this year, not 1900.
+        minDate={new Date(new Date().getFullYear(), 0, 1)}
       />
       <Button
         variant="outline"
@@ -359,11 +362,8 @@ export default function ReviewBulkActionBar({
               </div>
             ) : null}
             {pendingAction === 'release-hidden' ? (
-              <>
-                <PreviewRow label={t('preview.selectedHiddenSubmissions')} value={String(releaseSummary.hidden)} />
-                <PreviewRow label={t('preview.alreadyVisible')} value={String(releaseSummary.visible)} />
-                <p className="text-muted-foreground text-xs">{t('preview.releaseHiddenDescription')}</p>
-              </>
+              // UX-105: the action is assessment-wide — no selection counts here.
+              <p className="text-muted-foreground text-xs">{t('preview.releaseHiddenDescription')}</p>
             ) : null}
             {lastSummary ? (
               <p className="text-muted-foreground text-xs">{t('lastResult', { detail: lastSummary.detail })}</p>

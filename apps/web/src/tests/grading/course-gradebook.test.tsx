@@ -68,6 +68,9 @@ vi.mock('@/features/grading/review/GradingReviewWorkspace', () => ({
 
 vi.mock('next-intl', () => ({
   useLocale: () => 'ru-RU',
+  useFormatter: () => ({
+    number: (value: number, options?: Intl.NumberFormatOptions) => value.toLocaleString('ru-RU', options),
+  }),
   useTranslations: () => (key: string, values?: Record<string, string | number>) =>
     values?.count === undefined ? key : `${key}:${values.count}`,
 }))
@@ -139,7 +142,7 @@ function baseGradebook(): CourseGradebookResponse {
         user_id: 'user_student_one',
         activity_id: 'activity_quiz',
         state: 'PASSED',
-        score: 88,
+        score: 90.25,
         passed: true,
         is_late: false,
         teacher_action_required: false,
@@ -216,6 +219,8 @@ describe('CourseGradebookCommandCenter', () => {
     expect(within(table).getByText('Quiz')).toBeInTheDocument()
     expect(within(table).getByText('states.passed')).toBeInTheDocument()
     expect(within(table).getByText('states.returned')).toBeInTheDocument()
+    // UX-105: the cell shows the score the review list and the CSV show, not a rounded «90%».
+    expect(within(table).getByText('90,25%')).toBeInTheDocument()
   })
 
   // Gauntlet F26: file-submission columns render the same cells as

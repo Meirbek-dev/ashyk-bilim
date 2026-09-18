@@ -255,7 +255,9 @@ describe('teacher review controls', () => {
         assessmentUuid="assessment_review"
         disabled={false}
         onRefresh={vi.fn().mockResolvedValue(undefined)}
-        submissions={[createSubmission({ submission_uuid: 'submission_pending', status: 'PENDING', final_score: null })]}
+        submissions={[
+          createSubmission({ submission_uuid: 'submission_pending', status: 'PENDING', final_score: null }),
+        ]}
       />,
     )
     expect(screen.getByRole('button', { name: 'returnSelected' })).toBeDisabled()
@@ -367,7 +369,10 @@ describe('teacher review controls', () => {
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('dialogs.releaseTitle')).toBeInTheDocument()
-    expect(within(dialog).getByText('preview.selectedHiddenSubmissions')).toBeInTheDocument()
+    // UX-105: the action is assessment-wide — the dialog explains that and shows no selection counts.
+    expect(within(dialog).getByText('preview.releaseHiddenDescription')).toBeInTheDocument()
+    expect(within(dialog).queryByText('preview.selectedHiddenSubmissions')).toBeNull()
+    expect(within(dialog).queryByText('preview.alreadyVisible')).toBeNull()
 
     fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
       target: { value: 'Release hidden grades' },

@@ -128,6 +128,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
       try {
         const csv = await apiBody<string, 'text'>(`assessments/${assessmentUuid}/submissions/export`, {
           responseType: 'text',
+          headers: { 'Accept-Language': locale },
         })
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
