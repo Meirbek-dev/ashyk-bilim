@@ -3316,6 +3316,221 @@ export const useQueueRemediation = <TError = ErrorType<unknown>, TContext = unkn
 > => {
   return useMutation(getQueueRemediationMutationOptions(options), queryClient)
 }
+export const getLatestRemediationUrl = (submissionId: AiSubjectId) => {
+  return `/api/v2/ai/remediation/${submissionId}/latest`
+}
+
+/**
+ * @summary The newest remediation session on a submission — `null` when none —
+for whoever may read the work (the grader's gate card, UX-115).
+ */
+export const latestRemediation = async (
+  submissionId: AiSubjectId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<null | RemediationSession> => {
+  return orvalMutator<null | RemediationSession>(
+    getLatestRemediationUrl(submissionId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    nullableParser(RemediationSession),
+  )
+}
+
+export const getLatestRemediationQueryKey = (submissionId: AiSubjectId) => {
+  return [`/api/v2/ai/remediation/${submissionId}/latest`] as const
+}
+
+export const getLatestRemediationQueryOptions = <
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getLatestRemediationQueryKey(submissionId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof latestRemediation>>> = ({ signal }) =>
+    latestRemediation(submissionId, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: submissionId !== null && submissionId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type LatestRemediationQueryResult = NonNullable<Awaited<ReturnType<typeof latestRemediation>>>
+export type LatestRemediationQueryError = ErrorType<Problem>
+
+export function useLatestRemediation<
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof latestRemediation>>,
+          TError,
+          Awaited<ReturnType<typeof latestRemediation>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLatestRemediation<
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof latestRemediation>>,
+          TError,
+          Awaited<ReturnType<typeof latestRemediation>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLatestRemediation<
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The newest remediation session on a submission — `null` when none —
+for whoever may read the work (the grader's gate card, UX-115).
+ */
+
+export function useLatestRemediation<
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getLatestRemediationQueryOptions(submissionId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getLatestRemediationSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getLatestRemediationQueryKey(submissionId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof latestRemediation>>> = ({ signal }) =>
+    latestRemediation(submissionId, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof latestRemediation>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type LatestRemediationSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof latestRemediation>>>
+export type LatestRemediationSuspenseQueryError = ErrorType<Problem>
+
+export function useLatestRemediationSuspense<
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLatestRemediationSuspense<
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLatestRemediationSuspense<
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The newest remediation session on a submission — `null` when none —
+for whoever may read the work (the grader's gate card, UX-115).
+ */
+
+export function useLatestRemediationSuspense<
+  TData = Awaited<ReturnType<typeof latestRemediation>>,
+  TError = ErrorType<Problem>,
+>(
+  submissionId: AiSubjectId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof latestRemediation>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getLatestRemediationSuspenseQueryOptions(submissionId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getAiGetRunUrl = (id: AiRunId) => {
   return `/api/v2/ai/runs/${id}`
 }

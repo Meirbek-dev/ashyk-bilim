@@ -45,7 +45,7 @@ export const GradebookPage = zod
           user_id: zod.uuid(),
         })
         .describe(
-          "One learner's latest non-draft attempt on one graded activity.\n\nExactly one id pair is set: `assessment_id` + `submission_id` for an\nassessment, `file_submission_id` + `attempt_id` for a file submission\n(whose `submitted` reads as `pending` here).",
+          "One learner's grade-of-record attempt on one graded activity (the\nprojector's best-scored submission or latest scored file attempt).\n\nExactly one id pair is set: `assessment_id` + `submission_id` for an\nassessment, `file_submission_id` + `attempt_id` for a file submission\n(whose `submitted` reads as `pending` here).",
         ),
     ),
     file_submissions: zod.array(

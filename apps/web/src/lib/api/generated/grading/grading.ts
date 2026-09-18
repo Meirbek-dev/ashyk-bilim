@@ -1245,8 +1245,10 @@ export const getGradebookUrl = (id: CourseId, params?: GradebookParams) => {
 }
 
 /**
- * @summary Course gradebook: the latest submitted attempt per (learner, graded
-activity) — assessment submissions and file-submission attempts.
+ * The attempt learner progress scores (best-scored submission, latest
+ * scored file attempt) — assessment submissions and file-submission
+ * attempts alike.
+ * @summary Course gradebook: the grade-of-record attempt per (learner, activity).
  */
 export const gradebook = async (
   id: CourseId,
@@ -1332,8 +1334,7 @@ export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TErr
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Course gradebook: the latest submitted attempt per (learner, graded
-activity) — assessment submissions and file-submission attempts.
+ * @summary Course gradebook: the grade-of-record attempt per (learner, activity).
  */
 
 export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
@@ -1410,8 +1411,7 @@ export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Course gradebook: the latest submitted attempt per (learner, graded
-activity) — assessment submissions and file-submission attempts.
+ * @summary Course gradebook: the grade-of-record attempt per (learner, activity).
  */
 
 export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(

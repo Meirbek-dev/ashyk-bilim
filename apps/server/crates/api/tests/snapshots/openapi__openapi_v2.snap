@@ -5783,7 +5783,7 @@ expression: json
         "type": "object"
       },
       "GradebookCell": {
-        "description": "One learner's latest non-draft attempt on one graded activity.\n\nExactly one id pair is set: `assessment_id` + `submission_id` for an\nassessment, `file_submission_id` + `attempt_id` for a file submission\n(whose `submitted` reads as `pending` here).",
+        "description": "One learner's grade-of-record attempt on one graded activity (the\nprojector's best-scored submission or latest scored file attempt).\n\nExactly one id pair is set: `assessment_id` + `submission_id` for an\nassessment, `file_submission_id` + `attempt_id` for a file submission\n(whose `submitted` reads as `pending` here).",
         "properties": {
           "activity_id": {
             "$ref": "#/components/schemas/ActivityId"
@@ -13740,6 +13740,55 @@ expression: json
         ]
       }
     },
+    "/api/v2/ai/remediation/{submission_id}/latest": {
+      "get": {
+        "operationId": "latest_remediation",
+        "parameters": [
+          {
+            "description": "An assessment submission id or a file-submission attempt id",
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AiSubjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RemediationSession"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The latest session or null"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible submission"
+          }
+        },
+        "summary": "The newest remediation session on a submission — `null` when none —\nfor whoever may read the work (the grader's gate card, UX-115).",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/api/v2/ai/runs/{id}": {
       "get": {
         "operationId": "get_run",
@@ -20548,6 +20597,7 @@ expression: json
     },
     "/api/v2/courses/{id}/gradebook": {
       "get": {
+        "description": "The attempt learner progress scores (best-scored submission, latest\nscored file attempt) — assessment submissions and file-submission\nattempts alike.",
         "operationId": "gradebook",
         "parameters": [
           {
@@ -20597,7 +20647,7 @@ expression: json
             "description": "Gradebook page"
           }
         },
-        "summary": "Course gradebook: the latest submitted attempt per (learner, graded\nactivity) — assessment submissions and file-submission attempts.",
+        "summary": "Course gradebook: the grade-of-record attempt per (learner, activity).",
         "tags": [
           "grading"
         ]
