@@ -239,7 +239,7 @@
       "noSubmissionsYet": "Әзірге жіберулер жоқ",
       "noVisibleTestCases": "Көрінетін тест-кейстер жоқ. Жасырын тесттерді тексеру үшін шешімді жіберіңіз.",
       "notConfigured": "Оқу әрекеті бапталмаған",
-      "notConfiguredDescription": "Бұл код оқу әрекетісы әлі бапталмаған. Мұғалімңызға хабарласыңыз.",
+      "notConfiguredDescription": "Бұл код оқу әрекеті әлі бапталмаған. Мұғалімңызға хабарласыңыз.",
       "otherLanguages": "Басқа тілдер",
       "output": "Шығару",
       "partialCredit": "Ішінара несие",
@@ -1715,7 +1715,7 @@
         "namePlaceholder": "мыс., Екі санның қосындысы",
         "selectDifficulty": "Қиындықты таңдаңыз",
         "selectType": "Түрін таңдаңыз",
-        "subtitle": "Автоматты тексерумен бағдарламалау оқу әрекетісын жасаңыз",
+        "subtitle": "Автоматты тексерумен бағдарламалау оқу әрекетін жасаңыз",
         "title": "Код оқу әрекеті жасау",
         "type": "Оқу әрекеті түрі",
         "typeCompetitive": "Жарыс",
@@ -1726,7 +1726,7 @@
       "backToActivities": "Активтіктерге оралу",
       "chooseType": "Белсенділік түрін таңдаңыз",
       "codeChallenge": "Код оқу әрекеті",
-      "codeChallengeDesc": "Автоматты тексерумен бағдарламалау оқу әрекетісын жасаңыз",
+      "codeChallengeDesc": "Автоматты тексерумен бағдарламалау оқу әрекетін жасаңыз",
       "document": "Құжат",
       "documentDesc": "Студенттер үшін PDF немесе құжат жүктеңіз",
       "dynamicPage": "Динамикалық бет",
@@ -2674,7 +2674,7 @@
         "chooseFromGalleryButton": "Галереядан таңдаңыз",
         "label": "Курс нобайы",
         "mediaActionsDescription": "Сурет жүктеу курс жазбасын бірден жаңартады. Тақырып, сипаттама, тегтер және басқа параметрлер сақтауға дейін жергілікті болып қалады.",
-        "mediaActionsTitle": "Медиафайл әрекеттері бірше қолданылады",
+        "mediaActionsTitle": "Медиафайл әрекеттері бірден қолданылады",
         "mediaUpdatesIsolated": "Медиафайл жаңартулары жоғарғы өрістерден арнайы оқшауланған.",
         "uploadImageButton": "Кескінді жүктеу",
         "uploading": "Жүктелуде..."
@@ -2687,7 +2687,7 @@
       "buttonText": "Белсенділік қосу",
       "description": "Осы тарау үшін жаңа белсенділік жасаңыз.",
       "quickCreate": {
-        "codeChallengeName": "Жаңа код оқу әрекетісы",
+        "codeChallengeName": "Жаңа код оқу әрекеті",
         "dynamicPageName": "Жаңа динамикалық бет"
       },
       "title": "Белсенділік қосу"
@@ -4930,7 +4930,7 @@
           },
           "quizizz": {
             "label": "Quizizz",
-            "description": "Интерактивті викториналар мен асинхронды үй оқу әрекетісы режимі."
+            "description": "Интерактивті викториналар мен асинхронды үй оқу әрекеті режимі."
           },
           "edpuzzle": {
             "label": "Edpuzzle",
@@ -7534,7 +7534,7 @@
       "assessmentType": {
         "quiz": "Тест",
         "exam": "Емтихан",
-        "codeChallenge": "Код оқу әрекетісы"
+        "codeChallenge": "Код оқу әрекеті"
       },
       "severity": {
         "info": "Ақпарат",
@@ -8211,7 +8211,7 @@
         },
         "activityTypes": {
           "exam": "Емтихан",
-          "codeChallenge": "Код оқу әрекетісы",
+          "codeChallenge": "Код оқу әрекеті",
           "quiz": "Тест",
           "form": "Форма",
           "file": "Файл"
@@ -8486,11 +8486,11 @@
       "Studio": {
         "kinds": {
           "EXAM": "Емтихан",
-          "CODE_CHALLENGE": "Код оқу әрекетісы",
+          "CODE_CHALLENGE": "Код оқу әрекеті",
           "QUIZ": "Тест",
           "TYPE_FILE_SUBMISSION": "Файл жіберу",
           "TYPE_EXAM": "Емтихан",
-          "TYPE_CODE_CHALLENGE": "Код оқу әрекетісы",
+          "TYPE_CODE_CHALLENGE": "Код оқу әрекеті",
           "TYPE_CUSTOM": "Тест"
         },
         "NativeItemStudio": {
@@ -8574,25 +8574,25 @@
             "item_title_missing": "Элемент атауы міндетті.",
             "item_prompt_missing": "Элемент сұрағы міндетті.",
             "item_max_score_invalid": "Элемент баллы нөлден көп болуы керек.",
-            "choice_prompt_missing": "Таңдау оқу әрекетісының сұрағы міндетті.",
-            "choice_options_missing": "Таңдау оқу әрекетісында кем дегенде екі нұсқа болуы керек.",
+            "choice_prompt_missing": "Таңдау оқу әрекетінің сұрағы міндетті.",
+            "choice_options_missing": "Таңдау оқу әрекетінде кем дегенде екі нұсқа болуы керек.",
             "choice_option_text_missing": "Әр нұсқаның мәтіні болуы керек.",
             "choice_option_duplicate": "Таңдау нұсқалары бірегей болуы керек.",
             "choice_correct_missing": "Кем дегенде бір дұрыс жауапты белгілеңіз.",
             "choice_too_many_correct": "Жалғыз таңдаулы оқу әрекеттеріда тек бір дұрыс жауап болуы мүмкін.",
-            "matching_prompt_missing": "Сәйкестендіру оқу әрекетісының сұрағы міндетті.",
-            "matching_pairs_missing": "Сәйкестендіру оқу әрекетісында кем дегенде бір жұп болуы керек.",
+            "matching_prompt_missing": "Сәйкестендіру оқу әрекетінің сұрағы міндетті.",
+            "matching_pairs_missing": "Сәйкестендіру оқу әрекетінде кем дегенде бір жұп болуы керек.",
             "matching_pair_value_missing": "Әр жұптың сол және оң мәні болуы керек.",
             "matching_left_duplicate": "Сол жақ сұрақтар бірегей болуы керек.",
             "matching_right_duplicate": "Оң жақ жауаптар бірегей болуы керек.",
-            "open_text_prompt_missing": "Ашық мәтін оқу әрекетісының сұрағы міндетті.",
+            "open_text_prompt_missing": "Ашық мәтін оқу әрекетінің сұрағы міндетті.",
             "open_text_min_words_invalid": "Сөздердің минималды саны теріс болмауы керек.",
-            "file_prompt_missing": "Файл жүктеу оқу әрекетісының сұрағы міндетті.",
-            "file_max_files_invalid": "Файл жүктеу оқу әрекетісы кем дегенде бір файлға рұқсат беруі керек.",
+            "file_prompt_missing": "Файл жүктеу оқу әрекетінің сұрағы міндетті.",
+            "file_max_files_invalid": "Файл жүктеу оқу әрекеті кем дегенде бір файлға рұқсат беруі керек.",
             "file_max_mb_invalid": "Орнатылған максималды файл өлшемі нөлден көп болуы керек.",
             "file_mime_invalid": "Рұқсат етілген файл түрлері бос болмауы керек.",
-            "form_prompt_missing": "Форма оқу әрекетісының сұрағы міндетті.",
-            "form_fields_missing": "Форма оқу әрекетісында кем дегенде бір өріс болуы керек.",
+            "form_prompt_missing": "Форма оқу әрекетінің сұрағы міндетті.",
+            "form_fields_missing": "Форма оқу әрекетінде кем дегенде бір өріс болуы керек.",
             "form_field_label_missing": "Әр форма өрісінің жазбасы болуы керек.",
             "form_field_id_duplicate": "Форма өрістерінің бірегей идентификаторлары болуы керек.",
             "code_languages_missing": "Кем дегенде бір рұқсат етілген тілді таңдаңыз",
@@ -9436,7 +9436,7 @@
           "unflagQuestion": "Белгіні алу",
           "answered_short": "жауап",
           "resumedDraftDescription": "Соңғы сақталған уақыты: {time}",
-          "codeChallenge": "Код оқу әрекетісы",
+          "codeChallenge": "Код оқу әрекеті",
           "assessmentTitle": "Бағалау",
           "connectionLostTitle": "Байланыс үзілді",
           "connectionLostDescription": "Интернет байланысын тексеріңіз. Прогресіңіз жергілікті түрде сақталып, желі қалпына келгенде синхрондалады.",
@@ -9460,7 +9460,7 @@
           "compilationOutput": "Компиляция шығаруы",
           "configSaveFailed": "Параметрлерді сақтау мүмкін болмады",
           "configSaved": "Параметрлер сәтті сақталды",
-          "configureChallenge": "Код оқу әрекетісын баптау",
+          "configureChallenge": "Код оқу әрекетін баптау",
           "configureDescription": "Тест жағдайларын, уақыт шектерін және рұқсат етілген бағдарламалау тілдерін орнатыңыз",
           "customInput": "Өз енгізу",
           "deselectAll": "Барлығын алып тастау",
@@ -9552,7 +9552,7 @@
           "noSubmissionsYet": "Әзірге жіберулер жоқ",
           "noVisibleTestCases": "Көрінетін тест-кейстер жоқ. Жасырын тесттерді тексеру үшін шешімді жіберіңіз.",
           "notConfigured": "Оқу әрекеті бапталмаған",
-          "notConfiguredDescription": "Бұл код оқу әрекетісы әлі бапталмаған. Мұғалімңызға хабарласыңыз.",
+          "notConfiguredDescription": "Бұл код оқу әрекеті әлі бапталмаған. Мұғалімңызға хабарласыңыз.",
           "underConstructionIcon": "🛠️",
           "timeLimitValue": "{value} мс",
           "memoryLimitValue": "{value} МБ",
@@ -9693,7 +9693,7 @@
           },
           "activityTypes": {
             "exam": "Емтихан",
-            "codeChallenge": "Код оқу әрекетісы",
+            "codeChallenge": "Код оқу әрекеті",
             "quiz": "Тест",
             "form": "Форма",
             "file": "Файл"
@@ -9855,7 +9855,7 @@
         },
         "activityTypes": {
           "exam": "Емтихан",
-          "codeChallenge": "Код оқу әрекетісы",
+          "codeChallenge": "Код оқу әрекеті",
           "quiz": "Тест",
           "form": "Форма",
           "file": "Файл"
