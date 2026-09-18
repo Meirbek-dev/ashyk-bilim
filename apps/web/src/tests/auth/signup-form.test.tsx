@@ -11,6 +11,7 @@ const catalog: Record<string, string> = {
   'fields.invalid': 'Invalid value',
 }
 vi.mock('next-intl', () => ({
+  useLocale: () => 'ru-RU',
   useTranslations: (ns?: string) =>
     Object.assign((key: string) => (ns === 'Errors' ? (catalog[key] ?? key) : key), {
       has: (key: string) => key in catalog,
@@ -75,6 +76,8 @@ describe('/auth/signup', () => {
         email: 'aigerim@example.com',
         password: 'correct horse',
         confirmPassword: 'correct horse',
+        // UX-101: the signer's UI locale prefixes the verification link.
+        locale: 'ru-RU',
       }),
     )
     await waitFor(() => expect(push).toHaveBeenCalledWith('/auth/login'))

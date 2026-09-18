@@ -65,7 +65,7 @@ describe('v2 analytics requests', () => {
   })
 
   it('validates intervention responses and preserves UUID scopes and epoch seconds', async () => {
-    const response = { generated_at_unix: 1777982400, total: 0, items: [] }
+    const response = { generated_at_unix: 1777982400, total: 0, page: 1, page_size: 50, items: [] }
     vi.mocked(apiJson).mockImplementation(async (_path, _init, parse) => parse!(response))
     expect(await getTeacherInterventions({ course_id: id, user_id: id })).toEqual(response)
     expect(apiJson).toHaveBeenLastCalledWith(

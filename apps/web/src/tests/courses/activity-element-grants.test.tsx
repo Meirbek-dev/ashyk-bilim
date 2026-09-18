@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vite-plus/test'
 
 // v2 `Activity` carries no `can_update` / `can_delete`; the curriculum row
@@ -50,7 +51,13 @@ const activity = {
   published: false,
 }
 
-const renderRow = () => render(<ActivityElement activity={activity} activityIndex={0} course_uuid="course-1" />)
+// UX-104: the row reads the course's assessments (scheduled badge) through TanStack Query.
+const renderRow = () =>
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } })}>
+      <ActivityElement activity={activity} activityIndex={0} course_uuid="course-1" />
+    </QueryClientProvider>,
+  )
 
 describe('ActivityElement capabilities (v2 grants)', () => {
   it('lets the course creator with `:own` grants rename, publish and delete', () => {

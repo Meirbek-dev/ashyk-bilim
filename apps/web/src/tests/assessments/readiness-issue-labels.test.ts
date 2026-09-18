@@ -105,7 +105,7 @@ describe('readiness issue labels (BUG-029)', () => {
     const t = translator('ru', ruMessages, 'Features.Assessments.Studio')
     const lifecycle = 'PUBLISHED'
     expect(t('lifecycleChanged', { state: t(`lifecycle.${lifecycle.toLowerCase()}`) })).toBe(
-      'Этап изменён на Опубликовано',
+      'Этап изменён: Опубликовано',
     )
   })
 })
