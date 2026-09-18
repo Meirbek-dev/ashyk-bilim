@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 
 import type { Submission, SubmissionStats } from '@/features/grading/domain'
 import { cn } from '@/lib/utils'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import ReviewBulkActionBar from './ReviewBulkActionBar'
 
 interface ReviewQueueSummary {
@@ -80,6 +81,7 @@ function StatsGrid({
 }) {
   const t = useTranslations('Features.Grading.Review')
   const format = useFormatter()
+  const formatPercent = usePercentFormat()
   if (!stats) return null
 
   return (
@@ -96,7 +98,7 @@ function StatsGrid({
       />
       <StatTile
         label={t('layout.stats.avgScore')}
-        value={stats.avg_score != null ? `${format.number(stats.avg_score, { maximumFractionDigits: 1 })}%` : '--'}
+        value={stats.avg_score != null ? formatPercent(stats.avg_score) : '--'}
         icon={TrendingUp}
         accent="blue"
       />

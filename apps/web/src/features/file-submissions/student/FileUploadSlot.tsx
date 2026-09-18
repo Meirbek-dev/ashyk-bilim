@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -18,15 +19,6 @@ export interface PendingFileSlot {
   status: FileSlotStatus
   progress: number // 0–100
   error?: string
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatBytes(bytes: number): string {
-  if (!bytes) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
-  return `${(bytes / 1024 ** idx).toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -43,6 +35,7 @@ interface FileUploadSlotProps {
  */
 export default function FileUploadSlot({ slot, onRemove, readonly = false }: FileUploadSlotProps) {
   const t = useTranslations('FileSubmission')
+  const formatBytes = useFormatBytes()
   const isUploading = slot.status === 'uploading'
   const isSaved = slot.status === 'saved'
   const isFailed = slot.status === 'failed' || slot.status === 'rejected'

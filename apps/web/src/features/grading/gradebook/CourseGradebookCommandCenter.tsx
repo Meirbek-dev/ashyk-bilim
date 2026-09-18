@@ -31,6 +31,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import GradebookToolbar, { labelActivityType } from './GradebookToolbar'
 import GradebookActivityCell, { progressStateLabelKey } from './GradebookActivityCell'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 interface CourseGradebookCommandCenterProps {
   courseUuid: string
@@ -424,6 +425,7 @@ function uniqueActionActivities(actions: TeacherAction[]) {
 
 function RollupPanel({ data }: { data: CourseGradebookResponse }) {
   const t = useTranslations('Features.Grading.Gradebook')
+  const formatPercent = usePercentFormat()
   const [kind, setKind] = useState<GradebookRollupKind>('activity_category')
   const rows = useMemo(() => buildGradebookRollups(data, kind), [data, kind])
 
@@ -451,7 +453,7 @@ function RollupPanel({ data }: { data: CourseGradebookResponse }) {
                 <div className="text-muted-foreground mt-1 text-xs">
                   {row.averageScore === null
                     ? t('noScore')
-                    : t('averageScore', { score: Math.round(row.averageScore) })}
+                    : t('averageScore', { score: formatPercent(row.averageScore) })}
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                   <RollupMetric label={t('summary.needsGrading')} value={row.needsGrading} />

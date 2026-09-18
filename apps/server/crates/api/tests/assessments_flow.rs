@@ -679,6 +679,22 @@ async fn matching_items_have_a_learner_shape_and_grade_by_id(pool: PgPool) {
         .await;
     assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
     let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    // UX-108: a misspelled answer key (`pairs`) is 422, not stored as empty.
+    let unknown_field = app
+        .post_as(
+            &learner,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { &item_id: { "kind": "matching", "pairs": [
+                { "left": "Kazakhstan", "right": "Astana" },
+            ] } } }),
+        )
+        .await;
+    assert_eq!(
+        unknown_field.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        unknown_field.text()
+    );
     let submitted = app
         .post_as(
             &learner,

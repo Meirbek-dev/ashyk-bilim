@@ -68,6 +68,7 @@ import { fromUnix } from '@/lib/api/contract'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
 // ── Rubric types (convention-based schema stored in rubric_json) ──────────────
 
@@ -148,6 +149,7 @@ export default function FileSubmissionReviewWorkspace({
   const [previewFilename, setPreviewFilename] = useState<string | null>(null)
   const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null) // attempt file id
   const t = useTranslations('FileSubmissionReview')
+  const formatBytes = useFormatBytes()
   const tPanel = useTranslations('Grading.Panel')
   const { handleApiError, toastApiError } = useApiError()
   const navigationGuard = useUnsavedChangesGuard(isGradeDirty, {
@@ -997,11 +999,4 @@ function formatDate(unix: number) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(fromUnix(unix))
-}
-
-function formatBytes(bytes: number) {
-  if (!bytes) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
-  return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`
 }

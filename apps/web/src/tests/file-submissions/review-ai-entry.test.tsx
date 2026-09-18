@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useFormatter: () => ({ number: (n: number) => String(n) }),
 }))
 
 vi.mock('next/navigation', () => ({

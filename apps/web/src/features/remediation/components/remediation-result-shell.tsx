@@ -16,7 +16,8 @@ export function RemediationResultShell({ session }: { session: RemediationView }
   const contextValue: AIResultShellContextValue = useMemo(
     () => ({
       title: session.lecture.title || t('title'),
-      description: session.gate_mode ? t('activeGate') : t('assigned'),
+      description:
+        session.status === 'passed' ? t('gatePassed') : session.gate_mode ? t('activeGate') : t('assigned'),
       state: session.status === 'passed' ? 'complete' : 'needs_human_review',
       citations,
     }),

@@ -24,9 +24,11 @@ pub struct MatchingAnswer {
     pub right: String,
 }
 
-/// Internally tagged on `kind`, mirroring the item body kinds.
+/// Internally tagged on `kind`, mirroring the item body kinds. Unknown
+/// fields are refused (UX-108: a `pairs` matching answer used to be
+/// accepted and stored empty).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ItemAnswer {
     Choice {
         #[serde(default)]
