@@ -68,7 +68,12 @@ const gateSession = {
   status: 'assigned',
   gate_mode: true,
   language: 'ru',
-  lecture: { title: 'Повторение', micro_lecture_markdown: 'Ещё раз про отчёты.', learning_objectives: [], citations: [] },
+  lecture: {
+    title: 'Повторение',
+    micro_lecture_markdown: 'Ещё раз про отчёты.',
+    learning_objectives: [],
+    citations: [],
+  },
   test: { questions: [] },
   score: null,
   passed_at_unix: null,
@@ -98,9 +103,7 @@ beforeEach(() => {
 
 describe('FileSubmissionWorkspace blocked states', () => {
   it('BUG-166: a PAST_DUE submit 403 refetches and shows the blocked card instead of the editor', async () => {
-    mocks.submit.mockRejectedValue(
-      new APIError({ code: 'forbidden', status: 403, message: 'cannot start: PAST_DUE' }),
-    )
+    mocks.submit.mockRejectedValue(new APIError({ code: 'forbidden', status: 403, message: 'cannot start: PAST_DUE' }))
     mocks.getActivity.mockResolvedValueOnce(config).mockResolvedValue({ ...config, disabled_reasons: ['PAST_DUE'] })
     renderWorkspace()
     fireEvent.click(await screen.findByRole('button', { name: 'submitFiles' }))
@@ -111,6 +114,22 @@ describe('FileSubmissionWorkspace blocked states', () => {
     expect(mocks.getActivity).toHaveBeenCalledTimes(2)
   })
 
+  it('UX-115: an open draft polls the projection, so a closed deadline flips to the blocked card without a save', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      mocks.getActivity.mockResolvedValueOnce(config).mockResolvedValue({ ...config, disabled_reasons: ['PAST_DUE'] })
+      renderWorkspace()
+      await screen.findByRole('button', { name: 'submitFiles' })
+      await vi.advanceTimersByTimeAsync(15_500)
+      await screen.findByTestId('file-submission-blocked')
+      expect(screen.queryByRole('button', { name: 'submitFiles' })).toBeNull()
+      expect(mocks.submit).not.toHaveBeenCalled()
+      expect(mocks.getActivity).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('BUG-167: a gate seen by the sessions query replaces the open draft editor with «Пройти исправление»', async () => {
     mocks.apiJson.mockImplementation(async (path: string) =>
       path === `ai/remediation/student/${USER_ID}` ? [gateSession] : [],
@@ -119,6 +138,8 @@ describe('FileSubmissionWorkspace blocked states', () => {
     await screen.findByTestId('remediation-gate')
     expect(screen.getByRole('button', { name: 'open' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'submitFiles' })).toBeNull()
-    await waitFor(() => expect(mocks.apiJson).toHaveBeenCalledWith(`ai/remediation/student/${USER_ID}`, undefined, expect.any(Function)))
+    await waitFor(() =>
+      expect(mocks.apiJson).toHaveBeenCalledWith(`ai/remediation/student/${USER_ID}`, undefined, expect.any(Function)),
+    )
   })
 })

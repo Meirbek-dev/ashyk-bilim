@@ -151,6 +151,7 @@ fn ai_agent_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::ai_agents::generate_remediation))
         .routes(routes!(routes::ai_agents::queue_remediation))
         .routes(routes!(routes::ai_agents::remediation_session))
+        .routes(routes!(routes::ai_agents::latest_remediation))
         .routes(routes!(routes::ai_agents::complete_remediation))
         .routes(routes!(routes::ai_agents::student_remediation))
 }

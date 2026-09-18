@@ -354,6 +354,18 @@ impl AiService {
         self.accessible_remediation(actor, id).await
     }
 
+    /// `GET /ai/remediation/{subject}/latest`: the newest session on the
+    /// work, for whoever may read the work (UX-115: the grader's gate card
+    /// reads the status here — the learner's session list is admin-only).
+    pub async fn latest_remediation(
+        &self,
+        actor: &Actor,
+        subject_id: AiSubjectId,
+    ) -> Result<Option<RemediationSessionRow>> {
+        let subject = self.accessible_subject(actor, subject_id).await?;
+        ab_db::ai::latest_remediation_session(&self.pool, subject.id()).await
+    }
+
     /// `GET /ai/remediation/student/{user}`: own sessions, or any with the
     /// platform-scoped `platform:read` (admins only — course staff get 403).
     pub async fn student_remediation_sessions(

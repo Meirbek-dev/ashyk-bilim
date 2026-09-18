@@ -392,11 +392,12 @@ pub async fn list_non_draft(
 
 // ── Course gradebook ────────────────────────────────────────────────────────
 
-/// The grade-of-record attempt of one learner on one graded activity — the
-/// attempt `progress::projector` scores (BUG-173): the best-scored non-draft
-/// submission (`COALESCE(final_score, auto_score)`, latest on ties) or, on a
-/// file submission, the latest scored attempt; the latest one when nothing
-/// is scored yet.
+/// The grade-of-record attempt of one learner on one graded activity.
+///
+/// The attempt `progress::projector` scores (BUG-173): the best-scored
+/// non-draft submission (`COALESCE(final_score, auto_score)`, latest on
+/// ties) or, on a file submission, the latest scored attempt; the latest
+/// one when nothing is scored yet.
 ///
 /// An assessment submission or a file-submission attempt: exactly one of
 /// the id pairs is set, and a file attempt `submitted` maps to `pending`.
@@ -420,9 +421,10 @@ pub struct GradebookCellRow {
     pub graded_at: Option<i64>,
 }
 
-/// Grade-of-record attempt per (learner, activity) in a course, over both
-/// assessment submissions and file-submission attempts, keyset on that pair.
-/// `rank` mirrors `project_submissions` / `project_file_attempts`.
+/// Grade-of-record attempt per (learner, activity) in a course.
+///
+/// Over both assessment submissions and file-submission attempts, keyset on
+/// that pair; `rank` mirrors `project_submissions` / `project_file_attempts`.
 pub async fn gradebook_cells(
     pool: &PgPool,
     course_id: CourseId,

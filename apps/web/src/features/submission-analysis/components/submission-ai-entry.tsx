@@ -24,7 +24,13 @@ import {
   AIRunProgress,
   useAIRunController,
 } from '@/features/ai-experience'
-import { RemediationLecture, RemediationResultShell, useQueueRemediation } from '@/features/remediation'
+import {
+  RemediationLecture,
+  RemediationResultShell,
+  latestRemediationQueryOptions,
+  useLatestRemediation,
+  useQueueRemediation,
+} from '@/features/remediation'
 import type { RemediationView } from '@/features/remediation'
 
 import {
@@ -57,15 +63,19 @@ export function SubmissionAIEntry({
   })
   const queueRemediation = useQueueRemediation(submissionUuid ?? '')
   const remediation = useAIRunController({
+    invalidateQueryKeys: [latestRemediationQueryOptions(submissionUuid ?? '').queryKey],
     persistenceKey: `submission-remediation:${submissionUuid ?? 'none'}`,
     queue: queueRemediation,
   })
+  // The stored session carries the live status (UX-115: «Исправление пройдено.» once the learner passed);
+  // until it is fetched, the queued run's final artifact (the lecture bundle) stands in as an assigned gate.
+  const storedSession = useLatestRemediation(submissionUuid ?? '')
   const artifactContent = remediation.latestArtifact?.content
-  // The queued run's final artifact is the lecture bundle; the session row itself is not returned.
   const remediationSession = useMemo<RemediationView | null>(() => {
+    if (storedSession.data) return storedSession.data
     const lecture = RemediationLecture.safeParse(artifactContent)
     return lecture.success ? { gate_mode: true, lecture: lecture.data, status: 'assigned' } : null
-  }, [artifactContent])
+  }, [storedSession.data, artifactContent])
 
   if (!submissionUuid) {
     return null

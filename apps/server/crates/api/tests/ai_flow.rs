@@ -1144,6 +1144,23 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         )
         .await;
     assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
+    // UX-115: the grader reads the pass back on the work itself (the
+    // learner's list is admin-only); a stranger gets 404.
+    let latest = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/ai/remediation/{attempt_id}/latest"),
+        )
+        .await;
+    assert_eq!(latest.status, StatusCode::OK, "{}", latest.text());
+    assert_eq!(latest.json()["id"], session_id.as_str());
+    assert_eq!(latest.json()["status"], "passed");
+    assert_eq!(
+        app.get_as(&bob, &format!("/api/v2/ai/remediation/{attempt_id}/latest"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
     // UX-099: a passed session is final — a lower re-completion is 409, the gate stays lifted.
     let again = app
         .post_as(

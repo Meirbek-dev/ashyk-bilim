@@ -47,7 +47,7 @@ const vm = {
       feedback_code: 'pairs-matched',
       feedback_params: { correct: 2, total: 3 },
     },
-    [prose]: { item_id: prose, score: 33.33, max_score: 33.33, feedback: 'Хорошо, но раскройте вывод.' },
+    [prose]: { item_id: prose, score: 33.33, max_score: 33.33, feedback: 'Хорошо, но **раскройте** вывод.' },
   },
 } as unknown as AttemptViewModel
 
@@ -68,7 +68,10 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     // Verdicts: auto-grader codes localized, teacher prose as-is.
     expect(screen.getByTestId(`item-verdict-${itemId}`)).toHaveTextContent('Верно')
     expect(screen.getByTestId(`item-verdict-${matchingId}`)).toHaveTextContent('Совпало пар: 2/3')
-    expect(screen.getByTestId(`item-verdict-${prose}`)).toHaveTextContent('Хорошо, но раскройте вывод.')
+    // UX-115: the teacher's prose is Markdown — `**раскройте**` renders as emphasis, not asterisks.
+    const proseVerdict = screen.getByTestId(`item-verdict-${prose}`)
+    expect(proseVerdict).toHaveTextContent('Хорошо, но раскройте вывод.')
+    expect(proseVerdict.querySelector('strong')).toHaveTextContent('раскройте')
     // ru date, not en-US "9/11/2026, 6:04:39 PM"
     expect(screen.queryByText(/9\/11\/2026/)).toBeNull()
     expect(screen.getByText(/11 сент\. 2026 г\./)).toBeInTheDocument()
@@ -110,7 +113,7 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
             latePenaltyPct: 20,
             attemptCapPercent: 80,
             autoSubmitReason: 'time_expired',
-            generalFeedback: 'Хорошо, но коротко',
+            generalFeedback: '| Критерий | Балл |\n| --- | --- |\n| Полнота | 3 |',
           }}
         />
       </NextIntlClientProvider>,
@@ -120,7 +123,11 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     // UX-088: one percent format on the card («83,33%» beside «80%», never «80 %»).
     expect(notes).toHaveTextContent('Штраф за опоздание: −20%')
     expect(notes).toHaveTextContent('Применён лимит для этой попытки: 80%')
-    expect(screen.getByTestId('general-feedback')).toHaveTextContent('Хорошо, но коротко')
+    // UX-115: the criteria table the teacher pasted is a table, not `| --- |` text.
+    const feedback = screen.getByTestId('general-feedback')
+    expect(feedback.querySelector('table')).not.toBeNull()
+    expect(feedback).toHaveTextContent('Полнота')
+    expect(feedback).not.toHaveTextContent('---')
   })
 
   it('shows nothing extra for a plain released attempt', () => {
@@ -155,11 +162,19 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
       { ...vm.items[2], body: { kind: 'OPEN_TEXT', prompt: '' } },
     ]
     const itemScores = {
-      [itemId]: { ...vm.itemScores[itemId], correct: false, user_answer: { kind: 'choice', selected: ['b'] }, correct_answer: ['a'] },
+      [itemId]: {
+        ...vm.itemScores[itemId],
+        correct: false,
+        user_answer: { kind: 'choice', selected: ['b'] },
+        correct_answer: ['a'],
+      },
       [matchingId]: {
         ...vm.itemScores[matchingId],
         user_answer: { kind: 'matching', matches: [{ left: 'KZ', right: 'Астана' }] },
-        correct_answer: [{ left: 'KZ', right: 'Астана' }, { left: 'RU', right: 'Москва' }],
+        correct_answer: [
+          { left: 'KZ', right: 'Астана' },
+          { left: 'RU', right: 'Москва' },
+        ],
       },
       [prose]: { ...vm.itemScores[prose], user_answer: { kind: 'open_text', text: 'Мой вывод' }, correct_answer: null },
     }

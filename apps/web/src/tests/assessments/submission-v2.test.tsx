@@ -232,9 +232,10 @@ describe('v2 learner submissions', () => {
   })
 
   // UX-061: the learner's open page polls a hand-in the teacher has not released
-  // (10 s) and stops once the grade is visible; the learner-state projection
-  // (passed/score headline) is refreshed on that flip.
-  it('polls an awaiting hand-in until the grade is released', async () => {
+  // (10 s); the learner-state projection (passed/score headline) is refreshed
+  // on that flip. UX-115: a released result keeps following the teacher every
+  // 30 s, so a republished feedback reaches the open review without a reload.
+  it('polls an awaiting hand-in until the grade is released, then every 30 s', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const invalidation = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
     let listCalls = 0
@@ -263,8 +264,10 @@ describe('v2 learner submissions', () => {
       await act(() => vi.advanceTimersByTimeAsync(10_500))
       await waitFor(() => expect(result.current.vm).toMatchObject({ vm: { recommendedAction: 'viewResult' } }))
       expect(invalidation).toHaveBeenCalledWith({ queryKey: ['learner-course'] })
-      await act(() => vi.advanceTimersByTimeAsync(30_000))
+      await act(() => vi.advanceTimersByTimeAsync(20_000))
       expect(listCalls).toBe(3)
+      await act(() => vi.advanceTimersByTimeAsync(10_500))
+      expect(listCalls).toBe(4)
     } finally {
       invalidation.mockRestore()
       vi.useRealTimers()

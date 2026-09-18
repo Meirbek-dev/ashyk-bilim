@@ -617,6 +617,27 @@ pub async fn remediation_session(
     ))
 }
 
+/// The newest remediation session on a submission — `null` when none —
+/// for whoever may read the work (the grader's gate card, UX-115).
+#[utoipa::path(
+    get, path = "/ai/remediation/{submission_id}/latest", tag = "ai",
+    params(("submission_id" = AiSubjectId, Path,
+            description = "An assessment submission id or a file-submission attempt id")),
+    responses(
+        (status = 200, description = "The latest session or null", body = Option<RemediationSession>),
+        (status = 404, description = "Unknown or inaccessible submission", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn latest_remediation(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(submission_id): Path<AiSubjectId>,
+) -> ApiResult<Json<Option<RemediationSession>>> {
+    let latest = state.ai.latest_remediation(&actor, submission_id).await?;
+    Ok(Json(latest.map(Into::into)))
+}
+
 /// The learner records a score; 70 or more passes (and lifts a gate).
 #[utoipa::path(
     post, path = "/ai/remediation/sessions/{session_id}/complete", tag = "ai",

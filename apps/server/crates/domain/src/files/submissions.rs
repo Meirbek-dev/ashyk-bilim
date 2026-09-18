@@ -708,20 +708,14 @@ impl FileSubmissionsService {
         {
             return Ok((self.attempt_view(open, false, true).await?, false));
         }
-        let attempt = self.open_new_attempt(&row, actor, &course).await?;
+        let attempt = self.open_new_attempt(&row, actor).await?;
         self.projector
             .after_file_attempt(row.id, actor.user_id)
             .await;
         Ok((self.attempt_view(attempt, false, true).await?, true))
     }
 
-    async fn open_new_attempt(
-        &self,
-        row: &FileSubmissionRow,
-        actor: &Actor,
-        course: &Course,
-    ) -> Result<AttemptRow> {
-        self.require_can_act(actor, course, row).await?;
+    async fn open_new_attempt(&self, row: &FileSubmissionRow, actor: &Actor) -> Result<AttemptRow> {
         let user_id = actor.user_id;
         let completed =
             ab_db::file_submissions::count_completed_attempts(&self.pool, row.id, user_id).await?;
@@ -766,10 +760,13 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         let (course, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
+        // UX-115: an open draft is frozen too once the deadline closed or a
+        // gate is active — 403, the stored files untouched.
+        self.require_can_act(actor, &course, &row).await?;
         let attempt =
             match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
                 Some(a) => a,
-                None => self.open_new_attempt(&row, actor, &course).await?,
+                None => self.open_new_attempt(&row, actor).await?,
             };
         if let Some(expected) = expected_version
             && expected != attempt.version
@@ -918,7 +915,7 @@ impl FileSubmissionsService {
                 Some(a) => a,
                 // A bare submit must not spend an attempt on an empty draft (BUG-137).
                 None if files.is_none_or(<[FileRef]>::is_empty) => return Err(files_required()),
-                None => self.open_new_attempt(&row, actor, &course).await?,
+                None => self.open_new_attempt(&row, actor).await?,
             };
         if let Some(expected) = expected_version
             && expected != attempt.version

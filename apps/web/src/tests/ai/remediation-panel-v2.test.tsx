@@ -144,6 +144,29 @@ describe('remediation on the v2 wire', () => {
     expect(screen.getByText('AiExperience.remediation.activeGate')).toBeInTheDocument()
   })
 
+  it('reads the stored session on the work, so a passed gate says so to the grader (UX-115)', async () => {
+    answerApi((path, parse) =>
+      path === `ai/remediation/${SUBMISSION_ID}/latest`
+        ? parse({ ...sessionWire, status: 'passed', score: 80 })
+        : parse(null),
+    )
+    // The run artifact from an earlier visit says "assigned"; the store wins.
+    mocks.controllers['submission-remediation'] = {
+      latestArtifact: { content: lecture, created_at_unix: 1, final: true, id: 'a', kind: 'remediation' },
+      state: 'complete',
+    }
+
+    render(<SubmissionAIEntry submissionUuid={SUBMISSION_ID} />, { wrapper })
+
+    expect(await screen.findByText('AiExperience.remediation.gatePassed')).toBeInTheDocument()
+    expect(screen.queryByText('AiExperience.remediation.activeGate')).not.toBeInTheDocument()
+    expect(mocks.apiJson).toHaveBeenCalledWith(
+      `ai/remediation/${SUBMISSION_ID}/latest`,
+      undefined,
+      expect.any(Function),
+    )
+  })
+
   it('renders nothing for a run that has no lecture artifact yet', async () => {
     mocks.controllers['submission-remediation'] = {
       latestArtifact: { content: { citations: [] }, created_at_unix: 1, final: false, id: 'x', kind: 'draft' },

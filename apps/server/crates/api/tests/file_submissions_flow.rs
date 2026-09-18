@@ -755,6 +755,21 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
         late_submit.text()
     );
     assert_eq!(late_submit.json()["detail"], "cannot start: PAST_DUE");
+    // UX-115: so is a draft save — the stored files stay.
+    let late_save = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closing}/draft"),
+            &serde_json::json!({ "files": [] }),
+        )
+        .await;
+    assert_eq!(
+        late_save.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        late_save.text()
+    );
+    assert_eq!(late_save.json()["detail"], "cannot start: PAST_DUE");
     let still_draft = app
         .get_as(&alice, &format!("/api/v2/file-submissions/{closing}/draft"))
         .await;

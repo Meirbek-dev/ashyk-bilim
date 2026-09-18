@@ -80,10 +80,12 @@ export function fileSubmissionQueryOptions(activityUuid: string) {
     // UX-068: a hand-in waiting on the teacher (submitted, graded, or returned
     // and then re-graded) polls for the release while the tab is visible.
     // BUG-158: a released result keeps following the server too (a gate assigned meanwhile).
+    // UX-115: so does an open draft — the deadline closing under it flips
+    // `disabled_reasons` to the blocked card without a save attempt.
     refetchOnWindowFocus: 'always',
     refetchInterval: query => {
       const status = query.state.data?.current_attempt?.status
-      return isAwaitingTeacher(status) ? 10_000 : status === 'published' ? 15_000 : false
+      return isAwaitingTeacher(status) ? 10_000 : status === 'published' || status === 'draft' ? 15_000 : false
     },
   })
 }
@@ -473,7 +475,11 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         ) : attemptsLeft ? (
           <div className="mx-auto max-w-2xl">
             <Button variant="outline" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
-              {startMutation.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+              {startMutation.isPending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <RotateCcw className="size-4" />
+              )}
               {t('newAttempt', { number: data.attempts.length + 1, max: data.max_attempts ?? 0 })}
             </Button>
           </div>

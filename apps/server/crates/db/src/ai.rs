@@ -1450,6 +1450,36 @@ pub async fn get_remediation_session(
     row.map(TryInto::try_into).transpose()
 }
 
+/// The newest session generated for a submission or file attempt (UX-115:
+/// what a grader reads back for the gate card).
+pub async fn latest_remediation_session(
+    pool: &PgPool,
+    subject: AiSubject,
+) -> Result<Option<RemediationSessionRow>> {
+    let (submission_id, attempt_id) = subject.columns();
+    let row = sqlx::query_as!(
+        RemediationSessionRaw,
+        r#"SELECT id AS "id: AiRemediationSessionId", submission_id AS "submission_id: SubmissionId",
+                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
+                  activity_id AS "activity_id: ActivityId",
+                  student_user_id AS "student_user_id: UserId",
+                  analysis_id AS "analysis_id: AiSubmissionAnalysisId", run_id AS "run_id: AiRunId",
+                  status AS "status: RemediationStatus", gate_mode, language, lecture, test, score,
+                  (extract(epoch FROM passed_at))::bigint AS "passed_at?",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM ai_remediation_sessions
+           WHERE ($1::uuid IS NOT NULL AND submission_id = $1)
+              OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2)
+           ORDER BY created_at DESC, id DESC LIMIT 1"#,
+        submission_id,
+        attempt_id
+    )
+    .fetch_optional(pool)
+    .await?;
+    row.map(TryInto::try_into).transpose()
+}
+
 /// A learner's sessions, newest first.
 pub async fn list_student_remediation_sessions(
     pool: &PgPool,

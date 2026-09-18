@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { MarkdownContent } from '@/features/content-markdown'
 import { localizeItemFeedback } from '@/features/grading/domain/status'
 import { answerLines } from '@/features/assessments/domain/answer-lines'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
@@ -135,7 +136,9 @@ export default function AttemptResultCard({
           {vm.autoSubmitReason ? (
             <li>{t(vm.autoSubmitReason === 'time_expired' ? 'autoSubmittedTimeExpired' : 'autoSubmittedViolation')}</li>
           ) : null}
-          {vm.latePenaltyPct !== null ? <li>{t('latePenaltyApplied', { percent: percent(vm.latePenaltyPct) })}</li> : null}
+          {vm.latePenaltyPct !== null ? (
+            <li>{t('latePenaltyApplied', { percent: percent(vm.latePenaltyPct) })}</li>
+          ) : null}
           {vm.attemptCapPercent !== null ? (
             <li>{t('attemptCapApplied', { percent: percent(vm.attemptCapPercent) })}</li>
           ) : null}
@@ -146,7 +149,8 @@ export default function AttemptResultCard({
       {vm.generalFeedback ? (
         <div className="border-border mb-4 rounded-lg border px-4 py-3 text-sm" data-testid="general-feedback">
           <p className="text-muted-foreground mb-1 text-xs font-medium">{t('teacherFeedback')}</p>
-          <p className="whitespace-pre-wrap">{vm.generalFeedback}</p>
+          {/* UX-115: the teacher writes Markdown (tables, emphasis) — render it like the file result does. */}
+          <MarkdownContent content={vm.generalFeedback} mode="compactRichText" />
         </div>
       ) : null}
 
@@ -185,7 +189,10 @@ export default function AttemptResultCard({
                         {i + 1}. {item.title}
                       </span>
                       {userAnswer.length > 0 ? (
-                        <span className="mt-0.5 block text-xs whitespace-pre-wrap" data-testid={`item-answer-${item.id}`}>
+                        <span
+                          className="mt-0.5 block text-xs whitespace-pre-wrap"
+                          data-testid={`item-answer-${item.id}`}
+                        >
                           {t('yourAnswer')}: {userAnswer.join('; ')}
                         </span>
                       ) : null}
@@ -197,7 +204,12 @@ export default function AttemptResultCard({
                           {t('correctAnswer')}: {correctAnswer.join('; ')}
                         </span>
                       ) : null}
-                      {verdict ? (
+                      {verdict && !graded?.feedback_code ? (
+                        // The teacher's own prose is Markdown (UX-115); auto verdicts stay coloured one-liners.
+                        <span className="mt-0.5 block text-xs" data-testid={`item-verdict-${item.id}`}>
+                          <MarkdownContent content={verdict} mode="compactRichText" />
+                        </span>
+                      ) : verdict ? (
                         <span
                           className={cn(
                             'mt-0.5 block text-xs',

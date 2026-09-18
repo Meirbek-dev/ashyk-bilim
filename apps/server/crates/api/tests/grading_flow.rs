@@ -749,7 +749,10 @@ async fn gradebook_reports_the_best_published_attempt(pool: PgPool) {
     assert_eq!(cell["status"], "published", "{cell}");
     assert_eq!(cell["final_score"], 76.0, "{cell}");
     let csv = app
-        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook/export"))
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/gradebook/export"),
+        )
         .await;
     assert_eq!(csv.status, StatusCode::OK, "{}", csv.text());
     let text = csv.text();

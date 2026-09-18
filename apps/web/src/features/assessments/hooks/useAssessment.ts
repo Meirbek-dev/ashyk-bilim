@@ -119,8 +119,16 @@ function useAssessment(
     queryFn: () => getMyAssessmentSubmissions(assessment!.id),
     enabled: options.surface === 'ATTEMPT' && Boolean(assessment),
     // UX-061: a hand-in waiting on the teacher polls for the release while the
-    // tab is visible (default `refetchIntervalInBackground: false`), stops once seen.
-    refetchInterval: query => (isAwaitingRelease(query.state.data?.[0]) ? 10_000 : false),
+    // tab is visible (default `refetchIntervalInBackground: false`); UX-115: a
+    // released result keeps following the teacher (a republished feedback
+    // reaches the open review) every 30 s + on focus, like the teacher's own
+    // results tab.
+    refetchOnWindowFocus: 'always',
+    refetchInterval: query => {
+      const latest = query.state.data?.[0]
+      if (isAwaitingRelease(latest)) return 10_000
+      return latest?.release_state === 'visible' ? 30_000 : false
+    },
   })
   // The release flipped under an open page: the outline/progress projection
   // (passed, score) must follow, or the headline shows a stale verdict.

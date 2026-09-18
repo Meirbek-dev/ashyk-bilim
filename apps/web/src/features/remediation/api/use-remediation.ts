@@ -32,6 +32,28 @@ export function useRemediationSession(sessionId: string) {
   return useQuery(remediationSessionQueryOptions(sessionId))
 }
 
+/**
+ * The newest session on a submission / file attempt, readable by whoever may read the work — the grader's
+ * gate card reads the status here (UX-115): the learner's session list is admin-only. Polls 15 s + on focus
+ * so «Исправление пройдено.» shows without a reload.
+ */
+export function latestRemediationQueryOptions(submissionId: string) {
+  return queryOptions({
+    queryKey: ['remediation-latest', submissionId],
+    queryFn: () =>
+      apiJson(`ai/remediation/${submissionId}/latest`, undefined, value =>
+        value === null ? null : RemediationSessionView.parse(value),
+      ),
+    enabled: Boolean(submissionId),
+    refetchOnWindowFocus: 'always',
+    refetchInterval: 15_000,
+  })
+}
+
+export function useLatestRemediation(submissionId: string) {
+  return useQuery(latestRemediationQueryOptions(submissionId))
+}
+
 export function useGenerateRemediation(submissionId: string) {
   return useMutation({
     mutationFn: (payload: RemediationRequest) =>
