@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
@@ -128,6 +128,8 @@ describe('SubmissionAIEntry on the v2 wire', () => {
     expect(onDraftFeedback).not.toHaveBeenCalled()
     fireEvent.click(await screen.findByRole('button', { name: 'AiExperience.submissionAIEntry.replaceFeedbackConfirm' }))
     expect(onDraftFeedback).toHaveBeenCalledTimes(1)
+    // BUG-172: confirming closes the dialog.
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   })
 
   it.each([

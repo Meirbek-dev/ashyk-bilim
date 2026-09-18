@@ -124,6 +124,7 @@ export function SubmissionAIEntry({
               <AlertDialogAction
                 onClick={() => {
                   if (latest.data && onDraftFeedback) onDraftFeedback(buildFeedbackDraft(latest.data))
+                  setConfirmReplace(false)
                 }}
               >
                 {t('replaceFeedbackConfirm')}
