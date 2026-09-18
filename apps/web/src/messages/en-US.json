@@ -1674,11 +1674,12 @@
       "infoMessage": "Users not in the group will no longer have access to this course",
       "linkButton": "Link",
       "linkError": "Error linking to group: {error}",
-      "linkSuccess": "Successfully linked to group",
+      "linkSuccess": "Course linked to the group",
       "noUserGroupsAvailable": "No user groups available",
       "selectUserGroup": "Select user group",
       "unknownError": "Unknown error",
-      "userGroupNameLabel": "Group Name"
+      "userGroupNameLabel": "Group Name",
+      "noRightsOnGroup": "No rights on this group"
     },
     "LocaleSwitcher": {
       "en-US": "English",
@@ -8327,8 +8328,7 @@
             "notSet": "Not set",
             "noReason": "No reason provided",
             "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned — skipped.",
-            "selectedHiddenSubmissions": "Selected hidden submissions",
-            "releaseHiddenDescription": "This applies the activity-level grade release action and updates any graded submissions that are still hidden.",
+            "releaseHiddenDescription": "Every graded submission of this activity that is still hidden will be released — regardless of what is selected in the list.",
             "notGraded": "{count, plural, one {# ungraded submission is skipped} other {# ungraded submissions are skipped}}: {names}"
           },
           "dialogs": {
@@ -10495,7 +10495,9 @@
     "scan_clean": "scanned",
     "scan_flagged": "flagged",
     "scan_error": "scan error",
-    "publishedIsFinal": "The grade is published and final: the score cannot be changed and the work cannot be returned — only a re-publish is possible."
+    "publishedIsFinal": "The grade is published and final: the score cannot be changed and the work cannot be returned — only a re-publish is possible.",
+    "unknownSubmissionParam": "The submission from the link was not found — the first one in the list is shown.",
+    "csvSaved": "CSV saved"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Loading file submission studio",
