@@ -133,11 +133,12 @@ fn default_view_type() -> String {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SaveViewRequest {
-    #[garde(length(min = 1, max = 200))]
+    /// Blank → 422 `required` (trimmed in the service).
+    #[garde(length(max = 200))]
     pub name: String,
     /// Defaults to `overview`.
     #[serde(default = "default_view_type")]
-    #[garde(length(min = 1, max = 50))]
+    #[garde(length(max = 50))]
     pub view_type: String,
     /// The saved filter state (an object).
     #[serde(default = "empty_object")]

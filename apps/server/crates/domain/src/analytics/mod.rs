@@ -55,7 +55,6 @@ pub const INTERVENTION_TYPES: &[&str] = &[
     "learner_recovered",
 ];
 pub const INTERVENTION_STATUSES: &[&str] = &["planned", "completed", "resolved"];
-const INTERVENTION_LIST_LIMIT: i64 = 100;
 /// "Latest" cut-off for rollup lookups.
 const FAR_FUTURE: &str = "9999-12-31";
 
@@ -185,7 +184,6 @@ impl AnalyticsService {
             &scope.course_ids,
             None,
             None,
-            i64::MAX,
         )
         .await?;
         let teacher_rollup = if supports {
@@ -402,19 +400,23 @@ impl AnalyticsService {
         if let Some(course_id) = course_id {
             scope.ensure_course(course_id)?;
         }
-        let rows = ab_db::analytics::list_interventions(
+        let rows: Vec<Intervention> = ab_db::analytics::list_interventions(
             &self.pool,
             scope.teacher_user_id,
             &scope.course_ids,
             user_id,
             course_id,
-            INTERVENTION_LIST_LIMIT,
         )
-        .await?;
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect();
         Ok(InterventionList {
             generated_at_unix: context::now_unix(),
             total: page_i64(rows.len()),
-            items: rows.into_iter().map(Into::into).collect(),
+            page: page_i64(filters.page),
+            page_size: page_i64(filters.page_size),
+            items: page(&rows, filters),
         })
     }
 
@@ -522,18 +524,13 @@ impl AnalyticsService {
         view_type: &str,
         query: &serde_json::Value,
     ) -> Result<SavedView> {
-        let scope = self.read_scope(actor, filters).await?;
+        self.read_scope(actor, filters).await?;
         let (name, view_type) = (name.trim(), view_type.trim());
-        let mut errors = Vec::new();
-        for (field, value) in [("name", name), ("view_type", view_type)] {
-            if value.is_empty() {
-                errors.push(FieldError {
-                    field: field.into(),
-                    code: "required".into(),
-                    message: format!("{field} must not be blank"),
-                });
-            }
-        }
+        let mut errors: Vec<FieldError> = [("name", name), ("view_type", view_type)]
+            .into_iter()
+            .filter(|(_, value)| value.is_empty())
+            .map(|(field, _)| FieldError::required(field))
+            .collect();
         if !query.is_object() {
             errors.push(FieldError {
                 field: "query".into(),
@@ -544,26 +541,24 @@ impl AnalyticsService {
         if !errors.is_empty() {
             return Err(Error::validation(errors));
         }
-        let row = ab_db::analytics::upsert_saved_view(
-            &self.pool,
-            scope.teacher_user_id,
-            name,
-            view_type,
-            query,
-        )
-        .await?;
+        // UX-106: `teacher_user_id` impersonation is read-only — a view is
+        // saved under the acting user (like interventions, BUG-157).
+        let row =
+            ab_db::analytics::upsert_saved_view(&self.pool, actor.user_id, name, view_type, query)
+                .await?;
         Ok(row.into())
     }
 
-    /// 404 when the view is not the teacher's own.
+    /// 404 when the view is not the actor's own (`teacher_user_id` is
+    /// read-only — it never selects whose view is deleted).
     pub async fn delete_view(
         &self,
         actor: &Actor,
         filters: &AnalyticsFilters,
         id: SavedViewId,
     ) -> Result<()> {
-        let scope = self.read_scope(actor, filters).await?;
-        if ab_db::analytics::delete_saved_view(&self.pool, scope.teacher_user_id, id).await? {
+        self.read_scope(actor, filters).await?;
+        if ab_db::analytics::delete_saved_view(&self.pool, actor.user_id, id).await? {
             Ok(())
         } else {
             Err(Error::not_found("saved view"))

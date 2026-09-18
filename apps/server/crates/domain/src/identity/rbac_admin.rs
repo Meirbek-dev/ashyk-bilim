@@ -6,7 +6,7 @@
 
 use ab_core::id::UserId;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, ErrorCode, FieldError, Result};
+use ab_core::{Error, ErrorCode, Result};
 use sqlx::PgPool;
 
 use crate::identity::Actor;
@@ -353,15 +353,7 @@ impl RbacAdminService {
     }
 }
 
-/// Trimmed display name, or 422 `display_name`/`required` when blank (like usergroups).
+/// Trimmed display name, or 422 `display_name`/`required` when blank.
 fn trimmed_display_name(name: &str) -> Result<&str> {
-    let name = name.trim();
-    if name.is_empty() {
-        return Err(Error::validation(vec![FieldError {
-            field: "display_name".into(),
-            code: "required".into(),
-            message: "display_name must not be blank".into(),
-        }]));
-    }
-    Ok(name)
+    ab_core::required_str("display_name", name)
 }

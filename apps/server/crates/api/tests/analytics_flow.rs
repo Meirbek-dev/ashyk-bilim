@@ -1231,3 +1231,141 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
         .await;
     assert_eq!(bad_course_sort.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
+
+/// UX-106: `teacher_user_id` is read-only — an admin inspecting a teacher
+/// neither saves nor deletes that teacher's views; `GET interventions`
+/// honours `page`/`page_size`; a `reporter` roster row does not put the
+/// course into the reporter's analytics scope; `""` and `"   "` answer the
+/// same 422 `required`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, _) = public_course(&app, &teacher, "Analytics 101").await;
+    let alice = learner(&app, "alice").await;
+    sqlx::query(
+        "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, $3)",
+    )
+    .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+    .bind(alice.user_id.0)
+    .bind(0.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let saved = app
+        .post_as(
+            &teacher,
+            "/api/v2/analytics/teacher/saved-views",
+            &serde_json::json!({ "name": "Mine", "view_type": "watchlist", "query": {} }),
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::CREATED, "{}", saved.text());
+    let view_id = saved.json()["id"].as_str().unwrap().to_owned();
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(boss, &["analytics:read:platform"])
+        .await;
+    let as_teacher = format!("?teacher_user_id={}", teacher.user_id);
+    let not_theirs = app
+        .delete_as(
+            &admin,
+            &format!("/api/v2/analytics/teacher/saved-views/{view_id}{as_teacher}"),
+        )
+        .await;
+    assert_eq!(
+        not_theirs.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        not_theirs.text()
+    );
+    let admins_own = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/analytics/teacher/saved-views{as_teacher}"),
+            &serde_json::json!({ "name": "Boss view", "query": {} }),
+        )
+        .await;
+    assert_eq!(
+        admins_own.status,
+        StatusCode::CREATED,
+        "{}",
+        admins_own.text()
+    );
+    assert_eq!(admins_own.json()["teacher_user_id"], boss.to_string());
+    let teachers = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/saved-views")
+        .await;
+    assert_eq!(teachers.json()["total"], 1, "{}", teachers.text());
+
+    for empty in ["", "   "] {
+        let blank = app
+            .post_as(
+                &teacher,
+                "/api/v2/analytics/teacher/saved-views",
+                &serde_json::json!({ "name": empty, "query": {} }),
+            )
+            .await;
+        assert_eq!(blank.status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(blank.json()["field_errors"][0]["field"], "name");
+        assert_eq!(
+            blank.json()["field_errors"][0]["code"],
+            "required",
+            "{empty:?}: {}",
+            blank.text()
+        );
+    }
+
+    for kind in ["message_sent", "meeting_scheduled"] {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/analytics/teacher/interventions",
+                &serde_json::json!({
+                    "user_id": alice.user_id, "course_id": course_id, "intervention_type": kind
+                }),
+            )
+            .await;
+        assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    }
+    let second_page = app
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/interventions?page=2&page_size=1",
+        )
+        .await;
+    assert_eq!(second_page.status, StatusCode::OK, "{}", second_page.text());
+    let body = second_page.json();
+    assert_eq!(body["total"], 2);
+    assert_eq!(body["page"], 2);
+    assert_eq!(body["page_size"], 1);
+    assert_eq!(body["items"].as_array().unwrap().len(), 1);
+    assert_eq!(body["items"][0]["intervention_type"], "message_sent");
+
+    // A reporter reads the course but it is not in their analytics scope.
+    let reporter = instructor(&app, "reporter").await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "username": "reporter", "role": "reporter" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let reporters_courses = app
+        .get_as(&reporter, "/api/v2/analytics/teacher/courses")
+        .await;
+    assert_eq!(
+        reporters_courses.status,
+        StatusCode::OK,
+        "{}",
+        reporters_courses.text()
+    );
+    assert_eq!(reporters_courses.json()["total"], 0);
+    let teachers_courses = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/courses")
+        .await;
+    assert_eq!(teachers_courses.json()["total"], 1);
+}

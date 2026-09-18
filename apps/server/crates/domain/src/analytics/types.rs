@@ -487,6 +487,8 @@ impl From<ab_db::analytics::SavedViewRow> for SavedView {
 pub struct InterventionList {
     pub generated_at_unix: i64,
     pub total: i64,
+    pub page: i64,
+    pub page_size: i64,
     pub items: Vec<Intervention>,
 }
 

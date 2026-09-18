@@ -400,8 +400,9 @@ async fn role_reads_are_gated_and_system_roles_are_undeletable(pool: PgPool) {
     assert_eq!(system.status, StatusCode::FORBIDDEN, "{}", system.text());
 }
 
-/// `POST /rbac/roles` body validation: blank display name and an
-/// out-of-range priority are 422 field errors.
+/// `POST /rbac/roles` body validation: an out-of-range priority is a 422
+/// field error (a blank display name is the service's `required`, see
+/// `whitespace_display_name_is_required_on_create_and_rename`).
 #[sqlx::test(migrations = "../../migrations")]
 async fn create_role_rejects_bad_display_name_and_priority(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -428,8 +429,7 @@ async fn create_role_rejects_bad_display_name_and_priority(pool: PgPool) {
         .iter()
         .map(|e| e["field"].as_str().unwrap().to_owned())
         .collect();
-    assert!(fields.contains(&"display_name".to_owned()), "{fields:?}");
-    assert!(fields.contains(&"priority".to_owned()), "{fields:?}");
+    assert_eq!(fields, ["priority"]);
 }
 
 /// A whitespace-only display name is blank after trimming: 422
@@ -454,6 +454,14 @@ async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) 
             &serde_json::json!({ "slug": "helper-2", "display_name": "   ", "priority": 10 }),
         )
         .await;
+    // UX-106: `""` answers the same `required` (not garde's `invalid`).
+    let empty_create = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({ "slug": "helper-3", "display_name": "", "priority": 10 }),
+        )
+        .await;
     let blank_rename = app
         .patch_as(
             &admin,
@@ -461,7 +469,7 @@ async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) 
             &serde_json::json!({ "display_name": "   " }),
         )
         .await;
-    for response in [blank_create, blank_rename] {
+    for response in [blank_create, empty_create, blank_rename] {
         assert_eq!(
             response.status,
             StatusCode::UNPROCESSABLE_ENTITY,

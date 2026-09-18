@@ -413,7 +413,6 @@ pub async fn enrich_risk_rows(
         &scope.course_ids,
         None,
         None,
-        i64::MAX,
     )
     .await?;
     let mut by_pair: HashMap<(CourseId, UserId), Vec<&ab_db::analytics::InterventionRow>> =

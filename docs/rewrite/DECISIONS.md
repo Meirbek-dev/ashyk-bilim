@@ -1104,3 +1104,24 @@ Implements three more items of the owner answers above. Routes:
   `Idempotency-Key` replay. An unknown `sort_by` on the at-risk / courses /
   assessments listings is a 422 `sort_by/invalid` (it used to fall back to
   the default order silently).
+
+## Analytics scope, saved views and blank strings (2026-09-18, gauntlet pass 14)
+
+- **`teacher_user_id` impersonation is read-only** (UX-106): saved views are
+  written and deleted as the acting user (like interventions, BUG-157) — an
+  admin inspecting a teacher cannot delete that teacher's view (404).
+- **Reporters are out of the assigned analytics scope** (UX-106):
+  `db::analytics::teacher_course_ids` excludes `reporter` roster rows, the
+  same rule the work queue, search and `contributor_ids` apply — a read-only
+  role never lists a course as "mine" in the teacher dashboard.
+- **`GET analytics/teacher/interventions` honours `page`/`page_size`** (the
+  shared `AnalyticsQuery`; response carries `page`/`page_size`) instead of a
+  fixed 100 newest.
+- **Blank strings are one rule**: `ab_core::required_str` trims and answers
+  422 `<field>`/`required`; DTOs routed through it (role display name,
+  usergroup name, saved-view name/type, platform name) carry no garde
+  `min = 1`, so `""` and `"   "` answer the same code.
+- **The remediation gate holds at submit** (UX-105): an unpassed gate-mode
+  session blocks the hand-in of a draft opened before the gate (403
+  `REMEDIATION_REQUIRED`, `attempt-state.can_continue = false`) for quizzes
+  and file submissions alike — the gate was start-only before.

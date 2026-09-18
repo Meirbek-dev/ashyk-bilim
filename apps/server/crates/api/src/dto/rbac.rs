@@ -59,7 +59,8 @@ pub struct CreateRoleRequest {
     /// Kebab-case slug, e.g. `teaching-assistant`.
     #[garde(length(min = 1, max = 64), custom(kebab_slug))]
     pub slug: String,
-    #[garde(length(min = 1, max = 200))]
+    /// Blank → 422 `required` (trimmed in the service).
+    #[garde(length(max = 200))]
     pub display_name: String,
     #[garde(length(max = 1000))]
     pub description: Option<String>,
@@ -71,7 +72,7 @@ pub struct CreateRoleRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateRoleRequest {
-    #[garde(inner(length(min = 1, max = 200)))]
+    #[garde(inner(length(max = 200)))]
     pub display_name: Option<String>,
     #[garde(inner(length(max = 1000)))]
     pub description: Option<String>,

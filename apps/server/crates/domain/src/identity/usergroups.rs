@@ -51,15 +51,7 @@ pub(crate) fn reject_unknown<T: PartialEq + std::fmt::Display>(
 
 /// Trimmed name, or 422 `name`/`required` when blank (BUG-142).
 fn trimmed_name(name: &str) -> Result<&str> {
-    let name = name.trim();
-    if name.is_empty() {
-        return Err(Error::validation(vec![FieldError {
-            field: "name".into(),
-            code: "required".into(),
-            message: "name must not be blank".into(),
-        }]));
-    }
-    Ok(name)
+    ab_core::required_str("name", name)
 }
 
 #[derive(Clone)]
@@ -220,6 +212,10 @@ impl UsergroupsService {
     /// Groups linked to a course (course-settings view).
     pub async fn for_course(&self, actor: &Actor, course_id: CourseId) -> Result<Vec<Usergroup>> {
         actor.require(perm(Action::Read))?;
+        // UX-106: a course the actor cannot read is 404, like every course read.
+        CoursesService::new(self.pool.clone())
+            .get(actor, course_id)
+            .await?;
         ab_db::usergroups::list_for_course(&self.pool, course_id).await
     }
 }

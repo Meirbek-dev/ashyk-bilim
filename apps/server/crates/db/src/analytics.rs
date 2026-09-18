@@ -39,7 +39,8 @@ pub async fn teacher_course_ids(pool: &PgPool, user_id: UserId) -> Result<Vec<Co
            FROM courses c
            WHERE c.creator_id = $1 OR EXISTS (
                  SELECT 1 FROM resource_authors ra
-                 WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active')
+                 WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
+                   AND ra.authorship <> 'reporter')
            ORDER BY c.id"#,
         user_id.0
     )
@@ -1290,7 +1291,6 @@ pub async fn list_interventions(
     course_ids: &[CourseId],
     user_id: Option<UserId>,
     course_id: Option<CourseId>,
-    limit: i64,
 ) -> Result<Vec<InterventionRow>> {
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
@@ -1306,13 +1306,11 @@ pub async fn list_interventions(
            WHERE teacher_user_id = $1 AND course_id = ANY($2)
              AND ($3::uuid IS NULL OR user_id = $3)
              AND ($4::uuid IS NULL OR course_id = $4)
-           ORDER BY created_at DESC, id DESC
-           LIMIT $5"#,
+           ORDER BY created_at DESC, id DESC"#,
         teacher_user_id.0,
         &ids,
         user_id.map(|u| u.0),
-        course_id.map(|c| c.0),
-        limit
+        course_id.map(|c| c.0)
     )
     .fetch_all(pool)
     .await?;

@@ -62,7 +62,8 @@ impl From<ab_domain::identity::usergroups::Member> for UsergroupMember {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CreateUsergroupRequest {
-    #[garde(length(min = 1, max = 500))]
+    /// Blank → 422 `required` (trimmed in the service).
+    #[garde(length(max = 500))]
     pub name: String,
     #[garde(length(max = 5000))]
     pub description: Option<String>,
@@ -71,7 +72,7 @@ pub struct CreateUsergroupRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateUsergroupRequest {
-    #[garde(inner(length(min = 1, max = 500)))]
+    #[garde(inner(length(max = 500)))]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
     pub description: Option<String>,

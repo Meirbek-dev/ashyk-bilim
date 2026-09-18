@@ -174,21 +174,24 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = organizer(&app, "owner").await;
 
-    let blank = app
-        .post_as(
-            &owner,
-            "/api/v2/usergroups",
-            &serde_json::json!({ "name": "   " }),
-        )
-        .await;
-    assert_eq!(
-        blank.status,
-        StatusCode::UNPROCESSABLE_ENTITY,
-        "{}",
-        blank.text()
-    );
-    assert_eq!(blank.json()["field_errors"][0]["field"], "name");
-    assert_eq!(blank.json()["field_errors"][0]["code"], "required");
+    // UX-106: `""` and `"   "` answer the same code.
+    for empty in ["", "   "] {
+        let blank = app
+            .post_as(
+                &owner,
+                "/api/v2/usergroups",
+                &serde_json::json!({ "name": empty }),
+            )
+            .await;
+        assert_eq!(
+            blank.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            blank.text()
+        );
+        assert_eq!(blank.json()["field_errors"][0]["field"], "name");
+        assert_eq!(blank.json()["field_errors"][0]["code"], "required");
+    }
 
     let created = app
         .post_as(
@@ -340,6 +343,32 @@ async fn linking_a_course_requires_write_access_on_it(pool: PgPool) {
         "{}",
         by_admin.text()
     );
+    // UX-106: the course's group list needs the course to be readable —
+    // the private course and an unknown id are 404, the own course lists.
+    let private_groups = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{private_id}/usergroups"),
+        )
+        .await;
+    assert_eq!(
+        private_groups.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        private_groups.text()
+    );
+    let unknown_groups = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{}/usergroups", uuid::Uuid::now_v7()),
+        )
+        .await;
+    assert_eq!(unknown_groups.status, StatusCode::NOT_FOUND);
+    let own_groups = app
+        .get_as(&teacher, &format!("/api/v2/courses/{own_id}/usergroups"))
+        .await;
+    assert_eq!(own_groups.status, StatusCode::OK, "{}", own_groups.text());
+    assert_eq!(own_groups.json()[0]["id"], group_id.as_str());
 
     // A missing group is a 404 before any write check.
     let ghost = uuid::Uuid::now_v7();
