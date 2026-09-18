@@ -9,11 +9,22 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 // `{to:'ARCHIVED', scheduled_at:null}` (422: `to` is lowercase, the field is
 // `scheduled_at_unix`).
 
-const mocks = vi.hoisted(() => ({ apiJson: vi.fn(async () => ({})) }))
+const mocks = vi.hoisted(() => ({
+  apiJson: vi.fn(async () => ({})),
+  toastError: vi.fn(),
+  lifecycle: 'PUBLISHED' as 'PUBLISHED' | 'ARCHIVED',
+}))
 
 vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key, useLocale: () => 'ru' }))
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock('next-intl', () => ({
+  useTranslations: () => {
+    const t = (key: string, values?: Record<string, unknown>) => (values ? `${key}:${JSON.stringify(values)}` : key)
+    t.has = () => false
+    return t
+  },
+  useLocale: () => 'ru',
+}))
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: mocks.toastError } }))
 vi.mock('@/features/assessments/registry', () => ({ loadKindModule: () => new Promise(() => {}) }))
 vi.mock('@/features/ai-experience', () => ({
   ActivityAIDockLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -56,7 +67,7 @@ vi.mock('@/features/assessments/hooks/useAssessment', () => ({
         assessmentUuid: 'asm-1',
         activityUuid: 'act-1',
         title: 'Quiz',
-        lifecycle: 'PUBLISHED',
+        lifecycle: mocks.lifecycle,
         isEditable: false,
         canPublish: false,
         canSchedule: false,
@@ -71,6 +82,7 @@ vi.mock('@/features/assessments/hooks/useAssessment', () => ({
 }))
 
 import AssessmentStudioWorkspace from '@/features/assessments/studio/AssessmentStudioWorkspace'
+import { APIError } from '@/lib/api/assertSuccess'
 
 describe('studio archive menu item', () => {
   it('fires on click, posts the lowercase lifecycle body and refreshes the header badge (UX-107)', async () => {
@@ -90,5 +102,28 @@ describe('studio archive menu item', () => {
     expect(JSON.parse(String(init.body))).toEqual({ to: 'archived', scheduled_at_unix: null })
     // The badge's vm query lives under `assessments.activity(id)`; `studio(id)` is only a child key.
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['assessments', 'activity', 'act-1'] })
+  })
+
+  // BUG-171: an archived assessment offers «Восстановить» (→ draft), and a
+  // lifecycle 409 is a localized toast naming the refused stage, not raw English.
+  it('restores an archived assessment to draft and localizes a lifecycle conflict', async () => {
+    mocks.lifecycle = 'ARCHIVED'
+    mocks.apiJson.mockClear()
+    mocks.apiJson.mockRejectedValueOnce(
+      new APIError({ code: 'conflict', message: 'cannot move from archived to published; allowed: draft', status: 409 }),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AssessmentStudioWorkspace courseUuid="course-1" activityUuid="act-1" />
+      </QueryClientProvider>,
+    )
+    expect(screen.queryByRole('button', { name: 'archive' })).toBeNull()
+    fireEvent.click(await screen.findByRole('button', { name: 'restore' }))
+    await act(async () => {})
+
+    const [path, init] = mocks.apiJson.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('assessments/asm-1/lifecycle')
+    expect(JSON.parse(String(init.body))).toEqual({ to: 'draft', scheduled_at_unix: null })
+    expect(mocks.toastError).toHaveBeenCalledWith('lifecycleConflict:{"state":"lifecycle.draft"}')
   })
 })

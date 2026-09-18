@@ -82,4 +82,34 @@ describe('publish confirmation dialog (UX-011)', () => {
     expect(rowValue('Лимит времени')).toBe('50 мин')
     expect(rowValue('Попытки')).toBe('1')
   })
+
+  // BUG-171: the archived arm — «В архиве», a restore button, no publish/schedule.
+  it('renders the archived state with a restore-to-draft action only', () => {
+    const onLifecycleChange = vi.fn()
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <NextIntlClientProvider locale="ru" messages={ruMessages}>
+          <PublishDashboardTab
+            assessmentUuid="asm-1"
+            lifecycle="ARCHIVED"
+            items={items}
+            totalPoints={8}
+            assessmentState={assessmentState}
+            validationIssues={[]}
+            canPublish
+            canSchedule={false}
+            canArchive={false}
+            onSwitchToBuilder={() => undefined}
+            onLifecycleChange={onLifecycleChange}
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByText('В архиве')).toBeInTheDocument()
+    expect(screen.queryByText('Опубликовать')).toBeNull()
+    expect(screen.queryByText('Запланировать')).toBeNull()
+    fireEvent.click(screen.getByText('Вернуть в черновики'))
+    expect(onLifecycleChange).toHaveBeenCalledWith('DRAFT')
+  })
 })

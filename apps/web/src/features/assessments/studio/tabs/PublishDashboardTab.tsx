@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  Archive,
   BookOpen,
   CalendarClock,
   CheckCircle2,
@@ -124,6 +125,7 @@ export default function PublishDashboardTab({
   const timeLimitMinutes = assessmentState.timeLimitMinutes ? Number(assessmentState.timeLimitMinutes) : null
   const isPublished = lifecycle === 'PUBLISHED'
   const isScheduled = lifecycle === 'SCHEDULED'
+  const isArchived = lifecycle === 'ARCHIVED'
   const highStakes = isHighStakesAssessment(assessmentState)
   const canConfirmGate =
     canConfirmLifecycleChange({
@@ -161,9 +163,11 @@ export default function PublishDashboardTab({
           'flex items-center justify-between gap-4 rounded-lg border p-5 shadow-sm',
           isPublished
             ? 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30'
-            : isScheduled
-              ? 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30'
-              : hasIssues
+            : isArchived
+              ? 'border-border bg-muted/40'
+              : isScheduled
+                ? 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30'
+                : hasIssues
                 ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
                 : 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30',
         )}
@@ -171,6 +175,8 @@ export default function PublishDashboardTab({
         <div className="flex items-center gap-3">
           {isPublished ? (
             <CheckCircle2 className="size-6 text-lime-600 dark:text-lime-400" />
+          ) : isArchived ? (
+            <Archive className="text-muted-foreground size-6" />
           ) : isScheduled ? (
             <CalendarClock className="size-6 text-blue-600 dark:text-blue-400" />
           ) : hasIssues ? (
@@ -182,7 +188,9 @@ export default function PublishDashboardTab({
             <p className="font-semibold">
               {isPublished
                 ? tPublish('statusPublished')
-                : isScheduled
+                : isArchived
+                  ? tPublish('statusArchived')
+                  : isScheduled
                   ? tPublish('statusScheduled')
                   : hasIssues
                     ? tPublish('statusHasIssues', {
@@ -193,7 +201,9 @@ export default function PublishDashboardTab({
             <p className="text-muted-foreground text-sm">
               {isPublished
                 ? tPublish('statusPublishedDesc')
-                : isScheduled
+                : isArchived
+                  ? tPublish('statusArchivedDesc')
+                  : isScheduled
                   ? tPublish('statusScheduledDesc')
                   : hasIssues
                     ? tPublish('statusHasIssuesDesc')
@@ -204,9 +214,10 @@ export default function PublishDashboardTab({
 
         {/* Publish actions */}
         <div className="flex items-center gap-2">
-          {isPublished || isScheduled ? (
+          {isPublished || isScheduled || isArchived ? (
+            // BUG-171: archived → draft is the only way out of the archive (the API allows it).
             <Button variant="outline" size="sm" disabled={isPending} onClick={handleUnpublish}>
-              {tPublish('revertToDraft')}
+              {tPublish(isArchived ? 'restoreToDraft' : 'revertToDraft')}
             </Button>
           ) : (
             <>
@@ -230,7 +241,12 @@ export default function PublishDashboardTab({
                 />
                 <PopoverContent align="end" className="w-64 space-y-3 p-3">
                   <p className="text-sm font-medium">{tPublish('schedulePublication')}</p>
-                  <CalendarDateTimePicker value={scheduledAt} onChange={setScheduledAt} />
+                  {/* UX-112: a publication date is in the future — no 1900–2077 year list. */}
+                  <CalendarDateTimePicker
+                    value={scheduledAt}
+                    onChange={setScheduledAt}
+                    minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                  />
                   <Button
                     size="sm"
                     className="w-full"

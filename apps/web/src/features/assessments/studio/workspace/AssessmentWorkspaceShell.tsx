@@ -21,10 +21,11 @@ export interface AssessmentWorkspaceNavItem {
 
 interface AssessmentWorkspaceShellProps {
   navItems: AssessmentWorkspaceNavItem[]
+  banner?: ReactNode
   renderView: (view: AssessmentWorkspaceView) => ReactNode
 }
 
-export function AssessmentWorkspaceShell({ navItems, renderView }: AssessmentWorkspaceShellProps) {
+export function AssessmentWorkspaceShell({ navItems, banner, renderView }: AssessmentWorkspaceShellProps) {
   const { activeView, saveLedger } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.Workspace')
   const activeItem = navItems.find(item => item.id === activeView)
@@ -43,6 +44,7 @@ export function AssessmentWorkspaceShell({ navItems, renderView }: AssessmentWor
         <div aria-live="polite" className="sr-only">
           {saveLedger.liveMessage}
         </div>
+        {banner}
         <AssessmentReadinessStrip />
         <section aria-label={activeItem?.label}>{renderView(activeView)}</section>
       </main>

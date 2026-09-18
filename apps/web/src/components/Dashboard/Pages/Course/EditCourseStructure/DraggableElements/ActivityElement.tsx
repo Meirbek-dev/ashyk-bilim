@@ -141,7 +141,10 @@ function ActivityElement({
     query: { enabled: isAssessment && !activity.published, staleTime: 5_000 },
   })
   const activityId = activity.activity_uuid.replace(/^activity_/, '')
-  const isScheduled = assessments.data?.some(a => a.activity_id === activityId && a.lifecycle === 'scheduled')
+  const assessmentLifecycle = assessments.data?.find(a => a.activity_id === activityId)?.lifecycle
+  const isScheduled = assessmentLifecycle === 'scheduled'
+  // BUG-171: an archived assessment's row is «В архиве», not «Черновик».
+  const isArchived = assessmentLifecycle === 'archived'
 
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(activity?.name ?? '')
@@ -299,7 +302,9 @@ function ActivityElement({
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
-            <CourseStatusBadge status={activity.published ? 'live' : isScheduled ? 'scheduled' : 'draft'} />
+            <CourseStatusBadge
+              status={activity.published ? 'live' : isScheduled ? 'scheduled' : isArchived ? 'archived' : 'draft'}
+            />
             {canUpdate && (
               <ToolTip content={t('editButton')} side="top">
                 <Button

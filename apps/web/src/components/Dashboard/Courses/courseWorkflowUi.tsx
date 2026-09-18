@@ -92,7 +92,7 @@ export function CourseStatusBadge({
   status,
   className,
 }: {
-  status: 'public' | 'private' | 'ready' | 'needs-review' | 'attention' | 'unsaved' | 'live' | 'scheduled' | 'draft'
+  status: 'public' | 'private' | 'ready' | 'needs-review' | 'attention' | 'unsaved' | 'live' | 'scheduled' | 'draft' | 'archived'
   className?: string
 }) {
   const t = useTranslations('DashPage.CourseManagement.Workflow.status')
@@ -115,6 +115,7 @@ export function CourseStatusBadge({
     live: { label: t('live'), status: LmsStatuses.PUBLISHED },
     scheduled: { label: t('scheduled'), status: LmsStatuses.IN_PROGRESS },
     draft: { label: t('draft'), status: LmsStatuses.DRAFT },
+    archived: { label: t('archived'), status: LmsStatuses.UNAVAILABLE },
   }[status]
 
   return (
