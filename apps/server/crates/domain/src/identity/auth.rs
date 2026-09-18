@@ -358,17 +358,13 @@ impl IdentityService {
     }
 
     pub async fn login(&self, input: LoginInput) -> Result<LoginOk> {
-        // UX-110: the name-limit key already trimmed; the lookup must too.
-        let input = LoginInput {
-            login: input.login.trim().to_owned(),
-            ..input
-        };
         let ip_key = self.enforce_login_ip_limit(&input).await?;
 
         // Our row first (username or email, legacy semantics), then the
         // password check by Zitadel user id — Zitadel's login name may be
         // either identifier depending on how the account was created.
-        let user = ab_db::identity::find_user_for_login(&self.pool, &input.login).await?;
+        // UX-110: the name-limit key already trimmed; the lookup must too.
+        let user = ab_db::identity::find_user_for_login(&self.pool, input.login.trim()).await?;
         let login_key = self.enforce_login_name_limit(&input, user.as_ref()).await?;
         let Some(user) = user else {
             self.audit(

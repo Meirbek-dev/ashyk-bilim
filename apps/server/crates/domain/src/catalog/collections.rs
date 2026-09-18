@@ -171,9 +171,7 @@ impl CollectionsService {
             .await?
             .ok_or_else(|| Error::not_found("collection"))?;
         Self::require_write(actor, &collection)?;
-        let name = name
-            .map(|n| ab_core::required_str("name", n))
-            .transpose()?;
+        let name = name.map(|n| ab_core::required_str("name", n)).transpose()?;
         ab_db::collections::update_collection(&self.pool, id, name, description, public).await?;
         if let Some(course_ids) = course_ids {
             self.check_courses_readable(actor, &course_ids).await?;

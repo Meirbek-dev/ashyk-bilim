@@ -185,9 +185,7 @@ impl CurriculumService {
         description: Option<&str>,
     ) -> Result<Chapter> {
         self.writable_chapter(actor, chapter_id).await?;
-        let name = name
-            .map(|n| ab_core::required_str("name", n))
-            .transpose()?;
+        let name = name.map(|n| ab_core::required_str("name", n)).transpose()?;
         ab_db::catalog::update_chapter(&self.pool, chapter_id, name, description).await?;
         ab_db::catalog::get_chapter(&self.pool, chapter_id)
             .await?
