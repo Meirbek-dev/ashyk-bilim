@@ -200,7 +200,8 @@ fn correct_answer(body: &ItemBody) -> serde_json::Value {
 pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> AutoGrade {
     let points = item_points(items);
     let mut graded = Vec::with_capacity(items.len());
-    let mut total = 0.0;
+    let mut earned = 0.0;
+    let mut possible = 0.0;
     let mut manual = false;
     for (item, pts) in items.iter().zip(points) {
         let answer = answers.get(&item.id);
@@ -220,12 +221,14 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
         let needs_manual_review = verdict.is_none();
         manual |= needs_manual_review;
         let score = verdict.as_ref().map_or(0.0, |v| v.score);
-        total += score;
+        let max_score = round2(pts);
+        earned += score;
+        possible += max_score;
         graded.push(GradedItem {
             item_id: item.id,
             item_text: item.title.clone(),
             score,
-            max_score: round2(pts),
+            max_score,
             correct: verdict.as_ref().and_then(|v| v.correct),
             feedback: verdict
                 .as_ref()
@@ -238,8 +241,16 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
             correct_answer: correct_answer(&item.body),
         });
     }
+    // BUG-169: one normalisation over the rounded breakdown (same formula as
+    // the teacher path) — summing per-item round2 gave 100.02 / 99.99 for
+    // 6 / 3 equal items, so `passing_score: 100` failed a perfect attempt.
+    let auto_score = if possible > 0.0 {
+        round2((earned / possible * 100.0).max(0.0))
+    } else {
+        0.0
+    };
     AutoGrade {
-        auto_score: round2(total.max(0.0)),
+        auto_score,
         breakdown: GradingBreakdown {
             items: graded,
             needs_manual_review: manual,
@@ -432,6 +443,26 @@ mod tests {
             grade.breakdown.items[1].feedback_params,
             Some(serde_json::json!({ "correct": 1, "total": 2 }))
         );
+    }
+
+    #[test]
+    fn perfect_attempts_score_exactly_100_regardless_of_item_count() {
+        for n in [3, 6, 7] {
+            let items: Vec<Item> = (0..n)
+                .map(|_| item(choice(&["a"], &["b"], false), 1.0))
+                .collect();
+            let mut answers = Answers::new();
+            for q in &items {
+                answers.insert(
+                    q.id,
+                    ItemAnswer::Choice {
+                        selected: vec!["a".into()],
+                    },
+                );
+            }
+            let grade = grade_quiz(&items, &answers, POLICY);
+            assert_eq!(grade.auto_score, 100.0, "{n} items");
+        }
     }
 
     #[test]

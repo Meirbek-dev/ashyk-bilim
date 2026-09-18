@@ -1125,3 +1125,20 @@ Implements three more items of the owner answers above. Routes:
   session blocks the hand-in of a draft opened before the gate (403
   `REMEDIATION_REQUIRED`, `attempt-state.can_continue = false`) for quizzes
   and file submissions alike — the gate was start-only before.
+
+## Quiz total is one normalisation (2026-09-19, gauntlet pass 15)
+
+- **`grade_quiz` scores `round2(earned / possible × 100)` once** (BUG-169):
+  the breakdown keeps per-item rounded points, but the total no longer sums
+  them — legacy `quiz_grader.py` summed `round2` item points, so 6 equal
+  items gave 100.02 and 3 gave 99.99, and `passing_score: 100` failed a
+  perfect attempt. Same formula as the teacher re-grade path
+  (`teacher.rs`), so auto and manual agree. Deliberate deviation from the
+  legacy rounding.
+- **The submit limiter counts accepted submits only** (UX-111): like
+  `save_draft`, the 3/10 s budget is spent after ownership, status, version
+  and answer validation — a 409/422 never locks the learner out.
+- **Wrong verbs answer problem+json** (UX-110): `method-not-allowed` (405)
+  joins the registry via axum's `method_not_allowed_fallback`; API `login`
+  trims the identifier (the name-limit key already did).
+

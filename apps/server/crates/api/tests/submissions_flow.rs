@@ -873,15 +873,10 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
     .unwrap();
     assert_eq!(published, 1);
 
-    // Fourth submit inside the 10 s window → 429 before any other check.
-    let spam = app.send(submit(&alice, &sub_id, None, &answer)).await;
-    assert_eq!(
-        spam.status,
-        StatusCode::TOO_MANY_REQUESTS,
-        "{}",
-        spam.text()
-    );
-    assert_eq!(spam.json()["code"], "rate-limited");
+    // UX-111: the limiter runs after validation — a submit on an already
+    // submitted attempt is a 409, never a 429.
+    let again = app.send(submit(&alice, &sub_id, None, &answer)).await;
+    assert_eq!(again.status, StatusCode::CONFLICT, "{}", again.text());
 
     // Bob opened his draft in time; the deadline passes; no late work → 403 PAST_DUE.
     let bob = learner(&app, "bob").await;
@@ -908,4 +903,127 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(still_draft, "draft");
+}
+
+/// UX-111: only submits that pass validation spend the 3/10 s budget —
+/// four 422s must not lock the learner out of the real submit.
+#[sqlx::test(migrations = "../../migrations")]
+async fn submit_limiter_counts_only_accepted_submits(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "max_attempts": 10 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let ok = serde_json::json!({
+        "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } }
+    });
+    let bogus = serde_json::json!({
+        "answers": { "00000000-0000-7000-8000-000000000000": { "kind": "choice", "selected": [] } }
+    });
+
+    let start = async |app: &TestApp| {
+        let draft = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+        draft.json()["id"].as_str().unwrap().to_owned()
+    };
+
+    let sub_id = start(&app).await;
+    for _ in 0..4 {
+        let rejected = app.send(submit(&alice, &sub_id, None, &bogus)).await;
+        assert_eq!(
+            rejected.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            rejected.text()
+        );
+    }
+    // Three accepted submits go through; the fourth is the one that is 429.
+    let accepted = app.send(submit(&alice, &sub_id, None, &ok)).await;
+    assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.text());
+    for _ in 0..2 {
+        let sub_id = start(&app).await;
+        let accepted = app.send(submit(&alice, &sub_id, None, &ok)).await;
+        assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.text());
+    }
+    let sub_id = start(&app).await;
+    let spam = app.send(submit(&alice, &sub_id, None, &ok)).await;
+    assert_eq!(
+        spam.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        spam.text()
+    );
+    assert_eq!(spam.json()["code"], "rate-limited");
+}
+
+/// BUG-169: a perfect attempt is exactly 100 whatever the item count
+/// (6 equal items used to sum to 100.02, 3 to 99.99) and passes at
+/// `passing_score: 100`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn perfect_attempt_scores_exactly_100_and_passes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    for n in [6, 3] {
+        let items: Vec<serde_json::Value> = (0..n).map(|i| choice_item(&format!("Q{i}"))).collect();
+        let (id, item_ids) = published_assessment(
+            &app,
+            &teacher,
+            &chapter_id,
+            "quiz",
+            serde_json::json!({ "passing_score": 100 }),
+            &items,
+        )
+        .await;
+        let draft = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+        let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+        let mut answers = serde_json::Map::new();
+        for item in &item_ids {
+            answers.insert(
+                item.clone(),
+                serde_json::json!({ "kind": "choice", "selected": ["a"] }),
+            );
+        }
+        let submitted = app
+            .send(submit(
+                &alice,
+                &sub_id,
+                None,
+                &serde_json::json!({ "answers": answers }),
+            ))
+            .await;
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        assert_eq!(submitted.json()["auto_score"], 100.0, "{n} items");
+        assert_eq!(submitted.json()["final_score"], 100.0, "{n} items");
+        let passed: Option<bool> = sqlx::query_scalar(
+            "SELECT passed FROM activity_progress WHERE latest_submission_id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        assert_eq!(passed, Some(true), "{n} items");
+    }
 }

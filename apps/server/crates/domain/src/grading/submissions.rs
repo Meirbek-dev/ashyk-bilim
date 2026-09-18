@@ -659,20 +659,6 @@ impl SubmissionsService {
         reported_violations: i32,
         expected_draft_version: Option<i64>,
     ) -> Result<StudentSubmission> {
-        if !self
-            .limiter
-            .check(
-                &format!("submit_rl:{}", actor.user_id),
-                SUBMIT_LIMIT,
-                SUBMIT_WINDOW,
-            )
-            .await?
-        {
-            return Err(Error::app(
-                ErrorCode::RateLimited,
-                "too many submit attempts; slow down",
-            ));
-        }
         let submission = self.owned(actor, id).await?;
         if submission.status != SubmissionStatus::Draft {
             return Err(Error::conflict("submission was already submitted"));
@@ -688,6 +674,22 @@ impl SubmissionsService {
             Some(patch) => Self::merge(&ctx, patch)?,
             None => Self::merge(&ctx, Answers::new())?,
         };
+        // UX-111: like `save_draft`, only a submit that passed validation
+        // spends the budget — a 409/422 must not lock the learner out.
+        if !self
+            .limiter
+            .check(
+                &format!("submit_rl:{}", actor.user_id),
+                SUBMIT_LIMIT,
+                SUBMIT_WINDOW,
+            )
+            .await?
+        {
+            return Err(Error::app(
+                ErrorCode::RateLimited,
+                "too many submit attempts; slow down",
+            ));
+        }
         let fresh = Self::finalize(
             &self.runner,
             self.events.as_ref(),
