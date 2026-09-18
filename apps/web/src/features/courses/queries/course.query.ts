@@ -57,6 +57,21 @@ export function courseStructureQueryOptions<TCourseStructure = unknown>(
   })
 }
 
+/**
+ * The learner course page outline: teachers publish while the learner reads,
+ * and the page seeds the query from the server prop, so it refetches on every
+ * focus and every 30 s regardless of staleness (UX-104).
+ */
+export function learnerCourseStructureQueryOptions<TCourseStructure = unknown>(courseUuid: string) {
+  return queryOptions({
+    ...courseStructureQueryOptions<TCourseStructure>(courseUuid),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+  })
+}
+
 export function courseRightsQueryOptions<TRights = unknown>(courseUuid: string) {
   return queryOptions({
     queryKey: courseKeys.rights(courseUuid),

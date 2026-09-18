@@ -357,6 +357,21 @@ impl CurriculumService {
         if merged_published && (type_changes || !activity.published) {
             self.require_publishable(activity_id, merged_type).await?;
         }
+        // UX-104: a live (or scheduled) assessment stays attached to its
+        // activity; the type cannot move away from it until it is unpublished.
+        if type_changes
+            && matches!(
+                activity.activity_type.as_str(),
+                "quiz" | "exam" | "code_challenge"
+            )
+            && ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id)
+                .await?
+                .is_some_and(|a| matches!(a.lifecycle, Lifecycle::Published | Lifecycle::Scheduled))
+        {
+            return Err(Error::conflict(
+                "the activity has a live assessment; unpublish it before changing the type",
+            ));
+        }
         if let Some((activity_type, sub_type)) = changes.type_pair {
             ab_db::catalog::set_activity_type(&self.pool, activity_id, activity_type, sub_type)
                 .await?;

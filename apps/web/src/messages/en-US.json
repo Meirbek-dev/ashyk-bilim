@@ -2267,9 +2267,7 @@
       "successSubtitleAdded": "{label} subtitle added successfully",
       "successSubtitleLanguageUpdated": "Subtitle language updated",
       "successSubtitleRemoved": "{label} subtitle removed",
-      "successVideoActivityCreated": "Video activity created successfully!",
       "successVideoFileSelected": "Video file selected successfully",
-      "successYouTubeVideoActivityCreated": "YouTube video activity created successfully!",
       "supportedFormatsAndSize": "Supported formats: MP4, MKV, WebM • Max size: {size} MB",
       "timingControls": "Timing Controls",
       "uploadVideo": "Upload Video",
@@ -3999,6 +3997,7 @@
           "private": "Private",
           "public": "Public",
           "ready": "Ready",
+          "scheduled": "Scheduled",
           "unsavedChanges": "Unsaved changes"
         }
       },

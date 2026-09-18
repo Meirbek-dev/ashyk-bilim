@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 import { CourseAIHub } from '@/features/course-qa'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { courseDiscussionsQueryOptions, courseStructureQueryOptions } from '@/features/courses/queries/course.query'
+import { courseDiscussionsQueryOptions, learnerCourseStructureQueryOptions } from '@/features/courses/queries/course.query'
 import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 interface CourseClientProps {
@@ -127,13 +127,11 @@ function CourseClient(props: CourseClientProps) {
   const { courseuuid, initialDiscussions = [], trailData } = props
   const isMobile = useIsMobile()
   const { user: currentUser } = useSession()
-  // The server-rendered outline seeds the query; it then follows learner-state's
-  // focus policy so a lesson published meanwhile shows up with the progress (UX-080).
+  // The server-rendered outline seeds the query; a lesson published meanwhile
+  // shows up on focus / every 30 s (UX-080, UX-104).
   const { data: course } = useQuery({
-    ...courseStructureQueryOptions<AppCourse>(courseuuid),
+    ...learnerCourseStructureQueryOptions<AppCourse>(courseuuid),
     initialData: props.course,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
   })
   const learnerStateQuery = useQuery(learnerCourseStateQueryOptions(courseuuid, Boolean(currentUser)))
   const learnerState = learnerStateQuery.data

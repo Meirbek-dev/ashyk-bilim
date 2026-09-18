@@ -446,6 +446,24 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
         .await;
     assert_eq!(toggled.status, StatusCode::OK, "{}", toggled.text());
 
+    // UX-104: the live exam stays attached — the type cannot move away
+    // from it (409 `conflict`) until the assessment is unpublished.
+    let detached = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    assert_eq!(detached.status, StatusCode::CONFLICT, "{}", detached.text());
+    assert_eq!(detached.json()["code"], "conflict");
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+            .await
+            .json()["activity_type"],
+        "exam"
+    );
+
     // Type change + publish in one body: the gate sees the NEW type.
     let draft = create_activity(&app, &teacher, &chapter_id, "Essay").await;
     let bypass = app

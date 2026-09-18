@@ -189,7 +189,6 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
           },
           chapterId,
         })
-        toast.success(t('successVideoActivityCreated'))
       }
 
       if (selectedView === 'youtube') {
@@ -201,8 +200,8 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
           details: videoDetails,
         }
 
+        // The create handlers toast «Активность успешно создана» themselves (UX-104).
         await submitExternalVideo?.(external_video_object, { name: submittedName }, chapterId)
-        toast.success(t('successYouTubeVideoActivityCreated'))
       }
     } catch (error) {
       console.error('Error creating video activity:', error)

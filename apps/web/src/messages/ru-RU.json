@@ -2266,9 +2266,7 @@
       "successSubtitleAdded": "Субтитры {label} успешно добавлены",
       "successSubtitleLanguageUpdated": "Язык субтитров обновлен",
       "successSubtitleRemoved": "Субтитры {label} удалены",
-      "successVideoActivityCreated": "Видео активность успешно создана!",
       "successVideoFileSelected": "Видеофайл успешно выбран",
-      "successYouTubeVideoActivityCreated": "YouTube видео активность успешно создана!",
       "supportedFormatsAndSize": "Поддерживаемые форматы: MP4, MKV, WebM • Макс размер: {size} МБ",
       "timingControls": "Управление временем",
       "uploadVideo": "Загрузить видео",
@@ -4011,6 +4009,7 @@
           "private": "Приватный",
           "public": "Публичный",
           "ready": "Готов",
+          "scheduled": "Запланировано",
           "unsavedChanges": "Несохранённые изменения"
         }
       },

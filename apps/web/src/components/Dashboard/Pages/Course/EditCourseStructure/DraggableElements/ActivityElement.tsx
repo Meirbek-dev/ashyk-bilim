@@ -30,6 +30,7 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
+import { useListCourseAssessments } from '@/lib/api/generated/assessments/assessments'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { cleanActivityUuid, cleanCourseUuid, isCourseAuthor } from '@/lib/course-management'
 import type { DraggableAttributes } from '@dnd-kit/core'
@@ -133,6 +134,14 @@ function ActivityElement({
   const { deleteActivity, updateActivity } = useActivityMutations(course_uuid, true)
   const t = useTranslations('CourseEdit.ActivityElement')
   const { toastApiError } = useApiError()
+  // A scheduled assessment's activity is still unpublished on the wire; the
+  // row says «Запланировано» like the studio does (UX-104). One listing per course.
+  const isAssessment = ['TYPE_EXAM', 'TYPE_CUSTOM', 'TYPE_CODE_CHALLENGE'].includes(activity.activity_type)
+  const assessments = useListCourseAssessments(course_uuid.replace(/^course_/, ''), {
+    query: { enabled: isAssessment && !activity.published, staleTime: 5_000 },
+  })
+  const activityId = activity.activity_uuid.replace(/^activity_/, '')
+  const isScheduled = assessments.data?.some(a => a.activity_id === activityId && a.lifecycle === 'scheduled')
 
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(activity?.name ?? '')
@@ -290,7 +299,7 @@ function ActivityElement({
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
-            <CourseStatusBadge status={activity.published ? 'live' : 'draft'} />
+            <CourseStatusBadge status={activity.published ? 'live' : isScheduled ? 'scheduled' : 'draft'} />
             {canUpdate && (
               <ToolTip content={t('editButton')} side="top">
                 <Button

@@ -2266,9 +2266,7 @@
       "successSubtitleAdded": "{label} субтитрі сәтті қосылды",
       "successSubtitleLanguageUpdated": "Субтитр тілі жаңартылды",
       "successSubtitleRemoved": "{label} субтитрі жойылды",
-      "successVideoActivityCreated": "Бейне белсенділігі сәтті жасалды!",
       "successVideoFileSelected": "Бейне файлы сәтті таңдалды",
-      "successYouTubeVideoActivityCreated": "YouTube бейне белсенділігі сәтті жасалды!",
       "supportedFormatsAndSize": "Қолдау көрсетілетін форматтар: MP4, MKV, WebM • Макс өлшем: {size} МБ",
       "timingControls": "Уақытты басқару",
       "uploadVideo": "Бейнені жүктеу",
@@ -4008,12 +4006,13 @@
       "Workflow": {
         "status": {
           "attention": "Назар",
-          "draft": "Драфт",
+          "draft": "Нобай",
           "live": "Жария",
           "needsReview": "Тексеру қажет",
           "private": "Жабық",
           "public": "Жария",
           "ready": "Дайын",
+          "scheduled": "Жоспарланған",
           "unsavedChanges": "Сақталмаған өзгерістер"
         }
       },
