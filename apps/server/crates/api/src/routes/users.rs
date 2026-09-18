@@ -107,6 +107,7 @@ pub async fn create_user(
                 last_name: request.last_name,
                 ip,
                 user_agent: user_agent(&headers),
+                language: None,
             },
             request.roles.as_deref().unwrap_or_default(),
         )

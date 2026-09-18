@@ -6789,6 +6789,7 @@
     "technicalDetails": "Technical details:",
     "tryAgain": "Try again",
     "rateLimited": "Too many requests. Please try again shortly.",
+    "rateLimitedRetry": "Too many requests. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
     "networkUnavailable": "Network unavailable. Please check your connection.",
     "sessionExpired": "Your session has expired. Please log in again.",
     "permissionDenied": "You do not have permission to perform this action.",

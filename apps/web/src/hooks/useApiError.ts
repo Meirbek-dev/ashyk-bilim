@@ -6,7 +6,14 @@ import { toast } from 'sonner'
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form'
 import { presentApiError } from '@/lib/api/error-presenter'
 import type { ErrorRetryPolicy, ErrorSeverity } from '@/lib/api/error-presenter'
+import { isApiError } from '@/lib/api/assertSuccess'
 import type { ApiFieldError } from '@/lib/api/assertSuccess'
+
+function retryAfterSecondsOf(error: unknown): number | null {
+  if (!isApiError(error)) return null
+  const fromDetails = error.details?.['retry_after_seconds']
+  return error.retryAfterSeconds ?? (typeof fromDetails === 'number' ? fromDetails : null)
+}
 
 export interface ProcessedError {
   actionLabel: string
@@ -78,6 +85,12 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
         },
         ...(options.fallback === undefined ? {} : { fallback: options.fallback }),
       })
+      // A 429 that knows its window says when (UX-101): `Retry-After` /
+      // `details.retry_after_seconds` → «Попробуйте через N минут».
+      const retryAfter = retryAfterSecondsOf(error)
+      if (processed.status === 429 && retryAfter && t.has('rateLimitedRetry')) {
+        processed.description = t('rateLimitedRetry', { minutes: Math.max(1, Math.ceil(retryAfter / 60)) })
+      }
 
       // Bind validation errors to RHF if setError is provided
       if (options.setError && processed.fieldErrors.length > 0) {

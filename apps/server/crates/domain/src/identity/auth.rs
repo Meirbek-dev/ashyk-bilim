@@ -20,6 +20,7 @@ use ab_clients::zitadel::{
     ZitadelClient,
 };
 use ab_core::id::UserId;
+use ab_core::language::Language;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use secrecy::SecretString;
@@ -164,6 +165,8 @@ pub struct NewAccount {
     pub last_name: String,
     pub ip: Option<String>,
     pub user_agent: Option<String>,
+    /// UI language of the signer: prefixes the verification link.
+    pub language: Option<Language>,
 }
 
 pub use ab_db::identity::ProfileRow as Profile;
@@ -603,12 +606,18 @@ impl IdentityService {
             self.limiter.check(key, limit, window).await?;
         }
         if let Some(code) = code {
-            self.deliver_verification_code(&profile, &code).await;
+            self.deliver_verification_code(&profile, &code, account.language)
+                .await;
         }
         Ok(profile)
     }
 
-    async fn deliver_verification_code(&self, profile: &Profile, code: &str) {
+    async fn deliver_verification_code(
+        &self,
+        profile: &Profile,
+        code: &str,
+        language: Option<Language>,
+    ) {
         let Some(mailer) = &self.mailer else {
             tracing::warn!(
                 user_id = %profile.id,
@@ -624,8 +633,9 @@ impl IdentityService {
             .map(|b| b.trim_end_matches('/'))
             .unwrap_or_default();
         let link = format!(
-            "{base}/auth/verify-email?email={}&code={code}",
-            query_encode(&profile.email)
+            "{base}{prefix}/auth/verify-email?email={}&code={code}",
+            query_encode(&profile.email),
+            prefix = language.map_or("", Language::web_prefix),
         );
         let html = format!(
             "<p>Здравствуйте, {name}!</p>\

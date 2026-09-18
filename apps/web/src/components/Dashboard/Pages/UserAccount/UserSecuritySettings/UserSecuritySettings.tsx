@@ -64,7 +64,8 @@ function SessionsSection({ t }: { t: Translator }) {
   const sessionsQuery = useQuery({
     queryKey: queryKeys.auth.sessions(),
     queryFn: listSessions,
-    staleTime: 15_000,
+    // A session revoked from another tab shows on focus (UX-101), like the TOTP query.
+    staleTime: 5_000,
     // The app-wide default (queryClient.ts) retries 3x with a 5s delay each —
     // up to a minute of an unlabelled spinner before `sessionsLoadError` (and
     // its retry button) ever gets a chance to render. Cap it here so a real

@@ -1291,6 +1291,19 @@ pub async fn get_idempotent(
     Ok(row)
 }
 
+/// Anonymous scope (registration): the key alone, whoever stored it.
+pub async fn get_idempotent_by_key(pool: &PgPool, key: &str) -> Result<Option<IdempotentResponse>> {
+    let row = sqlx::query_as!(
+        IdempotentResponse,
+        "SELECT request_hash, status_code, response FROM idempotency_keys
+         WHERE key = $1 ORDER BY created_at LIMIT 1",
+        key
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
 pub async fn store_idempotent(
     pool: &PgPool,
     user_id: UserId,

@@ -273,21 +273,63 @@ where
     T: serde::Serialize,
     Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
 {
+    idempotent_for(pool, Some(user_id), scope, headers, body, fresh, |_| {
+        user_id
+    })
+    .await
+}
+
+/// [`idempotent`] for an anonymous create that produces its own owner
+/// (registration): the key is looked up alone and the reply is stored
+/// under the user `owner_of` names on the fresh reply.
+pub async fn idempotent_anonymous<T, Fut>(
+    pool: &sqlx::PgPool,
+    scope: &str,
+    headers: &HeaderMap,
+    body: &[u8],
+    fresh: impl FnOnce() -> Fut,
+    owner_of: impl FnOnce(&T) -> UserId,
+) -> Result<Response, ApiError>
+where
+    T: serde::Serialize,
+    Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
+{
+    idempotent_for(pool, None, scope, headers, body, fresh, owner_of).await
+}
+
+async fn idempotent_for<T, Fut>(
+    pool: &sqlx::PgPool,
+    user_id: Option<UserId>,
+    scope: &str,
+    headers: &HeaderMap,
+    body: &[u8],
+    fresh: impl FnOnce() -> Fut,
+    owner_of: impl FnOnce(&T) -> UserId,
+) -> Result<Response, ApiError>
+where
+    T: serde::Serialize,
+    Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
+{
     let key = idempotency_key(headers)?.map(|k| format!("{scope}:{k}"));
     let request_hash = sha256_hex(body);
-    if let Some(key) = &key
-        && let Some(stored) = ab_db::submissions::get_idempotent(pool, user_id, key).await?
-    {
-        if stored.request_hash != request_hash {
-            return Err(ApiError(Error::validation(vec![FieldError {
-                field: "Idempotency-Key".into(),
-                code: "reused".into(),
-                message: "Idempotency-Key was already used with a different request body".into(),
-            }])));
+    if let Some(key) = &key {
+        let stored = match user_id {
+            Some(user_id) => ab_db::submissions::get_idempotent(pool, user_id, key).await?,
+            None => ab_db::submissions::get_idempotent_by_key(pool, key).await?,
+        };
+        if let Some(stored) = stored {
+            if stored.request_hash != request_hash {
+                return Err(ApiError(Error::validation(vec![FieldError {
+                    field: "Idempotency-Key".into(),
+                    code: "reused".into(),
+                    message: "Idempotency-Key was already used with a different request body"
+                        .into(),
+                }])));
+            }
+            let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
+                .unwrap_or(StatusCode::OK);
+            return Ok((status, Json(stored.response)).into_response());
         }
-        let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
-            .unwrap_or(StatusCode::OK);
-        return Ok((status, Json(stored.response)).into_response());
     }
     let (status, dto) = fresh().await?;
     let value = serde_json::to_value(&dto)
@@ -295,7 +337,7 @@ where
     if let Some(key) = &key {
         ab_db::submissions::store_idempotent(
             pool,
-            user_id,
+            user_id.unwrap_or_else(|| owner_of(&dto)),
             key,
             &request_hash,
             i32::from(status.as_u16()),

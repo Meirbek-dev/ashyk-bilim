@@ -139,6 +139,8 @@ interface RegisterActionInput {
   password: string
   firstName: string
   lastName: string
+  /** Active UI locale (`kk-KZ`, …): the verification link opens under it. */
+  locale?: string | null
 }
 
 export interface RegisterActionResult {
@@ -175,7 +177,11 @@ export async function registerAction(input: RegisterActionInput): Promise<Regist
         first_name: input.firstName.trim(),
         last_name: input.lastName.trim(),
       },
-      { includeAuthCookies: false },
+      {
+        includeAuthCookies: false,
+        // Not the browser's Accept-Language: the link must land on the UI locale (UX-101).
+        ...(input.locale ? { headers: { 'accept-language': input.locale } } : {}),
+      },
     )
   } catch {
     return { ok: false, code: 'service-unavailable' }

@@ -488,6 +488,42 @@ async fn registration_rejects_taken_username_and_email(pool: PgPool) {
     assert_eq!(res.json()["code"], "email-taken");
 }
 
+/// UX-101: `POST /auth/register` honours `Idempotency-Key` (a retry replays
+/// the 201 — one Zitadel create, one email) and the verification link is
+/// prefixed with the `Accept-Language` locale (`/kz/auth/verify-email`).
+#[sqlx::test(migrations = "../../migrations")]
+async fn registration_is_idempotent_and_links_the_signers_locale(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    mock_user_create_with_code(&app.zitadel, "KZ1234").await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .and(wiremock::matchers::body_string_contains(
+            "/kz/auth/verify-email?email=",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({ "id": "em-2" })))
+        .expect(1)
+        .mount(&app.resend)
+        .await;
+    let body = register_body("dana", "dana@example.com");
+    let send = || {
+        app.send(
+            Request::builder()
+                .method("POST")
+                .uri("/api/v2/auth/register")
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::ACCEPT_LANGUAGE, "kk-KZ,ru;q=0.8")
+                .header("Idempotency-Key", "signup-dana-1")
+                .body(Body::from(body.to_string()))
+                .expect("request build"),
+        )
+    };
+    let first = send().await;
+    assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
+    let replay = send().await;
+    assert_eq!(replay.status, StatusCode::CREATED, "{}", replay.text());
+    assert_eq!(replay.json(), first.json());
+}
+
 /// Emails are case-insensitive identities: registration stores them
 /// lower-cased, uniqueness and login ignore case (usernames too).
 #[sqlx::test(migrations = "../../migrations")]

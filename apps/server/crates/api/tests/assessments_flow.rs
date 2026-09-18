@@ -1059,14 +1059,18 @@ async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
         let user = app
             .create_user(name, &format!("{name}@example.com"), &["user"])
             .await;
-        app.mint_session_for(user, &["assessment:read:assigned"]).await
+        app.mint_session_for(user, &["assessment:read:assigned"])
+            .await
     };
     let alice = learner("alice").await;
     let bob = learner("bob").await;
     let orders = |json: &serde_json::Value| -> (Vec<String>, Vec<String>) {
         let items = json["items"].as_array().unwrap();
         (
-            items.iter().map(|i| i["title"].as_str().unwrap().to_owned()).collect(),
+            items
+                .iter()
+                .map(|i| i["title"].as_str().unwrap().to_owned())
+                .collect(),
             items[0]["body"]["options"]
                 .as_array()
                 .unwrap()
@@ -1077,9 +1081,21 @@ async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
     };
     let authored: Vec<String> = (0..8).map(|n| format!("q{n}")).collect();
     let authored_options: Vec<String> = (0..8).map(|n| format!("o{n}")).collect();
-    let alice_read = orders(&app.get_as(&alice, &format!("/api/v2/assessments/{id}")).await.json());
-    let alice_again = orders(&app.get_as(&alice, &format!("/api/v2/assessments/{id}")).await.json());
-    let bob_read = orders(&app.get_as(&bob, &format!("/api/v2/assessments/{id}")).await.json());
+    let alice_read = orders(
+        &app.get_as(&alice, &format!("/api/v2/assessments/{id}"))
+            .await
+            .json(),
+    );
+    let alice_again = orders(
+        &app.get_as(&alice, &format!("/api/v2/assessments/{id}"))
+            .await
+            .json(),
+    );
+    let bob_read = orders(
+        &app.get_as(&bob, &format!("/api/v2/assessments/{id}"))
+            .await
+            .json(),
+    );
     assert_eq!(alice_read, alice_again, "a reload keeps the order");
     assert_ne!(alice_read.0, authored, "questions shuffled");
     assert_ne!(alice_read.1, authored_options, "options shuffled");
@@ -1087,7 +1103,11 @@ async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
     let mut sorted = alice_read.0.clone();
     sorted.sort();
     assert_eq!(sorted, authored);
-    let teacher_read = orders(&app.get_as(&teacher, &format!("/api/v2/assessments/{id}")).await.json());
+    let teacher_read = orders(
+        &app.get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+            .await
+            .json(),
+    );
     assert_eq!(teacher_read, (authored, authored_options));
 }
 
@@ -1096,9 +1116,7 @@ async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
 /// sweep re-checks readiness, leaving a blocked schedule `scheduled` with
 /// an audit row instead of going live past due.
 #[sqlx::test(migrations = "../../migrations")]
-async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
-    pool: PgPool,
-) {
+async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
     let (course_id, chapter_id) = scaffold(&app, &teacher).await;
@@ -1150,7 +1168,12 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
             &serde_json::json!({ "title": "" }),
         )
         .await;
-    assert_eq!(item_edit.status, StatusCode::CONFLICT, "{}", item_edit.text());
+    assert_eq!(
+        item_edit.status,
+        StatusCode::CONFLICT,
+        "{}",
+        item_edit.text()
+    );
 
     // The world moves: the schedule is now due and after the due date.
     sqlx::query(
@@ -1165,7 +1188,9 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
         .await
         .unwrap();
     assert_eq!(published, 0);
-    let detail = app.get_as(&teacher, &format!("/api/v2/assessments/{id}")).await;
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
     assert_eq!(detail.json()["lifecycle"], "scheduled", "{}", detail.text());
     let audit = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}/audit"))
@@ -1187,6 +1212,8 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
         .await
         .unwrap();
     assert_eq!(published, 1);
-    let detail = app.get_as(&teacher, &format!("/api/v2/assessments/{id}")).await;
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
     assert_eq!(detail.json()["lifecycle"], "published", "{}", detail.text());
 }

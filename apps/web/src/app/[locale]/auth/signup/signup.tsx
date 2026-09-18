@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { toast } from 'sonner'
 import * as v from 'valibot'
@@ -55,6 +55,7 @@ function SignupClient() {
   const t = useTranslations('Auth.Signup')
   const validationT = useTranslations('Validation')
   const errorsT = useTranslations('Errors')
+  const locale = useLocale()
   const router = useRouter()
 
   const schema = v.pipe(
@@ -95,7 +96,7 @@ function SignupClient() {
       return { values, error: null, fieldErrors, version }
     }
 
-    const result = await registerAction(parsed.output)
+    const result = await registerAction({ ...parsed.output, locale })
     if (!result.ok) {
       const fieldErrors: SignupState['fieldErrors'] = {}
       for (const [wire, code] of Object.entries(result.fieldErrors ?? {})) {

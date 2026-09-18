@@ -1,9 +1,10 @@
+use ab_core::language::Language;
 use ab_core::{Error, ErrorCode};
 use ab_domain::identity::{LoginInput, NewAccount};
 use axum::Json;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
-use axum::response::Redirect;
+use axum::response::{Redirect, Response};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use secrecy::SecretString;
@@ -15,7 +16,9 @@ use crate::dto::auth::{
 };
 use crate::dto::users::UserProfile;
 use crate::error::{ApiResult, Problem};
-use crate::extract::{ClientIp, CurrentActor, Path, Query, SESSION_COOKIE, ValidJson};
+use crate::extract::{
+    ClientIp, CurrentActor, Path, Query, SESSION_COOKIE, ValidJson, idempotent_anonymous,
+};
 use crate::state::AppState;
 
 pub(crate) fn user_agent(headers: &HeaderMap) -> Option<String> {
@@ -87,11 +90,20 @@ pub async fn login(
 }
 
 /// Self-registration: creates the account (default `user` role) and emails
-/// a verification code. No session is opened — the client logs in next.
+/// a verification code.
+///
+/// The link opens the web app under the `Accept-Language` locale (`/ru`,
+/// `/kz`, `/en`). No session is opened — the client logs in next. Honours
+/// `Idempotency-Key` (a retry replays the 201 instead of 409
+/// `username-taken`).
 #[utoipa::path(
     post,
     path = "/auth/register",
     tag = "auth",
+    params(
+        ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+        ("Accept-Language" = Option<String>, Header, description = "ru, kk or en — the locale of the verification link"),
+    ),
     request_body = RegisterRequest,
     responses(
         (status = 201, description = "Account created; verification code sent", body = UserProfile),
@@ -107,21 +119,38 @@ pub async fn register(
     State(state): State<AppState>,
     headers: HeaderMap,
     ClientIp(ip): ClientIp,
-    ValidJson(request): ValidJson<RegisterRequest>,
-) -> ApiResult<(StatusCode, Json<UserProfile>)> {
-    let profile = state
-        .identity
-        .register(NewAccount {
-            username: request.username,
-            email: request.email,
-            password: Some(SecretString::from(request.password)),
-            first_name: request.first_name,
-            last_name: request.last_name,
-            ip,
-            user_agent: user_agent(&headers),
-        })
-        .await?;
-    Ok((StatusCode::CREATED, Json(profile.into())))
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    let request = ValidJson::<RegisterRequest>::parse(&body)?;
+    let language = Language::from_accept_language(
+        headers
+            .get(axum::http::header::ACCEPT_LANGUAGE)
+            .and_then(|v| v.to_str().ok()),
+    );
+    idempotent_anonymous(
+        &state.pool,
+        "register",
+        &headers,
+        &body,
+        || async {
+            let profile = state
+                .identity
+                .register(NewAccount {
+                    username: request.username,
+                    email: request.email,
+                    password: Some(SecretString::from(request.password)),
+                    first_name: request.first_name,
+                    last_name: request.last_name,
+                    ip,
+                    user_agent: user_agent(&headers),
+                    language,
+                })
+                .await?;
+            Ok((StatusCode::CREATED, UserProfile::from(profile)))
+        },
+        |profile: &UserProfile| profile.id,
+    )
+    .await
 }
 
 /// Confirm the email address with the emailed code (public).
