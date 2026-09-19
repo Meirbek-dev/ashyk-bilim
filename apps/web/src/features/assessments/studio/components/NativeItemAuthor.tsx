@@ -197,6 +197,9 @@ export function NativeItemAuthor({
     const serialized = serializeAssessmentState(assessmentState)
     if (serialized === lastSavedAssessmentRef.current) return
     setAssessmentSaveState('dirty')
+    // UX-120: a blank title is flagged inline (`assessment.title_missing`);
+    // the server would only 422 it, so nothing is PATCHed until it is back.
+    if (!assessmentState.title.trim()) return
     const timeout = setTimeout(() => {
       void saveAssessment(assessmentState)
     }, 900)

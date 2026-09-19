@@ -349,8 +349,8 @@ function ActivityElement({
             />
           </ToolTip>
 
-          {/* Publish toggle */}
-          {canUpdate && (
+          {/* Publish toggle — UX-120: an archived assessment publishes only after «Восстановить» in the studio (409 otherwise). */}
+          {canUpdate && !isArchived && (
             <ToolTip content={activity.published ? t('unpublish') : t('publish')} side="top">
               <Button
                 size="icon"

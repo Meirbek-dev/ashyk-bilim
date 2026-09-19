@@ -168,8 +168,8 @@ export default function PublishDashboardTab({
               : isScheduled
                 ? 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30'
                 : hasIssues
-                ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
-                : 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30',
+                  ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
+                  : 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30',
         )}
       >
         <div className="flex items-center gap-3">
@@ -191,12 +191,12 @@ export default function PublishDashboardTab({
                 : isArchived
                   ? tPublish('statusArchived')
                   : isScheduled
-                  ? tPublish('statusScheduled')
-                  : hasIssues
-                    ? tPublish('statusHasIssues', {
-                        count: classifiedIssues.length,
-                      })
-                    : tPublish('statusReadyToPublish')}
+                    ? tPublish('statusScheduled')
+                    : hasIssues
+                      ? tPublish('statusHasIssues', {
+                          count: classifiedIssues.length,
+                        })
+                      : tPublish('statusReadyToPublish')}
             </p>
             <p className="text-muted-foreground text-sm">
               {isPublished
@@ -204,10 +204,10 @@ export default function PublishDashboardTab({
                 : isArchived
                   ? tPublish('statusArchivedDesc')
                   : isScheduled
-                  ? tPublish('statusScheduledDesc')
-                  : hasIssues
-                    ? tPublish('statusHasIssuesDesc')
-                    : tPublish('statusReadyDesc')}
+                    ? tPublish('statusScheduledDesc')
+                    : hasIssues
+                      ? tPublish('statusHasIssuesDesc')
+                      : tPublish('statusReadyDesc')}
             </p>
           </div>
         </div>
@@ -519,6 +519,7 @@ function LifecycleConfirmationDialog({
   onConfirm: () => void
 }) {
   const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
+  const locale = useLocale()
   const isSchedule = action === 'schedule'
 
   return (
@@ -548,7 +549,8 @@ function LifecycleConfirmationDialog({
             {isSchedule ? (
               <ImpactRow
                 label={tPublish('impactSchedule')}
-                value={scheduledAt ? new Date(scheduledAt).toLocaleString() : tPublish('unknown')}
+                // UX-120: same format as the schedule picker and the audit trail.
+                value={scheduledAt ? formatAuditDate(scheduledAt, locale) : tPublish('unknown')}
               />
             ) : null}
           </div>

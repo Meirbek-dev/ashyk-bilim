@@ -10,7 +10,10 @@ export const courseGeneralSchema = v.object({
   name: v.pipe(v.string(), v.trim(), v.minLength(1, 'title_required'), v.maxLength(100, 'title_too_long')),
   description: v.pipe(v.string(), v.maxLength(5000, 'description_too_long')),
   about: v.optional(v.pipe(v.string(), v.maxLength(20_000, 'about_too_long'))),
-  tags: v.pipe(v.array(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(64, 'tag_too_long'))), v.maxLength(20, 'too_many_tags')),
+  tags: v.pipe(
+    v.array(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(64, 'tag_too_long'))),
+    v.maxLength(20, 'too_many_tags'),
+  ),
 })
 
 export type CourseGeneralValues = v.InferOutput<typeof courseGeneralSchema>
@@ -55,7 +58,7 @@ export type CourseWizardValues = v.InferOutput<typeof courseWizardSchema>
 
 export const courseCreateSchema = v.pipe(
   v.object({
-    title: v.pipe(v.string(), v.minLength(1, 'title_required'), v.maxLength(100, 'title_too_long')),
+    title: v.pipe(v.string(), v.trim(), v.minLength(1, 'title_required'), v.maxLength(100, 'title_too_long')),
     description: v.pipe(v.string(), v.maxLength(5000, 'description_too_long')),
     structureMode: v.picklist(['blank', 'starter', 'copy-outline'] as const),
     sourceCourseUuid: v.optional(v.string()),

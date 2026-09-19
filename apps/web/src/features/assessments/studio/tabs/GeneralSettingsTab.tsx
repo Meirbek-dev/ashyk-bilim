@@ -116,6 +116,11 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                   className={cn(hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
                   onChange={e => onChange({ ...state, title: e.target.value })}
                 />
+                {issues.find(issue => issue.field === 'title')?.message ? (
+                  <p className="text-sm text-amber-700 dark:text-amber-400" role="alert">
+                    {issues.find(issue => issue.field === 'title')?.message}
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="assessment-description">{t('descriptionLabel')}</Label>

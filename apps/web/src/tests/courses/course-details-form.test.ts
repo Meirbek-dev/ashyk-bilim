@@ -1,12 +1,16 @@
 import { describe, expect, it, vi } from 'vite-plus/test'
 import * as v from 'valibot'
 
-import { courseGeneralSchema } from '@/schemas/courseSchemas'
+import { courseCreateSchema, courseGeneralSchema } from '@/schemas/courseSchemas'
 import { toAppCourse } from '@/hooks/courses/courseKeys'
 
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
 const mocks = vi.hoisted(() => ({
-  apiResult: vi.fn(async () => ({ data: wireCourse({ thumbnail_key: 'course-thumbnail/abc' }), status: 200, headers: {} })),
+  apiResult: vi.fn(async () => ({
+    data: wireCourse({ thumbnail_key: 'course-thumbnail/abc' }),
+    status: 200,
+    headers: {},
+  })),
 }))
 vi.mock('@/lib/api-client', () => ({ apiJson: vi.fn(), apiResult: mocks.apiResult }))
 
@@ -37,12 +41,28 @@ describe('course details form matches the v2 Course (F19)', () => {
   })
 
   it('reports localizable validation keys, not raw length messages', () => {
-    const issues = v.safeParse(courseGeneralSchema, {
-      name: '',
-      description: 'x'.repeat(5001),
-      tags: ['ok'],
-    }).issues?.map(issue => issue.message)
+    const issues = v
+      .safeParse(courseGeneralSchema, {
+        name: '',
+        description: 'x'.repeat(5001),
+        tags: ['ok'],
+      })
+      .issues?.map(issue => issue.message)
     expect(issues).toEqual(expect.arrayContaining(['title_required', 'description_too_long']))
+  })
+})
+
+// UX-120: the create form trims like the details form — «   » never reaches POST /courses.
+describe('course create form (F19)', () => {
+  it('rejects a whitespace-only title inline', () => {
+    const result = v.safeParse(courseCreateSchema, {
+      title: '   ',
+      description: '',
+      structureMode: 'blank',
+      initialVisibility: 'private',
+      destination: 'overview',
+    })
+    expect(result.issues?.map(issue => issue.message)).toEqual(['title_required'])
   })
 })
 
