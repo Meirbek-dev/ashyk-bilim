@@ -322,7 +322,25 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         await refreshLearnerCourseState(queryClient, router)
         return
       }
-      setSaveState('error')
+      // BUG-178: the submit carried the latest answers, but the draft on the
+      // server may not — the mutation cleared the throttled autosave. Put the
+      // answers back on the draft path (autosave / pagehide flush / «Сохранить»)
+      // so a 429 / 5xx / offline submit never loses them.
+      const draftAnswers = answersFromSubmission(
+        queryClient.getQueryData<DraftRead>(draftQueryOptions.queryKey)?.submission,
+      )
+      if (areAnswersEqual(localAnswersRef.current, draftAnswers)) {
+        setSaveState('saved')
+      } else {
+        pendingAnswersRef.current = localAnswersRef.current
+        setSaveState('dirty')
+        if (!nextSaveTimeoutRef.current) {
+          nextSaveTimeoutRef.current = setTimeout(() => {
+            nextSaveTimeoutRef.current = null
+            saveRef.current()
+          }, 100)
+        }
+      }
       if (!isApiError(error) || error.status !== 429) {
         void reportClientError({
           scope: 'assessment-flow',

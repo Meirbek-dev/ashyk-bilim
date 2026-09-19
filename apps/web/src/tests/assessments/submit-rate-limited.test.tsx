@@ -72,4 +72,29 @@ describe('submit rate limited', () => {
     expect(message).toBe('Errors.rateLimitedRetry:{"minutes":1}')
     expect(String(message)).not.toContain('slow down')
   })
+
+  // BUG-178: answers typed inside the autosave throttle used to die with a
+  // failed submit — the draft PATCH must follow with the typed answers and
+  // the attempt stays «Не сохранено» until it lands.
+  it('re-queues the unsaved answers as a draft save when the submit fails', async () => {
+    vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+      if (String(path).endsWith('/submit'))
+        throw new APIError({ code: 'rate-limited', status: 429, message: 'slow down', headers: { 'retry-after': '10' } })
+      if (init?.method === 'PATCH') return parse!({ ...fixture, draft_version: 4 })
+      return parse!(String(path).endsWith('/me') ? [fixture] : fixture)
+    })
+    const { result } = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'typed' }))
+    await act(async () => {
+      await result.current.submit().catch(() => undefined)
+    })
+    expect(result.current.saveState).toBe('dirty')
+    await waitFor(() => {
+      const draftSave = vi.mocked(apiJson).mock.calls.find(([, init]) => init?.method === 'PATCH')
+      expect(draftSave).toBeDefined()
+      expect(String(draftSave![1]!.body)).toContain('"typed"')
+    })
+    await waitFor(() => expect(result.current.saveState).toBe('saved'))
+  })
 })
