@@ -11,6 +11,7 @@ use ab_core::{Error, Result};
 use ab_db::ai::{NewSubmissionAnalysis, RunRow, SubmissionAnalysisRow};
 use tokio_util::sync::CancellationToken;
 
+use super::remediation_generator::learner_only;
 use super::{Execution, draft_citation, evidence_json, metadata_language, run_user};
 use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
@@ -242,14 +243,22 @@ impl AiService {
         .await
     }
 
-    /// `GET /ai/submission-analysis/{subject}/latest`.
+    /// `GET /ai/submission-analysis/{subject}/latest`: the owner gets the
+    /// newest analysis of their own runs (the learner's context, BUG-182 /
+    /// BUG-185 — a grader's report is prose over the answer key and cannot
+    /// be redacted by `review_visibility`); graders get the newest of all.
     pub async fn latest_submission_analysis(
         &self,
         actor: &Actor,
         subject_id: AiSubjectId,
     ) -> Result<Option<SubmissionAnalysisRow>> {
         let subject = self.accessible_subject(actor, subject_id).await?;
-        ab_db::ai::latest_submission_analysis(&self.pool, subject.id()).await
+        ab_db::ai::latest_submission_analysis(
+            &self.pool,
+            subject.id(),
+            learner_only(&subject, actor.user_id),
+        )
+        .await
     }
 }
 

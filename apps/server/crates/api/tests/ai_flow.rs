@@ -1575,6 +1575,105 @@ async fn owner_analysis_waits_for_release_and_gets_the_learner_context(pool: PgP
     let mine = app.get_as(&alice, &latest_url).await;
     assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
     assert_eq!(mine.json()["id"], own.json()["id"]);
+
+    // BUG-185: a newer grader-triggered report (prose over the answer key)
+    // never reaches the owner — `latest` stays their own run; the grader
+    // reads the newest of all.
+    app.llm.reset().await;
+    let mut keyed = analysis_reply(&sub_id);
+    keyed["knowledge_gaps"][0]["evidence"] = serde_json::json!("The key was astana, not almaty.");
+    mount_json_reply(&app.llm, &keyed).await;
+    let graded_again = app
+        .post_as(
+            &teacher,
+            &analyze_url,
+            &serde_json::json!({ "language": "en" }),
+        )
+        .await;
+    assert_eq!(
+        graded_again.status,
+        StatusCode::OK,
+        "{}",
+        graded_again.text()
+    );
+    let mine = app.get_as(&alice, &latest_url).await;
+    assert_eq!(mine.json()["id"], own.json()["id"], "{}", mine.text());
+    assert!(!mine.text().contains("astana"), "{}", mine.text());
+    assert_eq!(
+        app.get_as(&teacher, &latest_url).await.json()["id"],
+        graded_again.json()["id"]
+    );
+}
+
+/// BUG-185: two queued gates enqueued inside the worker latency both pass
+/// the enqueue-time check; executing them yields one `assigned` gate — the
+/// other run fails and `latest` names the survivor.
+#[sqlx::test(migrations = "../../migrations")]
+async fn queued_gates_cannot_stack(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Gate race").await;
+    let sub_id = submitted_essay(&app, &teacher, &alice, &course_id).await;
+    mount_json_reply(&app.llm, &analysis_reply(&sub_id)).await;
+    let analysed = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/analyze"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(analysed.status, StatusCode::OK, "{}", analysed.text());
+    app.llm.reset().await;
+    mount_json_reply(&app.llm, &remediation_reply()).await;
+    let queue_url = format!("/api/v2/ai/remediation/{sub_id}/generate/queue");
+    let mut run_ids = Vec::new();
+    for _ in 0..2 {
+        let queued = app
+            .post_as(
+                &teacher,
+                &queue_url,
+                &serde_json::json!({ "gate_mode": true }),
+            )
+            .await;
+        assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+        run_ids.push(AiRunId(
+            uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
+        ));
+    }
+    let ai = app.ai_service();
+    let (first, second) =
+        tokio::join!(ai.execute_queued(run_ids[0]), ai.execute_queued(run_ids[1]));
+    first.unwrap();
+    second.unwrap();
+    let statuses: Vec<String> =
+        sqlx::query_scalar("SELECT status FROM ai_runs WHERE id = ANY($1) ORDER BY status")
+            .bind(run_ids.iter().map(|r| r.0).collect::<Vec<_>>())
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(statuses, ["failed", "succeeded"]);
+    let gates: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM ai_remediation_sessions WHERE gate_mode AND status = 'assigned'",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(gates, 1);
+    let latest = app
+        .get_as(&teacher, &format!("/api/v2/ai/remediation/{sub_id}/latest"))
+        .await;
+    assert_eq!(latest.json()["status"], "assigned", "{}", latest.text());
+    // A third gate over the live one is refused at the door, naming it.
+    let stacked = app
+        .post_as(
+            &teacher,
+            &queue_url,
+            &serde_json::json!({ "gate_mode": true }),
+        )
+        .await;
+    assert_eq!(stacked.status, StatusCode::CONFLICT, "{}", stacked.text());
+    assert_eq!(stacked.json()["details"]["session_id"], latest.json()["id"]);
 }
 
 /// The hourly AI limiter over HTTP: past `analysis_requests_per_hour_per_user`

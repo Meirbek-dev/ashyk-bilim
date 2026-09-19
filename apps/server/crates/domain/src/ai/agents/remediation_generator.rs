@@ -30,6 +30,12 @@ const FAIL_CODE: &str = "REMEDIATION_FAILED";
 /// Legacy: `passed` at 70 or above.
 pub const PASS_SCORE: i32 = 70;
 
+/// The owner reads (and builds on) only analyses produced from the
+/// learner's view — their own runs; graders see every run (BUG-185).
+pub(crate) fn learner_only(subject: &Subject, viewer: UserId) -> Option<UserId> {
+    Some(viewer).filter(|v| *v == subject.user_id())
+}
+
 /// Legacy `_draft_remediation` (verbatim strings).
 #[must_use]
 pub fn draft_remediation(language: &str) -> RemediationBundle {
@@ -68,8 +74,12 @@ impl AiService {
         user_id: UserId,
         language: &str,
     ) -> Result<SubmissionAnalysisRow> {
-        if let Some(existing) =
-            ab_db::ai::latest_submission_analysis(&self.pool, subject.id()).await?
+        if let Some(existing) = ab_db::ai::latest_submission_analysis(
+            &self.pool,
+            subject.id(),
+            learner_only(subject, user_id),
+        )
+        .await?
         {
             return Ok(existing);
         }
@@ -183,16 +193,20 @@ impl AiService {
         // BUG-179: one blocking gate per learner and activity — a second one
         // would stack behind the first and outlive it in `latest`.
         let activity_id = self.subject_activity(subject).await?;
-        if let Some(existing) =
-            ab_db::ai::active_remediation_gate(&self.pool, subject.user_id(), activity_id).await?
+        self.refuse_stacked_gate(subject, activity_id).await
+    }
+
+    /// 409 `conflict` naming the gate that already blocks the learner.
+    async fn refuse_stacked_gate(&self, subject: &Subject, activity_id: ActivityId) -> Result<()> {
+        match ab_db::ai::active_remediation_gate(&self.pool, subject.user_id(), activity_id).await?
         {
-            return Err(Error::app_with_details(
+            Some(existing) => Err(Error::app_with_details(
                 ErrorCode::Conflict,
                 "an unpassed remediation gate already blocks this learner",
                 serde_json::json!({ "session_id": existing }),
-            ));
+            )),
+            None => Ok(()),
         }
-        Ok(())
     }
 
     /// `POST /ai/remediation/{subject}/generate/queue`.
@@ -292,6 +306,13 @@ impl AiService {
         language: &str,
     ) -> Result<RemediationSessionRow> {
         Box::pin(self.settle(run.id, FAIL_CODE, async {
+            // BUG-185: the enqueue-time check cannot see a sibling job still
+            // in flight — refuse before spending the model call, and the
+            // partial unique index decides the race at the insert.
+            let activity_id = self.subject_activity(subject).await?;
+            if gate_mode {
+                self.refuse_stacked_gate(subject, activity_id).await?;
+            }
             let analysis = self
                 .analysis_for(run, token, subject, user_id, language)
                 .await?;
@@ -335,8 +356,7 @@ impl AiService {
                 serde_json::to_value(&finished.value.practice_questions)
                     .map_err(|e| Error::internal("serialising practice questions", e))?,
             );
-            let activity_id = self.subject_activity(subject).await?;
-            let id = ab_db::ai::insert_remediation_session(
+            let inserted = ab_db::ai::insert_remediation_session(
                 &self.pool,
                 NewRemediationSession {
                     subject: subject.id(),
@@ -351,6 +371,15 @@ impl AiService {
                 },
             )
             .await?;
+            // ponytail: the race loser's run is already finished by
+            // `run_structured` (artifact saved, no session) — reorder the
+            // insert before the finish if that status ever matters.
+            let Some(id) = inserted else {
+                self.refuse_stacked_gate(subject, activity_id).await?;
+                return Err(Error::conflict(
+                    "a remediation gate was assigned concurrently",
+                ));
+            };
             ab_db::ai::get_remediation_session(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("remediation session"))

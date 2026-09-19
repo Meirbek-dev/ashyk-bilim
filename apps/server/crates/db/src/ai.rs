@@ -1066,9 +1066,12 @@ pub async fn get_submission_analysis(
 }
 
 /// The newest analysis of a submission or file attempt.
+/// `triggered_by` narrows to one user's runs (the owner reads only the
+/// analyses built from the learner's view — BUG-185).
 pub async fn latest_submission_analysis(
     pool: &PgPool,
     subject: AiSubject,
+    triggered_by: Option<UserId>,
 ) -> Result<Option<SubmissionAnalysisRow>> {
     let (submission_id, attempt_id) = subject.columns();
     let row = sqlx::query_as!(
@@ -1079,11 +1082,13 @@ pub async fn latest_submission_analysis(
                   language, gap_count, analysis, evidence, model_name,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM ai_submission_analyses
-           WHERE ($1::uuid IS NOT NULL AND submission_id = $1)
-              OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2)
+           WHERE (($1::uuid IS NOT NULL AND submission_id = $1)
+              OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2))
+             AND ($3::uuid IS NULL OR triggered_by = $3)
            ORDER BY created_at DESC, id DESC LIMIT 1"#,
         submission_id,
-        attempt_id
+        attempt_id,
+        triggered_by.map(|u| u.0)
     )
     .fetch_optional(pool)
     .await?;
@@ -1358,16 +1363,19 @@ pub struct NewRemediationSession<'a> {
     pub test: &'a serde_json::Value,
 }
 
+/// `None` = a gate already blocks this learner on the activity (BUG-185:
+/// the partial unique index on active gates is the last word).
 pub async fn insert_remediation_session(
     pool: &PgPool,
     s: NewRemediationSession<'_>,
-) -> Result<AiRemediationSessionId> {
+) -> Result<Option<AiRemediationSessionId>> {
     let (submission_id, attempt_id) = s.subject.columns();
     let id = sqlx::query_scalar!(
         r#"INSERT INTO ai_remediation_sessions (submission_id, file_submission_attempt_id,
                                                 activity_id, student_user_id, analysis_id, run_id,
                                                 gate_mode, language, lecture, test)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id"#,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           ON CONFLICT DO NOTHING RETURNING id"#,
         submission_id,
         attempt_id,
         s.activity_id.0,
@@ -1379,9 +1387,9 @@ pub async fn insert_remediation_session(
         s.lecture,
         s.test
     )
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await?;
-    Ok(AiRemediationSessionId(id))
+    Ok(id.map(AiRemediationSessionId))
 }
 
 struct RemediationSessionRaw {
