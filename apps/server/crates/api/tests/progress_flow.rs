@@ -687,3 +687,72 @@ async fn pipeline_owned_activities_cannot_be_marked_by_hand(pool: PgPool) {
     .unwrap();
     assert_eq!((steps, progress, xp), (0, 0, 0));
 }
+
+/// A course unpublished under an enrolled learner leaves the trail listing
+/// but the learner can still leave it and un-mark their own steps; with no
+/// own step, an invisible course's activity is a 404 like an unknown one
+/// (BUG-183).
+#[sqlx::test(migrations = "../../migrations")]
+async fn learner_can_always_leave_an_unpublished_course(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Vanishing 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let a2 = lesson(&app, &teacher, &chapter_id, "Deep dive").await;
+    let alice = learner(&app, "alice").await;
+    let marked = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{a1}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+
+    sqlx::query("UPDATE courses SET public = false WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+
+    // The run is kept but not listed while the course is invisible.
+    let trail = app.get_as(&alice, "/api/v2/trail").await;
+    assert_eq!(trail.status, StatusCode::OK, "{}", trail.text());
+    assert!(trail.json()["runs"].as_array().unwrap().is_empty());
+
+    // Own step: un-marking works; no own step: 404, not an oracle.
+    let unmarked = app
+        .delete_as(&alice, &format!("/api/v2/trail/activities/{a1}"))
+        .await;
+    assert_eq!(unmarked.status, StatusCode::OK, "{}", unmarked.text());
+    let oracle = app
+        .delete_as(&alice, &format!("/api/v2/trail/activities/{a2}"))
+        .await;
+    assert_eq!(oracle.status, StatusCode::NOT_FOUND, "{}", oracle.text());
+
+    // Leaving always works on an own run; a second leave is a 404.
+    let left = app
+        .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    let again = app
+        .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(again.status, StatusCode::NOT_FOUND, "{}", again.text());
+
+    // Republished: nothing comes back, the learner really left.
+    app.publish_course(&course_id).await;
+    assert!(
+        app.get_as(&alice, "/api/v2/trail").await.json()["runs"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await;
+    assert_eq!(state.json()["enrolled"], false);
+}

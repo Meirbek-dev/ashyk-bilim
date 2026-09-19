@@ -96,7 +96,7 @@ impl TrailService {
             });
         }
         match ab_db::progress::get_trail(&self.pool, actor.user_id).await? {
-            Some(trail) => self.hydrate(trail).await,
+            Some(trail) => self.hydrate(actor, trail).await,
             None => Ok(Trail {
                 row: None,
                 user_id: actor.user_id,
@@ -105,7 +105,10 @@ impl TrailService {
         }
     }
 
-    async fn hydrate(&self, trail: TrailRow) -> Result<Trail> {
+    /// Runs whose course the caller can no longer see (unpublished under
+    /// them, BUG-183) are kept but not listed: they come back on republish
+    /// and `remove_course` still drops them by id.
+    async fn hydrate(&self, actor: &Actor, trail: TrailRow) -> Result<Trail> {
         let runs = ab_db::progress::list_trail_runs(&self.pool, trail.id).await?;
         let steps = ab_db::progress::list_trail_steps(&self.pool, trail.id).await?;
         let course_ids: Vec<CourseId> = runs.iter().map(|r| r.course_id).collect();
@@ -115,6 +118,9 @@ impl TrailService {
             let Some(course) = ab_db::catalog::get_course(&self.pool, run.course_id).await? else {
                 continue;
             };
+            if self.courses.require_read(actor, &course).await.is_err() {
+                continue;
+            }
             let activities = ab_db::catalog::list_activities(&self.pool, run.course_id).await?;
             let run_steps = steps
                 .iter()
@@ -165,27 +171,32 @@ impl TrailService {
         let course = self.accessible_course(actor, course_id).await?;
         let trail = ab_db::progress::ensure_trail(&self.pool, actor.user_id).await?;
         ab_db::progress::ensure_trail_run(&self.pool, trail.id, course.id, actor.user_id).await?;
-        self.hydrate(trail).await
+        self.hydrate(actor, trail).await
     }
 
     /// Drop the run and every step in it, and reset the explicit lesson
     /// completions those steps stood for (legacy `remove_course_from_trail`
     /// deleted the `TrailStep`s). Assessment and file-submission rows are
     /// pipeline-owned and stay — the submissions still exist.
+    ///
+    /// The run is the caller's own, so no course visibility check: a learner
+    /// can always leave a course that was unpublished under them (BUG-183).
+    /// No run (unknown, invisible or never joined course) → 404, which
+    /// tells the caller nothing about the course itself.
     pub async fn remove_course(&self, actor: &Actor, course_id: CourseId) -> Result<Trail> {
         Self::require_write(actor)?;
-        // Unknown or invisible course → 404, as on the way in.
-        let course = self.courses.get(actor, course_id).await?;
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("trail"))?;
-        ab_db::progress::delete_trail_run(&self.pool, trail.id, course.id).await?;
+        if !ab_db::progress::delete_trail_run(&self.pool, trail.id, course_id).await? {
+            return Err(Error::not_found("trail run"));
+        }
         for activity in ab_db::catalog::list_activities(&self.pool, course_id).await? {
             self.projector
                 .unmark_complete(&activity, actor.user_id)
                 .await?;
         }
-        self.hydrate(trail).await
+        self.hydrate(actor, trail).await
     }
 
     /// Mark an activity done: run + step, and an explicit completion for
@@ -217,10 +228,12 @@ impl TrailService {
             crate::gamification::hooks::activity_completed(&self.pool, actor.user_id, activity.id)
                 .await;
         }
-        self.hydrate(trail).await
+        self.hydrate(actor, trail).await
     }
 
-    /// Un-mark an activity.
+    /// Un-mark an activity. Deleting the caller's own step needs no
+    /// visibility check; with nothing to delete the course must be visible
+    /// (404 otherwise) so the reply is not an existence oracle (BUG-183).
     pub async fn remove_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Trail> {
         Self::require_write(actor)?;
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
@@ -233,7 +246,9 @@ impl TrailService {
             self.projector
                 .unmark_complete(&activity, actor.user_id)
                 .await?;
+        } else {
+            self.courses.get(actor, activity.course_id).await?;
         }
-        self.hydrate(trail).await
+        self.hydrate(actor, trail).await
     }
 }
