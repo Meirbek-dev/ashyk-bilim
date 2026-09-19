@@ -1340,7 +1340,10 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
     assert_eq!(plain.status, StatusCode::OK, "{}", plain.text());
     let plain_id = plain.json()["id"].as_str().unwrap().to_owned();
     let latest_url = format!("/api/v2/ai/remediation/{sub_id}/latest");
-    assert_eq!(app.get_as(&teacher, &latest_url).await.json()["id"], session_id);
+    assert_eq!(
+        app.get_as(&teacher, &latest_url).await.json()["id"],
+        session_id
+    );
 
     let passed = app
         .post_as(
@@ -1351,7 +1354,10 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
         .await;
     assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
     assert_eq!(passed.json()["status"], "passed");
-    assert_eq!(app.get_as(&teacher, &latest_url).await.json()["id"], plain_id);
+    assert_eq!(
+        app.get_as(&teacher, &latest_url).await.json()["id"],
+        plain_id
+    );
     let open = app.get_as(&alice, &state_url).await;
     assert_eq!(open.json()["can_continue"], true, "{}", open.text());
     assert_eq!(open.json()["disabled_reasons"], serde_json::json!([]));

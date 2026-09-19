@@ -825,6 +825,29 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
     assert_eq!(submitted.json()["late_penalty_pct"], 30.0);
     // The same upload is now referenced by two attempts.
     assert_eq!(referenced_count(&app, &pdf_upload).await, 2);
+    // UX-121: the grade applies the stored penalty like a quiz (80 → 56 at
+    // 30 %); the raw score is kept so the form reopens with 80, not 56.
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let version = submitted.json()["version"].to_string();
+    let graded = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    assert_eq!(graded.json()["raw_score"], 80.0);
+    assert_eq!(graded.json()["final_score"], 56.0);
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}"),
+        )
+        .await;
+    assert_eq!(mine.json()["final_score"], 56.0, "{}", mine.text());
 }
 
 /// BUG-129: completion is sticky. A second attempt that is only submitted

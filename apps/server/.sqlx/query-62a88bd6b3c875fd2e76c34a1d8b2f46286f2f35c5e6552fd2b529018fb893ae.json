@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND user_id = $2\n           ORDER BY attempt_number DESC",
+  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND user_id = $2 AND status IN ('draft', 'returned')\n           ORDER BY attempt_number DESC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -111,6 +111,17 @@
       },
       {
         "ordinal": 11,
+        "name": "raw_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "raw_score"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
         "name": "final_score",
         "type_info": "Float8",
         "origin": {
@@ -121,7 +132,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "feedback",
         "type_info": "Text",
         "origin": {
@@ -132,7 +143,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "rubric_scores",
         "type_info": "Jsonb",
         "origin": {
@@ -143,7 +154,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "graded_by: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -154,7 +165,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "version",
         "type_info": "Int8",
         "origin": {
@@ -165,13 +176,13 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -196,6 +207,7 @@
       false,
       false,
       true,
+      true,
       false,
       false,
       true,
@@ -204,5 +216,5 @@
       null
     ]
   },
-  "hash": "09865444023c31097735c2179d131d058c9031b59850a086d8ab5a96f80e8877"
+  "hash": "62a88bd6b3c875fd2e76c34a1d8b2f46286f2f35c5e6552fd2b529018fb893ae"
 }

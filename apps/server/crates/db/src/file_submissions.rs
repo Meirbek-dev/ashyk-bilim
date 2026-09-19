@@ -259,6 +259,8 @@ pub struct AttemptRow {
     pub graded_at: Option<i64>,
     pub is_late: bool,
     pub late_penalty_pct: f64,
+    /// The grader's score before the late penalty (UX-121).
+    pub raw_score: Option<f64>,
     pub final_score: Option<f64>,
     pub feedback: String,
     pub rubric_scores: serde_json::Value,
@@ -304,7 +306,7 @@ pub async fn get_attempt(pool: &PgPool, id: FileAttemptId) -> Result<Option<Atte
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct, final_score, feedback, rubric_scores,
+                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
                   graded_by AS "graded_by: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -331,7 +333,7 @@ pub async fn open_attempt(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct, final_score, feedback, rubric_scores,
+                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
                   graded_by AS "graded_by: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -361,7 +363,7 @@ pub async fn list_user_attempts(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct, final_score, feedback, rubric_scores,
+                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
                   graded_by AS "graded_by: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -390,7 +392,7 @@ pub async fn list_attempts(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct, final_score, feedback, rubric_scores,
+                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
                   graded_by AS "graded_by: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -463,6 +465,7 @@ pub async fn submit_attempt(
 /// What a grader writes.
 pub struct GradeWrite<'a> {
     pub status: FileAttemptStatus,
+    pub raw_score: Option<f64>,
     pub final_score: Option<f64>,
     /// `None` keeps the stored feedback.
     pub feedback: Option<&'a str>,
@@ -482,7 +485,7 @@ pub async fn grade_attempt(
         r#"UPDATE file_submission_attempts SET
                status = $3, final_score = $4, feedback = COALESCE($5, feedback),
                rubric_scores = COALESCE($6, rubric_scores),
-               graded_by = $7, graded_at = now(), version = version + 1
+               graded_by = $7, graded_at = now(), version = version + 1, raw_score = $8
            WHERE id = $1 AND version = $2"#,
         id.0,
         expected_version,
@@ -490,7 +493,8 @@ pub async fn grade_attempt(
         grade.final_score,
         grade.feedback,
         grade.rubric_scores,
-        grade.graded_by.0
+        grade.graded_by.0,
+        grade.raw_score
     )
     .execute(pool)
     .await?;

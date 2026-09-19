@@ -130,18 +130,24 @@ function useAssessment(
       return latest?.release_state === 'visible' ? 30_000 : false
     },
   })
-  // The release flipped under an open page: the outline/progress projection
-  // (passed, score) must follow, or the headline shows a stale verdict.
+  // A released grade changed under an open page (release flip, re-grade,
+  // override — UX-121): the outline/progress projection (passed, score) must
+  // follow, or the headline shows a stale verdict.
   const queryClient = useQueryClient()
-  const awaiting = isAwaitingRelease(submissions.data?.[0])
-  const wasAwaitingRef = useRef(false)
+  const releasedGrades =
+    submissions.data
+      ?.filter(row => row.release_state === 'visible')
+      .map(row => `${row.id}:${row.final_score ?? ''}:${row.graded_at_unix ?? ''}`)
+      .join('|') ?? null
+  const releasedGradesRef = useRef<string | null>(null)
   useEffect(() => {
-    if (wasAwaitingRef.current && !awaiting) {
+    if (releasedGrades === null) return
+    if (releasedGradesRef.current !== null && releasedGradesRef.current !== releasedGrades) {
       void queryClient.invalidateQueries({ queryKey: ['learner-course'] })
       void queryClient.invalidateQueries({ queryKey: ['student-activity'] })
     }
-    wasAwaitingRef.current = awaiting
-  }, [awaiting, queryClient])
+    releasedGradesRef.current = releasedGrades
+  }, [releasedGrades, queryClient])
 
   if (isLoading || !assessment) {
     return { vm: null, isLoading, error }

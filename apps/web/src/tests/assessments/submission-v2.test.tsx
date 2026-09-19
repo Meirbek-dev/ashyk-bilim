@@ -252,7 +252,8 @@ describe('v2 learner submissions', () => {
             ...fixture,
             status: released ? 'published' : 'pending',
             release_state: released ? 'visible' : 'awaiting_release',
-            final_score: released ? 86.67 : null,
+            // UX-121: the 4th poll carries a re-grade of the released attempt.
+            final_score: released ? (listCalls >= 4 ? 100 : 86.67) : null,
           },
         ])
       })
@@ -268,6 +269,9 @@ describe('v2 learner submissions', () => {
       expect(listCalls).toBe(3)
       await act(() => vi.advanceTimersByTimeAsync(10_500))
       expect(listCalls).toBe(4)
+      const projectionInvalidations = () =>
+        invalidation.mock.calls.filter(([filters]) => filters?.queryKey?.[0] === 'learner-course').length
+      await waitFor(() => expect(projectionInvalidations()).toBe(2))
     } finally {
       invalidation.mockRestore()
       vi.useRealTimers()

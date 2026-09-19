@@ -1163,3 +1163,20 @@ Implements three more items of the owner answers above. Routes:
   joins the registry via axum's `method_not_allowed_fallback`; API `login`
   trims the identifier (the name-limit key already did).
 
+## File grades carry the late penalty (2026-09-19, gauntlet pass 16)
+
+- **A file grade applies `late_penalty_pct` like a quiz** (UX-121): the
+  legacy stored the penalty on the attempt and never applied it to the
+  teacher's score, so «80 % · Штраф −10 %» meant 80. `FileSubmissionsService::grade`
+  now stores the grader's number as `raw_score` and `final_score =
+  apply_late(raw, late_penalty_pct)` (80 → 72 at 10 %) — the same order as
+  the assessment teacher path. `raw_score` is on the attempt DTO (same
+  visibility as `final_score`) so the review form reopens with the raw
+  value and a re-save never penalises twice; existing rows were backfilled
+  `raw_score = final_score` (they were never penalised). Deliberate
+  deviation from the legacy.
+- **One active remediation gate per learner and activity** (BUG-179):
+  `generate`/`queue` with `gate_mode` answer 409 `conflict` with
+  `details.session_id` while `active_remediation_gate` finds an unpassed
+  one; `GET ai/remediation/{subject}/latest` returns the blocking session
+  first, then the newest.

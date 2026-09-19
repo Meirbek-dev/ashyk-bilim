@@ -17,7 +17,8 @@ vi.mock('next-intl', () => ({
   useTranslations: (ns: string) => {
     const t = (key: string, values?: Record<string, unknown>) =>
       values ? `${ns}.${key}:${JSON.stringify(values)}` : `${ns}.${key}`
-    t.has = (key: string) => key === 'codes.rate-limited' || key === 'rateLimitedRetry'
+    t.has = (key: string) =>
+      key === 'codes.rate-limited' || key === 'rateLimitedRetry' || key === 'rateLimitedRetrySeconds'
     return t
   },
 }))
@@ -69,7 +70,8 @@ describe('submit rate limited', () => {
     })
     await waitFor(() => expect(toast.error).toHaveBeenCalled())
     const [message] = vi.mocked(toast.error).mock.calls[0]!
-    expect(message).toBe('Errors.rateLimitedRetry:{"minutes":1}')
+    // UX-121: an 8 s window is «через 8 с», not «через 1 минуту».
+    expect(message).toBe('Errors.rateLimitedRetrySeconds:{"seconds":8}')
     expect(String(message)).not.toContain('slow down')
   })
 

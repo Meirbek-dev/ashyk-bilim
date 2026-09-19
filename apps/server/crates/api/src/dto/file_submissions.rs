@@ -150,6 +150,7 @@ impl From<domain::FileSubmission> for FileSubmission {
                 files: a.files.clone(),
                 is_late: a.is_late,
                 late_penalty_pct: a.late_penalty_pct,
+                raw_score: a.raw_score,
                 final_score: a.final_score,
                 feedback: a.feedback.clone(),
                 rubric_scores: a.rubric_scores.clone(),
@@ -181,6 +182,9 @@ pub struct Attempt {
     pub files: Vec<AttachedFile>,
     pub is_late: bool,
     pub late_penalty_pct: f64,
+    /// The grader's score before `late_penalty_pct` (UX-121); `final_score`
+    /// is what counts. Same visibility as `final_score`.
+    pub raw_score: Option<f64>,
     pub final_score: Option<f64>,
     pub feedback: Option<String>,
     #[schema(value_type = Option<Object>)]
@@ -206,6 +210,7 @@ impl From<domain::Attempt> for Attempt {
             files: a.files,
             is_late: a.row.is_late,
             late_penalty_pct: a.row.late_penalty_pct,
+            raw_score: visible.then_some(a.row.raw_score).flatten(),
             final_score: visible.then_some(a.row.final_score).flatten(),
             feedback: visible.then_some(a.row.feedback),
             rubric_scores: visible.then_some(a.row.rubric_scores),

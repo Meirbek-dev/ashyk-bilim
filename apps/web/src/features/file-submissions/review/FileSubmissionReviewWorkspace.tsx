@@ -747,7 +747,9 @@ function GradeEditor({
   onSubmit: (payload: FileSubmissionGradePayload) => void
 }) {
   const t = useTranslations('FileSubmissionReview')
-  const [score, setScore] = useState(typeof attempt.final_score === 'number' ? String(attempt.final_score) : '')
+  // UX-121: reopen with the raw score — `final_score` already carries the late penalty.
+  const storedScore = attempt.raw_score ?? attempt.final_score
+  const [score, setScore] = useState(typeof storedScore === 'number' ? String(storedScore) : '')
   const [feedback, setFeedback] = useState(attempt.feedback ?? '')
   const [rubricScores, setRubricScores] = useState<Record<string, number>>(() => readRubricScores(attempt))
   const [showErrors, setShowErrors] = useState(false)

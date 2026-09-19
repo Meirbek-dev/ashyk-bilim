@@ -33,7 +33,7 @@ use crate::assessments::service::{AssessmentsService, LatePolicy, perm};
 use crate::catalog::courses::Course;
 use crate::events::GradingEvents;
 use crate::files::uploads::UNREFERENCED_GRACE;
-use crate::grading::penalties::late_penalty_pct;
+use crate::grading::penalties::{apply_late, late_penalty_pct};
 use crate::grading::teacher::{CsvLanguage, UserSummary, course_event_name, csv_row, iso8601};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -1095,9 +1095,14 @@ impl FileSubmissionsService {
                 "0..=100",
             )]));
         }
+        // UX-121: the stored late penalty applies like on quizzes; the raw
+        // score is kept so a re-save of the form never penalises twice.
         let write = GradeWrite {
             status,
-            final_score: input.final_score,
+            raw_score: input.final_score,
+            final_score: input
+                .final_score
+                .map(|s| apply_late(s, attempt.late_penalty_pct)),
             feedback: input.feedback.as_deref().map(str::trim),
             rubric_scores: input.rubric_scores.as_ref(),
             graded_by: actor.user_id,

@@ -7,14 +7,13 @@
  * Attempt `version` is the optimistic lock: optional `If-Match` on learner
  * saves/submits (412 when stale), required on grader writes.
  */
-import type * as zod from 'zod'
+import * as zod from 'zod'
 
 import { apiBody, apiJson } from '@/lib/api-client'
 import { idempotencyHeaders, ifMatchHeaders } from '@/lib/api/headers'
 import { Attempt, DisabledReason, FileReviewPage, FileSubmission, SignedDownload } from '@/lib/api/generated/zod'
 import type {
   AttachedFile,
-  Attempt as AttemptType,
   CreateFileSubmissionRequest,
   FileAttemptStatus,
   FileGradeRequest,
@@ -34,7 +33,13 @@ import type { UploadProgress } from '@services/media/uploads'
  */
 const FileSubmissionView = FileSubmission.extend({ disabled_reasons: DisabledReason.array().default([]) })
 export type FileSubmissionActivity = zod.output<typeof FileSubmissionView>
-export type FileSubmissionAttempt = AttemptType
+/**
+ * UX-121: `raw_score` — the grader's score before the late penalty, so the
+ * review form reopens with it (not the penalised `final_score`). Declared
+ * here until the regenerated contract carries it.
+ */
+const AttemptView = Attempt.extend({ raw_score: zod.number().nullish() })
+export type FileSubmissionAttempt = zod.output<typeof AttemptView>
 export type FileSubmissionAttemptFile = AttachedFile
 export type FileSubmissionAttemptStatus = FileAttemptStatus
 export type FileSubmissionReviewItem = FileReviewItem
@@ -53,8 +58,8 @@ const json = (method: 'POST' | 'PATCH', body: unknown, headers: Record<string, s
 const id = (value: string) => encodeURIComponent(value)
 
 const parseFileSubmission = (data: unknown) => FileSubmissionView.parse(data)
-const parseAttempt = (data: unknown) => Attempt.parse(data)
-const parseAttempts = (data: unknown) => Attempt.array().parse(data)
+const parseAttempt = (data: unknown) => AttemptView.parse(data)
+const parseAttempts = (data: unknown) => AttemptView.array().parse(data)
 const parseReviewPage = (data: unknown) => FileReviewPage.parse(data)
 const parseSignedDownload = (data: unknown) => SignedDownload.parse(data)
 
