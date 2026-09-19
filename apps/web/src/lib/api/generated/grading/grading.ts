@@ -1650,7 +1650,8 @@ export const getCourseGradingEventsUrl = (id: CourseId) => {
 
 /**
  * Event names: `connected`, `submission.submitted`, `grade.saved`,
- * `grade.published`, `submission.returned`. `data` is
+ * `grade.published`, `submission.returned`, `closed` (grading access
+ * lost — e.g. the grant set inactive — the stream ends). `data` is
  * `{event_id, event, payload, sent_at}` where `payload` carries
  * `activity_id`, `user_id`, `status`, `final_score` and either
  * `submission_id` (assessment) or `attempt_id` (file submission);

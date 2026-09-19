@@ -828,7 +828,7 @@ export const getSubmissionEventsUrl = (id: SubmissionId) => {
 
 /**
  * Event names: `connected`, `grade.published`, `submission.returned`,
- * `deadline.extended`. `data` is the stored event
+ * `deadline.extended`, `closed` (access lost; the stream ends). `data` is the stored event
  * (`{event_id, event, submission_id, payload, sent_at}`); `id` is the
  * stream id to send back as `Last-Event-ID` on reconnect.
  * @summary Grading events for one submission as `text/event-stream`.
