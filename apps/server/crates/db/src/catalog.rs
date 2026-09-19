@@ -218,10 +218,10 @@ pub async fn summarize_courses(
     Ok(row)
 }
 
-/// Newest-first page of courses `user` created or actively co-authors;
-/// private ones only when `include_private`.
-/// Courses `user` created or actively co-authors, as `viewer` sees them
-/// (SQL `course_visible`, BUG-190 — the profile is not a sixth rule, UX-133).
+/// Newest-first page of courses `user` created or actively co-authors.
+///
+/// As `viewer` sees them (SQL `course_visible`, BUG-190 — the profile is
+/// not a sixth rule, UX-133).
 pub async fn list_user_courses(
     pool: &PgPool,
     user: UserId,
