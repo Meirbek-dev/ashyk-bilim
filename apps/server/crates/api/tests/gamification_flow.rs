@@ -178,6 +178,18 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert!(board.json()["entries"][0].get("email").is_none());
     let bob_rank = app.get_as(&bob, "/api/v2/gamification/rank").await;
     assert_eq!(bob_rank.json()["rank"], 2);
+    // UX-134: out-of-range paging is a 422 like the other lists, not a silent clamp.
+    for query in ["limit=0", "limit=-1", "limit=101", "offset=-1"] {
+        let bad = app
+            .get_as(&bob, &format!("/api/v2/gamification/leaderboard?{query}"))
+            .await;
+        assert_eq!(
+            bad.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{query}: {}",
+            bad.text()
+        );
+    }
 
     // Opting out hides alice from the board; bob is ranked among the rest.
     let opted_out = app

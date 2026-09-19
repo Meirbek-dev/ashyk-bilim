@@ -212,11 +212,31 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
             .status,
         StatusCode::FORBIDDEN
     );
+    // UX-134: another learner's submission id answers like an unknown one.
     assert_eq!(
         app.get_as(&alice, &format!("/api/v2/submissions/{bob_sub}/review"))
             .await
             .status,
-        StatusCode::FORBIDDEN
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        app.get_as(
+            &alice,
+            &format!("/api/v2/submissions/{bob_sub}/grading-history")
+        )
+        .await
+        .status,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        app.patch_as(
+            &alice,
+            &format!("/api/v2/submissions/{bob_sub}/grade"),
+            &serde_json::json!({ "action": "save", "final_score": 100 }),
+        )
+        .await
+        .status,
+        StatusCode::NOT_FOUND
     );
 
     // Queue + stats: three pending essays.

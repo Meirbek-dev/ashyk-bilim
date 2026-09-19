@@ -440,10 +440,9 @@ impl AiService {
         let session = ab_db::ai::get_remediation_session(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("remediation session"))?;
+        // Another learner's session answers like an unknown one (UX-134).
         if session.student_user_id != actor.user_id {
-            return Err(Error::forbidden(
-                "cannot complete another learner's remediation",
-            ));
+            return Err(Error::not_found("remediation session"));
         }
         // UX-099: a passed session is final — re-completing it with a lower
         // score must not re-lock the gate.

@@ -314,8 +314,13 @@ impl GamificationService {
     }
 
     pub async fn leaderboard(&self, limit: i64, offset: i64) -> Result<Leaderboard> {
-        let limit = limit.clamp(1, MAX_LEADERBOARD_PAGE);
-        let offset = offset.max(0);
+        if !(1..=MAX_LEADERBOARD_PAGE).contains(&limit) || offset < 0 {
+            return Err(Error::validation(vec![FieldError {
+                field: if offset < 0 { "offset" } else { "limit" }.into(),
+                code: "out-of-range".into(),
+                message: format!("limit must be 1..={MAX_LEADERBOARD_PAGE}, offset >= 0"),
+            }]));
+        }
         let rows = ab_db::gamification::leaderboard(&self.pool, limit, offset).await?;
         let total_participants = ab_db::gamification::count_profiles(&self.pool).await?;
         Ok(Leaderboard {

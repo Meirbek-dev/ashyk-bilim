@@ -671,6 +671,28 @@ impl GradingService {
             .ok_or_else(|| Error::not_found("submission"))
     }
 
+    /// A submission the actor may grade. Unknown and not-gradable answer
+    /// the same 404: the id is the secret (UX-134 — a 403 confirmed
+    /// another learner's submission ids).
+    async fn gradable_submission(
+        &self,
+        actor: &Actor,
+        id: SubmissionId,
+    ) -> Result<(SubmissionRow, Assessment)> {
+        let row = self.load_submission(id).await?;
+        let (assessment, _) = self
+            .grader_context(actor, row.assessment_id)
+            .await
+            .map_err(|err| match err {
+                Error::App {
+                    code: ErrorCode::Forbidden,
+                    ..
+                } => Error::not_found("submission"),
+                other => other,
+            })?;
+        Ok((row, assessment))
+    }
+
     // ── Reads ───────────────────────────────────────────────────────────
 
     /// Non-draft submissions, newest first, keyset on id.
@@ -986,8 +1008,7 @@ impl GradingService {
 
     /// One submission with answers, breakdown, versions and feedback.
     pub async fn submission(&self, actor: &Actor, id: SubmissionId) -> Result<TeacherSubmission> {
-        let row = self.load_submission(id).await?;
-        let (assessment, _) = self.grader_context(actor, row.assessment_id).await?;
+        let (row, assessment) = self.gradable_submission(actor, id).await?;
         self.view(row, &assessment).await
     }
 
@@ -997,8 +1018,7 @@ impl GradingService {
         actor: &Actor,
         id: SubmissionId,
     ) -> Result<Vec<GradingEntry>> {
-        let row = self.load_submission(id).await?;
-        self.grader_context(actor, row.assessment_id).await?;
+        self.gradable_submission(actor, id).await?;
         Ok(ab_db::submissions::list_grading_entries(&self.pool, id)
             .await?
             .into_iter()
@@ -1070,8 +1090,7 @@ impl GradingService {
         id: SubmissionId,
         input: GradeInput,
     ) -> Result<TeacherSubmission> {
-        let row = self.load_submission(id).await?;
-        let (assessment, _) = self.grader_context(actor, row.assessment_id).await?;
+        let (row, assessment) = self.gradable_submission(actor, id).await?;
         let expected_version = input.expected_version.ok_or_else(|| {
             Error::validation(vec![FieldError {
                 field: "If-Match".into(),

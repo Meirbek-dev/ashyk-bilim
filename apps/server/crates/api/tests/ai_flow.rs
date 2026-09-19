@@ -1180,6 +1180,20 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         gated_submit.text()
     );
     assert!(gated_submit.text().contains("REMEDIATION_REQUIRED"));
+    // UX-134: another learner cannot tell alice's session id from an unknown one.
+    let stranger = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
+            &serde_json::json!({ "score": 80 }),
+        )
+        .await;
+    assert_eq!(
+        stranger.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        stranger.text()
+    );
     let passed = app
         .post_as(
             &alice,
