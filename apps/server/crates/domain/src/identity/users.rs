@@ -61,7 +61,7 @@ impl UsersService {
             &self.pool,
             actor.user_id,
             display_name,
-            changes.bio.as_deref(),
+            changes.bio.as_deref().map(str::trim),
             changes.locale.as_deref(),
         )
         .await?

@@ -620,6 +620,42 @@ async fn registration_is_idempotent_and_links_the_signers_locale(pool: PgPool) {
     assert_eq!(replay.json(), first.json());
 }
 
+/// UX-132: an unsupported `Accept-Language` (de-DE) and a missing header
+/// both seed the default `ru-RU` locale (the Google path is pinned in
+/// google_flow::google_signup_creates_user_and_session).
+#[sqlx::test(migrations = "../../migrations")]
+async fn registration_locale_falls_back_to_russian(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    for (username, accept_language) in [("hans", Some("de-DE,de;q=0.9")), ("nolang", None)] {
+        Mock::given(method("POST"))
+            .and(path("/v2/users/human"))
+            .and(wiremock::matchers::body_partial_json(
+                serde_json::json!({ "username": username }),
+            ))
+            .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+                "userId": format!("z-{username}"),
+                "details": {},
+                "emailCode": "CODE01"
+            })))
+            .expect(1)
+            .mount(&app.zitadel)
+            .await;
+        let mut request = Request::builder()
+            .method("POST")
+            .uri("/api/v2/auth/register")
+            .header(header::CONTENT_TYPE, "application/json");
+        if let Some(accept_language) = accept_language {
+            request = request.header(header::ACCEPT_LANGUAGE, accept_language);
+        }
+        let body = register_body(username, &format!("{username}@example.com"));
+        let res = app
+            .send(request.body(Body::from(body.to_string())).unwrap())
+            .await;
+        assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
+        assert_eq!(res.json()["locale"], "ru-RU", "{accept_language:?}");
+    }
+}
+
 /// Emails are case-insensitive identities: registration stores them
 /// lower-cased, uniqueness and login ignore case (usernames too).
 #[sqlx::test(migrations = "../../migrations")]

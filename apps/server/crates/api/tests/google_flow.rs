@@ -108,12 +108,15 @@ async fn google_signup_creates_user_and_session(pool: PgPool) {
     );
 
     // DB state: user + google link, username from the email local part.
-    let (username, email): (String, String) = sqlx::query_as("SELECT username, email FROM users")
-        .fetch_one(&app.pool)
-        .await
-        .unwrap();
+    let (username, email, locale): (String, String, String) =
+        sqlx::query_as("SELECT username, email, locale FROM users")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
     assert_eq!(username, "newbie");
     assert_eq!(email, "newbie@gmail.com");
+    // UX-132: Google sign-up carries no Accept-Language → default locale.
+    assert_eq!(locale, "ru-RU");
     let linked: i64 =
         sqlx::query_scalar("SELECT count(*) FROM google_accounts WHERE google_sub = 'g-sub-1'")
             .fetch_one(&app.pool)

@@ -26,7 +26,8 @@ async fn profile_read_and_partial_update(pool: PgPool) {
                 .header(axum::http::header::CONTENT_TYPE, "application/json")
                 .header(axum::http::header::COOKIE, &session.cookie)
                 .body(axum::body::Body::from(
-                    serde_json::json!({ "display_name": "Meirbek", "locale": "kk-KZ" }).to_string(),
+                    serde_json::json!({ "display_name": "Meirbek", "locale": "kk-KZ", "bio": "  " })
+                        .to_string(),
                 ))
                 .unwrap(),
         )
@@ -34,6 +35,8 @@ async fn profile_read_and_partial_update(pool: PgPool) {
     assert_eq!(updated.status, StatusCode::OK);
     assert_eq!(updated.json()["display_name"], "Meirbek");
     assert_eq!(updated.json()["locale"], "kk-KZ");
+    // UX-132: bio is trimmed like display_name (blank → "").
+    assert_eq!(updated.json()["bio"], "");
     // Untouched fields survive the partial update.
     assert_eq!(updated.json()["email"], "m@example.com");
 }
@@ -420,6 +423,7 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
                 "course:create:platform",
                 "course:read:all",
                 "course:update:own",
+                "usergroup:create:platform",
             ],
         )
         .await;
@@ -487,6 +491,39 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     let reported = app.get("/api/v2/users/reporter/courses").await;
     assert_eq!(reported.status, StatusCode::OK, "{}", reported.text());
     assert_eq!(reported.json()["items"].as_array().unwrap().len(), 0);
+
+    // UX-133: the profile applies the catalogue's `course_visible` rule —
+    // a cohort member sees the private course, anonymous visitors do not.
+    let member_id = app
+        .create_user("member", "member@example.com", &["user"])
+        .await;
+    let member = app.mint_session_for(member_id, &[]).await;
+    let group = app
+        .post_as(
+            &teacher,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "Cohort" }),
+        )
+        .await;
+    let group_id = group.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/usergroups/{group_id}/members"),
+        &serde_json::json!({ "user_ids": [member_id] }),
+    )
+    .await;
+    let linked = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/usergroups/{group_id}/courses"),
+            &serde_json::json!({ "course_ids": [ids[1]] }),
+        )
+        .await;
+    assert_eq!(linked.status, StatusCode::NO_CONTENT, "{}", linked.text());
+    let cohort = app.get_as(&member, "/api/v2/users/author/courses").await;
+    assert_eq!(cohort.json()["items"].as_array().unwrap().len(), 2);
+    let anon = app.get("/api/v2/users/author/courses").await;
+    assert_eq!(anon.json()["items"].as_array().unwrap().len(), 1);
 
     let unknown = app.get_as(&stranger, "/api/v2/users/nobody/courses").await;
     assert_eq!(unknown.status, StatusCode::NOT_FOUND);
