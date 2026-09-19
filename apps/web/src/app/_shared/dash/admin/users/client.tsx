@@ -116,53 +116,53 @@ export default function UserRolesClient() {
           <p className="text-muted-foreground">{t('userRolesDescription')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-        {canManageStatus && (
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger
-              render={
-                <Button variant="outline">
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  {t('createUser')}
-                </Button>
-              }
-            />
-            <DialogContent className="sm:max-w-lg">
-              {createOpen && (
-                <CreateUserForm
-                  roles={roles}
-                  roleName={roleName}
-                  pending={create.isPending}
-                  error={create.error}
-                  onCancel={() => setCreateOpen(false)}
-                  onSubmit={body => create.mutate(body)}
-                />
-              )}
-            </DialogContent>
-          </Dialog>
-        )}
-        {canManageRoles && (
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
-            <DialogTrigger
-              render={
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t('addRole')}
-                </Button>
-              }
-            />
-            <DialogContent className="sm:max-w-md">
-              {addOpen && (
-                <AssignRoleForm
-                  roles={roles}
-                  roleName={roleName}
-                  pending={assign.isPending}
-                  onCancel={() => setAddOpen(false)}
-                  onSubmit={(userId, slug) => assign.mutate({ userId, slug })}
-                />
-              )}
-            </DialogContent>
-          </Dialog>
-        )}
+          {canManageStatus && (
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger
+                render={
+                  <Button variant="outline">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {t('createUser')}
+                  </Button>
+                }
+              />
+              <DialogContent className="sm:max-w-lg">
+                {createOpen && (
+                  <CreateUserForm
+                    roles={roles}
+                    roleName={roleName}
+                    pending={create.isPending}
+                    error={create.error}
+                    onCancel={() => setCreateOpen(false)}
+                    onSubmit={body => create.mutate(body)}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
+          )}
+          {canManageRoles && (
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+              <DialogTrigger
+                render={
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t('addRole')}
+                  </Button>
+                }
+              />
+              <DialogContent className="sm:max-w-md">
+                {addOpen && (
+                  <AssignRoleForm
+                    roles={roles}
+                    roleName={roleName}
+                    pending={assign.isPending}
+                    onCancel={() => setAddOpen(false)}
+                    onSubmit={(userId, slug) => assign.mutate({ userId, slug })}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -431,13 +431,19 @@ function CreateUserForm({
   const [values, setValues] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' })
   const [role, setRole] = useState<Role | null>(null)
   const [errors, setErrors] = useState<Partial<Record<keyof typeof values, string>>>({})
+  // UX-131: a server rejection clears as soon as the field is edited — remember
+  // which error each field was edited under.
+  const [editedUnder, setEditedUnder] = useState<Partial<Record<keyof typeof values, unknown>>>({})
+  const fresh = (name: keyof typeof values, rejection: string | null) =>
+    rejection && editedUnder[name] !== error ? rejection : null
   const extraRoles = roles.filter(item => item.slug !== 'user')
 
   // Contract codes land on the field they concern; anything else is a banner.
   // UX-130: a 422 `password` / `password-policy` names the rule on the field,
   // the way the security page does.
   const passwordCode = error instanceof APIError ? error.fieldErrors.find(f => f.field === 'password')?.code : undefined
-  const passwordRejected = passwordCode && errorsT.has(`fields.${passwordCode}`) ? errorsT(`fields.${passwordCode}`) : null
+  const passwordRejected =
+    passwordCode && errorsT.has(`fields.${passwordCode}`) ? errorsT(`fields.${passwordCode}`) : null
   const serverError = error
     ? hasErrorCode(error, 'username-taken') || hasErrorCode(error, 'email-taken') || passwordRejected
       ? null
@@ -448,7 +454,10 @@ function CreateUserForm({
 
   const bind = (name: keyof typeof values) => ({
     value: values[name],
-    onChange: (event: React.ChangeEvent<HTMLInputElement>) => setValues(prev => ({ ...prev, [name]: event.target.value })),
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+      setValues(prev => ({ ...prev, [name]: event.target.value }))
+      if (error) setEditedUnder(prev => ({ ...prev, [name]: error }))
+    },
   })
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -515,30 +524,38 @@ function CreateUserForm({
       ) : null}
       <div className="grid gap-4 py-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          {field('firstName', t('firstNameLabel'), <Input id="create-user-firstName" autoComplete="off" {...bind('firstName')} />)}
-          {field('lastName', t('lastNameLabel'), <Input id="create-user-lastName" autoComplete="off" {...bind('lastName')} />)}
+          {field(
+            'firstName',
+            t('firstNameLabel'),
+            <Input id="create-user-firstName" autoComplete="off" {...bind('firstName')} />,
+          )}
+          {field(
+            'lastName',
+            t('lastNameLabel'),
+            <Input id="create-user-lastName" autoComplete="off" {...bind('lastName')} />,
+          )}
         </div>
         {field(
           'username',
           t('usernameLabel'),
           <Input id="create-user-username" autoComplete="off" {...bind('username')} />,
           undefined,
-          usernameTaken,
+          fresh('username', usernameTaken),
         )}
         {field(
           'email',
           t('emailLabel'),
           <Input id="create-user-email" type="email" autoComplete="off" {...bind('email')} />,
           undefined,
-          emailTaken,
+          fresh('email', emailTaken),
         )}
         {field(
           'password',
           t('passwordLabel'),
           <PasswordInput id="create-user-password" autoComplete="new-password" placeholder=" " {...bind('password')} />,
           // The policy text is the hint; once rejected it is the error instead.
-          passwordRejected ? undefined : t('passwordHint'),
-          passwordRejected,
+          fresh('password', passwordRejected) ? undefined : t('passwordHint'),
+          fresh('password', passwordRejected),
         )}
         <div className="grid gap-2">
           <Label htmlFor="create-user-role">{t('extraRolesLabel')}</Label>

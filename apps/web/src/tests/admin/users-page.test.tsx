@@ -19,7 +19,11 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 // The assign dialog's user picker walks `GET /users` through `apiJson` (allMembersQueryOptions).
 vi.mock('@/lib/api-client', () => ({ apiJson: vi.fn(() => Promise.resolve(wire)) }))
 vi.mock('@/hooks/useSession', () => ({
-  useSession: () => ({ session: { roles: ['admin'], permissions: ['*:*:*'] }, user: { id: 'admin-id' }, can: () => true }),
+  useSession: () => ({
+    session: { roles: ['admin'], permissions: ['*:*:*'] },
+    user: { id: 'admin-id' },
+    can: () => true,
+  }),
 }))
 
 const listUsers = vi.fn()
@@ -37,15 +41,58 @@ vi.mock('@/services/rbac', () => ({
 
 const wire = {
   items: [
-    { id: 'admin-id', username: 'admin', email: 'admin@ashyq.local', display_name: 'Aliya Admin', status: 'active', roles: ['admin'], created_at_unix: 1 },
-    { id: 'teacher-id', username: 'teacher', email: 'teacher@ashyq.local', display_name: 'Daniyar Teacher', status: 'disabled', roles: ['instructor', 'user'], created_at_unix: 1 },
+    {
+      id: 'admin-id',
+      username: 'admin',
+      email: 'admin@ashyq.local',
+      display_name: 'Aliya Admin',
+      status: 'active',
+      roles: ['admin'],
+      created_at_unix: 1,
+    },
+    {
+      id: 'teacher-id',
+      username: 'teacher',
+      email: 'teacher@ashyq.local',
+      display_name: 'Daniyar Teacher',
+      status: 'disabled',
+      roles: ['instructor', 'user'],
+      created_at_unix: 1,
+    },
   ],
   next_cursor: null,
 }
 const roles = [
-  { slug: 'instructor', display_name_key: 'roles.instructor.name', description_key: '', display_name: null, description: null, priority: 50, is_system: true, permissions: [] },
-  { slug: 'user', display_name_key: 'roles.user.name', description_key: '', display_name: null, description: null, priority: 10, is_system: true, permissions: [] },
-  { slug: 'custom-x', display_name_key: 'roles.custom-x.name', description_key: 'roles.custom-x.description', display_name: 'Custom X', description: null, priority: 5, is_system: false, permissions: [] },
+  {
+    slug: 'instructor',
+    display_name_key: 'roles.instructor.name',
+    description_key: '',
+    display_name: null,
+    description: null,
+    priority: 50,
+    is_system: true,
+    permissions: [],
+  },
+  {
+    slug: 'user',
+    display_name_key: 'roles.user.name',
+    description_key: '',
+    display_name: null,
+    description: null,
+    priority: 10,
+    is_system: true,
+    permissions: [],
+  },
+  {
+    slug: 'custom-x',
+    display_name_key: 'roles.custom-x.name',
+    description_key: 'roles.custom-x.description',
+    display_name: 'Custom X',
+    description: null,
+    priority: 5,
+    is_system: false,
+    permissions: [],
+  },
 ]
 
 function renderPage() {
@@ -156,5 +203,10 @@ describe('/dash/admin/users (v2 AdminUserPage wire)', () => {
     expect(rejection).toHaveAttribute('id', 'create-user-password-error')
     expect(input('password')).toHaveAttribute('aria-describedby', 'create-user-password-error')
     expect(within(dialog).queryByText('validation failed')).not.toBeInTheDocument()
+
+    // UX-131: editing the field clears the rejection before the next submit.
+    await user.type(input('password'), '!')
+    expect(input('password')).not.toHaveAttribute('aria-invalid', 'true')
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
   })
 })

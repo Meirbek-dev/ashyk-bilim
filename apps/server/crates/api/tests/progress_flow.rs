@@ -778,6 +778,19 @@ async fn learner_can_always_leave_an_unpublished_course(pool: PgPool) {
             .unwrap()
             .is_empty()
     );
+
+    // An unpublished activity inside a visible course is no oracle either:
+    // with no own step the un-mark reads like an unknown id (UX-131).
+    sqlx::query("UPDATE activities SET published = false WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&a2).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let draft = app
+        .delete_as(&alice, &format!("/api/v2/trail/activities/{a2}"))
+        .await;
+    assert_eq!(draft.status, StatusCode::NOT_FOUND, "{}", draft.text());
+    assert_eq!(draft.json()["detail"], "activity not found");
     let state = app
         .get_as(
             &alice,

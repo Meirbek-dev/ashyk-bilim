@@ -246,7 +246,8 @@ impl TrailService {
 
     /// Un-mark an activity. Deleting the caller's own step needs no
     /// visibility check; with nothing to delete the course must be visible
-    /// (404 otherwise) so the reply is not an existence oracle (BUG-183).
+    /// and the activity published (404 otherwise) so the reply is not an
+    /// existence oracle (BUG-183, UX-131).
     /// Every 404 here reads `activity not found` — the detail is not an
     /// oracle for the course or the trail either (UX-131).
     pub async fn remove_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Trail> {
@@ -266,6 +267,9 @@ impl TrailService {
                 .get(actor, activity.course_id)
                 .await
                 .map_err(activity_not_found)?;
+            if !activity.published {
+                return Err(Error::not_found("activity"));
+            }
         }
         self.hydrate(actor, trail).await
     }
