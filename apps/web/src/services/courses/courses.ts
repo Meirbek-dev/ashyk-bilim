@@ -1,7 +1,13 @@
 'use server'
 
 import { apiJson, apiResult } from '@/lib/api-client'
-import { Contributor, Course, CoursePage, CourseReadiness as CourseReadinessSchema, Curriculum } from '@/lib/api/generated/zod'
+import {
+  Contributor,
+  Course,
+  CoursePage,
+  CourseReadiness as CourseReadinessSchema,
+  Curriculum,
+} from '@/lib/api/generated/zod'
 import type { AddContributorRequest, ReadinessItem, UpdateContributorRequest } from '@/lib/api/generated/zod'
 import { emptyPage } from '@/lib/api/contract'
 import type { Page } from '@/lib/api/contract'
@@ -42,11 +48,11 @@ async function revalidateCourse(course_uuid?: string) {
 }
 
 /**
- * Public catalog page. The v2 listing is keyset (`{items, next_cursor}`); `page`
- * is emulated by walking `page - 1` cursor hops so the legacy page-numbered
- * callers keep working, and `total` is only a lower bound they use to decide
- * whether a next page exists.
- * ponytail: drop `page`/`total` once callers pass `next_cursor` back as `cursor`.
+ * Public catalog page. The v2 listing is keyset (`{items, next_cursor}`) with
+ * no total; `page` is emulated by walking `page - 1` cursor hops so the
+ * page-numbered callers keep working, and `next_cursor` is the only "is there
+ * a next page" signal (UX-133).
+ * ponytail: drop `page` once callers pass `next_cursor` back as `cursor`.
  */
 export async function getCourses(_next?: unknown, page = 1, limit = 20) {
   let cursor: string | null | undefined
@@ -64,8 +70,7 @@ export async function getCourses(_next?: unknown, page = 1, limit = 20) {
 
   const courses = result.items.map(toAppCourse)
   const next_cursor = result.next_cursor ?? null
-  const total = (page - 1) * limit + courses.length + (next_cursor ? 1 : 0)
-  return { courses, total, next_cursor }
+  return { courses, next_cursor }
 }
 
 /**

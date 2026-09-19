@@ -129,14 +129,12 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
     return <LandingDegradedState isAuthenticated={Boolean(session)} t={tDegraded} />
   }
 
-  const { courses } = coursesData
-  const totalCourses = coursesData.total
-  const sortedCourses = sortCoursesByProgress(courses, trailData)
+  const sortedCourses = sortCoursesByProgress(coursesData.courses, trailData)
 
   return (
     <LandingClassic
       courses={sortedCourses}
-      totalCourses={totalCourses}
+      hasNextPage={Boolean(coursesData.next_cursor)}
       collections={collections}
       gamificationData={gamificationData}
       trailData={trailData}

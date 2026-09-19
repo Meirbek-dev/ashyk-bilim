@@ -114,6 +114,26 @@ describe('CourseEndView (BUG-165)', () => {
     expect(screen.queryByText('40%')).toBeNull()
   })
 
+  // UX-133: not enrolled in a 0/0 course — no «Начать обучение» promise, the
+  // landing it links to shows no CTA either.
+  it('not enrolled + no live activities → no start CTA', () => {
+    const s = state()
+    s.enrolled = false
+    s.enrollment_state = 'not_enrolled'
+    s.progress = {
+      ...s.progress,
+      completed_at_unix: null,
+      completed_required_count: 0,
+      progress_pct: 0,
+      total_required_count: 0,
+    }
+    s.outline = []
+    renderView(s)
+    expect(screen.getByText('В этом курсе пока нет опубликованных уроков')).toBeInTheDocument()
+    expect(screen.queryByText('Начать обучение')).toBeNull()
+    expect(screen.queryByText('Готовы начать?')).toBeNull()
+  })
+
   it('completed → the single «Назад к курсу» label', () => {
     renderView(state())
     expect(screen.getByText('Назад к курсу')).toBeInTheDocument()

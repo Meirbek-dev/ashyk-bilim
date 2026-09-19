@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE (creator_id = $1\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = courses.id AND ra.user_id = $1\n                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))\n             AND (public OR $2)\n             AND ($3::uuid IS NULL OR id < $3)\n           ORDER BY id DESC\n           LIMIT $4",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE (creator_id = $1\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = courses.id AND ra.user_id = $1\n                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))\n             AND course_visible(courses, $2, $5)\n             AND ($3::uuid IS NULL OR id < $3)\n           ORDER BY id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -124,9 +124,10 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Bool",
         "Uuid",
-        "Int8"
+        "Uuid",
+        "Int8",
+        "Bool"
       ]
     },
     "nullable": [
@@ -144,5 +145,5 @@
       null
     ]
   },
-  "hash": "3ff9cb1359e7ad6c5a2854ca36d9a2d7bef16fcf061961f0e0fb7148922eaf23"
+  "hash": "4bf1f888048324c05cbe7ffc94007fe6697e58762e68119d6ee8de51fad0a051"
 }

@@ -164,8 +164,8 @@ impl CoursesService {
         .await
     }
 
-    /// Courses `user` created or actively co-authors, newest first. Private
-    /// ones only for the user themself or platform managers.
+    /// Courses `user` created or actively co-authors, newest first, filtered
+    /// by the shared `course_visible` rule (BUG-190).
     pub async fn list_by_user(
         &self,
         actor: &Actor,
@@ -174,10 +174,15 @@ impl CoursesService {
         limit: i64,
     ) -> Result<(Vec<Course>, Option<CourseId>)> {
         let limit = limit.clamp(1, 100);
-        let include_private = actor.user_id == user || sees_private(actor, ResourceType::Course);
-        let mut rows =
-            ab_db::catalog::list_user_courses(&self.pool, user, include_private, cursor, limit + 1)
-                .await?;
+        let mut rows = ab_db::catalog::list_user_courses(
+            &self.pool,
+            user,
+            actor.user_id,
+            sees_private(actor, ResourceType::Course),
+            cursor,
+            limit + 1,
+        )
+        .await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             rows.last().map(|c| c.id)

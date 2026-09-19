@@ -220,10 +220,13 @@ pub async fn summarize_courses(
 
 /// Newest-first page of courses `user` created or actively co-authors;
 /// private ones only when `include_private`.
+/// Courses `user` created or actively co-authors, as `viewer` sees them
+/// (SQL `course_visible`, BUG-190 — the profile is not a sixth rule, UX-133).
 pub async fn list_user_courses(
     pool: &PgPool,
     user: UserId,
-    include_private: bool,
+    viewer: UserId,
+    see_all: bool,
     cursor: Option<CourseId>,
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
@@ -243,14 +246,15 @@ pub async fn list_user_courses(
                   OR EXISTS (SELECT 1 FROM resource_authors ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $1
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))
-             AND (public OR $2)
+             AND course_visible(courses, $2, $5)
              AND ($3::uuid IS NULL OR id < $3)
            ORDER BY id DESC
            LIMIT $4"#,
         user.0,
-        include_private,
+        viewer.0,
         cursor.map(|c| c.0),
-        limit
+        limit,
+        see_all
     )
     .fetch_all(pool)
     .await?;

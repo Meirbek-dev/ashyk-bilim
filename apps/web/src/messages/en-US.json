@@ -2000,11 +2000,13 @@
       "loading": "Loading..."
     },
     "Pagination": {
+      "backToFirst": "Back to the first page",
       "ellipsis": "More pages",
       "ellipsisAria": "More pages",
       "label": "Pagination",
       "next": "Next",
       "nextAria": "Go to next page",
+      "pastEnd": "This page is empty — there is nothing further.",
       "previous": "Previous",
       "previousAria": "Go to previous page"
     },

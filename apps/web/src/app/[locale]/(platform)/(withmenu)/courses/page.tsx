@@ -118,7 +118,7 @@ async function CoursesContent({ searchParams }: CoursesContentProps) {
   return (
     <Courses
       courses={sortedCourses}
-      totalCourses={coursesData.total}
+      hasNextPage={Boolean(coursesData.next_cursor)}
       trailData={trailData}
       currentPage={page}
       isAuthenticated={Boolean(session)}

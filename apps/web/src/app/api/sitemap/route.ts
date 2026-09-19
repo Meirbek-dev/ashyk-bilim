@@ -13,9 +13,9 @@ export async function GET(_request: NextRequest) {
 
   try {
     while (hasMore) {
-      const { courses: pageCourses, total } = await getCourses(undefined, page, COURSES_PER_PAGE)
+      const { courses: pageCourses, next_cursor } = await getCourses(undefined, page, COURSES_PER_PAGE)
       allCourses.push(...pageCourses)
-      hasMore = page * COURSES_PER_PAGE < total
+      hasMore = Boolean(next_cursor)
       page += 1
     }
   } catch {

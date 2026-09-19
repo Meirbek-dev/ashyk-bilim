@@ -128,6 +128,11 @@ export function trailCurrentQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.trail.current(),
     queryFn: async () => toAppTrail(await apiJson('trail', {}, Trail.parse)),
+    // UX-133: a course left in another tab / unpublished by the teacher must
+    // drop off `/trail` on focus — same policy as learner-state (UX-050).
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   })
 }
 

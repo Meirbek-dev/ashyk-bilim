@@ -59,7 +59,11 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
       await revalidateTags(['courses'])
       router.refresh()
     },
-    onError: error => toastApiError(error, { fallback: t('quitCourseFailed') }),
+    onError: async error => {
+      toastApiError(error, { fallback: t('quitCourseFailed') })
+      // UX-133: a stale card (already left elsewhere / unpublished) goes away too.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+    },
   })
 
   return (

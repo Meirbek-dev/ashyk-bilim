@@ -3,21 +3,18 @@
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
-import { useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-
-const COURSES_PER_PAGE = 20
+import { useTranslations } from 'next-intl'
 
 interface CourseGridClientProps {
   initialCourses: AppCourse[]
-  initialTotal: number
+  /** The listing is keyset with no total: `next_cursor` is the only "next page" signal (UX-133). */
+  hasNextPage: boolean
   trailData: AppTrailData | null
   currentPage: number
   isAuthenticated: boolean
@@ -25,14 +22,13 @@ interface CourseGridClientProps {
 
 export default function CourseGridClient({
   initialCourses,
-  initialTotal,
+  hasNextPage,
   trailData,
   currentPage,
 }: CourseGridClientProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
-
-  const totalPages = Math.ceil(initialTotal / COURSES_PER_PAGE)
+  const t = useTranslations('Components.Pagination')
 
   // Helper to create page URLs preserving other query params
   const createPageUrl = (pageNum: number) => {
@@ -42,102 +38,61 @@ export default function CourseGridClient({
   }
 
   const isTrailLoading = false
-
-  // Generate pagination range
-  const paginationRange = useMemo(() => {
-    const delta = 2
-    const range: (number | 'ellipsis')[] = []
-    const rangeWithDots: (number | 'ellipsis')[] = []
-
-    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i += 1) {
-      range.push(i)
-    }
-
-    if (currentPage - delta > 2) {
-      rangeWithDots.push(1, 'ellipsis')
-    } else {
-      for (let i = 1; i < Math.max(2, currentPage - delta); i += 1) {
-        rangeWithDots.push(i)
-      }
-    }
-
-    rangeWithDots.push(...range)
-
-    if (currentPage + delta < totalPages - 1) {
-      rangeWithDots.push('ellipsis', totalPages)
-    } else {
-      for (let i = Math.min(totalPages - 1, currentPage + delta) + 1; i <= totalPages; i += 1) {
-        rangeWithDots.push(i)
-      }
-    }
-
-    return rangeWithDots
-  }, [currentPage, totalPages])
+  const hasPrevPage = currentPage > 1
 
   return (
     <div className="space-y-8">
-      <div className="grid w-full grid-cols-1 justify-items-center gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {initialCourses.map((course: AppCourse, index: number) => (
-          <div key={course.course_uuid} className="flex w-full max-w-sm justify-center">
-            <CourseThumbnail
-              course={course}
-              trailData={trailData}
-              trailLoading={isTrailLoading}
-              priority={currentPage === 1 && index < 3}
-            />
-          </div>
-        ))}
-      </div>
+      {initialCourses.length === 0 ? (
+        <div className="text-muted-foreground flex flex-col items-center gap-3 py-12 text-center text-sm">
+          <p>{t('pastEnd')}</p>
+          <a
+            href={createPageUrl(1)}
+            onClick={e => {
+              e.preventDefault()
+              router.push(createPageUrl(1))
+            }}
+            className="text-primary font-medium underline-offset-4 hover:underline"
+          >
+            {t('backToFirst')}
+          </a>
+        </div>
+      ) : (
+        <div className="grid w-full grid-cols-1 justify-items-center gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {initialCourses.map((course: AppCourse, index: number) => (
+            <div key={course.course_uuid} className="flex w-full max-w-sm justify-center">
+              <CourseThumbnail
+                course={course}
+                trailData={trailData}
+                trailLoading={isTrailLoading}
+                priority={currentPage === 1 && index < 3}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
+      {/* Pagination: prev/next only — the contract carries no total (UX-133). */}
+      {(hasPrevPage || hasNextPage) && (
         <Pagination>
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                {...(currentPage <= 1 ? { 'aria-disabled': true } : { href: createPageUrl(currentPage - 1) })}
+                {...(hasPrevPage ? { href: createPageUrl(currentPage - 1) } : { 'aria-disabled': true })}
                 onClick={e => {
                   e.preventDefault()
-                  if (currentPage > 1) {
-                    router.push(createPageUrl(currentPage - 1))
-                  }
+                  if (hasPrevPage) router.push(createPageUrl(currentPage - 1))
                 }}
-                className={currentPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                className={hasPrevPage ? 'cursor-pointer' : 'pointer-events-none opacity-50'}
               />
             </PaginationItem>
-
-            {paginationRange.map((item, index) =>
-              item === 'ellipsis' ? (
-                <PaginationItem key={`ellipsis-${index}`}>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              ) : (
-                <PaginationItem key={item}>
-                  <PaginationLink
-                    href={createPageUrl(item)}
-                    onClick={e => {
-                      e.preventDefault()
-                      router.push(createPageUrl(item))
-                    }}
-                    isActive={currentPage === item}
-                    className="cursor-pointer"
-                  >
-                    {item}
-                  </PaginationLink>
-                </PaginationItem>
-              ),
-            )}
-
             <PaginationItem>
               <PaginationNext
-                {...(currentPage >= totalPages ? { 'aria-disabled': true } : { href: createPageUrl(currentPage + 1) })}
+                {...(hasNextPage ? { href: createPageUrl(currentPage + 1) } : { 'aria-disabled': true })}
                 onClick={e => {
                   e.preventDefault()
-                  if (currentPage < totalPages) {
-                    router.push(createPageUrl(currentPage + 1))
-                  }
+                  if (hasNextPage) router.push(createPageUrl(currentPage + 1))
                 }}
-                className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                className={hasNextPage ? 'cursor-pointer' : 'pointer-events-none opacity-50'}
               />
             </PaginationItem>
           </PaginationContent>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
@@ -14,6 +14,7 @@ import { runStudentActivityAction } from '@/features/student-activity/api/runtim
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext'
 import { queryKeys } from '@/lib/react-query/queryKeys'
+import { useApiError } from '@/hooks/useApiError'
 
 type RuntimeNavItem = NonNullable<StudentActivityRuntime['next']>
 type RuntimeActionId = StudentActivityRuntime['primary_action']['id']
@@ -143,7 +144,7 @@ function RuntimeCTA({
     return (
       <Button
         className={PRIMARY_BUTTON_CLASSNAME}
-        onClick={() => completion.mutate(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')}
+        onClick={() => completion.run(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')}
         disabled={!action.enabled || completion.isPending || waitingForReadCompletion}
         title={disabledReason}
       >
@@ -252,8 +253,12 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useTranslations('ActivityPage')
+  const { toastApiError } = useApiError()
   const activityUuid = runtime.activity?.uuid ?? ''
-  return useMutation({
+  // UX-133: `isPending` lands on the next render — a double click fired two
+  // POSTs and two toasts. The ref closes the gap synchronously.
+  const inFlight = useRef(false)
+  const mutation = useMutation({
     mutationFn: (command: 'mark_complete' | 'unmark_complete') =>
       runStudentActivityAction(cleanUuid(courseUuid, 'course_'), cleanUuid(activityUuid, 'activity_'), {
         command,
@@ -270,10 +275,18 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
       router.refresh()
       toast.success(t('activityCompleted'))
     },
-    onError: error => {
-      toast.error(error instanceof Error ? error.message : t('markCompleteError'))
+    // UX-133: problem+json codes reach the toast (`activity not found` was raw English).
+    onError: error => toastApiError(error, { fallback: t('markCompleteError') }),
+    onSettled: () => {
+      inFlight.current = false
     },
   })
+  const run = (command: 'mark_complete' | 'unmark_complete') => {
+    if (inFlight.current) return
+    inFlight.current = true
+    mutation.mutate(command)
+  }
+  return { isPending: mutation.isPending, run }
 }
 
 function ProgressFill({ percent }: { percent: number }) {

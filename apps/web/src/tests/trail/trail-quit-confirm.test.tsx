@@ -69,6 +69,17 @@ describe('TrailCourseElement quit + certificate', () => {
     expect(invalidate.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(toast.success).mock.invocationCallOrder[0]!)
   })
 
+  it('drops the stale card when leaving fails (UX-133)', async () => {
+    vi.mocked(removeCourse).mockRejectedValueOnce(new Error('gone'))
+    const queryClient = renderCard()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    fireEvent.click(screen.getByRole('button', { name: 'Покинуть курс' }))
+    const confirm = (await screen.findAllByRole('button', { name: 'Покинуть курс' })).at(-1)!
+    fireEvent.click(confirm)
+    await waitFor(() => expect(toast.error).toHaveBeenCalled())
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['trail', 'current'] }))
+  })
+
   it('labels the certificate control as "view", since nothing is downloaded', () => {
     renderCard()
     const link = screen.getByRole('link', { name: /Просмотреть сертификат/ })

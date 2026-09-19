@@ -401,14 +401,15 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   // end page must not keep celebrating a stale «40 %».
   const notEnrolled = learnerState?.enrollment_state === 'not_enrolled'
   // UX-127: promise a certificate only when the course has one configured;
-  // at 0/0 live activities there is nothing to continue — the action bar's
-  // «Назад к курсу» stays the single primary.
+  // at 0/0 live activities there is nothing to continue (or, UX-133, to
+  // start — the landing shows no CTA either): the action bar's «Назад к
+  // курсу» stays the single primary.
   const certificateConfigured = learnerState?.certificate.configured === true
-  const noLiveActivities = !notEnrolled && progressInfo?.total === 0
-  const keepGoingText = notEnrolled
-    ? t('readyToBegin')
-    : noLiveActivities
-      ? t('noPublishedActivities')
+  const noLiveActivities = progressInfo?.total === 0
+  const keepGoingText = noLiveActivities
+    ? t('noPublishedActivities')
+    : notEnrolled
+      ? t('readyToBegin')
       : `${t('keepGoing')} 💪`
 
   // Show progress and encouragement for incomplete course
@@ -437,10 +438,10 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         <h1 className="text-4xl font-bold text-gray-900">{keepGoingText}</h1>
 
         <p className="text-xl text-gray-600">
-          {notEnrolled
-            ? t(certificateConfigured ? 'notEnrolledMessage' : 'notEnrolledMessageNoCertificate')
-            : noLiveActivities
-              ? null
+          {noLiveActivities
+            ? null
+            : notEnrolled
+              ? t(certificateConfigured ? 'notEnrolledMessage' : 'notEnrolledMessageNoCertificate')
               : t('youAreMakingProgress')}
           <span className="font-semibold text-gray-900"> {courseName}</span>
         </p>
