@@ -392,14 +392,50 @@ pub async fn list_non_draft(
 
 // ── Course gradebook ────────────────────────────────────────────────────────
 
-/// The grade-of-record attempt of one learner on one graded activity.
+/// The grade-of-record sort key (BUG-173 / BUG-180 / BUG-187) — one order
+/// shared by `progress::projector` and [`gradebook_cells`].
 ///
-/// The attempt `progress::projector` scores (BUG-173 / BUG-180): a graded
-/// non-draft submission (`final_score IS NOT NULL`) outranks any pending
-/// one whose partial `auto_score` is higher; among graded, the highest
-/// score, latest on ties. Same for file attempts. The latest attempt when
-/// nothing is scored yet. Keep the order in step with
-/// `projector::grade_of_record_order`.
+/// A released attempt outranks any unreleased one whatever score the
+/// latter carries (a returned or saved-unreleased grade is never the grade
+/// of record); among released quiz attempts the highest score wins; file
+/// attempts are revisions (`score` `None`), so the latest released one
+/// wins, as on ties. Unreleased attempts rank by attempt number only.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GradeKey {
+    pub released: bool,
+    pub score: Option<f64>,
+    pub attempt_number: i32,
+}
+
+impl GradeKey {
+    #[must_use]
+    pub fn order(self, other: Self) -> std::cmp::Ordering {
+        self.released
+            .cmp(&other.released)
+            .then_with(|| {
+                self.score
+                    .unwrap_or(0.0)
+                    .total_cmp(&other.score.unwrap_or(0.0))
+            })
+            .then_with(|| self.attempt_number.cmp(&other.attempt_number))
+    }
+}
+
+impl SubmissionRow {
+    /// A quiz attempt is released once `published` with a score.
+    #[must_use]
+    pub fn grade_key(&self) -> GradeKey {
+        let released = self.status == SubmissionStatus::Published && self.final_score.is_some();
+        GradeKey {
+            released,
+            score: self.final_score.filter(|_| released),
+            attempt_number: self.attempt_number,
+        }
+    }
+}
+
+/// The grade-of-record attempt of one learner on one graded activity
+/// ([`GradeKey`]), with the newest attempt still in the teacher's hands.
 ///
 /// An assessment submission or a file-submission attempt: exactly one of
 /// the id pairs is set, and a file attempt `submitted` maps to `pending`.
@@ -415,8 +451,9 @@ pub struct GradebookCellRow {
     pub attempt_number: i32,
     /// Submitted attempts on this pair.
     pub attempts: i64,
-    /// The newest attempt awaiting grading (`pending`, or `submitted` on a
-    /// file attempt), if any — the ranked attempt may be an older graded one.
+    /// The newest attempt awaiting the teacher (`pending`, or `submitted`
+    /// on a file attempt, or `graded` but unreleased), if any — the ranked
+    /// attempt may be an older released one.
     pub pending_attempt: Option<i32>,
     /// That attempt's id (a submission id or a file attempt id) — the
     /// gradebook's «pending» deep link (UX-123).
@@ -429,10 +466,24 @@ pub struct GradebookCellRow {
     pub graded_at: Option<i64>,
 }
 
+impl GradebookCellRow {
+    fn grade_key(&self) -> GradeKey {
+        let quiz = self.assessment_id.is_some();
+        let released =
+            self.status == SubmissionStatus::Published && (!quiz || self.final_score.is_some());
+        GradeKey {
+            released,
+            score: self.final_score.filter(|_| released && quiz),
+            attempt_number: self.attempt_number,
+        }
+    }
+}
+
 /// Grade-of-record attempt per (learner, activity) in a course.
 ///
 /// Over both assessment submissions and file-submission attempts, keyset on
-/// that pair; `rank` mirrors `project_submissions` / `project_file_attempts`.
+/// that pair: the page's attempts come out in attempt order and each pair
+/// folds to its [`GradeKey`] maximum.
 pub async fn gradebook_cells(
     pool: &PgPool,
     course_id: CourseId,
@@ -441,34 +492,11 @@ pub async fn gradebook_cells(
 ) -> Result<Vec<GradebookCellRow>> {
     let rows = sqlx::query_as!(
         GradebookCellRow,
-        r#"SELECT DISTINCT ON (c.user_id, c.activity_id)
-                  c.user_id AS "user_id!: UserId", c.activity_id AS "activity_id!: ActivityId",
-                  c.assessment_id AS "assessment_id?: AssessmentId",
-                  c.submission_id AS "submission_id?: SubmissionId",
-                  c.file_submission_id AS "file_submission_id?: FileSubmissionId",
-                  c.attempt_id AS "attempt_id?: FileAttemptId",
-                  c.status AS "status!: SubmissionStatus", c.attempt_number AS "attempt_number!",
-                  count(*) OVER (PARTITION BY c.user_id, c.activity_id) AS "attempts!",
-                  max(c.attempt_number) FILTER (WHERE c.status = 'pending')
-                      OVER (PARTITION BY c.user_id, c.activity_id) AS "pending_attempt?",
-                  (array_remove(array_agg(CASE WHEN c.status = 'pending'
-                                               THEN COALESCE(c.submission_id, c.attempt_id) END)
-                      OVER (PARTITION BY c.user_id, c.activity_id ORDER BY c.attempt_number DESC
-                            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING), NULL))[1]
-                      AS "pending_attempt_id?",
-                  c.final_score AS "final_score?", c.is_late AS "is_late!",
-                  (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
-                  (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",
-                  (extract(epoch FROM c.graded_at))::bigint AS "graded_at?"
-           FROM (
+        r#"WITH c AS (
                SELECT s.user_id, a.activity_id, s.assessment_id, s.id AS submission_id,
                       NULL::uuid AS file_submission_id, NULL::uuid AS attempt_id,
                       s.status, s.attempt_number, s.final_score, s.is_late,
-                      o.due_at_override, s.submitted_at, s.graded_at,
-                      row_number() OVER (PARTITION BY s.user_id, s.assessment_id
-                          ORDER BY (s.final_score IS NOT NULL) DESC,
-                                   COALESCE(s.final_score, s.auto_score) DESC NULLS LAST,
-                                   s.attempt_number DESC) AS rank
+                      o.due_at_override, s.submitted_at, s.graded_at
                FROM submissions s JOIN assessments a ON a.id = s.assessment_id
                LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id
                     AND o.user_id = s.user_id
@@ -478,16 +506,33 @@ pub async fn gradebook_cells(
                SELECT fa.user_id, f.activity_id, NULL::uuid, NULL::uuid, f.id, fa.id,
                       CASE WHEN fa.status = 'submitted' THEN 'pending' ELSE fa.status END,
                       fa.attempt_number, fa.final_score, fa.is_late, NULL::timestamptz,
-                      fa.submitted_at, fa.graded_at,
-                      row_number() OVER (PARTITION BY fa.user_id, fa.file_submission_id
-                          ORDER BY (fa.final_score IS NOT NULL) DESC, fa.attempt_number DESC)
+                      fa.submitted_at, fa.graded_at
                FROM file_submission_attempts fa
                JOIN file_submissions f ON f.id = fa.file_submission_id
                WHERE fa.course_id = $1 AND fa.status <> 'draft'
-           ) c
-           WHERE ($2::uuid IS NULL OR (c.user_id, c.activity_id) > ($2::uuid, $3::uuid))
-           ORDER BY c.user_id, c.activity_id, c.rank
-           LIMIT $4"#,
+           ), page AS (
+               SELECT DISTINCT user_id, activity_id FROM c
+               WHERE ($2::uuid IS NULL OR (user_id, activity_id) > ($2::uuid, $3::uuid))
+               ORDER BY user_id, activity_id
+               LIMIT $4
+           )
+           SELECT c.user_id AS "user_id!: UserId", c.activity_id AS "activity_id!: ActivityId",
+                  c.assessment_id AS "assessment_id?: AssessmentId",
+                  c.submission_id AS "submission_id?: SubmissionId",
+                  c.file_submission_id AS "file_submission_id?: FileSubmissionId",
+                  c.attempt_id AS "attempt_id?: FileAttemptId",
+                  c.status AS "status!: SubmissionStatus", c.attempt_number AS "attempt_number!",
+                  1::bigint AS "attempts!",
+                  CASE WHEN c.status IN ('pending', 'graded') THEN c.attempt_number END
+                      AS "pending_attempt?",
+                  CASE WHEN c.status IN ('pending', 'graded')
+                       THEN COALESCE(c.submission_id, c.attempt_id) END AS "pending_attempt_id?",
+                  c.final_score AS "final_score?", c.is_late AS "is_late!",
+                  (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
+                  (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM c.graded_at))::bigint AS "graded_at?"
+           FROM c JOIN page USING (user_id, activity_id)
+           ORDER BY c.user_id, c.activity_id, c.attempt_number"#,
         course_id.0,
         after.map(|(u, _)| u.0),
         after.map(|(_, a)| a.0),
@@ -495,7 +540,29 @@ pub async fn gradebook_cells(
     )
     .fetch_all(pool)
     .await?;
-    Ok(rows)
+    let mut cells: Vec<GradebookCellRow> = Vec::with_capacity(rows.len());
+    for row in rows {
+        let Some(cell) = cells
+            .last_mut()
+            .filter(|c| (c.user_id, c.activity_id) == (row.user_id, row.activity_id))
+        else {
+            cells.push(row);
+            continue;
+        };
+        let attempts = cell.attempts + 1;
+        // Attempts arrive in order: the newest teacher-owned one wins.
+        let pending = row
+            .pending_attempt
+            .map_or((cell.pending_attempt, cell.pending_attempt_id), |n| {
+                (Some(n), row.pending_attempt_id)
+            });
+        if row.grade_key().order(cell.grade_key()) == std::cmp::Ordering::Greater {
+            *cell = row;
+        }
+        cell.attempts = attempts;
+        (cell.pending_attempt, cell.pending_attempt_id) = pending;
+    }
+    Ok(cells)
 }
 
 // ── Review queue (teacher) ──────────────────────────────────────────────────

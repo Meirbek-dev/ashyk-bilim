@@ -1139,7 +1139,7 @@ impl GradingService {
         merge_item_grades(&mut breakdown, &input.item_grades, &items, &answers);
         breakdown.needs_manual_review = breakdown.items.iter().any(|i| i.needs_manual_review);
         if let Some(feedback) = &input.feedback {
-            breakdown.feedback.clone_from(feedback);
+            breakdown.feedback = feedback.trim().to_owned();
         }
         let feedback = breakdown.feedback.clone();
 

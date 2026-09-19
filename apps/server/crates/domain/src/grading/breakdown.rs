@@ -59,8 +59,11 @@ impl GradingBreakdown {
     }
 }
 
-/// Python's `round(x, 2)` is half-to-even; Rust's `f64::round` is
-/// half-away-from-zero. Scores must match the legacy to the cent.
+/// Python's `round(x, 2)`: half-to-even, to the cent.
+///
+/// Rust's `f64::round` is half-away-from-zero, and scores must match the
+/// legacy. `-0.0` comes out as `0` (the `+ 0.0`), so a grade never echoes a
+/// minus sign.
 #[must_use]
 pub fn round2(x: f64) -> f64 {
     let scaled = x * 100.0;
@@ -76,7 +79,7 @@ pub fn round2(x: f64) -> f64 {
     } else {
         scaled.round()
     };
-    rounded / 100.0
+    rounded / 100.0 + 0.0
 }
 
 #[cfg(test)]
@@ -91,6 +94,7 @@ mod tests {
         assert_eq!(round2(2.5), 2.5);
         assert_eq!(round2(66.666_66), 66.67);
         assert_eq!(round2(-0.125), -0.12);
+        assert!(round2(-0.0).is_sign_positive());
     }
 
     #[test]

@@ -369,22 +369,6 @@ fn submission_sort_key(s: &SubmissionRow) -> (i64, uuid::Uuid) {
     (s.submitted_at.unwrap_or(s.updated_at), s.id.0)
 }
 
-/// One grade of record (BUG-173 / BUG-180): a graded attempt
-/// (`final_score` set) outranks a pending one whose partial auto score is
-/// higher; among graded, the highest score, latest on ties. Mirrors the
-/// `rank` in `ab_db::submissions::gradebook_cells` — change both.
-fn grade_of_record_order(a: &SubmissionRow, b: &SubmissionRow) -> std::cmp::Ordering {
-    a.final_score
-        .is_some()
-        .cmp(&b.final_score.is_some())
-        .then_with(|| {
-            submission_score(a)
-                .unwrap_or(0.0)
-                .total_cmp(&submission_score(b).unwrap_or(0.0))
-        })
-        .then_with(|| a.attempt_number.cmp(&b.attempt_number))
-}
-
 /// Legacy `_apply_progress_from_submissions`.
 pub(crate) fn project_submissions(
     activity: &ActivityRow,
@@ -397,13 +381,14 @@ pub(crate) fn project_submissions(
         .iter()
         .filter(|s| s.status != SubmissionStatus::Draft)
         .collect();
-    // The grade of record is a released one (BUG-180): a pending or saved
-    // attempt never scores the activity, whatever its partial auto score.
+    // The grade of record is a released one (BUG-180 / BUG-187): a pending,
+    // saved or returned attempt never scores the activity, whatever its
+    // partial score — `GradeKey` is the gradebook's order too.
     let best = submitted
         .iter()
         .copied()
-        .filter(|s| s.status == SubmissionStatus::Published && s.final_score.is_some())
-        .max_by(|a, b| grade_of_record_order(a, b));
+        .filter(|s| s.grade_key().released)
+        .max_by(|a, b| a.grade_key().order(b.grade_key()));
 
     let mut state = ActivityProgressState::NotStarted;
     let mut score = None;
@@ -530,8 +515,8 @@ pub(crate) fn project_file_attempts(
     // attempt is published, the last released one keeps its verdict.
     let released = attempts
         .iter()
-        .filter(|a| a.status == FileAttemptStatus::Published)
-        .max_by_key(|a| (a.updated_at, a.id.0));
+        .filter(|a| a.grade_key().released)
+        .max_by(|a, b| a.grade_key().order(b.grade_key()));
     let submitted = attempts
         .iter()
         .filter(|a| a.status != FileAttemptStatus::Draft)

@@ -270,6 +270,19 @@ pub struct AttemptRow {
     pub updated_at: i64,
 }
 
+impl AttemptRow {
+    /// File attempts are revisions: the latest released one is the grade of
+    /// record (`crate::submissions::GradeKey`).
+    #[must_use]
+    pub fn grade_key(&self) -> crate::submissions::GradeKey {
+        crate::submissions::GradeKey {
+            released: self.status == FileAttemptStatus::Published,
+            score: None,
+            attempt_number: self.attempt_number,
+        }
+    }
+}
+
 /// Open a draft (started now). `None` when the learner already has an open
 /// (draft or returned) attempt — the partial unique index absorbs the race.
 pub async fn insert_attempt(
