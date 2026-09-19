@@ -3,6 +3,11 @@
 //! - Sliding idle timeout [`IDLE_TTL`], absolute cap [`ABSOLUTE_CAP`] enforced
 //!   on touch (a session older than the cap is treated as expired regardless
 //!   of activity).
+//! - The touch never rewrites the record (BUG-191): it `EXPIRE`s the record
+//!   and writes `last_seen` to its own key `session_seen:{id}`, so a touch in
+//!   flight cannot resurrect a revoked session or undo a grant rewrite.
+//!   Rewrites are compare-and-set (`SET … XX KEEPTTL` under a Lua guard) and
+//!   a session whose id left the registry zset is dead even if its key is not.
 //! - Per-user registry `user_sessions:{uid}` (zset scored by creation time)
 //!   caps concurrent sessions at [`MAX_SESSIONS_PER_USER`], evicting oldest.
 //! - Permission changes propagate at mutation time:
@@ -25,9 +30,26 @@ pub const MAX_SESSIONS_PER_USER: usize = 10;
 fn session_key(id: &str) -> String {
     format!("session:{id}")
 }
+fn seen_key(id: &str) -> String {
+    format!("session_seen:{id}")
+}
 fn user_key(user_id: UserId) -> String {
     format!("user_sessions:{user_id}")
 }
+fn idle_ttl() -> i64 {
+    i64::try_from(IDLE_TTL.as_secs()).unwrap_or(i64::MAX)
+}
+fn past_absolute_cap(record: &SessionRecord) -> bool {
+    let age = now_unix().saturating_sub(record.created_at_unix);
+    age >= i64::try_from(ABSOLUTE_CAP.as_secs()).unwrap_or(i64::MAX)
+}
+
+/// Compare-and-set rewrite: only if the record is still the one we read, and
+/// only if it still exists (`XX` — a concurrent revoke must win).
+const REWRITE_IF_UNCHANGED: &str = r"
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+redis.call('SET', KEYS[1], ARGV[2], 'XX', 'KEEPTTL')
+return 1";
 fn now_unix() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -134,14 +156,14 @@ impl SessionStore {
         let mut conn = self.redis.clone();
         let payload = serde_json::to_string(&record)
             .map_err(|e| Error::internal("serializing session", e))?;
-        let () = conn
+        // One atomic step: a record without its registry entry reads as revoked.
+        let () = redis::pipe()
+            .atomic()
             .set_ex(session_key(&id), payload, IDLE_TTL.as_secs())
+            .zadd(user_key(record.user_id), &id, now_unix_millis())
+            .query_async(&mut conn)
             .await
             .map_err(|e| Error::internal("storing session", e))?;
-        let () = conn
-            .zadd(user_key(record.user_id), &id, now_unix_millis())
-            .await
-            .map_err(|e| Error::internal("registering session", e))?;
 
         // Cap concurrent sessions: evict oldest beyond the limit.
         let count: usize = conn
@@ -162,63 +184,85 @@ impl SessionStore {
     }
 
     /// Fetch + touch: refreshes the idle TTL, enforces the absolute cap, and
-    /// updates `last_seen`. Returns `None` for missing/expired sessions.
+    /// updates `last_seen`. Returns `None` for missing/expired/revoked sessions.
     pub async fn get_and_touch(&self, id: &str) -> Result<Option<SessionRecord>> {
-        let mut conn = self.redis.clone();
-        let raw: Option<String> = conn
-            .get(session_key(id))
-            .await
-            .map_err(|e| Error::internal("loading session", e))?;
-        let Some(raw) = raw else { return Ok(None) };
-        let mut record: SessionRecord =
-            serde_json::from_str(&raw).map_err(|e| Error::internal("corrupt session record", e))?;
-
-        let now = now_unix();
-        let age = now.saturating_sub(record.created_at_unix);
-        if age >= i64::try_from(ABSOLUTE_CAP.as_secs()).unwrap_or(i64::MAX) {
+        let Some(mut record) = self.load(id).await? else {
+            return Ok(None);
+        };
+        if past_absolute_cap(&record) {
             self.revoke(record.user_id, id).await?;
             return Ok(None);
         }
+        // Registry membership is authoritative: `revoke` removes it in the
+        // same atomic step as the record, so a key that outlived its entry
+        // (or was re-created by anything) is dead.
+        let mut conn = self.redis.clone();
+        let registered: Option<f64> = conn
+            .zscore(user_key(record.user_id), id)
+            .await
+            .map_err(|e| Error::internal("checking session registry", e))?;
+        if registered.is_none() {
+            self.revoke(record.user_id, id).await?;
+            return Ok(None);
+        }
+        record.last_seen_unix = self.touch(id).await?;
+        Ok(Some(record))
+    }
 
-        record.last_seen_unix = now;
-        let payload = serde_json::to_string(&record)
-            .map_err(|e| Error::internal("serializing session", e))?;
-        let () = conn
-            .set_ex(session_key(id), payload, IDLE_TTL.as_secs())
+    /// The write half of [`Self::get_and_touch`]: slide the idle TTL and stamp
+    /// `last_seen`. Never writes the record itself, so it cannot resurrect a
+    /// revoked session (`EXPIRE` on a missing key is a no-op) or overwrite a
+    /// concurrent grant rewrite. Returns the stamped `last_seen`.
+    pub async fn touch(&self, id: &str) -> Result<i64> {
+        let now = now_unix();
+        let mut conn = self.redis.clone();
+        let () = redis::pipe()
+            .expire(session_key(id), idle_ttl())
+            .set_ex(seen_key(id), now, IDLE_TTL.as_secs())
+            .query_async(&mut conn)
             .await
             .map_err(|e| Error::internal("touching session", e))?;
-        Ok(Some(record))
+        Ok(now)
     }
 
     /// Read without touching: no TTL refresh, no `last_seen` update (session
     /// listings must not keep idle sessions alive). Sessions past the
     /// absolute cap read as gone, same as [`Self::get_and_touch`].
     pub async fn peek(&self, id: &str) -> Result<Option<SessionRecord>> {
+        Ok(self
+            .load(id)
+            .await?
+            .filter(|record| !past_absolute_cap(record)))
+    }
+
+    /// Record + its `last_seen` stamp (the record's own field is the creation
+    /// time; the stamp lives in `session_seen:{id}`).
+    async fn load(&self, id: &str) -> Result<Option<SessionRecord>> {
         let mut conn = self.redis.clone();
-        let raw: Option<String> = conn
-            .get(session_key(id))
+        let (raw, seen): (Option<String>, Option<i64>) = conn
+            .mget((session_key(id), seen_key(id)))
             .await
             .map_err(|e| Error::internal("loading session", e))?;
         let Some(raw) = raw else { return Ok(None) };
-        let record: SessionRecord =
+        let mut record: SessionRecord =
             serde_json::from_str(&raw).map_err(|e| Error::internal("corrupt session record", e))?;
-        let age = now_unix().saturating_sub(record.created_at_unix);
-        if age >= i64::try_from(ABSOLUTE_CAP.as_secs()).unwrap_or(i64::MAX) {
-            return Ok(None);
+        if let Some(seen) = seen {
+            record.last_seen_unix = seen;
         }
         Ok(Some(record))
     }
 
+    /// Record, `last_seen` stamp and registry entry go in one atomic step.
     pub async fn revoke(&self, user_id: UserId, id: &str) -> Result<()> {
         let mut conn = self.redis.clone();
-        let () = conn
+        let () = redis::pipe()
+            .atomic()
             .del(session_key(id))
+            .del(seen_key(id))
+            .zrem(user_key(user_id), id)
+            .query_async(&mut conn)
             .await
             .map_err(|e| Error::internal("deleting session", e))?;
-        let () = conn
-            .zrem(user_key(user_id), id)
-            .await
-            .map_err(|e| Error::internal("deregistering session", e))?;
         Ok(())
     }
 
@@ -282,33 +326,41 @@ impl SessionStore {
     }
 
     /// Apply `edit` to every live session of the user, keeping each idle TTL.
+    /// Compare-and-set per session: a concurrent rewrite is retried on top of
+    /// its result, a concurrent revoke wins (`XX`).
     async fn update_user_sessions(
         &self,
         user_id: UserId,
         mut edit: impl FnMut(&mut SessionRecord),
     ) -> Result<u32> {
         let mut conn = self.redis.clone();
+        let script = redis::Script::new(REWRITE_IF_UNCHANGED);
         let mut updated = 0;
         for id in self.list(user_id).await? {
-            let raw: Option<String> = conn
-                .get(session_key(&id))
-                .await
-                .map_err(|e| Error::internal("loading session", e))?;
-            let Some(raw) = raw else { continue };
-            let mut record: SessionRecord = serde_json::from_str(&raw)
-                .map_err(|e| Error::internal("corrupt session record", e))?;
-            edit(&mut record);
-            let payload = serde_json::to_string(&record)
-                .map_err(|e| Error::internal("serializing session", e))?;
-            // KEEPTTL: don't extend idle expiry just because roles changed.
-            let () = redis::cmd("SET")
-                .arg(session_key(&id))
-                .arg(payload)
-                .arg("KEEPTTL")
-                .query_async(&mut conn)
-                .await
-                .map_err(|e| Error::internal("rewriting session", e))?;
-            updated += 1;
+            // ponytail: 3 CAS rounds; two rewriters of one user racing thrice is not a real workload.
+            for _ in 0..3 {
+                let raw: Option<String> = conn
+                    .get(session_key(&id))
+                    .await
+                    .map_err(|e| Error::internal("loading session", e))?;
+                let Some(raw) = raw else { break };
+                let mut record: SessionRecord = serde_json::from_str(&raw)
+                    .map_err(|e| Error::internal("corrupt session record", e))?;
+                edit(&mut record);
+                let payload = serde_json::to_string(&record)
+                    .map_err(|e| Error::internal("serializing session", e))?;
+                let written: i32 = script
+                    .key(session_key(&id))
+                    .arg(&raw)
+                    .arg(payload)
+                    .invoke_async(&mut conn)
+                    .await
+                    .map_err(|e| Error::internal("rewriting session", e))?;
+                if written == 1 {
+                    updated += 1;
+                    break;
+                }
+            }
         }
         Ok(updated)
     }

@@ -312,6 +312,100 @@ async fn session_management_lists_and_revokes_by_handle(pool: PgPool) {
     assert_eq!(missing.status, StatusCode::NOT_FOUND);
 }
 
+/// BUG-191: a session touch in flight (read half done, write half pending)
+/// must never resurrect a revoked session, keep a disabled account's session
+/// alive, or undo a grant rewrite. The interleaving is driven explicitly:
+/// `peek` is the touch's read, `touch` its write. A session whose id left
+/// `user_sessions:{uid}` is dead even while its record key exists.
+#[sqlx::test(migrations = "../../migrations")]
+async fn touch_in_flight_never_outlives_a_revoke_or_a_grant_rewrite(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+    let user = app
+        .create_user("racer", "racer@example.com", &["user"])
+        .await;
+    let id_of = |s: &ab_testkit::MintedSession| s.cookie.split_once('=').unwrap().1.to_owned();
+
+    // 1. revoke mid-touch: still 401 afterwards, not listed, key gone.
+    let victim = app.mint_session_for(user, &[]).await;
+    let other = app.mint_session_for(user, &[]).await;
+    let list = app.get_as(&other, "/api/v2/auth/sessions").await;
+    let handle = list.json().as_array().unwrap()[0]["handle"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(app.sessions.peek(&id_of(&victim)).await.unwrap().is_some());
+    let revoke = app
+        .delete_as(&other, &format!("/api/v2/auth/sessions/{handle}"))
+        .await;
+    assert_eq!(revoke.status, StatusCode::NO_CONTENT);
+    app.sessions.touch(&id_of(&victim)).await.unwrap();
+    assert_eq!(
+        app.get_as(&victim, "/api/v2/auth/session").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+    let list = app.get_as(&other, "/api/v2/auth/sessions").await;
+    assert_eq!(list.json().as_array().unwrap().len(), 1, "{}", list.text());
+    let mut redis = app.sessions.redis();
+    let exists: bool =
+        redis::AsyncCommands::exists(&mut redis, format!("session:{}", id_of(&victim)))
+            .await
+            .unwrap();
+    assert!(!exists, "late touch re-created the revoked record");
+
+    // 2. disable mid-touch: the disabled account's session is 401.
+    let disabled = app.create_user("gone", "gone@example.com", &["user"]).await;
+    let ghost = app.mint_session_for(disabled, &[]).await;
+    assert!(app.sessions.peek(&id_of(&ghost)).await.unwrap().is_some());
+    let status = app
+        .patch_as(
+            &admin,
+            &format!("/api/v2/users/{disabled}/status"),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    assert_eq!(status.status, StatusCode::NO_CONTENT, "{}", status.text());
+    app.sessions.touch(&id_of(&ghost)).await.unwrap();
+    assert_eq!(
+        app.get_as(&ghost, "/api/v2/auth/session").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+
+    // 3. role change mid-touch: the new grants win.
+    assert!(app.sessions.peek(&id_of(&other)).await.unwrap().is_some());
+    let granted = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/users/{user}/roles"),
+            &serde_json::json!({ "role": "instructor" }),
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::NO_CONTENT, "{}", granted.text());
+    app.sessions.touch(&id_of(&other)).await.unwrap();
+    let session = app.get_as(&other, "/api/v2/auth/session").await;
+    assert_eq!(session.status, StatusCode::OK);
+    assert!(
+        session.json()["roles"]
+            .as_array()
+            .unwrap()
+            .contains(&serde_json::json!("instructor")),
+        "{}",
+        session.text()
+    );
+
+    // 4. a record whose id is not in the user's registry is not a session.
+    let () = redis::AsyncCommands::zrem(&mut redis, format!("user_sessions:{user}"), id_of(&other))
+        .await
+        .unwrap();
+    assert_eq!(
+        app.get_as(&other, "/api/v2/auth/session").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+}
+
 // ── Self-registration, email verification, password change ─────────────────
 // Zitadel shapes captured live 2026-09-12: create with `returnCode` answers
 // `{userId, details, emailCode}`; a wrong verification code is code 3

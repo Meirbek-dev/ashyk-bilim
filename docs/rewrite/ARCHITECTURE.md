@@ -439,7 +439,7 @@ CREATE TABLE jobs (
 
 | Use | Structure | Notes |
 |---|---|---|
-| Sessions | `session:{id}` JSON + `user_sessions:{uid}` zset | as legacy, simplified record |
+| Sessions | `session:{id}` JSON + `session_seen:{id}` last-seen stamp + `user_sessions:{uid}` zset | as legacy, simplified record; the touch only `EXPIRE`s the record and writes the stamp (BUG-191) |
 | SSE event logs | Redis Streams `sse:grading:{submission}` / `sse:ai:{run}` | `MAXLEN ~1024`, replay via `XRANGE` |
 | SSE connection caps | `INCR`/`DECR` counters with TTL | limit 5/user |
 | Rate limits | sliding-window counters | tower_governor covers IP; Redis covers per-user/per-feature (AI hourly caps) |
