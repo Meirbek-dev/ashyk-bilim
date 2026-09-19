@@ -93,8 +93,8 @@ export class CurriculumEditorPage {
       await this.page.keyboard.type('Upload your project as a PDF.')
       await dialog.getByRole('button', { name: /create activity/i }).click()
     } else if (activityType === 'Exam') {
+      // UX-112: one name — the activity name is the assessment title.
       await dialog.getByRole('textbox', { name: /activity name/i }).fill(name ?? 'Exam')
-      await dialog.getByRole('textbox', { name: /exam title/i }).fill(name ?? 'Exam')
       await dialog.getByRole('textbox', { name: /exam description/i }).fill('Covers the whole course.')
       await dialog.getByRole('button', { name: /create exam/i }).click()
       // The exam modal navigates to the new assessment's studio.
