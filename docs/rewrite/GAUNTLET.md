@@ -247,11 +247,11 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 16 (reverify-A) |
 | F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | fail | pass 17 fail: UX-128; pass 16 (reverify-A): blank title 422 + inline; scheduled rename 409; archive confirm carried as UX-124 |
 | F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 16 (reverify-A) |
-| F25 | submission grading + item feedback | `/ru/dash/courses/[id]/activity/[id]/review` | teacher | pass | pass 16 (reverify-B) |
-| F26 | gradebook + bulk actions | `/ru/dash/courses/[id]/gradebook` | teacher | fail | pass 17 fail: BUG-187; pass 16 (reverify-C): «На проверке» deep link opens the pending attempt (UX-123); learner card keeps the released grade during a retake |
-| F27 | grading SSE live updates | gradebook / review | teacher | fail | pass 17 fail: BUG-188; pass 16 (reverify-B) |
-| F28 | work queue | `/dash/courses/[uuid]/review` | teacher | pass | pass 16 (reverify-B) |
-| F29 | course collaboration/access | `/dash/courses/[uuid]/collaboration` | teacher | pass | pass 16 (reverify-B) |
+| F25 | submission grading + item feedback | `/ru/dash/courses/[id]/activity/[id]/review` | teacher | pass | pass 17 (reverify-C); pass 16 (reverify-B) |
+| F26 | gradebook + bulk actions | `/ru/dash/courses/[id]/gradebook` | teacher | pass | pass 17 (reverify-C): cell/CSV/UI follow the grade of record (BUG-187); pass 16 (reverify-C): «На проверке» deep link opens the pending attempt (UX-123); learner card keeps the released grade during a retake |
+| F27 | grading SSE live updates | gradebook / review | teacher | pass | pass 17 (reverify-C): demoted maintainer stream closes (BUG-188); second-tab gradebook live; pass 16 (reverify-B) |
+| F28 | work queue | `/dash/courses/[uuid]/review` | teacher | pass | pass 17 (reverify-C); pass 16 (reverify-B) |
+| F29 | course collaboration/access | `/dash/courses/[uuid]/collaboration` | teacher | pass | pass 17 (reverify-C); pass 16 (reverify-B) |
 | F30 | search | `/ru/search?q=` | any | fail | pass 17 fail: BUG-190 (fixed 8fee31e); pass 16 (analytics-admin clean); pass 15 (reverify-C) |
 | F31 | analytics: overview/performance/operations | `/ru/dash/analytics/*` | teacher+admin | pass | pass 16 (reverify-C); pass 15 (reverify-C) |
 | F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 16 (analytics-admin clean); pass 15 (reverify-C) |
@@ -269,13 +269,13 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 16 (analytics-admin clean); pass 15 (reverify-C) |
 | F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 16 (identity clean); pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
 | F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 16 (reverify-A) |
-| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 16 (reverify-A) |
+| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 17 (reverify-C); pass 16 (reverify-A) |
 | F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 16 (reverify-A) |
-| F49 | gradebook: file cells, CSV export, live stream | `/dash/courses/[id]/gradebook` | teacher | pass | pass 16 (reverify-B): released grade outranks a pending retake (BUG-180) |
+| F49 | gradebook: file cells, CSV export, live stream | `/dash/courses/[id]/gradebook` | teacher | pass | pass 17 (reverify-C); pass 16 (reverify-B): released grade outranks a pending retake (BUG-180) |
 | F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 16 (reverify-B): headline follows a re-grade |
 | F51 | matching items (learner body) | quiz attempt + review | learner+teacher | pass | pass 16 (reverify-B) |
 | F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 16 (reverify-B) |
-| F53 | AI on file-submission attempts | file review page | teacher | fail | pass 17 fail: UX-129; pass 16 (reverify-B) |
+| F53 | AI on file-submission attempts | file review page | teacher | pass | pass 17 (reverify-C): history row opens the released feedback beside an open draft (UX-129); pass 16 (reverify-B) |
 | F54 | link preview block | lecture editor | teacher | pass | pass 16 (reverify-A) |
 | F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 16 (analytics-admin clean); pass 15 (reverify-C) |
 | F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 16 (analytics-admin clean); pass 15 (reverify-C) |
