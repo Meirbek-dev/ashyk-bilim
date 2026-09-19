@@ -15,7 +15,7 @@ export const SaveGradeBody = zod.object({
     .number()
     .nullish()
     .describe(
-      'Raw 0..100 before the late penalty; omitted = computed from item\nscores (earned / possible × 100).\nOmitted together with `item_grades` (a publish-only save), the raw\nscore of the latest grading entry is kept.',
+      'Raw 0..100 before the late penalty (a manual override). Omitted: the\nstored override (or the 0 of an integrity-annulled attempt) is kept,\notherwise the raw is computed from the item scores (earned / possible\n× 100). An explicit `null` drops the override and recomputes (BUG-174).',
     ),
   item_grades: zod
     .array(

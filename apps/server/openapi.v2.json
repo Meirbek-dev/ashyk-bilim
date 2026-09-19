@@ -18046,7 +18046,7 @@
               "null"
             ],
             "format": "double",
-            "description": "Raw 0..100 before the late penalty; omitted = computed from item\nscores (earned / possible × 100).\nOmitted together with `item_grades` (a publish-only save), the raw\nscore of the latest grading entry is kept."
+            "description": "Raw 0..100 before the late penalty (a manual override). Omitted: the\nstored override (or the 0 of an integrity-annulled attempt) is kept,\notherwise the raw is computed from the item scores (earned / possible\n× 100). An explicit `null` drops the override and recomputes (BUG-174)."
           },
           "item_grades": {
             "type": "array",
@@ -18169,6 +18169,14 @@
           },
           "is_late": {
             "type": "boolean"
+          },
+          "pending_attempt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The newest attempt still awaiting grading (`pending`), if any — set\neven when the grade of record is an older published attempt (BUG-175)."
           },
           "status": {
             "$ref": "#/components/schemas/SubmissionStatus"
@@ -23181,6 +23189,14 @@
           },
           "release_state": {
             "$ref": "#/components/schemas/ReleaseState"
+          },
+          "score_override": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "The raw score of the latest grading entry when it is a manual\noverride (differs from the item-derived one); `null` otherwise."
           },
           "started_at_unix": {
             "type": [
