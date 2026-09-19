@@ -116,6 +116,9 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 - **First e2e run after a cold `next dev` start can time out on the studio autosave** (the
   first studio compile eats the 15 s «Activity saved» wait) and the chained specs 04–07
   then cascade; rerun the suite before calling it red.
+- **`ashyq serve` does not run migrations** (`MIGRATOR.iter().len()` is only logged); after a builder adds
+  a migration run `ashyq.exe migrate` (or `just migrate`) before restarting, else the new code hits a
+  missing index/function. A running `ashyq.exe` can be renamed aside so `cargo build` needs no downtime.
 - **e2e signup users accumulate** (`e2e-signup-<ts>@test.local` per run); the admin users
   table is newest-first, paged by 50, so fixed accounts fall off page 1 — specs filter by
   email (15cfee6). `bun run lint` (`--fix-dangerously`) with `next dev` up OOMs mid-run and
