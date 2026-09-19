@@ -15,8 +15,22 @@ import ruMessages from '@/messages/ru-RU.json'
 const draft = { submission_uuid: 's3', id: 's3', attempt_number: 3, status: 'DRAFT', answered_count: 0 }
 const submissions = [
   draft,
-  { submission_uuid: 's2', id: 's2', attempt_number: 2, status: 'PUBLISHED', final_score: 0, submitted_at: '2026-09-12T10:00:00Z' },
-  { submission_uuid: 's1', id: 's1', attempt_number: 1, status: 'PUBLISHED', final_score: 100, submitted_at: '2026-09-12T09:00:00Z' },
+  {
+    submission_uuid: 's2',
+    id: 's2',
+    attempt_number: 2,
+    status: 'PUBLISHED',
+    final_score: 0,
+    submitted_at: '2026-09-12T10:00:00Z',
+  },
+  {
+    submission_uuid: 's1',
+    id: 's1',
+    attempt_number: 1,
+    status: 'PUBLISHED',
+    final_score: 100,
+    submitted_at: '2026-09-12T09:00:00Z',
+  },
 ]
 
 vi.mock('@/hooks/useContributorStatus', () => ({ useContributorStatus: () => ({ contributorStatus: null }) }))

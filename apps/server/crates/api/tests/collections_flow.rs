@@ -220,8 +220,8 @@ async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
 }
 
 /// UX-119: a public collection whose attached courses are all invisible to
-/// the viewer is left out of the list (it would render as «0 courses»);
-/// the creator still sees it, and an empty collection still lists.
+/// the viewer is left out of the list (it would render as «0 courses»),
+/// and so is an empty one (UX-127); the creator still sees both.
 #[sqlx::test(migrations = "../../migrations")]
 async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -252,7 +252,7 @@ async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPo
         .iter()
         .map(|c| c["name"].as_str().unwrap().to_owned())
         .collect();
-    assert_eq!(names, ["Empty"], "{}", listed.text());
+    assert!(names.is_empty(), "{}", listed.text());
 
     let mine = app.get_as(&owner, "/api/v2/collections").await;
     assert_eq!(mine.json()["items"].as_array().unwrap().len(), 2);

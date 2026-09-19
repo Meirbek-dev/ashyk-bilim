@@ -1063,6 +1063,9 @@
       "downloadCertificate": "Download Certificate",
       "earnedCertificate": "Your Certificate",
       "encouragementMessage": "You're doing great! Complete the remaining activities to unlock your course completion certificate.",
+      "encouragementMessageNoCertificate": "You're doing great! Complete the remaining activities.",
+      "notEnrolledMessageNoCertificate": "Start the course to track your progress:",
+      "noPublishedActivities": "This course has no published lessons yet",
       "errorGeneratingPDF": "Failed to generate PDF. Please try again.",
       "exploreCourses": "Explore More Courses",
       "instructor": "Instructor",
@@ -1552,6 +1555,8 @@
       "purchaseToAccess": "This content requires a course purchase to access."
     },
     "CourseThumbnail": {
+      "viewCertificate": "View certificate",
+      "reviewCompletion": "Review course summary",
       "authorLabel": "{count, plural, one {Author} other {Authors}}",
       "authors": "Authors",
       "courseAuthorsAria": "Course authors",

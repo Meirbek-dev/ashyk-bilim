@@ -47,11 +47,14 @@ pub async fn search_courses(
     Ok(rows)
 }
 
+/// Same listing rule as [`crate::collections::list_collections`]
+/// (`collection_listable`): no «0 courses» hits (UX-127).
 pub async fn search_collections(
     pool: &PgPool,
     query: &str,
     viewer: Option<UserId>,
     see_all: bool,
+    see_all_courses: bool,
     limit: i64,
 ) -> Result<Vec<CollectionRow>> {
     let rows = sqlx::query_as!(
@@ -63,12 +66,14 @@ pub async fn search_collections(
            FROM collections
            WHERE search @@ websearch_to_tsquery('simple', $1)
              AND (public OR $2 OR creator_id = $3)
+             AND collection_listable(id, $3, $5)
            ORDER BY ts_rank_cd(search, websearch_to_tsquery('simple', $1)) DESC, id DESC
            LIMIT $4"#,
         query,
         see_all,
         viewer.map(|v| v.0),
-        limit
+        limit,
+        see_all_courses
     )
     .fetch_all(pool)
     .await?;

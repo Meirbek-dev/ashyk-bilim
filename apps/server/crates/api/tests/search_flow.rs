@@ -41,20 +41,25 @@ async fn course(app: &TestApp, session: &MintedSession, name: &str, publish: boo
 async fn search_respects_visibility_and_gates_people(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "rustacean").await;
-    course(&app, &teacher, "Rust Programming", true).await;
-    course(&app, &teacher, "Rust Secrets", false).await;
-    app.post_as(
-        &teacher,
-        "/api/v2/collections",
-        &serde_json::json!({ "name": "Rust Path", "public": true }),
-    )
-    .await;
-    app.post_as(
-        &teacher,
-        "/api/v2/collections",
-        &serde_json::json!({ "name": "Rust Private Path", "public": false }),
-    )
-    .await;
+    let public_course = course(&app, &teacher, "Rust Programming", true).await;
+    let secret_course = course(&app, &teacher, "Rust Secrets", false).await;
+    // Listed for everyone; private; public but nothing visible in it (UX-119
+    // rule shared with the collections list, UX-127); public and empty.
+    for (name, public, courses) in [
+        ("Rust Path", true, vec![public_course.as_str()]),
+        ("Rust Private Path", false, vec![]),
+        ("Rust Secret Path", true, vec![secret_course.as_str()]),
+        ("Rust Empty Path", true, vec![]),
+    ] {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/collections",
+                &serde_json::json!({ "name": name, "public": public, "courses": courses }),
+            )
+            .await;
+        assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    }
 
     // Anonymous: public hits only, and never a people section.
     let anon = app.get("/api/v2/search?q=rust").await;
@@ -67,6 +72,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
         .map(|c| c["name"].as_str().unwrap().to_owned())
         .collect();
     assert_eq!(course_names, ["Rust Programming"]);
+    assert_eq!(body["collections"][0]["name"], "Rust Path");
     assert_eq!(body["collections"].as_array().unwrap().len(), 1);
     assert!(body["users"].as_array().unwrap().is_empty());
 
@@ -75,7 +81,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
     let mine = app.get_as(&teacher, "/api/v2/search?q=rust").await;
     let body = mine.json();
     assert_eq!(body["courses"].as_array().unwrap().len(), 2);
-    assert_eq!(body["collections"].as_array().unwrap().len(), 2);
+    assert_eq!(body["collections"].as_array().unwrap().len(), 4);
     let people: Vec<_> = body["users"]
         .as_array()
         .unwrap()

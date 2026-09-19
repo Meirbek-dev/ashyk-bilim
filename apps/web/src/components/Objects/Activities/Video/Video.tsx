@@ -3,7 +3,9 @@ import { getActivityMediaDirectory } from '@services/media/media'
 import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
 import { getYouTubeVideoId } from '@/lib/utils'
 import type ArtplayerType from 'artplayer'
-import { useLocale } from 'next-intl'
+import { FileText } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 
 interface VideoDetails {
   startTime?: number
@@ -41,6 +43,7 @@ interface VideoActivityProps {
 function VideoActivity({ activity, course }: VideoActivityProps) {
   const fullLocale = useLocale()
   const locale = fullLocale.split('-')[0]
+  const t = useTranslations('ActivityPage')
 
   // Extract YouTube ID from activity content
   const videoId = activity?.content?.uri ? getYouTubeVideoId(activity.content.uri) || '' : ''
@@ -84,6 +87,26 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
         fileId: activity.content.filename,
         activityType: 'video',
       }) ?? ''
+    )
+  }
+
+  // UX-127: a published video without a playable source shows the same
+  // empty state as a blank dynamic page instead of a blank viewer.
+  const hasSource =
+    activity.activity_sub_type === 'SUBTYPE_VIDEO_YOUTUBE' ? Boolean(videoId) : Boolean(activity.content?.filename)
+  if (!hasSource) {
+    return (
+      <div className="w-full max-w-full px-2 sm:px-4">
+        <Empty className="bg-muted/40 my-4 border border-dashed py-12">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <FileText className="size-4" />
+            </EmptyMedia>
+            <EmptyTitle>{t('noContent')}</EmptyTitle>
+            <EmptyDescription>{t('emptyContentDescription')}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
     )
   }
 

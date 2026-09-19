@@ -1063,6 +1063,9 @@
       "downloadCertificate": "Скачать сертификат",
       "earnedCertificate": "Ваш сертификат",
       "encouragementMessage": "Вы отлично справляетесь! Завершите оставшиеся учебные задачи, чтобы получить сертификат о прохождении курса.",
+      "encouragementMessageNoCertificate": "Вы отлично справляетесь! Завершите оставшиеся учебные задачи.",
+      "notEnrolledMessageNoCertificate": "Начните курс, чтобы отслеживать прогресс:",
+      "noPublishedActivities": "В этом курсе пока нет опубликованных уроков",
       "errorGeneratingPDF": "Не удалось сгенерировать PDF. Повторите попытку.",
       "exploreCourses": "Изучить другие курсы",
       "instructor": "Преподаватель",
@@ -1536,6 +1539,8 @@
       "purchaseToAccess": "Для доступа к этому контенту требуется покупка курса."
     },
     "CourseThumbnail": {
+      "viewCertificate": "Просмотреть сертификат",
+      "reviewCompletion": "Посмотреть итоги курса",
       "authorLabel": "{count, plural, one {Автор} other {Авторы}}",
       "authors": "Авторы",
       "courseAuthorsAria": "Авторы курса",

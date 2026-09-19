@@ -1062,6 +1062,9 @@
       "downloadCertificate": "Сертификатты жүктеу",
       "earnedCertificate": "Сіздің сертификатыңыз",
       "encouragementMessage": "Сіз керемет жұмыс істеп жатырсыз! Курсты аяқтау сертификатын алу үшін қалған оқу әрекеттерін орындаңыз.",
+      "encouragementMessageNoCertificate": "Сіз керемет жұмыс істеп жатырсыз! Қалған оқу тапсырмаларын орындаңыз.",
+      "notEnrolledMessageNoCertificate": "Прогресті бақылау үшін курсты бастаңыз:",
+      "noPublishedActivities": "Бұл курста әзірге жарияланған сабақтар жоқ",
       "errorGeneratingPDF": "PDF жасау сәтсіз аяқталды. Қайталап көріңіз.",
       "exploreCourses": "Басқа курстарды қарау",
       "instructor": "Мұғалім",
@@ -1535,6 +1538,8 @@
       "purchaseToAccess": "Бұл мазмұнға қол жеткізу үшін курсты сатып алу қажет."
     },
     "CourseThumbnail": {
+      "viewCertificate": "Сертификатты қарау",
+      "reviewCompletion": "Курс қорытындысын қарау",
       "authorLabel": "{count, plural, one {Автор} other {Авторлар}}",
       "authors": "Авторлар",
       "courseAuthorsAria": "Курстың авторлары",

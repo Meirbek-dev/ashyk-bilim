@@ -47,9 +47,15 @@ impl SearchService {
         let collections_all = sees_private(actor, ResourceType::Collection);
         let courses =
             ab_db::search::search_courses(&self.pool, query, viewer, courses_all, limit).await?;
-        let collections =
-            ab_db::search::search_collections(&self.pool, query, viewer, collections_all, limit)
-                .await?;
+        let collections = ab_db::search::search_collections(
+            &self.pool,
+            query,
+            viewer,
+            collections_all,
+            courses_all,
+            limit,
+        )
+        .await?;
         let users = if actor.is_anonymous() {
             Vec::new()
         } else {

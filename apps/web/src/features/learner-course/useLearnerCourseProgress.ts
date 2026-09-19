@@ -10,5 +10,10 @@ import { learnerCourseProgress, learnerCourseStateQueryOptions } from './api'
  */
 export function useLearnerCourseProgress(courseUuid: string, enabled = true) {
   const query = useQuery(learnerCourseStateQueryOptions(courseUuid, enabled))
-  return { ...learnerCourseProgress(query.data), isLoaded: query.data !== undefined }
+  return {
+    ...learnerCourseProgress(query.data),
+    isLoaded: query.data !== undefined,
+    nextAction: query.data?.next_action?.id ?? null,
+    certificateHref: query.data?.certificate?.issued ? (query.data.certificate.href ?? null) : null,
+  }
 }

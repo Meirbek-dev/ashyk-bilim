@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  Award,
   BookMinus,
   Calendar,
   Crown,
@@ -296,6 +297,9 @@ interface CourseActionsProps {
   courseName: string
   /** Management cards link to the learner preview, not to "start learning". */
   actionLabel?: string | undefined
+  /** The server's `next_action.id` for an enrolled course (UX-127). */
+  nextAction?: string | null
+  certificateHref?: string | null
   t: AppTranslator
 }
 
@@ -306,6 +310,8 @@ const CourseActions: FC<CourseActionsProps> = ({
   courseUrl,
   courseName,
   actionLabel,
+  nextAction,
+  certificateHref,
   t,
 }) => {
   if (isLoading) {
@@ -326,20 +332,21 @@ const CourseActions: FC<CourseActionsProps> = ({
   }
 
   if (isEnrolled) {
+    // A completed course follows the server's next action (UX-127): the
+    // certificate when there is one, the course summary otherwise.
+    const isCertificate = nextAction === 'view_certificate'
+    const label = isCertificate
+      ? t('viewCertificate')
+      : nextAction === 'review_completion'
+        ? t('reviewCompletion')
+        : t('continueLearning')
+    const href = isCertificate && certificateHref ? getAbsoluteUrl(certificateHref) : courseUrl
     return (
       <div className="w-full space-y-2">
         <ProgressBar percentage={progressPercentage} courseName={courseName} t={t} />
-        <Button
-          nativeButton={false}
-          render={<Link href={courseUrl} />}
-          aria-label={t('continueLearning', {
-            defaultValue: 'Continue Learning',
-          })}
-          size="sm"
-          className="w-full"
-        >
-          <Play className="mr-2 h-3.5 w-3.5" />
-          {t('continueLearning', { defaultValue: 'Continue Learning' })}
+        <Button nativeButton={false} render={<Link href={href} />} aria-label={label} size="sm" className="w-full">
+          {isCertificate ? <Award className="mr-2 h-3.5 w-3.5" /> : <Play className="mr-2 h-3.5 w-3.5" />}
+          {label}
         </Button>
       </div>
     )
@@ -602,6 +609,8 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
           courseUrl={actionUrl}
           courseName={course.name || ''}
           actionLabel={actionLink && !isEnrolled ? actionLabel : undefined}
+          nextAction={learnerProgress.nextAction}
+          certificateHref={learnerProgress.certificateHref}
           t={t}
         />
       </CardFooter>

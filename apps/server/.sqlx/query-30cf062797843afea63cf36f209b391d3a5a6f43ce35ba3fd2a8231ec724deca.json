@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections\n           WHERE (public OR $1 OR creator_id = $2)\n             AND ($3::uuid IS NULL OR id < $3)\n             AND ($5 OR creator_id = $2\n                  OR NOT EXISTS (SELECT 1 FROM collection_courses cc\n                                 WHERE cc.collection_id = collections.id)\n                  OR EXISTS (SELECT 1 FROM collection_courses cc\n                             JOIN courses c ON c.id = cc.course_id\n                             WHERE cc.collection_id = collections.id\n                               AND (c.public OR c.creator_id = $2\n                                    OR EXISTS (SELECT 1 FROM resource_authors ra\n                                               WHERE ra.course_id = c.id AND ra.user_id = $2\n                                                 AND ra.status = 'active'))))\n           ORDER BY id DESC\n           LIMIT $4",
+  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections\n           WHERE (public OR $1 OR creator_id = $2)\n             AND ($3::uuid IS NULL OR id < $3)\n             AND collection_listable(id, $2, $5)\n           ORDER BY id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -90,5 +90,5 @@
       null
     ]
   },
-  "hash": "26e19c65ce28442f3f18aa4ddc021f514bc745cbc7eeb707ed502286dc5312f5"
+  "hash": "30cf062797843afea63cf36f209b391d3a5a6f43ce35ba3fd2a8231ec724deca"
 }
