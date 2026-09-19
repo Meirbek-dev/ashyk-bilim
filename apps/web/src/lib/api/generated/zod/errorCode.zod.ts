@@ -39,6 +39,7 @@ export const ErrorCode = zod
     'code-runner-degraded',
     'compile-error',
     'language-not-allowed',
+    'grade-not-released',
     'ai-disabled',
     'ai-budget-exhausted',
     'ai-rate-limited',

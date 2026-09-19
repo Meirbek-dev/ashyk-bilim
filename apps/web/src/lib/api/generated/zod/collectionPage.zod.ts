@@ -11,6 +11,9 @@ export const CollectionPage = zod
   .object({
     items: zod.array(
       zod.object({
+        can_delete: zod
+          .boolean()
+          .describe('The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`).'),
         courses: zod
           .array(
             zod.object({

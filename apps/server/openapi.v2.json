@@ -15432,10 +15432,15 @@
           "description",
           "public",
           "courses",
+          "can_delete",
           "created_at_unix",
           "updated_at_unix"
         ],
         "properties": {
+          "can_delete": {
+            "type": "boolean",
+            "description": "The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`)."
+          },
           "courses": {
             "type": "array",
             "items": {
@@ -17245,6 +17250,7 @@
           "code-runner-degraded",
           "compile-error",
           "language-not-allowed",
+          "grade-not-released",
           "ai-disabled",
           "ai-budget-exhausted",
           "ai-rate-limited",
@@ -18185,6 +18191,14 @@
             ],
             "format": "int32",
             "description": "The newest attempt still awaiting grading (`pending`), if any — set\neven when the grade of record is an older published attempt (BUG-175)."
+          },
+          "pending_attempt_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The id of that pending attempt — a submission id or a file attempt\nid, whichever the cell is about — so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123)."
           },
           "status": {
             "$ref": "#/components/schemas/SubmissionStatus"

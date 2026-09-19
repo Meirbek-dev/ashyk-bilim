@@ -3116,6 +3116,10 @@ expression: json
       },
       "Collection": {
         "properties": {
+          "can_delete": {
+            "description": "The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`).",
+            "type": "boolean"
+          },
           "courses": {
             "description": "Member courses visible to the caller, in collection order.",
             "items": {
@@ -3160,6 +3164,7 @@ expression: json
           "description",
           "public",
           "courses",
+          "can_delete",
           "created_at_unix",
           "updated_at_unix"
         ],
@@ -4934,6 +4939,7 @@ expression: json
           "code-runner-degraded",
           "compile-error",
           "language-not-allowed",
+          "grade-not-released",
           "ai-disabled",
           "ai-budget-exhausted",
           "ai-rate-limited",
@@ -5864,6 +5870,14 @@ expression: json
             "format": "int32",
             "type": [
               "integer",
+              "null"
+            ]
+          },
+          "pending_attempt_id": {
+            "description": "The id of that pending attempt — a submission id or a file attempt\nid, whichever the cell is about — so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123).",
+            "format": "uuid",
+            "type": [
+              "string",
               "null"
             ]
           },

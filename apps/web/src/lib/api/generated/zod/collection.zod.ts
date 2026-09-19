@@ -8,6 +8,9 @@
 import * as zod from 'zod'
 
 export const Collection = zod.object({
+  can_delete: zod
+    .boolean()
+    .describe('The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`).'),
   courses: zod
     .array(
       zod.object({
