@@ -813,36 +813,70 @@ function DraftEditor({
 
 // ── SubmissionHistory ──────────────────────────────────────────────────────────
 
+/** A released result (published, or returned with a score / feedback) opens from its history row (UX-129). */
+function hasResult(attempt: FileSubmissionAttempt) {
+  return (
+    attempt.status === 'published' ||
+    (attempt.status === 'returned' && (typeof attempt.final_score === 'number' || Boolean(attempt.feedback)))
+  )
+}
+
 function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) {
   const t = useTranslations('FileSubmission')
   const formatPercent = usePercentFormat()
+  const [openId, setOpenId] = useState<string | null>(null)
   if (attempts.length === 0) return null
   return (
     <section className="space-y-3">
       <h3 className="text-sm font-semibold">{t('submissionHistory')}</h3>
-      <div className="divide-border border-border rounded-md border">
-        {attempts.map(attempt => (
-          <div key={attempt.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
-            <div>
-              <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
-              <p className="text-muted-foreground text-xs">
-                {attempt.submitted_at_unix
-                  ? new Intl.DateTimeFormat(undefined, {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    }).format(fromUnix(attempt.submitted_at_unix))
-                  : t('draft')}{' '}
-                / {t('fileCount', { count: attempt.files.length })}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {attempt.final_score !== null && attempt.final_score !== undefined ? (
-                <Badge variant="outline">{formatPercent(attempt.final_score)}</Badge>
+      <div className="divide-border border-border divide-y rounded-md border">
+        {attempts.map(attempt => {
+          const row = (
+            <>
+              <div>
+                <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
+                <p className="text-muted-foreground text-xs">
+                  {attempt.submitted_at_unix
+                    ? new Intl.DateTimeFormat(undefined, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      }).format(fromUnix(attempt.submitted_at_unix))
+                    : t('draft')}{' '}
+                  / {t('fileCount', { count: attempt.files.length })}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {attempt.final_score !== null && attempt.final_score !== undefined ? (
+                  <Badge variant="outline">{formatPercent(attempt.final_score)}</Badge>
+                ) : null}
+                <StatusBadge status={attempt.status} />
+              </div>
+            </>
+          )
+          const rowClass = 'flex flex-wrap items-center justify-between gap-3 p-3 text-sm'
+          if (!hasResult(attempt)) {
+            return (
+              <div key={attempt.id} className={rowClass}>
+                {row}
+              </div>
+            )
+          }
+          const open = openId === attempt.id
+          return (
+            <details
+              key={attempt.id}
+              open={open}
+              onToggle={event => setOpenId(event.currentTarget.open ? attempt.id : open ? null : openId)}
+            >
+              <summary className={cn(rowClass, 'hover:bg-muted/40 cursor-pointer list-none')}>{row}</summary>
+              {open ? (
+                <div className="p-3 pt-0">
+                  <FileSubmissionResult attempt={attempt} />
+                </div>
               ) : null}
-              <StatusBadge status={attempt.status} />
-            </div>
-          </div>
-        ))}
+            </details>
+          )
+        })}
       </div>
     </section>
   )
