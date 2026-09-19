@@ -257,10 +257,13 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 
 /// `Idempotency-Key` replay around a create.
 ///
-/// The reply stored for `{scope}:{key}` is returned again for the same body,
-/// the same key with a different body is 422 `reused`, and a first call runs
-/// `fresh` and stores its reply (24h) for the retry. Without the header
-/// `fresh` simply runs.
+/// The key `{scope}:{key}` is reserved **before** `fresh` runs (BUG-195):
+/// the first caller owns it and stores its reply (24h) for the retry, a
+/// concurrent duplicate waits for that reply and gets the same one (409
+/// `idempotency-in-progress` if it takes longer than [`IN_PROGRESS_WAIT`]),
+/// the same key with a different body is 422 `reused`, and a failed action
+/// releases the key so the retry runs again. Without the header `fresh`
+/// simply runs.
 pub async fn idempotent<T, Fut>(
     pool: &sqlx::PgPool,
     user_id: UserId,
@@ -280,8 +283,12 @@ where
 }
 
 /// [`idempotent`] for an anonymous create that produces its own owner
-/// (registration): the key is looked up alone and the reply is stored
-/// under the user `owner_of` names on the fresh reply.
+/// (registration).
+///
+/// The key is looked up alone and the reply is stored under the user
+/// `owner_of` names on the fresh reply. No owner is known before the
+/// action, so the key is not reserved up front — concurrent duplicates
+/// race to the unique email/username instead.
 pub async fn idempotent_anonymous<T, Fut>(
     pool: &sqlx::PgPool,
     scope: &str,
@@ -295,6 +302,59 @@ where
     Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
 {
     idempotent_for(pool, None, scope, headers, body, fresh, owner_of).await
+}
+
+/// How long a concurrent duplicate waits for the owner's reply.
+// ponytail: 50 ms polling of the key row; LISTEN/NOTIFY if the wait shows up in latency.
+const IN_PROGRESS_WAIT: std::time::Duration = std::time::Duration::from_secs(5);
+const IN_PROGRESS_POLL: std::time::Duration = std::time::Duration::from_millis(50);
+
+fn replay(
+    stored: ab_db::submissions::IdempotentResponse,
+    request_hash: &str,
+) -> Result<Response, ApiError> {
+    if stored.request_hash != request_hash {
+        return Err(ApiError(Error::validation(vec![FieldError {
+            field: "Idempotency-Key".into(),
+            code: "reused".into(),
+            message: "Idempotency-Key was already used with a different request body".into(),
+        }])));
+    }
+    let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
+        .unwrap_or(StatusCode::OK);
+    Ok((status, Json(stored.response)).into_response())
+}
+
+/// Reserve the key or replay the owner's reply; `Ok(None)` means this
+/// caller owns the key and must run the action.
+async fn reserve_or_replay(
+    pool: &sqlx::PgPool,
+    user_id: UserId,
+    key: &str,
+    request_hash: &str,
+) -> Result<Option<Response>, ApiError> {
+    let deadline = tokio::time::Instant::now() + IN_PROGRESS_WAIT;
+    loop {
+        if ab_db::submissions::reserve_idempotent(pool, user_id, key, request_hash).await? {
+            return Ok(None);
+        }
+        // Released between the failed insert and this read: race again.
+        let Some(stored) = ab_db::submissions::get_idempotent(pool, user_id, key).await? else {
+            continue;
+        };
+        if stored.status_code != ab_db::submissions::IDEMPOTENT_IN_PROGRESS
+            || stored.request_hash != request_hash
+        {
+            return replay(stored, request_hash).map(Some);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(ApiError(Error::app(
+                ab_core::ErrorCode::IdempotencyInProgress,
+                "the same request is still being processed",
+            )));
+        }
+        tokio::time::sleep(IN_PROGRESS_POLL).await;
+    }
 }
 
 async fn idempotent_for<T, Fut>(
@@ -312,38 +372,57 @@ where
 {
     let key = idempotency_key(headers)?.map(|k| format!("{scope}:{k}"));
     let request_hash = sha256_hex(body);
+    let mut reserved = None;
     if let Some(key) = &key {
-        let stored = match user_id {
-            Some(user_id) => ab_db::submissions::get_idempotent(pool, user_id, key).await?,
-            None => ab_db::submissions::get_idempotent_by_key(pool, key).await?,
-        };
-        if let Some(stored) = stored {
-            if stored.request_hash != request_hash {
-                return Err(ApiError(Error::validation(vec![FieldError {
-                    field: "Idempotency-Key".into(),
-                    code: "reused".into(),
-                    message: "Idempotency-Key was already used with a different request body"
-                        .into(),
-                }])));
+        match user_id {
+            Some(user_id) => {
+                if let Some(response) = reserve_or_replay(pool, user_id, key, &request_hash).await?
+                {
+                    return Ok(response);
+                }
+                reserved = Some(user_id);
             }
-            let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
-                .unwrap_or(StatusCode::OK);
-            return Ok((status, Json(stored.response)).into_response());
+            None => {
+                if let Some(stored) = ab_db::submissions::get_idempotent_by_key(pool, key).await? {
+                    return replay(stored, &request_hash);
+                }
+            }
         }
     }
-    let (status, dto) = fresh().await?;
-    let value = serde_json::to_value(&dto)
-        .map_err(|err| Error::internal("serialize idempotent reply", err))?;
+    let outcome = async {
+        let (status, dto) = fresh().await?;
+        let value = serde_json::to_value(&dto)
+            .map_err(|err| Error::internal("serialize idempotent reply", err))?;
+        Ok::<_, ApiError>((status, dto, value))
+    }
+    .await;
+    let (status, dto, value) = match (outcome, &key, reserved) {
+        (Ok(ok), _, _) => ok,
+        (Err(err), Some(key), Some(user_id)) => {
+            ab_db::submissions::release_idempotent(pool, user_id, key).await?;
+            return Err(err);
+        }
+        (Err(err), _, _) => return Err(err),
+    };
     if let Some(key) = &key {
-        ab_db::submissions::store_idempotent(
-            pool,
-            user_id.unwrap_or_else(|| owner_of(&dto)),
-            key,
-            &request_hash,
-            i32::from(status.as_u16()),
-            &value,
-        )
-        .await?;
+        let status_code = i32::from(status.as_u16());
+        match reserved {
+            Some(user_id) => {
+                ab_db::submissions::complete_idempotent(pool, user_id, key, status_code, &value)
+                    .await?;
+            }
+            None => {
+                ab_db::submissions::store_idempotent(
+                    pool,
+                    owner_of(&dto),
+                    key,
+                    &request_hash,
+                    status_code,
+                    &value,
+                )
+                .await?;
+            }
+        }
     }
     Ok((status, Json(value)).into_response())
 }

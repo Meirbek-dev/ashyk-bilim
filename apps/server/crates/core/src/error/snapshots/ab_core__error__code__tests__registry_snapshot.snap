@@ -67,6 +67,10 @@ expression: registry
     403,
     "Grade is not released yet"
   ],
+  "idempotency-in-progress": [
+    409,
+    "The same request is still being processed"
+  ],
   "internal": [
     500,
     "Internal server error"

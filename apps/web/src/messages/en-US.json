@@ -6869,6 +6869,7 @@
       "forbidden": "You do not have permission to perform this action.",
       "unauthenticated": "Please sign in to continue.",
       "conflict": "The data was changed elsewhere. Reload the page and try again.",
+      "idempotency-in-progress": "This request is still being processed. Wait a moment and reload the page.",
       "validation-failed": "Check the highlighted fields and try again.",
       "precondition-failed": "This record was changed by someone else. Reload the page and try again.",
       "rate-limited": "Too many attempts. Please try again later.",

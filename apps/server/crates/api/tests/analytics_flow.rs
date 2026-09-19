@@ -1065,7 +1065,7 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
         "user_id": alice.user_id, "course_id": course_id,
         "intervention_type": "message_sent", "notes": "pinged"
     });
-    let post = |body: serde_json::Value| {
+    let post_key = |body: serde_json::Value, key: &'static str| {
         let app = &app;
         let teacher = &teacher;
         async move {
@@ -1075,22 +1075,40 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
                     .uri("/api/v2/analytics/teacher/interventions")
                     .header(header::CONTENT_TYPE, "application/json")
                     .header(header::COOKIE, &teacher.cookie)
-                    .header("idempotency-key", "retry-1")
+                    .header("idempotency-key", key)
                     .body(Body::from(body.to_string()))
                     .unwrap(),
             )
             .await
         }
     };
+    let post = |body: serde_json::Value| post_key(body, "retry-1");
     let first = post(body.clone()).await;
     assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
-    let replay = post(body).await;
+    let replay = post(body.clone()).await;
     assert_eq!(replay.status, StatusCode::CREATED, "{}", replay.text());
     assert_eq!(replay.json()["id"], first.json()["id"]);
     let list = app
         .get_as(&teacher, "/api/v2/analytics/teacher/interventions")
         .await;
     assert_eq!(list.json()["total"], 1, "{}", list.text());
+    // BUG-195: four concurrent identical requests reserve the key once —
+    // one row, four identical 201 replies.
+    let race = tokio::join!(
+        post_key(body.clone(), "race-1"),
+        post_key(body.clone(), "race-1"),
+        post_key(body.clone(), "race-1"),
+        post_key(body.clone(), "race-1"),
+    );
+    let raced = [race.0, race.1, race.2, race.3];
+    for r in &raced {
+        assert_eq!(r.status, StatusCode::CREATED, "{}", r.text());
+        assert_eq!(r.json()["id"], raced[0].json()["id"], "{}", r.text());
+    }
+    let list = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/interventions")
+        .await;
+    assert_eq!(list.json()["total"], 2, "{}", list.text());
     let reused = post(serde_json::json!({
         "user_id": bob.user_id, "course_id": course_id,
         "intervention_type": "message_sent"
@@ -1435,9 +1453,18 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     let second = submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
     let third = submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
     for (sub, body) in [
-        (&first, serde_json::json!({ "action": "publish", "final_score": 30 })),
-        (&second, serde_json::json!({ "action": "return", "final_score": 60 })),
-        (&third, serde_json::json!({ "action": "save", "final_score": 100 })),
+        (
+            &first,
+            serde_json::json!({ "action": "publish", "final_score": 30 }),
+        ),
+        (
+            &second,
+            serde_json::json!({ "action": "return", "final_score": 60 }),
+        ),
+        (
+            &third,
+            serde_json::json!({ "action": "save", "final_score": 100 }),
+        ),
     ] {
         let graded = app.send(grade(&teacher, sub, &body)).await;
         assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());

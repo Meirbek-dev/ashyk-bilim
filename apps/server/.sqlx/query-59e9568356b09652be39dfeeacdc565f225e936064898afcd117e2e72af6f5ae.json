@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO idempotency_keys (user_id, key, request_hash, status_code, response)\n           VALUES ($1, $2, $3, $4, 'null'::jsonb)\n           ON CONFLICT (user_id, key) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "59e9568356b09652be39dfeeacdc565f225e936064898afcd117e2e72af6f5ae"
+}

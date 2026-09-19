@@ -18,7 +18,7 @@ use crate::dto::submissions::{
     SaveDraftRequest, StudentSubmission, SubmitRequest, ViolationRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, ValidJson, idempotency_key, sha256_hex};
+use crate::extract::{CurrentActor, Path, ValidJson, idempotent};
 use crate::state::AppState;
 
 /// `If-Match: "3"` or `If-Match: 3` → 3. Anything else is a validation error.
@@ -252,56 +252,32 @@ pub async fn submit_submission(
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
     let expected = if_match(&headers)?;
-    let key = idempotency_key(&headers)?.map(|k| format!("submit:{id}:{k}"));
-    let request_hash = sha256_hex(&body);
-
-    if let Some(key) = &key
-        && let Some(stored) =
-            ab_db::submissions::get_idempotent(&state.pool, actor.user_id, key).await?
-    {
-        if stored.request_hash != request_hash {
-            return Err(Error::validation(vec![FieldError {
-                field: "Idempotency-Key".into(),
-                code: "reused".into(),
-                message: "Idempotency-Key was already used with a different request body".into(),
-            }])
-            .into());
-        }
-        let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
-            .unwrap_or(StatusCode::OK);
-        return Ok((status, Json(stored.response)).into_response());
-    }
-
     let request: SubmitRequest = if body.is_empty() {
         SubmitRequest::default()
     } else {
         parse_and_validate(&body)?
     };
-    let submitted = state
-        .submissions
-        .submit(
-            &actor,
-            id,
-            request.answers,
-            request.violation_count,
-            expected,
-        )
-        .await?;
-    let dto = StudentSubmission::from(submitted);
-    if let Some(key) = &key {
-        let value = serde_json::to_value(&dto)
-            .map_err(|err| Error::internal("serialize submission", err))?;
-        ab_db::submissions::store_idempotent(
-            &state.pool,
-            actor.user_id,
-            key,
-            &request_hash,
-            i32::from(StatusCode::OK.as_u16()),
-            &value,
-        )
-        .await?;
-    }
-    Ok((StatusCode::OK, Json(dto)).into_response())
+    idempotent(
+        &state.pool,
+        actor.user_id,
+        &format!("submit:{id}"),
+        &headers,
+        &body,
+        || async {
+            let submitted = state
+                .submissions
+                .submit(
+                    &actor,
+                    id,
+                    request.answers,
+                    request.violation_count,
+                    expected,
+                )
+                .await?;
+            Ok((StatusCode::OK, StudentSubmission::from(submitted)))
+        },
+    )
+    .await
 }
 
 /// [`ValidJson`] plus the sign check on the raw body.

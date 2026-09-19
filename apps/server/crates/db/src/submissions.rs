@@ -1429,6 +1429,64 @@ pub async fn store_idempotent(
     Ok(())
 }
 
+/// An in-progress reservation: `status_code` of a key whose action has
+/// not completed yet (BUG-195).
+pub const IDEMPOTENT_IN_PROGRESS: i32 = 0;
+
+/// Reserve `key` before the action; `true` when this caller now owns it.
+/// The row is completed by [`complete_idempotent`] or dropped by
+/// [`release_idempotent`] when the action fails.
+pub async fn reserve_idempotent(
+    pool: &PgPool,
+    user_id: UserId,
+    key: &str,
+    request_hash: &str,
+) -> Result<bool> {
+    let inserted = sqlx::query!(
+        r#"INSERT INTO idempotency_keys (user_id, key, request_hash, status_code, response)
+           VALUES ($1, $2, $3, $4, 'null'::jsonb)
+           ON CONFLICT (user_id, key) DO NOTHING"#,
+        user_id.0,
+        key,
+        request_hash,
+        IDEMPOTENT_IN_PROGRESS
+    )
+    .execute(pool)
+    .await?;
+    Ok(inserted.rows_affected() == 1)
+}
+
+pub async fn complete_idempotent(
+    pool: &PgPool,
+    user_id: UserId,
+    key: &str,
+    status_code: i32,
+    response: &serde_json::Value,
+) -> Result<()> {
+    sqlx::query!(
+        "UPDATE idempotency_keys SET status_code = $3, response = $4 WHERE user_id = $1 AND key = $2",
+        user_id.0,
+        key,
+        status_code,
+        response
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn release_idempotent(pool: &PgPool, user_id: UserId, key: &str) -> Result<()> {
+    sqlx::query!(
+        "DELETE FROM idempotency_keys WHERE user_id = $1 AND key = $2 AND status_code = $3",
+        user_id.0,
+        key,
+        IDEMPOTENT_IN_PROGRESS
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// Drop keys older than the retention window (24h sweep).
 pub async fn sweep_idempotency(pool: &PgPool, older_than_secs: f64) -> Result<u64> {
     let deleted = sqlx::query!(

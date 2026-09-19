@@ -4,8 +4,8 @@
 //! submit, history), grading (queue, attempt, grade, CSV) and signed file
 //! downloads.
 
+use ab_core::Error;
 use ab_core::id::{ActivityId, FileAttemptFileId, FileAttemptId, FileSubmissionId};
-use ab_core::{Error, FieldError};
 use ab_domain::files::submissions::{FileGradeInput, FileRef, ReviewFilter};
 use axum::Json;
 use axum::extract::State;
@@ -18,7 +18,7 @@ use crate::dto::file_submissions::{
     SignedDownload, SubmitRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotency_key, sha256_hex};
+use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
 use crate::routes::grading::{csv_language, if_match};
 use crate::state::AppState;
 
@@ -253,49 +253,27 @@ pub async fn submit(
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
     let expected = if_match(&headers)?;
-    let key = idempotency_key(&headers)?.map(|k| format!("file-submit:{id}:{k}"));
-    let request_hash = sha256_hex(&body);
-    if let Some(key) = &key
-        && let Some(stored) =
-            ab_db::submissions::get_idempotent(&state.pool, actor.user_id, key).await?
-    {
-        if stored.request_hash != request_hash {
-            return Err(Error::validation(vec![FieldError {
-                field: "Idempotency-Key".into(),
-                code: "reused".into(),
-                message: "Idempotency-Key was already used with a different request body".into(),
-            }])
-            .into());
-        }
-        let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
-            .unwrap_or(StatusCode::OK);
-        return Ok((status, Json(stored.response)).into_response());
-    }
     let request = if body.is_empty() {
         SubmitRequest::default()
     } else {
         ValidJson::<SubmitRequest>::parse(&body)?
     };
     let files = request.files.map(refs);
-    let submitted = state
-        .file_submissions
-        .submit(&actor, id, files.as_deref(), expected)
-        .await?;
-    let dto = Attempt::from(submitted);
-    if let Some(key) = &key {
-        let value =
-            serde_json::to_value(&dto).map_err(|err| Error::internal("serialize attempt", err))?;
-        ab_db::submissions::store_idempotent(
-            &state.pool,
-            actor.user_id,
-            key,
-            &request_hash,
-            i32::from(StatusCode::OK.as_u16()),
-            &value,
-        )
-        .await?;
-    }
-    Ok((StatusCode::OK, Json(dto)).into_response())
+    idempotent(
+        &state.pool,
+        actor.user_id,
+        &format!("file-submit:{id}"),
+        &headers,
+        &body,
+        || async {
+            let submitted = state
+                .file_submissions
+                .submit(&actor, id, files.as_deref(), expected)
+                .await?;
+            Ok((StatusCode::OK, Attempt::from(submitted)))
+        },
+    )
+    .await
 }
 
 /// Every attempt the caller made, newest first.

@@ -1,13 +1,12 @@
-use ab_core::Error;
 use axum::Json;
 use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::response::Redirect;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::{Redirect, Response};
 use uuid::Uuid;
 
 use crate::dto::uploads::{CreateUploadRequest, CreatedUpload, FinalizedUpload};
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, ValidJson, idempotency_key};
+use crate::extract::{CurrentActor, Path, ValidJson, idempotent};
 use crate::state::AppState;
 
 /// Start an upload: validates the purpose policy and returns a presigned PUT
@@ -63,30 +62,27 @@ pub async fn finalize_upload(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-) -> ApiResult<Json<FinalizedUpload>> {
-    let key = idempotency_key(&headers)?.map(|k| format!("finalize:{id}:{k}"));
-    if let Some(key) = &key
-        && let Some(stored) =
-            ab_db::submissions::get_idempotent(&state.pool, actor.user_id, key).await?
-    {
-        let dto: FinalizedUpload = serde_json::from_value(stored.response)
-            .map_err(|err| Error::internal("replay finalized upload", err))?;
-        return Ok(Json(dto));
-    }
-    let finalized = state.uploads.finalize(&actor, id).await?;
-    let dto = FinalizedUpload {
-        id: finalized.id,
-        key: finalized.key,
-        size_bytes: finalized.size_bytes,
-    };
-    if let Some(key) = &key {
-        // No body to fingerprint: the path is the whole request.
-        let value = serde_json::to_value(&dto)
-            .map_err(|err| Error::internal("serialize finalized upload", err))?;
-        ab_db::submissions::store_idempotent(&state.pool, actor.user_id, key, "", 200, &value)
-            .await?;
-    }
-    Ok(Json(dto))
+) -> ApiResult<Response> {
+    // No body to fingerprint: the path is the whole request.
+    idempotent(
+        &state.pool,
+        actor.user_id,
+        &format!("finalize:{id}"),
+        &headers,
+        &[],
+        || async {
+            let finalized = state.uploads.finalize(&actor, id).await?;
+            Ok((
+                StatusCode::OK,
+                FinalizedUpload {
+                    id: finalized.id,
+                    key: finalized.key,
+                    size_bytes: finalized.size_bytes,
+                },
+            ))
+        },
+    )
+    .await
 }
 
 /// Redirect to a short-lived presigned download URL.

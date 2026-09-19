@@ -51,6 +51,7 @@ error_codes! {
     Forbidden => ("forbidden", 403, "Forbidden"),
     Unauthenticated => ("unauthenticated", 401, "Authentication required"),
     Conflict => ("conflict", 409, "Conflict"),
+    IdempotencyInProgress => ("idempotency-in-progress", 409, "The same request is still being processed"),
     ValidationFailed => ("validation-failed", 422, "Validation failed"),
     PreconditionFailed => ("precondition-failed", 412, "Precondition failed"),
     RateLimited => ("rate-limited", 429, "Too many requests"),

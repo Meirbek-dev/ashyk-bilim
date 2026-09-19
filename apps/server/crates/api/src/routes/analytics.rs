@@ -5,10 +5,10 @@
 //! `analytics:read:assigned`; every course under `analytics:read:platform`
 //! / `:all` (exports use `analytics:export:*`).
 
+use ab_core::Error;
 use ab_core::assessments::AssessmentKind;
 use ab_core::id::{AssessmentId, CourseId, SavedViewId};
 use ab_core::permission::Action;
-use ab_core::{Error, FieldError};
 use ab_domain::analytics::{AnalyticsFilters, NewIntervention};
 use axum::Json;
 use axum::extract::State;
@@ -23,7 +23,7 @@ use crate::dto::analytics::{
     TeacherCourseListResponse, TeacherOverviewResponse,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotency_key, sha256_hex};
+use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
 use crate::routes::grading::csv_language;
 use crate::state::AppState;
 
@@ -247,55 +247,34 @@ pub async fn create_intervention(
         .analytics
         .resolve_scope(&actor, &filters, Action::Read)
         .await?;
-    let key = idempotency_key(&headers)?.map(|k| format!("intervention:{k}"));
-    let request_hash = sha256_hex(&body);
-    if let Some(key) = &key
-        && let Some(stored) =
-            ab_db::submissions::get_idempotent(&state.pool, actor.user_id, key).await?
-    {
-        if stored.request_hash != request_hash {
-            return Err(Error::validation(vec![FieldError {
-                field: "Idempotency-Key".into(),
-                code: "reused".into(),
-                message: "Idempotency-Key was already used with a different request body".into(),
-            }])
-            .into());
-        }
-        let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
-            .unwrap_or(StatusCode::OK);
-        return Ok((status, Json(stored.response)).into_response());
-    }
     let request = ValidJson::<CreateInterventionRequest>::parse(&body)?;
-    let created = state
-        .analytics
-        .create_intervention(
-            &actor,
-            &filters,
-            NewIntervention {
-                user_id: request.user_id,
-                course_id: request.course_id,
-                intervention_type: request.intervention_type,
-                status: request.status,
-                outcome: request.outcome,
-                notes: request.notes,
-                payload: request.payload,
-            },
-        )
-        .await?;
-    if let Some(key) = &key {
-        let value = serde_json::to_value(&created)
-            .map_err(|err| Error::internal("serialize intervention", err))?;
-        ab_db::submissions::store_idempotent(
-            &state.pool,
-            actor.user_id,
-            key,
-            &request_hash,
-            i32::from(StatusCode::CREATED.as_u16()),
-            &value,
-        )
-        .await?;
-    }
-    Ok((StatusCode::CREATED, Json(created)).into_response())
+    idempotent(
+        &state.pool,
+        actor.user_id,
+        "intervention",
+        &headers,
+        &body,
+        || async {
+            let created = state
+                .analytics
+                .create_intervention(
+                    &actor,
+                    &filters,
+                    NewIntervention {
+                        user_id: request.user_id,
+                        course_id: request.course_id,
+                        intervention_type: request.intervention_type,
+                        status: request.status,
+                        outcome: request.outcome,
+                        notes: request.notes,
+                        payload: request.payload,
+                    },
+                )
+                .await?;
+            Ok((StatusCode::CREATED, created))
+        },
+    )
+    .await
 }
 
 // ── Saved views ─────────────────────────────────────────────────────────
