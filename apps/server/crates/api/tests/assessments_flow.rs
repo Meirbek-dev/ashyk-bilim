@@ -1190,6 +1190,20 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
         "{}",
         item_edit.text()
     );
+    // UX-120: the curriculum rename writes the same title — same lock.
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    let rename = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "name": "Renamed while scheduled" }),
+        )
+        .await;
+    assert_eq!(rename.status, StatusCode::CONFLICT, "{}", rename.text());
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(detail.json()["title"], "Timed", "{}", detail.text());
 
     // The world moves: the schedule is now due and after the due date.
     sqlx::query(
@@ -1232,4 +1246,69 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
         .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
         .await;
     assert_eq!(detail.json()["lifecycle"], "published", "{}", detail.text());
+}
+
+/// BUG-177: a whitespace-only title is 422 `title`/`required` on create and
+/// update (garde's `min=1` saw the untrimmed string); stored titles are
+/// trimmed on both the assessment and its activity.
+#[sqlx::test(migrations = "../../migrations")]
+async fn blank_titles_are_rejected_and_trimmed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = scaffold(&app, &teacher).await;
+    let blank = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "   " }),
+        )
+        .await;
+    assert_eq!(
+        blank.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        blank.text()
+    );
+    assert_eq!(blank.json()["field_errors"][0]["field"], "title");
+    assert_eq!(blank.json()["field_errors"][0]["code"], "required");
+
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "  Quiz  " }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    assert_eq!(created.json()["title"], "Quiz");
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+
+    let blank = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}"),
+            &serde_json::json!({ "title": "  " }),
+        )
+        .await;
+    assert_eq!(
+        blank.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        blank.text()
+    );
+    assert_eq!(blank.json()["field_errors"][0]["field"], "title");
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}"),
+            &serde_json::json!({ "title": "  Quiz 2 " }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    assert_eq!(renamed.json()["title"], "Quiz 2");
+    let activity = app
+        .get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+        .await;
+    assert_eq!(activity.json()["name"], "Quiz 2", "{}", activity.text());
 }

@@ -345,11 +345,13 @@ impl CurriculumService {
     }
 
     /// UX-112: one name — the assessment title follows the activity name
-    /// (the reverse already holds in `AssessmentsService::update`).
+    /// (the reverse already holds in `AssessmentsService::update`), under
+    /// the same lock: scheduled / published-with-submissions → 409 (UX-120).
     async fn sync_assessment_title(&self, activity_id: ActivityId, name: &str) -> Result<()> {
         if let Some(assessment) =
             ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id).await?
         {
+            crate::assessments::service::ensure_editable(&self.pool, &assessment).await?;
             ab_db::assessments::update_assessment_details(
                 &self.pool,
                 assessment.id,
@@ -420,10 +422,12 @@ impl CurriculumService {
             .name
             .map(|n| ab_core::required_str("name", n))
             .transpose()?;
-        ab_db::catalog::update_activity(&self.pool, activity_id, name, None).await?;
+        // The assessment lock is checked (and its title written) first, so a
+        // refused rename leaves the activity untouched too.
         if let Some(name) = name {
             self.sync_assessment_title(activity_id, name).await?;
         }
+        ab_db::catalog::update_activity(&self.pool, activity_id, name, None).await?;
         if let Some(published) = changes.published
             && published != activity.published
         {

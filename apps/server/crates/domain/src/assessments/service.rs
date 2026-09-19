@@ -27,6 +27,30 @@ use crate::progress::ProgressProjector;
 /// Legacy `ITEM_LIMIT_EXCEEDED` ceiling.
 pub const MAX_ITEMS: i64 = 200;
 
+/// Archived and scheduled assessments are read-only; a published one with
+/// any submission cannot be edited (BUG-162). Shared with the curriculum
+/// rename path (UX-120), which writes the title through the activity.
+pub(crate) async fn ensure_editable(pool: &PgPool, assessment: &Assessment) -> Result<()> {
+    match assessment.lifecycle {
+        Lifecycle::Archived => Err(Error::conflict("archived assessments are read-only")),
+        Lifecycle::Published => {
+            let activity = ab_db::assessments::submission_activity(pool, assessment.id).await?;
+            if activity.any {
+                return Err(Error::conflict(
+                    "published assessment already has submissions; unpublish first",
+                ));
+            }
+            Ok(())
+        }
+        // BUG-162: a schedule was readiness-checked at schedule time;
+        // edits would bypass that gate, so it is read-only until unscheduled.
+        Lifecycle::Scheduled => Err(Error::conflict(
+            "scheduled assessments are read-only; unschedule first",
+        )),
+        Lifecycle::Draft => Ok(()),
+    }
+}
+
 fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -493,25 +517,7 @@ impl AssessmentsService {
     /// Legacy `_ensure_authorable`: archived is read-only; a published
     /// assessment with any submission cannot be edited.
     async fn ensure_editable(&self, assessment: &Assessment) -> Result<()> {
-        match assessment.lifecycle {
-            Lifecycle::Archived => Err(Error::conflict("archived assessments are read-only")),
-            Lifecycle::Published => {
-                let activity =
-                    ab_db::assessments::submission_activity(&self.pool, assessment.id).await?;
-                if activity.any {
-                    return Err(Error::conflict(
-                        "published assessment already has submissions; unpublish first",
-                    ));
-                }
-                Ok(())
-            }
-            // BUG-162: a schedule was readiness-checked at schedule time;
-            // edits would bypass that gate, so it is read-only until unscheduled.
-            Lifecycle::Scheduled => Err(Error::conflict(
-                "scheduled assessments are read-only; unschedule first",
-            )),
-            Lifecycle::Draft => Ok(()),
-        }
+        ensure_editable(&self.pool, assessment).await
     }
 
     /// Legacy `ASSESSMENT_LOCKED`: content (body/kind/max score) freezes once
@@ -563,6 +569,8 @@ impl AssessmentsService {
             .await?
             .ok_or_else(|| Error::not_found("chapter"))?;
         self.authorable_course(actor, chapter.course_id).await?;
+        // BUG-177: titles are trimmed and never blank (shared rule, BUG-168).
+        let title = ab_core::required_str("title", input.title)?;
         let kind = input.kind;
         let policy = input.policy.unwrap_or_else(|| PolicyInput::preset(kind));
         policy.validate()?;
@@ -572,7 +580,7 @@ impl AssessmentsService {
             &self.pool,
             input.chapter_id,
             chapter.course_id,
-            input.title,
+            title,
             activity_type,
             sub_type,
             actor.user_id,
@@ -584,7 +592,7 @@ impl AssessmentsService {
                 activity_id,
                 course_id: chapter.course_id,
                 kind,
-                title: input.title,
+                title,
                 description: input.description,
                 weight: input.weight,
                 grading_type: input.grading_type,
@@ -695,16 +703,20 @@ impl AssessmentsService {
     ) -> Result<AssessmentDetail> {
         let assessment = self.load_for_author(actor, id).await?;
         self.ensure_editable(&assessment).await?;
+        let title = changes
+            .title
+            .map(|t| ab_core::required_str("title", t))
+            .transpose()?;
         ab_db::assessments::update_assessment_details(
             &self.pool,
             id,
-            changes.title,
+            title,
             changes.description,
             changes.weight,
             changes.grading_type,
         )
         .await?;
-        if let Some(title) = changes.title {
+        if let Some(title) = title {
             // The activity carries the title into the curriculum.
             ab_db::catalog::update_activity(&self.pool, assessment.activity_id, Some(title), None)
                 .await?;
