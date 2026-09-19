@@ -8,17 +8,11 @@ import { tags } from '@/lib/cacheTags'
 import { getAPIUrl } from '../config/config'
 
 /*
- This file includes POST, PUT, DELETE requests and cached GET requests
+ This file includes POST requests and cached GET requests (the card deletes
+ through the generated client fetcher, BUG-035).
 */
 
 const serverGet = () => ({ method: 'GET', baseUrl: getAPIUrl(), timeoutMs: 10_000 })
-
-export async function deleteCollection(collection_uuid: string): Promise<void> {
-  await apiJson(`collections/${stripEntityPrefix(collection_uuid)}`, { method: 'DELETE' })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.collections, 'max')
-}
 
 /** `courses` are v2 course ids (`CreateCollectionRequest`). */
 export async function createCollection(collection: {

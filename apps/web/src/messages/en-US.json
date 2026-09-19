@@ -1524,6 +1524,8 @@
       "deleteButtonText": "Delete Collection",
       "deleteConfirmationMessage": "Are you sure you want to delete this collection?",
       "deleteConfirmationTitle": "Delete {collectionName}?",
+      "deleteFailed": "Could not delete the collection.",
+      "deleted": "Collection \"{collectionName}\" deleted.",
       "deleting": "Deleting..."
     },
     "ConfirmationModal": {
@@ -2594,6 +2596,7 @@
       "ownerBadge": "You created this activity",
       "previewTooltip": "Preview Activity",
       "publish": "Publish",
+      "scheduledHint": "Publishes automatically; unschedule it in the studio to change this",
       "publishButton": "Publish",
       "unpublish": "Unpublish",
       "unpublishButton": "Unpublish",
@@ -9075,6 +9078,8 @@
         "saveAsDraft": "Save as draft",
         "moreOptions": "More options",
         "archive": "Archive",
+        "archiveConfirmTitle": "Archive \"{title}\"?",
+        "archiveConfirmMessage": "Learners will lose access to this activity and its schedule is dropped. You can restore it to draft at any time.",
         "hideInspector": "Hide inspector",
         "showInspector": "Show inspector",
         "publishNow": "Publish now",

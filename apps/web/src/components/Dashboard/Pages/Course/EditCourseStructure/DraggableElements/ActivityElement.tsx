@@ -302,9 +302,16 @@ function ActivityElement({
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
-            <CourseStatusBadge
-              status={activity.published ? 'live' : isScheduled ? 'scheduled' : isArchived ? 'archived' : 'draft'}
-            />
+            {/* UX-124: a scheduled assessment publishes itself — the badge explains why there is no toggle. */}
+            {isScheduled && !activity.published ? (
+              <ToolTip content={t('scheduledHint')} side="top">
+                <span className="inline-flex" tabIndex={0} aria-label={t('scheduledHint')}>
+                  <CourseStatusBadge status="scheduled" />
+                </span>
+              </ToolTip>
+            ) : (
+              <CourseStatusBadge status={activity.published ? 'live' : isArchived ? 'archived' : 'draft'} />
+            )}
             {canUpdate && (
               <ToolTip content={t('editButton')} side="top">
                 <Button
@@ -349,8 +356,9 @@ function ActivityElement({
             />
           </ToolTip>
 
-          {/* Publish toggle — UX-120: an archived assessment publishes only after «Восстановить» in the studio (409 otherwise). */}
-          {canUpdate && !isArchived && (
+          {/* Publish toggle — UX-120: an archived assessment publishes only after «Восстановить» in the studio (409
+              otherwise); UX-124: a scheduled one publishes itself (409 `activity-not-ready` until then). */}
+          {canUpdate && !isArchived && !isScheduled && (
             <ToolTip content={activity.published ? t('unpublish') : t('publish')} side="top">
               <Button
                 size="icon"

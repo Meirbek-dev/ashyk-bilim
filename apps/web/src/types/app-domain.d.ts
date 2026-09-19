@@ -197,6 +197,8 @@ declare global {
     name?: string
     description?: string
     courses?: AppCourse[] | number[]
+    /** Creator or `collection:delete:platform` (server-derived). */
+    can_delete?: boolean
     [key: string]: unknown
   }
 

@@ -1507,6 +1507,8 @@
       "deleteButtonText": "Жинақты жою",
       "deleteConfirmationMessage": "Бұл жинақты жойғыңыз келетініне сенімдісіз бе?",
       "deleteConfirmationTitle": "{collectionName} жою керек пе?",
+      "deleteFailed": "Жинақты жою мүмкін болмады.",
+      "deleted": "«{collectionName}» жинағы жойылды.",
       "deleting": "Жойылуда..."
     },
     "ConfirmationModal": {
@@ -2593,6 +2595,7 @@
       "previewTooltip": "Белсенділікті алдын ала қарау",
       "ownerBadge": "Сіз бұл белсенділікті жасадыңыз",
       "publish": "Жариялау",
+      "scheduledHint": "Автоматты түрде жарияланады; өзгерту үшін студияда кестеден алып тастаңыз",
       "publishButton": "Жариялау",
       "unpublish": "Жариялаудан алу",
       "unpublishButton": "Жариялаудан алу",
@@ -9131,6 +9134,8 @@
         "saveAsDraft": "Нобай ретінде сақтау",
         "moreOptions": "Қосымша параметрлер",
         "archive": "Мұрағаттау",
+        "archiveConfirmTitle": "«{title}» мұрағатталсын ба?",
+        "archiveConfirmMessage": "Оқушылар бұл әрекетке қол жеткізе алмайды, кесте алынып тасталады. Оны кез келген уақытта жобаға қайтаруға болады.",
         "hideInspector": "Инспекторды жасыру",
         "showInspector": "Инспекторды көрсету",
         "publishNow": "Қазір жариялау",

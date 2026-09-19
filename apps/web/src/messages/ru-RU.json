@@ -1508,6 +1508,8 @@
       "deleteButtonText": "Удалить коллекцию",
       "deleteConfirmationMessage": "Вы уверены, что хотите удалить эту коллекцию?",
       "deleteConfirmationTitle": "Удалить {collectionName}?",
+      "deleteFailed": "Не удалось удалить коллекцию.",
+      "deleted": "Коллекция «{collectionName}» удалена.",
       "deleting": "Удаление..."
     },
     "ConfirmationModal": {
@@ -2593,6 +2595,7 @@
       "previewTooltip": "Предварительный просмотр активности",
       "ownerBadge": "Вы создали эту активность",
       "publish": "Опубликовать",
+      "scheduledHint": "Опубликуется автоматически; снимите с расписания в студии, чтобы изменить",
       "publishButton": "Опубликовать",
       "unpublish": "Снять с публикации",
       "unpublishButton": "Снять с публикации",
@@ -8548,6 +8551,8 @@
         "saveAsDraft": "Сохранить как черновик",
         "moreOptions": "Дополнительные параметры",
         "archive": "Архивировать",
+        "archiveConfirmTitle": "Архивировать «{title}»?",
+        "archiveConfirmMessage": "Учащиеся потеряют доступ к этой активности, а расписание будет снято. Вернуть её в черновики можно в любой момент.",
         "hideInspector": "Скрыть инспектор",
         "showInspector": "Показать инспектор",
         "publishNow": "Опубликовать сейчас",

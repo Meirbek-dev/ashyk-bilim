@@ -13,6 +13,8 @@ pub struct Collection {
     pub creator_id: Option<UserId>,
     /// Member courses visible to the caller, in collection order.
     pub courses: Vec<Course>,
+    /// The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`).
+    pub can_delete: bool,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -26,6 +28,7 @@ impl From<ab_domain::catalog::collections::CollectionWithCourses> for Collection
             public: c.collection.public,
             creator_id: c.collection.creator_id,
             courses: c.courses.into_iter().map(Into::into).collect(),
+            can_delete: c.can_delete,
             created_at_unix: c.collection.created_at,
             updated_at_unix: c.collection.updated_at,
         }

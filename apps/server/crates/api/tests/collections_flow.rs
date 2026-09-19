@@ -61,6 +61,8 @@ async fn crud_membership_and_visibility(pool: PgPool) {
     assert_eq!(created.status, StatusCode::CREATED);
     let id = created.json()["id"].as_str().unwrap().to_owned();
     assert_eq!(created.json()["courses"].as_array().unwrap().len(), 2);
+    // UX-124: the creator sees the delete affordance …
+    assert_eq!(created.json()["can_delete"], true);
 
     // UX-102: `Idempotency-Key` replays the 201 — one row, not two.
     let keyed = serde_json::json!({ "name": "Keyed", "public": false });
@@ -88,6 +90,8 @@ async fn crud_membership_and_visibility(pool: PgPool) {
         .get_as(&learner, &format!("/api/v2/collections/{id}"))
         .await;
     assert_eq!(seen.status, StatusCode::OK);
+    // … a learner does not (UX-124).
+    assert_eq!(seen.json()["can_delete"], false);
     let names: Vec<_> = seen.json()["courses"]
         .as_array()
         .unwrap()

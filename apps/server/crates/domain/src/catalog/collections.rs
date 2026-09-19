@@ -27,6 +27,8 @@ const fn perm(action: Action, scope: Scope) -> Permission {
 pub struct CollectionWithCourses {
     pub collection: Collection,
     pub courses: Vec<Course>,
+    /// The viewer may `DELETE` it (creator with `delete:own`, or `delete:platform`).
+    pub can_delete: bool,
 }
 
 #[derive(Clone)]
@@ -50,6 +52,12 @@ impl CollectionsService {
         } else {
             Err(Error::not_found("collection"))
         }
+    }
+
+    fn can_delete(actor: &Actor, collection: &Collection) -> bool {
+        actor.has(perm(Action::Delete, Scope::Platform))
+            || (collection.creator_id == Some(actor.user_id)
+                && actor.has(perm(Action::Delete, Scope::Own)))
     }
 
     fn require_write(actor: &Actor, collection: &Collection) -> Result<()> {
@@ -119,6 +127,7 @@ impl CollectionsService {
         Self::require_read(actor, &collection)?;
         let courses = self.visible_courses(actor, id).await?;
         Ok(CollectionWithCourses {
+            can_delete: Self::can_delete(actor, &collection),
             collection,
             courses,
         })
@@ -152,6 +161,7 @@ impl CollectionsService {
         for collection in rows {
             let courses = self.visible_courses(actor, collection.id).await?;
             out.push(CollectionWithCourses {
+                can_delete: Self::can_delete(actor, &collection),
                 collection,
                 courses,
             });
@@ -185,10 +195,7 @@ impl CollectionsService {
         let collection = ab_db::collections::get_collection(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("collection"))?;
-        if !(actor.has(perm(Action::Delete, Scope::Platform))
-            || (collection.creator_id == Some(actor.user_id)
-                && actor.has(perm(Action::Delete, Scope::Own))))
-        {
+        if !Self::can_delete(actor, &collection) {
             return Err(Error::forbidden("no delete access to this collection"));
         }
         ab_db::collections::delete_collection(&self.pool, id).await?;

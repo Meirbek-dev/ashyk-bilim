@@ -12,16 +12,19 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { deleteCollection } from '@services/courses/collections'
+import { deleteCollection } from '@/lib/api/generated/collections/collections'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Crown, Layers, Loader2, Trash2 } from 'lucide-react'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { getAbsoluteUrl } from '@services/config/config'
-import { useState, useTransition } from 'react'
+import { useApiError } from '@/hooks/useApiError'
 import { Badge } from '@components/ui/badge'
 import { Button } from '@components/ui/button'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface PropsType {
   collection: AppCollection
@@ -155,18 +158,23 @@ function CollectionDeleteAction({
   collection: AppCollection
 }) {
   const t = useTranslations('Components.CollectionThumbnail')
-  const router = useRouter()
+  const queryClient = useQueryClient()
+  const { toastApiError } = useApiError()
   const [isOpen, setIsOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
 
-  async function handleDelete() {
-    startTransition(async () => {
-      await deleteCollection(collection_uuid)
-      await revalidateTags(['collections'])
+  // UX-124: apiJson from the client (BUG-035) — the grid is a client query, so
+  // drop it and the server seed; no router.refresh().
+  const remove = useMutation({
+    mutationFn: () => deleteCollection(collection_uuid),
+    onSuccess: async () => {
       setIsOpen(false)
-      router.refresh()
-    })
-  }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.collections.list() })
+      toast.success(t('deleted', { collectionName: collection.name ?? '' }))
+      await revalidateTags(['collections'])
+    },
+    onError: error => toastApiError(error, { fallback: t('deleteFailed') }),
+  })
+  const isPending = remove.isPending
 
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
@@ -192,7 +200,7 @@ function CollectionDeleteAction({
           <AlertDialogCancel disabled={isPending} />
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm"
-            onClick={handleDelete}
+            onClick={() => remove.mutate()}
             disabled={isPending}
           >
             {isPending ? (

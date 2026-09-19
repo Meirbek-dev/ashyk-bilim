@@ -15,6 +15,7 @@ const harness = vi.hoisted(() => ({
   userId: 'teacher-1',
   creatorId: 'teacher-1',
   contributorIds: [] as string[],
+  lifecycle: undefined as string | undefined,
 }))
 
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
@@ -40,6 +41,11 @@ vi.mock('@/i18n/navigation', () => ({
   Link: ({ prefetch: _prefetch, ...props }: React.ComponentProps<'a'> & { prefetch?: boolean }) => <a {...props} />,
 }))
 vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: vi.fn() }) }))
+vi.mock('@/lib/api/generated/assessments/assessments', () => ({
+  useListCourseAssessments: () => ({
+    data: harness.lifecycle ? [{ activity_id: 'act-1', lifecycle: harness.lifecycle }] : undefined,
+  }),
+}))
 
 import ActivityElement from '@/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ActivityElement'
 
@@ -104,5 +110,24 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     renderRow()
     expect(screen.getByRole('button', { name: 'publish' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'deleteButton' })).toBeNull()
+  })
+
+  // UX-124: a scheduled assessment publishes itself; the row shows «Запланировано»
+  // with the hint instead of a toggle that would only 409.
+  it('hides the publish toggle on a scheduled assessment and explains why', () => {
+    harness.permissions = new Set(['activity:update:platform'])
+    harness.lifecycle = 'scheduled'
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ActivityElement
+          activity={{ ...activity, activity_type: 'TYPE_CUSTOM' as const }}
+          activityIndex={0}
+          course_uuid="course-1"
+        />
+      </QueryClientProvider>,
+    )
+    expect(screen.queryByRole('button', { name: 'publish' })).toBeNull()
+    expect(screen.getByLabelText('scheduledHint')).toHaveTextContent('scheduled')
+    harness.lifecycle = undefined
   })
 })
