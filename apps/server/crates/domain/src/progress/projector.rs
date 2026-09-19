@@ -195,7 +195,9 @@ impl ProgressProjector {
         Ok(())
     }
 
-    async fn is_pipeline_owned(&self, activity: &ActivityRow) -> Result<bool> {
+    /// Assessment and file-submission activities complete through their
+    /// pipelines (submit → grade → project), never by an explicit mark.
+    pub async fn is_pipeline_owned(&self, activity: &ActivityRow) -> Result<bool> {
         if activity.activity_type == "file_submission" {
             return Ok(true);
         }

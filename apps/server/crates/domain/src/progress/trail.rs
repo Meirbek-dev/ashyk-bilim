@@ -191,6 +191,9 @@ impl TrailService {
     /// Mark an activity done: run + step, and an explicit completion for
     /// lesson-type activities. Drafts do not exist for learners (404): a
     /// step on one would become a required row the course never counts.
+    /// Pipeline-owned activities (quiz/exam/code/file submission) complete
+    /// through their submissions only — a step here would fire the XP hook
+    /// while the projection stays untouched (BUG-176) → 409.
     pub async fn add_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Trail> {
         Self::require_write(actor)?;
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
@@ -198,6 +201,11 @@ impl TrailService {
             .filter(|a| a.published)
             .ok_or_else(|| Error::not_found("activity"))?;
         let course = self.accessible_course(actor, activity.course_id).await?;
+        if self.projector.is_pipeline_owned(&activity).await? {
+            return Err(Error::conflict(
+                "activity is completed through its submissions, not marked by hand",
+            ));
+        }
         let trail = ab_db::progress::ensure_trail(&self.pool, actor.user_id).await?;
         let run = ab_db::progress::ensure_trail_run(&self.pool, trail.id, course.id, actor.user_id)
             .await?;

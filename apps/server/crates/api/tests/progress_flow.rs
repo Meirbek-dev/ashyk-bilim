@@ -619,3 +619,71 @@ async fn chapter_delete_recalculates_totals(pool: PgPool) {
     assert_eq!(after["completed_required_count"], 1, "{after}");
     assert_eq!(after["progress_pct"], 50.0, "{after}");
 }
+
+/// BUG-176: quiz / exam / code / file-submission activities complete through
+/// their pipelines only — marking one by hand is a 409 and leaves no trail
+/// step, no progress row and no XP behind.
+#[sqlx::test(migrations = "../../migrations")]
+async fn pipeline_owned_activities_cannot_be_marked_by_hand(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Pipelines").await;
+    let mut activity_ids = Vec::new();
+    for kind in ["quiz", "exam", "code_challenge"] {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/assessments",
+                &serde_json::json!({ "chapter_id": chapter_id, "kind": kind, "title": kind }),
+            )
+            .await;
+        assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+        activity_ids.push(created.json()["activity_id"].as_str().unwrap().to_owned());
+    }
+    let essay = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({ "chapter_id": chapter_id, "title": "Essay",
+                                  "instructions": "Upload." }),
+        )
+        .await;
+    assert_eq!(essay.status, StatusCode::CREATED, "{}", essay.text());
+    activity_ids.push(essay.json()["activity_id"].as_str().unwrap().to_owned());
+    // Published as activities (the learner must be able to see them).
+    for id in &activity_ids {
+        sqlx::query("UPDATE activities SET published = true WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(id).unwrap())
+            .execute(&app.pool)
+            .await
+            .unwrap();
+    }
+
+    let alice = learner(&app, "alice").await;
+    for id in &activity_ids {
+        let refused = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/trail/activities/{id}"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(
+            refused.status,
+            StatusCode::CONFLICT,
+            "{id}: {}",
+            refused.text()
+        );
+        assert_eq!(refused.json()["code"], "conflict");
+    }
+    let (steps, progress, xp): (i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM trail_steps),
+                (SELECT count(*) FROM activity_progress WHERE course_id = $1),
+                (SELECT count(*) FROM xp_transactions)",
+    )
+    .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((steps, progress, xp), (0, 0, 0));
+}
