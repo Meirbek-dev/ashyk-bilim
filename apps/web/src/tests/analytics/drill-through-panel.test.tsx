@@ -5,7 +5,8 @@ import DrillThroughAuditPanel from '@/components/Dashboard/Analytics/DrillThroug
 import { filenameFromContentDisposition } from '@/lib/download'
 
 const t = Object.assign((key: string) => key, { has: () => false })
-vi.mock('next-intl', () => ({ useTranslations: () => t, useLocale: () => 'ru' }))
+const format = { number: (v: number, o?: Intl.NumberFormatOptions) => new Intl.NumberFormat('ru-RU', o).format(v) }
+vi.mock('next-intl', () => ({ useTranslations: () => t, useLocale: () => 'ru', useFormatter: () => format }))
 const toastApiError = vi.fn()
 vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError }) }))
 const getTeacherDrillThrough = vi.fn()
@@ -49,6 +50,8 @@ describe('UX-122 drill-through audit panel', () => {
     expect(screen.getByText('labels.assessmentType.quiz')).toBeTruthy()
     expect(screen.getByText('drillThroughAuditPanel.no')).toBeTruthy()
     expect(screen.queryByText('1789783999')).toBeNull()
+    // UX-125: numbers go through the locale formatter («30,5», not «30.5»)
+    expect(screen.getByText('30,5')).toBeTruthy()
     expect(screen.queryByText(/course id|submission id/i)).toBeNull()
   })
 
