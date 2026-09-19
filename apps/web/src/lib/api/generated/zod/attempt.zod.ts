@@ -33,6 +33,12 @@ export const Attempt = zod
     id: zod.uuid(),
     is_late: zod.boolean(),
     late_penalty_pct: zod.number(),
+    raw_score: zod
+      .number()
+      .nullish()
+      .describe(
+        "The grader's score before `late_penalty_pct` (UX-121); `final_score`\nis what counts. Same visibility as `final_score`.",
+      ),
     rubric_scores: zod.looseObject({}).nullish(),
     started_at_unix: zod.int().nullish(),
     status: zod

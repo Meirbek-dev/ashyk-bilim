@@ -2210,6 +2210,14 @@ expression: json
             "format": "double",
             "type": "number"
           },
+          "raw_score": {
+            "description": "The grader's score before `late_penalty_pct` (UX-121); `final_score`\nis what counts. Same visibility as `final_score`.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "rubric_scores": {
             "type": [
               "object",

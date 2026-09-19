@@ -14532,6 +14532,14 @@
             "type": "number",
             "format": "double"
           },
+          "raw_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "The grader's score before `late_penalty_pct` (UX-121); `final_score`\nis what counts. Same visibility as `final_score`."
+          },
           "rubric_scores": {
             "type": [
               "object",
