@@ -1466,7 +1466,26 @@
         "yes": "Да",
         "no": "Нет",
         "na": "N/A",
-        "couldNotLoadRows": "Не удалось загрузить подробные строки."
+        "couldNotLoadRows": "Не удалось загрузить подробные строки.",
+        "columns": {
+          "learner": "Учащийся",
+          "course": "Курс",
+          "progress": "Прогресс",
+          "steps": "Шаги",
+          "completed": "Завершено",
+          "lastActivity": "Последняя активность",
+          "assessment": "Учебная задача",
+          "assessmentType": "Тип",
+          "status": "Статус",
+          "submitted": "Отправлено",
+          "ageHours": "В очереди, ч",
+          "slaBreached": "SLA нарушен",
+          "attempts": "Попытки",
+          "bestScore": "Лучший балл",
+          "lastScore": "Последний балл",
+          "gradedAt": "Проверено",
+          "passed": "Пройдено"
+        }
       },
       "savedViewsBar": {
         "nameFirst": "Сначала назовите этот вид.",
@@ -6881,7 +6900,8 @@
       "unsafe": "Этот адрес нельзя использовать.",
       "password-policy": "Пароль должен содержать не менее 8 символов, включая заглавную и строчную буквы, цифру и специальный символ.",
       "password-unchanged": "Новый пароль совпадает с текущим."
-    }
+    },
+    "requestFailed": "Запрос не выполнен"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -7934,6 +7954,7 @@
       "too_hard": "Слишком сложно",
       "too_easy": "Слишком легко",
       "low_variance": "Низкий разброс баллов",
+      "low_discrimination": "Низкая различающая способность",
       "live": "Живой запрос",
       "rollup": "Агрегация",
       "progress_events": "события прогресса",

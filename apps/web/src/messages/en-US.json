@@ -1466,7 +1466,26 @@
         "yes": "Yes",
         "no": "No",
         "na": "N/A",
-        "couldNotLoadRows": "Could not load drill-through rows."
+        "couldNotLoadRows": "Could not load drill-through rows.",
+        "columns": {
+          "learner": "Learner",
+          "course": "Course",
+          "progress": "Progress",
+          "steps": "Steps",
+          "completed": "Completed",
+          "lastActivity": "Last activity",
+          "assessment": "Assessment",
+          "assessmentType": "Type",
+          "status": "Status",
+          "submitted": "Submitted",
+          "ageHours": "Age, h",
+          "slaBreached": "SLA breached",
+          "attempts": "Attempts",
+          "bestScore": "Best score",
+          "lastScore": "Last score",
+          "gradedAt": "Graded",
+          "passed": "Passed"
+        }
       },
       "savedViewsBar": {
         "nameFirst": "Name this view first.",
@@ -6881,7 +6900,8 @@
       "unsafe": "This address cannot be used.",
       "password-policy": "The password must be at least 8 characters and include an uppercase and a lowercase letter, a digit and a symbol.",
       "password-unchanged": "The new password is the same as the current one."
-    }
+    },
+    "requestFailed": "Request failed"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -7919,6 +7939,7 @@
       "too_hard": "Too hard",
       "too_easy": "Too easy",
       "low_variance": "Low score variance",
+      "low_discrimination": "Low discrimination",
       "live": "Live",
       "rollup": "Rollup",
       "progress_events": "progress events",

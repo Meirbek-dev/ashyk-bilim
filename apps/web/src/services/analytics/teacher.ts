@@ -19,7 +19,9 @@ import {
   AssessmentId,
   AssessmentKind,
 } from '@/lib/api/generated/zod'
-import { apiBody, apiJson } from '@/lib/api-client'
+import { apiFetchRaw, apiJson } from '@/lib/api-client'
+import { parseApiError } from '@/lib/api/assertSuccess'
+import { filenameFromContentDisposition } from '@/lib/download'
 import { getAPIUrl } from '@services/config/config'
 
 export type TeacherInterventionCreate = CreateInterventionRequest
@@ -192,16 +194,19 @@ export function getAnalyticsExportUrl(
   return `${getAPIUrl()}analytics/teacher/exports/${exportName}.csv${buildQueryString(query)}`
 }
 
-/** UTF-8 + BOM CSV in `locale` (UX-114); bytes, since `Response.text()` strips the BOM. */
+/**
+ * UTF-8 + BOM CSV in `locale` (UX-114); bytes, since `Response.text()` strips
+ * the BOM. The filename is the server's `Content-Disposition` one (UX-122).
+ */
 export async function downloadAnalyticsExport(
   exportUrl: string,
   locale: string,
 ): Promise<{ blob: Blob; filename: string }> {
-  const blob = await apiBody<Blob, 'blob'>(exportUrl, { responseType: 'blob', headers: { 'Accept-Language': locale } })
-  const pathWithoutQuery = exportUrl.split('?').shift() ?? exportUrl
-
+  const response = await apiFetchRaw(exportUrl, { headers: { 'Accept-Language': locale } })
+  if (!response.ok) throw await parseApiError(response, exportUrl)
+  const fallback = (exportUrl.split('?').shift() ?? exportUrl).split('/').pop() || 'export.csv'
   return {
-    blob,
-    filename: pathWithoutQuery.split('/').pop() ?? 'export.csv',
+    blob: await response.blob(),
+    filename: filenameFromContentDisposition(response.headers.get('content-disposition'), fallback),
   }
 }

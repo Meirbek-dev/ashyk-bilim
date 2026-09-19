@@ -1465,7 +1465,26 @@
         "yes": "Иә",
         "no": "Жоқ",
         "na": "N/A",
-        "couldNotLoadRows": "Деректер жолдарын жүктеу мүмкін болмады."
+        "couldNotLoadRows": "Деректер жолдарын жүктеу мүмкін болмады.",
+        "columns": {
+          "learner": "Білім алушы",
+          "course": "Курс",
+          "progress": "Прогресс",
+          "steps": "Қадамдар",
+          "completed": "Аяқталды",
+          "lastActivity": "Соңғы белсенділік",
+          "assessment": "Оқу тапсырмасы",
+          "assessmentType": "Түрі",
+          "status": "Күйі",
+          "submitted": "Жіберілді",
+          "ageHours": "Кезекте, сағ",
+          "slaBreached": "SLA бұзылды",
+          "attempts": "Әрекеттер",
+          "bestScore": "Үздік балл",
+          "lastScore": "Соңғы балл",
+          "gradedAt": "Тексерілді",
+          "passed": "Өтті"
+        }
       },
       "savedViewsBar": {
         "nameFirst": "Бірінші кезекте бұл көрініске атау беріңіз.",
@@ -6896,7 +6915,8 @@
       "unsafe": "Бұл мекенжайды пайдалануға болмайды.",
       "password-policy": "Құпиясөзде кемінде 8 таңба, оның ішінде бас және кіші әріп, цифр және арнайы таңба болуы керек.",
       "password-unchanged": "Жаңа құпиясөз ағымдағымен бірдей."
-    }
+    },
+    "requestFailed": "Сұрау орындалмады"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -7949,6 +7969,7 @@
       "too_hard": "Тым қиын",
       "too_easy": "Тым оңай",
       "low_variance": "Ұпайлардың төмен шашырауы",
+      "low_discrimination": "Төмен ажырату қабілеті",
       "live": "Тікелей сұрау",
       "rollup": "Жинақтау",
       "progress_events": "прогресс оқиғалары",

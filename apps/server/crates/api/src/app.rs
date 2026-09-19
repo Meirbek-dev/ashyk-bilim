@@ -518,7 +518,12 @@ fn cors_layer(config: &Config) -> Result<CorsLayer> {
             HeaderName::from_static("idempotency-key"),
         ])
         // Cross-origin reads see no response header unless it is exposed:
-        // `ETag` carries the new version after a locked write, and
-        // `x-request-id` is what the client reports in error toasts.
-        .expose_headers([header::ETAG, HeaderName::from_static(REQUEST_ID_HEADER)]))
+        // `ETag` carries the new version after a locked write, `x-request-id`
+        // is what the client reports in error toasts, and `Content-Disposition`
+        // names the CSV exports (UX-122).
+        .expose_headers([
+            header::ETAG,
+            header::CONTENT_DISPOSITION,
+            HeaderName::from_static(REQUEST_ID_HEADER),
+        ]))
 }

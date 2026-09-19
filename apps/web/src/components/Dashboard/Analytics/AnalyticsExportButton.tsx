@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useApiError } from '@/hooks/useApiError'
 import { useSession } from '@/hooks/useSession'
 import { canExportAnalytics } from '@/lib/rbac/navigation-policy'
+import { saveBlob } from '@/lib/download'
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -29,12 +30,7 @@ export default function AnalyticsExportButton({ href, label }: AnalyticsExportBu
     setLoading(true)
     try {
       const { blob, filename } = await downloadAnalyticsExport(href, locale)
-      const url = globalThis.URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.download = filename
-      anchor.href = url
-      anchor.click()
-      globalThis.URL.revokeObjectURL(url)
+      saveBlob(blob, filename)
       toast.success(t('exportSaved'))
     } catch (error) {
       toastApiError(error, { fallback: t('exportFailed') })

@@ -13,10 +13,12 @@ vi.mock('@/i18n/navigation', () => ({ Link: () => null, useRouter: () => ({ refr
 const toastError = vi.fn()
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: (...args: unknown[]) => toastError(...args) } }))
 const toastApiError = vi.fn()
-vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError }) }))
+const handleApiError = vi.fn(() => ({ message: 'codes.forbidden' }))
+vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError, handleApiError }) }))
 const createTeacherIntervention = vi.fn()
+const getTeacherInterventions = vi.fn(async (..._args: unknown[]) => ({ items: [] }))
 vi.mock('@services/analytics/teacher', () => ({
-  getTeacherInterventions: async () => ({ items: [] }),
+  getTeacherInterventions: (...args: unknown[]) => getTeacherInterventions(...args),
   createTeacherIntervention: (...args: unknown[]) => createTeacherIntervention(...args),
 }))
 
@@ -74,5 +76,21 @@ describe('UX-114 at-risk table', () => {
     fireEvent.click(await screen.findByText('atRisk.interventions.message'))
     await waitFor(() => expect(toastError).toHaveBeenCalledWith('atRisk.learnerNotEnrolled'))
     expect(toastApiError).not.toHaveBeenCalled()
+  })
+
+  it('shows the journal load error through the API error mapper (UX-122)', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    getTeacherInterventions.mockRejectedValueOnce(
+      new APIError({ status: 403, code: 'forbidden', message: 'missing permission analytics:read' }),
+    )
+    render(
+      <QueryClientProvider client={client}>
+        <AtRiskLearnersTable rows={[row] as never} query={{ window: '28d' } as never} />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(screen.getByText('intervention.manage'))
+    expect(await screen.findByText('codes.forbidden')).toBeTruthy()
+    expect(screen.queryByText(/missing permission/)).toBeNull()
+    expect(handleApiError).toHaveBeenCalled()
   })
 })

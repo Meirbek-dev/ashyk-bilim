@@ -459,10 +459,11 @@ function InterventionAuditLog({
 }) {
   const t = useTranslations('TeacherAnalytics')
   const locale = useLocale()
+  const { handleApiError } = useApiError()
   return (
     <aside className="rounded-lg border p-3">
       <div className="mb-3 text-sm font-medium">{t('intervention.auditLog')}</div>
-      {error ? <InlineError description={error.message} error={error} /> : null}
+      {error ? <InlineError description={handleApiError(error).message} error={error} /> : null}
       {loading ? <p className="text-muted-foreground text-sm">{t('intervention.loadingAudit')}</p> : null}
       {!error && !loading && rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t('intervention.emptyAudit')}</p>

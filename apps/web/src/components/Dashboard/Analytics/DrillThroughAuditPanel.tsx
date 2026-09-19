@@ -4,29 +4,90 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { AnalyticsQuery, AssessmentOutlierRow, DrillThroughResponse } from '@/types/analytics'
+import type { AnalyticsQuery, AssessmentOutlierRow, AssessmentType, DrillThroughResponse } from '@/types/analytics'
 import { getTeacherDrillThrough } from '@services/analytics/teacher'
+import { useApiError } from '@/hooks/useApiError'
+import { getAnalyticsAssessmentTypeLabel, getAnalyticsStatusLabel } from '@/lib/analytics/labels'
+import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 import { ListFilter, Search } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 interface DrillThroughAuditPanelProps {
   query: AnalyticsQuery
   assessmentPreview: AssessmentOutlierRow[]
 }
 
+type ColumnKind = 'text' | 'number' | 'percent' | 'steps' | 'bool' | 'unix' | 'status' | 'assessmentType'
+type Column = { key: string; label: string; kind: ColumnKind }
+const col = (key: string, label: string, kind: ColumnKind = 'text'): Column => ({ key, label, kind })
+
+/**
+ * Curated columns per metric (UX-122) — the rows are untyped `Object`s on the
+ * wire (`drillthrough.rs` / `workload.rs`), so the shape is pinned here.
+ */
+const learnerColumns = [
+  col('user_display_name', 'learner'),
+  col('course_name', 'course'),
+  col('progress_pct', 'progress', 'percent'),
+  col('completed_steps', 'steps', 'steps'),
+  col('is_completed', 'completed', 'bool'),
+  col('last_activity_at_unix', 'lastActivity', 'unix'),
+]
+export const DRILL_THROUGH_COLUMNS: Record<DrillThroughResponse['metric'], Column[]> = {
+  active_learners: learnerColumns,
+  completion_rate: learnerColumns,
+  backlog: [
+    col('user_display_name', 'learner'),
+    col('course_name', 'course'),
+    col('assessment_title', 'assessment'),
+    col('assessment_type', 'assessmentType', 'assessmentType'),
+    col('status', 'status', 'status'),
+    col('submitted_at_unix', 'submitted', 'unix'),
+    col('age_hours', 'ageHours', 'number'),
+    col('sla_breached', 'slaBreached', 'bool'),
+  ],
+  pass_rate: [
+    col('user_display_name', 'learner'),
+    col('attempts', 'attempts', 'number'),
+    col('best_score', 'bestScore', 'number'),
+    col('last_score', 'lastScore', 'number'),
+    col('status', 'status', 'status'),
+    col('submitted_at_unix', 'submitted', 'unix'),
+    col('graded_at_unix', 'gradedAt', 'unix'),
+    col('passed', 'passed', 'bool'),
+  ],
+}
+
 export default function DrillThroughAuditPanel({ query, assessmentPreview }: DrillThroughAuditPanelProps) {
   const t = useTranslations('Components.DashboardAnalytics')
+  const tA = useTranslations('TeacherAnalytics')
+  const locale = useLocale()
+  const { toastApiError } = useApiError()
   const [result, setResult] = useState<DrillThroughResponse | null>(null)
   const [loadingMetric, setLoadingMetric] = useState<DrillThroughResponse['metric'] | null>(null)
   const assessment = assessmentPreview.find(item => item.pass_rate !== null) ?? assessmentPreview[0]
 
-  const displayValue = (value: unknown) => {
-    if (typeof value === 'boolean') return value ? t('drillThroughAuditPanel.yes') : t('drillThroughAuditPanel.no')
+  const displayValue = (row: Record<string, unknown>, column: Column) => {
+    const value = row[column.key]
     if (value === null || value === undefined || value === '') return t('drillThroughAuditPanel.na')
-    if (Array.isArray(value)) return value.join(', ')
-    return String(value)
+    switch (column.kind) {
+      case 'bool':
+        return value ? t('drillThroughAuditPanel.yes') : t('drillThroughAuditPanel.no')
+      case 'unix':
+        return typeof value === 'number' ? formatDate(fromUnix(value), locale, DATE_TIME_OPTIONS) : String(value)
+      case 'percent':
+        return `${value}%`
+      case 'steps':
+        return `${value} / ${row['total_steps'] ?? t('drillThroughAuditPanel.na')}`
+      case 'status':
+        return getAnalyticsStatusLabel(tA, String(value))
+      case 'assessmentType':
+        return getAnalyticsAssessmentTypeLabel(tA, String(value) as AssessmentType)
+      default:
+        return String(value)
+    }
   }
 
   const metricLabel = (metric: string) => {
@@ -55,14 +116,14 @@ export default function DrillThroughAuditPanel({ query, assessmentPreview }: Dri
       )
       setResult(response)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('drillThroughAuditPanel.couldNotLoadRows'))
+      toastApiError(error, { fallback: t('drillThroughAuditPanel.couldNotLoadRows') })
     } finally {
       setLoadingMetric(null)
     }
   }
 
   const resultItems = result?.items ?? []
-  const columns = resultItems[0] ? Object.keys(resultItems[0]).slice(0, 6) : []
+  const columns = result ? DRILL_THROUGH_COLUMNS[result.metric] : []
 
   return (
     <Card className="shadow-sm">
@@ -109,7 +170,7 @@ export default function DrillThroughAuditPanel({ query, assessmentPreview }: Dri
               <TableHeader>
                 <TableRow>
                   {columns.map(column => (
-                    <TableHead key={column}>{metricLabel(column)}</TableHead>
+                    <TableHead key={column.key}>{t(`drillThroughAuditPanel.columns.${column.label}`)}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -117,8 +178,8 @@ export default function DrillThroughAuditPanel({ query, assessmentPreview }: Dri
                 {resultItems.slice(0, 8).map((item, index) => (
                   <TableRow key={`${result.metric}-${index}`}>
                     {columns.map(column => (
-                      <TableCell key={column} className="max-w-[220px] truncate">
-                        {displayValue(item[column])}
+                      <TableCell key={column.key} className="max-w-[220px] truncate">
+                        {displayValue(item, column)}
                       </TableCell>
                     ))}
                   </TableRow>

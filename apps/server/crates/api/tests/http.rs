@@ -258,7 +258,8 @@ async fn cors_preflight_allows_the_headers_the_web_client_sends(pool: PgPool) {
 
 /// `Access-Control-Expose-Headers` rides the actual response, not the
 /// preflight. Without it a cross-origin caller cannot read `ETag` (the new
-/// version after a locked write) or `x-request-id` (shown in error toasts).
+/// version after a locked write), `x-request-id` (shown in error toasts) or
+/// `Content-Disposition` (the CSV export's filename — UX-122).
 #[sqlx::test(migrations = "../../migrations")]
 async fn cors_exposes_the_response_headers_the_web_client_reads(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
@@ -282,7 +283,7 @@ async fn cors_exposes_the_response_headers_the_web_client_reads(pool: PgPool) {
         .to_str()
         .unwrap()
         .to_ascii_lowercase();
-    for header_name in ["etag", "x-request-id"] {
+    for header_name in ["etag", "x-request-id", "content-disposition"] {
         assert!(
             exposed.contains(header_name),
             "`{header_name}` must be exposed; got `{exposed}`"
