@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { apiJson } from '@/lib/api-client'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import { useApiError } from '@/hooks/useApiError'
 import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
 import { toUnix } from '@/lib/api/contract'
@@ -307,10 +307,13 @@ export function NativeItemAuthor({
           toast.error(tStudio('lifecycleConflict', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
           return
         }
-        toastApiError(error, { fallback: t('updateLifecycleFailed') })
+        // UX-128: `schedule.after_due_at` belongs on the date field — the
+        // publish tab shows it there and keeps the picked date.
+        if (isApiError(error) && error.fieldErrors.some(e => e.code === 'schedule.after_due_at')) throw error
+        toastApiError(error, { fallback: tStudio('updateLifecycleFailed') })
       }
     },
-    [assessment.assessment_uuid, assessment.course_uuid, queryClient, refresh, t, tStudio, toastApiError],
+    [assessment.assessment_uuid, assessment.course_uuid, queryClient, refresh, tStudio, toastApiError],
   )
 
   const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue)

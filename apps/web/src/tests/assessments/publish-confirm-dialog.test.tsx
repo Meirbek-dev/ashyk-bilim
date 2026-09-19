@@ -10,12 +10,19 @@ import PublishDashboardTab from '@/features/assessments/studio/tabs/PublishDashb
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import ruMessages from '@/messages/ru-RU.json'
+import { APIError } from '@/lib/api/assertSuccess'
 
 vi.mock('@/lib/api-client', () => ({
   apiJson: vi.fn(() => Promise.resolve({ effective_user_count: 12 })),
 }))
 vi.mock('@/i18n/navigation', () => ({
   Link: (props: React.ComponentProps<'a'>) => <a {...props} />,
+}))
+// The date-time picker is a nested popover + calendar; a plain input drives the same `onChange`.
+vi.mock('@/components/ui/calendar', () => ({
+  CalendarDateTimePicker: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
+    <input aria-label="schedule-at" value={value} onChange={event => onChange(event.target.value)} />
+  ),
 }))
 
 const assessmentState = {
@@ -111,5 +118,66 @@ describe('publish confirmation dialog (UX-011)', () => {
     expect(screen.queryByText('Запланировать')).toBeNull()
     fireEvent.click(screen.getByText('Вернуть в черновики'))
     expect(onLifecycleChange).toHaveBeenCalledWith('DRAFT')
+  })
+
+  // UX-128: a publish date past the policy due date is refused on the date
+  // field — client-side first, and again when the server says `schedule.after_due_at`.
+  it('surfaces schedule.after_due_at on the date field and keeps the date', async () => {
+    const onLifecycleChange = vi.fn(() =>
+      Promise.reject(
+        new APIError({
+          status: 422,
+          code: 'validation-failed',
+          message: 'validation failed',
+          fieldErrors: [
+            { field: 'publish', code: 'schedule.after_due_at', message: 'scheduled opening is after the due date' },
+          ],
+        }),
+      ),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <NextIntlClientProvider locale="ru" messages={ruMessages}>
+          <PublishDashboardTab
+            assessmentUuid="asm-1"
+            lifecycle="DRAFT"
+            items={items}
+            totalPoints={8}
+            assessmentState={{
+              ...assessmentState,
+              dueAt: '2030-01-10T10:00:00.000Z',
+              maxAttempts: '',
+              timeLimitMinutes: '',
+            }}
+            validationIssues={[]}
+            canPublish
+            canSchedule
+            canArchive
+            onSwitchToBuilder={() => undefined}
+            onLifecycleChange={onLifecycleChange}
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    )
+    const hint = 'Дата публикации должна быть раньше срока сдачи.'
+    fireEvent.click(screen.getByRole('button', { name: /Запланировать/ }))
+    const dateInput = await screen.findByLabelText('schedule-at')
+
+    // After the due date: the hint shows and the button stays disabled — no request.
+    fireEvent.change(dateInput, { target: { value: '2030-01-20T10:00' } })
+    expect(screen.getByRole('alert')).toHaveTextContent(hint)
+    const scheduleButtons = () => screen.getAllByRole('button', { name: /^Запланировать$/ })
+    expect(scheduleButtons().at(-1)).toBeDisabled()
+
+    // Before the due date on the client, refused by the server: the hint comes
+    // back on the field with the picked date still there.
+    fireEvent.change(dateInput, { target: { value: '2030-01-05T10:00' } })
+    expect(screen.queryByRole('alert')).toBeNull()
+    fireEvent.click(scheduleButtons().at(-1)!)
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Запланировать$/ }))
+    await waitFor(() => expect(onLifecycleChange).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(hint))
+    expect(screen.getByLabelText('schedule-at')).toHaveValue('2030-01-05T10:00')
   })
 })

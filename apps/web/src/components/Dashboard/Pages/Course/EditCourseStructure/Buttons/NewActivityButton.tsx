@@ -13,6 +13,7 @@ import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { apiJson } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
+import { useApiError } from '@/hooks/useApiError'
 import { useTranslations } from 'next-intl'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
@@ -32,6 +33,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
   const activityMutations = useActivityMutations(course.courseStructure.course_uuid, true)
   const t = useTranslations('CourseEdit.NewActivityModal')
   const tNotify = useTranslations('DashPage.Notifications')
+  const { toastApiError } = useApiError()
 
   const closeNewActivityModal = async () => {
     setNewActivityModal(false)
@@ -44,8 +46,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
       toast.success(tNotify('activityCreatedSuccess'))
       setNewActivityModal(false)
     } catch (error: unknown) {
-      const err = error as Error | AppApiError
-      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
+      toastApiError(error, undefined, tNotify('activityCreateFailed'))
       throw error
     } finally {
       toast.dismiss(toast_loading)
@@ -76,8 +77,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
       toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: unknown) {
       toast.dismiss(toast_loading)
-      const err = error as Error | AppApiError
-      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
+      toastApiError(error, undefined, tNotify('activityCreateFailed'))
     }
   }
 
@@ -92,8 +92,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
       setNewActivityModal(false)
       toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: unknown) {
-      const err = error as Error | AppApiError
-      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
+      toastApiError(error, undefined, tNotify('activityCreateFailed'))
     } finally {
       toast.dismiss(toast_loading)
     }
@@ -124,7 +123,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
         toast.success(tNotify('activityCreatedSuccess'))
         setNewActivityModal(false)
       } catch (error: unknown) {
-        toast.error(error instanceof Error ? error.message : tNotify('uploadFailed'))
+        toastApiError(error, undefined, tNotify('activityCreateFailed'))
         throw error
       } finally {
         toast.dismiss(toast_loading)

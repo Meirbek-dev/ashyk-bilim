@@ -71,7 +71,11 @@ interface PublishDashboardTabProps {
   publishedAt?: string | null
   archivedAt?: string | null
   onSwitchToBuilder: (itemUuid?: string) => void
-  onLifecycleChange: (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => void
+  onLifecycleChange: (
+    lifecycle: AssessmentLifecycle,
+    scheduledAt?: string | null,
+    auditNote?: string | null,
+  ) => void | Promise<void>
 }
 
 const assessmentAccessQueryOptions = (assessmentUuid: string) =>
@@ -101,6 +105,9 @@ export default function PublishDashboardTab({
   const tStudio = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduledAt, setScheduledAt] = useState('')
+  // UX-128: the server refuses a publish date past the policy due date
+  // (422 `schedule.after_due_at`); the picker says so before and after.
+  const [scheduleRefused, setScheduleRefused] = useState(false)
   const [pendingAction, setPendingAction] = useState<'publish' | 'schedule' | null>(null)
   const [auditNote, setAuditNote] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -140,13 +147,22 @@ export default function PublishDashboardTab({
     })
   }
 
+  const scheduleAfterDue = Boolean(
+    scheduledAt && assessmentState.dueAt && new Date(scheduledAt) >= new Date(assessmentState.dueAt),
+  )
+
   const handleSchedule = () => {
     if (!scheduledAt) return
-    startTransition(() => {
-      onLifecycleChange('SCHEDULED', new Date(scheduledAt).toISOString(), auditNote)
-      setScheduleOpen(false)
+    startTransition(async () => {
       setPendingAction(null)
-      setScheduledAt('')
+      try {
+        await onLifecycleChange('SCHEDULED', new Date(scheduledAt).toISOString(), auditNote)
+        setScheduleOpen(false)
+        setScheduledAt('')
+      } catch {
+        setScheduleRefused(true)
+        setScheduleOpen(true)
+      }
     })
   }
 
@@ -244,13 +260,21 @@ export default function PublishDashboardTab({
                   {/* UX-112: a publication date is in the future — no 1900–2077 year list. */}
                   <CalendarDateTimePicker
                     value={scheduledAt}
-                    onChange={setScheduledAt}
+                    onChange={value => {
+                      setScheduledAt(value)
+                      setScheduleRefused(false)
+                    }}
                     minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                   />
+                  {(scheduleAfterDue || scheduleRefused) && (
+                    <p role="alert" className="text-destructive text-xs">
+                      {tStudio('validation.schedule_after_due_at')}
+                    </p>
+                  )}
                   <Button
                     size="sm"
                     className="w-full"
-                    disabled={isPending || !scheduledAt || !canSchedule}
+                    disabled={isPending || !scheduledAt || !canSchedule || scheduleAfterDue}
                     onClick={() => {
                       setPendingAction('schedule')
                       setScheduleOpen(false)
