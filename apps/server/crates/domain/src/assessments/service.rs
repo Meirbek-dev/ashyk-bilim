@@ -476,7 +476,7 @@ impl AssessmentsService {
             return Ok(());
         }
         Err(Error::forbidden(format!(
-            "no {what} access to this assessment"
+            "no {what} access to this course"
         )))
     }
 
