@@ -30,6 +30,7 @@ export function teacherSubmissionFromWire(value: unknown): Submission {
   })
   return {
     ...reviewItemFromWire(item), assessment_id: item.assessment_id, score_override: item.score_override ?? null,
+    auto_submit_reason: item.auto_submit_reason ?? null,
     answers_json: learner.answers_json, grading_json: item.grading,
     release_state: item.release_state.toUpperCase(),
     started_at: unixToIso(item.started_at_unix),

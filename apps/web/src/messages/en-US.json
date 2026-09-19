@@ -10368,6 +10368,7 @@
     "description": "Grade each item individually. The final score is calculated automatically.",
     "overrideScore": "Override score",
     "overrideScoreDescription": "Set a custom final score instead of the calculated total.",
+    "annulledOverrideHint": "Attempt annulled (violations) — score 0 unless overridden.",
     "finalScore": "Final score",
     "overrideReason": "Override reason",
     "overallFeedback": "Overall feedback",

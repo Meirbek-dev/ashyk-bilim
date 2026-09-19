@@ -713,6 +713,44 @@ describe('teacher review controls', () => {
       await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
       expect(lastPayload()).toMatchObject({ final_score: null, item_grades: [] })
     })
+
+    // UX-117: an integrity-annulled attempt keeps raw 0 unless overridden — the
+    // form says so, and the switch cannot be turned off (a silent no-op otherwise).
+    it('keeps the override switch on with a hint for an annulled attempt', async () => {
+      mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+      mocks.gradingPanelState.submission = createSubmission({
+        status: 'PUBLISHED',
+        final_score: 0,
+        score_override: 0,
+        auto_submit_reason: 'integrity_violation',
+        version: 2,
+        grading_json: { feedback: '', items: gradedItems },
+      })
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="submission_review"
+              assessmentUuid="assessment_review"
+              activityUuid="activity_review"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+      const republish = screen.getByRole('button', { name: 'republish' })
+      await waitFor(() => expect(republish).toBeEnabled())
+      expect(screen.getByText('annulledOverrideHint')).toBeInTheDocument()
+      expect(screen.getByRole('switch')).toBeChecked()
+      fireEvent.click(screen.getByRole('switch'))
+      expect(screen.getByRole('switch')).toBeChecked()
+
+      fireEvent.change(screen.getByRole('spinbutton', { name: 'overrideScore' }), { target: { value: '40' } })
+      fireEvent.click(republish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ final_score: 40 })
+    })
   })
 
   it('explains already visible grades and offers a re-publish (PUBLISHED → PUBLISHED is the only allowed move)', () => {

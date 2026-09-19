@@ -31,6 +31,8 @@ export interface Submission {
   final_score?: number | null
   /** BUG-174: the stored raw when it is a manual override (teacher view only). */
   score_override?: number | null
+  /** UX-117: `integrity_violation` = annulled, the raw stays 0 unless overridden. */
+  auto_submit_reason?: 'time_expired' | 'integrity_violation' | null
   version?: number
   started_at?: string | null
   submitted_at?: string | null

@@ -141,6 +141,9 @@ export default function GradeForm({
   const maxPossible = useMemo(() => sumScores(gradedItems.map(item => item.max_score)), [gradedItems])
 
   const editable = submission ? canTeacherEditGrade(submission.status) : false
+  // UX-117: an integrity-annulled attempt keeps its raw 0 on the server unless
+  // a typed override replaces it — the switch stays on, turning it off is a no-op.
+  const annulled = submission?.auto_submit_reason === 'integrity_violation'
   // Field-level validation: a typed score outside 0..=max blocks save/publish
   // with a visible error instead of being silently clamped.
   const finalScoreInvalid = (!hasItemGrading || overrideScore) && isScoreInputInvalid(draft.score)
@@ -164,7 +167,7 @@ export default function GradeForm({
       score: stored === null || stored === undefined ? '' : String(stored),
       feedback: submission?.grading_json?.feedback ?? '',
     })
-    setOverrideScore(submission?.score_override != null)
+    setOverrideScore(submission?.score_override != null || submission?.auto_submit_reason === 'integrity_violation')
     setOverrideReason('')
     setDirty(false)
     setDirtyItems(new Set())
@@ -575,15 +578,22 @@ export default function GradeForm({
                 id="override-score-switch"
                 checked={overrideScore}
                 onCheckedChange={checked => {
+                  if (!checked && annulled) return
                   setOverrideScore(checked)
                   setDirty(true)
                 }}
                 disabled={!editable}
+                aria-describedby={annulled ? 'override-score-annulled' : undefined}
               />
               <Label htmlFor="override-score-switch" className="text-sm">
                 {tItemGrading('overrideScore')}
               </Label>
             </div>
+            {annulled ? (
+              <p id="override-score-annulled" className="text-muted-foreground text-xs">
+                {tItemGrading('annulledOverrideHint')}
+              </p>
+            ) : null}
             {overrideScore && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
