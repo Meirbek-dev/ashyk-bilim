@@ -475,9 +475,7 @@ impl AssessmentsService {
         if actor.has(perm(action, Scope::Platform)) || course.is_author(actor.user_id) {
             return Ok(());
         }
-        Err(Error::forbidden(format!(
-            "no {what} access to this course"
-        )))
+        Err(Error::forbidden(format!("no {what} access to this course")))
     }
 
     /// Course-visible (404 otherwise) + authoring grant.
