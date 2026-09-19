@@ -6813,6 +6813,7 @@
     "tryAgain": "Қайтадан көріңіз",
     "rateLimited": "Сұраулар тым көп. Сәл кейінірек қайталап көріңіз.",
     "rateLimitedRetry": "Әрекеттер тым көп. {minutes, plural, other {# минуттан}} кейін қайталап көріңіз.",
+    "rateLimitedRetrySeconds": "Әрекеттер тым көп. {seconds, plural, other {# секундтан}} кейін қайталап көріңіз.",
     "networkUnavailable": "Желіге қосылым жоқ. Байланысты тексеріңіз.",
     "sessionExpired": "Сеанс мерзімі аяқталды. Қайта кіріңіз.",
     "permissionDenied": "Бұл әрекетке рұқсатыңыз жоқ.",

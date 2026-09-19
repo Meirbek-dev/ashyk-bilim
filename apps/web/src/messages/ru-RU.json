@@ -6798,6 +6798,7 @@
     "tryAgain": "Попробуйте снова",
     "rateLimited": "Слишком много запросов. Попробуйте чуть позже.",
     "rateLimitedRetry": "Слишком много попыток. Попробуйте через {minutes, plural, one {# минуту} few {# минуты} other {# минут}}.",
+    "rateLimitedRetrySeconds": "Слишком много попыток. Попробуйте через {seconds, plural, one {# секунду} few {# секунды} other {# секунд}}.",
     "networkUnavailable": "Нет соединения с сетью. Проверьте подключение.",
     "sessionExpired": "Сеанс истёк. Войдите снова.",
     "permissionDenied": "У вас нет прав для этого действия.",

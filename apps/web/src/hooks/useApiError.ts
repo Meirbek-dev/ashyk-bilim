@@ -86,10 +86,14 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
         ...(options.fallback === undefined ? {} : { fallback: options.fallback }),
       })
       // A 429 that knows its window says when (UX-101): `Retry-After` /
-      // `details.retry_after_seconds` → «Попробуйте через N минут».
+      // `details.retry_after_seconds` → «Попробуйте через N минут», or in
+      // seconds under a minute (UX-121: a 10 s window is not «1 минуту»).
       const retryAfter = retryAfterSecondsOf(error)
       if (processed.status === 429 && retryAfter && t.has('rateLimitedRetry')) {
-        processed.description = t('rateLimitedRetry', { minutes: Math.max(1, Math.ceil(retryAfter / 60)) })
+        processed.description =
+          retryAfter < 60 && t.has('rateLimitedRetrySeconds')
+            ? t('rateLimitedRetrySeconds', { seconds: Math.max(1, Math.ceil(retryAfter)) })
+            : t('rateLimitedRetry', { minutes: Math.max(1, Math.ceil(retryAfter / 60)) })
       }
 
       // Bind validation errors to RHF if setError is provided

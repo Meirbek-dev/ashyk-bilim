@@ -6798,6 +6798,7 @@
     "tryAgain": "Try again",
     "rateLimited": "Too many requests. Please try again shortly.",
     "rateLimitedRetry": "Too many attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+    "rateLimitedRetrySeconds": "Too many attempts. Try again in {seconds, plural, one {# second} other {# seconds}}.",
     "networkUnavailable": "Network unavailable. Please check your connection.",
     "sessionExpired": "Your session has expired. Please log in again.",
     "permissionDenied": "You do not have permission to perform this action.",
