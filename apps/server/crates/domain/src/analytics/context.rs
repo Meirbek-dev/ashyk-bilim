@@ -455,11 +455,12 @@ pub const fn is_reviewable(s: &SubmissionInfoRow) -> bool {
     matches!(s.status, SubmissionStatus::Pending)
 }
 
-/// Final score, else the auto score once graded.
+/// The released score — the grade of record (BUG-194): a returned, pending
+/// or saved-unreleased attempt never scores analytics, as in the gradebook
+/// and the learner's projection (`GradeKey`).
 #[must_use]
 pub fn score_of(s: &SubmissionInfoRow) -> Option<f64> {
-    s.final_score
-        .or_else(|| if is_graded(s) { s.auto_score } else { None })
+    s.grade_key().score
 }
 
 #[must_use]

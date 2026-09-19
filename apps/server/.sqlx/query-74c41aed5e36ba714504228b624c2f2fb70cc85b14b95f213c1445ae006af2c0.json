@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", auto_score, final_score, is_late,\n                  violation_count, duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                  grading\n           FROM submissions\n           WHERE course_id = ANY($1) AND status <> 'draft'\n             AND ($2::double precision IS NULL\n                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))\n           ORDER BY id",
+  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, final_score, is_late,\n                  violation_count, duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                  grading\n           FROM submissions\n           WHERE course_id = ANY($1) AND status <> 'draft'\n             AND ($2::double precision IS NULL\n                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))\n           ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -60,12 +60,12 @@
       },
       {
         "ordinal": 5,
-        "name": "auto_score",
-        "type_info": "Float8",
+        "name": "attempt_number",
+        "type_info": "Int4",
         "origin": {
           "Table": {
             "table": "submissions",
-            "name": "auto_score"
+            "name": "attempt_number"
           }
         }
       },
@@ -167,7 +167,7 @@
       false,
       false,
       false,
-      true,
+      false,
       true,
       false,
       false,
@@ -180,5 +180,5 @@
       false
     ]
   },
-  "hash": "47d6831def9fb4d009b32e5f1bf18847a3bb57e2a90af66b6a838aff887bc1dd"
+  "hash": "74c41aed5e36ba714504228b624c2f2fb70cc85b14b95f213c1445ae006af2c0"
 }

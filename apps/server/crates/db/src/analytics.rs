@@ -198,7 +198,7 @@ pub struct SubmissionInfoRow {
     pub course_id: CourseId,
     pub user_id: UserId,
     pub status: SubmissionStatus,
-    pub auto_score: Option<f64>,
+    pub attempt_number: i32,
     pub final_score: Option<f64>,
     pub is_late: bool,
     pub violation_count: i32,
@@ -209,6 +209,20 @@ pub struct SubmissionInfoRow {
     pub created_at: i64,
     pub updated_at: i64,
     pub grading: serde_json::Value,
+}
+
+impl SubmissionInfoRow {
+    /// The grade-of-record key (BUG-194): the same rule as
+    /// [`crate::submissions::SubmissionRow::grade_key`].
+    #[must_use]
+    pub fn grade_key(&self) -> crate::submissions::GradeKey {
+        let released = self.status == SubmissionStatus::Published && self.final_score.is_some();
+        crate::submissions::GradeKey {
+            released,
+            score: self.final_score.filter(|_| released),
+            attempt_number: self.attempt_number,
+        }
+    }
 }
 
 /// Non-draft submissions in the courses, optionally only those submitted
@@ -223,7 +237,7 @@ pub async fn list_submissions(
         SubmissionInfoRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: SubmissionStatus", auto_score, final_score, is_late,
+                  status AS "status: SubmissionStatus", attempt_number, final_score, is_late,
                   violation_count, duration_seconds,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",

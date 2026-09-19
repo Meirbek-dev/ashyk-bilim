@@ -112,6 +112,7 @@ async fn quiz_with_essay(
     app: &TestApp,
     teacher: &MintedSession,
     chapter_id: &str,
+    policy_patch: serde_json::Value,
 ) -> (String, String, String) {
     let created = app
         .post_as(
@@ -148,6 +149,9 @@ async fn quiz_with_essay(
     let essay_id = essay.json()["id"].as_str().unwrap().to_owned();
     let mut policy = created.json()["policy"].clone();
     policy["grade_release_mode"] = serde_json::json!("batch");
+    for (key, value) in policy_patch.as_object().into_iter().flatten() {
+        policy[key] = value.clone();
+    }
     let policy_res = app
         .send(
             Request::builder()
@@ -277,7 +281,8 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let (course_id, chapter_id) = public_course(&app, &teacher, "Analytics 101").await;
     let (other_course, _) = public_course(&app, &carol, "Other course").await;
     let lesson_id = lesson(&app, &teacher, &chapter_id, "Intro").await;
-    let (quiz_id, choice_id, essay_id) = quiz_with_essay(&app, &teacher, &chapter_id).await;
+    let (quiz_id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
     let alice = learner(&app, "alice").await;
     let bob = learner(&app, "bob").await;
 
@@ -1396,4 +1401,84 @@ async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(poo
         .get_as(&teacher, "/api/v2/analytics/teacher/courses")
         .await;
     assert_eq!(teachers_courses.json()["total"], 1);
+}
+
+fn grade(session: &MintedSession, id: &str, body: &serde_json::Value) -> Request<Body> {
+    Request::builder()
+        .method("PATCH")
+        .uri(format!("/api/v2/submissions/{id}/grade"))
+        .header(header::CONTENT_TYPE, "application/json")
+        .header(header::COOKIE, &session.cookie)
+        .header(header::IF_MATCH, "\"1\"")
+        .body(Body::from(body.to_string()))
+        .unwrap()
+}
+
+/// BUG-194: analytics score the grade of record only — a returned (60) or
+/// saved-unreleased (100) retake never outranks the published 30 in the
+/// assessment summary, the learner rows, the pass-rate drill-through or
+/// the outcomes CSV (the BUG-187 `GradeKey` rule).
+#[sqlx::test(migrations = "../../migrations")]
+async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher, "Grade of record").await;
+    let (quiz_id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 3, "passing_score": 50 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    let first = submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
+    let second = submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
+    let third = submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
+    for (sub, body) in [
+        (&first, serde_json::json!({ "action": "publish", "final_score": 30 })),
+        (&second, serde_json::json!({ "action": "return", "final_score": 60 })),
+        (&third, serde_json::json!({ "action": "save", "final_score": 100 })),
+    ] {
+        let graded = app.send(grade(&teacher, sub, &body)).await;
+        assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    }
+
+    let detail = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/assessments/quiz/{quiz_id}"),
+        )
+        .await;
+    assert_eq!(detail.status, StatusCode::OK, "{}", detail.text());
+    let body = detail.json();
+    assert_eq!(body["summary"]["pass_rate"], 0.0, "{}", body["summary"]);
+    assert_eq!(body["summary"]["median_score"], 30.0, "{}", body["summary"]);
+    let row = &body["learner_rows"][0];
+    assert_eq!(row["attempts"], 3, "{row}");
+    assert_eq!(row["best_score"], 30.0, "{row}");
+    assert_eq!(row["last_score"], 30.0, "{row}");
+
+    let pass_rate = app
+        .get_as(
+            &teacher,
+            &format!(
+                "/api/v2/analytics/teacher/drill-through/pass_rate?assessment_type=quiz&assessment_id={quiz_id}"
+            ),
+        )
+        .await;
+    let item = &pass_rate.json()["items"][0];
+    assert_eq!(item["best_score"], 30.0, "{item}");
+    assert_eq!(item["passed"], false, "{item}");
+
+    let csv = app
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/exports/assessment-outcomes.csv",
+        )
+        .await;
+    assert_eq!(csv.status, StatusCode::OK, "{}", csv.text());
+    let text = csv.text();
+    let line = text.lines().nth(1).unwrap();
+    // …,submission_rate,pass_rate,median_score,difficulty,signals
+    assert!(line.contains(",0,30,"), "{line}");
 }

@@ -1010,12 +1010,19 @@ pub fn build_detail(
                 .iter()
                 .max_by_key(|s| (submitted_at(s), s.id))
                 .copied();
+            // BUG-194: the last *released* attempt's score, never a
+            // returned / unreleased retake's.
+            let last_released = attempts
+                .iter()
+                .filter(|s| score_of(s).is_some())
+                .max_by_key(|s| (submitted_at(s), s.id))
+                .copied();
             AssessmentLearnerRow {
                 user_id: *user_id,
                 user_display_name: ctx.display_name(*user_id),
                 attempts: count_i64(attempts.len()),
                 best_score: best.map(round2),
-                last_score: last.and_then(score_of).map(round2),
+                last_score: last_released.and_then(score_of).map(round2),
                 submitted_at_unix: last.map(submitted_at),
                 graded_at_unix: last.and_then(graded_at),
                 status: last.map(|s| status_str(s.status)),
