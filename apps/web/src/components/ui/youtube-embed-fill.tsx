@@ -6,6 +6,7 @@
  */
 import type { CSSProperties } from 'react'
 import { YouTubeEmbed } from '@next/third-parties/google'
+import { useTranslations } from 'next-intl'
 
 type YouTubeEmbedProps = Parameters<typeof YouTubeEmbed>[0]
 
@@ -23,7 +24,9 @@ function cssPropToString(style: CSSProperties): string {
 }
 
 export function YouTubeEmbedFill({ style, ...props }: YouTubeEmbedFillProps) {
-  const embedProps: YouTubeEmbedProps = { ...props }
+  const t = useTranslations('Common')
+  // UX-119: lite-youtube's facade button/iframe title defaults to «Play».
+  const embedProps: YouTubeEmbedProps = { playlabel: t('playVideo'), ...props }
   if (style) {
     embedProps.style = cssPropToString(style)
   }

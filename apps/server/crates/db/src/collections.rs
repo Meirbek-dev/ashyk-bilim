@@ -55,10 +55,15 @@ pub async fn get_collection(pool: &PgPool, id: CollectionId) -> Result<Option<Co
 }
 
 /// Newest-first page of collections visible to `viewer`.
+///
+/// A collection whose attached courses are all invisible to the viewer is
+/// omitted (UX-119) — unless the viewer created it or `see_all_courses`
+/// (same course-visibility rule as [`list_collection_courses`]).
 pub async fn list_collections(
     pool: &PgPool,
     viewer: Option<UserId>,
     see_all: bool,
+    see_all_courses: bool,
     cursor: Option<CollectionId>,
     limit: i64,
 ) -> Result<Vec<CollectionRow>> {
@@ -71,12 +76,23 @@ pub async fn list_collections(
            FROM collections
            WHERE (public OR $1 OR creator_id = $2)
              AND ($3::uuid IS NULL OR id < $3)
+             AND ($5 OR creator_id = $2
+                  OR NOT EXISTS (SELECT 1 FROM collection_courses cc
+                                 WHERE cc.collection_id = collections.id)
+                  OR EXISTS (SELECT 1 FROM collection_courses cc
+                             JOIN courses c ON c.id = cc.course_id
+                             WHERE cc.collection_id = collections.id
+                               AND (c.public OR c.creator_id = $2
+                                    OR EXISTS (SELECT 1 FROM resource_authors ra
+                                               WHERE ra.course_id = c.id AND ra.user_id = $2
+                                                 AND ra.status = 'active'))))
            ORDER BY id DESC
            LIMIT $4"#,
         see_all,
         viewer.map(|v| v.0),
         cursor.map(|c| c.0),
-        limit
+        limit,
+        see_all_courses
     )
     .fetch_all(pool)
     .await?;

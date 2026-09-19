@@ -214,3 +214,42 @@ async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
         assert_eq!(res.json()["field_errors"][0]["code"], "required");
     }
 }
+
+/// UX-119: a public collection whose attached courses are all invisible to
+/// the viewer is left out of the list (it would render as «0 courses»);
+/// the creator still sees it, and an empty collection still lists.
+#[sqlx::test(migrations = "../../migrations")]
+async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let draft_course = course(&app, &owner, "Draft only", false).await;
+    let hidden = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Drafts", "public": true, "courses": [draft_course] }),
+        )
+        .await;
+    assert_eq!(hidden.status, StatusCode::CREATED, "{}", hidden.text());
+    let empty = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Empty", "public": true }),
+        )
+        .await;
+    assert_eq!(empty.status, StatusCode::CREATED, "{}", empty.text());
+
+    let learner = app.mint_session(&[]).await;
+    let listed = app.get_as(&learner, "/api/v2/collections").await;
+    let names: Vec<_> = listed.json()["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(names, ["Empty"], "{}", listed.text());
+
+    let mine = app.get_as(&owner, "/api/v2/collections").await;
+    assert_eq!(mine.json()["items"].as_array().unwrap().len(), 2);
+}

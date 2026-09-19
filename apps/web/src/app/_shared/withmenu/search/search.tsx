@@ -124,6 +124,8 @@ function SearchPage() {
   }
 
   const totalResults = searchResults.courses.length + searchResults.collections.length + searchResults.users.length
+  // UX-119: a filter with 0 hits gets its own empty copy, not a blank list.
+  const visibleResults = selectedType === 'all' ? totalResults : searchResults[selectedType].length
   // UX-109: no «Найдено 0 результатов» / «(0)» before the first result set.
   const countOf = (n: number) => (isLoading ? null : n)
 
@@ -230,6 +232,10 @@ function SearchPage() {
             <LoadingState />
           ) : totalResults === 0 && query ? (
             <EmptyState query={query} t={t} />
+          ) : visibleResults === 0 && selectedType !== 'all' ? (
+            <p className="text-muted-foreground py-16 text-center text-sm">
+              {t(`noFilterResults.${selectedType}`, { query })}
+            </p>
           ) : (
             <div className="space-y-12">
               {/* Courses Grid */}

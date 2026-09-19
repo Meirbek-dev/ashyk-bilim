@@ -137,6 +137,7 @@ impl CollectionsService {
             &self.pool,
             Some(actor.user_id),
             see_all,
+            sees_private(actor, ResourceType::Course),
             cursor,
             limit + 1,
         )

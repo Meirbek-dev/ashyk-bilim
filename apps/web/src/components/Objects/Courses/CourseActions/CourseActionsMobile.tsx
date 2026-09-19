@@ -9,7 +9,13 @@ import { startCourse } from '@services/courses/activity'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import type { LearnerCourseState } from '@/features/learner-course/api'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  learnerCourseProgress,
+  learnerCourseStateQueryOptions,
+  type LearnerCourseState,
+} from '@/features/learner-course/api'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
 
 import { Button } from '@/components/ui/button'
@@ -139,6 +145,7 @@ function MultipleAuthors({ authors }: { authors: Author[] }) {
 function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: CourseActionsMobileProps) {
   const t = useTranslations('Courses.CourseActionsMobile')
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { user: currentUser } = useSession()
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -154,6 +161,17 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
   )
   // Same rule as CoursesActions: the wire's `enrolled` wins over the trail run.
   const isStarted = learnerState?.enrolled ?? hasTrailRun
+  // UX-119: nothing published for learners (0/0) — no CTA to dead-click.
+  const hasNoLiveActivities =
+    learnerState !== null && learnerState !== undefined && learnerCourseProgress(learnerState).total === 0
+
+  // UX-119: same as CoursesActions — Back within the learner-state
+  // staleTime must show the enrolled landing.
+  const refreshEnrolment = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
+      queryClient.invalidateQueries({ queryKey: learnerCourseStateQueryOptions(courseuuid).queryKey }),
+    ])
 
   const handleCourseAction = async () => {
     if (!currentUser) {
@@ -165,7 +183,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
     if (isStarted) {
       if (!hasTrailRun) {
         await startCourse(`course_${courseuuid}`).catch(() => undefined)
-        await revalidateTags(['courses'])
+        await Promise.all([revalidateTags(['courses']), refreshEnrolment()])
       }
       const run = trailData?.runs?.find((r: AppTrailRun) => {
         const cleanRunCourseUuid = r.course?.course_uuid?.replace('course_', '')
@@ -204,7 +222,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
     startTransition(() => setIsActionLoading(true))
     try {
       await startCourse(`course_${courseuuid}`)
-      await revalidateTags(['courses'])
+      await Promise.all([revalidateTags(['courses']), refreshEnrolment()])
 
       // Get the first activity from the first chapter
       const firstChapter = course.chapters?.[0]
@@ -247,31 +265,35 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
       <div className="flex flex-col space-y-4">
         <MultipleAuthors authors={sortedAuthors} />
 
-        <Button
-          type="button"
-          onClick={handleCourseAction}
-          disabled={isActionLoading || isPending}
-          className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
-        >
-          {isActionLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : !currentUser ? (
-            <>
-              <LogIn className="h-4 w-4" />
-              {t('signIn')}
-            </>
-          ) : isStarted ? (
-            <>
-              <BookOpen className="h-4 w-4" />
-              {t('continueLearning')}
-            </>
-          ) : (
-            <>
-              <LogIn className="h-4 w-4" />
-              {t('startCourse')}
-            </>
-          )}
-        </Button>
+        {hasNoLiveActivities ? (
+          <p className="text-muted-foreground text-sm">{t('noPublishedActivities')}</p>
+        ) : (
+          <Button
+            type="button"
+            onClick={handleCourseAction}
+            disabled={isActionLoading || isPending}
+            className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
+          >
+            {isActionLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : !currentUser ? (
+              <>
+                <LogIn className="h-4 w-4" />
+                {t('signIn')}
+              </>
+            ) : isStarted ? (
+              <>
+                <BookOpen className="h-4 w-4" />
+                {t('continueLearning')}
+              </>
+            ) : (
+              <>
+                <LogIn className="h-4 w-4" />
+                {t('startCourse')}
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   )

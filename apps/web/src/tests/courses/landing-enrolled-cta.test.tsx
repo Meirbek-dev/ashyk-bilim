@@ -58,9 +58,9 @@ const enrolledWithoutRun = {
   outline: [{ id: 'ch', activities: [{ id: 'a1', complete: false }] }],
 } as unknown as LearnerCourseState
 
-function renderActions(learnerState: LearnerCourseState | null) {
+function renderActions(learnerState: LearnerCourseState | null, client = new QueryClient()) {
   return render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={client}>
       <NextIntlClientProvider locale="ru" messages={ruMessages}>
         <CoursesActions courseuuid="c1" course={course} trailData={{ runs: [] } as never} learnerState={learnerState} />
       </NextIntlClientProvider>
@@ -92,6 +92,24 @@ describe('course landing CTA vs learner-state', () => {
   it('still offers «Начать курс» when the wire says not enrolled', () => {
     renderActions({ ...enrolledWithoutRun, enrolled: false } as LearnerCourseState)
     expect(screen.getByRole('button', { name: /Начать курс/ })).toBeInTheDocument()
+  })
+
+  // UX-119: the landing reads learner-state (5 s staleTime) — enrolling must
+  // invalidate it, or Back from the first activity offers «Начать курс» again.
+  it('invalidates learner-state after «Начать курс»', async () => {
+    const client = new QueryClient()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    renderActions({ ...enrolledWithoutRun, enrolled: false } as LearnerCourseState, client)
+    fireEvent.click(screen.getByRole('button', { name: /Начать курс/ }))
+    await waitFor(() => expect(mocks.startCourse).toHaveBeenCalledWith('course_c1'))
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['learner-course', 'c1', 'state'] }))
+  })
+
+  // UX-119: 0/0 (every activity unpublished) — no dead «Продолжить», an empty state instead.
+  it('hides the CTA on a course with no published activities', () => {
+    renderActions({ ...enrolledWithoutRun, outline: [] } as unknown as LearnerCourseState)
+    expect(screen.queryByRole('button', { name: /Продолжить/ })).toBeNull()
+    expect(screen.getByText(ruMessages.Courses.CoursesActions.noPublishedActivities)).toBeInTheDocument()
   })
 
   // UX-021: anonymous → login with a returnTo back to this course.

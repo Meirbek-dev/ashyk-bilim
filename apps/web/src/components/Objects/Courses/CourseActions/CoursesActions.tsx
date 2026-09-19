@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { learnerCourseProgress } from '@/features/learner-course/api'
+import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import type { LearnerCourseState } from '@/features/learner-course/api'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
 import { buildCourseWorkspacePath } from '@/lib/course-management'
@@ -70,9 +70,19 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
       : null
   // 100 % without a certificate: the wire's next action is a review, not «Продолжить» (UX-053).
   const isReviewCompletion = isStarted && !nextUnfinished && learnerState?.next_action?.id === 'review_completion'
+  // UX-119: nothing published for learners (0/0) — no CTA to dead-click.
+  const hasNoLiveActivities =
+    learnerState !== null && learnerState !== undefined && learnerCourseProgress(learnerState).total === 0
 
   // Anonymous: sign in and come straight back to this course.
   const loginHref = buildLoginRedirect(`/course/${courseuuid}`)
+  // UX-119: the landing reads `learner-state.enrolled` — Back within its
+  // staleTime must not offer «Начать курс» again.
+  const refreshEnrolment = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
+      queryClient.invalidateQueries({ queryKey: learnerCourseStateQueryOptions(courseuuid).queryKey }),
+    ])
 
   const handleCourseAction = async () => {
     if (!currentUser) {
@@ -96,7 +106,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
       // the run back so `/trail` lists the course again.
       if (!hasTrailRun) {
         await startCourse(`course_${courseuuid}`).catch(() => undefined)
-        await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+        await refreshEnrolment()
       }
       const { completedIds } = learnerCourseProgress(learnerState)
 
@@ -134,7 +144,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
 
     try {
       await startCourse(`course_${courseuuid}`)
-      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+      await refreshEnrolment()
       toast.success(t('startedCourseSuccess'), { id: loadingToast })
 
       // Get the first activity from the first chapter
@@ -147,9 +157,6 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
           `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`,
         )
       } else {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.trail.current(),
-        })
         router.refresh()
       }
     } catch (error) {
@@ -317,6 +324,17 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     } = learnerCourseProgress(learnerState)
     const isCompleted = totalActivities > 0 && progressPercentage === 100
 
+    if (hasNoLiveActivities) {
+      return (
+        <div className="border-border/60 bg-muted/20 flex items-center gap-4 rounded-xl border p-4">
+          <div className="bg-muted flex size-14 shrink-0 items-center justify-center rounded-full">
+            <BookOpen className="text-muted-foreground size-6" />
+          </div>
+          <p className="text-muted-foreground text-sm">{t('noPublishedActivities')}</p>
+        </div>
+      )
+    }
+
     if (!isStarted) {
       return (
         <Button
@@ -413,21 +431,23 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
         {renderProgressSection()}
 
         {/* Start/Continue Course Button */}
-        <Button onClick={handleCourseAction} disabled={isActionLoading} className="h-12 w-full gap-2 text-base">
-          {isActionLoading ? (
-            <Loader2 className="size-5 animate-spin" />
-          ) : (
-            renderActionButton(
-              !isStarted
-                ? 'start'
-                : !nextUnfinished && certificateHref
-                  ? 'certificate'
-                  : isReviewCompletion
-                    ? 'review'
-                    : 'continue',
-            )
-          )}
-        </Button>
+        {hasNoLiveActivities ? null : (
+          <Button onClick={handleCourseAction} disabled={isActionLoading} className="h-12 w-full gap-2 text-base">
+            {isActionLoading ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              renderActionButton(
+                !isStarted
+                  ? 'start'
+                  : !nextUnfinished && certificateHref
+                    ? 'certificate'
+                    : isReviewCompletion
+                      ? 'review'
+                      : 'continue',
+              )
+            )}
+          </Button>
+        )}
 
         {/* Contributor Button */}
         {renderContributorButton()}

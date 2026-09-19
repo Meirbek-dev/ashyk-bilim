@@ -42,7 +42,10 @@ import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 import { CourseAIHub } from '@/features/course-qa'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { courseDiscussionsQueryOptions, learnerCourseStructureQueryOptions } from '@/features/courses/queries/course.query'
+import {
+  courseDiscussionsQueryOptions,
+  learnerCourseStructureQueryOptions,
+} from '@/features/courses/queries/course.query'
 import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 interface CourseClientProps {
@@ -386,124 +389,133 @@ function CourseClient(props: CourseClientProps) {
                 {/* Course chapters */}
                 <div>
                   <h2 className="mb-4 text-lg font-semibold tracking-tight">{t('courseLessons')}</h2>
-                  <div className="border-border overflow-hidden rounded-xl border">
-                    {(course.chapters ?? []).map((chapter: AppChapter, idx: number) => {
-                      const chapterKey = chapter.chapter_uuid ?? `chapter-${idx}`
-                      const isExpanded = expandedChapters[chapterKey] ?? idx === 0
-                      return (
-                        <Collapsible
-                          key={chapter.chapter_uuid || `chapter-${chapter.name}`}
-                          open={isExpanded}
-                          onOpenChange={open => {
-                            setExpandedChapters(prev => ({
-                              ...prev,
-                              [chapterKey]: open,
-                            }))
-                          }}
-                        >
-                          <CollapsibleTrigger
-                            nativeButton={false}
-                            render={
-                              <div
+                  {/* UX-008/UX-119: no chapters, or none with a published activity — say so instead of an empty box. */}
+                  {(course.chapters ?? []).every((chapter: AppChapter) => (chapter.activities?.length ?? 0) === 0) ? (
+                    <p className="border-border text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
+                      {t('noPublishedActivities')}
+                    </p>
+                  ) : (
+                    <div className="border-border overflow-hidden rounded-xl border">
+                      {(course.chapters ?? []).map((chapter: AppChapter, idx: number) => {
+                        const chapterKey = chapter.chapter_uuid ?? `chapter-${idx}`
+                        const isExpanded = expandedChapters[chapterKey] ?? idx === 0
+                        return (
+                          <Collapsible
+                            key={chapter.chapter_uuid || `chapter-${chapter.name}`}
+                            open={isExpanded}
+                            onOpenChange={open => {
+                              setExpandedChapters(prev => ({
+                                ...prev,
+                                [chapterKey]: open,
+                              }))
+                            }}
+                          >
+                            <CollapsibleTrigger
+                              nativeButton={false}
+                              render={
+                                <div
+                                  className={cn(
+                                    'flex w-full cursor-pointer items-center px-5 py-4 transition-colors hover:bg-muted/40',
+                                    idx > 0 && 'border-t border-border',
+                                  )}
+                                />
+                              }
+                            >
+                              <span className="text-muted-foreground mr-4 w-5 shrink-0 text-center font-mono text-xs tabular-nums">
+                                {idx + 1}
+                              </span>
+                              <div className="flex min-w-0 flex-1 flex-col">
+                                <h3 className="truncate text-sm font-semibold">{chapter.name}</h3>
+                                <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                                  <Layers size={11} />
+                                  {t('activitiesCount', {
+                                    count: chapter.activities?.length ?? 0,
+                                  })}
+                                </span>
+                              </div>
+                              <ChevronDown
+                                size={16}
                                 className={cn(
-                                  'flex w-full cursor-pointer items-center px-5 py-4 transition-colors hover:bg-muted/40',
-                                  idx > 0 && 'border-t border-border',
+                                  'ml-3 shrink-0 text-muted-foreground transition-transform duration-200',
+                                  isExpanded && 'rotate-180',
                                 )}
                               />
-                            }
-                          >
-                            <span className="text-muted-foreground mr-4 w-5 shrink-0 text-center font-mono text-xs tabular-nums">
-                              {idx + 1}
-                            </span>
-                            <div className="flex min-w-0 flex-1 flex-col">
-                              <h3 className="truncate text-sm font-semibold">{chapter.name}</h3>
-                              <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
-                                <Layers size={11} />
-                                {t('activitiesCount', {
-                                  count: chapter.activities?.length ?? 0,
-                                })}
-                              </span>
-                            </div>
-                            <ChevronDown
-                              size={16}
-                              className={cn(
-                                'ml-3 shrink-0 text-muted-foreground transition-transform duration-200',
-                                isExpanded && 'rotate-180',
-                              )}
-                            />
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="border-border border-t">
-                              {(chapter.activities ?? []).map((activity: AppActivity, actIdx: number) => {
-                                const done = isActivityDone(activity)
-                                const current = isActivityCurrent(activity)
-                                return (
-                                  <Link
-                                    key={activity.activity_uuid}
-                                    id={`activity-${activity.activity_uuid}`}
-                                    href={`${getAbsoluteUrl('')}/course/${courseuuid}/activity/${activity.activity_uuid.replace('activity_', '')}`}
-                                    rel="noopener noreferrer"
-                                    className={cn(
-                                      'group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-muted/30',
-                                      actIdx > 0 && 'border-t border-border/60',
-                                    )}
-                                  >
-                                    {/* Completion indicator */}
-                                    <div className="shrink-0">
-                                      {done ? (
-                                        <div className="bg-primary/15 flex h-5 w-5 items-center justify-center rounded-full">
-                                          <Check size={10} className="text-primary stroke-3" />
-                                        </div>
-                                      ) : (
-                                        <div className="border-border h-5 w-5 rounded-full border-2" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="border-border border-t">
+                                {(chapter.activities ?? []).map((activity: AppActivity, actIdx: number) => {
+                                  const done = isActivityDone(activity)
+                                  const current = isActivityCurrent(activity)
+                                  return (
+                                    <Link
+                                      key={activity.activity_uuid}
+                                      id={`activity-${activity.activity_uuid}`}
+                                      href={`${getAbsoluteUrl('')}/course/${courseuuid}/activity/${activity.activity_uuid.replace('activity_', '')}`}
+                                      rel="noopener noreferrer"
+                                      className={cn(
+                                        'group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-muted/30',
+                                        actIdx > 0 && 'border-t border-border/60',
                                       )}
-                                    </div>
-                                    {/* Activity info */}
-                                    <div className="flex min-w-0 flex-1 flex-col">
-                                      <div className="flex items-center gap-2">
-                                        <span
-                                          className={cn(
-                                            'truncate text-sm font-medium',
-                                            done ? 'text-muted-foreground' : 'text-foreground',
-                                          )}
-                                        >
-                                          {activity.name}
-                                        </span>
-                                        {current && (
-                                          <Badge
-                                            variant="secondary"
-                                            className="bg-primary/10 text-primary shrink-0 animate-pulse text-xs"
-                                          >
-                                            {t('current')}
-                                          </Badge>
+                                    >
+                                      {/* Completion indicator */}
+                                      <div className="shrink-0">
+                                        {done ? (
+                                          <div className="bg-primary/15 flex h-5 w-5 items-center justify-center rounded-full">
+                                            <Check size={10} className="text-primary stroke-3" />
+                                          </div>
+                                        ) : (
+                                          <div className="border-border h-5 w-5 rounded-full border-2" />
                                         )}
                                       </div>
-                                      <div className="text-muted-foreground mt-0.5 flex items-center gap-1">
-                                        {activity.activity_type === 'TYPE_DYNAMIC' && <StickyNote size={11} />}
-                                        {activity.activity_type === 'TYPE_VIDEO' && <Video size={11} />}
-                                        {activity.activity_type === 'TYPE_DOCUMENT' && <File size={11} />}
-                                        {activity.activity_type === 'TYPE_FILE_SUBMISSION' && <FileArchive size={11} />}
-                                        {activity.activity_type === 'TYPE_EXAM' && <ClipboardList size={11} />}
-                                        {activity.activity_type === 'TYPE_CUSTOM' && <ListChecks size={11} />}
-                                        <span className="text-xs">
-                                          {getActivityTypeLabel(activity.activity_type ?? '')}
-                                        </span>
+                                      {/* Activity info */}
+                                      <div className="flex min-w-0 flex-1 flex-col">
+                                        <div className="flex items-center gap-2">
+                                          <span
+                                            className={cn(
+                                              'truncate text-sm font-medium',
+                                              done ? 'text-muted-foreground' : 'text-foreground',
+                                            )}
+                                          >
+                                            {activity.name}
+                                          </span>
+                                          {current && (
+                                            <Badge
+                                              variant="secondary"
+                                              className="bg-primary/10 text-primary shrink-0 animate-pulse text-xs"
+                                            >
+                                              {t('current')}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className="text-muted-foreground mt-0.5 flex items-center gap-1">
+                                          {activity.activity_type === 'TYPE_DYNAMIC' && <StickyNote size={11} />}
+                                          {activity.activity_type === 'TYPE_VIDEO' && <Video size={11} />}
+                                          {activity.activity_type === 'TYPE_DOCUMENT' && <File size={11} />}
+                                          {activity.activity_type === 'TYPE_FILE_SUBMISSION' && (
+                                            <FileArchive size={11} />
+                                          )}
+                                          {activity.activity_type === 'TYPE_EXAM' && <ClipboardList size={11} />}
+                                          {activity.activity_type === 'TYPE_CUSTOM' && <ListChecks size={11} />}
+                                          <span className="text-xs">
+                                            {getActivityTypeLabel(activity.activity_type ?? '')}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                    {/* Arrow */}
-                                    <ArrowRight
-                                      size={13}
-                                      className="group-hover:text-muted-foreground shrink-0 text-transparent transition-all duration-150 group-hover:translate-x-0.5"
-                                    />
-                                  </Link>
-                                )
-                              })}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      )
-                    })}
-                  </div>
+                                      {/* Arrow */}
+                                      <ArrowRight
+                                        size={13}
+                                        className="group-hover:text-muted-foreground shrink-0 text-transparent transition-all duration-150 group-hover:translate-x-0.5"
+                                      />
+                                    </Link>
+                                  )
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* BUG-159: every AI call needs a session — anonymous visitors get no hub (and no 401 redirect). */}
