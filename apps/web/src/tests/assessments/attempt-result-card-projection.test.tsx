@@ -2,7 +2,7 @@
 // Gauntlet: the outline sidebar ticked the quiz (projection: best attempt 100%,
 // passed) while the result card said "Не пройдено · 0%" from the latest
 // attempt alone. The card now follows the projection and notes the latest.
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, it } from 'vite-plus/test'
 
@@ -55,6 +55,37 @@ describe('AttemptResultCard vs progress projection', () => {
     expect(screen.queryByText('Не пройдено')).toBeNull()
     expect(screen.getByText(/· 100%/)).toBeInTheDocument()
     expect(screen.getByText('Последняя попытка: 0%')).toBeInTheDocument()
+  })
+
+  // UX-116: the review belongs to the grade-of-record attempt (2, 76 %), not
+  // the latest annulled one (3, 0 %) whose breakdown is no verdict.
+  it('reviews the grade-of-record attempt and marks an annulled one', () => {
+    const itemId = '01a091a1-afdd-7607-b09a-e42c0f895903'
+    const item = { item_id: itemId, score: 100, max_score: 100, correct: true, feedback_code: 'correct' }
+    const reviewVm = {
+      ...vm,
+      items: [{ id: itemId, item_uuid: itemId, order: 0, kind: 'CHOICE', title: 'Вопрос', max_score: 10 }],
+      itemScores: { [itemId]: item },
+      autoSubmitReason: 'integrity_violation',
+      generalFeedback: null,
+      attemptReviews: [
+        { attemptNumber: 3, percent: 0, itemScores: { [itemId]: item }, generalFeedback: null, annulled: true },
+        { attemptNumber: 2, percent: 76, itemScores: { [itemId]: item }, generalFeedback: 'Молодец', annulled: false },
+        { attemptNumber: 1, percent: 40, itemScores: { [itemId]: { ...item, score: 40 } }, generalFeedback: null, annulled: false },
+      ],
+    } as unknown as AttemptViewModel
+    render(wrap(<AttemptResultCard vm={reviewVm} activityState={{ ...activityState, score: 76 }} />))
+
+    expect(screen.getByTestId('record-attempt')).toHaveTextContent('Учитывается попытка 2 · 76%')
+    expect(screen.getByTestId('general-feedback')).toHaveTextContent('Молодец')
+    expect(screen.getByRole('button', { name: 'Попытка 2 · 76%' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Посмотреть ответы' }))
+    expect(screen.getByTestId(`item-score-${itemId}`)).toHaveTextContent('10 / 10')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Попытка 3 · 0%' }))
+    expect(screen.getByTestId('attempt-annulled')).toHaveTextContent('Попытка аннулирована')
+    expect(screen.queryByTestId(`item-score-${itemId}`)).toBeNull()
+    expect(screen.queryByTestId('general-feedback')).toBeNull()
   })
 
   it('falls back to the latest attempt against the effective passing score', () => {

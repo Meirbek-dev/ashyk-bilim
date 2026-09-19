@@ -72,6 +72,16 @@ export interface ReviewQueueItemViewModel {
  * View model for the Student Attempt surface.
  * Shared by all kinds; the kind provides the task/question content.
  */
+/** UX-116: one released attempt the learner may review on the result card. */
+export interface AttemptReview {
+  attemptNumber: number
+  percent: number | null
+  itemScores: Record<string, GradedItem>
+  generalFeedback: string | null
+  /** Integrity-annulled: the breakdown is not a verdict. */
+  annulled: boolean
+}
+
 export interface AttemptViewModel {
   surface: 'ATTEMPT'
   kind: AssessmentKind
@@ -87,6 +97,8 @@ export interface AttemptViewModel {
   items: AssessmentItem[]
   /** Released per-item grades keyed by item id (the wire `GradedItem`: score, verdict code, teacher prose); empty until released. */
   itemScores: Record<string, GradedItem>
+  /** UX-116: every released attempt, newest first — the card reviews the grade-of-record one. */
+  attemptReviews: AttemptReview[]
   /** Student may edit answers. */
   canEdit: boolean
   /** Student may save a draft. */

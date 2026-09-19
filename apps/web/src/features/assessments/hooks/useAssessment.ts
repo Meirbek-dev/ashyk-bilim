@@ -238,6 +238,17 @@ function useAssessment(
     policy,
     items: assessment.items.map(itemFromWire),
     itemScores: visible ? Object.fromEntries((latest?.grading?.items ?? []).map(item => [item.item_id, item])) : {},
+    attemptReviews: visible
+      ? (submissions.data ?? [])
+          .filter(row => row.status !== 'DRAFT' && row.release_state === 'visible')
+          .map(row => ({
+            attemptNumber: row.attempt_number,
+            percent: row.final_score ?? row.auto_score ?? null,
+            itemScores: Object.fromEntries((row.grading?.items ?? []).map(item => [item.item_id, item])),
+            generalFeedback: row.grading?.feedback?.trim() ? row.grading.feedback : null,
+            annulled: row.auto_submit_reason === 'integrity_violation',
+          }))
+      : [],
     canEdit: state.can_continue || state.can_start,
     canSaveDraft: state.can_continue,
     canSubmit: state.can_continue || state.can_start,

@@ -162,6 +162,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
       },
     ],
     itemScores: {},
+    attemptReviews: [],
     canEdit: true,
     canSaveDraft: true,
     canSubmit: true,

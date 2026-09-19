@@ -58,6 +58,15 @@ export default function AttemptResultCard({
   const passing = activityState?.passed ?? (pct !== null && pct >= (vm.passingScore ?? 60))
   const showScore = isResultVisible && pct !== null
   const showLatest = showScore && latestPct !== null && latestPct !== pct
+  // UX-116: the review follows the grade-of-record attempt (the one the
+  // projection scored), not the latest; a switcher reaches the others.
+  const reviews = vm.attemptReviews ?? []
+  const recordAttempt = reviews.find(r => r.percent === pct) ?? reviews[0] ?? null
+  const [selectedAttempt, setSelectedAttempt] = useState<number | null>(null)
+  const shown = reviews.find(r => r.attemptNumber === selectedAttempt) ?? recordAttempt
+  const itemScores = shown ? shown.itemScores : vm.itemScores
+  const generalFeedback = shown ? shown.generalFeedback : vm.generalFeedback
+  const annulled = shown ? shown.annulled : vm.autoSubmitReason === 'integrity_violation'
 
   return (
     <div className="mx-auto w-full max-w-2xl py-6">
@@ -114,6 +123,11 @@ export default function AttemptResultCard({
               {t('latestAttemptScore', { score: formatPercent(latestPct) })}
             </p>
           ) : null}
+          {showScore && recordAttempt && recordAttempt !== reviews[0] ? (
+            <p className="text-muted-foreground text-xs" data-testid="record-attempt">
+              {t('recordAttempt', { attempt: recordAttempt.attemptNumber, score: formatPercent(recordAttempt.percent) })}
+            </p>
+          ) : null}
 
           {vm.startedAt ? (
             <p className="text-muted-foreground text-xs">
@@ -145,12 +159,30 @@ export default function AttemptResultCard({
         </ul>
       ) : null}
 
+      {/* UX-116: which released attempt the feedback and breakdown below belong to. */}
+      {showScore && reviews.length > 1 ? (
+        <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label={t('attemptSwitcher')}>
+          {reviews.map(review => (
+            <Button
+              key={review.attemptNumber}
+              type="button"
+              size="sm"
+              variant={review === shown ? 'secondary' : 'outline'}
+              aria-pressed={review === shown}
+              onClick={() => setSelectedAttempt(review.attemptNumber)}
+            >
+              {t('attemptTab', { attempt: review.attemptNumber, score: formatPercent(review.percent) })}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+
       {/* UX-063: the teacher's overall comment, next to the per-item prose. */}
-      {vm.generalFeedback ? (
+      {generalFeedback ? (
         <div className="border-border mb-4 rounded-lg border px-4 py-3 text-sm" data-testid="general-feedback">
           <p className="text-muted-foreground mb-1 text-xs font-medium">{t('teacherFeedback')}</p>
           {/* UX-115: the teacher writes Markdown (tables, emphasis) — render it like the file result does. */}
-          <MarkdownContent content={vm.generalFeedback} mode="compactRichText" />
+          <MarkdownContent content={generalFeedback} mode="compactRichText" />
         </div>
       ) : null}
 
@@ -168,10 +200,15 @@ export default function AttemptResultCard({
               className={cn('text-muted-foreground size-4 transition-transform', breakdownOpen && 'rotate-180')}
             />
           </button>
-          {breakdownOpen ? (
+          {breakdownOpen && annulled ? (
+            // UX-116: an annulled attempt's items are not verdicts — its score is 0 by rule.
+            <p className="text-muted-foreground border-border border-t px-4 py-3 text-sm" data-testid="attempt-annulled">
+              {t('attemptAnnulled')}
+            </p>
+          ) : breakdownOpen ? (
             <div className="border-border divide-border divide-y border-t text-sm">
               {vm.items.map((item, i) => {
-                const graded = vm.itemScores[item.id]
+                const graded = itemScores[item.id]
                 // The wire breakdown is the item's share of 100; show it in the
                 // item's own points — the «10 баллов» the attempt card named (UX-035).
                 const maxScore = item.max_score
