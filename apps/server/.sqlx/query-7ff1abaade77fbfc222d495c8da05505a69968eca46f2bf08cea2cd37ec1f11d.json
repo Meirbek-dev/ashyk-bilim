@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.id AS \"id: CourseId\", c.name, c.description, c.about, c.tags,\n                  c.public, c.open_to_contributors,\n                  c.thumbnail_image_key AS thumbnail_key,\n                  c.creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = c.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM c.updated_at))::bigint AS \"updated_at!\"\n           FROM collection_courses cc\n           JOIN courses c ON c.id = cc.course_id\n           WHERE cc.collection_id = $1\n             AND (c.public OR $2 OR c.creator_id = $3\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = c.id AND ra.user_id = $3\n                               AND ra.status = 'active'))\n           ORDER BY cc.position, c.id",
+  "query": "SELECT c.id AS \"id: CourseId\", c.name, c.description, c.about, c.tags,\n                  c.public, c.open_to_contributors,\n                  c.thumbnail_image_key AS thumbnail_key,\n                  c.creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = c.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM c.updated_at))::bigint AS \"updated_at!\"\n           FROM collection_courses cc\n           JOIN courses c ON c.id = cc.course_id\n           WHERE cc.collection_id = $1\n             AND course_visible(c, $3, $2)\n           ORDER BY cc.position, c.id",
   "describe": {
     "columns": [
       {
@@ -143,5 +143,5 @@
       null
     ]
   },
-  "hash": "e588bbc51993feafbb18cd5f7d4ef116ecfe811c7014f863087c0a881990b2ee"
+  "hash": "7ff1abaade77fbfc222d495c8da05505a69968eca46f2bf08cea2cd37ec1f11d"
 }

@@ -78,6 +78,28 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
     Ok(row)
 }
 
+/// Can `viewer` see this one course? (SQL `course_visible`, BUG-190.)
+///
+/// Public / `see_all` / creator / active resource author (reporters
+/// included) / linked-usergroup member. Unknown course = false.
+pub async fn course_visible(
+    pool: &PgPool,
+    id: CourseId,
+    viewer: Option<UserId>,
+    see_all: bool,
+) -> Result<bool> {
+    let visible = sqlx::query_scalar!(
+        r#"SELECT course_visible(courses, $2, $3) AS "visible!"
+           FROM courses WHERE id = $1"#,
+        id.0,
+        viewer.map(|v| v.0),
+        see_all
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(visible.unwrap_or(false))
+}
+
 /// Listing filters for `list_courses` (`GET /courses`).
 #[derive(Debug, Default, Clone)]
 pub struct CourseFilter<'a> {
@@ -96,8 +118,9 @@ pub struct CourseFilter<'a> {
 
 /// One page of the catalogue as `viewer` sees it.
 ///
-/// Visible: public courses, their own, courses they actively co-author, and
-/// courses reached through a linked usergroup (cohort access). `cursor` = id
+/// Visible: SQL `course_visible` (BUG-190) — public courses, their own,
+/// courses they actively co-author, and courses reached through a linked
+/// usergroup (cohort access); shared with search and collections. `cursor` = id
 /// of the last row from the previous page; the keyset is `(updated_at, id)`
 /// or `(name, id)` depending on `sort`, resolved from that id so the cursor
 /// stays a plain course id.
@@ -120,13 +143,7 @@ pub async fn list_courses(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
-           WHERE (public OR $1 OR creator_id = $2
-                  OR EXISTS (SELECT 1 FROM resource_authors ra
-                             WHERE ra.course_id = courses.id AND ra.user_id = $2
-                               AND ra.status = 'active')
-                  OR EXISTS (SELECT 1 FROM usergroup_courses uc
-                             JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
-                             WHERE uc.course_id = courses.id AND m.user_id = $2))
+           WHERE course_visible(courses, $2, $1)
              AND (NOT $5 OR $1 OR creator_id = $2
                   OR EXISTS (SELECT 1 FROM resource_authors ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $2

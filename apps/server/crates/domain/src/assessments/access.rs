@@ -129,7 +129,8 @@ pub struct AttemptState {
 }
 
 impl AssessmentsService {
-    /// Public course, course creator, or membership of a linked usergroup.
+    /// Public course, author, active reporter, or membership of a linked
+    /// usergroup — SQL `course_visible` (BUG-190), no `see_all` arm here.
     pub(crate) async fn user_has_course_access(
         &self,
         course: &Course,
@@ -138,16 +139,7 @@ impl AssessmentsService {
         if course.public || course.is_author(user_id) {
             return Ok(true);
         }
-        if ab_db::usergroups::user_in_course_group(&self.pool, course.id, user_id).await? {
-            return Ok(true);
-        }
-        // Reporters are not authors (`contributor_ids` excludes them) but an
-        // active roster row still reads the draft, learner-state included.
-        Ok(
-            ab_db::catalog::get_contributor(&self.pool, course.id, user_id)
-                .await?
-                .is_some_and(|row| row.status == "active"),
-        )
+        ab_db::catalog::course_visible(&self.pool, course.id, Some(user_id), false).await
     }
 
     /// The user row must exist before an access-list / override insert —

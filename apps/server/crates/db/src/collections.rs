@@ -173,10 +173,7 @@ pub async fn list_collection_courses(
            FROM collection_courses cc
            JOIN courses c ON c.id = cc.course_id
            WHERE cc.collection_id = $1
-             AND (c.public OR $2 OR c.creator_id = $3
-                  OR EXISTS (SELECT 1 FROM resource_authors ra
-                             WHERE ra.course_id = c.id AND ra.user_id = $3
-                               AND ra.status = 'active'))
+             AND course_visible(c, $3, $2)
            ORDER BY cc.position, c.id"#,
         id.0,
         see_all,

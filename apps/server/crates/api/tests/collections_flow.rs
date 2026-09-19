@@ -19,6 +19,7 @@ async fn curator(app: &TestApp, name: &str) -> MintedSession {
             "collection:read:all",
             "collection:update:own",
             "collection:delete:own",
+            "usergroup:create:platform",
         ],
     )
     .await
@@ -254,4 +255,83 @@ async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPo
 
     let mine = app.get_as(&owner, "/api/v2/collections").await;
     assert_eq!(mine.json()["items"].as_array().unwrap().len(), 2);
+}
+
+/// BUG-190: `collection_listable` shares the course-visibility predicate —
+/// a public collection whose only course is usergroup-shared is listed,
+/// searchable and shows the course for the cohort member; anon sees nothing.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cohort_shared_course_makes_the_collection_listable(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let draft_course = course(&app, &owner, "Cohort draft", false).await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Cohort path", "public": true, "courses": [draft_course] }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let collection_id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let member_id = app
+        .create_user("member", "member@example.com", &["user"])
+        .await;
+    let member = app.mint_session_for(member_id, &[]).await;
+    let group = app
+        .post_as(
+            &owner,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "Cohort" }),
+        )
+        .await;
+    let group_id = group.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &owner,
+        &format!("/api/v2/usergroups/{group_id}/members"),
+        &serde_json::json!({ "user_ids": [member_id] }),
+    )
+    .await;
+    app.post_as(
+        &owner,
+        &format!("/api/v2/usergroups/{group_id}/courses"),
+        &serde_json::json!({ "course_ids": [draft_course] }),
+    )
+    .await;
+
+    let listed = app.get_as(&member, "/api/v2/collections").await;
+    assert_eq!(
+        listed.json()["items"][0]["id"],
+        collection_id,
+        "{}",
+        listed.text()
+    );
+    let found = app.get_as(&member, "/api/v2/search?q=cohort").await;
+    assert_eq!(
+        found.json()["collections"][0]["id"],
+        collection_id,
+        "{}",
+        found.text()
+    );
+    let page = app
+        .get_as(&member, &format!("/api/v2/collections/{collection_id}"))
+        .await;
+    assert_eq!(
+        page.json()["courses"][0]["id"],
+        draft_course,
+        "{}",
+        page.text()
+    );
+
+    let anon = app.get("/api/v2/collections").await;
+    assert!(
+        anon.json()["items"].as_array().unwrap().is_empty(),
+        "{}",
+        anon.text()
+    );
+    let anon_page = app
+        .get(&format!("/api/v2/collections/{collection_id}"))
+        .await;
+    assert!(anon_page.json()["courses"].as_array().unwrap().is_empty());
 }

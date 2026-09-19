@@ -11,6 +11,8 @@ use sqlx::PgPool;
 use crate::catalog::CourseRow;
 use crate::collections::CollectionRow;
 
+/// Visibility = SQL `course_visible` (BUG-190), the predicate shared with
+/// [`crate::catalog::list_courses`] and `collection_listable`.
 pub async fn search_courses(
     pool: &PgPool,
     query: &str,
@@ -31,10 +33,7 @@ pub async fn search_courses(
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
            WHERE search @@ websearch_to_tsquery('simple', $1)
-             AND (public OR $2 OR creator_id = $3
-                  OR EXISTS (SELECT 1 FROM resource_authors ra
-                             WHERE ra.course_id = courses.id AND ra.user_id = $3
-                               AND ra.status = 'active'))
+             AND course_visible(courses, $3, $2)
            ORDER BY ts_rank_cd(search, websearch_to_tsquery('simple', $1)) DESC, id DESC
            LIMIT $4"#,
         query,

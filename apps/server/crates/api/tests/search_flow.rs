@@ -17,9 +17,41 @@ async fn author(app: &TestApp, name: &str) -> MintedSession {
             "course:create:platform",
             "course:update:own",
             "collection:create:platform",
+            "usergroup:create:platform",
         ],
     )
     .await
+}
+
+/// A usergroup linked to `course_id` with `user_id` in it (cohort access).
+async fn cohort(
+    app: &TestApp,
+    teacher: &MintedSession,
+    course_id: &str,
+    user_id: ab_core::id::UserId,
+) {
+    let group = app
+        .post_as(
+            teacher,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "Cohort" }),
+        )
+        .await;
+    let group_id = group.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        teacher,
+        &format!("/api/v2/usergroups/{group_id}/members"),
+        &serde_json::json!({ "user_ids": [user_id] }),
+    )
+    .await;
+    let linked = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/usergroups/{group_id}/courses"),
+            &serde_json::json!({ "course_ids": [course_id] }),
+        )
+        .await;
+    assert_eq!(linked.status, StatusCode::NO_CONTENT, "{}", linked.text());
 }
 
 async fn course(app: &TestApp, session: &MintedSession, name: &str, publish: bool) -> String {
@@ -103,6 +135,32 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
     let blank = app.get_as(&teacher, "/api/v2/search?q=%20").await;
     assert_eq!(blank.status, StatusCode::OK);
     assert!(blank.json()["courses"].as_array().unwrap().is_empty());
+}
+
+/// BUG-190: search uses the catalogue's visibility predicate, usergroup arm
+/// included — a cohort member finds the private course, anon does not.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cohort_member_finds_the_usergroup_shared_course(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "rustacean").await;
+    let secret_course = course(&app, &teacher, "Rust Secrets", false).await;
+    let member_id = app
+        .create_user("member", "member@example.com", &["user"])
+        .await;
+    let member = app.mint_session_for(member_id, &[]).await;
+    cohort(&app, &teacher, &secret_course, member_id).await;
+
+    let found = app.get_as(&member, "/api/v2/search?q=secrets").await;
+    assert_eq!(found.status, StatusCode::OK);
+    assert_eq!(
+        found.json()["courses"][0]["id"],
+        secret_course,
+        "{}",
+        found.text()
+    );
+
+    let anon = app.get("/api/v2/search?q=secrets").await;
+    assert!(anon.json()["courses"].as_array().unwrap().is_empty());
 }
 
 #[sqlx::test(migrations = "../../migrations")]

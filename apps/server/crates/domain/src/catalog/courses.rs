@@ -76,15 +76,15 @@ impl CoursesService {
 
     /// Visibility: public, author (creator / active contributor), active
     /// reporter, platform manager, or membership of a usergroup linked to
-    /// the course (cohort access). Invisible = 404.
+    /// the course (cohort access) — SQL `course_visible`, the predicate the
+    /// catalogue, search and collections list by (BUG-190). Invisible = 404.
     pub(crate) async fn require_read(&self, actor: &Actor, course: &Course) -> Result<()> {
+        let see_all = sees_private(actor, ResourceType::Course);
         if course.public
+            || see_all
             || course.is_author(actor.user_id)
-            || sees_private(actor, ResourceType::Course)
-            || ab_db::usergroups::user_in_course_group(&self.pool, course.id, actor.user_id).await?
-            || ab_db::catalog::get_contributor(&self.pool, course.id, actor.user_id)
+            || ab_db::catalog::course_visible(&self.pool, course.id, Some(actor.user_id), see_all)
                 .await?
-                .is_some_and(|row| row.status == "active")
         {
             Ok(())
         } else {
