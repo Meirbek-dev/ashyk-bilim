@@ -101,9 +101,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     const label =
       index === 0
         ? t('latestSubmission')
-        : t('attemptNumber', {
-            number: submissionState.submissions.length - index,
-          })
+        : t('attemptNumber', { number: submission.attempt_number })
     const submittedAt = submission.submitted_at ?? submission.updated_at ?? null
 
     return {
