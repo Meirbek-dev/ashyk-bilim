@@ -186,6 +186,56 @@ async fn attaching_unreadable_courses_is_refused(pool: PgPool) {
     assert_eq!(refused.status, StatusCode::NOT_FOUND);
 }
 
+/// BUG-192: an update is validated before anything is written — an
+/// unreadable course in `courses` is a 404 and the name stays; and a
+/// collection the caller cannot read is a 404 on PATCH/DELETE too (not a
+/// 403 existence oracle).
+#[sqlx::test(migrations = "../../migrations")]
+async fn update_validates_before_writing_and_hides_unreadable(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Empty", "public": false }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let path = format!("/api/v2/collections/{id}");
+
+    let refused = app
+        .patch_as(
+            &owner,
+            &path,
+            &serde_json::json!({
+                "name": "RENAMED",
+                "description": "changed",
+                "courses": [uuid::Uuid::now_v7()],
+            }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::NOT_FOUND, "{}", refused.text());
+    let after = app.get_as(&owner, &path).await;
+    assert_eq!(after.json()["name"], "Empty");
+    assert_eq!(after.json()["description"], "");
+
+    let learner_user = app
+        .create_user("learner", "learner@example.com", &["student"])
+        .await;
+    let learner = app
+        .mint_session_for(learner_user, &["collection:update:own"])
+        .await;
+    let patched = app
+        .patch_as(&learner, &path, &serde_json::json!({ "name": "Mine" }))
+        .await;
+    assert_eq!(patched.status, StatusCode::NOT_FOUND, "{}", patched.text());
+    let deleted = app.delete_as(&learner, &path).await;
+    assert_eq!(deleted.status, StatusCode::NOT_FOUND, "{}", deleted.text());
+    assert_eq!(app.get_as(&owner, &path).await.status, StatusCode::OK);
+}
+
 /// BUG-168: a whitespace-only name is 422 `name`/`required` on create and
 /// update; stored names are trimmed.
 #[sqlx::test(migrations = "../../migrations")]

@@ -18,13 +18,16 @@ pub struct CollectionRow {
     pub updated_at: i64,
 }
 
+/// Insert the collection and its membership in one transaction.
 pub async fn insert_collection(
     pool: &PgPool,
     name: &str,
     description: &str,
     public: bool,
     creator_id: UserId,
+    course_ids: &[CourseId],
 ) -> Result<CollectionId> {
+    let mut tx = pool.begin().await?;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO collections (name, description, public, creator_id)
            VALUES ($1, $2, $3, $4)
@@ -34,9 +37,12 @@ pub async fn insert_collection(
         public,
         creator_id.0
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *tx)
     .await?;
-    Ok(CollectionId(id))
+    let id = CollectionId(id);
+    set_collection_courses(&mut tx, id, course_ids).await?;
+    tx.commit().await?;
+    Ok(id)
 }
 
 pub async fn get_collection(pool: &PgPool, id: CollectionId) -> Result<Option<CollectionRow>> {
@@ -110,14 +116,18 @@ pub async fn list_collections(
     Ok(rows)
 }
 
+/// Update the fields and, when given, replace the membership — one
+/// transaction, so a failure leaves nothing half-written (BUG-192).
 pub async fn update_collection(
     pool: &PgPool,
     id: CollectionId,
     name: Option<&str>,
     description: Option<&str>,
     public: Option<bool>,
-) -> Result<bool> {
-    let updated = sqlx::query!(
+    course_ids: Option<&[CourseId]>,
+) -> Result<()> {
+    let mut tx = pool.begin().await?;
+    sqlx::query!(
         r#"UPDATE collections SET
                name = COALESCE($2, name),
                description = COALESCE($3, description),
@@ -128,9 +138,13 @@ pub async fn update_collection(
         description,
         public
     )
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
-    Ok(updated.rows_affected() == 1)
+    if let Some(course_ids) = course_ids {
+        set_collection_courses(&mut tx, id, course_ids).await?;
+    }
+    tx.commit().await?;
+    Ok(())
 }
 
 pub async fn delete_collection(pool: &PgPool, id: CollectionId) -> Result<bool> {
@@ -141,17 +155,16 @@ pub async fn delete_collection(pool: &PgPool, id: CollectionId) -> Result<bool> 
 }
 
 /// Replace the whole membership (legacy update semantics), positions 1..n.
-pub async fn set_collection_courses(
-    pool: &PgPool,
+async fn set_collection_courses(
+    conn: &mut sqlx::PgConnection,
     id: CollectionId,
     course_ids: &[CourseId],
 ) -> Result<()> {
-    let mut tx = pool.begin().await?;
     sqlx::query!(
         "DELETE FROM collection_courses WHERE collection_id = $1",
         id.0
     )
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await?;
     for (index, course_id) in course_ids.iter().enumerate() {
         let position = i32::try_from(index).unwrap_or(i32::MAX).saturating_add(1);
@@ -163,10 +176,9 @@ pub async fn set_collection_courses(
             course_id.0,
             position
         )
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
     }
-    tx.commit().await?;
     Ok(())
 }
 

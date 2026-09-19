@@ -114,16 +114,18 @@ impl CollectionsService {
             description,
             public,
             actor.user_id,
+            &course_ids,
         )
         .await?;
-        ab_db::collections::set_collection_courses(&self.pool, id, &course_ids).await?;
         self.get(actor, id).await
     }
 
-    /// A direct read applies the list's `collection_listable` rule too: a
-    /// collection with no course visible to the actor is a 404 unless they
-    /// created it or manage collections (UX-131).
-    pub async fn get(&self, actor: &Actor, id: CollectionId) -> Result<CollectionWithCourses> {
+    /// The one 404 rule for every direct access (`get`/`update`/`delete`):
+    /// unknown, not readable, or — unless the actor manages collections —
+    /// not `collection_listable` (no course visible to them, UX-131). A
+    /// caller who cannot read a collection learns nothing else about it
+    /// (BUG-192).
+    async fn load(&self, actor: &Actor, id: CollectionId) -> Result<Collection> {
         let collection = ab_db::collections::get_collection(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("collection"))?;
@@ -139,6 +141,11 @@ impl CollectionsService {
         {
             return Err(Error::not_found("collection"));
         }
+        Ok(collection)
+    }
+
+    pub async fn get(&self, actor: &Actor, id: CollectionId) -> Result<CollectionWithCourses> {
+        let collection = self.load(actor, id).await?;
         let courses = self.visible_courses(actor, id).await?;
         Ok(CollectionWithCourses {
             can_delete: Self::can_delete(actor, &collection),
@@ -192,23 +199,28 @@ impl CollectionsService {
         public: Option<bool>,
         course_ids: Option<Vec<CourseId>>,
     ) -> Result<CollectionWithCourses> {
-        let collection = ab_db::collections::get_collection(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("collection"))?;
+        let collection = self.load(actor, id).await?;
         Self::require_write(actor, &collection)?;
+        // BUG-192: everything is validated before the first write, and the
+        // fields + membership land in one transaction.
         let name = name.map(|n| ab_core::required_str("name", n)).transpose()?;
-        ab_db::collections::update_collection(&self.pool, id, name, description, public).await?;
-        if let Some(course_ids) = course_ids {
-            self.check_courses_readable(actor, &course_ids).await?;
-            ab_db::collections::set_collection_courses(&self.pool, id, &course_ids).await?;
+        if let Some(course_ids) = &course_ids {
+            self.check_courses_readable(actor, course_ids).await?;
         }
+        ab_db::collections::update_collection(
+            &self.pool,
+            id,
+            name,
+            description,
+            public,
+            course_ids.as_deref(),
+        )
+        .await?;
         self.get(actor, id).await
     }
 
     pub async fn delete(&self, actor: &Actor, id: CollectionId) -> Result<()> {
-        let collection = ab_db::collections::get_collection(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("collection"))?;
+        let collection = self.load(actor, id).await?;
         if !Self::can_delete(actor, &collection) {
             return Err(Error::forbidden("no delete access to this collection"));
         }

@@ -114,6 +114,8 @@ pub async fn get_collection(
         (status = 200, description = "Updated", body = Collection),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
+        (status = 404, description = "Unknown, inaccessible, or an attached course is unreadable", body = Problem,
+         content_type = "application/problem+json"),
     )
 )]
 pub async fn update_collection(
@@ -145,6 +147,8 @@ pub async fn update_collection(
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No delete access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
