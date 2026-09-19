@@ -210,30 +210,30 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 
 | id | area | route(s) | roles | status | last critic verdict |
 |---|---|---|---|---|---|
-| F01 | login + session | `/ru/auth/login` | all | pass | pass 15 (reverify-A) |
-| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 15 (reverify-A): verify-after-activation re-sync |
+| F01 | login + session | `/ru/auth/login` | all | pass | pass 16 (reverify-A) |
+| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 16 (reverify-A): reset enrolment copy |
 | F03 | Google login intent | `/ru/auth/login` → `/api/v2/auth/google` | any | pass | pass 6: Google → `/api/v2/auth/google` → 303 with `?error=service-unavailable`; host-relative redirect is correct behind the production nginx (Q-2026-09-12-2 #10) |
-| F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 15 (reverify-A) |
+| F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 16 (reverify-A) |
 | F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 15 (reverify-C) |
 | F06 | locale switch ru/kz/en | all routes | any | pass | pass 15 (reverify-C) |
-| F07 | home / landing | `/[locale]` | learner | pass | pass 15 (reverify-A) |
-| F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 15 (reverify-A): anonymous composer → login link |
-| F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 15 (reverify-A): whitespace names 422, list refetch on focus |
-| F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | pass | pass 15 (reverify-A): «Готовы начать?» when not enrolled |
-| F11 | trail / progress | `/trail` | learner | pass | pass 15 (reverify-A) |
-| F12 | user profile | `/ru/user/[username]` | learner | pass | pass 15 (reverify-A) |
+| F07 | home / landing | `/[locale]` | learner | pass | pass 16 (reverify-A) |
+| F08 | course browse + enroll (learner enrolled; "Курс успешно начат") | `/ru/courses`, `/ru/course/[id]` | learner | pass | pass 16 (reverify-A): enrol → Back shows the enrolled state; 0/0 empty state |
+| F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 16 (reverify-A): private-only collections hidden; delete affordance carried as UX-124 |
+| F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | pass | pass 16 (reverify-A) |
+| F11 | trail / progress | `/trail` | learner | pass | pass 16 (reverify-A): trail route refuses quizzes (BUG-176) |
+| F12 | user profile | `/ru/user/[username]` | learner | pass | pass 16 (reverify-A) |
 | F13 | taking a quiz/exam | `/ru/course/[id]/activity/[id]` | learner | pass | pass 16 (reverify-B): failed submit re-queues answers (BUG-178) |
 | F14 | code arena run | `/assessments/[uuid]` (code item) | learner | blocked | Judge0 not in the local stack (`code/languages` 503); e2e code tests skip on the probe. Needs an environment with the executor |
 | F15 | file submission upload | `/assessments/[uuid]` (file item) | learner | pass | pass 16 (reverify-B): late penalty applied to file grades |
 | F16 | discussions | course discussion surfaces | learner+teacher | pass | pass 16 (reverify-B) |
 | F17 | certificates + verify | `/certificates/[uuid]/verify`, `/dash/courses/[uuid]/certificate` | any | pass | pass 16 (reverify-B) |
 | F18 | gamification | `/dash/user-account/settings/gamification` | learner | pass | pass 16 (reverify-B) |
-| F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 15 (reverify-A) |
-| F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 15 (reverify-A): one name, live fs type change refused |
-| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 15 (reverify-A) |
-| F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 15 (reverify-A) |
-| F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | pass | pass 15 (reverify-A): unlimited attempts stay unlimited, archived/scheduled arms, restore |
-| F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 15 (reverify-A) |
+| F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 16 (reverify-A): course-create title trimmed inline |
+| F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 16 (reverify-A) |
+| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 16 (reverify-A) |
+| F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 16 (reverify-A) |
+| F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | pass | pass 16 (reverify-A): blank title 422 + inline; scheduled rename 409; archive confirm carried as UX-124 |
+| F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 16 (reverify-A) |
 | F25 | submission grading + item feedback | `/ru/dash/courses/[id]/activity/[id]/review` | teacher | pass | pass 16 (reverify-B) |
 | F26 | gradebook + bulk actions | `/ru/dash/courses/[id]/gradebook` | teacher | fail | pass 16 (reverify-B) cell/CSV/summary; **fail** — «На проверке» deep link opens the wrong attempt (UX-123) |
 | F27 | grading SSE live updates | gradebook / review | teacher | pass | pass 16 (reverify-B) |
@@ -250,23 +250,23 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 15 (reverify-C): one disable-confirm wording |
 | F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 15 (reverify-C): unlink needs course read; «Отвязать» |
 | F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 15 (reverify-C) |
-| F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 15 (reverify-A) |
-| F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 15 (reverify-A) |
+| F41 | self-registration + email verification | `/[locale]/auth/signup`, `/auth/verify-email` | anonymous | pass | pass 16 (reverify-A) |
+| F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 16 (reverify-A) |
 | F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 15 (reverify-C) |
 | F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 15 (reverify-C) |
 | F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
-| F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 15 (reverify-A) |
-| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 15 (reverify-A) |
-| F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 15 (reverify-A) |
+| F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 16 (reverify-A) |
+| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 16 (reverify-A) |
+| F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 16 (reverify-A) |
 | F49 | gradebook: file cells, CSV export, live stream | `/dash/courses/[id]/gradebook` | teacher | pass | pass 16 (reverify-B): released grade outranks a pending retake (BUG-180) |
 | F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 16 (reverify-B): headline follows a re-grade |
 | F51 | matching items (learner body) | quiz attempt + review | learner+teacher | pass | pass 16 (reverify-B) |
 | F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 16 (reverify-B) |
 | F53 | AI on file-submission attempts | file review page | teacher | pass | pass 16 (reverify-B) |
-| F54 | link preview block | lecture editor | teacher | pass | pass 15 (reverify-A) |
+| F54 | link preview block | lecture editor | teacher | pass | pass 16 (reverify-A) |
 | F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 15 (reverify-C) |
 | F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 15 (reverify-C) |
-| F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 15 (reverify-A) |
+| F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 16 (reverify-A) |
 
 ## Bugs
 
@@ -568,6 +568,7 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | UX-121 | F50/F15/F13 | Re-grade of a released attempt (override 55 → 100) with the learner page open: attempt list follows in ~28 s but the headline/verdict keep the old projection (invalidated only on the awaiting→visible flip); late file attempt graded 80 with `late_penalty_pct: 10` shows «80 % · Штраф −10 %» with no penalty applied (legacy-faithful) while quizzes apply it; submit 429 hint «через 1 минуту» for a 10 s window. | **fixed** — `useAssessmentAttempt` fingerprints the released grades (`id:final_score:graded_at`) and invalidates `learner-course` / `student-activity` whenever it changes, not only on the awaiting→visible flip; server `FileSubmissionsService::grade` stores the grader's `raw_score` and `final_score = apply_late(raw, late_penalty_pct)` (80 → 72 at 10 %; existing rows backfilled raw = final; DECISIONS «File grades carry the late penalty»), `Attempt` DTO carries `raw_score` and the review form reopens with it (`AttemptView` extension until the contract is regenerated); `useApiError` says «Попробуйте через N с» (`Errors.rateLimitedRetrySeconds`, ru/kk/en) when the 429 window is under a minute. vitests assessments/submission-v2 (4th poll with 100 → second projection invalidation), assessments/submit-rate-limited (8 s → seconds copy); nextest file_submissions_flow::late_work_is_refused_or_penalised_by_policy (publish 80 at 30 % → raw 80 / final 56, learner sees 56) | 30cda9f 04102d3 |
 | UX-122 | F31/F33/F55/F34 | «Аудит трассировки» (`DrillThroughAuditPanel`) shows English humanised keys, raw unix/enums, only the first 6 alphabetical keys (learner name never shown), raw `error.message`; intervention dialog journal error «Request failed missing permission…» (`InlineError` default title + raw message); no `codes.low_discrimination` label; export saves as `at-risk.csv` (URL-derived) although the server names it `teacher-at-risk.csv`. | **fixed** (d62d814) — root cause: the panel rendered `Object.keys(items[0]).slice(0,6)` of untyped wire rows and toasted `error.message`; `InlineError` hard-coded `title = 'Request failed'`; `low_discrimination` was never added to `codes`; the export name was URL-derived and `Content-Disposition` was not CORS-exposed. `DrillThroughAuditPanel` now pins a curated column set per metric (learner/course/value/status, dates via `formatDate`, status/kind via the label helpers) and errors via `toastApiError`; the journal error goes through `handleApiError` and `InlineError` defaults to `Errors.requestFailed`; `codes.low_discrimination` ru/kk/en; `downloadAnalyticsExport` reads `Content-Disposition` (`filenameFromContentDisposition`) + `saveBlob`, server exposes the header (`app.rs` CORS). Vitest `drill-through-panel.test.tsx`, journal case in `at-risk-intervention-dialog.test.tsx`, nextest `cors_exposes_the_response_headers_the_web_client_reads`. |
 | UX-123 | F26/F13/F50/F33/F25 | Gradebook «На проверке» deep link opens the grade-of-record attempt (cell `submission_id`) instead of the pending one (`pending_attempt` has no id); learner activity card with a pending retake shows only «Ожидание оценки / Начать новую попытку» — the released 85 % + feedback unreachable (`latest = submissions[0]`); at-risk CSV cells `low_progress` / `schedule_pace_meeting` unlocalized; teacher file review after a late publish shows «64 %» beside form 80 with no «−20 %» line. | fix — `pending_attempt_id` on the cell + deep link to it; card shows the grade of record while a retake is pending; localized reason/action cells; penalty line on the teacher side |
+| UX-124 | F09/F20/F23 | Collections can never be deleted from the UI: `CollectionThumbnail` gates on `collection.can_delete` which the v2 `Collection` schema does not carry (`toAppCollection` derives none, `deleteCollection` has no other caller); curriculum «Опубликовать» on a *scheduled* quiz → 409 toast «Сначала опубликуйте тест…» (wrong instruction; the row should be state-aware like archived); studio «Архивировать» on a published quiz has no confirm. | fix — `can_delete` derived from creator/`collection:delete:*`; hide/explain the toggle on scheduled rows; confirm before archiving a published assessment |
 | UX-001 | F01 | The password reveal control on the login page had the English accessible name "Show password" while the rest of the page was Russian. | **fixed** — `src/components/ui/custom/password-input.tsx` now uses `t('showPassword')`/`t('hidePassword')`; keys added to all three catalogs. Verified in the browser: "Показать пароль" (ru), "Құпия сөзді көрсету" (kz). |
 | UX-002 | F04 | With the API unreachable the session list showed an unlabelled spinner for well over a minute (react-query retried 7+ times with backoff) instead of reaching its error state. The error branch exists and is correct; the retry policy is what hides it. | fix — cap retries on this query so the existing `sessionsLoadError` + retry button appears within a few seconds |
 | UX-003 | F02 | The two-factor section renders "Включить двухфакторную аутентификацию" and "Отключить" side by side for an account with no TOTP enrolled. "Отключить" is a dead click. | fix — render the enable/disable control from the account's actual enrolment state |
