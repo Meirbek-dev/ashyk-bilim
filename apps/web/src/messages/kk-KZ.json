@@ -989,7 +989,6 @@
       "certificateType": "Сертификат түрі",
       "certificateVerified": "Сертификат расталды",
       "certificationDetails": "Сертификат мәліметтері",
-      "completion": "Курстың аяқталуы",
       "completionDate": "Берілген күні",
       "courseName": "Курс атауы",
       "courseThumbnailAlt": "миниатюра",
@@ -1012,8 +1011,7 @@
       "verificationStatusUnknown": "Тексеру күйі белгісіз",
       "verifyingCertificate": "Сертификат тексерілуде...",
       "viewCourse": "Курсты көру",
-      "viewFullCertificate": "Толық сертификатты көру",
-      "mastery": "Дағды меңгеру"
+      "viewFullCertificate": "Толық сертификатты көру"
     },
     "CertificateVerifyPage": {
       "description": "{courseName} курсы үшін {certificationName} сертификатының шынайылығын тексеріңіз.",

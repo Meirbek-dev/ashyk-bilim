@@ -69,10 +69,14 @@ export function toAppTrail(trail: Trail): AppTrailData {
 }
 
 /** The learner's own certificate or the public verify view (no holder id). */
-export function toAppCertification(issued: IssuedCertificate | VerifiedCertificate): AppCertification {
+export function toAppCertification(
+  // `instructor_name` (UX-131) is on the wire; the intersection goes once the client is regenerated.
+  issued: (IssuedCertificate | VerifiedCertificate) & { instructor_name?: string | null },
+): AppCertification {
   const { certificate, certification, course } = issued
   return {
     ...issued,
+    instructor_name: issued.instructor_name ?? null,
     certification_uuid: certification.id,
     course: toAppCourse(course),
     // `user_certification_uuid` is the public verify code: the client links `/certificates/{code}/verify`.

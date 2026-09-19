@@ -238,10 +238,12 @@ declare global {
       created_at: string
       [key: string]: unknown
     }
+    /** The name signed on the certificate (config instructor, else the course creator) — what the PDF prints. */
+    instructor_name?: string | null
     certification: {
       config: {
-        certification_name: string
-        certification_type: string
+        certification_name?: string
+        certification_type?: string
         certification_description?: string
         certificate_pattern?: string
         certificate_instructor?: string | null

@@ -149,7 +149,12 @@ describe('/dash/admin/users (v2 AdminUserPage wire)', () => {
     await user.click(within(dialog).getByRole('button', { name: 'createUserSubmit' }))
 
     await waitFor(() => expect(input('password')).toHaveAttribute('aria-invalid', 'true'))
-    expect(within(dialog).getByText('Needs a symbol')).toBeInTheDocument()
+    // UX-131: the rejection is an alert the input describes, styled as an error.
+    const rejection = within(dialog).getByRole('alert')
+    expect(rejection).toHaveTextContent('Needs a symbol')
+    expect(rejection).toHaveClass('text-destructive')
+    expect(rejection).toHaveAttribute('id', 'create-user-password-error')
+    expect(input('password')).toHaveAttribute('aria-describedby', 'create-user-password-error')
     expect(within(dialog).queryByText('validation failed')).not.toBeInTheDocument()
   })
 })

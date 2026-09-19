@@ -170,7 +170,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     }
   }, [isCourseCompleted])
 
-  const getCertificationTypeLabel = (type: string) => {
+  const getCertificationTypeLabel = (type: string | undefined) => {
     switch (type) {
       case 'completion': {
         return t('certificationTypes.completion')
@@ -210,7 +210,8 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
 
     try {
       const certificateId = userCertificate.certificate_user.user_certification_uuid
-      const certificationName = userCertificate.certification.config.certification_name
+      const certificationName =
+        userCertificate.certification.config.certification_name || userCertificate.course.name || ''
       const blob = await generateCertificatePdfBlob({
         awardedDate: new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
           year: 'numeric',
@@ -222,7 +223,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           userCertificate.certification.config.certification_description || t('defaultCertificationDescription'),
         certificationName,
         certificationTypeLabel: getCertificationTypeLabel(userCertificate.certification.config.certification_type),
-        instructor: userCertificate.certification.config.certificate_instructor ?? null,
+        instructor: userCertificate.instructor_name ?? null,
         labels: {
           authenticityGuaranteed: t('verifyCertificate'),
           awarded: t('labelAwarded'),
@@ -338,11 +339,13 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <div id="certificate-content">
                   <CertificatePreview
-                    certificationName={userCertificate.certification.config.certification_name}
+                    certificationName={
+                      userCertificate.certification.config.certification_name || userCertificate.course.name || ''
+                    }
                     certificationDescription={userCertificate.certification.config.certification_description ?? ''}
                     certificationType={userCertificate.certification.config.certification_type}
                     certificatePattern={userCertificate.certification.config.certificate_pattern ?? ''}
-                    certificateInstructor={userCertificate.certification.config.certificate_instructor ?? undefined}
+                    certificateInstructor={userCertificate.instructor_name ?? undefined}
                     certificateId={userCertificate.certificate_user.user_certification_uuid}
                     awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
                       year: 'numeric',

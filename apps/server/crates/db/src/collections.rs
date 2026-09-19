@@ -54,6 +54,25 @@ pub async fn get_collection(pool: &PgPool, id: CollectionId) -> Result<Option<Co
     Ok(row)
 }
 
+/// SQL `collection_listable` for one collection: the same rule the list
+/// and search apply, so a direct read cannot show what they hide (UX-131).
+pub async fn collection_listable(
+    pool: &PgPool,
+    id: CollectionId,
+    viewer: UserId,
+    see_all_courses: bool,
+) -> Result<bool> {
+    let listable = sqlx::query_scalar!(
+        r#"SELECT collection_listable($1, $2, $3) AS "listable!""#,
+        id.0,
+        viewer.0,
+        see_all_courses
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(listable)
+}
+
 /// Newest-first page of collections visible to `viewer`.
 ///
 /// A collection with no course visible to the viewer — all invisible

@@ -81,6 +81,9 @@ pub struct IssuedCertificate {
     pub certificate: Certificate,
     pub certification: Certification,
     pub course: Course,
+    /// The name signed on the certificate (`config.certificate_instructor`,
+    /// else the course creator's display name) — what the PDF prints.
+    pub instructor_name: Option<String>,
 }
 
 impl From<domain::IssuedCertificate> for IssuedCertificate {
@@ -89,6 +92,7 @@ impl From<domain::IssuedCertificate> for IssuedCertificate {
             certificate: i.certificate.into(),
             certification: i.certification.into(),
             course: i.course.into(),
+            instructor_name: i.instructor_name,
         }
     }
 }
@@ -115,6 +119,8 @@ pub struct VerifiedCertificate {
     pub certification: Certification,
     pub course: Course,
     pub holder: CertificateHolder,
+    /// The name signed on the certificate — what the PDF prints.
+    pub instructor_name: Option<String>,
 }
 
 impl From<domain::VerifiedCertificate> for VerifiedCertificate {
@@ -137,6 +143,7 @@ impl From<domain::VerifiedCertificate> for VerifiedCertificate {
             holder: CertificateHolder {
                 display_name: v.holder_display_name,
             },
+            instructor_name: v.issued.instructor_name,
         }
     }
 }

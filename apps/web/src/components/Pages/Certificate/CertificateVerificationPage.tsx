@@ -20,6 +20,7 @@ interface CertificateVerificationPageProps {
 const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = ({ certificateUuid }) => {
   const locale = useLocale()
   const t = useTranslations('Certificates.CertificateVerificationPage')
+  const tTypes = useTranslations('Certificates.EditCourseCertification.certificationTypes')
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
@@ -39,11 +40,9 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
   const verificationStatus: 'valid' | 'invalid' | 'loading' =
     !mounted || isLoading ? 'loading' : certificateData ? 'valid' : 'invalid'
 
-  // Certificate type translation helper
-  const getCertificationTypeLabel = (type: string): string => {
-    const typeKey = type as keyof typeof t
-    return t(typeKey) || t('completion')
-  }
+  // Every type the editor offers has a label; anything else (or nothing) reads as completion (UX-131).
+  const getCertificationTypeLabel = (type: string | undefined): string =>
+    type && tTypes.has(type) ? tTypes(type) : tTypes('completion')
 
   const getVerificationStatusIcon = () => {
     switch (verificationStatus) {
@@ -187,11 +186,13 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
               <h2 className="text-foreground mb-4 text-xl font-semibold">{t('certificatePreview')}</h2>
               <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <CertificatePreview
-                  certificationName={certificateData.certification.config.certification_name}
+                  certificationName={
+                    certificateData.certification.config.certification_name || certificateData.course.name || ''
+                  }
                   certificationDescription={certificateData.certification.config.certification_description ?? ''}
                   certificationType={certificateData.certification.config.certification_type}
                   certificatePattern={certificateData.certification.config.certificate_pattern ?? ''}
-                  certificateInstructor={certificateData.certification.config.certificate_instructor ?? undefined}
+                  certificateInstructor={certificateData.instructor_name ?? undefined}
                   certificateId={certificateData.certificate_user.user_certification_uuid}
                   awardedDate={new Date(certificateData.certificate_user.created_at).toLocaleDateString(locale, {
                     year: 'numeric',

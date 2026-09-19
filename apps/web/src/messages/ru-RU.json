@@ -990,7 +990,6 @@
       "certificateType": "Тип сертификации",
       "certificateVerified": "Сертификат подтверждён",
       "certificationDetails": "Подробности сертификации",
-      "completion": "За завершение курса",
       "completionDate": "Дата выдачи",
       "courseName": "Название курса",
       "courseThumbnailAlt": "эскиз",
@@ -1013,8 +1012,7 @@
       "verificationStatusUnknown": "Статус проверки неизвестен",
       "verifyingCertificate": "Проверка сертификата...",
       "viewCourse": "Перейти к курсу",
-      "viewFullCertificate": "Посмотреть полный сертификат",
-      "mastery": "Освоение навыка"
+      "viewFullCertificate": "Посмотреть полный сертификат"
     },
     "CertificateVerifyPage": {
       "description": "Проверьте подлинность сертификата {certificationName} для курса {courseName}.",

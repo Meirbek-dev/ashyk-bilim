@@ -564,6 +564,7 @@ function EditCourseCertification() {
                         certificationType={certificationType}
                         certificatePattern={certificatePattern}
                         {...(certificateInstructor === undefined ? {} : { certificateInstructor })}
+                        sample
                       />
                     </CardContent>
                   </Card>

@@ -253,6 +253,20 @@ async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPo
         listed.text()
     );
 
+    // UX-131: the direct read applies the same rule (404, not «0 courses»);
+    // the creator still opens it.
+    let empty_id = empty.json()["id"].as_str().unwrap().to_owned();
+    let direct = app
+        .get_as(&learner, &format!("/api/v2/collections/{empty_id}"))
+        .await;
+    assert_eq!(direct.status, StatusCode::NOT_FOUND, "{}", direct.text());
+    assert_eq!(
+        app.get_as(&owner, &format!("/api/v2/collections/{empty_id}"))
+            .await
+            .status,
+        StatusCode::OK
+    );
+
     let mine = app.get_as(&owner, "/api/v2/collections").await;
     assert_eq!(mine.json()["items"].as_array().unwrap().len(), 2);
 }
@@ -330,8 +344,14 @@ async fn cohort_shared_course_makes_the_collection_listable(pool: PgPool) {
         "{}",
         anon.text()
     );
+    // UX-131: the direct read hides it too, not «0 courses».
     let anon_page = app
         .get(&format!("/api/v2/collections/{collection_id}"))
         .await;
-    assert!(anon_page.json()["courses"].as_array().unwrap().is_empty());
+    assert_eq!(
+        anon_page.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        anon_page.text()
+    );
 }

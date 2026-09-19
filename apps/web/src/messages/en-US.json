@@ -990,7 +990,6 @@
       "certificateType": "Certification Type",
       "certificateVerified": "Certificate Verified",
       "certificationDetails": "Certification Details",
-      "completion": "Course Completion",
       "completionDate": "Awarded Date",
       "courseName": "Course Name",
       "courseThumbnailAlt": "thumbnail",
@@ -1013,8 +1012,7 @@
       "verificationStatusUnknown": "Verification Status Unknown",
       "verifyingCertificate": "Verifying Certificate...",
       "viewCourse": "View Course",
-      "viewFullCertificate": "View Full Certificate",
-      "mastery": "Skill Mastery"
+      "viewFullCertificate": "View Full Certificate"
     },
     "CertificateVerifyPage": {
       "description": "Verify the authenticity of the {certificationName} certificate for the course {courseName}.",

@@ -104,7 +104,7 @@ const UserCertificates: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Award className="text-primary h-4 w-4" />
                   <h3 className="text-foreground truncate text-sm font-semibold">
-                    {certificate.certification.config.certification_name}
+                    {certificate.certification.config.certification_name || certificate.course.name}
                   </h3>
                 </div>
 
@@ -131,9 +131,10 @@ const UserCertificates: React.FC = () => {
 
                 <div className="border-border flex flex-wrap items-center justify-between gap-2 border-t pt-2">
                   <div className="text-muted-foreground text-xs">
-                    {tTypes.has(certificate.certification.config.certification_type)
+                    {certificate.certification.config.certification_type &&
+                    tTypes.has(certificate.certification.config.certification_type)
                       ? tTypes(certificate.certification.config.certification_type)
-                      : certificate.certification.config.certification_type}
+                      : tTypes('completion')}
                   </div>
                   <div className="flex items-center gap-3">
                     <CertificatePdfDownloadButton

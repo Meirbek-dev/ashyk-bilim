@@ -1,6 +1,6 @@
 'use client'
 
-import { useDeferredValue, useMemo, useState } from 'react'
+import { cloneElement, useDeferredValue, useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { AlertTriangle, Plus, Search, UserPlus, X } from 'lucide-react'
@@ -471,18 +471,36 @@ function CreateUserForm({
     })
   }
 
-  const field = (name: keyof typeof values, label: string, input: React.ReactNode, hint?: string) => (
-    <div className="grid gap-2">
-      <Label htmlFor={`create-user-${name}`}>{label}</Label>
-      {input}
-      {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
-      {errors[name] ? (
-        <p role="alert" className="text-destructive text-xs">
-          {errors[name]}
-        </p>
-      ) : null}
-    </div>
-  )
+  // UX-131: a server rejection is an error like a client one — red, `role="alert"`,
+  // referenced by the input's `aria-describedby` (as the security page's FieldError).
+  const field = (
+    name: keyof typeof values,
+    label: string,
+    input: React.ReactElement<{ 'aria-describedby'?: string | undefined; 'aria-invalid'?: boolean }>,
+    hint?: string,
+    rejection?: string | null,
+  ) => {
+    const message = errors[name] ?? rejection ?? null
+    const hintId = `create-user-${name}-hint`
+    const errorId = `create-user-${name}-error`
+    const describedBy = [hint && hintId, message && errorId].filter(Boolean).join(' ') || undefined
+    return (
+      <div className="grid gap-2">
+        <Label htmlFor={`create-user-${name}`}>{label}</Label>
+        {cloneElement(input, { 'aria-describedby': describedBy, 'aria-invalid': Boolean(message) })}
+        {hint ? (
+          <p id={hintId} className="text-muted-foreground text-xs">
+            {hint}
+          </p>
+        ) : null}
+        {message ? (
+          <p id={errorId} role="alert" className="text-destructive text-xs">
+            {message}
+          </p>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <form onSubmit={submit} noValidate>
@@ -503,26 +521,24 @@ function CreateUserForm({
         {field(
           'username',
           t('usernameLabel'),
-          <Input id="create-user-username" autoComplete="off" aria-invalid={Boolean(usernameTaken)} {...bind('username')} />,
-          usernameTaken ?? undefined,
+          <Input id="create-user-username" autoComplete="off" {...bind('username')} />,
+          undefined,
+          usernameTaken,
         )}
         {field(
           'email',
           t('emailLabel'),
-          <Input id="create-user-email" type="email" autoComplete="off" aria-invalid={Boolean(emailTaken)} {...bind('email')} />,
-          emailTaken ?? undefined,
+          <Input id="create-user-email" type="email" autoComplete="off" {...bind('email')} />,
+          undefined,
+          emailTaken,
         )}
         {field(
           'password',
           t('passwordLabel'),
-          <PasswordInput
-            id="create-user-password"
-            autoComplete="new-password"
-            placeholder=" "
-            aria-invalid={Boolean(passwordRejected)}
-            {...bind('password')}
-          />,
-          passwordRejected ?? t('passwordHint'),
+          <PasswordInput id="create-user-password" autoComplete="new-password" placeholder=" " {...bind('password')} />,
+          // The policy text is the hint; once rejected it is the error instead.
+          passwordRejected ? undefined : t('passwordHint'),
+          passwordRejected,
         )}
         <div className="grid gap-2">
           <Label htmlFor="create-user-role">{t('extraRolesLabel')}</Label>

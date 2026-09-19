@@ -58,6 +58,16 @@ const fn trail_perm(action: Action, scope: Scope) -> Permission {
     }
 }
 
+/// A 404 from the course behind an activity reads as the activity's own
+/// 404: the detail must not tell an unknown id from an invisible course.
+fn activity_not_found(err: Error) -> Error {
+    if err.code() == ab_core::ErrorCode::NotFound {
+        Error::not_found("activity")
+    } else {
+        err
+    }
+}
+
 impl TrailService {
     #[must_use]
     pub fn new(pool: PgPool, courses: CoursesService, assessments: AssessmentsService) -> Self {
@@ -211,7 +221,10 @@ impl TrailService {
             .await?
             .filter(|a| a.published)
             .ok_or_else(|| Error::not_found("activity"))?;
-        let course = self.accessible_course(actor, activity.course_id).await?;
+        let course = self
+            .accessible_course(actor, activity.course_id)
+            .await
+            .map_err(activity_not_found)?;
         if self.projector.is_pipeline_owned(&activity).await? {
             return Err(Error::conflict(
                 "activity is completed through its submissions, not marked by hand",
@@ -234,6 +247,8 @@ impl TrailService {
     /// Un-mark an activity. Deleting the caller's own step needs no
     /// visibility check; with nothing to delete the course must be visible
     /// (404 otherwise) so the reply is not an existence oracle (BUG-183).
+    /// Every 404 here reads `activity not found` — the detail is not an
+    /// oracle for the course or the trail either (UX-131).
     pub async fn remove_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Trail> {
         Self::require_write(actor)?;
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
@@ -241,13 +256,16 @@ impl TrailService {
             .ok_or_else(|| Error::not_found("activity"))?;
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
-            .ok_or_else(|| Error::not_found("trail"))?;
+            .ok_or_else(|| Error::not_found("activity"))?;
         if ab_db::progress::delete_trail_step(&self.pool, trail.id, activity.id).await? {
             self.projector
                 .unmark_complete(&activity, actor.user_id)
                 .await?;
         } else {
-            self.courses.get(actor, activity.course_id).await?;
+            self.courses
+                .get(actor, activity.course_id)
+                .await
+                .map_err(activity_not_found)?;
         }
         self.hydrate(actor, trail).await
     }

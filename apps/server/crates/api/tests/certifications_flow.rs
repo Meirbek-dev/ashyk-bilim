@@ -179,6 +179,9 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
     assert_eq!(code.len(), 19);
     assert_eq!(items[0]["certification"]["id"], certification_id.as_str());
     assert_eq!(items[0]["course"]["name"], "Certified 101");
+    // UX-131: no `certificate_instructor` in the config -> the creator's
+    // display name, as the PDF prints it.
+    assert_eq!(items[0]["instructor_name"], "teacher");
     let all = app.get_as(&alice, "/api/v2/me/certificates").await;
     assert_eq!(all.json().as_array().unwrap().len(), 1);
     let state = app
@@ -208,6 +211,7 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
     assert_eq!(verified.status, StatusCode::OK, "{}", verified.text());
     assert_eq!(verified.json()["course"]["name"], "Certified 101");
     assert_eq!(verified.json()["holder"]["display_name"], "alice");
+    assert_eq!(verified.json()["instructor_name"], "teacher");
     assert_eq!(verified.json()["certificate"]["verify_code"], code.as_str());
     // BUG-116: the holder's identity stays private.
     assert!(verified.json()["holder"].get("username").is_none());
@@ -270,11 +274,19 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         .patch_as(
             &teacher,
             &format!("/api/v2/certifications/{certification_id}"),
-            &serde_json::json!({ "config": { "template": "modern" } }),
+            &serde_json::json!({ "config": { "template": "modern",
+                                  "certificate_instructor": " Dr. Who " } }),
         )
         .await;
     assert_eq!(updated.status, StatusCode::OK, "{}", updated.text());
     assert_eq!(updated.json()["config"]["template"], "modern");
+    // The config's instructor wins, trimmed.
+    assert_eq!(
+        app.get(&format!("/api/v2/certificates/{code}"))
+            .await
+            .json()["instructor_name"],
+        "Dr. Who"
+    );
     assert_eq!(
         app.delete_as(
             &alice,

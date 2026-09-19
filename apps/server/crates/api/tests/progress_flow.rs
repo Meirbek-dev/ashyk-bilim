@@ -729,6 +729,36 @@ async fn learner_can_always_leave_an_unpublished_course(pool: PgPool) {
         .delete_as(&alice, &format!("/api/v2/trail/activities/{a2}"))
         .await;
     assert_eq!(oracle.status, StatusCode::NOT_FOUND, "{}", oracle.text());
+    // UX-131: the detail is the same as for an unknown id — invisible
+    // course, no step, no trail all read alike.
+    assert_eq!(oracle.json()["detail"], "activity not found");
+    let unknown = app
+        .delete_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{}", uuid::Uuid::now_v7()),
+        )
+        .await;
+    assert_eq!(unknown.json()["detail"], "activity not found");
+    let marking = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{a2}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marking.status, StatusCode::NOT_FOUND, "{}", marking.text());
+    assert_eq!(marking.json()["detail"], "activity not found");
+    let bob = learner(&app, "bob").await;
+    let no_trail = app
+        .delete_as(&bob, &format!("/api/v2/trail/activities/{a1}"))
+        .await;
+    assert_eq!(
+        no_trail.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        no_trail.text()
+    );
+    assert_eq!(no_trail.json()["detail"], "activity not found");
 
     // Leaving always works on an own run; a second leave is a 404.
     let left = app

@@ -120,11 +120,25 @@ impl CollectionsService {
         self.get(actor, id).await
     }
 
+    /// A direct read applies the list's `collection_listable` rule too: a
+    /// collection with no course visible to the actor is a 404 unless they
+    /// created it or manage collections (UX-131).
     pub async fn get(&self, actor: &Actor, id: CollectionId) -> Result<CollectionWithCourses> {
         let collection = ab_db::collections::get_collection(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("collection"))?;
         Self::require_read(actor, &collection)?;
+        if !sees_private(actor, ResourceType::Collection)
+            && !ab_db::collections::collection_listable(
+                &self.pool,
+                id,
+                actor.user_id,
+                sees_private(actor, ResourceType::Course),
+            )
+            .await?
+        {
+            return Err(Error::not_found("collection"));
+        }
         let courses = self.visible_courses(actor, id).await?;
         Ok(CollectionWithCourses {
             can_delete: Self::can_delete(actor, &collection),

@@ -20,6 +20,15 @@ use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
 
+fn config_text(config: &serde_json::Value, key: &str) -> Option<String> {
+    config
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+}
+
 const fn perm(action: Action, scope: Scope) -> Permission {
     Permission {
         resource: ResourceType::Certificate,
@@ -109,6 +118,9 @@ pub struct IssuedCertificate {
     pub certificate: CertificateRow,
     pub certification: CertificationRow,
     pub course: Course,
+    /// The name signed on the certificate: `config.certificate_instructor`,
+    /// else the course creator's display name (what the PDF prints).
+    pub instructor_name: Option<String>,
 }
 
 /// The public verification view.
@@ -161,6 +173,31 @@ impl CertificationsService {
         ab_db::certifications::get_certification(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("certification"))
+    }
+
+    async fn issued(
+        &self,
+        certificate: CertificateRow,
+        certification: CertificationRow,
+        course: Course,
+    ) -> Result<IssuedCertificate> {
+        let instructor_name = match config_text(&certification.config, "certificate_instructor") {
+            Some(name) => Some(name),
+            None => match course.creator_id {
+                Some(creator) => ab_db::identity::list_user_summaries(&self.pool, &[creator])
+                    .await?
+                    .into_iter()
+                    .next()
+                    .map(|u| u.display_name),
+                None => None,
+            },
+        };
+        Ok(IssuedCertificate {
+            certificate,
+            certification,
+            course,
+            instructor_name,
+        })
     }
 
     fn require_object(config: &serde_json::Value) -> Result<()> {
@@ -253,11 +290,10 @@ impl CertificationsService {
         let mut out = Vec::with_capacity(rows.len());
         for certificate in rows {
             let certification = self.load(certificate.certification_id).await?;
-            out.push(IssuedCertificate {
-                certificate,
-                certification,
-                course: course.clone(),
-            });
+            out.push(
+                self.issued(certificate, certification, course.clone())
+                    .await?,
+            );
         }
         Ok(out)
     }
@@ -278,11 +314,7 @@ impl CertificationsService {
             else {
                 continue;
             };
-            out.push(IssuedCertificate {
-                certificate,
-                certification,
-                course,
-            });
+            out.push(self.issued(certificate, certification, course).await?);
         }
         Ok(out)
     }
@@ -305,11 +337,7 @@ impl CertificationsService {
             .next();
         Ok(VerifiedCertificate {
             holder_display_name: holder.map(|h| h.display_name).unwrap_or_default(),
-            issued: IssuedCertificate {
-                certificate,
-                certification,
-                course,
-            },
+            issued: self.issued(certificate, certification, course).await?,
         })
     }
 
@@ -334,25 +362,8 @@ impl CertificationsService {
             })
             .unwrap_or(Language::Ru);
         let config = &verified.issued.certification.config;
-        let text = |key: &str| {
-            config
-                .get(key)
-                .and_then(serde_json::Value::as_str)
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(str::to_owned)
-        };
-        let teacher_name = match text("certificate_instructor") {
-            Some(name) => Some(name),
-            None => match verified.issued.course.creator_id {
-                Some(creator) => ab_db::identity::list_user_summaries(&self.pool, &[creator])
-                    .await?
-                    .into_iter()
-                    .next()
-                    .map(|u| u.display_name),
-                None => None,
-            },
-        };
+        let text = |key: &str| config_text(config, key);
+        let teacher_name = verified.issued.instructor_name;
         let code = verified.issued.certificate.verify_code.clone();
         pdf::render(&pdf::CertificatePdf {
             language,
