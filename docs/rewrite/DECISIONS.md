@@ -1189,3 +1189,15 @@ Implements three more items of the owner answers above. Routes:
   `details.session_id` while `active_remediation_gate` finds an unpassed
   one; `GET ai/remediation/{subject}/latest` returns the blocking session
   first, then the newest.
+- **AI on a learner's own work waits for the release** (BUG-182): the
+  owner may analyse / read the analysis or remediation of their submission
+  or file attempt only once its grade is theirs to see (submission
+  `release_state` visible / returned, attempt `published` / `returned`);
+  before that the routes answer 403 `grade-not-released` (new registry
+  code). A run the owner triggers gets the learner's context — item bodies
+  through `redact_for_learner`, the grading through `redact_grading` by the
+  assessment's `review_visibility`, no `Final/Auto score` before release —
+  exactly the owner's submission read; a grader's run keeps the full
+  grading. The queued executor decides by `triggered_by == owner`. The
+  legacy let the owner analyse a pending attempt with the answer key in
+  the prompt.

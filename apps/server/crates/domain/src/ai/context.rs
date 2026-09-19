@@ -7,11 +7,16 @@
 //! sources; unknown ones are dropped from the evidence.
 
 use ab_core::Result;
+use ab_core::assessments::FileAttemptStatus;
 use ab_core::id::{ActivityId, CourseId};
 use ab_db::ai as db;
 use ab_db::file_submissions::{AttemptRow, FileRow};
 use ab_db::submissions::SubmissionRow;
 use sqlx::PgPool;
+
+use crate::assessments::items::ItemBody;
+use crate::grading::breakdown::GradingBreakdown;
+use crate::grading::submissions::{ReleaseState, redact_grading, release_state};
 
 /// One citable source (legacy `AIContextSource`).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -225,19 +230,31 @@ fn learnings_text(value: &serde_json::Value) -> String {
 /// One submission: answers, grading, the activity and its assessment items.
 /// Returns the bundle and the legacy run metadata
 /// (`activity_id`, `assessment_id`, `item_count`).
+///
+/// `learner_view` (BUG-182, the owner triggered the run) renders what the
+/// owner's submission read shows: scores and grading only once released,
+/// the grading redacted by the assessment's `review_visibility`, and item
+/// bodies without the answer key.
 pub async fn submission_bundle(
     pool: &PgPool,
     submission: &SubmissionRow,
+    learner_view: bool,
 ) -> Result<(ContextBundle, serde_json::Value)> {
     let assessment = ab_db::assessments::get_assessment(pool, submission.assessment_id).await?;
-    let activity = match &assessment {
-        Some(a) => db::activity_context(pool, a.activity_id).await?,
-        None => None,
+    let (mut activity, mut items) = (None, Vec::new());
+    if let Some(a) = &assessment {
+        activity = db::activity_context(pool, a.activity_id).await?;
+        items = db::items_context(pool, a.id).await?;
+    }
+    let (released, grading) = if learner_view {
+        for item in &mut items {
+            item.body = learner_item_body(&item.body);
+        }
+        learner_grading(pool, submission, assessment.as_ref()).await?
+    } else {
+        (true, Some(submission.grading.clone()))
     };
-    let items = match &assessment {
-        Some(a) => db::items_context(pool, a.id).await?,
-        None => Vec::new(),
-    };
+    let shown = |score: Option<f64>| opt_num(score.filter(|_| released));
     let activity_label = activity.as_ref().map_or_else(
         || {
             assessment
@@ -255,12 +272,12 @@ pub async fn submission_bundle(
                 .as_ref()
                 .map_or_else(|| "unknown".to_owned(), |a| a.kind.to_string())
         ),
-        format!("Final score: {}", opt_num(submission.final_score)),
-        format!("Auto score: {}", opt_num(submission.auto_score)),
+        format!("Final score: {}", shown(submission.final_score)),
+        format!("Auto score: {}", shown(submission.auto_score)),
         format!("Status: {}", submission.status),
         format!("Answers: {}", json_snippet(&submission.answers, 1800)),
-        format!("Grading: {}", json_snippet(&submission.grading, 1800)),
     ];
+    lines.extend(grading.map(|g| format!("Grading: {}", json_snippet(&g, 1800))));
     let mut sources = vec![source(
         format!("submission:{}", submission.id),
         format!("Submission {}", submission.id),
@@ -322,18 +339,59 @@ pub async fn submission_bundle(
     ))
 }
 
+/// What the owner's submission read shows of the grade: `(released,
+/// grading)` — scores only once released, the breakdown redacted by the
+/// assessment's `review_visibility` (`None` = hidden).
+async fn learner_grading(
+    pool: &PgPool,
+    submission: &SubmissionRow,
+    assessment: Option<&ab_db::assessments::AssessmentRow>,
+) -> Result<(bool, Option<serde_json::Value>)> {
+    let released = matches!(
+        release_state(pool, submission).await?,
+        ReleaseState::Visible | ReleaseState::ReturnedForRevision
+    );
+    let grading = assessment
+        .filter(|_| released)
+        .and_then(|a| {
+            redact_grading(
+                GradingBreakdown::from_value(&submission.grading),
+                a.review_visibility,
+            )
+        })
+        .map(|g| g.to_value());
+    Ok((released, grading))
+}
+
+/// The item body as the learner reads it: no answer key, rubric, reference
+/// solution or hidden tests. An unparsable body is dropped rather than
+/// shown.
+fn learner_item_body(body: &serde_json::Value) -> serde_json::Value {
+    serde_json::from_value::<ItemBody>(body.clone()).map_or(serde_json::Value::Null, |mut b| {
+        b.redact_for_learner(0, false);
+        serde_json::to_value(b).unwrap_or(serde_json::Value::Null)
+    })
+}
+
 /// One file-submission attempt as context.
 ///
 /// The activity, the teacher's instructions and rubric, the attempt's
 /// status/grade/feedback, and its files — `texts[i]` is the read-back
 /// content of `files[i]` when it is a text file (else the file is described
-/// by name, type and size).
+/// by name, type and size). `learner_view` hides the grade and feedback
+/// until the attempt is published or returned (BUG-182).
 pub async fn attempt_bundle(
     pool: &PgPool,
     attempt: &AttemptRow,
     files: &[FileRow],
     texts: &[Option<String>],
+    learner_view: bool,
 ) -> Result<(ContextBundle, serde_json::Value)> {
+    let released = !learner_view
+        || matches!(
+            attempt.status,
+            FileAttemptStatus::Published | FileAttemptStatus::Returned
+        );
     let file_submission =
         ab_db::file_submissions::get_file_submission(pool, attempt.file_submission_id).await?;
     let activity = match &file_submission {
@@ -354,14 +412,19 @@ pub async fn attempt_bundle(
         "Assessment type: file_submission".to_owned(),
         format!("Attempt number: {}", attempt.attempt_number),
         format!("Status: {}", attempt.status),
-        format!("Final score: {}", opt_num(attempt.final_score)),
-        format!("Late: {}", attempt.is_late),
-        format!("Teacher feedback: {}", attempt.feedback),
         format!(
+            "Final score: {}",
+            opt_num(attempt.final_score.filter(|_| released))
+        ),
+        format!("Late: {}", attempt.is_late),
+    ];
+    if released {
+        lines.push(format!("Teacher feedback: {}", attempt.feedback));
+        lines.push(format!(
             "Rubric scores: {}",
             json_snippet(&attempt.rubric_scores, 1800)
-        ),
-    ];
+        ));
+    }
     if let Some(f) = &file_submission {
         lines.push(format!("Instructions: {}", f.instructions));
         lines.push(format!("Rubric: {}", json_snippet(&f.rubric, 1800)));

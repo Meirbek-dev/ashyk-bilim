@@ -158,7 +158,42 @@ async fn submitted_essay(
         )
         .await;
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    publish_grade(app, teacher, &sub_id, &essay_id, 10).await;
     sub_id
+}
+
+/// The teacher publishes `score` on `item_id` of `sub_id` (BUG-182: the
+/// owner may read AI on the work only once its grade is released).
+async fn publish_grade(
+    app: &TestApp,
+    teacher: &MintedSession,
+    sub_id: &str,
+    item_id: &str,
+    score: u32,
+) {
+    let review = app
+        .get_as(teacher, &format!("/api/v2/submissions/{sub_id}/review"))
+        .await;
+    assert_eq!(review.status, StatusCode::OK, "{}", review.text());
+    let version = review.json()["version"].as_i64().unwrap();
+    let body = serde_json::json!({
+        "action": "publish",
+        "item_grades": [{ "item_id": item_id, "score": score }],
+    });
+    let published = app
+        .send(
+            axum::http::Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{sub_id}/grade"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+                .body(axum::body::Body::from(body.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["release_state"], "visible");
 }
 
 fn analysis_reply(sub_id: &str) -> serde_json::Value {
@@ -1033,9 +1068,18 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
     );
     assert!(prompt.contains("Argue for monads"), "instructions missing");
     assert!(prompt.contains("essay.md"), "file name missing");
-    let latest = app
+    // BUG-182: the owner may not read the analysis of an unreleased attempt.
+    let owner = app
         .get_as(
             &alice,
+            &format!("/api/v2/ai/submission-analysis/{attempt_id}/latest"),
+        )
+        .await;
+    assert_eq!(owner.status, StatusCode::FORBIDDEN, "{}", owner.text());
+    assert_eq!(owner.json()["code"], "grade-not-released");
+    let latest = app
+        .get_as(
+            &teacher,
             &format!("/api/v2/ai/submission-analysis/{attempt_id}/latest"),
         )
         .await;
@@ -1203,7 +1247,7 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
     mount_json_reply(&app.llm, &analysis_reply(&attempt_id)).await;
     let queued = app
         .post_as(
-            &alice,
+            &teacher,
             &format!("/api/v2/ai/submission-analysis/{attempt_id}/analyze/queue"),
             &serde_json::json!({}),
         )
@@ -1215,12 +1259,12 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         .await
         .unwrap();
     let done = app
-        .get_as(&alice, &format!("/api/v2/ai/runs/{queued_id}"))
+        .get_as(&teacher, &format!("/api/v2/ai/runs/{queued_id}"))
         .await;
     assert_eq!(done.json()["status"], "succeeded", "{}", done.text());
     let newest = app
         .get_as(
-            &alice,
+            &teacher,
             &format!("/api/v2/ai/submission-analysis/{attempt_id}/latest"),
         )
         .await;
@@ -1369,6 +1413,168 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
         )
         .await;
     assert_eq!(handed_in.status, StatusCode::OK, "{}", handed_in.text());
+}
+
+/// BUG-182: the owner may analyse (and read the analysis of) their own
+/// work only once its grade is released — 403 `grade-not-released` before
+/// that — and the context of a learner-triggered run is the learner's view
+/// (no answer key, grading redacted by `review_visibility`); the grader's
+/// run keeps the full grading.
+#[sqlx::test(migrations = "../../migrations")]
+async fn owner_analysis_waits_for_release_and_gets_the_learner_context(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Release").await;
+    let chapter = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &serde_json::json!({ "name": "Week 3" }),
+        )
+        .await;
+    let chapter_id = chapter.json()["id"].as_str().unwrap().to_owned();
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Capitals" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let choice = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &serde_json::json!({
+                "title": "Capital", "max_score": 10,
+                "body": { "kind": "choice", "prompt": "Capital of Kazakhstan?",
+                          "options": [{ "id": "astana", "text": "Astana", "is_correct": true },
+                                      { "id": "almaty", "text": "Almaty", "is_correct": false }] }
+            }),
+        )
+        .await;
+    let choice_id = choice.json()["id"].as_str().unwrap().to_owned();
+    let mut policy = created.json()["policy"].clone();
+    policy["grade_release_mode"] = serde_json::json!("batch");
+    policy["review_visibility"] = serde_json::json!("score_only");
+    let policy_res = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/policy"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(policy.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(policy_res.status, StatusCode::OK, "{}", policy_res.text());
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { &choice_id: { "kind": "choice", "selected": ["almaty"] } } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(submitted.json()["release_state"], "awaiting_release");
+    mount_json_reply(&app.llm, &analysis_reply(&sub_id)).await;
+
+    // Graded but unreleased: the owner is refused, analysing and reading.
+    let analyze_url = format!("/api/v2/ai/submission-analysis/{sub_id}/analyze");
+    let latest_url = format!("/api/v2/ai/submission-analysis/{sub_id}/latest");
+    let refused = app
+        .post_as(
+            &alice,
+            &analyze_url,
+            &serde_json::json!({ "language": "en" }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "grade-not-released");
+    let hidden = app.get_as(&alice, &latest_url).await;
+    assert_eq!(hidden.status, StatusCode::FORBIDDEN, "{}", hidden.text());
+    assert_eq!(hidden.json()["code"], "grade-not-released");
+    assert!(app.llm.received_requests().await.unwrap().is_empty());
+
+    // The grader's run carries the answer key and the full grading.
+    let graded = app
+        .post_as(
+            &teacher,
+            &analyze_url,
+            &serde_json::json!({ "language": "en" }),
+        )
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    let requests = app.llm.received_requests().await.unwrap();
+    let full = String::from_utf8_lossy(&requests.last().unwrap().body).into_owned();
+    assert!(
+        full.contains(r#"is_correct\":true"#),
+        "answer key missing: {full}"
+    );
+    assert!(
+        full.contains(r#"correct_answer\":[\"astana\"]"#),
+        "grading key missing: {full}"
+    );
+
+    // Released: the owner's run sees neither the answer key nor the
+    // correct-answer fields, only what `score_only` shows.
+    let released = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/publish-grades"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(released.status, StatusCode::OK, "{}", released.text());
+    app.llm.reset().await;
+    mount_json_reply(&app.llm, &analysis_reply(&sub_id)).await;
+    let own = app
+        .post_as(
+            &alice,
+            &analyze_url,
+            &serde_json::json!({ "language": "en" }),
+        )
+        .await;
+    assert_eq!(own.status, StatusCode::OK, "{}", own.text());
+    let requests = app.llm.received_requests().await.unwrap();
+    let redacted = String::from_utf8_lossy(&requests.last().unwrap().body).into_owned();
+    assert!(redacted.contains("Capital of Kazakhstan?"), "{redacted}");
+    assert!(redacted.contains("Grading:"), "{redacted}");
+    assert!(redacted.contains("Final score: 0"), "{redacted}");
+    assert!(
+        !redacted.contains(r#"is_correct\":true"#),
+        "answer key leaked: {redacted}"
+    );
+    assert!(
+        !redacted.contains(r#"correct_answer\":[\"astana\"]"#),
+        "grading key leaked: {redacted}"
+    );
+    assert!(
+        !redacted.contains(r#"\"correct\":false"#),
+        "verdict leaked: {redacted}"
+    );
+    let mine = app.get_as(&alice, &latest_url).await;
+    assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
+    assert_eq!(mine.json()["id"], own.json()["id"]);
 }
 
 /// The hourly AI limiter over HTTP: past `analysis_requests_per_hour_per_user`

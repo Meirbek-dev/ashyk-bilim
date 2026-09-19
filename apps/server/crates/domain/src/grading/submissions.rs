@@ -226,7 +226,7 @@ pub(crate) async fn release_state(pool: &PgPool, submission: &Submission) -> Res
 /// The learner-facing breakdown under `review_visibility`: `full` keeps
 /// everything, `score_only` keeps per-item scores and teacher prose but
 /// drops correctness and the correct answers, `none` hides the items.
-fn redact_grading(
+pub(crate) fn redact_grading(
     mut grading: GradingBreakdown,
     visibility: ReviewVisibility,
 ) -> Option<GradingBreakdown> {

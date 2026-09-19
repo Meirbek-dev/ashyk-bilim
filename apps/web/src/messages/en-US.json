@@ -6877,6 +6877,7 @@
       "ai-budget-exhausted": "The AI token budget is exhausted. Please try again later.",
       "ai-rate-limited": "Hourly AI request limit reached. Please try again later.",
       "ai-run-cancelled": "The AI run was cancelled.",
+      "grade-not-released": "The grade for this work has not been released yet.",
       "ai-provider-unavailable": "The AI provider is unavailable. Please try again later.",
       "username-taken": "This username is already taken.",
       "email-taken": "This email address is already registered.",

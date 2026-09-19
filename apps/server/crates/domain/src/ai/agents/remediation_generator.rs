@@ -73,7 +73,7 @@ impl AiService {
         {
             return Ok(existing);
         }
-        let (bundle, metadata) = self.subject_bundle(subject).await?;
+        let (bundle, metadata) = self.subject_bundle(subject, user_id).await?;
         let rendered = bundle.render();
         let input_tokens = self.budget.assert_request(&self.pool, &rendered).await?;
         let analysis_run = self
@@ -125,7 +125,7 @@ impl AiService {
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Remediation)
             .await?;
-        let (bundle, metadata) = self.subject_bundle(&subject).await?;
+        let (bundle, metadata) = self.subject_bundle(&subject, actor.user_id).await?;
         let rendered = bundle.render();
         let input_tokens = self.budget.assert_request(&self.pool, &rendered).await?;
         let activity_id = self.subject_activity(&subject).await?;
@@ -249,7 +249,7 @@ impl AiService {
         let language = metadata_language(run);
         let user_id = run_user(run)?;
         let subject = self.load_subject_by(run_subject(run)?).await?;
-        let (bundle, metadata) = self.subject_bundle(&subject).await?;
+        let (bundle, metadata) = self.subject_bundle(&subject, user_id).await?;
         ab_db::ai::merge_run_metadata(&self.pool, run.id, &metadata).await?;
         let rendered = bundle.render();
         let input_tokens = self

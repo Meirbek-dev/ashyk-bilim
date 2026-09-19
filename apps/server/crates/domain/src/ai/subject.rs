@@ -3,8 +3,9 @@
 //! (`AiSubjectId`, looked up in both tables — DECISIONS 2026-09-12).
 
 use ab_clients::storage::Bucket;
+use ab_core::assessments::FileAttemptStatus;
 use ab_core::id::{ActivityId, AiSubjectId, CourseId, FileAttemptId, SubmissionId, UserId};
-use ab_core::{Error, Result};
+use ab_core::{Error, ErrorCode, Result};
 use ab_db::ai::{AiSubject, RunRow};
 use ab_db::file_submissions::AttemptRow;
 use ab_db::submissions::SubmissionRow;
@@ -12,6 +13,7 @@ use ab_db::submissions::SubmissionRow;
 use super::AiService;
 use super::agents::metadata_optional_id;
 use super::context::{self, ContextBundle};
+use crate::grading::submissions::{ReleaseState, release_state};
 use crate::identity::Actor;
 
 /// Text content the context reads back from storage: only files the model
@@ -96,8 +98,10 @@ impl AiService {
     }
 
     /// Legacy `require_ai_submission_access`, for either subject kind: the
-    /// owner, or someone who can update the course — anyone else gets 404
-    /// (an id must not leak that it exists).
+    /// owner once the grade is released to them (BUG-182: 403
+    /// `grade-not-released` before that — the analysis reads the grading),
+    /// or someone who can update the course — anyone else gets 404 (an id
+    /// must not leak that it exists).
     pub(crate) async fn accessible_subject(
         &self,
         actor: &Actor,
@@ -114,11 +118,33 @@ impl AiService {
         subject: &Subject,
     ) -> Result<()> {
         if subject.user_id() == actor.user_id {
-            return Ok(());
+            return if self.grade_visible_to_owner(subject).await? {
+                Ok(())
+            } else {
+                Err(Error::app(
+                    ErrorCode::GradeNotReleased,
+                    "the grade of this work is not released to you yet",
+                ))
+            };
         }
         let visible = self.courses.get(actor, subject.course_id()).await?;
         super::policy::require_course_update(actor, &visible)
             .map_err(|_| Error::not_found("submission"))
+    }
+
+    /// Same rule as the owner's submission / attempt read: published or
+    /// returned work shows its grading, anything earlier hides it.
+    pub(crate) async fn grade_visible_to_owner(&self, subject: &Subject) -> Result<bool> {
+        Ok(match subject {
+            Subject::Submission(s) => matches!(
+                release_state(&self.pool, s).await?,
+                ReleaseState::Visible | ReleaseState::ReturnedForRevision
+            ),
+            Subject::FileAttempt(a) => matches!(
+                a.status,
+                FileAttemptStatus::Published | FileAttemptStatus::Returned
+            ),
+        })
     }
 
     /// The activity the subject belongs to.
@@ -139,13 +165,19 @@ impl AiService {
         }
     }
 
-    /// The context bundle + run metadata for the subject.
+    /// The context bundle + run metadata for the subject. A run the owner
+    /// triggers (`viewer` is the learner) gets the learner's view: item
+    /// bodies without the answer key and the grading redacted by
+    /// `review_visibility`, as the submission read does (BUG-182); graders
+    /// get everything.
     pub(crate) async fn subject_bundle(
         &self,
         subject: &Subject,
+        viewer: UserId,
     ) -> Result<(ContextBundle, serde_json::Value)> {
+        let learner_view = subject.user_id() == viewer;
         match subject {
-            Subject::Submission(s) => context::submission_bundle(&self.pool, s).await,
+            Subject::Submission(s) => context::submission_bundle(&self.pool, s, learner_view).await,
             Subject::FileAttempt(a) => {
                 let files = ab_db::file_submissions::list_files(&self.pool, a.id).await?;
                 let mut texts = Vec::with_capacity(files.len());
@@ -172,7 +204,7 @@ impl AiService {
                     };
                     texts.push(text);
                 }
-                context::attempt_bundle(&self.pool, a, &files, &texts).await
+                context::attempt_bundle(&self.pool, a, &files, &texts, learner_view).await
             }
         }
     }

@@ -1,6 +1,5 @@
 ---
 source: crates/core/src/error/code.rs
-assertion_line: 107
 expression: registry
 ---
 {
@@ -63,6 +62,10 @@ expression: registry
   "google-oauth-expired": [
     400,
     "Google sign-in expired or invalid"
+  ],
+  "grade-not-released": [
+    403,
+    "Grade is not released yet"
   ],
   "internal": [
     500,
