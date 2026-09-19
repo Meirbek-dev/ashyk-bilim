@@ -2589,6 +2589,8 @@
       "configureButton": "Configure",
       "deleteButton": "Delete Activity",
       "deleteConfirmation": "Are you sure you want to delete this activity?",
+      "deleteAssessmentConfirmation": "Are you sure you want to delete this activity? Every learner hand-in for this assessment will be deleted for good.",
+      "lockedAssessment": "This assessment cannot be renamed: it is scheduled, archived or already has hand-ins. Unpublish it in the studio first.",
       "deleteFailed": "Failed to delete activity",
       "deleteTitle": "Delete {name}?",
       "deleting": "Deleting...",
@@ -5318,6 +5320,7 @@
         "uploadImageButton": "Upload New Image"
       },
       "activityCreatedSuccess": "Activity created successfully",
+      "activityCreateFailed": "Failed to create activity",
       "activityDeleteFailed": "Failed to delete activity",
       "activityDeletedSuccess": "Activity deleted successfully",
       "activityNameUpdateFailed": "Failed to update activity name",

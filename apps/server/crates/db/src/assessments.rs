@@ -331,8 +331,8 @@ pub async fn list_assessments_for_course(
 }
 
 /// Title/description/weight/grading type (the non-policy scalars).
-pub async fn update_assessment_details(
-    pool: &PgPool,
+pub async fn update_assessment_details<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
     title: Option<&str>,
     description: Option<&str>,
@@ -352,7 +352,7 @@ pub async fn update_assessment_details(
         weight,
         grading_type.map(GradingType::as_str)
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }

@@ -344,27 +344,6 @@ impl CurriculumService {
         })
     }
 
-    /// UX-112: one name — the assessment title follows the activity name
-    /// (the reverse already holds in `AssessmentsService::update`), under
-    /// the same lock: scheduled / published-with-submissions → 409 (UX-120).
-    async fn sync_assessment_title(&self, activity_id: ActivityId, name: &str) -> Result<()> {
-        if let Some(assessment) =
-            ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id).await?
-        {
-            crate::assessments::service::ensure_editable(&self.pool, &assessment).await?;
-            ab_db::assessments::update_assessment_details(
-                &self.pool,
-                assessment.id,
-                Some(name),
-                None,
-                None,
-                None,
-            )
-            .await?;
-        }
-        Ok(())
-    }
-
     pub async fn update_activity(
         &self,
         actor: &Actor,
@@ -390,6 +369,10 @@ impl CurriculumService {
                 message: format!("'{sub_type}' is not valid for '{activity_type}'"),
             }]));
         }
+        let name = changes
+            .name
+            .map(|n| ab_core::required_str("name", n))
+            .transpose()?;
         // The publish gate reads the MERGED row: the type this PATCH sets
         // (or keeps) and the published flag it asks for. It runs whenever
         // the merged row is published and either the flag flips or the type
@@ -414,30 +397,41 @@ impl CurriculumService {
                 "the activity has a live assessment; unpublish it before changing the type",
             ));
         }
+        // UX-112/UX-120: one name — the assessment title follows the activity
+        // name under the assessment lock (scheduled / archived /
+        // published-with-submissions → 409). BUG-186: every refusal above runs
+        // before the first write, and the writes share one transaction.
+        let assessment = match name {
+            Some(_) => {
+                ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id).await?
+            }
+            None => None,
+        };
+        if let Some(assessment) = &assessment {
+            crate::assessments::service::ensure_editable(&self.pool, assessment).await?;
+        }
+
+        let mut tx = self.pool.begin().await?;
         if let Some((activity_type, sub_type)) = changes.type_pair {
-            ab_db::catalog::set_activity_type(&self.pool, activity_id, activity_type, sub_type)
+            ab_db::catalog::set_activity_type(&mut *tx, activity_id, activity_type, sub_type)
                 .await?;
         }
-        let name = changes
-            .name
-            .map(|n| ab_core::required_str("name", n))
-            .transpose()?;
-        // The assessment lock is checked (and its title written) first, so a
-        // refused rename leaves the activity untouched too.
-        if let Some(name) = name {
-            self.sync_assessment_title(activity_id, name).await?;
+        if let (Some(assessment), Some(name)) = (&assessment, name) {
+            ab_db::assessments::update_assessment_details(
+                &mut *tx,
+                assessment.id,
+                Some(name),
+                None,
+                None,
+                None,
+            )
+            .await?;
         }
-        ab_db::catalog::update_activity(&self.pool, activity_id, name, None).await?;
-        if let Some(published) = changes.published
-            && published != activity.published
-        {
-            self.projector
-                .set_activity_published(activity_id, activity.course_id, published)
-                .await?;
-        }
+        let published = changes.published.filter(|p| *p != activity.published);
+        ab_db::catalog::update_activity(&mut *tx, activity_id, name, published).await?;
         if changes.content.is_some() || changes.details.is_some() || changes.settings.is_some() {
             let updated = ab_db::catalog::update_activity_content(
-                &self.pool,
+                &mut *tx,
                 activity_id,
                 changes.content,
                 changes.details,
@@ -446,13 +440,20 @@ impl CurriculumService {
             )
             .await?;
             if !updated {
-                // Lost the race between the check above and the write.
+                // Lost the race between the check above and the write; the
+                // dropped transaction rolls the other writes back.
                 return Err(Error::app_with_details(
                     ErrorCode::PreconditionFailed,
                     "activity changed since you loaded it",
                     serde_json::json!({ "expected": changes.expected_version }),
                 ));
             }
+        }
+        tx.commit().await?;
+        if published.is_some() {
+            self.projector
+                .recalculate_course_for_all(activity.course_id)
+                .await?;
         }
         self.activity_detail(actor, activity_id).await
     }

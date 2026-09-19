@@ -40,6 +40,7 @@ import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useSession } from '@/hooks/useSession'
 import { useApiError } from '@/hooks/useApiError'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import AppLink from '@/components/ui/AppLink'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -184,7 +185,11 @@ function ActivityElement({
       toast.success(t('activityNameUpdatedSuccess'))
       setIsEditing(false)
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t('failedToUpdateActivityName'))
+      // UX-128: the assessment lock (scheduled / archived / published with
+      // hand-ins) is a 409 — name the fix in the page language, not the
+      // server's English `detail`.
+      if (isAssessment && hasErrorCode(error, 'conflict')) toast.error(t('lockedAssessment'))
+      else toastApiError(error, undefined, t('failedToUpdateActivityName'))
       setEditedName(activity.name)
     } finally {
       setIsSavingEdit(false)
@@ -217,7 +222,7 @@ function ActivityElement({
       toast.success(t('activityDeletedSuccess'))
       setIsDeleteDialogOpen(false)
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t('deleteFailed'))
+      toastApiError(error, undefined, t('deleteFailed'))
     } finally {
       toast.dismiss(toastId)
       setIsDeletingActivity(false)
@@ -403,7 +408,10 @@ function ActivityElement({
               <AlertTriangle className="size-8" />
             </AlertDialogMedia>
             <AlertDialogTitle>{t('deleteTitle', { name: activity.name })}</AlertDialogTitle>
-            <AlertDialogDescription>{t('deleteConfirmation')}</AlertDialogDescription>
+            {/* BUG-186: deleting an assessment activity cascades its hand-ins. */}
+            <AlertDialogDescription>
+              {isAssessment ? t('deleteAssessmentConfirmation') : t('deleteConfirmation')}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeletingActivity} />

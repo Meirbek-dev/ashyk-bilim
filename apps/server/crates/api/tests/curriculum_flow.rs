@@ -723,3 +723,160 @@ async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
         assert_eq!(res.json()["field_errors"][0]["code"], "required");
     }
 }
+
+/// Create → one item → publish; returns (assessment_id, activity_id).
+async fn published_quiz(
+    app: &TestApp,
+    teacher: &MintedSession,
+    chapter_id: &str,
+) -> (String, String) {
+    let created = app
+        .post_as(
+            teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &serde_json::json!({
+                "title": "1+1?", "max_score": 5,
+                "body": { "kind": "choice", "prompt": "1+1?",
+                          "options": [{ "id": "a", "text": "2", "is_correct": true },
+                                      { "id": "b", "text": "3", "is_correct": false }] }
+            }),
+        )
+        .await;
+    assert_eq!(item.status, StatusCode::CREATED, "{}", item.text());
+    let published = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    (id, activity_id)
+}
+
+/// BUG-186: a refused PATCH writes nothing. An archived quiz is read-only;
+/// renaming it together with a type change is refused (409 `conflict`)
+/// before `set_activity_type` runs — the row keeps its type and name.
+#[sqlx::test(migrations = "../../migrations")]
+async fn refused_activity_patch_writes_nothing(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("archiver", "archiver@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Archive").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let (assessment_id, activity_id) = published_quiz(&app, &teacher, &chapter_id).await;
+    let archived = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{assessment_id}/lifecycle"),
+            &serde_json::json!({ "to": "archived" }),
+        )
+        .await;
+    assert_eq!(archived.status, StatusCode::OK, "{}", archived.text());
+
+    let refused = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({
+                "name": "Renamed",
+                "activity_type": "dynamic",
+                "activity_sub_type": "dynamic_page",
+            }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "conflict");
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+        .await;
+    assert_eq!(detail.json()["activity_type"], "quiz");
+    assert_eq!(detail.json()["name"], "Quiz");
+}
+
+/// BUG-186 (test task): deleting the activity of a published quiz with a
+/// hand-in cascades the assessment and its submissions (204, both gone).
+#[sqlx::test(migrations = "../../migrations")]
+async fn deleting_a_quiz_activity_cascades_its_hand_ins(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("deleter", "deleter@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Cascade").await;
+    app.publish_course(&course_id).await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let (assessment_id, activity_id) = published_quiz(&app, &teacher, &chapter_id).await;
+
+    let alice = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            alice,
+            &["assessment:submit:assigned", "assessment:read:assigned"],
+        )
+        .await;
+    let started = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{assessment_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+    let submission_id = started.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{submission_id}/submit"),
+            &serde_json::json!({ "answers": {} }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    let assessment = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{assessment_id}"))
+        .await;
+    assert_eq!(assessment.status, StatusCode::NOT_FOUND);
+    let submission = app
+        .get_as(&alice, &format!("/api/v2/submissions/{submission_id}"))
+        .await;
+    assert_eq!(submission.status, StatusCode::NOT_FOUND);
+}

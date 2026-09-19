@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vite-plus/test'
 
@@ -16,6 +16,9 @@ const harness = vi.hoisted(() => ({
   creatorId: 'teacher-1',
   contributorIds: [] as string[],
   lifecycle: undefined as string | undefined,
+  updateActivity: vi.fn<() => Promise<unknown>>(),
+  toastApiError: vi.fn(),
+  toastError: vi.fn(),
 }))
 
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
@@ -27,11 +30,15 @@ vi.mock('@/hooks/useSession', () => ({
 }))
 vi.mock('@components/Contexts/CourseContext', () => ({
   useCourse: () => ({
-    courseStructure: { course_uuid: 'course-1', creator_id: harness.creatorId, contributor_ids: harness.contributorIds },
+    courseStructure: {
+      course_uuid: 'course-1',
+      creator_id: harness.creatorId,
+      contributor_ids: harness.contributorIds,
+    },
   }),
 }))
 vi.mock('@/hooks/mutations/useActivityMutations', () => ({
-  useActivityMutations: () => ({ deleteActivity: vi.fn(), updateActivity: vi.fn() }),
+  useActivityMutations: () => ({ deleteActivity: vi.fn(), updateActivity: harness.updateActivity }),
 }))
 vi.mock('@/components/Objects/Elements/Tooltip/Tooltip', () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -40,7 +47,10 @@ vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (path: string) => pa
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ prefetch: _prefetch, ...props }: React.ComponentProps<'a'> & { prefetch?: boolean }) => <a {...props} />,
 }))
-vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: vi.fn() }) }))
+vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: harness.toastApiError }) }))
+vi.mock('sonner', () => ({
+  toast: { error: harness.toastError, success: vi.fn(), loading: vi.fn(), dismiss: vi.fn() },
+}))
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({
   useListCourseAssessments: () => ({
     data: harness.lifecycle ? [{ activity_id: 'act-1', lifecycle: harness.lifecycle }] : undefined,
@@ -48,6 +58,7 @@ vi.mock('@/lib/api/generated/assessments/assessments', () => ({
 }))
 
 import ActivityElement from '@/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ActivityElement'
+import { APIError } from '@/lib/api/assertSuccess'
 
 const activity = {
   id: 'act-1',
@@ -129,5 +140,44 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     expect(screen.queryByRole('button', { name: 'publish' })).toBeNull()
     expect(screen.getByLabelText('scheduledHint')).toHaveTextContent('scheduled')
     harness.lifecycle = undefined
+  })
+
+  // UX-128: a locked quiz refuses the rename with a 409 — the toast is the
+  // page-language lock copy, never the server's English `detail`.
+  it('names the assessment lock on a refused rename instead of the raw detail', async () => {
+    harness.permissions = new Set(['activity:update:platform'])
+    harness.updateActivity.mockRejectedValueOnce(
+      new APIError({ status: 409, code: 'conflict', message: 'scheduled assessments are read-only; unschedule first' }),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ActivityElement
+          activity={{ ...activity, activity_type: 'TYPE_CUSTOM' as const }}
+          activityIndex={0}
+          course_uuid="course-1"
+        />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'editButton' }))
+    fireEvent.change(screen.getByPlaceholderText('activityNamePlaceholder'), { target: { value: 'Renamed' } })
+    fireEvent.click(screen.getByRole('button', { name: 'save' }))
+    await waitFor(() => expect(harness.toastError).toHaveBeenCalledWith('lockedAssessment'))
+    expect(harness.toastError).not.toHaveBeenCalledWith(expect.stringContaining('read-only'))
+  })
+
+  // BUG-186: deleting an assessment activity cascades its hand-ins — the confirm says so.
+  it('warns about lost hand-ins when deleting an assessment activity', () => {
+    harness.permissions = new Set(['activity:delete:platform'])
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ActivityElement
+          activity={{ ...activity, activity_type: 'TYPE_CUSTOM' as const }}
+          activityIndex={0}
+          course_uuid="course-1"
+        />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'deleteButton' }))
+    expect(screen.getByText('deleteAssessmentConfirmation')).toBeInTheDocument()
   })
 })

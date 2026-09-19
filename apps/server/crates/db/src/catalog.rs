@@ -497,8 +497,8 @@ pub async fn list_chapter_activity_ids(
     Ok(ids)
 }
 
-pub async fn update_activity(
-    pool: &PgPool,
+pub async fn update_activity<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: ActivityId,
     name: Option<&str>,
     published: Option<bool>,
@@ -512,7 +512,7 @@ pub async fn update_activity(
         name,
         published
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -563,8 +563,8 @@ pub async fn get_activity_content(
 
 /// Writes only when `expected_version` is `None` or matches; `false` means a
 /// stale version (the caller answers 412). Every write bumps `version`.
-pub async fn update_activity_content(
-    pool: &PgPool,
+pub async fn update_activity_content<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: ActivityId,
     content: Option<&serde_json::Value>,
     details: Option<&serde_json::Value>,
@@ -584,14 +584,14 @@ pub async fn update_activity_content(
         settings,
         expected_version
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
 
 /// Change the type pair together — the DB CHECK enforces validity.
-pub async fn set_activity_type(
-    pool: &PgPool,
+pub async fn set_activity_type<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: ActivityId,
     activity_type: &str,
     activity_sub_type: &str,
@@ -602,7 +602,7 @@ pub async fn set_activity_type(
         activity_type,
         activity_sub_type
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
