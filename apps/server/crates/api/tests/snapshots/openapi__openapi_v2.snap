@@ -6458,6 +6458,13 @@ expression: json
           },
           "course": {
             "$ref": "#/components/schemas/Course"
+          },
+          "instructor_name": {
+            "description": "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) — what the PDF prints.",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -11981,6 +11988,13 @@ expression: json
           },
           "holder": {
             "$ref": "#/components/schemas/CertificateHolder"
+          },
+          "instructor_name": {
+            "description": "The name signed on the certificate — what the PDF prints.",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [

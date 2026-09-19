@@ -47,6 +47,7 @@ export const VerifiedCertificate = zod
         display_name: zod.string(),
       })
       .describe('What a verifier learns about the holder: the name on the certificate.'),
+    instructor_name: zod.string().nullish().describe('The name signed on the certificate — what the PDF prints.'),
   })
   .describe('The public verification view.')
 

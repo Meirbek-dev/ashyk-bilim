@@ -41,6 +41,12 @@ export const IssuedCertificate = zod
       thumbnail_key: zod.string().nullish().describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
       updated_at_unix: zod.int(),
     }),
+    instructor_name: zod
+      .string()
+      .nullish()
+      .describe(
+        "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) — what the PDF prints.",
+      ),
   })
   .describe('A certificate with its template and course.')
 
