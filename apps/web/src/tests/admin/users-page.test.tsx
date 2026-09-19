@@ -4,12 +4,16 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import UserRolesClient from '@/app/_shared/dash/admin/users/client'
+import { APIError } from '@/lib/api/assertSuccess'
 
 // `t` needs `.has` because role labels resolve `roles.<slug>.name` through the root catalog.
-const catalog: Record<string, string> = { 'roles.instructor.name': 'Teacher', 'roles.user.name': 'User' }
+const catalog: Record<string, string> = {
+  'roles.instructor.name': 'Teacher',
+  'roles.user.name': 'User',
+  'fields.password-policy': 'Needs a symbol',
+}
 vi.mock('next-intl', () => ({
-  useTranslations: (ns?: string) =>
-    Object.assign((key: string) => (ns ? key : (catalog[key] ?? key)), { has: (key: string) => key in catalog }),
+  useTranslations: () => Object.assign((key: string) => catalog[key] ?? key, { has: (key: string) => key in catalog }),
 }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 // The assign dialog's user picker walks `GET /users` through `apiJson` (allMembersQueryOptions).
@@ -120,5 +124,32 @@ describe('/dash/admin/users (v2 AdminUserPage wire)', () => {
       }),
     )
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users', 'admin'] }))
+  })
+
+  it('UX-130: a 422 password-policy lands on the password field, not the banner', async () => {
+    createUser.mockRejectedValue(
+      new APIError({
+        status: 422,
+        code: 'validation-failed',
+        message: 'validation failed',
+        fieldErrors: [{ field: 'password', code: 'password-policy', message: 'must contain symbol' }],
+      }),
+    )
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('teacher@ashyq.local')
+    await user.click(screen.getByRole('button', { name: 'createUser' }))
+    const dialog = await screen.findByRole('dialog')
+    const input = (name: string) => dialog.querySelector<HTMLInputElement>(`#create-user-${name}`)!
+    await user.type(input('firstName'), 'New')
+    await user.type(input('lastName'), 'Bie')
+    await user.type(input('username'), 'newbie')
+    await user.type(input('email'), 'newbie@ashyq.local')
+    await user.type(input('password'), 'Password1')
+    await user.click(within(dialog).getByRole('button', { name: 'createUserSubmit' }))
+
+    await waitFor(() => expect(input('password')).toHaveAttribute('aria-invalid', 'true'))
+    expect(within(dialog).getByText('Needs a symbol')).toBeInTheDocument()
+    expect(within(dialog).queryByText('validation failed')).not.toBeInTheDocument()
   })
 })

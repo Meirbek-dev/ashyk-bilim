@@ -1366,7 +1366,7 @@
         "contentROI": "Контент ROI",
         "roi": "ROI",
         "passCompletion": "Өту/аяқтау",
-        "noData": "N/A"
+        "noData": "жоқ"
       },
       "teacherWorkloadPanel": {
         "title": "Мұғалім жүктемесі",
@@ -1383,7 +1383,7 @@
         "waiting": "Күту",
         "oldest": "Ең ескі",
         "noSubmissions": "Тексеруді күткен оқу әрекеті жоқ.",
-        "na": "N/A",
+        "na": "жоқ",
         "assessment": "Бағалау"
       },
       "dataQualityPanel": {
@@ -1424,7 +1424,7 @@
           "stale_low_performance": "Ескірген контент"
         },
         "noBottlenecks": "Ағымдағы сүзгі үшін тарлықтар табылмады.",
-        "na": "N/A"
+        "na": "жоқ"
       },
       "insightFeedPanel": {
         "title": "Инсайттар таспасы",
@@ -1467,7 +1467,7 @@
         "noSourceRows": "Бұл метрика үшін көз жолдары табылмады.",
         "yes": "Иә",
         "no": "Жоқ",
-        "na": "N/A",
+        "na": "жоқ",
         "couldNotLoadRows": "Деректер жолдарын жүктеу мүмкін болмады.",
         "columns": {
           "learner": "Білім алушы",

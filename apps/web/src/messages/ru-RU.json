@@ -1367,7 +1367,7 @@
         "contentROI": "ROI контента",
         "roi": "ROI",
         "passCompletion": "Проход/завершение",
-        "noData": "N/A"
+        "noData": "н/д"
       },
       "teacherWorkloadPanel": {
         "title": "Нагрузка учителя",
@@ -1384,7 +1384,7 @@
         "waiting": "Ожидание",
         "oldest": "Старейшее",
         "noSubmissions": "Нет отправлений, ожидающих проверки.",
-        "na": "N/A",
+        "na": "н/д",
         "assessment": "Оценивание"
       },
       "dataQualityPanel": {
@@ -1425,7 +1425,7 @@
           "stale_low_performance": "Устаревший контент"
         },
         "noBottlenecks": "Для текущего фильтра узких мест не обнаружено.",
-        "na": "N/A"
+        "na": "н/д"
       },
       "insightFeedPanel": {
         "title": "Лента инсайтов",
@@ -1468,7 +1468,7 @@
         "noSourceRows": "Исходные строки не найдены для этой метрики.",
         "yes": "Да",
         "no": "Нет",
-        "na": "N/A",
+        "na": "н/д",
         "couldNotLoadRows": "Не удалось загрузить подробные строки.",
         "columns": {
           "learner": "Учащийся",

@@ -47,7 +47,7 @@ import { useAdminUsers, useAllMembers, useRoles } from '@/features/users/hooks/u
 import { accountLabel, useRoleLabels } from '@/features/users/hooks/useRoleLabels'
 import { useApiError } from '@/hooks/useApiError'
 import { useSession } from '@/hooks/useSession'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { APIError, hasErrorCode } from '@/lib/api/assertSuccess'
 import type { AdminUser, CreateUserBody, Role } from '@/lib/api/generated/zod'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { assignRoleToUser, createUser, removeRoleFromUser, setUserStatus } from '@/services/rbac'
@@ -426,6 +426,7 @@ function CreateUserForm({
   onSubmit: (body: CreateUserBody) => void
 }) {
   const t = useTranslations('Components.Roles')
+  const errorsT = useTranslations('Errors')
   const { handleApiError } = useApiError()
   const [values, setValues] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' })
   const [role, setRole] = useState<Role | null>(null)
@@ -433,8 +434,12 @@ function CreateUserForm({
   const extraRoles = roles.filter(item => item.slug !== 'user')
 
   // Contract codes land on the field they concern; anything else is a banner.
+  // UX-130: a 422 `password` / `password-policy` names the rule on the field,
+  // the way the security page does.
+  const passwordCode = error instanceof APIError ? error.fieldErrors.find(f => f.field === 'password')?.code : undefined
+  const passwordRejected = passwordCode && errorsT.has(`fields.${passwordCode}`) ? errorsT(`fields.${passwordCode}`) : null
   const serverError = error
-    ? hasErrorCode(error, 'username-taken') || hasErrorCode(error, 'email-taken')
+    ? hasErrorCode(error, 'username-taken') || hasErrorCode(error, 'email-taken') || passwordRejected
       ? null
       : handleApiError(error).message
     : null
@@ -510,8 +515,14 @@ function CreateUserForm({
         {field(
           'password',
           t('passwordLabel'),
-          <PasswordInput id="create-user-password" autoComplete="new-password" placeholder=" " {...bind('password')} />,
-          t('passwordHint'),
+          <PasswordInput
+            id="create-user-password"
+            autoComplete="new-password"
+            placeholder=" "
+            aria-invalid={Boolean(passwordRejected)}
+            {...bind('password')}
+          />,
+          passwordRejected ?? t('passwordHint'),
         )}
         <div className="grid gap-2">
           <Label htmlFor="create-user-role">{t('extraRolesLabel')}</Label>
