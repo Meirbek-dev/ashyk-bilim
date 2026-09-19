@@ -953,6 +953,75 @@ async fn gradebook_flags_a_pending_attempt_behind_the_grade_of_record(pool: PgPo
     assert_eq!(cell["pending_attempt"], 2, "{cell}");
 }
 
+/// BUG-180: a pending retake never becomes the grade of record, however
+/// high its partial auto score (choice 10/20 = 50 here). Bob: attempt 1
+/// published 40 < pending 50 → the cell is 40 published, `pending_attempt`
+/// 2, learner-state 40 passed, CSV `40`. Alice: a 50 tie → published wins.
+#[sqlx::test(migrations = "../../migrations")]
+async fn pending_retake_never_outranks_the_released_grade(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 3, "passing_score": 30 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    let alice = learner(&app, "alice").await;
+    for (who, score) in [(&bob, 40), (&alice, 50)] {
+        let first = submit_attempt(&app, who, &id, &choice_id, &essay_id).await;
+        let published = app
+            .send(grade(
+                &teacher,
+                &first,
+                Some("1"),
+                &serde_json::json!({ "action": "publish", "final_score": score }),
+            ))
+            .await;
+        assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+        let second = submit_attempt(&app, who, &id, &choice_id, &essay_id).await;
+        let view = app
+            .get_as(&teacher, &format!("/api/v2/submissions/{second}/review"))
+            .await;
+        assert_eq!(view.json()["auto_score"], 50.0, "{}", view.text());
+    }
+    let gradebook = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook"))
+        .await;
+    assert_eq!(gradebook.status, StatusCode::OK, "{}", gradebook.text());
+    for (who, score) in [(&bob, 40.0), (&alice, 50.0)] {
+        let cell = gradebook.json()["cells"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["user_id"] == who.user_id.to_string())
+            .cloned()
+            .unwrap();
+        assert_eq!(cell["attempt_number"], 1, "{cell}");
+        assert_eq!(cell["status"], "published", "{cell}");
+        assert_eq!(cell["final_score"], score, "{cell}");
+        assert_eq!(cell["pending_attempt"], 2, "{cell}");
+    }
+    let state = app
+        .get_as(&bob, &format!("/api/v2/courses/{course_id}/learner-state"))
+        .await;
+    let entry = &state.json()["outline"][0]["activities"][0];
+    assert_eq!(entry["score"], 40.0, "{entry}");
+    assert_eq!(entry["passed"], true, "{entry}");
+    let csv = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/gradebook/export"),
+        )
+        .await;
+    let text = csv.text();
+    let row = text.lines().find(|l| l.starts_with("bob")).unwrap();
+    assert!(row.ends_with(",40"), "{row}");
+}
+
 /// BUG-138: a publish-only save (no score, no item grades) keeps the raw
 /// score of the latest entry — the late penalty is not applied twice — and
 /// an omitted `feedback` keeps the stored one; `audit_note` lands in the

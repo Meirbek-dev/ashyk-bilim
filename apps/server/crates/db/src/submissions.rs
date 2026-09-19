@@ -394,10 +394,12 @@ pub async fn list_non_draft(
 
 /// The grade-of-record attempt of one learner on one graded activity.
 ///
-/// The attempt `progress::projector` scores (BUG-173): the best-scored
-/// non-draft submission (`COALESCE(final_score, auto_score)`, latest on
-/// ties) or, on a file submission, the latest scored attempt; the latest
-/// one when nothing is scored yet.
+/// The attempt `progress::projector` scores (BUG-173 / BUG-180): a graded
+/// non-draft submission (`final_score IS NOT NULL`) outranks any pending
+/// one whose partial `auto_score` is higher; among graded, the highest
+/// score, latest on ties. Same for file attempts. The latest attempt when
+/// nothing is scored yet. Keep the order in step with
+/// `projector::grade_of_record_order`.
 ///
 /// An assessment submission or a file-submission attempt: exactly one of
 /// the id pairs is set, and a file attempt `submitted` maps to `pending`.
@@ -456,7 +458,8 @@ pub async fn gradebook_cells(
                       s.status, s.attempt_number, s.final_score, s.is_late,
                       o.due_at_override, s.submitted_at, s.graded_at,
                       row_number() OVER (PARTITION BY s.user_id, s.assessment_id
-                          ORDER BY COALESCE(s.final_score, s.auto_score) DESC NULLS LAST,
+                          ORDER BY (s.final_score IS NOT NULL) DESC,
+                                   COALESCE(s.final_score, s.auto_score) DESC NULLS LAST,
                                    s.attempt_number DESC) AS rank
                FROM submissions s JOIN assessments a ON a.id = s.assessment_id
                LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id

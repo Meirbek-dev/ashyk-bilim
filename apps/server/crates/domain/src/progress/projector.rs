@@ -369,6 +369,22 @@ fn submission_sort_key(s: &SubmissionRow) -> (i64, uuid::Uuid) {
     (s.submitted_at.unwrap_or(s.updated_at), s.id.0)
 }
 
+/// One grade of record (BUG-173 / BUG-180): a graded attempt
+/// (`final_score` set) outranks a pending one whose partial auto score is
+/// higher; among graded, the highest score, latest on ties. Mirrors the
+/// `rank` in `ab_db::submissions::gradebook_cells` — change both.
+fn grade_of_record_order(a: &SubmissionRow, b: &SubmissionRow) -> std::cmp::Ordering {
+    a.final_score
+        .is_some()
+        .cmp(&b.final_score.is_some())
+        .then_with(|| {
+            submission_score(a)
+                .unwrap_or(0.0)
+                .total_cmp(&submission_score(b).unwrap_or(0.0))
+        })
+        .then_with(|| a.attempt_number.cmp(&b.attempt_number))
+}
+
 /// Legacy `_apply_progress_from_submissions`.
 pub(crate) fn project_submissions(
     activity: &ActivityRow,
@@ -381,15 +397,13 @@ pub(crate) fn project_submissions(
         .iter()
         .filter(|s| s.status != SubmissionStatus::Draft)
         .collect();
+    // The grade of record is a released one (BUG-180): a pending or saved
+    // attempt never scores the activity, whatever its partial auto score.
     let best = submitted
         .iter()
         .copied()
-        .filter(|s| submission_score(s).is_some())
-        .max_by(|a, b| {
-            submission_score(a)
-                .unwrap_or(0.0)
-                .total_cmp(&submission_score(b).unwrap_or(0.0))
-        });
+        .filter(|s| s.status == SubmissionStatus::Published && s.final_score.is_some())
+        .max_by(|a, b| grade_of_record_order(a, b));
 
     let mut state = ActivityProgressState::NotStarted;
     let mut score = None;
@@ -399,8 +413,15 @@ pub(crate) fn project_submissions(
     let mut status_reason = None;
 
     if let Some(latest) = latest {
-        score = submission_score(best.unwrap_or(latest));
-        passed = Some(score.is_some_and(|s| s >= assessment.passing_score));
+        // Without a released grade only a returned attempt carries its
+        // (provisional) score to the learner; pending / saved ones are
+        // teacher-only, so `learner_state` needs no mask.
+        score = best.and_then(|s| s.final_score).or_else(|| {
+            (latest.status == SubmissionStatus::Returned)
+                .then(|| submission_score(latest))
+                .flatten()
+        });
+        passed = score.map(|s| s >= assessment.passing_score);
         state = match latest.status {
             SubmissionStatus::Draft => ActivityProgressState::InProgress,
             SubmissionStatus::Returned => {
@@ -515,9 +536,12 @@ pub(crate) fn project_file_attempts(
         .iter()
         .filter(|a| a.status != FileAttemptStatus::Draft)
         .count();
-    let score = latest
-        .and_then(|a| a.final_score)
-        .or_else(|| released.and_then(|a| a.final_score));
+    // Released grade first (BUG-180); a returned attempt carries its own.
+    let score = released.and_then(|a| a.final_score).or_else(|| {
+        latest
+            .filter(|a| a.status == FileAttemptStatus::Returned)
+            .and_then(|a| a.final_score)
+    });
     let passed = score.map(|s| s >= FILE_SUBMISSION_PASSING_SCORE);
     let mut state = ActivityProgressState::NotStarted;
     let mut teacher_action = false;

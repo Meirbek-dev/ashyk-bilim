@@ -1147,6 +1147,15 @@ Implements three more items of the owner answers above. Routes:
   76 %» on the card and in the gradebook alike; `attempts` still counts
   every hand-in and the review queue lists a newer pending attempt.
   `gradebook_cells` ranks per (learner, activity) with the same ordering.
+  Refined (BUG-180): a released grade outranks any pending attempt —
+  `gradebook_cells` ranks `(final_score IS NOT NULL) DESC, COALESCE(final,
+  auto) DESC, attempt_number DESC` (as the file branch already did), and
+  `project_submissions` scores only released (`published`, scored)
+  attempts through the mirrored `grade_of_record_order`; a pending retake
+  with a higher partial auto score stays `pending_attempt`. Since the
+  projection no longer carries unreleased scores, `learner_state` dropped
+  its awaiting-grade mask: the card keeps «85 % · Пройдено» while attempt
+  2 waits, and a returned attempt carries its provisional score as before.
 - **The stored raw survives** (BUG-174): `save_grade` keeps the latest
   entry's raw score unless the request names a new one — a manual override
   (raw ≠ the item-derived value) and an integrity-annulled attempt's 0 are
