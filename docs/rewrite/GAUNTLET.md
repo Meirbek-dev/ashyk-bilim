@@ -128,6 +128,11 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 - **Stack rebuilt a fifth time 2026-09-18 21:15** (machine restart; same recipe, one shell
   script's worth). The rebuild is now routine: containers → `CREATE DATABASE` → migrate →
   build → serve/worker → register ×3 → verify (codes from server.log) → `UPDATE user_roles`.
+- **Stack rebuilt a sixth time 2026-09-19 13:55** (the podman WSL VM died mid-pass-17 without a
+  machine restart: port forwards refused, then the socket; `wsl --shutdown` + `podman machine
+  start`, same recipe as `<scratchpad>/rebuild-stack.ps1`: containers → buckets/CORS/policy →
+  `CREATE DATABASE` → `ashyq migrate` → serve/worker → register ×3 (`first_name`/`last_name`,
+  not `display_name`) → verify → `UPDATE user_roles`; ~4 min).
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
 
 ## v1→v2 client drift map (pass 1 survey, 2026-09-10)
