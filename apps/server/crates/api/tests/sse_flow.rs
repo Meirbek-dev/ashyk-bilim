@@ -352,3 +352,83 @@ async fn course_stream_fans_out_grade_changes_to_graders(pool: PgPool) {
     assert!(data["payload"]["activity_id"].is_string());
     drop(stream);
 }
+
+/// BUG-188: the course stream re-checks grading access before each batch,
+/// so a maintainer demoted mid-stream gets a terminal `closed` instead of
+/// the next `grade.published`; reconnecting is refused like any read.
+#[sqlx::test(migrations = "../../migrations")]
+async fn demoted_maintainer_stream_closes_before_the_next_event(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let maint = learner(&app, "maint").await;
+    let (sub_id, essay_id) = pending_submission(&app, &teacher, &alice).await;
+    let course_id: String =
+        sqlx::query_scalar("SELECT course_id::text FROM submissions WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "username": "maint", "role": "maintainer" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let base = app.serve().await;
+    let client = reqwest::Client::new();
+    let url = format!("{base}/api/v2/courses/{course_id}/grading/events");
+    let mut stream = client
+        .get(&url)
+        .header("cookie", &maint.cookie)
+        .header("accept", "text/event-stream")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(stream.status(), StatusCode::OK);
+    let mut buffer = String::new();
+    read_until(&mut stream, &mut buffer, "event: connected").await;
+
+    let demoted = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors/{}", maint.user_id),
+            &serde_json::json!({ "status": "inactive" }),
+        )
+        .await;
+    assert_eq!(demoted.status, StatusCode::OK, "{}", demoted.text());
+    let published = app
+        .send(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{sub_id}/grade"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::IF_MATCH, "1")
+                .body(Body::from(
+                    serde_json::json!({ "action": "publish",
+                        "item_grades": [{ "item_id": &essay_id, "score": 9 }] })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    read_until(&mut stream, &mut buffer, "event: closed").await;
+    while let Some(chunk) = stream.chunk().await.unwrap() {
+        buffer.push_str(&String::from_utf8_lossy(&chunk));
+    }
+    assert!(!buffer.contains("grade.published"), "leaked: {buffer}");
+    assert!(!buffer.contains("grade.saved"), "leaked: {buffer}");
+    assert!(buffer.contains("\"code\":\"forbidden\""), "{buffer}");
+    let again = client
+        .get(&url)
+        .header("cookie", &maint.cookie)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(again.status(), StatusCode::FORBIDDEN);
+}

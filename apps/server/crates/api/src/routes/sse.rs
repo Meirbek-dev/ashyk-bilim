@@ -5,7 +5,10 @@
 //! `GET /courses/{id}/grading/events` for graders. `Last-Event-ID` replays
 //! what was missed (Redis stream ids), then a `connected` event, then live
 //! events; axum's keep-alive comments every 25s hold proxies open. Each
-//! user may hold five streams at once (429 beyond that).
+//! user may hold five streams at once (429 beyond that). Access is
+//! re-checked before every batch of live events (and on every idle
+//! read timeout): once lost, a terminal `closed` event ends the stream
+//! (BUG-188).
 
 use std::convert::Infallible;
 use std::time::Duration;
@@ -13,6 +16,7 @@ use std::time::Duration;
 use ab_core::id::{CourseId, SubmissionId};
 use ab_core::{Error, ErrorCode};
 use ab_domain::events::{ConnectionSlot, GradingEvents, MAX_CONNECTIONS_PER_USER, Stream};
+use ab_domain::identity::Actor;
 use axum::extract::State;
 use axum::http::HeaderMap;
 use axum::response::Sse;
@@ -47,16 +51,31 @@ fn last_event_id(headers: &HeaderMap) -> Option<String> {
         .map(str::to_owned)
 }
 
+/// The connect-time access rule, re-run while the stream is open.
+async fn access(
+    grading: &ab_domain::grading::GradingService,
+    actor: &Actor,
+    stream: Stream,
+) -> ab_core::Result<()> {
+    match stream {
+        Stream::Submission(id) => grading.stream_access(actor, id).await,
+        Stream::Course(id) => grading.course_stream_access(actor, id).await,
+    }
+}
+
 /// Take a connection slot, replay after `Last-Event-ID`, announce
-/// `connected` (with `connected_with` merged in), then relay live events.
+/// `connected` (with `connected_with` merged in), then relay live events
+/// while `actor` keeps access (checked before each batch, so a revoked
+/// grant never leaks a later event); a `closed` event ends the stream.
 async fn open_stream(
     state: &AppState,
-    actor_user: ab_core::id::UserId,
+    actor: Actor,
     stream: Stream,
     headers: &HeaderMap,
     connected_with: serde_json::Value,
 ) -> ApiResult<EventStream> {
-    let Some(slot) = state.events.acquire_slot(actor_user).await? else {
+    access(&state.grading, &actor, stream).await?;
+    let Some(slot) = state.events.acquire_slot(actor.user_id).await? else {
         return Err(Error::app_with_details(
             ErrorCode::RateLimited,
             "too many concurrent event streams for this user",
@@ -72,6 +91,7 @@ async fn open_stream(
         base.extend(extra.clone());
     }
 
+    let grading = state.grading.clone();
     let out = async_stream::stream! {
         // Moved in so the slot is released when the client goes away.
         let _slot: ConnectionSlot = slot;
@@ -91,6 +111,13 @@ async fn open_stream(
         loop {
             match subscriber.read(stream, &cursor, READ_TIMEOUT, BATCH_LIMIT).await {
                 Ok(batch) => {
+                    if let Err(err) = access(&grading, &actor, stream).await {
+                        tracing::info!(?stream, user = %actor.user_id, %err, "sse access lost; closing stream");
+                        yield Ok(Event::default().event("closed").data(
+                            serde_json::json!({ "event": "closed", "code": err.code() }).to_string(),
+                        ));
+                        break;
+                    }
                     for stored in &batch {
                         cursor.clone_from(&stored.event_id);
                         yield Ok(to_event(stored));
@@ -113,7 +140,7 @@ async fn open_stream(
 /// Grading events for one submission as `text/event-stream`.
 ///
 /// Event names: `connected`, `grade.published`, `submission.returned`,
-/// `deadline.extended`. `data` is the stored event
+/// `deadline.extended`, `closed` (access lost; the stream ends). `data` is the stored event
 /// (`{event_id, event, submission_id, payload, sent_at}`); `id` is the
 /// stream id to send back as `Last-Event-ID` on reconnect.
 #[utoipa::path(
@@ -137,10 +164,9 @@ pub async fn submission_events(
     Path(id): Path<SubmissionId>,
     headers: HeaderMap,
 ) -> ApiResult<EventStream> {
-    state.grading.stream_access(&actor, id).await?;
     open_stream(
         &state,
-        actor.user_id,
+        actor,
         Stream::Submission(id),
         &headers,
         serde_json::json!({ "submission_id": id }),
@@ -152,7 +178,8 @@ pub async fn submission_events(
 /// (graders).
 ///
 /// Event names: `connected`, `submission.submitted`, `grade.saved`,
-/// `grade.published`, `submission.returned`. `data` is
+/// `grade.published`, `submission.returned`, `closed` (grading access
+/// lost — e.g. the grant set inactive — the stream ends). `data` is
 /// `{event_id, event, payload, sent_at}` where `payload` carries
 /// `activity_id`, `user_id`, `status`, `final_score` and either
 /// `submission_id` (assessment) or `attempt_id` (file submission);
@@ -180,10 +207,9 @@ pub async fn course_grading_events(
     Path(id): Path<CourseId>,
     headers: HeaderMap,
 ) -> ApiResult<EventStream> {
-    state.grading.course_stream_access(&actor, id).await?;
     open_stream(
         &state,
-        actor.user_id,
+        actor,
         Stream::Course(id),
         &headers,
         serde_json::json!({ "course_id": id }),
