@@ -228,6 +228,7 @@ impl GoogleAuthService {
                 &candidate,
                 &identity.email,
                 &display_name,
+                None,
             )
             .await?
             {

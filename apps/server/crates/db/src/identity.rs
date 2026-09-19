@@ -260,17 +260,19 @@ pub async fn create_user_with_default_role(
     username: &str,
     email: &str,
     display_name: &str,
+    locale: Option<&str>,
 ) -> Result<Option<UserId>> {
     let mut tx = pool.begin().await?;
     let inserted = sqlx::query_scalar!(
-        r#"INSERT INTO users (zitadel_user_id, username, email, display_name)
-           VALUES ($1, $2, $3, $4)
+        r#"INSERT INTO users (zitadel_user_id, username, email, display_name, locale)
+           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru-RU'))
            ON CONFLICT DO NOTHING
            RETURNING id"#,
         zitadel_user_id,
         username,
         email.to_lowercase(),
-        display_name
+        display_name,
+        locale
     )
     .fetch_optional(&mut *tx)
     .await?;

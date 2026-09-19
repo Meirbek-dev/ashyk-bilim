@@ -491,6 +491,7 @@ async fn registration_rejects_taken_username_and_email(pool: PgPool) {
 /// UX-101: `POST /auth/register` honours `Idempotency-Key` (a retry replays
 /// the 201 — one Zitadel create, one email) and the verification link is
 /// prefixed with the `Accept-Language` locale (`/kz/auth/verify-email`).
+/// UX-126: the same header seeds the stored profile `locale`.
 #[sqlx::test(migrations = "../../migrations")]
 async fn registration_is_idempotent_and_links_the_signers_locale(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -519,6 +520,7 @@ async fn registration_is_idempotent_and_links_the_signers_locale(pool: PgPool) {
     };
     let first = send().await;
     assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
+    assert_eq!(first.json()["locale"], "kk-KZ");
     let replay = send().await;
     assert_eq!(replay.status, StatusCode::CREATED, "{}", replay.text());
     assert_eq!(replay.json(), first.json());

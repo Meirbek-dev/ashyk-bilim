@@ -30,6 +30,16 @@ impl Language {
         }
     }
 
+    /// The stored `users.locale` tag for this language.
+    #[must_use]
+    pub const fn locale(self) -> &'static str {
+        match self {
+            Self::Ru => "ru-RU",
+            Self::Kk => "kk-KZ",
+            Self::En => "en-US",
+        }
+    }
+
     /// The web app's URL prefix for this language (`/ru`, `/kz`, `/en`).
     #[must_use]
     pub const fn web_prefix(self) -> &'static str {

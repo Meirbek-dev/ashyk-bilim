@@ -165,7 +165,8 @@ pub struct NewAccount {
     pub last_name: String,
     pub ip: Option<String>,
     pub user_agent: Option<String>,
-    /// UI language of the signer: prefixes the verification link.
+    /// UI language of the signer: prefixes the verification link and seeds
+    /// the profile `locale` (UX-126).
     pub language: Option<Language>,
 }
 
@@ -552,6 +553,7 @@ impl IdentityService {
             &account.username,
             &account.email,
             &format!("{first_name} {last_name}"),
+            account.language.map(Language::locale),
         )
         .await?;
         let Some(user_id) = inserted else {
