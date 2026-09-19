@@ -12,7 +12,8 @@ import { fromUnix } from '@/lib/api/contract'
 import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 import { ListFilter, Search } from 'lucide-react'
 import { useState } from 'react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useFormatter, useLocale, useTranslations } from 'next-intl'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 interface DrillThroughAuditPanelProps {
   query: AnalyticsQuery
@@ -20,7 +21,11 @@ interface DrillThroughAuditPanelProps {
 }
 
 type ColumnKind = 'text' | 'number' | 'percent' | 'steps' | 'bool' | 'unix' | 'status' | 'assessmentType'
-type Column = { key: string; label: string; kind: ColumnKind }
+interface Column {
+  key: string
+  label: string
+  kind: ColumnKind
+}
 const col = (key: string, label: string, kind: ColumnKind = 'text'): Column => ({ key, label, kind })
 
 /**
@@ -64,6 +69,8 @@ export default function DrillThroughAuditPanel({ query, assessmentPreview }: Dri
   const t = useTranslations('Components.DashboardAnalytics')
   const tA = useTranslations('TeacherAnalytics')
   const locale = useLocale()
+  const format = useFormatter()
+  const percent = usePercentFormat()
   const { toastApiError } = useApiError()
   const [result, setResult] = useState<DrillThroughResponse | null>(null)
   const [loadingMetric, setLoadingMetric] = useState<DrillThroughResponse['metric'] | null>(null)
@@ -73,20 +80,30 @@ export default function DrillThroughAuditPanel({ query, assessmentPreview }: Dri
     const value = row[column.key]
     if (value === null || value === undefined || value === '') return t('drillThroughAuditPanel.na')
     switch (column.kind) {
-      case 'bool':
+      case 'bool': {
         return value ? t('drillThroughAuditPanel.yes') : t('drillThroughAuditPanel.no')
-      case 'unix':
+      }
+      case 'unix': {
         return typeof value === 'number' ? formatDate(fromUnix(value), locale, DATE_TIME_OPTIONS) : String(value)
-      case 'percent':
-        return `${value}%`
-      case 'steps':
+      }
+      case 'percent': {
+        return typeof value === 'number' ? percent(value) : `${value}%`
+      }
+      case 'number': {
+        return typeof value === 'number' ? format.number(value, { maximumFractionDigits: 2 }) : String(value)
+      }
+      case 'steps': {
         return `${value} / ${row['total_steps'] ?? t('drillThroughAuditPanel.na')}`
-      case 'status':
+      }
+      case 'status': {
         return getAnalyticsStatusLabel(tA, String(value))
-      case 'assessmentType':
+      }
+      case 'assessmentType': {
         return getAnalyticsAssessmentTypeLabel(tA, String(value) as AssessmentType)
-      default:
+      }
+      default: {
         return String(value)
+      }
     }
   }
 
