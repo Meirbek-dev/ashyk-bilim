@@ -15,7 +15,7 @@
 use std::time::Duration;
 
 use ab_core::id::AiRunId;
-use ab_testkit::llm::{mount_json_reply, mount_stream_reply};
+use ab_testkit::llm::{mount_json_reply, mount_json_reply_after, mount_stream_reply};
 use ab_testkit::{MintedSession, TestApp};
 use axum::http::StatusCode;
 use sqlx::PgPool;
@@ -1625,10 +1625,12 @@ async fn queued_gates_cannot_stack(pool: PgPool) {
         .await;
     assert_eq!(analysed.status, StatusCode::OK, "{}", analysed.text());
     app.llm.reset().await;
-    mount_json_reply(&app.llm, &remediation_reply()).await;
+    // A slow model: every worker passes the pre-check before any of them
+    // reaches the insert, so the index alone decides (BUG-189 nit).
+    mount_json_reply_after(&app.llm, &remediation_reply(), Duration::from_millis(300)).await;
     let queue_url = format!("/api/v2/ai/remediation/{sub_id}/generate/queue");
     let mut run_ids = Vec::new();
-    for _ in 0..2 {
+    for _ in 0..3 {
         let queued = app
             .post_as(
                 &teacher,
@@ -1642,17 +1644,30 @@ async fn queued_gates_cannot_stack(pool: PgPool) {
         ));
     }
     let ai = app.ai_service();
-    let (first, second) =
-        tokio::join!(ai.execute_queued(run_ids[0]), ai.execute_queued(run_ids[1]));
+    let (first, second, third) = tokio::join!(
+        ai.execute_queued(run_ids[0]),
+        ai.execute_queued(run_ids[1]),
+        ai.execute_queued(run_ids[2])
+    );
     first.unwrap();
     second.unwrap();
+    third.unwrap();
     let statuses: Vec<String> =
         sqlx::query_scalar("SELECT status FROM ai_runs WHERE id = ANY($1) ORDER BY status")
             .bind(run_ids.iter().map(|r| r.0).collect::<Vec<_>>())
             .fetch_all(&app.pool)
             .await
             .unwrap();
-    assert_eq!(statuses, ["failed", "succeeded"]);
+    assert_eq!(statuses, ["failed", "failed", "succeeded"]);
+    // Every worker got past the model: the losers lost at the insert, not
+    // at the pre-check, and their finished runs were flipped to failed.
+    let artifacts: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM ai_artifacts WHERE run_id = ANY($1)")
+            .bind(run_ids.iter().map(|r| r.0).collect::<Vec<_>>())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(artifacts, 3);
     let gates: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM ai_remediation_sessions WHERE gate_mode AND status = 'assigned'",
     )
@@ -1674,6 +1689,53 @@ async fn queued_gates_cannot_stack(pool: PgPool) {
         .await;
     assert_eq!(stacked.status, StatusCode::CONFLICT, "{}", stacked.text());
     assert_eq!(stacked.json()["details"]["session_id"], latest.json()["id"]);
+}
+
+/// BUG-189: the hourly lanes are counted apart — remediation requests never
+/// spend the analysis allowance.
+#[sqlx::test(migrations = "../../migrations")]
+async fn remediation_calls_never_consume_the_analysis_lane(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.ai.analysis_requests_per_hour_per_user = 1;
+    })
+    .await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Lanes").await;
+    let sub_id = submitted_essay(&app, &teacher, &alice, &course_id).await;
+    for _ in 0..2 {
+        let queued = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/ai/remediation/{sub_id}/generate/queue"),
+                &serde_json::json!({ "gate_mode": false }),
+            )
+            .await;
+        assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    }
+    mount_json_reply(&app.llm, &analysis_reply(&sub_id)).await;
+    let analysed = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/analyze"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(analysed.status, StatusCode::OK, "{}", analysed.text());
+    let limited = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/analyze"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        limited.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        limited.text()
+    );
+    assert_eq!(limited.json()["details"]["limit"], 1);
 }
 
 /// The hourly AI limiter over HTTP: past `analysis_requests_per_hour_per_user`

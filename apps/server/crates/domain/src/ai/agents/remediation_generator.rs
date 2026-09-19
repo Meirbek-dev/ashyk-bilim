@@ -371,9 +371,9 @@ impl AiService {
                 },
             )
             .await?;
-            // ponytail: the race loser's run is already finished by
-            // `run_structured` (artifact saved, no session) — reorder the
-            // insert before the finish if that status ever matters.
+            // The race loser's run is already `succeeded` by `run_structured`
+            // (artifact saved, no session): `settle` → `fail_run` flips it to
+            // `failed` (BUG-189).
             let Some(id) = inserted else {
                 self.refuse_stacked_gate(subject, activity_id).await?;
                 return Err(Error::conflict(

@@ -23,11 +23,22 @@ pub struct TokenBudget {
     limiter: Option<RateLimiter>,
 }
 
-/// Which hourly limit applies (legacy `remediation: bool`).
+/// Which hourly limit applies (legacy `remediation: bool`). Each lane has
+/// its own counter (BUG-189): remediation calls never spend the analysis
+/// allowance and vice versa.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BudgetLane {
     Analysis,
     Remediation,
+}
+
+impl BudgetLane {
+    const fn key(self) -> &'static str {
+        match self {
+            Self::Analysis => "analysis",
+            Self::Remediation => "remediation",
+        }
+    }
 }
 
 impl TokenBudget {
@@ -83,7 +94,7 @@ impl TokenBudget {
         Ok(estimated)
     }
 
-    /// One request against the caller's hourly allowance. Without Redis
+    /// One request against the caller's hourly allowance on `lane`. Without Redis
     /// (worker without `AB__REDIS__URL`) the check is skipped — it already
     /// ran when the run was accepted.
     pub async fn assert_hourly(&self, user_id: UserId, lane: BudgetLane) -> Result<()> {
@@ -94,7 +105,7 @@ impl TokenBudget {
             BudgetLane::Analysis => self.config.analysis_requests_per_hour_per_user,
             BudgetLane::Remediation => self.config.remediation_requests_per_hour_per_user,
         };
-        let key = format!("ai_hourly:{user_id}");
+        let key = format!("ai_hourly:{user_id}:{}", lane.key());
         if limiter.check(&key, limit, HOUR).await? {
             Ok(())
         } else {

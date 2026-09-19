@@ -288,12 +288,16 @@ pub async fn finish_run(
     Ok(result.rows_affected() > 0)
 }
 
-/// `{queued, running} → failed`. `false` = already terminal.
+/// `{queued, running, succeeded} → failed`; `false` = aborted or already failed.
+///
+/// A succeeded run flips too: the artifact is saved before the feature row,
+/// and a run whose feature row was refused (BUG-189: the gate race loser)
+/// must not read as a success.
 pub async fn fail_run(pool: &PgPool, id: AiRunId, error_code: &str) -> Result<bool> {
     let result = sqlx::query!(
         r#"UPDATE ai_runs SET status = 'failed', error_code = $2, completed_at = now(),
                duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
-           WHERE id = $1 AND status IN ('queued', 'running')"#,
+           WHERE id = $1 AND status IN ('queued', 'running', 'succeeded')"#,
         id.0,
         error_code
     )

@@ -83,6 +83,22 @@ pub async fn mount_json_reply(server: &MockServer, reply: &serde_json::Value) {
         .await;
 }
 
+/// [`mount_json_reply`] answered after `delay` (in-flight overlap tests).
+pub async fn mount_json_reply_after(
+    server: &MockServer,
+    reply: &serde_json::Value,
+    delay: std::time::Duration,
+) {
+    completions(false)
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(delay)
+                .set_body_json(completion_body(&reply.to_string())),
+        )
+        .mount(server)
+        .await;
+}
+
 /// Answer every streaming completion with `reply` streamed as SSE deltas.
 pub async fn mount_stream_reply(server: &MockServer, reply: &serde_json::Value) {
     completions(true)
