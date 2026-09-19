@@ -274,4 +274,28 @@ describe('file submission review workspace', () => {
     expect(screen.getByRole('button', { name: 'returnForRevision' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'publishResult' })).toBeEnabled()
   })
+
+  // UX-123: the form holds the raw score; a late attempt shows what the
+  // learner will get next to it, and the line follows the typed value.
+  it('previews the late penalty next to the raw score', async () => {
+    const late: FileSubmissionAttempt = {
+      ...attempt('attempt_first', 'Aruzhan', 64, 'Late but fine'),
+      is_late: true,
+      late_penalty_pct: 20,
+      raw_score: 80,
+    }
+    mocks.getQueue.mockResolvedValue({ items: [queueItem(late)], next_cursor: null })
+    mocks.getAttempt.mockResolvedValue(late)
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <FileSubmissionReviewWorkspace activityUuid="activity_1" />
+      </QueryClientProvider>,
+    )
+
+    const input = await screen.findByDisplayValue('80')
+    expect(screen.getByTestId('late-penalty-preview')).toHaveTextContent('latePenaltyPreview')
+    fireEvent.change(input, { target: { value: '' } })
+    expect(screen.queryByTestId('late-penalty-preview')).toBeNull()
+  })
 })

@@ -418,6 +418,9 @@ pub struct GradebookCellRow {
     /// The newest attempt awaiting grading (`pending`, or `submitted` on a
     /// file attempt), if any — the ranked attempt may be an older graded one.
     pub pending_attempt: Option<i32>,
+    /// That attempt's id (a submission id or a file attempt id) — the
+    /// gradebook's «pending» deep link (UX-123).
+    pub pending_attempt_id: Option<uuid::Uuid>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// The learner's active (unexpired) per-assessment due-date override, if any.
@@ -448,6 +451,11 @@ pub async fn gradebook_cells(
                   count(*) OVER (PARTITION BY c.user_id, c.activity_id) AS "attempts!",
                   max(c.attempt_number) FILTER (WHERE c.status = 'pending')
                       OVER (PARTITION BY c.user_id, c.activity_id) AS "pending_attempt?",
+                  (array_remove(array_agg(CASE WHEN c.status = 'pending'
+                                               THEN COALESCE(c.submission_id, c.attempt_id) END)
+                      OVER (PARTITION BY c.user_id, c.activity_id ORDER BY c.attempt_number DESC
+                            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING), NULL))[1]
+                      AS "pending_attempt_id?",
                   c.final_score AS "final_score?", c.is_late AS "is_late!",
                   (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
                   (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",

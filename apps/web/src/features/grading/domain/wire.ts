@@ -52,6 +52,11 @@ const cellStates: Record<SubmissionStatus, ActivityProgressCell['state']> = {
  * (learner, graded activity) — assessment submissions and file-submission
  * attempts in one cell shape — plus both column lists.
  */
+/** The attempt a grader opens from a cell: the one awaiting grading when there is one (UX-123). */
+export function reviewTarget(cell: Pick<ActivityProgressCell, 'pending_attempt_id' | 'latest_submission_uuid'>) {
+  return cell.pending_attempt_id ?? cell.latest_submission_uuid ?? null
+}
+
 export function gradebookFromWire(pages: GradebookPage[], course: Course, curriculum?: Curriculum): CourseGradebookResponse {
   const assessmentMap = new Map(pages.flatMap(p => p.assessments).map(a => [a.id, a]))
   const fileMap = new Map(pages.flatMap(p => p.file_submissions).map(f => [f.id, f]))
@@ -76,6 +81,7 @@ export function gradebookFromWire(pages: GradebookPage[], course: Course, curric
       // a newer pending attempt behind a published grade of record too (BUG-175).
       teacher_action_required: c.status === 'pending' || c.status === 'graded' || c.pending_attempt != null,
       pending_attempt: c.pending_attempt ?? null,
+      pending_attempt_id: c.pending_attempt_id ?? null,
     }
   })
   const columnName = (activityId: string, fallback: string) => activityNames.get(activityId) ?? fallback
@@ -101,7 +107,9 @@ export function gradebookFromWire(pages: GradebookPage[], course: Course, curric
     },
     teacher_actions: cells.filter(c => c.teacher_action_required).map(c => ({
       activity_id: c.activity_id, activity_name: activities.find(a => a.id === c.activity_id)?.name ?? '',
-      user_id: c.user_id, student_name: users.get(c.user_id)?.display_name ?? '', submission_uuid: c.latest_submission_uuid!,
+      user_id: c.user_id, student_name: users.get(c.user_id)?.display_name ?? '',
+      // UX-123: the queue opens the work awaiting grading, not the (older) grade of record.
+      submission_uuid: reviewTarget(c)!,
     })),
   }
 }

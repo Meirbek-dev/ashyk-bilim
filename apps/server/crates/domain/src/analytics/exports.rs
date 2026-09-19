@@ -1,9 +1,10 @@
 //! CSV exports (legacy `services/analytics/exports.py`).
 //!
 //! RFC 4180, CRLF, UTF-8 with BOM; headers and enum cells follow
-//! `Accept-Language` through the shared [`CsvLanguage`] (UX-114).
-//! Diagnostic codes (`reason_codes`, `recommended_action`, `signals`) stay
-//! stable identifiers.
+//! `Accept-Language` through the shared [`CsvLanguage`] (UX-114); the
+//! at-risk `reason_codes` / `recommended_action` cells carry the same labels
+//! the watchlist shows (UX-123). Other diagnostic codes (`signals`,
+//! `outlier_reason_codes`) stay stable identifiers.
 
 use super::assessments::build_assessment_rows;
 use super::context::{AnalyticsContext, is_reviewable, progress_snapshots, submitted_at};
@@ -64,6 +65,50 @@ const fn risk_level(language: CsvLanguage, level: RiskLevel) -> &'static str {
         (L::En, RiskLevel::Medium) => "Medium",
         (L::En, RiskLevel::High) => "High",
     }
+}
+
+/// The watchlist's label for an at-risk reason or recommended action
+/// (`labels.reasonCode.*` / `labels.recommendedAction.*` in the web
+/// catalogs); an unknown code is written as-is.
+fn code_label(language: CsvLanguage, code: &str) -> String {
+    use CsvLanguage as L;
+    let label = match (language, code) {
+        (L::Ru, "inactive_7d") => "Нет активности 7 дней",
+        (L::Ru, "low_progress") => "Низкий прогресс",
+        (L::Ru, "repeated_failures") => "Повторяющиеся неудачи",
+        (L::Ru, "missing_required_assessments") => "Пропущены обязательные оценивания",
+        (L::Ru, "grading_block") => "Ожидает проверки",
+        (L::Ru, "review_submissions_first") => "Сначала проверить работы",
+        (L::Ru, "contact_learner_this_week") => "Связаться с учащимся на этой неделе",
+        (L::Ru, "offer_targeted_help") => "Предложить адресную помощь",
+        (L::Ru, "remind_missing_work") => "Напомнить о пропущенных работах",
+        (L::Ru, "schedule_pace_meeting") => "Назначить встречу о темпе",
+        (L::Ru, "send_personal_message") => "Отправить личное сообщение",
+        (L::Kk, "inactive_7d") => "7 күн белсенділік жоқ",
+        (L::Kk, "low_progress") => "Төмен прогресс",
+        (L::Kk, "repeated_failures") => "Қайталанатын сәтсіздіктер",
+        (L::Kk, "missing_required_assessments") => "Міндетті бағалаулар өтпеген",
+        (L::Kk, "grading_block") => "Бағалауды күтіп тұр",
+        (L::Kk, "review_submissions_first") => "Алдымен жұмыстарды тексеру",
+        (L::Kk, "contact_learner_this_week") => "Осы аптада оқушымен байланысу",
+        (L::Kk, "offer_targeted_help") => "Мақсатты көмек ұсыну",
+        (L::Kk, "remind_missing_work") => "Өткізілген жұмыстар туралы еске салу",
+        (L::Kk, "schedule_pace_meeting") => "Қарқын туралы кездесу тағайындау",
+        (L::Kk, "send_personal_message") => "Жеке хабарлама жіберу",
+        (L::En, "inactive_7d") => "Inactive for 7 days",
+        (L::En, "low_progress") => "Low progress",
+        (L::En, "repeated_failures") => "Repeated failures",
+        (L::En, "missing_required_assessments") => "Missing required assessments",
+        (L::En, "grading_block") => "Waiting on grading",
+        (L::En, "review_submissions_first") => "Review submissions first",
+        (L::En, "contact_learner_this_week") => "Contact the learner this week",
+        (L::En, "offer_targeted_help") => "Offer targeted help",
+        (L::En, "remind_missing_work") => "Remind about missing work",
+        (L::En, "schedule_pace_meeting") => "Schedule a pace meeting",
+        (L::En, "send_personal_message") => "Send a personal message",
+        (_, other) => other,
+    };
+    label.to_owned()
 }
 
 const fn at_risk_header(language: CsvLanguage) -> [&'static str; 10] {
@@ -243,8 +288,12 @@ pub fn at_risk_csv(
                 opt(r.days_since_last_activity),
                 r.risk_score.to_string(),
                 risk_level(language, r.risk_level).to_owned(),
-                r.reason_codes.join(";"),
-                r.recommended_action.to_owned(),
+                r.reason_codes
+                    .iter()
+                    .map(|c| code_label(language, c))
+                    .collect::<Vec<_>>()
+                    .join("; "),
+                code_label(language, r.recommended_action),
             ]
         }),
     )
@@ -351,5 +400,15 @@ mod tests {
         assert_eq!(CsvLanguage::En.yes_no(true), "Yes");
         assert_eq!(CsvLanguage::Ru.yes_no(false), "Нет");
         assert_eq!(at_risk_header(CsvLanguage::Kk)[7], "Тәуекел деңгейі");
+        // UX-123: reason / action cells are labels, unknown codes pass through.
+        assert_eq!(
+            code_label(CsvLanguage::Ru, "low_progress"),
+            "Низкий прогресс"
+        );
+        assert_eq!(
+            code_label(CsvLanguage::En, "schedule_pace_meeting"),
+            "Schedule a pace meeting"
+        );
+        assert_eq!(code_label(CsvLanguage::Kk, "new_code"), "new_code");
     }
 }

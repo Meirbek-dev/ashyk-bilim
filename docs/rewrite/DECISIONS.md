@@ -1201,3 +1201,9 @@ Implements three more items of the owner answers above. Routes:
   grading. The queued executor decides by `triggered_by == owner`. The
   legacy let the owner analyse a pending attempt with the answer key in
   the prompt.
+- **Gradebook cells name the pending attempt** (UX-123):
+  `GradebookCell.pending_attempt_id` (the submission or file attempt id
+  behind `pending_attempt`) so the «На проверке» queue and the cell deep
+  link open the work awaiting grading, not the older grade of record; the
+  at-risk CSV `reason_codes` / `recommended_action` cells carry the
+  watchlist labels per `CsvLanguage` (unknown codes pass through).

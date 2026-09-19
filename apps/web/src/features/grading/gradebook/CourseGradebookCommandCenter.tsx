@@ -17,6 +17,7 @@ import {
   gradebookCellKey,
   gradebookLearnerName,
 } from '@/features/grading/domain'
+import { reviewTarget } from '@/features/grading/domain/wire'
 import type {
   ActivityProgressCell,
   CourseGradebookResponse,
@@ -145,8 +146,9 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   }
 
   const openCell = (cell: ActivityProgressCell) => {
-    if (!cell.latest_submission_uuid) return
-    openReview(cell.activity_id, cell.latest_submission_uuid)
+    const target = reviewTarget(cell)
+    if (!target) return
+    openReview(cell.activity_id, target)
   }
 
   const openTeacherAction = (action: TeacherAction) => {

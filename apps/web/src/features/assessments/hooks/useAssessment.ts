@@ -214,7 +214,7 @@ function useAssessment(
   if (submissions.error) return { vm: null, isLoading: false, error: submissions.error }
 
   const state = attempt.data
-  const latest = submissions.data?.find(row => row.id === state.draft_id) ?? submissions.data?.[0]
+  const { latest, pendingAttemptNumber } = shownSubmission(submissions.data ?? [], state.draft_id)
   const policy = policyFromWire(assessment.policy, state.effective)
   const visible = latest?.release_state === 'visible' && policy.resultReviewAllowed
   const releaseStates = {
@@ -287,6 +287,7 @@ function useAssessment(
     latePenaltyPct: visible && latest?.late_penalty_pct ? latest.late_penalty_pct : null,
     autoSubmitReason: latest?.auto_submit_reason ?? null,
     generalFeedback: visible && latest?.grading?.feedback?.trim() ? latest.grading.feedback : null,
+    pendingAttemptNumber,
     recommendedAction,
     primaryButtonLabelKey: recommendedAction,
     startedAt: unixToIso(startedAt),
@@ -295,6 +296,25 @@ function useAssessment(
       typeof startedAt === 'number' && typeof timeLimit === 'number' ? unixToIso(startedAt + timeLimit) : null,
   }
   return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null }
+}
+
+/**
+ * The attempt the card is about: the open draft; else, while the newest
+ * hand-in still waits on the teacher, the newest released one — a retake must
+ * not hide the grade of record (UX-123), which then names the pending attempt
+ * as a secondary line; else the newest.
+ */
+export function shownSubmission<T extends { id: string; status: string; release_state: string; attempt_number: number }>(
+  rows: readonly T[],
+  draftId: string | null | undefined,
+): { latest: T | undefined; pendingAttemptNumber: number | null } {
+  const newest = rows[0]
+  const draft = rows.find(row => row.id === draftId)
+  const released = isAwaitingRelease(newest)
+    ? rows.find(row => row.status !== 'DRAFT' && row.release_state === 'visible')
+    : undefined
+  const latest = draft ?? released ?? newest
+  return { latest, pendingAttemptNumber: released && newest && latest === released ? newest.attempt_number : null }
 }
 
 /**

@@ -190,6 +190,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     timeRemainingSeconds: null,
     contentVersion: 1,
     policyVersion: 1,
+    pendingAttemptNumber: null,
   } satisfies AttemptViewModel
   return { ...vm, ...overrides }
 }

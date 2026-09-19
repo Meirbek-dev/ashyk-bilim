@@ -19,6 +19,7 @@ use ab_domain::grading::submissions::ReleaseState;
 use ab_domain::grading::teacher as domain;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 use super::double_option;
 
@@ -363,6 +364,10 @@ pub struct GradebookCell {
     /// The newest attempt still awaiting grading (`pending`), if any — set
     /// even when the grade of record is an older published attempt (BUG-175).
     pub pending_attempt: Option<i32>,
+    /// The id of that pending attempt — a submission id or a file attempt
+    /// id, whichever the cell is about — so the review deep link opens the
+    /// work awaiting grading rather than the grade of record (UX-123).
+    pub pending_attempt_id: Option<Uuid>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// The learner's active due-date override for this assessment (UX-113):
@@ -419,6 +424,7 @@ impl From<domain::GradebookPage> for GradebookPage {
                     attempt_number: c.attempt_number,
                     attempts: c.attempts,
                     pending_attempt: c.pending_attempt,
+                    pending_attempt_id: c.pending_attempt_id,
                     final_score: c.final_score,
                     is_late: c.is_late,
                     due_at_override_unix: c.due_at_override,

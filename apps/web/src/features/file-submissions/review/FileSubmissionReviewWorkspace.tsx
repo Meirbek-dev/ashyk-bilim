@@ -764,6 +764,11 @@ function GradeEditor({
   const parsedScore = score.trim() === '' ? null : Number(score)
   const scoreOutOfRange =
     parsedScore !== null && (!Number.isFinite(parsedScore) || parsedScore < 0 || parsedScore > 100)
+  // UX-123: the form holds the raw score; the learner gets `raw × (1 − penalty)` (server `apply_late`).
+  const latePreview =
+    attempt.late_penalty_pct > 0 && parsedScore !== null && !scoreOutOfRange
+      ? Math.round(parsedScore * (1 - attempt.late_penalty_pct / 100) * 100) / 100
+      : null
   const scoreError = scoreOutOfRange
     ? t('scoreInvalid')
     : showErrors && parsedScore === null
@@ -833,6 +838,11 @@ function GradeEditor({
               className="w-24 tabular-nums"
             />
             <span className="text-muted-foreground text-sm">{t('scoreSlash')}</span>
+            {latePreview !== null ? (
+              <span className="text-muted-foreground text-xs" data-testid="late-penalty-preview">
+                {t('latePenaltyPreview', { percent: attempt.late_penalty_pct, final: latePreview })}
+              </span>
+            ) : null}
             {rubricTotalScore !== null ? (
               <Button
                 type="button"

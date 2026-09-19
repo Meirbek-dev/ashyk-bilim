@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Course, Curriculum, GradebookPage } from '@/lib/api/generated/zod'
-import { gradebookFromWire } from '@/features/grading/domain/wire'
+import { gradebookFromWire, reviewTarget } from '@/features/grading/domain/wire'
 import { localizeItemFeedback, matchesGradebookSavedFilter } from '@/features/grading/domain'
 
 const COURSE_ID = '01a0910d-2963-7483-a97d-40dc56e9aa20'
@@ -101,12 +101,18 @@ describe('gradebookFromWire (UX-013)', () => {
   // BUG-175: the cell ranks the published grade of record (attempt 1, 80 %)
   // while a newer attempt still waits — the queue, filter and count see it.
   it('flags a pending attempt behind a published grade of record', () => {
-    const data = gradebookFromWire([page([{ ...examCell('published', 80), attempts: 2, pending_attempt: 2 }])], course)
+    const data = gradebookFromWire(
+      [page([{ ...examCell('published', 80), attempts: 2, pending_attempt: 2, pending_attempt_id: 'submission_2' }])],
+      course,
+    )
     const cell = data.cells[0]!
     expect(cell).toMatchObject({ state: 'PASSED', score: 80, pending_attempt: 2, teacher_action_required: true })
     expect(matchesGradebookSavedFilter(cell, 'needs_grading')).toBe(true)
     expect(data.summary.needs_grading_count).toBe(1)
-    expect(data.teacher_actions).toHaveLength(1)
+    // UX-123: the queue and the cell open the attempt awaiting grading, not the grade of record.
+    expect(data.teacher_actions.map(action => action.submission_uuid)).toEqual(['submission_2'])
+    expect(reviewTarget(cell)).toBe('submission_2')
+    expect(reviewTarget(gradebookFromWire([page([examCell('published')])], course).cells[0]!)).toBe('submission_1')
   })
 })
 

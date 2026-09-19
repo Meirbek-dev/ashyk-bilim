@@ -254,6 +254,8 @@ pub struct GradebookCell {
     /// BUG-175: the newest attempt still awaiting grading, if any — the
     /// grade of record may be an older published one.
     pub pending_attempt: Option<i32>,
+    /// Its id (submission or file attempt), for the «pending» deep link (UX-123).
+    pub pending_attempt_id: Option<uuid::Uuid>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// UX-113: the learner's active due-date override (the gradebook's
@@ -1471,6 +1473,7 @@ impl GradingService {
                     attempt_number: r.attempt_number,
                     attempts: r.attempts,
                     pending_attempt: r.pending_attempt,
+                    pending_attempt_id: r.pending_attempt_id,
                     final_score: r.final_score,
                     is_late: r.is_late,
                     due_at_override: r.due_at_override,

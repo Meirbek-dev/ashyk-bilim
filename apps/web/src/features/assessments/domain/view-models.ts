@@ -139,6 +139,8 @@ export interface AttemptViewModel {
   autoSubmitReason: 'time_expired' | 'integrity_violation' | null
   /** Teacher's overall comment on the shown attempt, null until released (UX-063). */
   generalFeedback: string | null
+  /** UX-123: a newer hand-in awaiting the teacher while the card shows the released grade of record. */
+  pendingAttemptNumber: number | null
   /**
    * Backend-recommended primary action for this student right now.
    * Drive the primary CTA from this value.

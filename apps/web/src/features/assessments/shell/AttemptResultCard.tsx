@@ -128,6 +128,11 @@ export default function AttemptResultCard({
               {t('recordAttempt', { attempt: recordAttempt.attemptNumber, score: formatPercent(recordAttempt.percent) })}
             </p>
           ) : null}
+          {vm.pendingAttemptNumber !== null ? (
+            <p className="text-muted-foreground text-xs" data-testid="pending-attempt">
+              {t('pendingAttempt', { attempt: vm.pendingAttemptNumber })}
+            </p>
+          ) : null}
 
           {vm.startedAt ? (
             <p className="text-muted-foreground text-xs">

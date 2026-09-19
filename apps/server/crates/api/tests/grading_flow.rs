@@ -941,16 +941,19 @@ async fn gradebook_flags_a_pending_attempt_behind_the_grade_of_record(pool: PgPo
         ))
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
-    submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    let second = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
     let gradebook = app
         .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook"))
         .await;
     assert_eq!(gradebook.status, StatusCode::OK, "{}", gradebook.text());
     let cell = &gradebook.json()["cells"][0];
     assert_eq!(cell["attempt_number"], 1, "{cell}");
+    assert_eq!(cell["submission_id"], first, "{cell}");
     assert_eq!(cell["status"], "published", "{cell}");
     assert_eq!(cell["final_score"], 80.0, "{cell}");
     assert_eq!(cell["pending_attempt"], 2, "{cell}");
+    // UX-123: the «pending» deep link names the attempt awaiting grading.
+    assert_eq!(cell["pending_attempt_id"], second, "{cell}");
 }
 
 /// BUG-180: a pending retake never becomes the grade of record, however

@@ -1,6 +1,7 @@
 import type { GradedItem as WireGradedItem, GradingBreakdown as WireGradingBreakdown, Stats, UserSummary } from '@/lib/api/generated/zod'
 import type { ActivityProgressCell as ProgressCell, ActivityProgressState } from '@/features/assessments/domain/progress'
 import type { SubmissionStatus } from '@/features/assessments/domain/submission-status'
+
 export type { ActivityProgressState, SubmissionStatus }
 
 // Display projections only. HTTP responses are parsed and converted in wire.ts.
@@ -66,6 +67,8 @@ export interface ActivityProgressCell extends ProgressCell {
   teacher_action_required: boolean
   /** BUG-175: the newest attempt awaiting grading behind the grade of record. */
   pending_attempt?: number | null
+  /** UX-123: that attempt's id — the «На проверке» deep link opens it, not the grade of record. */
+  pending_attempt_id?: string | null
 }
 export interface GradebookActivity {
   id: string
