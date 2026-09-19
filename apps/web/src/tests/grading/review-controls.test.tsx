@@ -670,6 +670,39 @@ describe('teacher review controls', () => {
       expect(lastPayload().item_grades).toHaveLength(1)
     })
 
+    it('keeps the switch on after a first override publish without a reload (optimistic seed)', async () => {
+      mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+      mocks.gradingPanelState.submission = createSubmission({
+        status: 'PENDING',
+        final_score: null,
+        score_override: null,
+        version: 1,
+        grading_json: { feedback: '', items: gradedItems },
+      })
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="submission_review"
+              assessmentUuid="assessment_review"
+              activityUuid="activity_review"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+      const publish = screen.getByRole('button', { name: 'publish' })
+      await waitFor(() => expect(publish).toBeEnabled())
+      fireEvent.click(screen.getByRole('switch'))
+      fireEvent.change(screen.getByRole('spinbutton', { name: 'overrideScore' }), { target: { value: '55' } })
+      fireEvent.click(publish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ final_score: 55 })
+      // The optimistic cache entry must carry the override so the reseed keeps the switch on.
+      await waitFor(() => expect(screen.getByRole('switch')).toBeChecked())
+    })
+
     it('drops the override with an explicit null when the switch goes off', async () => {
       renderItemForm()
       const republish = screen.getByRole('button', { name: 'republish' })

@@ -155,7 +155,7 @@ export default function GradeForm({
   )
   const hasInvalidScore = finalScoreInvalid || invalidItemIds.size > 0
 
-  const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.version ?? ''}-${submission?.final_score ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
+  const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.version ?? ''}-${submission?.final_score ?? ''}-${submission?.score_override ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
   const [lastSeed, setLastSeed] = useState({ uuid: '', trigger: '' })
 
   const seedDrafts = () => {
@@ -270,6 +270,8 @@ export default function GradeForm({
         status,
         itemGrades,
         finalScore: typedScore ? (finalScore ?? null) : null,
+        // The reseed after a save reads `score_override` — keep it in step with what we sent.
+        scoreOverride: overrideScore ? (finalScore ?? null) : finalScore === null ? null : (submission.score_override ?? null),
       })
 
       setDirty(false)
@@ -592,6 +594,7 @@ export default function GradeForm({
                     step={0.5}
                     value={draft.score}
                     disabled={!editable || isSaving}
+                    aria-label={tItemGrading('overrideScore')}
                     aria-invalid={finalScoreInvalid || undefined}
                     aria-describedby={finalScoreInvalid ? 'override-score-error' : undefined}
                     onChange={e => editDraft({ score: e.target.value })}
@@ -814,6 +817,7 @@ function buildOptimisticSubmission(
     status: 'save' | 'publish' | 'return'
     itemGrades: ItemGradeEntry[]
     finalScore: number | null
+    scoreOverride: number | null
   },
 ): Submission {
   const nextStatus = args.status === 'publish' ? 'PUBLISHED' : args.status === 'return' ? 'RETURNED' : 'GRADED'
@@ -836,6 +840,7 @@ function buildOptimisticSubmission(
     ...submission,
     status: nextStatus,
     final_score: args.finalScore ?? submission.final_score,
+    score_override: args.scoreOverride,
     grading_json: gradingJson as GradingBreakdown,
     version: typeof submission.version === 'number' ? submission.version + 1 : submission.version,
   } as Submission
