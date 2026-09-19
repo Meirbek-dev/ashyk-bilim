@@ -442,9 +442,28 @@ pub fn build_router(state: AppState) -> Result<Router> {
         ))
         .layer(
             ServiceBuilder::new()
+                .layer(axum::middleware::from_fn(
+                    crate::middleware::sanitize_request_id,
+                ))
                 .layer(SetRequestIdLayer::new(request_id.clone(), MakeRequestUuid))
                 .layer(PropagateRequestIdLayer::new(request_id))
-                .layer(TraceLayer::new_for_http())
+                // UX-118: the span carries the id the client sees in error
+                // toasts, so `grep <id> server.log` finds the request.
+                .layer(TraceLayer::new_for_http().make_span_with(
+                    |request: &axum::extract::Request| {
+                        tracing::info_span!(
+                            "request",
+                            method = %request.method(),
+                            uri = %request.uri(),
+                            version = ?request.version(),
+                            request_id = request
+                                .headers()
+                                .get(REQUEST_ID_HEADER)
+                                .and_then(|v| v.to_str().ok())
+                                .unwrap_or_default(),
+                        )
+                    },
+                ))
                 .layer(TimeoutLayer::with_status_code(
                     StatusCode::REQUEST_TIMEOUT,
                     REQUEST_TIMEOUT,

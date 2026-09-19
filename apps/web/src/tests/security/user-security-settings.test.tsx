@@ -185,9 +185,9 @@ describe('UserSecuritySettings', () => {
   it('drops a session row that had already ended elsewhere', async () => {
     const { APIError } = await import('@/lib/api/assertSuccess')
     const row = { handle: 'abcd', current: false, created_at_unix: 0, last_seen_unix: 0, ip: null, user_agent: null }
-    mockListSessions.mockResolvedValueOnce([{ ...row, current: true, handle: 'me' }, row]).mockResolvedValue([
-      { ...row, current: true, handle: 'me' },
-    ])
+    mockListSessions
+      .mockResolvedValueOnce([{ ...row, current: true, handle: 'me' }, row])
+      .mockResolvedValue([{ ...row, current: true, handle: 'me' }])
     mockRevokeSession.mockRejectedValue(new APIError({ code: 'not-found', message: 'gone', status: 404 }))
     const user = userEvent.setup()
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -239,6 +239,31 @@ describe('UserSecuritySettings', () => {
     await user.keyboard('{Enter}')
     await waitFor(() => expect(toastInfo).toHaveBeenCalledWith('totpAlreadyActive'))
     expect(await screen.findByText('disableTotp')).toBeDefined()
+    expect(screen.queryByText('totpScanHint')).toBeNull()
+  })
+
+  // UX-118: the same 409 when the pending enrolment was removed elsewhere —
+  // the refetched flag says «not enabled», so the section goes back to
+  // «Включить…» with a «start again» notice, not «already active».
+  it('resets the enrolment when verify answers 409 and mfa is still off', async () => {
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    mockListSessions.mockResolvedValue([])
+    mockStartTotpEnrollment.mockResolvedValue({ secret: 'ABC', uri: 'otpauth://x' })
+    mockVerifyTotpEnrollment.mockRejectedValue(new APIError({ code: 'conflict', message: 'not started', status: 409 }))
+    mockGetSessionInfo.mockResolvedValue(sessionInfo(false))
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const user = userEvent.setup()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings />
+      </QueryClientProvider>,
+    )
+    await user.click(await screen.findByText('enableTotp'))
+    await user.type(await screen.findByRole('textbox'), '123456')
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(toastInfo).toHaveBeenCalledWith('totpEnrollmentReset'))
+    expect(toastInfo).not.toHaveBeenCalledWith('totpAlreadyActive')
+    expect(await screen.findByText('enableTotp')).toBeDefined()
     expect(screen.queryByText('totpScanHint')).toBeNull()
   })
 

@@ -81,6 +81,32 @@ async fn problem_bodies_carry_the_request_id(pool: PgPool) {
         .await;
     assert_eq!(res.status, StatusCode::UNAUTHORIZED);
     assert_eq!(res.json()["request_id"], "trace-abc-123");
+
+    // UX-118: a client id with non-visible bytes is reduced to visible ASCII
+    // in the header and the body alike; nothing visible → a fresh id.
+    for (sent, expected) in [
+        (b"tr\xfface\t-1".as_slice(), Some("trace-1")),
+        (b"\xff\t".as_slice(), None),
+    ] {
+        let res = app
+            .send(
+                Request::builder()
+                    .uri("/api/v2/auth/session")
+                    .header(
+                        "x-request-id",
+                        header::HeaderValue::from_bytes(sent).unwrap(),
+                    )
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+        let echoed = res.headers.get("x-request-id").unwrap().to_str().unwrap();
+        match expected {
+            Some(clean) => assert_eq!(echoed, clean),
+            None => assert!(uuid::Uuid::parse_str(echoed).is_ok(), "{echoed}"),
+        }
+        assert_eq!(res.json()["request_id"], echoed);
+    }
 }
 
 #[sqlx::test(migrations = "../../migrations")]

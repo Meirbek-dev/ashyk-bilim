@@ -34,6 +34,39 @@ pub async fn csrf_guard(request: Request, next: Next) -> Result<Response, ApiErr
     Ok(next.run(request).await)
 }
 
+/// Longest client-supplied `x-request-id` we echo (UX-118).
+const REQUEST_ID_MAX_LEN: usize = 128;
+
+/// UX-118: reduces a client-supplied `x-request-id` to visible ASCII.
+///
+/// The id is echoed in the header and the problem+json body and lands in
+/// the log span, so it is cleaned (and capped) before `SetRequestIdLayer`
+/// adopts it; nothing left → the header is dropped and a fresh UUID is
+/// generated instead.
+pub async fn sanitize_request_id(mut request: Request, next: Next) -> Response {
+    let name = axum::http::header::HeaderName::from_static("x-request-id");
+    if let Some(raw) = request.headers().get(&name) {
+        let clean: String = raw
+            .as_bytes()
+            .iter()
+            .filter(|b| b.is_ascii_graphic())
+            .take(REQUEST_ID_MAX_LEN)
+            .map(|&b| char::from(b))
+            .collect();
+        if clean.as_bytes() != raw.as_bytes() {
+            match axum::http::HeaderValue::from_str(&clean) {
+                Ok(value) if !clean.is_empty() => {
+                    request.headers_mut().insert(name, value);
+                }
+                _ => {
+                    request.headers_mut().remove(name);
+                }
+            }
+        }
+    }
+    next.run(request).await
+}
+
 tokio::task_local! {
     /// The `x-request-id` of the request being handled — read by the error
     /// mapper so the problem+json body carries the same id as the header.

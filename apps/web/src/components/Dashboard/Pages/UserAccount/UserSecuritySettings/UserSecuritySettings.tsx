@@ -101,7 +101,12 @@ function SessionsSection({ t }: { t: Translator }) {
   return (
     <section aria-labelledby="sessions-heading" className="flex flex-col gap-4">
       <div>
-        <h2 ref={headingRef} tabIndex={-1} id="sessions-heading" className="flex items-center gap-2 text-lg font-semibold">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          id="sessions-heading"
+          className="flex items-center gap-2 text-lg font-semibold"
+        >
           <MonitorSmartphone size={18} aria-hidden="true" />
           {t('sessionsTitle')}
         </h2>
@@ -139,7 +144,9 @@ function SessionsSection({ t }: { t: Translator }) {
                 </span>
                 <span className="text-muted-foreground text-xs">
                   {session.ip ? `${session.ip} · ` : ''}
-                  {t('lastSeen', { at: format.dateTime(fromUnix(session.last_seen_unix), { dateStyle: 'medium', timeStyle: 'short' }) })}
+                  {t('lastSeen', {
+                    at: format.dateTime(fromUnix(session.last_seen_unix), { dateStyle: 'medium', timeStyle: 'short' }),
+                  })}
                 </span>
               </div>
               {!session.current ? (
@@ -169,7 +176,8 @@ function SessionsSection({ t }: { t: Translator }) {
               variant="destructive"
               disabled={revokeMutation.isPending}
               onClick={() => {
-                if (revokeCandidate) revokeMutation.mutate(revokeCandidate, { onSettled: () => setRevokeCandidate(null) })
+                if (revokeCandidate)
+                  revokeMutation.mutate(revokeCandidate, { onSettled: () => setRevokeCandidate(null) })
               }}
             >
               {t('revoke')}
@@ -204,7 +212,8 @@ function PasswordSection({ t }: { t: Translator }) {
       }
       if (hasErrorCode(error, 'validation-failed')) {
         // `password-policy` / `password-unchanged` carry the specific rule.
-        const code = error instanceof APIError ? error.fieldErrors.find(f => f.field === 'new_password')?.code : undefined
+        const code =
+          error instanceof APIError ? error.fieldErrors.find(f => f.field === 'new_password')?.code : undefined
         const key = `fields.${code ?? ''}`
         setErrors({ next: code && errorsT.has(key) ? errorsT(key) : t('newPasswordRejected') })
         return
@@ -226,7 +235,8 @@ function PasswordSection({ t }: { t: Translator }) {
 
   const bind = (name: keyof typeof values) => ({
     value: values[name],
-    onChange: (event: React.ChangeEvent<HTMLInputElement>) => setValues(prev => ({ ...prev, [name]: event.target.value })),
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+      setValues(prev => ({ ...prev, [name]: event.target.value })),
   })
 
   return (
@@ -334,7 +344,22 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
         return
       }
       if (hasErrorCode(error, 'conflict')) {
-        resyncActive()
+        // UX-118: the same 409 also means «no pending enrolment» (it was
+        // removed elsewhere) — the refetched flag tells the two apart.
+        setEnrollment(null)
+        void (async () => {
+          try {
+            const session = await queryClient.fetchQuery({
+              queryKey: queryKeys.auth.session(),
+              queryFn: getSessionInfo,
+              staleTime: 0,
+            })
+            if (session.mfa_enabled) resyncActive()
+            else toast.info(t('totpEnrollmentReset'))
+          } catch {
+            toastApiError(error)
+          }
+        })()
         return
       }
       toastApiError(error)
