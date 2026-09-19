@@ -246,13 +246,11 @@ async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPo
 
     let learner = app.mint_session(&[]).await;
     let listed = app.get_as(&learner, "/api/v2/collections").await;
-    let names: Vec<_> = listed.json()["items"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|c| c["name"].as_str().unwrap().to_owned())
-        .collect();
-    assert!(names.is_empty(), "{}", listed.text());
+    assert!(
+        listed.json()["items"].as_array().unwrap().is_empty(),
+        "{}",
+        listed.text()
+    );
 
     let mine = app.get_as(&owner, "/api/v2/collections").await;
     assert_eq!(mine.json()["items"].as_array().unwrap().len(), 2);
