@@ -1,5 +1,8 @@
 //! Teacher-side grading DTOs: review queue, stats, the grader's view of a
 //! submission, grade saves, releases, bulk actions, the course gradebook.
+// A grade save's `final_score` has three states: absent (keep), `null` (drop
+// the override), value.
+#![allow(clippy::option_option)]
 
 use std::collections::BTreeMap;
 
@@ -16,6 +19,8 @@ use ab_domain::grading::submissions::ReleaseState;
 use ab_domain::grading::teacher as domain;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+
+use super::double_option;
 
 pub use ab_domain::grading::teacher::{
     ItemAnalytics, ItemFeedbackView, PublishSummary, ScoreBucket, UserSummary,
@@ -146,6 +151,9 @@ pub struct TeacherSubmission {
     pub grading: GradingBreakdown,
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
+    /// The raw score of the latest grading entry when it is a manual
+    /// override (differs from the item-derived one); `null` otherwise.
+    pub score_override: Option<f64>,
     pub is_late: bool,
     pub late_penalty_pct: f64,
     pub violation_count: i32,
@@ -176,6 +184,7 @@ impl From<domain::TeacherSubmission> for TeacherSubmission {
             grading: s.grading,
             auto_score: s.auto_score,
             final_score: s.final_score,
+            score_override: s.score_override,
             is_late: s.is_late,
             late_penalty_pct: s.late_penalty_pct,
             violation_count: s.violation_count,
@@ -232,12 +241,14 @@ pub struct ItemGradeRequest {
 pub struct GradeRequest {
     #[garde(skip)]
     pub action: GradeAction,
-    /// Raw 0..100 before the late penalty; omitted = computed from item
-    /// scores (earned / possible × 100).
-    /// Omitted together with `item_grades` (a publish-only save), the raw
-    /// score of the latest grading entry is kept.
+    /// Raw 0..100 before the late penalty (a manual override). Omitted: the
+    /// stored override (or the 0 of an integrity-annulled attempt) is kept,
+    /// otherwise the raw is computed from the item scores (earned / possible
+    /// × 100). An explicit `null` drops the override and recomputes (BUG-174).
     #[garde(range(min = 0.0, max = 100.0))]
-    pub final_score: Option<f64>,
+    #[serde(default, deserialize_with = "double_option")]
+    #[schema(value_type = Option<f64>)]
+    pub final_score: Option<Option<f64>>,
     /// Overall feedback shown to the learner; omitted = keep the stored one.
     #[garde(length(max = 10_000))]
     pub feedback: Option<String>,
@@ -349,6 +360,9 @@ pub struct GradebookCell {
     pub status: SubmissionStatus,
     pub attempt_number: i32,
     pub attempts: i64,
+    /// The newest attempt still awaiting grading (`pending`), if any — set
+    /// even when the grade of record is an older published attempt (BUG-175).
+    pub pending_attempt: Option<i32>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// The learner's active due-date override for this assessment (UX-113):
@@ -404,6 +418,7 @@ impl From<domain::GradebookPage> for GradebookPage {
                     status: c.status,
                     attempt_number: c.attempt_number,
                     attempts: c.attempts,
+                    pending_attempt: c.pending_attempt,
                     final_score: c.final_score,
                     is_late: c.is_late,
                     due_at_override_unix: c.due_at_override,

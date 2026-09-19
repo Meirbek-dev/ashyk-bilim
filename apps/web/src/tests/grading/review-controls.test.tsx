@@ -86,6 +86,19 @@ vi.mock('@/services/assessments/assessment-actions', () => ({
   saveGradingDraft: (...args: unknown[]) => mocks.saveGradingDraftMock(...args),
 }))
 
+// The item scale the grade save converts to (BUG-174 tests render item grading).
+vi.mock('@/features/assessments/queries', () => ({
+  assessmentByActivityQueryOptions: (activityUuid: string) => ({
+    queryKey: ['assessment', activityUuid],
+    queryFn: async () => ({
+      items: [
+        { id: 'item_1', max_score: 10 },
+        { id: 'item_2', max_score: 10 },
+      ],
+    }),
+  }),
+}))
+
 vi.mock('@/hooks/useGradingPanel', () => ({
   useGradingPanel: () => ({
     submission: mocks.gradingPanelState.submission,
@@ -599,6 +612,74 @@ describe('teacher review controls', () => {
     })
     expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.published')
     expect(onSaved).toHaveBeenCalledTimes(1)
+  })
+
+  // BUG-174: a feedback-only republish sends no item grades, and the stored
+  // override reopens with the switch on and travels along; an edited item
+  // goes alone; switching the override off sends an explicit null.
+  describe('item grading sends only what the teacher edited', () => {
+    const gradedItems = [
+      { item_id: 'item_1', item_text: 'Q1', score: 50, max_score: 50, feedback: '' },
+      { item_id: 'item_2', item_text: 'Q2', score: 10, max_score: 50, feedback: '' },
+    ]
+    const renderItemForm = () => {
+      mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+      mocks.gradingPanelState.submission = createSubmission({
+        status: 'PUBLISHED',
+        final_score: 55,
+        score_override: 55,
+        version: 5,
+        grading_json: { feedback: 'ok', items: gradedItems },
+      })
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="submission_review"
+              assessmentUuid="assessment_review"
+              activityUuid="activity_review"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+    }
+    const lastPayload = () => mocks.saveGradingDraftMock.mock.lastCall?.[2] as Record<string, unknown>
+
+    it('keeps the override through a feedback-only republish', async () => {
+      renderItemForm()
+      const republish = screen.getByRole('button', { name: 'republish' })
+      await waitFor(() => expect(republish).toBeEnabled())
+      expect(screen.getByRole('switch')).toBeChecked()
+
+      fireEvent.click(republish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ status: 'publish', final_score: 55, item_grades: [] })
+    })
+
+    it('sends the edited item only, override still on', async () => {
+      renderItemForm()
+      const republish = screen.getByRole('button', { name: 'republish' })
+      await waitFor(() => expect(republish).toBeEnabled())
+
+      fireEvent.change(screen.getByLabelText('2. Q2'), { target: { value: '30' } })
+      fireEvent.click(republish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ final_score: 55, item_grades: [{ item_uuid: 'item_2', score: 6 }] })
+      expect(lastPayload().item_grades).toHaveLength(1)
+    })
+
+    it('drops the override with an explicit null when the switch goes off', async () => {
+      renderItemForm()
+      const republish = screen.getByRole('button', { name: 'republish' })
+      await waitFor(() => expect(republish).toBeEnabled())
+
+      fireEvent.click(screen.getByRole('switch'))
+      fireEvent.click(republish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ final_score: null, item_grades: [] })
+    })
   })
 
   it('explains already visible grades and offers a re-publish (PUBLISHED → PUBLISHED is the only allowed move)', () => {

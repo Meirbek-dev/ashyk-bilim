@@ -97,6 +97,17 @@ describe('gradebookFromWire (UX-013)', () => {
     expect(data.cells[0]!.teacher_action_required).toBe(false)
     expect(data.summary.needs_grading_count).toBe(0)
   })
+
+  // BUG-175: the cell ranks the published grade of record (attempt 1, 80 %)
+  // while a newer attempt still waits — the queue, filter and count see it.
+  it('flags a pending attempt behind a published grade of record', () => {
+    const data = gradebookFromWire([page([{ ...examCell('published', 80), attempts: 2, pending_attempt: 2 }])], course)
+    const cell = data.cells[0]!
+    expect(cell).toMatchObject({ state: 'PASSED', score: 80, pending_attempt: 2, teacher_action_required: true })
+    expect(matchesGradebookSavedFilter(cell, 'needs_grading')).toBe(true)
+    expect(data.summary.needs_grading_count).toBe(1)
+    expect(data.teacher_actions).toHaveLength(1)
+  })
 })
 
 describe('localizeItemFeedback (Q-2026-09-11-2)', () => {

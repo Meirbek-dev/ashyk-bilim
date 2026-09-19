@@ -130,10 +130,11 @@ export interface ItemGradeEntry {
 }
 
 export interface GradingDraftSave {
+  /** Only the items the teacher edited (BUG-174): the server keeps the rest. */
   item_grades: ItemGradeEntry[]
   overall_feedback?: string | null
   status?: 'save' | 'publish' | 'return' | null
-  override_score?: boolean
+  /** A manual override; `null` drops a stored one (the items decide again); omitted keeps it. */
   final_score?: number | null
   override_reason?: string | null
 }
@@ -280,9 +281,7 @@ export async function saveGradingDraft(
   const body = {
     action: payload.status ?? 'save',
     ...(payload.overall_feedback ? { feedback: payload.overall_feedback } : {}),
-    ...(payload.override_score && payload.final_score !== undefined && payload.final_score !== null
-      ? { final_score: payload.final_score }
-      : {}),
+    ...(payload.final_score === undefined ? {} : { final_score: payload.final_score }),
     item_grades: payload.item_grades.map(item => ({
       item_id: item.item_uuid,
       score: item.score,

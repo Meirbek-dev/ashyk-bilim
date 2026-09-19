@@ -14,6 +14,8 @@ interface ProgressCellProps {
   attemptsLabel: string
   lateLabel: string
   stateLabel: string
+  /** BUG-175: «На проверке · попытка N» when a newer attempt waits behind the grade of record. */
+  pendingAttemptLabel?: string | null | undefined
   onOpen: () => void
 }
 
@@ -25,6 +27,7 @@ export default function ProgressCell({
   attemptsLabel,
   lateLabel,
   stateLabel,
+  pendingAttemptLabel,
   onOpen,
 }: ProgressCellProps) {
   // UX-105: one score, one rendering — the shared percent format («90,25%»)
@@ -56,7 +59,7 @@ export default function ProgressCell({
     >
       {cell.teacher_action_required ? (
         <div className="mb-2 flex items-center justify-end">
-          <Badge variant="warning">{actionRequiredLabel}</Badge>
+          <Badge variant="warning">{pendingAttemptLabel ?? actionRequiredLabel}</Badge>
         </div>
       ) : null}
       <div className="flex flex-wrap items-center gap-2">

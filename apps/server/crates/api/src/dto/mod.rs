@@ -28,3 +28,13 @@ pub mod usergroups;
 pub mod users;
 pub mod utils;
 pub mod work_queue;
+
+/// Distinguish an absent field (keep) from an explicit `null` (clear).
+#[allow(clippy::option_option, reason = "three-state patch field")]
+pub(crate) fn double_option<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    T: serde::Deserialize<'de>,
+    D: serde::Deserializer<'de>,
+{
+    <Option<T> as serde::Deserialize<'de>>::deserialize(deserializer).map(Some)
+}

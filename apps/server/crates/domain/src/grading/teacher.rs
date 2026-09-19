@@ -133,6 +133,10 @@ pub struct TeacherSubmission {
     pub grading: GradingBreakdown,
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
+    /// The latest entry's raw score when it is a manual override (differs
+    /// from the item-derived one) — the grade form reopens with the
+    /// override switch on (BUG-174).
+    pub score_override: Option<f64>,
     pub is_late: bool,
     pub late_penalty_pct: f64,
     pub violation_count: i32,
@@ -188,9 +192,11 @@ pub struct ItemGrade {
 
 pub struct GradeInput {
     pub action: GradeAction,
-    /// Raw 0..100 before the late penalty. `None` = computed from the item
-    /// scores (earned / possible × 100).
-    pub final_score: Option<f64>,
+    /// Raw 0..100 before the late penalty (a manual override). Absent =
+    /// keep a stored override / annulled 0, else derive from the item scores
+    /// (earned / possible × 100); `Some(None)` = drop the override and
+    /// derive (BUG-174).
+    pub final_score: Option<Option<f64>>,
     /// Overall feedback; `None` keeps the stored one (publish-only saves).
     pub feedback: Option<String>,
     pub item_grades: Vec<ItemGrade>,
@@ -245,6 +251,9 @@ pub struct GradebookCell {
     pub status: SubmissionStatus,
     pub attempt_number: i32,
     pub attempts: i64,
+    /// BUG-175: the newest attempt still awaiting grading, if any — the
+    /// grade of record may be an older published one.
+    pub pending_attempt: Option<i32>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// UX-113: the learner's active due-date override (the gradebook's
@@ -940,6 +949,11 @@ impl GradingService {
                 created_at_unix: f.created_at,
             })
             .collect();
+        let grading = GradingBreakdown::from_value(&row.grading);
+        let score_override = ab_db::submissions::latest_grading_entry(&self.pool, row.id)
+            .await?
+            .map(|e| e.raw_score)
+            .filter(|raw| !same_score(*raw, derived_raw(&grading)));
         Ok(TeacherSubmission {
             id: row.id,
             assessment_id: row.assessment_id,
@@ -948,9 +962,10 @@ impl GradingService {
             release_state: release,
             attempt_number: row.attempt_number,
             answers: parse_answers(&row.answers)?,
-            grading: GradingBreakdown::from_value(&row.grading),
+            grading,
             auto_score: row.auto_score,
             final_score: row.final_score,
+            score_override,
             is_late: row.is_late,
             late_penalty_pct: row.late_penalty_pct,
             violation_count: row.violation_count,
@@ -1076,7 +1091,7 @@ impl GradingService {
                 message: format!("cannot move a {} submission to {}", row.status, target),
             }]));
         }
-        if let Some(score) = input.final_score
+        if let Some(Some(score)) = input.final_score
             && !(0.0..=100.0).contains(&score)
         {
             return Err(Error::validation(vec![FieldError {
@@ -1118,6 +1133,7 @@ impl GradingService {
         let answers = parse_answers(&row.answers)?;
         let previous = row.grading.clone();
         let mut breakdown = GradingBreakdown::from_value(&row.grading);
+        let derived_before = derived_raw(&breakdown);
         merge_item_grades(&mut breakdown, &input.item_grades, &items, &answers);
         breakdown.needs_manual_review = breakdown.items.iter().any(|i| i.needs_manual_review);
         if let Some(feedback) = &input.feedback {
@@ -1125,29 +1141,28 @@ impl GradingService {
         }
         let feedback = breakdown.feedback.clone();
 
-        // BUG-138: a publish-only save (no score, no item grades) keeps the
-        // raw score of the latest entry — re-deriving it would drop a manual
-        // override, and re-sending the penalised final would penalise twice.
-        let stored_raw = if input.final_score.is_none() && input.item_grades.is_empty() {
-            ab_db::submissions::latest_grading_entry(&self.pool, id)
+        // BUG-138 / BUG-174: the stored raw survives any save that does not
+        // name a new one — a manual override (raw ≠ item-derived) is never
+        // silently replaced by an item recomputation, an integrity-annulled
+        // attempt keeps its 0, and re-sending the penalised final would
+        // penalise twice. Dropping an override takes an explicit `null`.
+        let annulled = row.auto_submit_reason == Some(AutoSubmitReason::IntegrityViolation);
+        let stored_raw = match input.final_score {
+            Some(Some(_)) => None,
+            Some(None) if !annulled => None,
+            _ => ab_db::submissions::latest_grading_entry(&self.pool, id)
                 .await?
-                .map(|e| e.raw_score)
-        } else {
-            None
+                .map(|e| e.raw_score),
         };
-        let raw = input
-            .final_score
-            .map(round2)
-            .or(stored_raw)
-            .unwrap_or_else(|| {
-                let possible: f64 = breakdown.items.iter().map(|i| i.max_score).sum();
-                let earned: f64 = breakdown.items.iter().map(|i| i.score).sum();
-                if possible > 0.0 {
-                    round2(earned / possible * 100.0)
-                } else {
-                    0.0
-                }
-            });
+        let raw = match input.final_score {
+            Some(Some(score)) => round2(score),
+            _ if annulled => stored_raw.unwrap_or(0.0),
+            Some(None) => derived_raw(&breakdown),
+            None => match stored_raw {
+                Some(stored) if !same_score(stored, derived_before) => stored,
+                _ => derived_raw(&breakdown),
+            },
+        };
         // Same order as the auto path (`penalties::apply`): cap, then late.
         let final_score = apply_late(
             attempt_cap(raw, assessment.attempt_penalty_percent, row.attempt_number),
@@ -1455,6 +1470,7 @@ impl GradingService {
                     status: r.status,
                     attempt_number: r.attempt_number,
                     attempts: r.attempts,
+                    pending_attempt: r.pending_attempt,
                     final_score: r.final_score,
                     is_late: r.is_late,
                     due_at_override: r.due_at_override,
@@ -1582,6 +1598,22 @@ fn parse_gradebook_cursor(cursor: &str) -> Result<(UserId, ActivityId)> {
 /// Legacy merge: a score sets the item and clears manual review; feedback
 /// replaces the item feedback; items not yet in the breakdown are appended
 /// with their real max score (`save_grade` refuses ids outside the assessment).
+/// Earned / possible × 100 over the breakdown items (0 without items).
+fn derived_raw(breakdown: &GradingBreakdown) -> f64 {
+    let possible: f64 = breakdown.items.iter().map(|i| i.max_score).sum();
+    let earned: f64 = breakdown.items.iter().map(|i| i.score).sum();
+    if possible > 0.0 {
+        round2(earned / possible * 100.0)
+    } else {
+        0.0
+    }
+}
+
+/// Equal to the 2-decimal precision raw scores are stored at.
+fn same_score(a: f64, b: f64) -> bool {
+    (a - b).abs() < 0.005
+}
+
 fn merge_item_grades(
     breakdown: &mut GradingBreakdown,
     grades: &[ItemGrade],

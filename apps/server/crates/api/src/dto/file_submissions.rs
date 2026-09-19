@@ -11,18 +11,10 @@ use ab_domain::files::submissions as domain;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+use super::double_option;
 use crate::dto::assessments::LatePolicy;
 pub use ab_domain::files::submissions::AttachedFile;
 pub use ab_domain::grading::teacher::UserSummary;
-
-/// Distinguish an absent field (keep) from an explicit `null` (clear).
-fn double_option<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
-where
-    T: Deserialize<'de>,
-    D: serde::Deserializer<'de>,
-{
-    Option::<T>::deserialize(deserializer).map(Some)
-}
 
 /// The configuration block; every field optional on create and patch.
 #[derive(Debug, Default, Deserialize, garde::Validate, ToSchema)]

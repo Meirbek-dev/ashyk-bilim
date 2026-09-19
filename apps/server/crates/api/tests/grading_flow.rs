@@ -760,6 +760,199 @@ async fn gradebook_reports_the_best_published_attempt(pool: PgPool) {
     assert!(row.ends_with(",76"), "{row}");
 }
 
+/// BUG-174: a stored override survives any save that does not name a new
+/// raw — a feedback-only republish that re-sends every item keeps 55, and
+/// the grader's view reports the override; dropping it takes an explicit
+/// `final_score: null`; without an override an edited item recomputes.
+#[sqlx::test(migrations = "../../migrations")]
+async fn override_survives_a_feedback_only_republish(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let items = |essay: i32| {
+        serde_json::json!([
+            { "item_id": choice_id, "score": 10 },
+            { "item_id": essay_id, "score": essay, "feedback": "ok" },
+        ])
+    };
+    let published = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 55, "item_grades": items(2) }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["final_score"], 55.0);
+    assert_eq!(published.json()["score_override"], 55.0);
+    let view = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
+        .await;
+    assert_eq!(view.json()["score_override"], 55.0, "{}", view.text());
+
+    // Feedback-only republish, every item re-sent unchanged: 55 stays.
+    let republished = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("2"),
+            &serde_json::json!({ "action": "publish", "feedback": "ещё строка", "item_grades": items(2) }),
+        ))
+        .await;
+    assert_eq!(republished.status, StatusCode::OK, "{}", republished.text());
+    assert_eq!(republished.json()["final_score"], 55.0, "override kept");
+    assert_eq!(republished.json()["grading"]["feedback"], "ещё строка");
+
+    // Explicit null drops the override: the items (10 + 2 of 20) decide.
+    let dropped = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("3"),
+            &serde_json::json!({ "action": "publish", "final_score": null, "item_grades": items(2) }),
+        ))
+        .await;
+    assert_eq!(dropped.status, StatusCode::OK, "{}", dropped.text());
+    assert_eq!(dropped.json()["final_score"], 60.0, "{}", dropped.text());
+    assert_eq!(dropped.json()["score_override"], serde_json::Value::Null);
+
+    // No override in place: an edited item recomputes (10 + 6 of 20).
+    let edited = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("4"),
+            &serde_json::json!({ "action": "publish", "item_grades": items(6) }),
+        ))
+        .await;
+    assert_eq!(edited.status, StatusCode::OK, "{}", edited.text());
+    assert_eq!(edited.json()["final_score"], 80.0, "{}", edited.text());
+}
+
+/// BUG-174: an integrity-annulled attempt (auto 0) keeps its 0 through a
+/// feedback-only republish that re-sends the item scores; only an explicit
+/// `final_score` moves it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn annulled_attempt_keeps_zero_unless_overridden(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "tab_switch_detection": true, "violation_threshold": 1 }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub = draft.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &alice,
+        &format!("/api/v2/submissions/{sub}/violations"),
+        &serde_json::json!({ "kind": "tab_switch" }),
+    )
+    .await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub}/submit"),
+            &serde_json::json!({ "answers": {
+                &choice_id: { "kind": "choice", "selected": ["a"] },
+                &essay_id: { "kind": "open_text", "text": "Because." },
+            } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(
+        submitted.json()["auto_submit_reason"],
+        "integrity_violation"
+    );
+
+    let items = serde_json::json!([
+        { "item_id": choice_id, "score": 10 },
+        { "item_id": essay_id, "score": 10 },
+    ]);
+    let published = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "feedback": "аннулировано", "item_grades": items }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["final_score"], 0.0, "{}", published.text());
+    let again = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("2"),
+            &serde_json::json!({ "action": "publish", "feedback": "ещё", "final_score": null, "item_grades": items }),
+        ))
+        .await;
+    assert_eq!(again.status, StatusCode::OK, "{}", again.text());
+    assert_eq!(again.json()["final_score"], 0.0, "annulled stays 0");
+    let overridden = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("3"),
+            &serde_json::json!({ "action": "publish", "final_score": 40 }),
+        ))
+        .await;
+    assert_eq!(overridden.status, StatusCode::OK, "{}", overridden.text());
+    assert_eq!(overridden.json()["final_score"], 40.0);
+}
+
+/// BUG-175: the cell keeps the grade of record (published attempt 1) and
+/// flags the newer attempt awaiting grading.
+#[sqlx::test(migrations = "../../migrations")]
+async fn gradebook_flags_a_pending_attempt_behind_the_grade_of_record(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 3 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    let first = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    let published = app
+        .send(grade(
+            &teacher,
+            &first,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    let gradebook = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook"))
+        .await;
+    assert_eq!(gradebook.status, StatusCode::OK, "{}", gradebook.text());
+    let cell = &gradebook.json()["cells"][0];
+    assert_eq!(cell["attempt_number"], 1, "{cell}");
+    assert_eq!(cell["status"], "published", "{cell}");
+    assert_eq!(cell["final_score"], 80.0, "{cell}");
+    assert_eq!(cell["pending_attempt"], 2, "{cell}");
+}
+
 /// BUG-138: a publish-only save (no score, no item grades) keeps the raw
 /// score of the latest entry — the late penalty is not applied twice — and
 /// an omitted `feedback` keeps the stored one; `audit_note` lands in the

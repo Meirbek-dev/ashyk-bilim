@@ -85,6 +85,10 @@ export default function GradeForm({
   // colleague (and a 412 on our own save) — the server copy is offered in a
   // notice instead of silently replacing the drafts.
   const [dirty, setDirty] = useState(false)
+  // BUG-174: only edited items (and a typed score) go to the server — re-sending
+  // every stored item would recompute the raw over a manual override.
+  const [dirtyItems, setDirtyItems] = useState<Set<string>>(() => new Set())
+  const [scoreDirty, setScoreDirty] = useState(false)
   const [remoteUpdate, setRemoteUpdate] = useState(false)
   // UX-049: `If-Match` carries the version the drafts were based on, not the
   // latest refetch — a colleague's save is adopted only by an explicit choice.
@@ -155,14 +159,16 @@ export default function GradeForm({
   const [lastSeed, setLastSeed] = useState({ uuid: '', trigger: '' })
 
   const seedDrafts = () => {
+    const stored = submission?.score_override ?? submission?.final_score
     setDraft({
-      score:
-        submission?.final_score !== null && submission?.final_score !== undefined ? String(submission.final_score) : '',
+      score: stored === null || stored === undefined ? '' : String(stored),
       feedback: submission?.grading_json?.feedback ?? '',
     })
-    setOverrideScore(false)
+    setOverrideScore(submission?.score_override != null)
     setOverrideReason('')
     setDirty(false)
+    setDirtyItems(new Set())
+    setScoreDirty(false)
     setRemoteUpdate(false)
     setBaseVersion(submission?.version ?? null)
 
@@ -191,10 +197,12 @@ export default function GradeForm({
   const editDraft = (patch: Partial<GradeDraft>) => {
     setDraft(current => ({ ...current, ...patch }))
     setDirty(true)
+    if (patch.score !== undefined) setScoreDirty(true)
   }
 
   const patchItemDraft = (itemId: string, field: keyof ItemDraftEntry, value: string) => {
     setDirty(true)
+    setDirtyItems(prev => new Set(prev).add(itemId))
     setItemDrafts(prev => ({
       ...prev,
       [itemId]: {
@@ -215,26 +223,37 @@ export default function GradeForm({
         return
       }
 
-      const itemGrades: ItemGradeEntry[] = gradedItems.map(item => {
-        const entry = itemDrafts[item.item_id]
-        const rawScore = entry?.score ?? String(item.score)
-        const parsed = Number.parseFloat(rawScore)
-        const baseFeedback = entry?.feedback ?? item.feedback ?? ''
-        const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? [])
-        return {
-          item_uuid: item.item_id,
-          score: toItemScale(
-            Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
-            item.max_score,
-            itemScaleById.get(item.item_id),
-          ),
-          feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
-          is_manual: true,
-        }
-      })
+      const edited = (itemId: string) => dirtyItems.has(itemId) || (annotationsByItem[itemId]?.length ?? 0) > 0
+      const itemGrades: ItemGradeEntry[] = gradedItems
+        .filter(item => edited(item.item_id))
+        .map(item => {
+          const entry = itemDrafts[item.item_id]
+          const rawScore = entry?.score ?? String(item.score)
+          const parsed = Number.parseFloat(rawScore)
+          const baseFeedback = entry?.feedback ?? item.feedback ?? ''
+          const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? [])
+          return {
+            item_uuid: item.item_id,
+            score: toItemScale(
+              Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
+              item.max_score,
+              itemScaleById.get(item.item_id),
+            ),
+            feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
+            is_manual: true,
+          }
+        })
 
-      const finalScore = overrideScore ? Number.parseFloat(draft.score) : undefined
-      if (overrideScore && (Number.isNaN(finalScore!) || finalScore! < 0 || finalScore! > 100)) {
+      // Override on → the typed raw; switched off over a stored override →
+      // an explicit null (the items decide again); untouched → omitted, the
+      // server keeps what it has. Without items the typed score is the raw.
+      const typedScore = overrideScore || (!hasItemGrading && scoreDirty)
+      const finalScore: number | null | undefined = typedScore
+        ? Number.parseFloat(draft.score)
+        : submission.score_override != null
+          ? null
+          : undefined
+      if (typedScore && (Number.isNaN(finalScore!) || finalScore! < 0 || finalScore! > 100)) {
         toast.error(t('invalidScore'))
         return
       }
@@ -247,11 +266,10 @@ export default function GradeForm({
         draft,
         gradedItems,
         itemDrafts,
-        overrideScore,
         overrideReason,
         status,
         itemGrades,
-        finalScore: overrideScore ? (finalScore ?? null) : null,
+        finalScore: typedScore ? (finalScore ?? null) : null,
       })
 
       setDirty(false)
@@ -266,8 +284,7 @@ export default function GradeForm({
               item_grades: itemGrades,
               overall_feedback: draft.feedback,
               status,
-              ...(overrideScore ? { override_score: true } : {}),
-              ...(overrideScore && finalScore !== undefined ? { final_score: finalScore } : {}),
+              ...(finalScore === undefined ? {} : { final_score: finalScore }),
               ...(overrideScore && overrideReason ? { override_reason: overrideReason } : {}),
             },
             baseVersion ?? submission.version,
@@ -301,7 +318,10 @@ export default function GradeForm({
       assessmentUuid,
       gradedItems,
       hasInvalidScore,
+      hasItemGrading,
       itemDrafts,
+      dirtyItems,
+      scoreDirty,
       overrideScore,
       draft,
       t,
@@ -790,7 +810,6 @@ function buildOptimisticSubmission(
     draft: { score: string; feedback: string }
     gradedItems: GradedItem[]
     itemDrafts: Record<string, { score: string; feedback: string }>
-    overrideScore: boolean
     overrideReason: string
     status: 'save' | 'publish' | 'return'
     itemGrades: ItemGradeEntry[]
@@ -816,7 +835,7 @@ function buildOptimisticSubmission(
   return {
     ...submission,
     status: nextStatus,
-    final_score: args.overrideScore ? (args.finalScore ?? submission.final_score) : submission.final_score,
+    final_score: args.finalScore ?? submission.final_score,
     grading_json: gradingJson as GradingBreakdown,
     version: typeof submission.version === 'number' ? submission.version + 1 : submission.version,
   } as Submission

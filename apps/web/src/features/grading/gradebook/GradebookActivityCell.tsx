@@ -15,6 +15,7 @@ export default function GradebookActivityCell({
     attempts: string
     late: string
     state: string
+    pendingAttempt?: string | null
   }
   onOpen: () => void
 }) {
@@ -26,6 +27,7 @@ export default function GradebookActivityCell({
         attemptsLabel={labels.attempts}
         lateLabel={labels.late}
         stateLabel={labels.state}
+        pendingAttemptLabel={labels.pendingAttempt}
         onOpen={onOpen}
       />
     </TableCell>

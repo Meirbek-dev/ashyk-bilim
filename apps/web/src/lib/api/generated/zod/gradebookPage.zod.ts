@@ -39,6 +39,12 @@ export const GradebookPage = zod
           final_score: zod.number().nullish(),
           graded_at_unix: zod.int().nullish(),
           is_late: zod.boolean(),
+          pending_attempt: zod
+            .int()
+            .nullish()
+            .describe(
+              'The newest attempt still awaiting grading (`pending`), if any — set\neven when the grade of record is an older published attempt (BUG-175).',
+            ),
           status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
           submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
           submitted_at_unix: zod.int().nullish(),

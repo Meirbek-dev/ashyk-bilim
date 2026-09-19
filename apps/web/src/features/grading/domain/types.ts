@@ -29,6 +29,8 @@ export interface Submission {
   is_late: boolean
   auto_score?: number | null
   final_score?: number | null
+  /** BUG-174: the stored raw when it is a manual override (teacher view only). */
+  score_override?: number | null
   version?: number
   started_at?: string | null
   submitted_at?: string | null
@@ -60,6 +62,8 @@ export interface ActivityProgressCell extends ProgressCell {
   attempt_count: number
   is_late: boolean
   teacher_action_required: boolean
+  /** BUG-175: the newest attempt awaiting grading behind the grade of record. */
+  pending_attempt?: number | null
 }
 export interface GradebookActivity {
   id: string

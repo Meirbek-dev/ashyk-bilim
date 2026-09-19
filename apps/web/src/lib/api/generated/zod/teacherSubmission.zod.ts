@@ -103,6 +103,12 @@ export const TeacherSubmission = zod
     release_state: zod
       .enum(['hidden', 'awaiting_release', 'visible', 'returned_for_revision'])
       .describe('What the learner may see of a grade (legacy `release_state`).'),
+    score_override: zod
+      .number()
+      .nullish()
+      .describe(
+        'The raw score of the latest grading entry when it is a manual\noverride (differs from the item-derived one); `null` otherwise.',
+      ),
     started_at_unix: zod.int().nullish(),
     status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
     submitted_at_unix: zod.int().nullish(),

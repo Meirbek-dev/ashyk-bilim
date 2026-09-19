@@ -413,6 +413,9 @@ pub struct GradebookCellRow {
     pub attempt_number: i32,
     /// Submitted attempts on this pair.
     pub attempts: i64,
+    /// The newest attempt awaiting grading (`pending`, or `submitted` on a
+    /// file attempt), if any — the ranked attempt may be an older graded one.
+    pub pending_attempt: Option<i32>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// The learner's active (unexpired) per-assessment due-date override, if any.
@@ -441,6 +444,8 @@ pub async fn gradebook_cells(
                   c.attempt_id AS "attempt_id?: FileAttemptId",
                   c.status AS "status!: SubmissionStatus", c.attempt_number AS "attempt_number!",
                   count(*) OVER (PARTITION BY c.user_id, c.activity_id) AS "attempts!",
+                  max(c.attempt_number) FILTER (WHERE c.status = 'pending')
+                      OVER (PARTITION BY c.user_id, c.activity_id) AS "pending_attempt?",
                   c.final_score AS "final_score?", c.is_late AS "is_late!",
                   (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
                   (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",

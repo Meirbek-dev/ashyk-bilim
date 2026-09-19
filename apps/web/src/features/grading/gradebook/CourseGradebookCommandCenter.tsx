@@ -240,6 +240,11 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
                           attempts: t('attempts', { count: cell.attempt_count }),
                           late: t('late'),
                           state: t(progressStateLabelKey(cell.state)),
+                          // Only when the pending attempt is not the one the cell ranks (BUG-175).
+                          pendingAttempt:
+                            cell.pending_attempt != null && cell.latest_submission_status !== 'PENDING'
+                              ? t('pendingAttempt', { attempt: cell.pending_attempt })
+                              : null,
                         }}
                         onOpen={() => openCell(cell)}
                       />

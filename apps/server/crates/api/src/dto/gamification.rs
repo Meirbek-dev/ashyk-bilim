@@ -9,6 +9,8 @@ use ab_domain::gamification as domain;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+use super::double_option;
+
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Profile {
     pub user_id: UserId,
@@ -258,15 +260,6 @@ pub struct UpdateGamificationConfigRequest {
 
 fn empty_object() -> serde_json::Value {
     serde_json::Value::Object(serde_json::Map::new())
-}
-
-/// Distinguish an absent section (keep) from an explicit `null` (remove).
-fn double_option<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
-where
-    T: Deserialize<'de>,
-    D: serde::Deserializer<'de>,
-{
-    Option::<T>::deserialize(deserializer).map(Some)
 }
 
 /// A preference value is a boolean or absent — `null` is neither an opt-in

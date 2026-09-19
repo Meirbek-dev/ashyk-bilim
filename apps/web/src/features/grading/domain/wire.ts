@@ -29,7 +29,7 @@ export function teacherSubmissionFromWire(value: unknown): Submission {
     answered_count: answeredCount,
   })
   return {
-    ...reviewItemFromWire(item), assessment_id: item.assessment_id,
+    ...reviewItemFromWire(item), assessment_id: item.assessment_id, score_override: item.score_override ?? null,
     answers_json: learner.answers_json, grading_json: item.grading,
     release_state: item.release_state.toUpperCase(),
     started_at: unixToIso(item.started_at_unix),
@@ -71,8 +71,10 @@ export function gradebookFromWire(pages: GradebookPage[], course: Course, curric
       state, score: c.final_score ?? null, passed,
       // UX-113: a learner's active deadline override is their due date (the server joins it per cell).
       due_at: unixToIso(c.due_at_override_unix ?? assessment?.due_at_unix ?? file?.due_at_unix), is_late: c.is_late,
-      // `graded` = scored but unreleased (batch release mode): the teacher still owes a publish.
-      teacher_action_required: c.status === 'pending' || c.status === 'graded',
+      // `graded` = scored but unreleased (batch release mode): the teacher still owes a publish;
+      // a newer pending attempt behind a published grade of record too (BUG-175).
+      teacher_action_required: c.status === 'pending' || c.status === 'graded' || c.pending_attempt != null,
+      pending_attempt: c.pending_attempt ?? null,
     }
   })
   const columnName = (activityId: string, fallback: string) => activityNames.get(activityId) ?? fallback

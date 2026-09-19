@@ -1147,6 +1147,18 @@ Implements three more items of the owner answers above. Routes:
   76 %» on the card and in the gradebook alike; `attempts` still counts
   every hand-in and the review queue lists a newer pending attempt.
   `gradebook_cells` ranks per (learner, activity) with the same ordering.
+- **The stored raw survives** (BUG-174): `save_grade` keeps the latest
+  entry's raw score unless the request names a new one — a manual override
+  (raw ≠ the item-derived value) and an integrity-annulled attempt's 0 are
+  never replaced by an item recomputation, however many `item_grades` the
+  client re-sends; only a differing item on a non-overridden grade
+  recomputes. Dropping an override is explicit: `final_score: null` (the
+  field is three-state — absent keeps, `null` drops, a value overrides),
+  and an annulled attempt moves only on an explicit `final_score`. The
+  grader's view carries `score_override` so the form reopens with the
+  switch on; the form sends only the items the teacher edited. The
+  gradebook cell also carries `pending_attempt` (BUG-175): the newest
+  attempt awaiting grading behind the grade of record.
 - **Wrong verbs answer problem+json** (UX-110): `method-not-allowed` (405)
   joins the registry via axum's `method_not_allowed_fallback`; API `login`
   trims the identifier (the name-limit key already did).
