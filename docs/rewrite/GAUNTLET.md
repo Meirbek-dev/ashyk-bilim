@@ -92,8 +92,8 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   `method/uri → status/latency` — that is the per-request evidence line for critics.
 - **Session cap, not single-session:** `MAX_SESSIONS_PER_USER = 10`, oldest evicted
   (`identity/sessions.rs`). A curl session dies after ~10 later logins of the same user
-  (every Playwright run logs each role in), and an RBAC change on a user revokes ALL
-  their sessions (`rbac_admin.rs:290`). Mint curl sessions right before use, re-mint on
+  (every Playwright run logs each role in), and an RBAC change on a user rewrites the
+  grants inside ALL their live sessions (`rbac_admin.rs propagate`; only disable revokes). Mint curl sessions right before use, re-mint on
   401, and never change the roles of the three shared accounts — create your own user.
 - **Do not kill `node.exe` / `bun.exe` wholesale** — the web dev server (bun → next dev)
   died with exit 9 mid-pass-11 while builders were running; restart it with
