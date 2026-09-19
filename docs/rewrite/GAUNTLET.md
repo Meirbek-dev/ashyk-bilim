@@ -242,10 +242,10 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F17 | certificates + verify | `/certificates/[uuid]/verify`, `/dash/courses/[uuid]/certificate` | any | pass | pass 16 (reverify-B) |
 | F18 | gamification | `/dash/user-account/settings/gamification` | learner | pass | pass 16 (reverify-B) |
 | F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 16 (reverify-A): course-create title trimmed inline |
-| F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | fail | pass 17 fail: BUG-186, UX-128; pass 16 (reverify-A) |
-| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 16 (reverify-A) |
-| F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 16 (reverify-A) |
-| F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | fail | pass 17 fail: UX-128; pass 16 (reverify-A): blank title 422 + inline; scheduled rename 409; archive confirm carried as UX-124 |
+| F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 17 (reverify-B): refused PATCH writes nothing (BUG-186), localized lock toast + hand-in confirm (UX-128); pass 16 (reverify-A) |
+| F21 | activity editor (blocks) | `/editor/course/[id]/activity/[uuid]/edit` | teacher | pass | pass 17 (reverify-B); pass 16 (reverify-A) |
+| F22 | uploads (images/video/docs) | editor + course thumbnails | teacher | pass | pass 17 (reverify-B); pass 16 (reverify-A) |
+| F23 | assessment authoring | `/ru/dash/courses/[id]/activity/[id]/studio` | teacher | pass | pass 17 (reverify-B): schedule-after-due hint on the field, server 422 reopens the picker (UX-128); pass 16 (reverify-A): blank title 422 + inline; scheduled rename 409; archive confirm carried as UX-124 |
 | F24 | assessment access + overrides | `/ru/dash/courses/[id]/access` | teacher | pass | pass 16 (reverify-A) |
 | F25 | submission grading + item feedback | `/ru/dash/courses/[id]/activity/[id]/review` | teacher | pass | pass 17 (reverify-C); pass 16 (reverify-B) |
 | F26 | gradebook + bulk actions | `/ru/dash/courses/[id]/gradebook` | teacher | pass | pass 17 (reverify-C): cell/CSV/UI follow the grade of record (BUG-187); pass 16 (reverify-C): «На проверке» deep link opens the pending attempt (UX-123); learner card keeps the released grade during a retake |
@@ -257,9 +257,9 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F32 | analytics: courses + assessments drilldown | `/dash/analytics/courses/*`, `/assessments/*` | teacher | pass | pass 16 (analytics-admin clean); pass 15 (reverify-C) |
 | F33 | analytics: at-risk + watchlist | `/ru/dash/analytics/watchlist` | teacher | pass | pass 16 (reverify-C): localized headers (BUG-181), CSV reason/action cells (UX-123), drill-through curated (UX-122); UX-125 number format fixed |
 | F34 | analytics CSV export | `/ru/dash/analytics/*` | teacher | pass | pass 16 (reverify-C); pass 15 (reverify-C): export gated on the grant, localized CSVs with BOM |
-| F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | fail | pass 17 fail: BUG-185; pass 16 (reverify-B): one active gate (BUG-179); owner analysis of hidden grading carried as BUG-182 |
-| F36 | AI agent: lecture authoring critique | `/dash/courses/[uuid]` | teacher | pass | pass 16 (reverify-B) |
-| F37 | AI agents: remaining 4 | assorted | teacher | fail | pass 17 fail: BUG-189; pass 16 (reverify-B) |
+| F35 | AI agent: QA / remediation (SSE) | learner surfaces | learner | pass | pass 17 (reverify-B): one gate under concurrent queue calls, loser runs failed (BUG-185); pass 16 (reverify-B): one active gate (BUG-179); owner analysis of hidden grading carried as BUG-182 |
+| F36 | AI agent: lecture authoring critique | `/dash/courses/[uuid]` | teacher | pass | pass 17 (reverify-B); pass 16 (reverify-B) |
+| F37 | AI agents: remaining 4 | assorted | teacher | pass | pass 17 (reverify-B): AI lanes counted separately (BUG-189); pass 16 (reverify-B) |
 | F38 | admin surface | `/dash/admin`, `/dash/admin/users`, `/dash/admin/roles` | admin | pass | pass 16 (analytics-admin clean); pass 15 (reverify-C): one disable-confirm wording |
 | F39 | usergroups | `/dash/users/settings/usergroups` | admin | pass | pass 16 (analytics-admin clean); pass 15 (reverify-C): unlink needs course read; «Отвязать» |
 | F40 | user account general settings | `/dash/user-account/settings/general` | any | pass | pass 16 (analytics-admin clean); pass 15 (reverify-C) |
@@ -272,7 +272,7 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 17 (reverify-C); pass 16 (reverify-A) |
 | F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 16 (reverify-A) |
 | F49 | gradebook: file cells, CSV export, live stream | `/dash/courses/[id]/gradebook` | teacher | pass | pass 17 (reverify-C); pass 16 (reverify-B): released grade outranks a pending retake (BUG-180) |
-| F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 16 (reverify-B): headline follows a re-grade |
+| F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 17 (reverify-B); pass 16 (reverify-B): headline follows a re-grade |
 | F51 | matching items (learner body) | quiz attempt + review | learner+teacher | pass | pass 16 (reverify-B) |
 | F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 16 (reverify-B) |
 | F53 | AI on file-submission attempts | file review page | teacher | pass | pass 17 (reverify-C): history row opens the released feedback beside an open draft (UX-129); pass 16 (reverify-B) |
