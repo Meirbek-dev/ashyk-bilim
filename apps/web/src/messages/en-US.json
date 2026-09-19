@@ -1181,6 +1181,7 @@
     }
   },
   "Common": {
+    "playVideo": "Play video",
     "close": "Close",
     "cancel": "Cancel",
     "DataTable": {
@@ -2774,6 +2775,7 @@
     "dedicationMessage": "Your dedication and hard work have paid off. You've mastered all the content in this course."
   },
   "CoursePage": {
+    "noPublishedActivities": "This course has no published lessons yet",
     "about": "About",
     "access": "Access",
     "activitiesCount": "{count, plural, one {# Activity} other {# Activities}}",
@@ -2866,6 +2868,7 @@
   },
   "Courses": {
     "CourseActionsMobile": {
+      "noPublishedActivities": "This course has no published lessons yet",
       "unknownAuthor": "Unknown",
       "author": "Author",
       "authors": "Authors",
@@ -2942,6 +2945,7 @@
       "updates": "Updates"
     },
     "CoursesActions": {
+      "noPublishedActivities": "This course has no published lessons yet",
       "activitiesCompleted": "{completed} of {total} activities completed",
       "applicationPending": "Contributor application pending",
       "applyToContribute": "Apply to contribute",
@@ -6306,6 +6310,7 @@
           "disableTotp": "Disable",
           "totpActive": "Two-factor authentication is on",
           "totpAlreadyActive": "Two-factor authentication is already enabled.",
+          "totpEnrollmentReset": "Setup was reset, start again.",
           "totpActivated": "Two-factor authentication enabled",
           "totpRemoved": "Two-factor authentication disabled",
           "invalidCode": "Invalid code. Try again.",
@@ -7349,6 +7354,11 @@
     "quote": "Quote"
   },
   "SearchPage": {
+    "noFilterResults": {
+      "courses": "No courses found for “{query}”",
+      "collections": "No collections found for “{query}”",
+      "users": "No users found for “{query}”"
+    },
     "collections": "Collections",
     "courses": "Courses",
     "coursesCount": "{count, plural, =0 {0 courses} one {# course} other {# courses}}",
@@ -10793,6 +10803,7 @@
       "replaceFeedbackCancel": "Cancel",
       "replaceFeedbackConfirm": "Replace",
       "generateGate": "Generate remediation gate",
+      "gateAlreadyAssigned": "A gate is already assigned",
       "emptyTitle": "No analysis yet",
       "emptyDescription": "Run an analysis to see knowledge gaps and evidence for this submission."
     },

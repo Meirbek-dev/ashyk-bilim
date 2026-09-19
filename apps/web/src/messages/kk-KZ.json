@@ -1180,6 +1180,7 @@
     }
   },
   "Common": {
+    "playVideo": "Бейнені ойнату",
     "close": "Жабу",
     "cancel": "Болдырмау",
     "DataTable": {
@@ -2773,6 +2774,7 @@
     "dedicationMessage": "Сіздің адалдығыңыз бен қажырлы еңбегіңіз өз нәтижесін берді. Сіз бұл курстың барлық материалын меңгердіңіз."
   },
   "CoursePage": {
+    "noPublishedActivities": "Бұл курста әзірге жарияланған сабақтар жоқ",
     "about": "Туралы",
     "access": "Қол жеткізу",
     "activitiesCount": "{count} белсенділік",
@@ -2865,6 +2867,7 @@
   },
   "Courses": {
     "CourseActionsMobile": {
+      "noPublishedActivities": "Бұл курста әзірге жарияланған сабақтар жоқ",
       "unknownAuthor": "Белгісіз",
       "author": "Автор",
       "authors": "Авторлар",
@@ -2956,6 +2959,7 @@
       "updates": "Жаңартулар"
     },
     "CoursesActions": {
+      "noPublishedActivities": "Бұл курста әзірге жарияланған сабақтар жоқ",
       "activitiesCompleted": "{completed}/{total} әрекеті аяқталды",
       "applicationPending": "Автор ретінде қатысуға өтінім қаралуда",
       "applyToContribute": "Қатысуға өтінім беру",
@@ -6321,6 +6325,7 @@
           "disableTotp": "Өшіру",
           "totpActive": "Екі факторлы аутентификация қосулы",
           "totpAlreadyActive": "Екі факторлы аутентификация қосулы тұр.",
+          "totpEnrollmentReset": "Қосу үдерісі қалпына келтірілді, қайтадан бастаңыз.",
           "totpActivated": "Екі факторлы аутентификация қосылды",
           "totpRemoved": "Екі факторлы аутентификация өшірілді",
           "invalidCode": "Код қате. Қайталап көріңіз.",
@@ -7369,6 +7374,11 @@
     "quote": "Дәйексөз"
   },
   "SearchPage": {
+    "noFilterResults": {
+      "courses": "«{query}» сұранысы бойынша курстар табылмады",
+      "collections": "«{query}» сұранысы бойынша жинақтар табылмады",
+      "users": "«{query}» сұранысы бойынша пайдаланушылар табылмады"
+    },
     "collections": "Жинақтар",
     "courses": "Курстар",
     "coursesCount": "{count, plural, =0 {0 курс} one {# курс} other {# курс}}",
@@ -10977,6 +10987,7 @@
       "replaceFeedbackCancel": "Болдырмау",
       "replaceFeedbackConfirm": "Ауыстыру",
       "generateGate": "Түзету шегін құру",
+      "gateAlreadyAssigned": "Кедергі бұрыннан тағайындалған",
       "emptyTitle": "Талдау әлі жүргізілмеген",
       "emptyDescription": "Осы жұмыс бойынша білім олқылықтары мен дәлелдерді көру үшін талдауды іске қосыңыз."
     },

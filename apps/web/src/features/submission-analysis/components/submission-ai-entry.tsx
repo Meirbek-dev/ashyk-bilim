@@ -76,6 +76,9 @@ export function SubmissionAIEntry({
     const lecture = RemediationLecture.safeParse(artifactContent)
     return lecture.success ? { gate_mode: true, lecture: lecture.data, status: 'assigned' } : null
   }, [storedSession.data, artifactContent])
+  // BUG-179: `latest` puts the unpassed gate first — a second one would 409.
+  const gateActive =
+    remediationSession?.gate_mode === true && ['assigned', 'in_progress', 'failed'].includes(remediationSession.status)
 
   if (!submissionUuid) {
     return null
@@ -145,11 +148,11 @@ export function SubmissionAIEntry({
         <Button
           className="w-full"
           variant="secondary"
-          disabled={remediation.pending || !latest.data}
+          disabled={remediation.pending || !latest.data || gateActive}
           onClick={() => void remediation.start({ gate_mode: true, language: aiLanguageFor(locale) })}
         >
           <Route data-icon="inline-start" aria-hidden="true" />
-          {t('generateGate')}
+          {gateActive ? t('gateAlreadyAssigned') : t('generateGate')}
         </Button>
         <AIRunProgress state={remediation.state} onCancel={remediation.pending ? remediation.cancel : undefined} />
         {remediationSession ? <RemediationResultShell session={remediationSession} /> : null}

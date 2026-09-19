@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AiRemediationSessionId\", submission_id AS \"submission_id: SubmissionId\",\n                  file_submission_attempt_id AS \"file_submission_attempt_id: FileAttemptId\",\n                  activity_id AS \"activity_id: ActivityId\",\n                  student_user_id AS \"student_user_id: UserId\",\n                  analysis_id AS \"analysis_id: AiSubmissionAnalysisId\", run_id AS \"run_id: AiRunId\",\n                  status AS \"status: RemediationStatus\", gate_mode, language, lecture, test, score,\n                  (extract(epoch FROM passed_at))::bigint AS \"passed_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM ai_remediation_sessions\n           WHERE ($1::uuid IS NOT NULL AND submission_id = $1)\n              OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2)\n           ORDER BY created_at DESC, id DESC LIMIT 1",
+  "query": "SELECT id AS \"id: AiRemediationSessionId\", submission_id AS \"submission_id: SubmissionId\",\n                  file_submission_attempt_id AS \"file_submission_attempt_id: FileAttemptId\",\n                  activity_id AS \"activity_id: ActivityId\",\n                  student_user_id AS \"student_user_id: UserId\",\n                  analysis_id AS \"analysis_id: AiSubmissionAnalysisId\", run_id AS \"run_id: AiRunId\",\n                  status AS \"status: RemediationStatus\", gate_mode, language, lecture, test, score,\n                  (extract(epoch FROM passed_at))::bigint AS \"passed_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM ai_remediation_sessions\n           WHERE ($1::uuid IS NOT NULL AND submission_id = $1)\n              OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2)\n           ORDER BY (gate_mode AND status IN ('assigned', 'in_progress', 'failed')) DESC,\n                    created_at DESC, id DESC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -190,5 +190,5 @@
       null
     ]
   },
-  "hash": "6952533256c6f09796256bc5f8ede538169d19903ae4434c2cea2c87636f6552"
+  "hash": "88c722f66e119d48ffa47d79cdaefb11de121fa69a27bde796742807120ebc85"
 }

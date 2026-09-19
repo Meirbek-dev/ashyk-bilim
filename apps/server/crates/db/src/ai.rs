@@ -1471,7 +1471,8 @@ pub async fn latest_remediation_session(
            FROM ai_remediation_sessions
            WHERE ($1::uuid IS NOT NULL AND submission_id = $1)
               OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2)
-           ORDER BY created_at DESC, id DESC LIMIT 1"#,
+           ORDER BY (gate_mode AND status IN ('assigned', 'in_progress', 'failed')) DESC,
+                    created_at DESC, id DESC LIMIT 1"#,
         submission_id,
         attempt_id
     )

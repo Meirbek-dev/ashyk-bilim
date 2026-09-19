@@ -1181,6 +1181,7 @@
     }
   },
   "Common": {
+    "playVideo": "Воспроизвести видео",
     "close": "Закрыть",
     "cancel": "Отмена",
     "DataTable": {
@@ -2772,6 +2773,7 @@
     "dedicationMessage": "Ваша преданность и усердный труд окупились. Вы освоили весь материал этого курса."
   },
   "CoursePage": {
+    "noPublishedActivities": "В этом курсе пока нет опубликованных уроков",
     "about": "О курсе",
     "access": "Доступ",
     "activitiesCount": "{count, plural, one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
@@ -2864,6 +2866,7 @@
   },
   "Courses": {
     "CourseActionsMobile": {
+      "noPublishedActivities": "В этом курсе пока нет опубликованных уроков",
       "unknownAuthor": "Неизвестно",
       "author": "Автор",
       "authors": "Авторы",
@@ -2955,6 +2958,7 @@
       "updates": "Обновления"
     },
     "CoursesActions": {
+      "noPublishedActivities": "В этом курсе пока нет опубликованных уроков",
       "activitiesCompleted": "{completed} из {total} активностей завершено",
       "applicationPending": "Заявка на участие в качестве автора на рассмотрении",
       "applyToContribute": "Подать заявку на участие",
@@ -6306,6 +6310,7 @@
           "disableTotp": "Отключить",
           "totpActive": "Двухфакторная аутентификация включена",
           "totpAlreadyActive": "Двухфакторная аутентификация уже включена.",
+          "totpEnrollmentReset": "Подключение сброшено, начните заново.",
           "totpActivated": "Двухфакторная аутентификация включена",
           "totpRemoved": "Двухфакторная аутентификация отключена",
           "invalidCode": "Неверный код. Попробуйте ещё раз.",
@@ -7354,6 +7359,11 @@
     "quote": "Цитата"
   },
   "SearchPage": {
+    "noFilterResults": {
+      "courses": "Курсы не найдены по запросу «{query}»",
+      "collections": "Коллекции не найдены по запросу «{query}»",
+      "users": "Пользователи не найдены по запросу «{query}»"
+    },
     "collections": "Коллекции",
     "courses": "Курсы",
     "coursesCount": "{count, plural, =0 {0 курсов} one {# курс} other {# курсов}}",
@@ -10807,6 +10817,7 @@
       "replaceFeedbackCancel": "Отмена",
       "replaceFeedbackConfirm": "Заменить",
       "generateGate": "Создать барьер исправления",
+      "gateAlreadyAssigned": "Барьер уже назначен",
       "emptyTitle": "Анализ еще не выполнялся",
       "emptyDescription": "Запустите анализ, чтобы увидеть пробелы в знаниях и подтверждения по этой работе."
     },

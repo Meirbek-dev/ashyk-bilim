@@ -1318,6 +1318,30 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
     assert!(refused.text().contains("REMEDIATION_REQUIRED"));
 
+    // BUG-179: a second gate cannot stack behind the unpassed one (409 names
+    // it); a later non-gate session does not hide the blocking one in `latest`.
+    let stacked = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/remediation/{sub_id}/generate"),
+            &serde_json::json!({ "gate_mode": true }),
+        )
+        .await;
+    assert_eq!(stacked.status, StatusCode::CONFLICT, "{}", stacked.text());
+    assert_eq!(stacked.json()["code"], "conflict");
+    assert_eq!(stacked.json()["details"]["session_id"], session_id);
+    let plain = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/remediation/{sub_id}/generate"),
+            &serde_json::json!({ "gate_mode": false }),
+        )
+        .await;
+    assert_eq!(plain.status, StatusCode::OK, "{}", plain.text());
+    let plain_id = plain.json()["id"].as_str().unwrap().to_owned();
+    let latest_url = format!("/api/v2/ai/remediation/{sub_id}/latest");
+    assert_eq!(app.get_as(&teacher, &latest_url).await.json()["id"], session_id);
+
     let passed = app
         .post_as(
             &alice,
@@ -1327,6 +1351,7 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
         .await;
     assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
     assert_eq!(passed.json()["status"], "passed");
+    assert_eq!(app.get_as(&teacher, &latest_url).await.json()["id"], plain_id);
     let open = app.get_as(&alice, &state_url).await;
     assert_eq!(open.json()["can_continue"], true, "{}", open.text());
     assert_eq!(open.json()["disabled_reasons"], serde_json::json!([]));

@@ -8,7 +8,7 @@
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole, RemediationStatus};
 use ab_core::id::{ActivityId, AiRemediationSessionId, AiSubjectId, UserId};
-use ab_core::{Error, FieldError, Result};
+use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::ai::{NewRemediationSession, RemediationSessionRow, RunRow, SubmissionAnalysisRow};
 use tokio_util::sync::CancellationToken;
 
@@ -179,7 +179,20 @@ impl AiService {
             return Ok(());
         }
         let course = self.courses.get(actor, subject.course_id()).await?;
-        policy::require_course_update(actor, &course)
+        policy::require_course_update(actor, &course)?;
+        // BUG-179: one blocking gate per learner and activity — a second one
+        // would stack behind the first and outlive it in `latest`.
+        let activity_id = self.subject_activity(subject).await?;
+        if let Some(existing) =
+            ab_db::ai::active_remediation_gate(&self.pool, subject.user_id(), activity_id).await?
+        {
+            return Err(Error::app_with_details(
+                ErrorCode::Conflict,
+                "an unpassed remediation gate already blocks this learner",
+                serde_json::json!({ "session_id": existing }),
+            ));
+        }
+        Ok(())
     }
 
     /// `POST /ai/remediation/{subject}/generate/queue`.
@@ -354,9 +367,10 @@ impl AiService {
         self.accessible_remediation(actor, id).await
     }
 
-    /// `GET /ai/remediation/{subject}/latest`: the newest session on the
-    /// work, for whoever may read the work (UX-115: the grader's gate card
-    /// reads the status here — the learner's session list is admin-only).
+    /// `GET /ai/remediation/{subject}/latest`: the newest **blocking** session
+    /// on the work if one exists (BUG-179), else the newest, for whoever may
+    /// read the work (UX-115: the grader's gate card reads the status here —
+    /// the learner's session list is admin-only).
     pub async fn latest_remediation(
         &self,
         actor: &Actor,
