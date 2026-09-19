@@ -72,6 +72,7 @@ export default function AtRiskLearnersTable({
   query,
 }: AtRiskLearnersTableProps) {
   const t = useTranslations('TeacherAnalytics')
+  const locale = useLocale()
   const percent = usePercentFormat()
   const resolvedTitle = title ?? t('atRisk.defaultTitle')
   const resolvedDescription = description ?? t('atRisk.defaultDescription')
@@ -95,7 +96,7 @@ export default function AtRiskLearnersTable({
     return [
       {
         accessorKey: 'user_display_name',
-        header: () => t('atRisk.colLearner'),
+        header: t('atRisk.colLearner'),
         cell: ({ row }) => {
           const courseHref = row.original.course_id ? `/dash/analytics/courses/${row.original.course_id}` : undefined
           return (
@@ -110,15 +111,15 @@ export default function AtRiskLearnersTable({
           )
         },
       },
-      { accessorKey: 'course_name', header: () => t('atRisk.colCourse') },
+      { accessorKey: 'course_name', header: t('atRisk.colCourse') },
       {
         accessorKey: 'progress_pct',
-        header: () => t('atRisk.colProgress'),
+        header: t('atRisk.colProgress'),
         cell: ({ row }) => percent(row.original.progress_pct),
       },
       {
         accessorKey: 'days_since_last_activity',
-        header: () => t('atRisk.colInactivity'),
+        header: t('atRisk.colInactivity'),
         cell: ({ row }) =>
           row.original.days_since_last_activity == null
             ? t('atRisk.na')
@@ -126,7 +127,7 @@ export default function AtRiskLearnersTable({
       },
       {
         accessorKey: 'risk_score',
-        header: () => t('atRisk.colRisk'),
+        header: t('atRisk.colRisk'),
         cell: ({ row }) => {
           const riskRow = row.original
           const c = riskRow.risk_components ?? {
@@ -168,7 +169,7 @@ export default function AtRiskLearnersTable({
       },
       {
         accessorKey: 'reason_codes',
-        header: () => t('atRisk.colReasons'),
+        header: t('atRisk.colReasons'),
         cell: ({ row }) => (
           <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
             {row.original.reason_codes.map((code: string) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
@@ -180,7 +181,7 @@ export default function AtRiskLearnersTable({
       },
       {
         accessorKey: 'recommended_action',
-        header: () => t('atRisk.colAction'),
+        header: t('atRisk.colAction'),
         cell: ({ row }) => {
           const riskRow = row.original
           const hasGradingBlock = riskRow.open_grading_blocks > 0
@@ -208,7 +209,7 @@ export default function AtRiskLearnersTable({
         },
       },
     ]
-  }, [queryKey])
+  }, [queryKey, locale])
 
   return (
     <Card className="shadow-sm">
