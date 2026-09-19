@@ -11,13 +11,14 @@ describe('learner file-activity query', () => {
     return refetchInterval({ state: { data: status ? { current_attempt: { status } } : null } })
   }
 
-  it('polls while submitted, graded or returned, slower once published, not on a draft', () => {
+  it('polls while submitted, graded or returned, slower once published; a draft polls for the deadline/gate (UX-115)', () => {
     expect(fileSubmissionQueryOptions('activity_1').refetchOnWindowFocus).toBe('always')
     expect(interval('submitted')).toBe(10_000)
     expect(interval('graded')).toBe(10_000)
     expect(interval('returned')).toBe(10_000)
     expect(interval('published')).toBe(15_000)
-    expect(interval('draft')).toBe(false)
+    // UX-115: an open draft must notice a closed deadline / a new remediation gate without a click.
+    expect(interval('draft')).toBe(15_000)
     expect(interval(null)).toBe(false)
   })
 })
