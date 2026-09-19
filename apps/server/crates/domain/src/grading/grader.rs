@@ -6,6 +6,8 @@
 //! optional negative marking on a full miss; matching scores the fraction
 //! of exact pairs; open text and forms always go to manual review.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use ab_core::assessments::ItemKind;
 use serde::Serialize;
 
@@ -97,7 +99,8 @@ fn grade_choice(
         .filter(|o| o.is_correct)
         .map(|o| o.id.as_str())
         .collect();
-    let chosen: Vec<&str> = selected.iter().map(String::as_str).collect();
+    // Set semantics (legacy `set(selected)`): a repeated pick is one pick.
+    let chosen: BTreeSet<&str> = selected.iter().map(String::as_str).collect();
     if chosen.is_empty() {
         return Verdict::new(0.0, false, "no-answer", "No answer provided");
     }
@@ -153,14 +156,15 @@ fn grade_matching(
         return Verdict::new(0.0, false, "no-answer", "No answer provided");
     }
     let expected = body.pairs.len().max(1);
+    // One right per left, last wins (legacy `{pair.left: pair.right}`).
+    let submitted: BTreeMap<&str, &str> = matches
+        .iter()
+        .map(|m| (m.left.as_str(), m.right.as_str()))
+        .collect();
     let correct = body
         .pairs
         .iter()
-        .filter(|p| {
-            matches
-                .iter()
-                .any(|m| m.left == p.left.trim() && m.right == p.right.trim())
-        })
+        .filter(|p| submitted.get(p.left.trim()) == Some(&p.right.trim()))
         .count();
     let all = correct == body.pairs.len();
     let score = round2(count(correct) / count(expected) * points);
@@ -220,8 +224,9 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
         };
         let needs_manual_review = verdict.is_none();
         manual |= needs_manual_review;
-        let score = verdict.as_ref().map_or(0.0, |v| v.score);
         let max_score = round2(pts);
+        // Never above the item's share (negative marking may go below 0).
+        let score = verdict.as_ref().map_or(0.0, |v| v.score).min(max_score);
         earned += score;
         possible += max_score;
         graded.push(GradedItem {
@@ -245,7 +250,7 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
     // the teacher path) — summing per-item round2 gave 100.02 / 99.99 for
     // 6 / 3 equal items, so `passing_score: 100` failed a perfect attempt.
     let auto_score = if possible > 0.0 {
-        round2((earned / possible * 100.0).max(0.0))
+        round2((earned / possible * 100.0).clamp(0.0, 100.0))
     } else {
         0.0
     };
@@ -463,6 +468,65 @@ mod tests {
             let grade = grade_quiz(&items, &answers, POLICY);
             assert_eq!(grade.auto_score, 100.0, "{n} items");
         }
+    }
+
+    /// BUG-193: duplicate picks / several rights per left count once, and
+    /// the totals are clamped even for a breakdown that slipped through.
+    #[test]
+    fn duplicates_count_once_and_scores_are_clamped() {
+        let single = item(choice(&["a"], &["b", "c"], false), 10.0);
+        let multi = item(choice(&["a", "c"], &["b"], true), 10.0);
+        let matching = item(
+            ItemBody::Matching(MatchingBody {
+                prompt: "m".into(),
+                pairs: (1..=3)
+                    .map(|n| MatchingPair {
+                        left: n.to_string(),
+                        right: format!("r{n}"),
+                    })
+                    .collect(),
+                explanation: None,
+            }),
+            10.0,
+        );
+        let mut answers = Answers::new();
+        answers.insert(
+            single.id,
+            ItemAnswer::Choice {
+                selected: vec!["a".into(), "a".into(), "a".into()],
+            },
+        );
+        answers.insert(
+            multi.id,
+            ItemAnswer::Choice {
+                selected: vec!["a".into(), "a".into()],
+            },
+        );
+        // Every left x right combination: the last right per left wins.
+        let combos = (1..=3)
+            .flat_map(|l| (1..=3).map(move |r| (l, r)))
+            .map(|(l, r)| crate::grading::answers::MatchingAnswer {
+                left: l.to_string(),
+                right: format!("r{r}"),
+            })
+            .collect();
+        answers.insert(matching.id, ItemAnswer::Matching { matches: combos });
+        let grade = grade_quiz(&[single, multi, matching], &answers, POLICY);
+        let [s, m, x] = grade.breakdown.items.as_slice() else {
+            panic!("three items");
+        };
+        assert_eq!((s.score, s.correct), (33.33, Some(true)));
+        assert_eq!(
+            (m.score, m.feedback_code.as_deref()),
+            (16.67, Some("partially-correct"))
+        );
+        // Last right per left is r3: only "3" -> "r3" matches.
+        assert_eq!(
+            (x.score, x.feedback_params.clone()),
+            (11.11, Some(serde_json::json!({ "correct": 1, "total": 3 })))
+        );
+        assert!(grade.auto_score <= 100.0);
+        assert!(grade.breakdown.items.iter().all(|g| g.score <= g.max_score));
     }
 
     #[test]

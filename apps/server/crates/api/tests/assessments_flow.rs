@@ -724,6 +724,128 @@ async fn matching_items_have_a_learner_shape_and_grade_by_id(pool: PgPool) {
     assert_eq!(graded["feedback"], "4/6 pairs matched");
 }
 
+/// BUG-193: duplicate picks and several rights per left count once (legacy
+/// `set(selected)` / `{left: right}`); no item or attempt scores above its
+/// maximum, and the stored answer is the deduped one.
+#[sqlx::test(migrations = "../../migrations")]
+async fn duplicate_picks_do_not_inflate_grades(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Dups" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let mut item_ids = Vec::new();
+    for body in [
+        choice_item("single")["body"].clone(),
+        serde_json::json!({
+            "kind": "choice", "prompt": "multi", "multiple": true,
+            "options": [
+                { "id": "a", "text": "a", "is_correct": true },
+                { "id": "b", "text": "b", "is_correct": false },
+                { "id": "c", "text": "c", "is_correct": true }
+            ]
+        }),
+        serde_json::json!({
+            "kind": "matching", "prompt": "match",
+            "pairs": [
+                { "left": "1", "right": "r1" },
+                { "left": "2", "right": "r2" },
+                { "left": "3", "right": "r3" }
+            ]
+        }),
+    ] {
+        let item = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/items"),
+                &serde_json::json!({ "title": body["prompt"], "max_score": 10, "body": body }),
+            )
+            .await;
+        assert_eq!(item.status, StatusCode::CREATED, "{}", item.text());
+        item_ids.push(item.json()["id"].as_str().unwrap().to_owned());
+    }
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    let learner = {
+        let user = app
+            .create_user("alice", "alice@example.com", &["user"])
+            .await;
+        app.mint_session_for(
+            user,
+            &["assessment:read:assigned", "assessment:submit:assigned"],
+        )
+        .await
+    };
+    let draft = app
+        .post_as(
+            &learner,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let combos: Vec<serde_json::Value> = (1..=3)
+        .flat_map(|l| (1..=3).map(move |r| (l, r)))
+        .map(|(l, r)| serde_json::json!({ "left": l.to_string(), "right": format!("r{r}") }))
+        .collect();
+    let submitted = app
+        .post_as(
+            &learner,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": {
+                &item_ids[0]: { "kind": "choice", "selected": ["a", "a", "a"] },
+                &item_ids[1]: { "kind": "choice", "selected": ["a", "a"] },
+                &item_ids[2]: { "kind": "matching", "matches": combos },
+            } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let body = submitted.json();
+    assert_eq!(body["auto_score"], 61.12, "{body}");
+    assert_eq!(
+        body["answers"][&item_ids[0]]["selected"],
+        serde_json::json!(["a"])
+    );
+    assert_eq!(
+        body["answers"][&item_ids[2]]["matches"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+    let review = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{sub_id}/review"))
+        .await;
+    let items = review.json()["grading"]["items"].clone();
+    assert_eq!(items[0]["score"], 33.33);
+    assert_eq!(items[0]["correct"], true);
+    assert_eq!(items[1]["score"], 16.67);
+    assert_eq!(items[1]["feedback_code"], "partially-correct");
+    assert_eq!(items[2]["score"], 11.11);
+    assert_eq!(
+        items[2]["feedback_params"],
+        serde_json::json!({ "correct": 1, "total": 3 })
+    );
+    for g in items.as_array().unwrap() {
+        assert!(g["score"].as_f64() <= g["max_score"].as_f64(), "{g}");
+    }
+}
+
 /// Studio guards on the money/permission/deadline paths: a schedule after
 /// the due date is a readiness blocker; a published assessment with any
 /// submission is read-only (`ensure_editable`), including item content

@@ -7,7 +7,7 @@
 //! legacy did that globally at parse time — it is load-bearing for the
 //! blank-source short-circuit).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use ab_core::assessments::ItemKind;
 use ab_core::id::AssessmentItemId;
@@ -89,12 +89,21 @@ impl ItemAnswer {
         }
     }
 
-    /// Legacy global `str_strip_whitespace`.
+    /// Legacy global `str_strip_whitespace`, plus the legacy grader's
+    /// `set(selected)` / `{left: right}` shapes (BUG-193: duplicate picks
+    /// and several rights per left used to count more than once).
     fn trimmed(self) -> Self {
         match self {
-            Self::Choice { selected } => Self::Choice {
-                selected: selected.into_iter().map(|s| s.trim().to_owned()).collect(),
-            },
+            Self::Choice { selected } => {
+                let mut seen = BTreeSet::new();
+                Self::Choice {
+                    selected: selected
+                        .into_iter()
+                        .map(|s| s.trim().to_owned())
+                        .filter(|s| seen.insert(s.clone()))
+                        .collect(),
+                }
+            }
             Self::OpenText { text } => Self::OpenText {
                 text: text.trim().to_owned(),
             },
@@ -108,15 +117,18 @@ impl ItemAnswer {
                 language,
                 source: source.trim().to_owned(),
             },
-            Self::Matching { matches } => Self::Matching {
-                matches: matches
-                    .into_iter()
-                    .map(|m| MatchingAnswer {
-                        left: m.left.trim().to_owned(),
-                        right: m.right.trim().to_owned(),
-                    })
-                    .collect(),
-            },
+            Self::Matching { matches } => {
+                // One right per left, last wins (legacy dict comprehension).
+                let mut out: Vec<MatchingAnswer> = Vec::new();
+                for m in matches {
+                    let (left, right) = (m.left.trim().to_owned(), m.right.trim().to_owned());
+                    match out.iter_mut().find(|o| o.left == left) {
+                        Some(o) => o.right = right,
+                        None => out.push(MatchingAnswer { left, right }),
+                    }
+                }
+                Self::Matching { matches: out }
+            }
         }
     }
 
@@ -260,6 +272,52 @@ mod tests {
         // Round trip through the stored shape.
         let value = answers_to_value(&merged);
         assert_eq!(parse_answers(&value).unwrap(), merged);
+    }
+
+    #[test]
+    fn duplicate_picks_and_lefts_collapse() {
+        let a = AssessmentItemId::new();
+        let m = AssessmentItemId::new();
+        let items = vec![
+            ItemShape {
+                id: a,
+                kind: ItemKind::Choice,
+            },
+            ItemShape {
+                id: m,
+                kind: ItemKind::Matching,
+            },
+        ];
+        let mut patch = Answers::new();
+        patch.insert(
+            a,
+            ItemAnswer::Choice {
+                selected: vec!["a".into(), " a".into(), "b".into(), "a".into()],
+            },
+        );
+        let pair = |l: &str, r: &str| MatchingAnswer {
+            left: l.into(),
+            right: r.into(),
+        };
+        patch.insert(
+            m,
+            ItemAnswer::Matching {
+                matches: vec![pair("1", "one"), pair("2", "two"), pair("1", "uno")],
+            },
+        );
+        let merged = canonicalize(&Answers::new(), patch, &items).unwrap();
+        assert_eq!(
+            merged[&a],
+            ItemAnswer::Choice {
+                selected: vec!["a".into(), "b".into()]
+            }
+        );
+        assert_eq!(
+            merged[&m],
+            ItemAnswer::Matching {
+                matches: vec![pair("1", "uno"), pair("2", "two")]
+            }
+        );
     }
 
     #[test]
