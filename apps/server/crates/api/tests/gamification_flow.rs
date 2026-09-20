@@ -260,7 +260,12 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
             &serde_json::json!({}),
         )
         .await;
-    assert_eq!(vanity.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", vanity.text());
+    assert_eq!(
+        vanity.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        vanity.text()
+    );
     assert_eq!(vanity.json()["field_errors"][0]["code"], "not-manual");
     let prefs = app
         .patch_as(

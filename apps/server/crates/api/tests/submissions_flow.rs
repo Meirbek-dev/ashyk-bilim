@@ -1074,30 +1074,42 @@ async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgP
         started.json()["id"].as_str().unwrap().to_owned()
     };
     let key_row = async |app: &TestApp, key: &str| -> Option<i32> {
-        sqlx::query_scalar("SELECT status_code FROM idempotency_keys WHERE user_id = $1 AND key = $2")
-            .bind(alice.user_id.0)
-            .bind(key)
-            .fetch_optional(&app.pool)
-            .await
-            .unwrap()
+        sqlx::query_scalar(
+            "SELECT status_code FROM idempotency_keys WHERE user_id = $1 AND key = $2",
+        )
+        .bind(alice.user_id.0)
+        .bind(key)
+        .fetch_optional(&app.pool)
+        .await
+        .unwrap()
     };
 
     // Attempt 1: a key someone else holds → 409 after the wait; once the
     // reservation is stale the next caller takes it over and submits.
     let sub_id = start(&app).await;
     let held = format!("submit:{sub_id}:k-held");
-    assert!(reserve_idempotent(&app.pool, alice.user_id, &held, &hash).await.unwrap());
+    assert!(
+        reserve_idempotent(&app.pool, alice.user_id, &held, &hash)
+            .await
+            .unwrap()
+    );
     let waited = tokio::time::Instant::now();
-    let busy = app.send(submit(&alice, &sub_id, Some("k-held"), &body)).await;
+    let busy = app
+        .send(submit(&alice, &sub_id, Some("k-held"), &body))
+        .await;
     assert_eq!(busy.status, StatusCode::CONFLICT, "{}", busy.text());
     assert_eq!(busy.json()["code"], "idempotency-in-progress");
     assert!(waited.elapsed() >= Duration::from_secs(4));
-    sqlx::query("UPDATE idempotency_keys SET created_at = now() - interval '31 seconds' WHERE key = $1")
-        .bind(&held)
-        .execute(&app.pool)
-        .await
-        .unwrap();
-    let taken = app.send(submit(&alice, &sub_id, Some("k-held"), &body)).await;
+    sqlx::query(
+        "UPDATE idempotency_keys SET created_at = now() - interval '31 seconds' WHERE key = $1",
+    )
+    .bind(&held)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let taken = app
+        .send(submit(&alice, &sub_id, Some("k-held"), &body))
+        .await;
     assert_eq!(taken.status, StatusCode::OK, "{}", taken.text());
     assert_eq!(taken.json()["status"], "published");
     assert_eq!(key_row(&app, &held).await, Some(200));
@@ -1106,11 +1118,15 @@ async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgP
     // the same key + body then runs and lands.
     let sub_id = start(&app).await;
     let mut stale = submit(&alice, &sub_id, Some("k-err"), &body);
-    stale.headers_mut().insert(header::IF_MATCH, "\"99\"".parse().unwrap());
+    stale
+        .headers_mut()
+        .insert(header::IF_MATCH, "\"99\"".parse().unwrap());
     let failed = app.send(stale).await;
     assert_eq!(failed.status, StatusCode::CONFLICT, "{}", failed.text());
     assert_eq!(key_row(&app, &format!("submit:{sub_id}:k-err")).await, None);
-    let retried = app.send(submit(&alice, &sub_id, Some("k-err"), &body)).await;
+    let retried = app
+        .send(submit(&alice, &sub_id, Some("k-err"), &body))
+        .await;
     assert_eq!(retried.status, StatusCode::OK, "{}", retried.text());
 
     // Attempt 3: the client drops the connection right after the key is
@@ -1136,11 +1152,16 @@ async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgP
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while key_row(&app, &dropped).await == Some(IDEMPOTENT_IN_PROGRESS) {
-        assert!(tokio::time::Instant::now() < deadline, "reservation stranded");
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "reservation stranded"
+        );
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
     assert_eq!(key_row(&app, &dropped).await, Some(200));
-    let replay = app.send(submit(&alice, &sub_id, Some("k-drop"), &body)).await;
+    let replay = app
+        .send(submit(&alice, &sub_id, Some("k-drop"), &body))
+        .await;
     assert_eq!(replay.status, StatusCode::OK, "{}", replay.text());
     assert_eq!(replay.json()["status"], "published");
     let mine = app

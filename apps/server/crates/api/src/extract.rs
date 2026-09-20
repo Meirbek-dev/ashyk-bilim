@@ -361,7 +361,9 @@ where
 }
 
 /// The action plus its serialized reply.
-async fn run<T, Fut>(fresh: impl FnOnce() -> Fut) -> Result<(StatusCode, T, serde_json::Value), ApiError>
+async fn run<T, Fut>(
+    fresh: impl FnOnce() -> Fut,
+) -> Result<(StatusCode, T, serde_json::Value), ApiError>
 where
     T: serde::Serialize,
     Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
