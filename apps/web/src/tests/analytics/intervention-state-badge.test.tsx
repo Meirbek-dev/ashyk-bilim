@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { InterventionStateBadge } from '@/components/Dashboard/Analytics/AtRiskLearnersTable'
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+  useFormatter: () => ({ number: (v: number) => String(v) }),
+}))
 vi.mock('@/i18n/navigation', () => ({ Link: () => null, useRouter: () => ({}) }))
 
 const base = { risk_trend: 'stable', intervention_count: 1, risk_score_delta: null } as const
