@@ -264,6 +264,20 @@ impl GamificationService {
         })
     }
 
+    /// The learner-callable touch: only `login` — the learning streak is a
+    /// completion side effect (`hooks::activity_completed`), never a bare
+    /// POST with nothing completed (BUG-204 nit).
+    pub async fn touch_streak(&self, user_id: UserId, kind: StreakKind) -> Result<StreakUpdate> {
+        if kind == StreakKind::Learning {
+            return Err(Error::validation(vec![FieldError {
+                field: "kind".into(),
+                code: "not-manual".into(),
+                message: "the learning streak is recorded by completing an activity".into(),
+            }]));
+        }
+        self.record_streak(user_id, kind).await
+    }
+
     /// Legacy `update_streak`: same day keeps, next day extends, a gap resets.
     pub async fn record_streak(&self, user_id: UserId, kind: StreakKind) -> Result<StreakUpdate> {
         let profile = ab_db::gamification::ensure_profile(&self.pool, user_id).await?;

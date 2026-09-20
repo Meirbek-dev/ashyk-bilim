@@ -71,12 +71,12 @@ pub async fn create_discussion(
 ) -> ApiResult<Response> {
     let request = ValidJson::<CreateDiscussionRequest>::parse(&body)?;
     idempotent(
-        &state.pool,
+        state.pool.clone(),
         actor.user_id,
         &format!("discussion:{id}"),
         &headers,
         &body,
-        || async {
+        move || async move {
             let created = state
                 .discussions
                 .create(&actor, id, request.parent_id, &request.content)

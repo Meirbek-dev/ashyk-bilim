@@ -40,6 +40,9 @@ interface ConflictState {
   localAnswers: Record<string, ItemAnswer>
 }
 
+/** BUG-204: pause before re-checking a submit the server reported as still in progress. */
+const IN_PROGRESS_RETRY_MS = 1000
+
 export type AssessmentSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error'
 
 function answersFromSubmission(submission: AssessmentSubmissionRead | null | undefined): Record<string, ItemAnswer> {
@@ -287,7 +290,20 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (submitRetryRef.current?.fingerprint !== fingerprint) {
         submitRetryRef.current = { fingerprint, key: createIdempotencyKey() }
       }
-      return submitAssessmentDraft(active.id, active.version, answers, submitRetryRef.current.key, violationCount)
+      try {
+        return await submitAssessmentDraft(active.id, active.version, answers, submitRetryRef.current.key, violationCount)
+      } catch (error) {
+        if (!isApiError(error) || error.code !== 'idempotency-in-progress') throw error
+        // BUG-204: the earlier submit under this key is still running (or its
+        // reservation is stranded). Give it a moment; if it landed, that is
+        // the result — otherwise mint a fresh key and submit again. Never the
+        // draft-conflict dialog for this.
+        await new Promise(resolve => setTimeout(resolve, IN_PROGRESS_RETRY_MS))
+        const latest = await getMySubmission(active.id)
+        if (latest.status !== 'DRAFT') return latest
+        submitRetryRef.current = { fingerprint, key: createIdempotencyKey() }
+        return submitAssessmentDraft(active.id, active.version, answers, submitRetryRef.current.key, violationCount)
+      }
     },
     onSuccess: async latest => {
       submitRetryRef.current = null

@@ -264,22 +264,59 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 /// the same key with a different body is 422 `reused`, and a failed action
 /// releases the key so the retry runs again. Without the header `fresh`
 /// simply runs.
+///
+/// The reserve → action → complete/release sequence runs on its own task
+/// (BUG-204): a client that drops the connection mid-flight makes hyper drop
+/// the handler future, which must neither abort the action nor strand the
+/// key IN_PROGRESS — the retry replays the completed reply. A reservation
+/// that nevertheless goes stale (crash, panic) is taken over after
+/// [`ab_db::submissions::IDEMPOTENT_STALE_SECS`].
 pub async fn idempotent<T, Fut>(
-    pool: &sqlx::PgPool,
+    pool: sqlx::PgPool,
     user_id: UserId,
     scope: &str,
     headers: &HeaderMap,
     body: &[u8],
-    fresh: impl FnOnce() -> Fut,
+    fresh: impl FnOnce() -> Fut + Send + 'static,
 ) -> Result<Response, ApiError>
 where
-    T: serde::Serialize,
-    Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
+    T: serde::Serialize + Send + 'static,
+    Fut: Future<Output = Result<(StatusCode, T), ApiError>> + Send + 'static,
 {
-    idempotent_for(pool, Some(user_id), scope, headers, body, fresh, |_| {
-        user_id
-    })
-    .await
+    let key = idempotency_key(headers)?.map(|k| format!("{scope}:{k}"));
+    let request_hash = sha256_hex(body);
+    let task_pool = pool.clone();
+    let task_key = key.clone();
+    let task = tokio::spawn(async move {
+        let pool = &task_pool;
+        let Some(key) = task_key else {
+            let (status, _, value) = run(fresh).await?;
+            return Ok((status, Json(value)).into_response());
+        };
+        if let Some(response) = reserve_or_replay(pool, user_id, &key, &request_hash).await? {
+            return Ok(response);
+        }
+        let (status, _, value) = match run(fresh).await {
+            Ok(ok) => ok,
+            Err(err) => {
+                ab_db::submissions::release_idempotent(pool, user_id, &key).await?;
+                return Err(err);
+            }
+        };
+        let status_code = i32::from(status.as_u16());
+        ab_db::submissions::complete_idempotent(pool, user_id, &key, status_code, &value).await?;
+        Ok::<_, ApiError>((status, Json(value)).into_response())
+    });
+    match task.await {
+        Ok(result) => result,
+        Err(join) => {
+            // Panicked mid-action: free the key so the retry runs again.
+            if let Some(key) = &key {
+                ab_db::submissions::release_idempotent(&pool, user_id, key).await?;
+            }
+            Err(ApiError(Error::internal("idempotent action", join)))
+        }
+    }
 }
 
 /// [`idempotent`] for an anonymous create that produces its own owner
@@ -301,7 +338,38 @@ where
     T: serde::Serialize,
     Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
 {
-    idempotent_for(pool, None, scope, headers, body, fresh, owner_of).await
+    let key = idempotency_key(headers)?.map(|k| format!("{scope}:{k}"));
+    let request_hash = sha256_hex(body);
+    if let Some(key) = &key
+        && let Some(stored) = ab_db::submissions::get_idempotent_by_key(pool, key).await?
+    {
+        return replay(stored, &request_hash);
+    }
+    let (status, dto, value) = run(fresh).await?;
+    if let Some(key) = &key {
+        ab_db::submissions::store_idempotent(
+            pool,
+            owner_of(&dto),
+            key,
+            &request_hash,
+            i32::from(status.as_u16()),
+            &value,
+        )
+        .await?;
+    }
+    Ok((status, Json(value)).into_response())
+}
+
+/// The action plus its serialized reply.
+async fn run<T, Fut>(fresh: impl FnOnce() -> Fut) -> Result<(StatusCode, T, serde_json::Value), ApiError>
+where
+    T: serde::Serialize,
+    Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
+{
+    let (status, dto) = fresh().await?;
+    let value = serde_json::to_value(&dto)
+        .map_err(|err| Error::internal("serialize idempotent reply", err))?;
+    Ok((status, dto, value))
 }
 
 /// How long a concurrent duplicate waits for the owner's reply.
@@ -355,74 +423,4 @@ async fn reserve_or_replay(
         }
         tokio::time::sleep(IN_PROGRESS_POLL).await;
     }
-}
-
-async fn idempotent_for<T, Fut>(
-    pool: &sqlx::PgPool,
-    user_id: Option<UserId>,
-    scope: &str,
-    headers: &HeaderMap,
-    body: &[u8],
-    fresh: impl FnOnce() -> Fut,
-    owner_of: impl FnOnce(&T) -> UserId,
-) -> Result<Response, ApiError>
-where
-    T: serde::Serialize,
-    Fut: Future<Output = Result<(StatusCode, T), ApiError>>,
-{
-    let key = idempotency_key(headers)?.map(|k| format!("{scope}:{k}"));
-    let request_hash = sha256_hex(body);
-    let mut reserved = None;
-    if let Some(key) = &key {
-        match user_id {
-            Some(user_id) => {
-                if let Some(response) = reserve_or_replay(pool, user_id, key, &request_hash).await?
-                {
-                    return Ok(response);
-                }
-                reserved = Some(user_id);
-            }
-            None => {
-                if let Some(stored) = ab_db::submissions::get_idempotent_by_key(pool, key).await? {
-                    return replay(stored, &request_hash);
-                }
-            }
-        }
-    }
-    let outcome = async {
-        let (status, dto) = fresh().await?;
-        let value = serde_json::to_value(&dto)
-            .map_err(|err| Error::internal("serialize idempotent reply", err))?;
-        Ok::<_, ApiError>((status, dto, value))
-    }
-    .await;
-    let (status, dto, value) = match (outcome, &key, reserved) {
-        (Ok(ok), _, _) => ok,
-        (Err(err), Some(key), Some(user_id)) => {
-            ab_db::submissions::release_idempotent(pool, user_id, key).await?;
-            return Err(err);
-        }
-        (Err(err), _, _) => return Err(err),
-    };
-    if let Some(key) = &key {
-        let status_code = i32::from(status.as_u16());
-        match reserved {
-            Some(user_id) => {
-                ab_db::submissions::complete_idempotent(pool, user_id, key, status_code, &value)
-                    .await?;
-            }
-            None => {
-                ab_db::submissions::store_idempotent(
-                    pool,
-                    owner_of(&dto),
-                    key,
-                    &request_hash,
-                    status_code,
-                    &value,
-                )
-                .await?;
-            }
-        }
-    }
-    Ok((status, Json(value)).into_response())
 }

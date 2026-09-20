@@ -60,11 +60,17 @@ pub async fn rank(
     }))
 }
 
-/// Touch a streak for today (same day keeps, next day extends, a gap resets).
+/// Touch the login streak for today (same day keeps, next day extends, a
+/// gap resets). `learning` is 422: that streak is recorded by completing
+/// an activity.
 #[utoipa::path(
     post, path = "/gamification/streaks/{kind}", tag = "gamification",
-    params(("kind" = StreakKind, Path, description = "login or learning")),
-    responses((status = 200, description = "Streak", body = StreakUpdate)),
+    params(("kind" = StreakKind, Path, description = "login (learning is 422)")),
+    responses(
+        (status = 200, description = "Streak", body = StreakUpdate),
+        (status = 422, description = "learning is not touched manually", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn record_streak(
     State(state): State<AppState>,
@@ -74,7 +80,7 @@ pub async fn record_streak(
     Ok(Json(
         state
             .gamification
-            .record_streak(actor.user_id, kind)
+            .touch_streak(actor.user_id, kind)
             .await?
             .into(),
     ))

@@ -339,6 +339,11 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         foreign.json()["field_errors"][0]["code"],
         "upload-not-ready"
     );
+    // BUG-204 nit: the rejected body opened no attempt for mallory.
+    let none = app
+        .get_as(&mallory, &format!("/api/v2/file-submissions/{id}/me"))
+        .await;
+    assert_eq!(none.json().as_array().unwrap().len(), 0, "{}", none.text());
 
     // Attach the PDF: the version moves, the upload is now referenced.
     let saved = app
@@ -485,6 +490,15 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         )
         .await;
     assert_eq!(learner_no_lock.status, StatusCode::FORBIDDEN);
+    // UX-134 (BUG-204 nit): a stranger grading → the unknown-id 404.
+    let stranger_grade = app
+        .patch_as(
+            &mallory,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            &serde_json::json!({ "action": "save", "final_score": 90 }),
+        )
+        .await;
+    assert_eq!(stranger_grade.status, StatusCode::NOT_FOUND, "{}", stranger_grade.text());
     let saved_grade = app
         .send(with_if_match(
             &teacher,

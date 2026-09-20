@@ -258,12 +258,12 @@ pub async fn submit_submission(
         parse_and_validate(&body)?
     };
     idempotent(
-        &state.pool,
+        state.pool.clone(),
         actor.user_id,
         &format!("submit:{id}"),
         &headers,
         &body,
-        || async {
+        move || async move {
             let submitted = state
                 .submissions
                 .submit(

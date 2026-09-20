@@ -24,6 +24,7 @@ use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::file_submissions::{
     AttemptRow, FileRow, FileSubmissionRow, FileSubmissionValues, GradeWrite, NewFile,
 };
+use ab_db::uploads::UploadRow;
 use serde::Serialize;
 use sqlx::PgPool;
 use utoipa::ToSchema;
@@ -764,6 +765,7 @@ impl FileSubmissionsService {
         // UX-115: an open draft is frozen too once the deadline closed or a
         // gate is active — 403, the stored files untouched.
         self.require_can_act(actor, &course, &row).await?;
+        let uploads = self.validate_files(&row, actor, files).await?;
         let attempt =
             match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
                 Some(a) => a,
@@ -774,7 +776,7 @@ impl FileSubmissionsService {
         {
             return Err(stale(expected, attempt.version));
         }
-        self.replace_files(&row, &attempt, actor, files).await?;
+        self.replace_files(&attempt, files, &uploads).await?;
         if !ab_db::file_submissions::touch_attempt(&self.pool, attempt.id, attempt.version).await? {
             let latest = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
                 .await?
@@ -790,16 +792,15 @@ impl FileSubmissionsService {
         self.attempt_view(fresh, false, true).await
     }
 
-    /// Validate and attach uploads (legacy `_replace_attempt_files`): count,
-    /// duplicates, ownership + finalized + purpose, mime allowlist, size cap.
-    /// Reference counts move from the old set to the new one.
-    async fn replace_files(
+    /// Validate uploads (legacy `_replace_attempt_files`): count, duplicates,
+    /// ownership + finalized + purpose, mime allowlist, size cap. Runs before
+    /// an attempt is opened so a rejected body never spends one (BUG-204).
+    async fn validate_files(
         &self,
         row: &FileSubmissionRow,
-        attempt: &AttemptRow,
         actor: &Actor,
         files: &[FileRef],
-    ) -> Result<()> {
+    ) -> Result<Vec<UploadRow>> {
         let count = i32::try_from(files.len()).unwrap_or(i32::MAX);
         if count > row.max_files {
             return Err(Error::validation(vec![field(
@@ -858,10 +859,21 @@ impl FileSubmissionsService {
             }
             uploads.push(upload);
         }
+        Ok(uploads)
+    }
+
+    /// Attach validated uploads; reference counts move from the old set to
+    /// the new one.
+    async fn replace_files(
+        &self,
+        attempt: &AttemptRow,
+        files: &[FileRef],
+        uploads: &[UploadRow],
+    ) -> Result<()> {
         let previous = ab_db::file_submissions::list_files(&self.pool, attempt.id).await?;
         let new_files: Vec<NewFile<'_>> = files
             .iter()
-            .zip(&uploads)
+            .zip(uploads)
             .map(|(file, upload)| NewFile {
                 upload_id: upload.id,
                 display_name: file
@@ -885,7 +897,7 @@ impl FileSubmissionsService {
                 .await?;
             }
         }
-        for upload in &uploads {
+        for upload in uploads {
             if !previous.iter().any(|p| p.upload_id == upload.id) {
                 ab_db::uploads::add_reference(&self.pool, upload.id).await?;
             }
@@ -911,6 +923,10 @@ impl FileSubmissionsService {
         self.require_can_act(actor, &course, &row).await?;
         let files_required =
             || Error::validation(vec![field("files", "required", "attach at least one file")]);
+        let uploads = match files {
+            Some(files) => Some(self.validate_files(&row, actor, files).await?),
+            None => None,
+        };
         let mut attempt =
             match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
                 Some(a) => a,
@@ -923,8 +939,8 @@ impl FileSubmissionsService {
         {
             return Err(stale(expected, attempt.version));
         }
-        if let Some(files) = files {
-            self.replace_files(&row, &attempt, actor, files).await?;
+        if let (Some(files), Some(uploads)) = (files, &uploads) {
+            self.replace_files(&attempt, files, uploads).await?;
         }
         if ab_db::file_submissions::list_files(&self.pool, attempt.id)
             .await?
@@ -1049,7 +1065,17 @@ impl FileSubmissionsService {
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
         let row = self.load(attempt.file_submission_id).await?;
-        self.scoped(actor, &row, Action::Grade, "grading").await?;
+        // UX-134: a stranger gets the unknown-id 404, not a 403 that
+        // confirms another learner's attempt id (the owner keeps the 403).
+        self.scoped(actor, &row, Action::Grade, "grading")
+            .await
+            .map_err(|err| match err {
+                Error::App {
+                    code: ErrorCode::Forbidden,
+                    ..
+                } if attempt.user_id != actor.user_id => Error::not_found("attempt"),
+                other => other,
+            })?;
         // UX-108: the grading gate answers before the header is validated.
         let expected_version = input.expected_version.ok_or_else(|| {
             Error::validation(vec![field(

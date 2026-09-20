@@ -249,12 +249,12 @@ pub async fn create_intervention(
         .await?;
     let request = ValidJson::<CreateInterventionRequest>::parse(&body)?;
     idempotent(
-        &state.pool,
+        state.pool.clone(),
         actor.user_id,
         "intervention",
         &headers,
         &body,
-        || async {
+        move || async move {
             let created = state
                 .analytics
                 .create_intervention(

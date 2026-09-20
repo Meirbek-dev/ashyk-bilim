@@ -251,6 +251,17 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(streak.status, StatusCode::OK, "{}", streak.text());
     assert_eq!(streak.json()["current_count"], 1);
     assert_eq!(streak.json()["is_new_record"], true);
+    // BUG-204 nit: the learning streak is a completion side effect, never a
+    // bare POST — 422, and the streak stays where the completions left it.
+    let vanity = app
+        .post_as(
+            &bob,
+            "/api/v2/gamification/streaks/learning",
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(vanity.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", vanity.text());
+    assert_eq!(vanity.json()["field_errors"][0]["code"], "not-manual");
     let prefs = app
         .patch_as(
             &bob,

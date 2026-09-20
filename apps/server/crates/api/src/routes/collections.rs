@@ -35,12 +35,12 @@ pub async fn create_collection(
 ) -> ApiResult<Response> {
     let request = ValidJson::<CreateCollectionRequest>::parse(&body)?;
     idempotent(
-        &state.pool,
+        state.pool.clone(),
         actor.user_id,
         "collection",
         &headers,
         &body,
-        || async {
+        move || async move {
             let collection = state
                 .collections
                 .create(

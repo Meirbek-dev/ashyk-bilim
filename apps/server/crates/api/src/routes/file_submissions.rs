@@ -260,12 +260,12 @@ pub async fn submit(
     };
     let files = request.files.map(refs);
     idempotent(
-        &state.pool,
+        state.pool.clone(),
         actor.user_id,
         &format!("file-submit:{id}"),
         &headers,
         &body,
-        || async {
+        move || async move {
             let submitted = state
                 .file_submissions
                 .submit(&actor, id, files.as_deref(), expected)

@@ -1433,8 +1433,13 @@ pub async fn store_idempotent(
 /// not completed yet (BUG-195).
 pub const IDEMPOTENT_IN_PROGRESS: i32 = 0;
 
-/// Reserve `key` before the action; `true` when this caller now owns it.
-/// The row is completed by [`complete_idempotent`] or dropped by
+/// An IN_PROGRESS reservation older than this is stale (the owner crashed
+/// or panicked mid-action) and the next caller takes it over (BUG-204).
+pub const IDEMPOTENT_STALE_SECS: f64 = 30.0;
+
+/// Reserve `key` before the action; `true` when this caller now owns it
+/// (a fresh row, or a stale IN_PROGRESS one taken over). The row is
+/// completed by [`complete_idempotent`] or dropped by
 /// [`release_idempotent`] when the action fails.
 pub async fn reserve_idempotent(
     pool: &PgPool,
@@ -1445,11 +1450,15 @@ pub async fn reserve_idempotent(
     let inserted = sqlx::query!(
         r#"INSERT INTO idempotency_keys (user_id, key, request_hash, status_code, response)
            VALUES ($1, $2, $3, $4, 'null'::jsonb)
-           ON CONFLICT (user_id, key) DO NOTHING"#,
+           ON CONFLICT (user_id, key) DO UPDATE
+               SET request_hash = EXCLUDED.request_hash, created_at = now()
+             WHERE idempotency_keys.status_code = $4
+               AND idempotency_keys.created_at < now() - make_interval(secs => $5)"#,
         user_id.0,
         key,
         request_hash,
-        IDEMPOTENT_IN_PROGRESS
+        IDEMPOTENT_IN_PROGRESS,
+        IDEMPOTENT_STALE_SECS
     )
     .execute(pool)
     .await?;

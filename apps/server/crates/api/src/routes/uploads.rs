@@ -68,12 +68,12 @@ pub async fn finalize_upload(
 ) -> ApiResult<Response> {
     // No body to fingerprint: the path is the whole request.
     idempotent(
-        &state.pool,
+        state.pool.clone(),
         actor.user_id,
         &format!("finalize:{id}"),
         &headers,
         &[],
-        || async {
+        move || async move {
             let finalized = state.uploads.finalize(&actor, id).await?;
             Ok((
                 StatusCode::OK,
