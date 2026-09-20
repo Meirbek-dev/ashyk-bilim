@@ -1812,13 +1812,14 @@ async fn feedback_only_save_keeps_the_attempt_pending(pool: PgPool) {
     // BUG-202: no score of record yet — the queue row shows no percent.
     assert!(saved.json()["final_score"].is_null(), "{}", saved.text());
     let queue = app
-        .get_as(
-            &teacher,
-            &format!("/api/v2/assessments/{id}/submissions"),
-        )
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/submissions"))
         .await;
     assert_eq!(queue.status, StatusCode::OK, "{}", queue.text());
-    assert!(queue.json()["items"][0]["final_score"].is_null(), "{}", queue.text());
+    assert!(
+        queue.json()["items"][0]["final_score"].is_null(),
+        "{}",
+        queue.text()
+    );
     let stats = app
         .get_as(
             &teacher,
