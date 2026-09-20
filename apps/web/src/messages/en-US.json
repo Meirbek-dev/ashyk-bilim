@@ -8374,7 +8374,8 @@
             "deadlineQueued": "Deadline extension queued",
             "deadlineDetail": "Learners targeted: {count}. {reason}",
             "releaseFinished": "Grade release finished",
-            "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}."
+            "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}.",
+            "releaseNeedsGrading": "{count, plural, one {# submission still awaits grading and was not published} other {# submissions still await grading and were not published}}"
           },
           "failedSubmissionsTitle": "{count, plural, one {# submission} other {# submissions}} failed to update:",
           "preview": {
@@ -9066,6 +9067,7 @@
         },
         "loading": "Loading studio",
         "unavailable": "Studio is unavailable for this activity.",
+        "studioNotAvailableForType": "The studio is not available for a “{type}” activity.",
         "lifecycle": {
           "draft": "Draft",
           "scheduled": "Scheduled",
@@ -9198,6 +9200,9 @@
             "matching_right_duplicate": "Right-side answers should be unique.",
             "open_text_prompt_missing": "Open-text prompt is required.",
             "open_text_min_words_invalid": "Minimum words cannot be negative.",
+            "policy_due_at_past": "The due date is already in the past.",
+            "policy_cutoff_before_due": "The late cutoff is before the due date.",
+            "policy_penalty_without_late": "A late penalty has no effect while late submissions are not allowed.",
             "file_prompt_missing": "File-upload prompt is required.",
             "file_max_files_invalid": "File upload items must allow at least one file.",
             "file_max_mb_invalid": "Maximum file size must be greater than zero when set.",
@@ -10440,7 +10445,8 @@
       "saved": "Grading draft saved",
       "published": "Grade published",
       "returned": "Returned for revision",
-      "failed": "Failed to save grading"
+      "failed": "Failed to save grading",
+      "unscoredItems": "Score every item awaiting review before publishing the grade"
     },
     "invalidItemScore": "Score must be between 0 and {max}",
     "republish": "Publish again",

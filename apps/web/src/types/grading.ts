@@ -98,4 +98,6 @@ export interface BulkPublishGradesResponse {
   activity_id: number
   published_count: number
   already_published_count: number
+  /** Rows held back: an item still awaits its manual score (BUG-197). */
+  needs_grading_count?: number
 }

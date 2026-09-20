@@ -29,6 +29,7 @@ import {
 } from '@/features/grading/domain'
 import type { GradedItem, GradingBreakdown, Submission, TeacherGradeInput } from '@/features/grading/domain'
 import { StaleGradeError } from '@/services/grading/errors'
+import { useApiError } from '@/hooks/useApiError'
 import { saveGradingDraft } from '@/services/assessments/assessment-actions'
 import type { ItemGradeEntry } from '@/services/assessments/assessment-actions'
 import { useGradingPanel } from '@/hooks/useGradingPanel'
@@ -76,6 +77,7 @@ export default function GradeForm({
   const tItemGrading = useTranslations('ItemGrading')
   const tGrading = useTranslations('Features.Grading')
   const format = useFormatter()
+  const { handleApiError } = useApiError()
   const [draft, setDraft] = useState<GradeDraft>({ score: '', feedback: '' })
   const [itemDrafts, setItemDrafts] = useState<Record<string, ItemDraftEntry>>({})
   const [overrideScore, setOverrideScore] = useState(false)
@@ -179,7 +181,9 @@ export default function GradeForm({
       const next: Record<string, ItemDraftEntry> = {}
       for (const item of gradedItems) {
         next[item.item_id] = {
-          score: String(item.score),
+          // BUG-197: an item still awaiting its manual score has none — the
+          // field starts blank (a save sends no score; publish stays disabled).
+          score: item.needs_manual_review ? '' : String(item.score),
           feedback: item.feedback ?? '',
         }
       }
@@ -210,7 +214,7 @@ export default function GradeForm({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        score: prev[itemId]?.score ?? '0',
+        score: prev[itemId]?.score ?? '',
         feedback: prev[itemId]?.feedback ?? '',
         [field]: value,
       },
@@ -237,11 +241,11 @@ export default function GradeForm({
           const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? [])
           return {
             item_uuid: item.item_id,
-            score: toItemScale(
-              Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
-              item.max_score,
-              itemScaleById.get(item.item_id),
-            ),
+            // BUG-197: a blank score is no score — feedback only, the item
+            // keeps waiting for its manual review (never a client-side 0).
+            score: Number.isNaN(parsed)
+              ? null
+              : toItemScale(Math.min(parsed, item.max_score), item.max_score, itemScaleById.get(item.item_id)),
             feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
             is_manual: true,
           }
@@ -274,7 +278,11 @@ export default function GradeForm({
         itemGrades,
         finalScore: typedScore ? (finalScore ?? null) : null,
         // The reseed after a save reads `score_override` — keep it in step with what we sent.
-        scoreOverride: overrideScore ? (finalScore ?? null) : finalScore === null ? null : (submission.score_override ?? null),
+        scoreOverride: overrideScore
+          ? (finalScore ?? null)
+          : finalScore === null
+            ? null
+            : (submission.score_override ?? null),
       })
 
       setDirty(false)
@@ -313,7 +321,14 @@ export default function GradeForm({
             setDirty(true)
             await mutate()
           } else {
-            toast.error(tItemGrading('toasts.failed'))
+            const processed = handleApiError(error, { fallback: tItemGrading('toasts.failed') })
+            // BUG-197: the server's 409 on a publish — an item still awaits
+            // its manual score (a stale form; the live form disables publish).
+            toast.error(
+              status === 'publish' && hasItemGrading && processed.code === 'conflict'
+                ? tItemGrading('toasts.unscoredItems')
+                : processed.message,
+            )
           }
         }
       })
@@ -343,6 +358,7 @@ export default function GradeForm({
       scaleReady,
       remoteUpdate,
       baseVersion,
+      handleApiError,
     ],
   )
 
@@ -461,7 +477,9 @@ export default function GradeForm({
             <p>
               {t('staleDraft.serverScoreLabel')}{' '}
               <strong>
-                {submission.final_score != null ? format.number(submission.final_score, { maximumFractionDigits: 2 }) : '—'}
+                {submission.final_score != null
+                  ? format.number(submission.final_score, { maximumFractionDigits: 2 })
+                  : '—'}
               </strong>
               . {t('staleDraft.yourDraftLabel')}{' '}
               <strong>
@@ -830,7 +848,19 @@ function buildOptimisticSubmission(
     scoreOverride: number | null
   },
 ): Submission {
-  const nextStatus = args.status === 'publish' ? 'PUBLISHED' : args.status === 'return' ? 'RETURNED' : 'GRADED'
+  const scored = new Set(args.itemGrades.filter(grade => grade.score !== null).map(grade => grade.item_uuid))
+  // BUG-197: a save with an item still awaiting its manual score (and no
+  // override) stays where it is — the server keeps it `pending`.
+  const unscored =
+    args.scoreOverride === null && args.gradedItems.some(item => item.needs_manual_review && !scored.has(item.item_id))
+  const nextStatus =
+    args.status === 'publish'
+      ? 'PUBLISHED'
+      : args.status === 'return'
+        ? 'RETURNED'
+        : unscored
+          ? submission.status
+          : 'GRADED'
   const gradingJson = {
     ...submission.grading_json,
     feedback: args.draft.feedback,
@@ -842,6 +872,7 @@ function buildOptimisticSubmission(
         ...item,
         score: Number.isNaN(parsed) ? item.score : Math.min(parsed, item.max_score),
         feedback: entry?.feedback ?? item.feedback ?? '',
+        needs_manual_review: item.needs_manual_review && !scored.has(item.item_id),
       }
     }),
   }

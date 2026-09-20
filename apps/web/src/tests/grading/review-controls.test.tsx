@@ -9,6 +9,7 @@ import type { Submission } from '@/features/grading/domain'
 import { AnnotationProvider } from '@/features/grading/review/AnnotationContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { APIError } from '@/lib/api/assertSuccess'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 const mocks = vi.hoisted(() => ({
   publishAssessmentGradesMock: vi.fn(),
@@ -58,6 +59,7 @@ vi.mock('@/hooks/useApiError', () => ({
   useApiError: () => ({
     handleApiError: (error: unknown) => ({
       message: error instanceof Error ? error.message : 'unknown',
+      code: error instanceof APIError ? error.code : null,
       fieldErrors: error instanceof APIError ? error.fieldErrors : [],
     }),
   }),
@@ -80,6 +82,19 @@ vi.mock('@/lib/api/generated/grading/grading', () => ({
   saveGrade: (...args: unknown[]) => mocks.saveGradeMock(...args),
   extendDeadline: (...args: unknown[]) => mocks.extendDeadlineMock(...args),
   getBulkAction: (...args: unknown[]) => mocks.getBulkActionMock(...args),
+}))
+
+// A plain textarea stands in for the markdown editor (the BUG-197 case types item feedback).
+vi.mock('@/features/content-markdown', () => ({
+  MarkdownEditor: ({
+    value,
+    onChange,
+    placeholder,
+  }: {
+    value: string
+    onChange: (value: string) => void
+    placeholder?: string
+  }) => <textarea placeholder={placeholder} value={value} onChange={event => onChange(event.target.value)} />,
 }))
 
 vi.mock('@/services/assessments/assessment-actions', () => ({
@@ -639,7 +654,13 @@ describe('teacher review controls', () => {
               assessmentUuid="assessment_review"
               activityUuid="activity_review"
               onSaved={vi.fn().mockResolvedValue(undefined)}
-              navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
             />
           </AnnotationProvider>
         </QueryClientProvider>,
@@ -687,7 +708,13 @@ describe('teacher review controls', () => {
               assessmentUuid="assessment_review"
               activityUuid="activity_review"
               onSaved={vi.fn().mockResolvedValue(undefined)}
-              navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
             />
           </AnnotationProvider>
         </QueryClientProvider>,
@@ -734,7 +761,13 @@ describe('teacher review controls', () => {
               assessmentUuid="assessment_review"
               activityUuid="activity_review"
               onSaved={vi.fn().mockResolvedValue(undefined)}
-              navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
             />
           </AnnotationProvider>
         </QueryClientProvider>,
@@ -750,6 +783,104 @@ describe('teacher review controls', () => {
       fireEvent.click(republish)
       await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
       expect(lastPayload()).toMatchObject({ final_score: 40 })
+    })
+  })
+
+  // BUG-197: an essay awaiting its manual score starts blank; typing only its
+  // feedback sends no score (the server keeps the attempt pending, never a 0)
+  // and the optimistic seed stays PENDING; the server's 409 on a publish maps
+  // to its own toast; the bulk release names the rows it held back.
+  describe('unscored manual items', () => {
+    const essayItems = [
+      { item_id: 'item_1', item_text: 'Q1', score: 50, max_score: 50, feedback: '', needs_manual_review: false },
+      { item_id: 'item_2', item_text: 'Essay', score: 0, max_score: 50, feedback: '', needs_manual_review: true },
+    ]
+    const renderPendingEssay = () => {
+      const queryClient = new QueryClient()
+      mocks.gradingPanelState.submission = createSubmission({
+        status: 'PENDING',
+        final_score: null,
+        score_override: null,
+        version: 1,
+        grading_json: { feedback: '', needs_manual_review: true, items: essayItems },
+      })
+      render(
+        <QueryClientProvider client={queryClient}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="submission_review"
+              assessmentUuid="assessment_review"
+              activityUuid="activity_review"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+      return queryClient
+    }
+
+    it('a feedback-only save sends no score and keeps the optimistic row pending', async () => {
+      mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+      const queryClient = renderPendingEssay()
+      const save = screen.getByRole('button', { name: 'saveDraft' })
+      await waitFor(() => expect(save).toBeEnabled())
+      expect(screen.getByRole('spinbutton', { name: '2. Essay' })).toHaveValue(null)
+      expect(screen.getByRole('button', { name: 'publish' })).toBeDisabled()
+
+      fireEvent.change(screen.getAllByPlaceholderText('itemFeedback')[1]!, { target: { value: 'Good try' } })
+      fireEvent.click(save)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      const payload = mocks.saveGradingDraftMock.mock.lastCall?.[2] as { item_grades: unknown[] }
+      expect(payload.item_grades).toEqual([{ item_uuid: 'item_2', score: null, feedback: 'Good try', is_manual: true }])
+      const cached = queryClient.getQueryData<Submission>(
+        queryKeys.grading.detail('submission_review', 'assessment_review'),
+      )
+      expect(cached?.status).toBe('PENDING')
+      expect(cached?.grading_json?.items?.[1]?.needs_manual_review).toBe(true)
+    })
+
+    it("maps the server's 409 on a publish to the unscored-items toast", async () => {
+      mocks.saveGradingDraftMock.mockRejectedValue(
+        new APIError({ status: 409, code: 'conflict', message: 'every item awaiting manual review must be scored' }),
+      )
+      renderPendingEssay()
+      const publish = screen.getByRole('button', { name: 'publish' })
+      fireEvent.change(screen.getByRole('spinbutton', { name: '2. Essay' }), { target: { value: '30' } })
+      await waitFor(() => expect(publish).toBeEnabled())
+      fireEvent.click(publish)
+      await waitFor(() => expect(mocks.toastErrorMock).toHaveBeenCalledWith('toasts.unscoredItems'))
+    })
+
+    it('the bulk release reports the rows held back for grading', async () => {
+      mocks.publishAssessmentGradesMock.mockResolvedValue({
+        published_count: 1,
+        already_published_count: 0,
+        needs_grading_count: 2,
+      })
+      render(
+        <ReviewBulkActionBar
+          activityId={55}
+          assessmentUuid="assessment_review"
+          disabled={false}
+          onRefresh={vi.fn().mockResolvedValue(undefined)}
+          submissions={[createSubmission({ status: 'GRADED' })]}
+        />,
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'releaseHidden' }))
+      const dialog = await screen.findByRole('dialog')
+      fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
+        target: { value: 'Release hidden grades' },
+      })
+      fireEvent.click(within(dialog).getByRole('button', { name: 'releaseGrades' }))
+      await waitFor(() => expect(mocks.toastWarningMock).toHaveBeenCalledWith('summaries.releaseNeedsGrading'))
+      expect(mocks.toastSuccessMock).not.toHaveBeenCalled()
     })
   })
 

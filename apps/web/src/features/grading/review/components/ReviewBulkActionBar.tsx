@@ -192,14 +192,20 @@ export default function ReviewBulkActionBar({
     startTransition(async () => {
       try {
         const result = await publishAssessmentGrades(assessmentUuid)
-        toast.success(t('toasts.hiddenReleased'))
+        // BUG-197: rows with an item still awaiting its manual score are held
+        // back by the server — say how many instead of claiming a clean run.
+        const held = result.needs_grading_count ?? 0
+        const heldNote = held > 0 ? t('summaries.releaseNeedsGrading', { count: held }) : null
+        if (heldNote) toast.warning(heldNote)
+        else toast.success(t('toasts.hiddenReleased'))
+        const detail = t('summaries.releaseDetail', {
+          published: result.published_count,
+          alreadyVisible: result.already_published_count,
+        })
         setLastSummary({
           label: t('summaries.releaseFinished'),
-          detail: t('summaries.releaseDetail', {
-            published: result.published_count,
-            alreadyVisible: result.already_published_count,
-          }),
-          tone: 'success',
+          detail: heldNote ? `${detail} ${heldNote}` : detail,
+          tone: heldNote ? 'warning' : 'success',
         })
         setPendingAction(null)
         setAuditNote('')
