@@ -2,7 +2,7 @@
 
 import { Area, AreaChart, CartesianGrid, Legend, XAxis, YAxis } from 'recharts'
 import type { MouseHandlerDataParam } from 'recharts'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 import {
   ChartContainer,
@@ -36,6 +36,7 @@ export default function AnalyticsMultiSeriesTrendChart({
   onBucketClick,
 }: AnalyticsMultiSeriesTrendChartProps) {
   const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
 
   const handleChartClick = (state: MouseHandlerDataParam, _event: unknown) => {
     const index = state.activeTooltipIndex
@@ -79,7 +80,12 @@ export default function AnalyticsMultiSeriesTrendChart({
             <AreaChart data={data} onClick={handleChartClick}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="bucket" tickLine={false} axisLine={false} minTickGap={24} />
-              <YAxis tickLine={false} axisLine={false} />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                tickFormatter={(v: number) => format.number(v)}
+              />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Legend content={<ChartLegendContent />} />
               <Area

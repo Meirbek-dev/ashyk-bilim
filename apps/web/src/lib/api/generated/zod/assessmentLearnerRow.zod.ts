@@ -12,7 +12,18 @@ export const AssessmentLearnerRow = zod.object({
   best_score: zod.number().nullish(),
   graded_at_unix: zod.int().nullish(),
   last_score: zod.number().nullish(),
-  status: zod.string().nullish().describe('Submission status of the latest attempt (`pending`, `graded`, …).'),
+  pending_attempt: zod
+    .int()
+    .nullish()
+    .describe(
+      'The newest attempt still awaiting the teacher (`pending` or `graded` but unreleased), if any — it may be newer than the ranked attempt.',
+    ),
+  status: zod
+    .string()
+    .nullish()
+    .describe(
+      "Submission status of the grade-of-record attempt (`published`, `pending`, `graded`, …) — the gradebook cell's rule.",
+    ),
   submitted_at_unix: zod.int().nullish(),
   user_display_name: zod.string(),
   user_id: zod.uuid(),

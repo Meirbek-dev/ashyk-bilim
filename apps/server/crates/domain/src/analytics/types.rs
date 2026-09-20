@@ -741,8 +741,12 @@ pub struct AssessmentLearnerRow {
     pub last_score: Option<f64>,
     pub submitted_at_unix: Option<i64>,
     pub graded_at_unix: Option<i64>,
-    /// Submission status of the latest attempt (`pending`, `graded`, …).
+    /// Submission status of the grade-of-record attempt (`published`,
+    /// `pending`, `graded`, …) — the gradebook cell's rule.
     pub status: Option<String>,
+    /// The newest attempt still awaiting the teacher (`pending` or `graded`
+    /// but unreleased), if any — it may be newer than the ranked attempt.
+    pub pending_attempt: Option<i32>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, ToSchema)]

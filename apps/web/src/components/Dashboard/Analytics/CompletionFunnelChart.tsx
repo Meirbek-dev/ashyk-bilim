@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import type { FunnelStep } from '@/types/analytics'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 interface CompletionFunnelChartProps {
   title: string
@@ -14,6 +14,7 @@ interface CompletionFunnelChartProps {
 
 export default function CompletionFunnelChart({ title, description, data }: CompletionFunnelChartProps) {
   const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -36,7 +37,13 @@ export default function CompletionFunnelChart({ title, description, data }: Comp
           >
             <BarChart data={data} layout="vertical" margin={{ left: 18 }}>
               <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-              <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={v => String(v)} />
+              <XAxis
+                type="number"
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                tickFormatter={(v: number) => format.number(v)}
+              />
               <YAxis dataKey="label" type="category" width={170} tickLine={false} axisLine={false} />
               <ChartTooltip
                 content={<ChartTooltipContent nameKey="label" formatter={v => [`${v} ${t('funnel.learners')}`, '']} />}

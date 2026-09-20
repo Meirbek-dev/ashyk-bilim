@@ -1017,6 +1017,23 @@ pub fn build_detail(
                 .filter(|s| score_of(s).is_some())
                 .max_by_key(|s| (submitted_at(s), s.id))
                 .copied();
+            // UX-138: the status is the grade-of-record attempt's, and a
+            // newer attempt still in the teacher's hands is flagged the way
+            // the gradebook cell does (`gradebook_cells`).
+            let record = attempts
+                .iter()
+                .max_by(|x, y| x.grade_key().order(y.grade_key()))
+                .copied();
+            let pending_attempt = attempts
+                .iter()
+                .filter(|s| {
+                    matches!(
+                        s.status,
+                        SubmissionStatus::Pending | SubmissionStatus::Graded
+                    )
+                })
+                .map(|s| s.attempt_number)
+                .max();
             AssessmentLearnerRow {
                 user_id: *user_id,
                 user_display_name: ctx.display_name(*user_id),
@@ -1025,7 +1042,8 @@ pub fn build_detail(
                 last_score: last_released.and_then(score_of).map(round2),
                 submitted_at_unix: last.map(submitted_at),
                 graded_at_unix: last.and_then(graded_at),
-                status: last.map(|s| status_str(s.status)),
+                status: record.map(|s| status_str(s.status)),
+                pending_attempt,
             }
         })
         .collect();

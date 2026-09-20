@@ -1484,6 +1484,10 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     assert_eq!(row["attempts"], 3, "{row}");
     assert_eq!(row["best_score"], 30.0, "{row}");
     assert_eq!(row["last_score"], 30.0, "{row}");
+    // UX-138: the row's status is the grade of record's, and the saved
+    // (unreleased) retake is flagged like the gradebook cell.
+    assert_eq!(row["status"], "published", "{row}");
+    assert_eq!(row["pending_attempt"], 3, "{row}");
 
     let pass_rate = app
         .get_as(

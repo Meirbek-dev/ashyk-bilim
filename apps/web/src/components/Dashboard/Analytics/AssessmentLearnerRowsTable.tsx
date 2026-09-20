@@ -18,6 +18,7 @@ interface AssessmentLearnerRowsTableProps {
 
 export default function AssessmentLearnerRowsTable({ rows, storageKey }: AssessmentLearnerRowsTableProps) {
   const t = useTranslations('TeacherAnalytics')
+  const tWorkspace = useTranslations('Features.ActivityWorkspace')
   const locale = useLocale()
   const percent = usePercentFormat()
 
@@ -56,7 +57,20 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
       accessorFn: row => row.status || '',
       id: 'status',
       header: t('pages.assessmentColStatus'),
-      cell: ({ row }) => getAnalyticsStatusLabel(t, row.original.status),
+      // UX-138: the status is the grade of record's; a newer attempt still with
+      // the teacher is flagged like the gradebook cell (BUG-175 rule).
+      cell: ({ row }) => {
+        const { status, pending_attempt } = row.original
+        const retake = status === 'pending' || status === 'graded' ? null : pending_attempt
+        return (
+          <span className="flex flex-col">
+            <span>{getAnalyticsStatusLabel(t, status)}</span>
+            {typeof retake === 'number' ? (
+              <span className="text-muted-foreground text-xs">{tWorkspace('pendingAttempt', { attempt: retake })}</span>
+            ) : null}
+          </span>
+        )
+      },
     },
   ]
 
