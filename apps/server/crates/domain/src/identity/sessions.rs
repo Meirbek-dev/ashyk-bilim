@@ -8,6 +8,13 @@
 //!   flight cannot resurrect a revoked session or undo a grant rewrite.
 //!   Rewrites are compare-and-set (`SET … XX KEEPTTL` under a Lua guard) and
 //!   a session whose id left the registry zset is dead even if its key is not.
+//! - Session creation is fenced on a per-user epoch `user_epoch:{uid}`
+//!   (BUG-203): every mutation that must end or rewrite the user's sessions
+//!   (`revoke_all`, `revoke_others`, the grant/MFA rewrites) bumps it BEFORE
+//!   touching the sessions, and [`SessionStore::create`] only writes when the
+//!   epoch still equals the one the login read before its slow credential
+//!   check — a login that straddles the mutation gets `None`, never a session
+//!   the mutation could not see.
 //! - Per-user registry `user_sessions:{uid}` (zset scored by creation time)
 //!   caps concurrent sessions at [`MAX_SESSIONS_PER_USER`], evicting oldest.
 //! - Permission changes propagate at mutation time:
@@ -36,6 +43,9 @@ fn seen_key(id: &str) -> String {
 fn user_key(user_id: UserId) -> String {
     format!("user_sessions:{user_id}")
 }
+fn epoch_key(user_id: UserId) -> String {
+    format!("user_epoch:{user_id}")
+}
 fn idle_ttl() -> i64 {
     i64::try_from(IDLE_TTL.as_secs()).unwrap_or(i64::MAX)
 }
@@ -49,6 +59,20 @@ fn past_absolute_cap(record: &SessionRecord) -> bool {
 const REWRITE_IF_UNCHANGED: &str = r"
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
 redis.call('SET', KEYS[1], ARGV[2], 'XX', 'KEEPTTL')
+return 1";
+/// Fenced create: record + registry entry only if the user's epoch is still
+/// the one the caller read (`KEYS[3]`; a never-bumped epoch reads as 0).
+const CREATE_IF_EPOCH: &str = r"
+if (redis.call('GET', KEYS[3]) or '0') ~= ARGV[5] then return 0 end
+redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
+redis.call('ZADD', KEYS[2], ARGV[3], ARGV[4])
+return 1";
+/// Touch: slide the record's TTL and stamp `last_seen` only while the record
+/// exists — a touch racing a revoke must not leave an orphan stamp.
+const TOUCH_IF_ALIVE: &str = r"
+if redis.call('EXPIRE', KEYS[1], ARGV[1]) == 1 then
+  redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[1])
+end
 return 1";
 fn now_unix() -> i64 {
     SystemTime::now()
@@ -98,6 +122,9 @@ pub struct NewSession {
     pub mfa_enabled: bool,
     pub ip: Option<String>,
     pub user_agent: Option<String>,
+    /// [`SessionStore::epoch`] as read BEFORE every check this session rests
+    /// on (status, password, MFA methods, grants).
+    pub epoch: i64,
 }
 
 #[derive(Clone)]
@@ -129,9 +156,34 @@ impl SessionStore {
         Ok(Self { client, redis })
     }
 
-    /// Create a session; returns the opaque id for the cookie. Evicts the
-    /// oldest sessions beyond [`MAX_SESSIONS_PER_USER`].
-    pub async fn create(&self, new: NewSession) -> Result<String> {
+    /// The user's current epoch — read it before the checks a login rests on,
+    /// pass it to [`Self::create`].
+    pub async fn epoch(&self, user_id: UserId) -> Result<i64> {
+        let mut conn = self.redis.clone();
+        let epoch: Option<i64> = conn
+            .get(epoch_key(user_id))
+            .await
+            .map_err(|e| Error::internal("reading user epoch", e))?;
+        Ok(epoch.unwrap_or(0))
+    }
+
+    /// Invalidate every login in flight for the user: a `create` carrying an
+    /// older epoch fails. The first step of every session-ending mutation.
+    async fn bump_epoch(&self, user_id: UserId) -> Result<()> {
+        let mut conn = self.redis.clone();
+        let _: i64 = conn
+            .incr(epoch_key(user_id), 1)
+            .await
+            .map_err(|e| Error::internal("bumping user epoch", e))?;
+        Ok(())
+    }
+
+    /// Create a session; returns the opaque id for the cookie, or `None` when
+    /// the user's epoch moved since `new.epoch` was read (a mutation landed
+    /// mid-login — the caller re-reads the account and refuses as a fresh
+    /// login would). Evicts the oldest sessions beyond
+    /// [`MAX_SESSIONS_PER_USER`].
+    pub async fn create(&self, new: NewSession) -> Result<Option<String>> {
         // 256 bits of randomness; the id never appears in logs.
         let id = format!(
             "{}{}",
@@ -156,14 +208,23 @@ impl SessionStore {
         let mut conn = self.redis.clone();
         let payload = serde_json::to_string(&record)
             .map_err(|e| Error::internal("serializing session", e))?;
-        // One atomic step: a record without its registry entry reads as revoked.
-        let () = redis::pipe()
-            .atomic()
-            .set_ex(session_key(&id), payload, IDLE_TTL.as_secs())
-            .zadd(user_key(record.user_id), &id, now_unix_millis())
-            .query_async(&mut conn)
+        // One atomic step, fenced on the epoch: a record without its registry
+        // entry reads as revoked; a record a mutation could not see is never written.
+        let written: i32 = redis::Script::new(CREATE_IF_EPOCH)
+            .key(session_key(&id))
+            .key(user_key(record.user_id))
+            .key(epoch_key(record.user_id))
+            .arg(payload)
+            .arg(idle_ttl())
+            .arg(now_unix_millis())
+            .arg(&id)
+            .arg(new.epoch)
+            .invoke_async(&mut conn)
             .await
             .map_err(|e| Error::internal("storing session", e))?;
+        if written != 1 {
+            return Ok(None);
+        }
 
         // Cap concurrent sessions: evict oldest beyond the limit.
         let count: usize = conn
@@ -180,7 +241,7 @@ impl SessionStore {
                 self.revoke(record.user_id, old).await?;
             }
         }
-        Ok(id)
+        Ok(Some(id))
     }
 
     /// Fetch + touch: refreshes the idle TTL, enforces the absolute cap, and
@@ -216,10 +277,12 @@ impl SessionStore {
     pub async fn touch(&self, id: &str) -> Result<i64> {
         let now = now_unix();
         let mut conn = self.redis.clone();
-        let () = redis::pipe()
-            .expire(session_key(id), idle_ttl())
-            .set_ex(seen_key(id), now, IDLE_TTL.as_secs())
-            .query_async(&mut conn)
+        let _: i32 = redis::Script::new(TOUCH_IF_ALIVE)
+            .key(session_key(id))
+            .key(seen_key(id))
+            .arg(idle_ttl())
+            .arg(now)
+            .invoke_async(&mut conn)
             .await
             .map_err(|e| Error::internal("touching session", e))?;
         Ok(now)
@@ -292,12 +355,25 @@ impl SessionStore {
         Ok(live)
     }
 
+    /// End every session of the user; logins in flight are fenced first.
     pub async fn revoke_all(&self, user_id: UserId) -> Result<u32> {
-        let ids = self.list(user_id).await?;
+        self.revoke_except(user_id, None).await
+    }
+
+    /// End every session of the user but `keep` (the caller's own, e.g. on a
+    /// password change); logins in flight are fenced first.
+    pub async fn revoke_others(&self, user_id: UserId, keep: &str) -> Result<u32> {
+        self.revoke_except(user_id, Some(keep)).await
+    }
+
+    async fn revoke_except(&self, user_id: UserId, keep: Option<&str>) -> Result<u32> {
+        self.bump_epoch(user_id).await?;
         let mut revoked = 0;
-        for id in &ids {
-            self.revoke(user_id, id).await?;
-            revoked += 1;
+        for id in self.list(user_id).await? {
+            if keep != Some(id.as_str()) {
+                self.revoke(user_id, &id).await?;
+                revoked += 1;
+            }
         }
         Ok(revoked)
     }
@@ -327,12 +403,14 @@ impl SessionStore {
 
     /// Apply `edit` to every live session of the user, keeping each idle TTL.
     /// Compare-and-set per session: a concurrent rewrite is retried on top of
-    /// its result, a concurrent revoke wins (`XX`).
+    /// its result, a concurrent revoke wins (`XX`). Logins in flight are
+    /// fenced first, so none is born with the state this rewrite replaces.
     async fn update_user_sessions(
         &self,
         user_id: UserId,
         mut edit: impl FnMut(&mut SessionRecord),
     ) -> Result<u32> {
+        self.bump_epoch(user_id).await?;
         let mut conn = self.redis.clone();
         let script = redis::Script::new(REWRITE_IF_UNCHANGED);
         let mut updated = 0;

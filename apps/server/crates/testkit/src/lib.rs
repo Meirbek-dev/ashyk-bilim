@@ -281,6 +281,7 @@ impl TestApp {
     }
 
     pub async fn mint_session_for(&self, user_id: UserId, permissions: &[&str]) -> MintedSession {
+        let epoch = self.sessions.epoch(user_id).await.expect("user epoch");
         let session_id = self
             .sessions
             .create(ab_domain::identity::NewSession {
@@ -294,9 +295,11 @@ impl TestApp {
                 mfa_enabled: false,
                 ip: None,
                 user_agent: Some("testkit".into()),
+                epoch,
             })
             .await
-            .expect("mint session");
+            .expect("mint session")
+            .expect("session fenced");
         MintedSession {
             user_id,
             cookie: format!("{}={session_id}", ab_api::extract::SESSION_COOKIE),

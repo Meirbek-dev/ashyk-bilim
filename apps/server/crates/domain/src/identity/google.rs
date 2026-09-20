@@ -118,7 +118,59 @@ impl GoogleAuthService {
         let identity = self.google.exchange_code(code, &record.verifier).await?;
         let user_id = self.find_or_create_user(&identity).await?;
 
-        let user = ab_db::identity::find_user_for_login(&self.pool, &identity.email)
+        // BUG-203: the session is fenced on the user's epoch; a mutation that
+        // lands while the account is being read makes `create` refuse, and
+        // one re-read (nothing here is a credential that can go stale) is
+        // what a fresh sign-in would do.
+        let mut session_id = self
+            .open_session(
+                user_id,
+                &identity.email,
+                ip.as_deref(),
+                user_agent.as_deref(),
+            )
+            .await?;
+        if session_id.is_none() {
+            session_id = self
+                .open_session(
+                    user_id,
+                    &identity.email,
+                    ip.as_deref(),
+                    user_agent.as_deref(),
+                )
+                .await?;
+        }
+        let session_id =
+            session_id.ok_or_else(|| Error::internal("google login fenced twice", anyhow_msg()))?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(user_id),
+            "login-google",
+            ip.as_deref(),
+            user_agent.as_deref(),
+            serde_json::json!({}),
+        )
+        .await?;
+        crate::gamification::hooks::login(&self.pool, user_id).await;
+        crate::analytics::events::hooks::login(&self.pool, user_id, "google").await;
+        Ok(GoogleLoginOk {
+            session_id,
+            user_id,
+            callback: record.callback,
+        })
+    }
+
+    /// Status, grants and MFA state read after the epoch, then a fenced
+    /// `create`; `None` when a mutation moved the epoch in between.
+    async fn open_session(
+        &self,
+        user_id: UserId,
+        email: &str,
+        ip: Option<&str>,
+        user_agent: Option<&str>,
+    ) -> Result<Option<String>> {
+        let epoch = self.sessions.epoch(user_id).await?;
+        let user = ab_db::identity::find_user_for_login(&self.pool, email)
             .await?
             .ok_or_else(|| Error::internal("google user vanished", anyhow_msg()))?;
         if user.status != "active" {
@@ -142,8 +194,7 @@ impl GoogleAuthService {
                 false
             }
         };
-        let session_id = self
-            .sessions
+        self.sessions
             .create(NewSession {
                 user_id,
                 zitadel_user_id: user.zitadel_user_id,
@@ -155,26 +206,11 @@ impl GoogleAuthService {
                 permissions,
                 rbac_version: user.rbac_version,
                 mfa_enabled,
-                ip: ip.clone(),
-                user_agent: user_agent.clone(),
+                ip: ip.map(str::to_owned),
+                user_agent: user_agent.map(str::to_owned),
+                epoch,
             })
-            .await?;
-        ab_db::identity::insert_auth_audit(
-            &self.pool,
-            Some(user_id),
-            "login-google",
-            ip.as_deref(),
-            user_agent.as_deref(),
-            serde_json::json!({}),
-        )
-        .await?;
-        crate::gamification::hooks::login(&self.pool, user_id).await;
-        crate::analytics::events::hooks::login(&self.pool, user_id, "google").await;
-        Ok(GoogleLoginOk {
-            session_id,
-            user_id,
-            callback: record.callback,
-        })
+            .await
     }
 
     async fn find_or_create_user(&self, identity: &GoogleIdentity) -> Result<UserId> {

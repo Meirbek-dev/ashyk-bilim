@@ -22,6 +22,7 @@ fn new_session(user_id: UserId, perms: &[&str]) -> NewSession {
         mfa_enabled: false,
         ip: Some("127.0.0.1".into()),
         user_agent: Some("test".into()),
+        epoch: 0,
     }
 }
 
@@ -33,6 +34,7 @@ async fn create_get_touch_revoke_roundtrip() {
     let id = store
         .create(new_session(user, &["course:read:all"]))
         .await
+        .unwrap()
         .unwrap();
     assert_eq!(id.len(), 64, "opaque 256-bit hex id");
 
@@ -68,7 +70,7 @@ async fn concurrent_sessions_are_capped_with_oldest_evicted() {
 
     let mut ids = Vec::new();
     for _ in 0..(sessions::MAX_SESSIONS_PER_USER + 3) {
-        ids.push(store.create(new_session(user, &[])).await.unwrap());
+        ids.push(store.create(new_session(user, &[])).await.unwrap().unwrap());
         // zset scores are unix seconds; nudge ordering determinism.
         tokio::time::sleep(std::time::Duration::from_millis(5)).await;
     }
@@ -96,10 +98,12 @@ async fn rewrite_propagates_permissions_to_live_sessions() {
     let a = store
         .create(new_session(user, &["course:read:all"]))
         .await
+        .unwrap()
         .unwrap();
     let b = store
         .create(new_session(user, &["course:read:all"]))
         .await
+        .unwrap()
         .unwrap();
 
     let updated = store

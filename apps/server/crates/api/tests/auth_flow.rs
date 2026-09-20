@@ -1399,3 +1399,182 @@ async fn zitadel_profile_rejection_maps_to_the_named_field(pool: PgPool) {
     );
     assert_eq!(res.json()["field_errors"][0]["field"], "first_name");
 }
+
+// ── BUG-203: logins in flight are fenced against account mutations ─────────
+// A slow Zitadel stub (`set_delay`) parks the login after it has read the
+// state it rests on; the mutation lands meanwhile; the login must then end
+// as a fresh one would — never with a session the mutation did not see.
+
+async fn mock_methods(app: &TestApp, zid: &str, with_totp: bool, delay_ms: u64, priority: u8) {
+    let mut methods = vec!["AUTHENTICATION_METHOD_TYPE_PASSWORD"];
+    if with_totp {
+        methods.push("AUTHENTICATION_METHOD_TYPE_TOTP");
+    }
+    Mock::given(method("GET"))
+        .and(path(format!("/v2/users/{zid}/authentication_methods")))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(delay_ms))
+                .set_body_json(serde_json::json!({
+                    "details": { "totalResult": "1" },
+                    "authMethodTypes": methods
+                })),
+        )
+        .with_priority(priority)
+        .mount(&app.zitadel)
+        .await;
+}
+
+fn login_body(login: &str) -> serde_json::Value {
+    serde_json::json!({ "login": login, "password": "old horse" })
+}
+
+async fn after(ms: u64, act: impl std::future::Future<Output = ()>) {
+    tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
+    act.await;
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn login_in_flight_during_a_disable_gets_no_session(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+    let user = app
+        .create_user("racer", "racer@example.com", &["user"])
+        .await;
+    let stale = app.mint_session_for(user, &[]).await;
+    mock_password_ok(&app.zitadel).await;
+    // Status was read (active) before this call parks the login.
+    mock_methods(&app, "z-racer", false, 400, 5).await;
+
+    let body = login_body("racer");
+    let (login, ()) = tokio::join!(
+        app.post_json("/api/v2/auth/login", &body),
+        after(100, async {
+            let res = app
+                .patch_as(
+                    &admin,
+                    &format!("/api/v2/users/{user}/status"),
+                    &serde_json::json!({ "disabled": true }),
+                )
+                .await;
+            assert_eq!(res.status, StatusCode::NO_CONTENT, "{}", res.text());
+        })
+    );
+    assert_eq!(login.status, StatusCode::FORBIDDEN, "{}", login.text());
+    assert_eq!(login.json()["code"], "account-disabled");
+    assert!(login.session_cookie().is_none());
+    assert!(
+        app.sessions.list(user).await.unwrap().is_empty(),
+        "no session outlived the disable"
+    );
+    assert_eq!(
+        app.get_as(&stale, "/api/v2/auth/session").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn old_password_login_in_flight_during_a_password_change_gets_no_session(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("pwracer", "pwracer@example.com", &["user"])
+        .await;
+    let current = app.mint_session_for(user, &[]).await;
+    let zid = format!("z-{user}");
+    // Zitadel still accepts the old password while the change is in flight.
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(400))
+                .set_body_json(serde_json::json!({
+                    "sessionId": "zit-session-1",
+                    "sessionToken": "zit-token-1",
+                    "details": {}
+                })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/password")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    mock_methods(&app, "z-pwracer", false, 0, 5).await;
+
+    let body = login_body("pwracer");
+    let (login, ()) = tokio::join!(
+        app.post_json("/api/v2/auth/login", &body),
+        after(100, async {
+            let res = app
+                .post_as(
+                    &current,
+                    "/api/v2/auth/password",
+                    &serde_json::json!({ "current_password": "old horse", "new_password": "new horse battery" }),
+                )
+                .await;
+            assert_eq!(res.status, StatusCode::NO_CONTENT, "{}", res.text());
+        })
+    );
+    assert_eq!(login.status, StatusCode::UNAUTHORIZED, "{}", login.text());
+    assert_eq!(login.json()["code"], "invalid-credentials");
+    assert!(login.session_cookie().is_none());
+    let own = current.cookie.split_once('=').unwrap().1.to_owned();
+    assert_eq!(
+        app.sessions.list(user).await.unwrap(),
+        vec![own],
+        "only the session that changed the password survives"
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn code_less_login_in_flight_during_totp_activation_is_mfa_required(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("mfaracer", "mfaracer@example.com", &["user"])
+        .await;
+    let enroller = app.mint_session_for(user, &[]).await;
+    let zid = format!("z-{user}");
+    mock_password_ok(&app.zitadel).await;
+    // The login lists methods before the activation lands: no TOTP yet.
+    // (Login-side Zitadel id is the row's `z-<username>`; the enroller's
+    // session carries the testkit's `z-<user id>`.)
+    mock_methods(&app, "z-mfaracer", false, 400, 5).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/totp/verify")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+
+    let body = login_body("mfaracer");
+    let (login, ()) = tokio::join!(
+        app.post_json("/api/v2/auth/login", &body),
+        after(100, async {
+            let res = app
+                .post_as(
+                    &enroller,
+                    "/api/v2/auth/mfa/totp/verify",
+                    &serde_json::json!({ "code": "654321" }),
+                )
+                .await;
+            assert_eq!(res.status, StatusCode::NO_CONTENT, "{}", res.text());
+            // From now on Zitadel reports the authenticator.
+            mock_methods(&app, "z-mfaracer", true, 0, 1).await;
+        })
+    );
+    assert_eq!(login.status, StatusCode::UNAUTHORIZED, "{}", login.text());
+    assert_eq!(login.json()["code"], "mfa-required");
+    assert!(login.session_cookie().is_none());
+    assert_eq!(
+        app.sessions.list(user).await.unwrap().len(),
+        1,
+        "no code-less session opened"
+    );
+}

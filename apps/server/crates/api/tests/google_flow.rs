@@ -267,3 +267,50 @@ async fn disabled_account_is_sent_back_with_account_disabled(pool: PgPool) {
     );
     assert!(res.session_cookie().is_none());
 }
+
+/// BUG-203: the Google callback is fenced like the password login — a
+/// disable landing while the account is being read (methods listing parked
+/// by a slow Zitadel) yields `account-disabled`, never a session.
+#[sqlx::test(migrations = "../../migrations")]
+async fn callback_in_flight_during_a_disable_gets_no_session(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+    let user = app
+        .create_user("graced", "graced@example.com", &["user"])
+        .await;
+    mock_zitadel_user_create(&app, 0).await;
+    mock_google_token(&app, "g-sub-graced", "graced@example.com").await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-graced/authentication_methods"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(400))
+                .set_body_json(serde_json::json!({ "authMethodTypes": [] })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    let state = start_and_get_state(&app, "/").await;
+
+    let url = format!("/api/v2/auth/google/callback?code=c&state={state}");
+    let (res, ()) = tokio::join!(app.get(&url), async {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let res = app
+            .patch_as(
+                &admin,
+                &format!("/api/v2/users/{user}/status"),
+                &serde_json::json!({ "disabled": true }),
+            )
+            .await;
+        assert_eq!(res.status, StatusCode::NO_CONTENT, "{}", res.text());
+    });
+    assert_eq!(res.status, StatusCode::SEE_OTHER);
+    assert_eq!(
+        res.headers.get("location").unwrap().to_str().unwrap(),
+        "/auth/login?error=account-disabled"
+    );
+    assert!(res.session_cookie().is_none());
+    assert!(app.sessions.list(user).await.unwrap().is_empty());
+}

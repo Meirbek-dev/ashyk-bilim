@@ -381,6 +381,12 @@ impl IdentityService {
                 "invalid credentials",
             ));
         };
+        // BUG-203: the epoch is read before every check this login rests on
+        // (password, status, MFA methods, grants); `sessions.create` refuses
+        // if a mutation bumped it in between, so a disable / password change /
+        // TOTP activation / role change landing during the ~1 s Zitadel call
+        // can never be outlived by the session it did not see.
+        let epoch = self.sessions.epoch(user.id).await?;
         let outcome = self
             .zitadel
             .create_password_session(
@@ -394,12 +400,17 @@ impl IdentityService {
         if let Some(key) = &ip_key {
             self.limiter.release(key).await?;
         }
-        if user.status != "active" {
+        // Status is re-read after the epoch, not taken from the row looked up
+        // before it — the fence only covers state read after the epoch.
+        let status = ab_db::identity::user_status(&self.pool, user.id)
+            .await?
+            .unwrap_or_else(|| "deleted".to_owned());
+        if status != "active" {
             self.audit(
                 Some(user.id),
                 "login-blocked",
                 &input,
-                serde_json::json!({ "status": user.status }),
+                serde_json::json!({ "status": status }),
             )
             .await?;
             return Err(Error::app(
@@ -414,38 +425,25 @@ impl IdentityService {
         // A supplied (and Zitadel-accepted) code proves enrollment by itself;
         // without one, an enrolled account never gets past this block.
         let mfa_enabled = input.totp_code.is_some();
-        if input.totp_code.is_none() {
-            let methods = self
-                .zitadel
-                .list_auth_method_types(&user.zitadel_user_id)
-                .await?;
-            if methods.iter().any(|m| m == TOTP_METHOD) {
-                let token = SecretString::from(zsession.session_token.clone());
-                if let Err(err) = self
-                    .zitadel
-                    .delete_session(&zsession.session_id, &token)
-                    .await
-                {
-                    tracing::warn!(%err, "discarding pre-mfa zitadel session failed");
-                }
-                self.audit(
-                    Some(user.id),
-                    "login-mfa-required",
-                    &input,
-                    serde_json::json!({}),
-                )
-                .await?;
-                return Err(Error::app(ErrorCode::MfaRequired, "one-time code required"));
-            }
+        if !mfa_enabled && self.totp_enrolled(&user.zitadel_user_id).await? {
+            self.discard_zitadel_session(&zsession, "pre-mfa").await;
+            self.audit(
+                Some(user.id),
+                "login-mfa-required",
+                &input,
+                serde_json::json!({}),
+            )
+            .await?;
+            return Err(Error::app(ErrorCode::MfaRequired, "one-time code required"));
         }
 
         let (roles, permissions) = ab_db::identity::load_user_grants(&self.pool, user.id).await?;
-        let session_id = self
+        let created = self
             .sessions
             .create(NewSession {
                 user_id: user.id,
-                zitadel_user_id: user.zitadel_user_id,
-                zitadel_session_id: zsession.session_id,
+                zitadel_user_id: user.zitadel_user_id.clone(),
+                zitadel_session_id: zsession.session_id.clone(),
                 zitadel_session_token: secrecy::ExposeSecret::expose_secret(
                     &zsession.session_token,
                 )
@@ -456,8 +454,12 @@ impl IdentityService {
                 mfa_enabled,
                 ip: input.ip.clone(),
                 user_agent: input.user_agent.clone(),
+                epoch,
             })
             .await?;
+        let Some(session_id) = created else {
+            return Err(self.fenced_login(&user, &input, &zsession).await?);
+        };
 
         self.limiter.clear(&login_key).await?;
         self.audit(Some(user.id), "login", &input, serde_json::json!({}))
@@ -472,6 +474,58 @@ impl IdentityService {
             permissions,
             mfa_enabled,
         })
+    }
+
+    /// A mutation landed while this login was in flight (`create` fenced):
+    /// discard the Zitadel session and answer as a fresh login would — 403
+    /// if the account is now disabled, 401 `mfa-required` if TOTP is now
+    /// enrolled and no code came, else 401 (the password may have changed).
+    async fn fenced_login(
+        &self,
+        user: &ab_db::identity::AuthUserRow,
+        input: &LoginInput,
+        zsession: &ab_clients::zitadel::ZitadelSession,
+    ) -> Result<Error> {
+        self.discard_zitadel_session(zsession, "fenced").await;
+        self.audit(Some(user.id), "login-fenced", input, serde_json::json!({}))
+            .await?;
+        if ab_db::identity::user_status(&self.pool, user.id).await? != Some("active".to_owned()) {
+            return Ok(Error::app(
+                ErrorCode::AccountDisabled,
+                "account is disabled",
+            ));
+        }
+        if input.totp_code.is_none() && self.totp_enrolled(&user.zitadel_user_id).await? {
+            return Ok(Error::app(ErrorCode::MfaRequired, "one-time code required"));
+        }
+        Ok(Error::app(
+            ErrorCode::InvalidCredentials,
+            "invalid credentials",
+        ))
+    }
+
+    async fn totp_enrolled(&self, zitadel_user_id: &str) -> Result<bool> {
+        Ok(self
+            .zitadel
+            .list_auth_method_types(zitadel_user_id)
+            .await?
+            .iter()
+            .any(|m| m == TOTP_METHOD))
+    }
+
+    /// Best-effort: our session is the credential, Zitadel's is bookkeeping.
+    async fn discard_zitadel_session(
+        &self,
+        zsession: &ab_clients::zitadel::ZitadelSession,
+        why: &str,
+    ) {
+        if let Err(err) = self
+            .zitadel
+            .delete_session(&zsession.session_id, &zsession.session_token)
+            .await
+        {
+            tracing::warn!(%err, why, "discarding zitadel session failed");
+        }
     }
 
     // ── Account creation (self-registration + admin) ───────────────────────
@@ -745,11 +799,11 @@ impl IdentityService {
             return Err(err);
         }
         self.limiter.clear(&key).await?;
-        for id in self.sessions.list(actor.user_id).await? {
-            if id != actor.session_id {
-                self.sessions.revoke(actor.user_id, &id).await?;
-            }
-        }
+        // Fenced (BUG-203): a login Zitadel accepted with the old password
+        // before the change cannot open a session after it.
+        self.sessions
+            .revoke_others(actor.user_id, &actor.session_id)
+            .await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             Some(actor.user_id),
