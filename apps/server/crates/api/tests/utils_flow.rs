@@ -195,3 +195,34 @@ async fn malformed_query_and_path_are_problem_json(pool: PgPool) {
         assert_eq!(res.json()["field_errors"][0]["field"], field, "{path}");
     }
 }
+
+/// U+0000 in a query string, a path parameter or any JSON string is a 422
+/// `validation-failed` (`query` / `path` / `body` field error) — never a
+/// Postgres 22021 turned 500 (BUG-211).
+#[sqlx::test(migrations = "../../migrations")]
+async fn nul_in_any_string_is_validation_failed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.mint_session(&["user:update:own"]).await;
+    let body = app
+        .patch_as(
+            &user,
+            "/api/v2/users/me",
+            &serde_json::json!({ "display_name": "a\u{0}b" }),
+        )
+        .await;
+    for (name, res, field) in [
+        ("query", app.get("/api/v2/courses?q=%00").await, "query"),
+        ("path", app.get("/api/v2/users/lea%00rner").await, "path"),
+        ("body", body, "body"),
+    ] {
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{name}: {}",
+            res.text()
+        );
+        assert_eq!(res.json()["code"], "validation-failed", "{name}");
+        assert_eq!(res.json()["field_errors"][0]["field"], field, "{name}");
+        assert_eq!(res.json()["field_errors"][0]["code"], "invalid", "{name}");
+    }
+}
