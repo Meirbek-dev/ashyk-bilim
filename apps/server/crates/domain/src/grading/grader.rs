@@ -261,6 +261,7 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
             needs_manual_review: manual,
             auto_graded: true,
             feedback: String::new(),
+            score_override: None,
         },
     }
 }
@@ -319,6 +320,7 @@ pub fn grade_code(item: &Item, cases: &[CaseOutcome], answer: Option<&ItemAnswer
             needs_manual_review: false,
             auto_graded: true,
             feedback: String::new(),
+            score_override: None,
         },
     }
 }

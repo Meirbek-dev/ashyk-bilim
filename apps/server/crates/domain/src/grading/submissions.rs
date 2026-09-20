@@ -135,6 +135,7 @@ const fn manual_review() -> AutoGrade {
             needs_manual_review: true,
             auto_graded: false,
             feedback: String::new(),
+            score_override: None,
         },
     }
 }

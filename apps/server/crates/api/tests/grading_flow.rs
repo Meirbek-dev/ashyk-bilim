@@ -1881,6 +1881,64 @@ async fn feedback_only_save_keeps_the_attempt_pending(pool: PgPool) {
     assert_eq!(mine.json()["final_score"], 80.0);
 }
 
+/// BUG-205: an explicit `final_score` equal to the item-derived score is
+/// still an override — the attempt is graded, survives a feedback-only save
+/// and is released by the bulk publish.
+#[sqlx::test(migrations = "../../migrations")]
+async fn override_equal_to_the_derived_score_is_a_score_of_record(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+
+    // Choice 10/10 + unscored essay 0/10 → derived 50; override with 50.
+    let overridden = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("1"),
+            &serde_json::json!({ "action": "save", "final_score": 50 }),
+        ))
+        .await;
+    assert_eq!(overridden.status, StatusCode::OK, "{}", overridden.text());
+    assert_eq!(overridden.json()["status"], "graded");
+    assert_eq!(overridden.json()["final_score"], 50.0);
+    assert_eq!(overridden.json()["score_override"], 50.0);
+    assert_eq!(overridden.json()["grading"]["needs_manual_review"], true);
+
+    let feedback_only = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("2"),
+            &serde_json::json!({ "action": "save", "feedback": "fine" }),
+        ))
+        .await;
+    assert_eq!(feedback_only.status, StatusCode::OK, "{}", feedback_only.text());
+    assert_eq!(feedback_only.json()["status"], "graded");
+    assert_eq!(feedback_only.json()["final_score"], 50.0);
+    assert_eq!(feedback_only.json()["score_override"], 50.0);
+
+    let released = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/publish-grades"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(released.status, StatusCode::OK, "{}", released.text());
+    assert_eq!(released.json()["published_count"], 1);
+    assert_eq!(released.json()["needs_grading_count"], 0);
+    let mine = app
+        .get_as(&alice, &format!("/api/v2/submissions/{alice_sub}"))
+        .await;
+    assert_eq!(mine.json()["status"], "published");
+    assert_eq!(mine.json()["final_score"], 50.0);
+}
+
 /// UX-136: a maintainer's queued deadline extension fails at execution
 /// once the creator has set them inactive — the grant is checked when the
 /// worker runs, not only at the enqueue.

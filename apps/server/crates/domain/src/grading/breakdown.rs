@@ -44,6 +44,10 @@ pub struct GradingBreakdown {
     /// Teacher's overall comment.
     #[serde(default)]
     pub feedback: String,
+    /// BUG-205: the teacher's explicit raw override — the score of record
+    /// regardless of whether it equals the item-derived one. `None` = derived.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score_override: Option<f64>,
 }
 
 impl GradingBreakdown {
@@ -118,6 +122,7 @@ mod tests {
                 correct_answer: serde_json::json!(["b"]),
             }],
             needs_manual_review: false,
+            score_override: None,
             auto_graded: true,
             feedback: String::new(),
         };

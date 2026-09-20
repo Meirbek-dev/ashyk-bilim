@@ -973,10 +973,10 @@ impl GradingService {
             })
             .collect();
         let grading = GradingBreakdown::from_value(&row.grading);
-        let score_override = ab_db::submissions::latest_grading_entry(&self.pool, row.id)
+        let latest_raw = ab_db::submissions::latest_grading_entry(&self.pool, row.id)
             .await?
-            .map(|e| e.raw_score)
-            .filter(|raw| !same_score(*raw, derived_raw(&grading)));
+            .map(|e| e.raw_score);
+        let score_override = override_of(&grading, latest_raw);
         Ok(TeacherSubmission {
             id: row.id,
             assessment_id: row.assessment_id,
@@ -1171,13 +1171,25 @@ impl GradingService {
                 .await?
                 .map(|e| e.raw_score),
         };
+        // BUG-205: an explicit `final_score` is the score of record even when
+        // it equals the derived one — the intent is stored on the breakdown
+        // (`score_override`), never inferred from equality.
         let (raw, overridden) = match input.final_score {
-            Some(Some(score)) => (round2(score), true),
+            Some(Some(score)) => {
+                breakdown.score_override = Some(round2(score));
+                (round2(score), true)
+            }
             _ if annulled => (stored_raw.unwrap_or(0.0), false),
-            Some(None) => (derived_raw(&breakdown), false),
-            None => match stored_raw {
-                Some(stored) if !same_score(stored, derived_before) => (stored, true),
-                _ => (derived_raw(&breakdown), false),
+            Some(None) => {
+                breakdown.score_override = None;
+                (derived_raw(&breakdown), false)
+            }
+            None => match override_of_before(&breakdown, stored_raw, derived_before) {
+                Some(stored) => {
+                    breakdown.score_override = Some(stored);
+                    (stored, true)
+                }
+                None => (derived_raw(&breakdown), false),
             },
         };
         // BUG-197: without a score of record — an item still awaiting manual
@@ -1652,11 +1664,27 @@ fn derived_raw(breakdown: &GradingBreakdown) -> f64 {
 }
 
 /// BUG-197: no score of record yet — an item still awaits its manual score
-/// and the stored raw (if any) is the item-derived one, not an override.
-/// Such a row is held back from the bulk release, as a single publish is.
+/// and no override is stored. Such a row is held back from the bulk
+/// release, as a single publish is.
 fn unscored(breakdown: &GradingBreakdown, stored_raw: Option<f64>) -> bool {
-    breakdown.needs_manual_review
-        && stored_raw.is_none_or(|raw| same_score(raw, derived_raw(breakdown)))
+    breakdown.needs_manual_review && override_of(breakdown, stored_raw).is_none()
+}
+
+/// The stored override (BUG-205), or — for rows written before the flag
+/// existed — a latest ledger raw that differs from the item-derived one.
+fn override_of(breakdown: &GradingBreakdown, ledger_raw: Option<f64>) -> Option<f64> {
+    override_of_before(breakdown, ledger_raw, derived_raw(breakdown))
+}
+
+/// `override_of` against a derived score computed before an item merge.
+fn override_of_before(
+    breakdown: &GradingBreakdown,
+    ledger_raw: Option<f64>,
+    derived: f64,
+) -> Option<f64> {
+    breakdown
+        .score_override
+        .or_else(|| ledger_raw.filter(|raw| !same_score(*raw, derived)))
 }
 
 /// Equal to the 2-decimal precision raw scores are stored at.
