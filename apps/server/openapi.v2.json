@@ -16577,7 +16577,7 @@
           },
           "payload": {
             "type": "object",
-            "description": "Free-form details (an object)."
+            "description": "Free-form details (an object of at most 16 KiB serialized, UX-148)."
           },
           "status": {
             "type": "string",
@@ -18242,6 +18242,17 @@
             ],
             "format": "uuid",
             "description": "The id of that pending attempt — a submission id or a file attempt\nid, whichever the cell is about — so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123)."
+          },
+          "pending_attempt_status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionStatus",
+                "description": "UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart."
+              }
+            ]
           },
           "status": {
             "$ref": "#/components/schemas/SubmissionStatus"
@@ -20811,7 +20822,7 @@
       },
       "ReadinessItem": {
         "type": "object",
-        "description": "`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nactivity-unpublished | thumbnail-missing | certificate-not-configured`.",
+        "description": "One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.",
         "required": [
           "code"
         ],
@@ -21644,7 +21655,7 @@
           },
           "query": {
             "type": "object",
-            "description": "The saved filter state (an object)."
+            "description": "The saved filter state (an object of at most 16 KiB serialized, UX-148)."
           },
           "view_type": {
             "type": "string",

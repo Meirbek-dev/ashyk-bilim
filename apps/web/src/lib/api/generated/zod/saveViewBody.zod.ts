@@ -10,7 +10,10 @@ import * as zod from 'zod'
 export const SaveViewBody = zod
   .object({
     name: zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
-    query: zod.looseObject({}).optional().describe('The saved filter state (an object).'),
+    query: zod
+      .looseObject({})
+      .optional()
+      .describe('The saved filter state (an object of at most 16 KiB serialized, UX-148).'),
     view_type: zod.string().optional().describe('Defaults to `overview`.'),
   })
   .describe('Save (or overwrite by name + type) a dashboard view.')

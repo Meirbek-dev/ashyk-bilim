@@ -37,11 +37,15 @@ export const GradebookCell = zod
         'The id of that pending attempt — a submission id or a file attempt\nid, whichever the cell is about — so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123).',
       ),
     pending_attempt_status: zod
-      .enum(['draft', 'pending', 'graded', 'published', 'returned'])
-      .nullish()
-      .describe(
-        'UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart.',
-      ),
+      .union([
+        zod.null(),
+        zod
+          .enum(['draft', 'pending', 'graded', 'published', 'returned'])
+          .describe(
+            'UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart.',
+          ),
+      ])
+      .optional(),
     status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
     submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
     submitted_at_unix: zod.int().nullish(),

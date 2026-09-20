@@ -17,7 +17,10 @@ export const CreateInterventionBody = zod
       ),
     notes: zod.string().nullish(),
     outcome: zod.string().nullish(),
-    payload: zod.looseObject({}).optional().describe('Free-form details (an object).'),
+    payload: zod
+      .looseObject({})
+      .optional()
+      .describe('Free-form details (an object of at most 16 KiB serialized, UX-148).'),
     status: zod.string().optional().describe('`planned`, `completed` or `resolved`.'),
     user_id: zod.uuid(),
   })

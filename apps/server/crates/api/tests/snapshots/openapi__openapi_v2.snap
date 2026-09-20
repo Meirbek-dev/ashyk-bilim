@@ -4230,7 +4230,7 @@ expression: json
             ]
           },
           "payload": {
-            "description": "Free-form details (an object).",
+            "description": "Free-form details (an object of at most 16 KiB serialized, UX-148).",
             "type": "object"
           },
           "status": {
@@ -5891,6 +5891,17 @@ expression: json
             "type": [
               "string",
               "null"
+            ]
+          },
+          "pending_attempt_status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionStatus",
+                "description": "UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart."
+              }
             ]
           },
           "status": {
@@ -8469,7 +8480,7 @@ expression: json
         "type": "object"
       },
       "ReadinessItem": {
-        "description": "`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nactivity-unpublished | thumbnail-missing | certificate-not-configured`.",
+        "description": "One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.",
         "properties": {
           "activity_id": {
             "oneOf": [
@@ -9299,7 +9310,7 @@ expression: json
             "type": "string"
           },
           "query": {
-            "description": "The saved filter state (an object).",
+            "description": "The saved filter state (an object of at most 16 KiB serialized, UX-148).",
             "type": "object"
           },
           "view_type": {

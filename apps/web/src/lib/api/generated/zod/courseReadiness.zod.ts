@@ -17,7 +17,7 @@ export const CourseReadiness = zod
           title: zod.string().nullish(),
         })
         .describe(
-          '`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nactivity-unpublished | thumbnail-missing | certificate-not-configured`.',
+          'One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.',
         ),
     ),
     ready: zod.boolean(),
@@ -29,7 +29,7 @@ export const CourseReadiness = zod
           title: zod.string().nullish(),
         })
         .describe(
-          '`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nactivity-unpublished | thumbnail-missing | certificate-not-configured`.',
+          'One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.',
         ),
     ),
   })
