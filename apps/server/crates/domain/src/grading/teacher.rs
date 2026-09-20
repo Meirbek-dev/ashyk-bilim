@@ -218,7 +218,8 @@ pub struct GradingEntry {
     pub graded_by: Option<UserId>,
     pub raw_score: f64,
     pub penalty_pct: f64,
-    pub final_score: f64,
+    /// `None` = a draft save that left the attempt pending.
+    pub final_score: Option<f64>,
     pub overall_feedback: String,
     pub published_at: Option<i64>,
     pub created_at: i64,
@@ -1209,6 +1210,9 @@ impl GradingService {
             attempt_cap(raw, assessment.attempt_penalty_percent, row.attempt_number),
             row.late_penalty_pct,
         );
+        // BUG-202 / BUG-206: no score of record while the attempt stays
+        // pending — neither the row nor its ledger entry carries a final.
+        let score_of_record = (target != SubmissionStatus::Pending).then_some(final_score);
         let effective = breakdown.to_value();
         // The row update and its ledger (entry, item feedback, audit) land
         // together or not at all.
@@ -1219,9 +1223,7 @@ impl GradingService {
             expected_version,
             target,
             &effective,
-            // BUG-202: no score of record while the attempt stays pending —
-            // the queue row must not read the auto part as a grade.
-            (target != SubmissionStatus::Pending).then_some(final_score),
+            score_of_record,
         )
         .await?;
         if !written {
@@ -1238,7 +1240,7 @@ impl GradingService {
             LedgerEntry {
                 target,
                 raw,
-                final_score,
+                final_score: score_of_record,
                 feedback: &feedback,
                 previous: &previous,
                 effective: &effective,
@@ -1379,7 +1381,7 @@ impl GradingService {
                     Some(e) => (
                         e.raw_score,
                         e.penalty_pct,
-                        e.final_score,
+                        e.final_score.unwrap_or(fallback_score),
                         e.overall_feedback.clone(),
                         e.raw_breakdown.clone(),
                         e.effective_breakdown.clone(),
@@ -1400,7 +1402,7 @@ impl GradingService {
                     graded_by: Some(actor.user_id),
                     raw_score,
                     penalty_pct,
-                    final_score,
+                    final_score: Some(final_score),
                     raw_breakdown: &raw_breakdown,
                     effective_breakdown: &effective,
                     overall_feedback: &feedback,
@@ -1619,7 +1621,7 @@ pub(crate) const fn course_event_name(target: SubmissionStatus) -> &'static str 
 struct LedgerEntry<'a> {
     target: SubmissionStatus,
     raw: f64,
-    final_score: f64,
+    final_score: Option<f64>,
     feedback: &'a str,
     previous: &'a serde_json::Value,
     effective: &'a serde_json::Value,

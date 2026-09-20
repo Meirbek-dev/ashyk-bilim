@@ -269,14 +269,17 @@ async fn run_deadline_extension(
             if late == submission.is_late {
                 continue;
             }
-            // On time now: the penalty goes, and a graded row is re-scored
-            // from its ledger (raw score, attempt cap, no late deduction).
+            // On time now: the penalty goes, and a row with a score of record
+            // is re-scored from its ledger (raw score, attempt cap, no late
+            // deduction). BUG-206: a pending row (feedback-only saved, no
+            // final) keeps its `NULL` — the ledger entry is not a grade.
             let mut penalty_pct = submission.late_penalty_pct;
             let mut final_score = None;
             if !late && penalty_pct > 0.0 {
                 penalty_pct = 0.0;
-                if let Some(entry) =
-                    ab_db::submissions::latest_grading_entry(pool, submission.id).await?
+                if submission.final_score.is_some()
+                    && let Some(entry) =
+                        ab_db::submissions::latest_grading_entry(pool, submission.id).await?
                 {
                     let rescored = attempt_cap(
                         entry.raw_score,
@@ -290,7 +293,7 @@ async fn run_deadline_extension(
                             graded_by: Some(granted_by),
                             raw_score: entry.raw_score,
                             penalty_pct: 0.0,
-                            final_score: rescored,
+                            final_score: Some(rescored),
                             raw_breakdown: &entry.raw_breakdown,
                             effective_breakdown: &entry.effective_breakdown,
                             overall_feedback: &entry.overall_feedback,

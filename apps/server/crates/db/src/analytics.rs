@@ -491,7 +491,7 @@ pub struct GradingEntryAuditRow {
     pub submission_id: SubmissionId,
     pub user_id: UserId,
     pub graded_by: Option<UserId>,
-    pub final_score: f64,
+    pub final_score: Option<f64>,
     pub published_at: Option<i64>,
     pub created_at: i64,
 }

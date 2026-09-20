@@ -1917,7 +1917,12 @@ async fn override_equal_to_the_derived_score_is_a_score_of_record(pool: PgPool) 
             &serde_json::json!({ "action": "save", "feedback": "fine" }),
         ))
         .await;
-    assert_eq!(feedback_only.status, StatusCode::OK, "{}", feedback_only.text());
+    assert_eq!(
+        feedback_only.status,
+        StatusCode::OK,
+        "{}",
+        feedback_only.text()
+    );
     assert_eq!(feedback_only.json()["status"], "graded");
     assert_eq!(feedback_only.json()["final_score"], 50.0);
     assert_eq!(feedback_only.json()["score_override"], 50.0);
@@ -1937,6 +1942,116 @@ async fn override_equal_to_the_derived_score_is_a_score_of_record(pool: PgPool) 
         .await;
     assert_eq!(mine.json()["status"], "published");
     assert_eq!(mine.json()["final_score"], 50.0);
+}
+
+/// BUG-206: a deadline extension re-scores only rows that have a score of
+/// record — a feedback-only-saved (pending, `final null`) late attempt
+/// loses its penalty but gains no score; its ledger entry carries no
+/// final either. Nits: `new_due_at_unix` outside the timestamp range is
+/// 422; the route honours `Idempotency-Key` (a replay is the same action).
+#[sqlx::test(migrations = "../../migrations")]
+async fn deadline_extension_leaves_a_pending_attempt_unscored(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let saved = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("1"),
+            &serde_json::json!({ "action": "save", "feedback": "read so far" }),
+        ))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    assert_eq!(saved.json()["status"], "pending");
+    assert_eq!(saved.json()["is_late"], true);
+    let history = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/submissions/{alice_sub}/grading-history"),
+        )
+        .await;
+    assert_eq!(history.status, StatusCode::OK, "{}", history.text());
+    assert!(
+        history.json()[0]["final_score"].is_null(),
+        "a draft entry carries no final: {}",
+        history.text()
+    );
+
+    let out_of_range = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [alice.user_id], "new_due_at_unix": 1_i64 << 62 }),
+        )
+        .await;
+    assert_eq!(
+        out_of_range.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        out_of_range.text()
+    );
+
+    let body =
+        serde_json::json!({ "user_ids": [alice.user_id], "new_due_at_unix": now_unix() + 86_400 });
+    let queue = || {
+        app.send(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/api/v2/assessments/{id}/deadline-extensions"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .header("idempotency-key", "extend-1")
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
+    };
+    let queued = queue().await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let replay = queue().await;
+    assert_eq!(replay.status, StatusCode::ACCEPTED, "{}", replay.text());
+    assert_eq!(
+        replay.json()["id"],
+        queued.json()["id"],
+        "one action per key"
+    );
+    let action_id = queued.json()["id"].as_str().unwrap().to_owned();
+    ab_domain::grading::GradingService::execute_bulk_action(
+        &app.pool,
+        None,
+        ab_core::id::BulkActionId(uuid::Uuid::parse_str(&action_id).unwrap()),
+    )
+    .await
+    .unwrap();
+    let review = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{alice_sub}/review"))
+        .await;
+    assert_eq!(review.json()["status"], "pending");
+    assert_eq!(review.json()["is_late"], false);
+    assert_eq!(review.json()["late_penalty_pct"], 0.0);
+    assert!(
+        review.json()["final_score"].is_null(),
+        "no score of record was invented: {}",
+        review.text()
+    );
+    let queue_row = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/submissions"))
+        .await;
+    assert!(
+        queue_row.json()["items"][0]["final_score"].is_null(),
+        "{}",
+        queue_row.text()
+    );
 }
 
 /// UX-136: a maintainer's queued deadline extension fails at execution

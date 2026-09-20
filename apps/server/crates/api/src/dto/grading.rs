@@ -268,7 +268,8 @@ pub struct GradingEntry {
     pub graded_by: Option<UserId>,
     pub raw_score: f64,
     pub penalty_pct: f64,
-    pub final_score: f64,
+    /// Absent for a draft save that left the attempt pending.
+    pub final_score: Option<f64>,
     pub overall_feedback: String,
     pub published_at_unix: Option<i64>,
     pub created_at_unix: i64,
@@ -294,7 +295,8 @@ impl From<domain::GradingEntry> for GradingEntry {
 pub struct DeadlineExtensionRequest {
     #[garde(length(min = 1, max = 500))]
     pub user_ids: Vec<UserId>,
-    #[garde(skip)]
+    /// Unix seconds, at most 9999-12-31 (the timestamp range).
+    #[garde(range(min = 0, max = 253_402_300_799))]
     pub new_due_at_unix: i64,
     #[garde(length(chars, max = 500))]
     #[serde(default)]

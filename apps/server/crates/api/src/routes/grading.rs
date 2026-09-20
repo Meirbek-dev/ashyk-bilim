@@ -21,7 +21,7 @@ use crate::dto::grading::{
     GradingEntry, ItemAnalytics, PublishSummary, ReviewPage, ReviewQuery, Stats, TeacherSubmission,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson};
+use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
 use crate::state::AppState;
 
 const DEFAULT_REVIEW_PAGE: i64 = 25;
@@ -266,7 +266,8 @@ pub async fn publish_grades(
 /// Extend the due date for selected learners.
 ///
 /// Recorded as a bulk action and executed by the worker; poll
-/// `GET /bulk-actions/{id}` for the outcome.
+/// `GET /bulk-actions/{id}` for the outcome. Retry-safe with
+/// `Idempotency-Key`: a replay returns the stored 202 (BUG-206).
 #[utoipa::path(
     post, path = "/assessments/{id}/deadline-extensions", tag = "grading",
     params(("id" = AssessmentId, Path, description = "Assessment id")),
@@ -281,21 +282,33 @@ pub async fn extend_deadline(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-    ValidJson(request): ValidJson<DeadlineExtensionRequest>,
-) -> ApiResult<(StatusCode, Json<BulkAction>)> {
-    let action = state
-        .grading
-        .extend_deadline(
-            &actor,
-            id,
-            DeadlineExtension {
-                user_ids: &request.user_ids,
-                new_due_at: request.new_due_at_unix,
-                reason: request.reason.trim(),
-            },
-        )
-        .await?;
-    Ok((StatusCode::ACCEPTED, Json(action.into())))
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    let request = ValidJson::<DeadlineExtensionRequest>::parse(&body)?;
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("deadline-extension:{id}"),
+        &headers,
+        &body,
+        move || async move {
+            let action = state
+                .grading
+                .extend_deadline(
+                    &actor,
+                    id,
+                    DeadlineExtension {
+                        user_ids: &request.user_ids,
+                        new_due_at: request.new_due_at_unix,
+                        reason: request.reason.trim(),
+                    },
+                )
+                .await?;
+            Ok((StatusCode::ACCEPTED, BulkAction::from(action)))
+        },
+    )
+    .await
 }
 
 /// A bulk action's status.

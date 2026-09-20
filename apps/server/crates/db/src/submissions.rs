@@ -787,7 +787,8 @@ pub struct GradingEntryRow {
     pub graded_by: Option<UserId>,
     pub raw_score: f64,
     pub penalty_pct: f64,
-    pub final_score: f64,
+    /// `None` = the save left the attempt pending (no score of record, BUG-206).
+    pub final_score: Option<f64>,
     pub raw_breakdown: serde_json::Value,
     pub effective_breakdown: serde_json::Value,
     pub overall_feedback: String,
@@ -801,7 +802,7 @@ pub struct NewGradingEntry<'a> {
     pub graded_by: Option<UserId>,
     pub raw_score: f64,
     pub penalty_pct: f64,
-    pub final_score: f64,
+    pub final_score: Option<f64>,
     pub raw_breakdown: &'a serde_json::Value,
     pub effective_breakdown: &'a serde_json::Value,
     pub overall_feedback: &'a str,

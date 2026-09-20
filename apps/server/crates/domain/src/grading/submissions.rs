@@ -796,7 +796,7 @@ impl SubmissionsService {
                     graded_by: None,
                     raw_score: verdict.auto_score,
                     penalty_pct: penalty.late_penalty_pct,
-                    final_score: penalty.final_score,
+                    final_score: Some(penalty.final_score),
                     raw_breakdown: &breakdown,
                     effective_breakdown: &breakdown,
                     overall_feedback: "",

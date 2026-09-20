@@ -165,7 +165,7 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
             graded_by: None,
             raw_score: 70.0,
             penalty_pct: 10.0,
-            final_score: 63.0,
+            final_score: Some(63.0),
             raw_breakdown: &breakdown,
             effective_breakdown: &breakdown,
             overall_feedback: "ok",

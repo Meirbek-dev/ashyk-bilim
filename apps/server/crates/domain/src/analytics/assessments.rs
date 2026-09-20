@@ -928,7 +928,7 @@ pub fn build_audit_history(
                     }
                     .to_owned(),
                 ),
-                final_score: Some(e.final_score),
+                final_score: e.final_score,
                 affected_count: Some(1),
                 submission_id: Some(e.submission_id),
                 grading_entry_id: Some(e.id),
