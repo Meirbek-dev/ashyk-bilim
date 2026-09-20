@@ -68,6 +68,8 @@ testAsTeacher('teacher can analyze a submission and generate a remediation gate'
   await expect(page.getByText('Knowledge gaps: 1')).toBeVisible()
   await expect(page.getByText('Loop condition')).toBeVisible()
   await page.getByRole('button', { name: 'Generate remediation gate' }).click()
+  // UX-139: a gate locks the learner out, so the button asks first.
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Assign', exact: true }).click()
   await expect(page.getByText('Trace the loop exit')).toBeVisible()
   await expect(page.getByText('Gate mode is active until the learner passes.')).toBeVisible()
 })
