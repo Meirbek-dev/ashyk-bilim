@@ -677,7 +677,7 @@ mod tests {
         );
         // BUG-199: shared option ids are refused at write time and flagged
         // by readiness (the grader matches by id).
-        let ItemBody::Choice(mut dup) = bad.clone() else {
+        let ItemBody::Choice(mut dup) = bad else {
             panic!("choice")
         };
         dup.options[1].id = "a".into();

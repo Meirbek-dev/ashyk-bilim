@@ -1100,7 +1100,7 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
         post_key(body.clone(), "race-1"),
         post_key(body.clone(), "race-1"),
     );
-    let raced = [race.0, race.1, race.2, race.3];
+    let raced: [_; 4] = race.into();
     for r in &raced {
         assert_eq!(r.status, StatusCode::CREATED, "{}", r.text());
         assert_eq!(r.json()["id"], raced[0].json()["id"], "{}", r.text());
