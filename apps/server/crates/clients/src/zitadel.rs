@@ -120,6 +120,19 @@ fn strip_error_id(message: &str) -> &str {
         .map_or(message, |(head, _)| head)
 }
 
+/// A transport failure (refused, reset, the 10 s timeout) is an outage of
+/// the identity provider, not a bug of ours: 503 `service-unavailable`
+/// (BUG-222 nit), with the cause in the log only.
+fn unavailable(what: &'static str) -> impl FnOnce(reqwest::Error) -> Error {
+    move |err| {
+        tracing::warn!(%err, what, "zitadel unreachable");
+        Error::app(
+            ErrorCode::ServiceUnavailable,
+            format!("{what}: identity provider unreachable"),
+        )
+    }
+}
+
 fn password_policy_error(field: &str, message: &str) -> Error {
     Error::validation(vec![ab_core::FieldError {
         field: field.into(),
@@ -173,7 +186,7 @@ impl ZitadelClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel create session", e))?;
+            .map_err(unavailable("create session"))?;
 
         if response.status().is_success() {
             #[derive(Deserialize)]
@@ -253,7 +266,7 @@ impl ZitadelClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel delete session", e))?;
+            .map_err(unavailable("delete session"))?;
         // Already-gone sessions are fine — logout must be idempotent.
         if response.status().is_success() || response.status() == reqwest::StatusCode::NOT_FOUND {
             return Ok(());
@@ -280,7 +293,7 @@ impl ZitadelClient {
             .auth(self.http.get(self.url("/management/v1/orgs/me")))
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel org lookup", e))?;
+            .map_err(unavailable("org lookup"))?;
         if !response.status().is_success() {
             return Err(Error::app(
                 ErrorCode::ServiceUnavailable,
@@ -313,7 +326,7 @@ impl ZitadelClient {
             )
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel list auth methods", e))?;
+            .map_err(unavailable("list auth methods"))?;
         if !response.status().is_success() {
             return Err(Error::app(
                 ErrorCode::ServiceUnavailable,
@@ -344,7 +357,7 @@ impl ZitadelClient {
             .json(&serde_json::json!({}))
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel totp register", e))?;
+            .map_err(unavailable("totp register"))?;
         if response.status().is_success() {
             let registered: Registered = response
                 .json()
@@ -383,7 +396,7 @@ impl ZitadelClient {
             .json(&serde_json::json!({ "code": code }))
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel totp verify", e))?;
+            .map_err(unavailable("totp verify"))?;
         if response.status().is_success() {
             return Ok(());
         }
@@ -417,7 +430,7 @@ impl ZitadelClient {
             )
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel totp remove", e))?;
+            .map_err(unavailable("totp remove"))?;
         if response.status().is_success() || response.status() == reqwest::StatusCode::NOT_FOUND {
             return Ok(());
         }
@@ -473,7 +486,7 @@ impl ZitadelClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel create user", e))?;
+            .map_err(unavailable("create user"))?;
 
         if response.status().is_success() {
             let ok: CreatedHumanUser = response
@@ -539,7 +552,7 @@ impl ZitadelClient {
             .json(&serde_json::json!({ "verificationCode": code }))
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel verify email", e))?;
+            .map_err(unavailable("verify email"))?;
         if response.status().is_success() {
             return Ok(());
         }
@@ -585,7 +598,7 @@ impl ZitadelClient {
             }))
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel change password", e))?;
+            .map_err(unavailable("change password"))?;
         if response.status().is_success() {
             return Ok(());
         }
@@ -632,7 +645,7 @@ impl ZitadelClient {
             .auth(self.http.delete(self.url(&format!("/v2/users/{user_id}"))))
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel delete user", e))?;
+            .map_err(unavailable("delete user"))?;
         if response.status().is_success() || response.status() == reqwest::StatusCode::NOT_FOUND {
             return Ok(());
         }
@@ -662,7 +675,7 @@ impl ZitadelClient {
             .auth(self.http.get(url))
             .send()
             .await
-            .map_err(|e| Error::internal("zitadel user lookup", e))?;
+            .map_err(unavailable("user lookup"))?;
         if response.status() == reqwest::StatusCode::NOT_FOUND {
             return Ok(None);
         }
@@ -693,5 +706,21 @@ mod tests {
             panic!("expected a validation error");
         };
         assert_eq!(field_errors[0].message, "Password must contain upper case");
+    }
+
+    /// BUG-222 nit: a Zitadel we cannot reach is a 503, not our 500.
+    #[tokio::test]
+    async fn unreachable_zitadel_is_service_unavailable() {
+        let client = super::ZitadelClient::new(super::ZitadelConfig {
+            base_url: "http://127.0.0.1:9".into(),
+            pat: "pat".into(),
+        })
+        .unwrap_or_else(|_| panic!("client builds"));
+        let err = client
+            .create_password_session(&super::SessionUser::Id("z-1"), &"pw".into(), None)
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("no zitadel on port 9"));
+        assert_eq!(err.code(), ab_core::ErrorCode::ServiceUnavailable);
     }
 }

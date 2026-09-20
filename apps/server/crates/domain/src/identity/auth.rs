@@ -279,28 +279,15 @@ impl IdentityService {
         }
     }
 
-    /// Per-IP limit, read before any Zitadel round-trip and counted only on
-    /// a rejected credential (BUG-214 nit: a connection dropped mid-check is
-    /// not a guess). Returns the key to count against.
+    /// Per-IP limit, counted BEFORE the Zitadel round-trip (BUG-222: a
+    /// peek-then-count let a concurrent burst through in full) and released
+    /// once Zitadel accepts the credential. A rejection, a transport error
+    /// and a dropped connection all keep their hit. Returns the key.
     async fn enforce_login_ip_limit(&self, input: &LoginInput) -> Result<Option<String>> {
         let Some(ip) = &input.ip else { return Ok(None) };
         let key = format!("rl:login:ip:{ip}");
-        let (limit, window) = IP_LIMIT;
-        if self.limiter.count(&key).await? >= limit {
-            return Err(self
-                .rate_limited(&key, window, "too many login attempts")
-                .await?);
-        }
+        self.enforce(&key, IP_LIMIT, "login").await?;
         Ok(Some(key))
-    }
-
-    /// One rejected credential against the caller's IP.
-    async fn count_login_failure(&self, ip_key: Option<&str>) -> Result<()> {
-        if let Some(key) = ip_key {
-            let (limit, window) = IP_LIMIT;
-            self.limiter.check(key, limit, window).await?;
-        }
-        Ok(())
     }
 
     /// Map a Zitadel check outcome to a session or the audited uniform error.
@@ -383,7 +370,6 @@ impl IdentityService {
         let user = ab_db::identity::find_user_for_login(&self.pool, input.login.trim()).await?;
         let login_key = self.enforce_login_name_limit(&input, user.as_ref()).await?;
         let Some(user) = user else {
-            self.count_login_failure(ip_key.as_deref()).await?;
             self.audit(
                 None,
                 "login-failed",
@@ -397,6 +383,36 @@ impl IdentityService {
                 "invalid credentials",
             ));
         };
+        // A fenced attempt (a mutation landed mid-flight) is retried once as
+        // a fresh login — every check including the password runs again on
+        // the new epoch, so a role or MFA rewrite costs the user nothing and
+        // a password change is caught by Zitadel itself (BUG-222 nit).
+        let mut ok = self.login_attempt(&input, &user).await?;
+        if ok.is_none() {
+            ok = self.login_attempt(&input, &user).await?;
+        }
+        let Some(ok) = ok else {
+            return Err(self.fenced_login(&user, &input).await?);
+        };
+        if let Some(key) = &ip_key {
+            self.limiter.release(key).await?;
+        }
+        self.limiter.clear(&login_key).await?;
+        self.audit(Some(user.id), "login", &input, serde_json::json!({}))
+            .await?;
+        crate::gamification::hooks::login(&self.pool, user.id).await;
+        crate::analytics::events::hooks::login(&self.pool, user.id, "password").await;
+        Ok(ok)
+    }
+
+    /// One fenced login attempt: `Ok(None)` when a mutation bumped the epoch
+    /// between the checks and `sessions.create` (the Zitadel session is
+    /// discarded and the fence audited); the caller retries or refuses.
+    async fn login_attempt(
+        &self,
+        input: &LoginInput,
+        user: &ab_db::identity::AuthUserRow,
+    ) -> Result<Option<LoginOk>> {
         // BUG-203: the epoch is read before every check this login rests on
         // (password, status, MFA methods, grants); `sessions.create` refuses
         // if a mutation bumped it in between, so a disable / password change /
@@ -411,23 +427,18 @@ impl IdentityService {
                 input.totp_code.as_deref(),
             )
             .await?;
-        let zsession = match self.resolve_session_outcome(outcome, &input).await {
-            Ok(zsession) => zsession,
-            Err(err) => {
-                self.count_login_failure(ip_key.as_deref()).await?;
-                return Err(err);
-            }
-        };
+        let zsession = self.resolve_session_outcome(outcome, input).await?;
         // Status is re-read after the epoch, not taken from the row looked up
         // before it — the fence only covers state read after the epoch.
         let status = ab_db::identity::user_status(&self.pool, user.id)
             .await?
             .unwrap_or_else(|| "deleted".to_owned());
         if status != "active" {
+            self.discard_zitadel_session(&zsession, "blocked").await;
             self.audit(
                 Some(user.id),
                 "login-blocked",
-                &input,
+                input,
                 serde_json::json!({ "status": status }),
             )
             .await?;
@@ -448,7 +459,7 @@ impl IdentityService {
             self.audit(
                 Some(user.id),
                 "login-mfa-required",
-                &input,
+                input,
                 serde_json::json!({}),
             )
             .await?;
@@ -476,37 +487,28 @@ impl IdentityService {
             })
             .await?;
         let Some(session_id) = created else {
-            return Err(self.fenced_login(&user, &input, &zsession).await?);
+            self.discard_zitadel_session(&zsession, "fenced").await;
+            self.audit(Some(user.id), "login-fenced", input, serde_json::json!({}))
+                .await?;
+            return Ok(None);
         };
-
-        self.limiter.clear(&login_key).await?;
-        self.audit(Some(user.id), "login", &input, serde_json::json!({}))
-            .await?;
-        crate::gamification::hooks::login(&self.pool, user.id).await;
-        crate::analytics::events::hooks::login(&self.pool, user.id, "password").await;
-
-        Ok(LoginOk {
+        Ok(Some(LoginOk {
             session_id,
             user_id: user.id,
             roles,
             permissions,
             mfa_enabled,
-        })
+        }))
     }
 
-    /// A mutation landed while this login was in flight (`create` fenced):
-    /// discard the Zitadel session and answer as a fresh login would — 403
-    /// if the account is now disabled, 401 `mfa-required` if TOTP is now
-    /// enrolled and no code came, else 401 (the password may have changed).
+    /// Fenced twice in a row: answer as a fresh login would — 403 if the
+    /// account is now disabled, 401 `mfa-required` if TOTP is now enrolled
+    /// and no code came, else 401 (the password may have changed).
     async fn fenced_login(
         &self,
         user: &ab_db::identity::AuthUserRow,
         input: &LoginInput,
-        zsession: &ab_clients::zitadel::ZitadelSession,
     ) -> Result<Error> {
-        self.discard_zitadel_session(zsession, "fenced").await;
-        self.audit(Some(user.id), "login-fenced", input, serde_json::json!({}))
-            .await?;
         if ab_db::identity::user_status(&self.pool, user.id).await? != Some("active".to_owned()) {
             return Ok(Error::app(
                 ErrorCode::AccountDisabled,
@@ -637,12 +639,21 @@ impl IdentityService {
                 if let Err(err) = self.zitadel.delete_user(&created.user_id).await {
                     tracing::warn!(%err, "compensating zitadel user delete failed");
                 }
-                return Err(other.err().unwrap_or_else(|| {
-                    Error::app(
-                        ErrorCode::UsernameTaken,
-                        "username or email is already taken",
-                    )
-                }));
+                return Err(match other {
+                    Err(err) => err,
+                    // Name the field that actually collided (BUG-222 nit:
+                    // an email race answered `username-taken`).
+                    Ok(_) => self
+                        .require_unique(&account.username, &account.email)
+                        .await
+                        .err()
+                        .unwrap_or_else(|| {
+                            Error::app(
+                                ErrorCode::UsernameTaken,
+                                "username or email is already taken",
+                            )
+                        }),
+                });
             }
         };
         ab_db::identity::insert_auth_audit(
@@ -813,11 +824,35 @@ impl IdentityService {
         // failure is not a guess and hands the attempt back.
         let key = format!("rl:password:user:{}", actor.user_id);
         self.enforce(&key, PASSWORD_CHECK_LIMIT, "password").await?;
-        if let Err(err) = self
+        // One change per user at a time (BUG-222 nit): two concurrent
+        // changes with the same current password both passed Zitadel and
+        // revoked each other. The runner is `detached()` (BUG-214), so the
+        // lock is always handed back; the TTL covers a crash.
+        let lock = format!("lock:password:user:{}", actor.user_id);
+        let mut redis = self.sessions.redis();
+        let locked: Option<String> = redis::cmd("SET")
+            .arg(&lock)
+            .arg(1)
+            .arg("NX")
+            .arg("EX")
+            .arg(30)
+            .query_async(&mut redis)
+            .await
+            .map_err(|e| Error::internal("password change lock", e))?;
+        if locked.is_none() {
+            self.limiter.release(&key).await?;
+            return Err(Error::conflict("a password change is already in progress"));
+        }
+        let changed = self
             .zitadel
             .change_password(&actor.zitadel_user_id, current, new)
+            .await;
+        let _: i64 = redis::cmd("DEL")
+            .arg(&lock)
+            .query_async(&mut redis)
             .await
-        {
+            .map_err(|e| Error::internal("password change unlock", e))?;
+        if let Err(err) = changed {
             if err.code() != ErrorCode::InvalidCredentials {
                 self.limiter.release(&key).await?;
             }

@@ -7,6 +7,11 @@ use std::time::Duration;
 use ab_core::{Error, Result};
 use redis::aio::ConnectionManager;
 
+const COUNT_HIT: &str = r"
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+return count";
+
 #[derive(Clone)]
 pub struct RateLimiter {
     redis: ConnectionManager,
@@ -19,21 +24,16 @@ impl RateLimiter {
     }
 
     /// Count a hit against `key`; `true` while within `limit` per `window`.
+    /// One Lua step: the window starts with the first hit even if the
+    /// process dies right after the `INCR` (no TTL-less counter).
     pub async fn check(&self, key: &str, limit: u32, window: Duration) -> Result<bool> {
         let mut conn = self.redis.clone();
-        let count: u32 = redis::cmd("INCR")
-            .arg(key)
-            .query_async(&mut conn)
+        let count: u32 = redis::Script::new(COUNT_HIT)
+            .key(key)
+            .arg(window.as_secs())
+            .invoke_async(&mut conn)
             .await
             .map_err(|e| Error::internal("rate limit incr", e))?;
-        if count == 1 {
-            let () = redis::cmd("EXPIRE")
-                .arg(key)
-                .arg(window.as_secs())
-                .query_async(&mut conn)
-                .await
-                .map_err(|e| Error::internal("rate limit expire", e))?;
-        }
         Ok(count <= limit)
     }
 
