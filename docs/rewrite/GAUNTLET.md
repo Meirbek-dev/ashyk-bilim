@@ -133,6 +133,9 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   start`, same recipe as `<scratchpad>/rebuild-stack.ps1`: containers → buckets/CORS/policy →
   `CREATE DATABASE` → `ashyq migrate` → serve/worker → register ×3 (`first_name`/`last_name`,
   not `display_name`) → verify → `UPDATE user_roles`; ~4 min).
+- **Stack rebuilt a seventh time 2026-09-20 14:05** (machine reboot overnight after the weekly usage
+  limit killed three builders mid-batch; same script, ~5 min incl. accounts + names). Resumed builders
+  by `SendMessage` to their ids — uncommitted edits survive a reboot, un-saved agent work does not.
 - **e2e expects the shared accounts' names** from `apps/web/e2e/.env.test.local` (learner «Aigerim Critic»,
   teacher «Daniyar Teacher»): after a rebuild set `users.display_name` accordingly or spec 05 fails.
 - `psql` needs `podman exec -i` (without `-i` the heredoc is silently dropped).
