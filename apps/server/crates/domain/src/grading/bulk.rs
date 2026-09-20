@@ -231,6 +231,66 @@ async fn performer_may_grade(pool: &PgPool, row: &ab_db::submissions::BulkAction
         .map_err(|_| Error::forbidden("the performer no longer has grading access to this course"))
 }
 
+/// One submission's lateness after a deadline change. BUG-216: the scoring
+/// fields are re-read under the row lock a concurrent grade save contends
+/// for, and the re-score lands in the same transaction — a save that priced
+/// the old penalty either waits and sees the bumped version (412) or landed
+/// first and is re-scored here.
+async fn settle_lateness(
+    pool: &PgPool,
+    assessment: &ab_db::assessments::AssessmentRow,
+    submission: &ab_db::submissions::SubmissionRow,
+    late: bool,
+    granted_by: UserId,
+) -> Result<()> {
+    let mut tx = pool.begin().await?;
+    let Some(locked) = ab_db::submissions::lock_for_lateness(&mut tx, submission.id).await? else {
+        return Ok(());
+    };
+    if late == locked.is_late {
+        return Ok(());
+    }
+    // On time now: the penalty goes, and a row with a score of record is
+    // re-scored from its ledger (raw score, attempt cap, no late deduction).
+    // BUG-206: a pending row (feedback-only saved, no final) keeps its
+    // `NULL` — the ledger entry is not a grade.
+    let mut penalty_pct = locked.late_penalty_pct;
+    let mut final_score = None;
+    if !late && penalty_pct > 0.0 {
+        penalty_pct = 0.0;
+        if locked.final_score.is_some()
+            && let Some(entry) =
+                ab_db::submissions::latest_grading_entry(&mut *tx, submission.id).await?
+        {
+            let rescored = attempt_cap(
+                entry.raw_score,
+                assessment.attempt_penalty_percent,
+                submission.attempt_number,
+            );
+            ab_db::submissions::insert_grading_entry(
+                &mut *tx,
+                NewGradingEntry {
+                    submission_id: submission.id,
+                    graded_by: Some(granted_by),
+                    raw_score: entry.raw_score,
+                    penalty_pct: 0.0,
+                    final_score: Some(rescored),
+                    raw_breakdown: &entry.raw_breakdown,
+                    effective_breakdown: &entry.effective_breakdown,
+                    overall_feedback: &entry.overall_feedback,
+                    published: entry.published_at.is_some(),
+                },
+            )
+            .await?;
+            final_score = Some(rescored);
+        }
+    }
+    ab_db::submissions::set_lateness(&mut *tx, submission.id, late, penalty_pct, final_score)
+        .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
 async fn run_deadline_extension(
     pool: &PgPool,
     events: Option<&GradingEvents>,
@@ -266,46 +326,7 @@ async fn run_deadline_extension(
             ab_db::submissions::list_submitted_for_user(pool, row.assessment_id, user_id).await?;
         for submission in &submitted {
             let late = submission.submitted_at.is_some_and(|s| s > new_due_at);
-            if late == submission.is_late {
-                continue;
-            }
-            // On time now: the penalty goes, and a row with a score of record
-            // is re-scored from its ledger (raw score, attempt cap, no late
-            // deduction). BUG-206: a pending row (feedback-only saved, no
-            // final) keeps its `NULL` — the ledger entry is not a grade.
-            let mut penalty_pct = submission.late_penalty_pct;
-            let mut final_score = None;
-            if !late && penalty_pct > 0.0 {
-                penalty_pct = 0.0;
-                if submission.final_score.is_some()
-                    && let Some(entry) =
-                        ab_db::submissions::latest_grading_entry(pool, submission.id).await?
-                {
-                    let rescored = attempt_cap(
-                        entry.raw_score,
-                        assessment.attempt_penalty_percent,
-                        submission.attempt_number,
-                    );
-                    ab_db::submissions::insert_grading_entry(
-                        pool,
-                        NewGradingEntry {
-                            submission_id: submission.id,
-                            graded_by: Some(granted_by),
-                            raw_score: entry.raw_score,
-                            penalty_pct: 0.0,
-                            final_score: Some(rescored),
-                            raw_breakdown: &entry.raw_breakdown,
-                            effective_breakdown: &entry.effective_breakdown,
-                            overall_feedback: &entry.overall_feedback,
-                            published: entry.published_at.is_some(),
-                        },
-                    )
-                    .await?;
-                    final_score = Some(rescored);
-                }
-            }
-            ab_db::submissions::set_lateness(pool, submission.id, late, penalty_pct, final_score)
-                .await?;
+            settle_lateness(pool, &assessment, submission, late, granted_by).await?;
         }
         ProgressProjector::new(pool.clone())
             .after_submission(row.assessment_id, user_id)

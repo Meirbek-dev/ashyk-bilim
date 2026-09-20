@@ -2224,3 +2224,85 @@ async fn annulled_attempt_is_a_score_of_record(pool: PgPool) {
         assert_eq!(review.json()["final_score"], 0.0);
     }
 }
+
+/// BUG-216: a deadline extension racing a teacher publish on a late row
+/// never leaves the penalised final behind — whichever lands first, the
+/// other one either re-scores (worker) or is refused as stale and retried
+/// (save). Both orders, twenty rounds.
+#[sqlx::test(migrations = "../../migrations")]
+async fn deadline_extension_racing_a_publish_settles_on_the_unpenalised_score(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 5, "max_days": 3 } }),
+    )
+    .await;
+    for round in 0..20 {
+        for worker_first in [false, true] {
+            let who = learner(&app, &format!("l{round}{}", u8::from(worker_first))).await;
+            let sub = submit_attempt(&app, &who, &id, &choice_id, &essay_id).await;
+            let queued = app
+                .post_as(
+                    &teacher,
+                    &format!("/api/v2/assessments/{id}/deadline-extensions"),
+                    &serde_json::json!({ "user_ids": [who.user_id],
+                                         "new_due_at_unix": now_unix() + 86_400 }),
+                )
+                .await;
+            assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+            let action = ab_core::id::BulkActionId(
+                uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
+            );
+            let extend =
+                ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action);
+            let publish = grade(
+                &teacher,
+                &sub,
+                Some("1"),
+                &serde_json::json!({ "action": "publish", "final_score": 80 }),
+            );
+            let saved = if worker_first {
+                let (extended, saved) = tokio::join!(extend, app.send(publish));
+                extended.unwrap();
+                saved
+            } else {
+                let (saved, extended) = tokio::join!(app.send(publish), extend);
+                extended.unwrap();
+                saved
+            };
+            if saved.status == StatusCode::PRECONDITION_FAILED {
+                let version = saved.json()["details"]["actual"]
+                    .as_i64()
+                    .unwrap()
+                    .to_string();
+                let retried = app
+                    .send(grade(
+                        &teacher,
+                        &sub,
+                        Some(&version),
+                        &serde_json::json!({ "action": "publish", "final_score": 80 }),
+                    ))
+                    .await;
+                assert_eq!(retried.status, StatusCode::OK, "{}", retried.text());
+            } else {
+                assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+            }
+            let review = app
+                .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
+                .await;
+            let body = review.json();
+            assert_eq!(body["status"], "published", "round {round}: {body}");
+            assert_eq!(body["is_late"], false, "round {round}: {body}");
+            assert_eq!(body["late_penalty_pct"], 0.0, "round {round}: {body}");
+            assert_eq!(
+                body["final_score"], 80.0,
+                "round {round} worker_first={worker_first}: {body}"
+            );
+        }
+    }
+}

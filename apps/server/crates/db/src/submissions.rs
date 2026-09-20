@@ -333,10 +333,38 @@ pub async fn mark_published(pool: &PgPool, id: SubmissionId, final_score: f64) -
     Ok(())
 }
 
-/// Recompute lateness after a deadline change; a cleared penalty carries
-/// the recomputed final score (`None` keeps the stored one).
-pub async fn set_lateness(
-    pool: &PgPool,
+/// The scoring fields a deadline change re-reads under the row lock a
+/// grade save contends for (BUG-216); `None` when the row is gone.
+#[derive(Debug, Clone, Copy)]
+pub struct LatenessRow {
+    pub final_score: Option<f64>,
+    pub late_penalty_pct: f64,
+    pub is_late: bool,
+}
+
+/// `SELECT … FOR UPDATE` on one submission — call inside the transaction
+/// that ends in [`set_lateness`].
+pub async fn lock_for_lateness(
+    tx: &mut sqlx::PgConnection,
+    id: SubmissionId,
+) -> Result<Option<LatenessRow>> {
+    let row = sqlx::query_as!(
+        LatenessRow,
+        r#"SELECT final_score, late_penalty_pct, is_late FROM submissions WHERE id = $1 FOR UPDATE"#,
+        id.0
+    )
+    .fetch_optional(tx)
+    .await?;
+    Ok(row)
+}
+
+/// Recompute lateness after a deadline change.
+///
+/// A cleared penalty carries the recomputed final score (`None` keeps the
+/// stored one). BUG-216: the version bumps either way — a save that priced
+/// the penalty before the change is stale (412).
+pub async fn set_lateness<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
     id: SubmissionId,
     is_late: bool,
     late_penalty_pct: f64,
@@ -344,15 +372,14 @@ pub async fn set_lateness(
 ) -> Result<()> {
     sqlx::query!(
         r#"UPDATE submissions SET is_late = $2, late_penalty_pct = $3,
-               final_score = COALESCE($4, final_score),
-               version = version + CASE WHEN $4 IS NULL THEN 0 ELSE 1 END
+               final_score = COALESCE($4, final_score), version = version + 1
            WHERE id = $1"#,
         id.0,
         is_late,
         late_penalty_pct,
         final_score
     )
-    .execute(pool)
+    .execute(executor)
     .await?;
     Ok(())
 }
@@ -843,8 +870,8 @@ pub async fn insert_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
     Ok(id)
 }
 
-pub async fn latest_grading_entry(
-    pool: &PgPool,
+pub async fn latest_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
     submission_id: SubmissionId,
 ) -> Result<Option<GradingEntryRow>> {
     let row = sqlx::query_as!(
@@ -857,7 +884,7 @@ pub async fn latest_grading_entry(
            FROM grading_entries WHERE submission_id = $1 ORDER BY id DESC LIMIT 1"#,
         submission_id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(executor)
     .await?;
     Ok(row)
 }
