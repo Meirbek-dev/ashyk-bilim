@@ -1735,14 +1735,25 @@ async fn grade_path_edges_over_http(pool: PgPool) {
     assert_eq!(bad_cursor.json()["field_errors"][0]["field"], "cursor");
     assert_eq!(bad_cursor.json()["field_errors"][0]["code"], "invalid");
 
-    // Publish-only on a never-graded attempt: the breakdown (10 of 20) is
-    // the raw score; attempt 1 is uncapped; 10 % late.
-    let published = app
+    // Publish-only on a never-graded attempt is 409 while the essay is
+    // unscored (BUG-197); an explicit 0 on it publishes: the breakdown (10
+    // of 20) is the raw score; attempt 1 is uncapped; 10 % late.
+    let unscored = app
         .send(grade(
             &teacher,
             &first,
             Some("1"),
             &serde_json::json!({ "action": "publish" }),
+        ))
+        .await;
+    assert_eq!(unscored.status, StatusCode::CONFLICT, "{}", unscored.text());
+    let published = app
+        .send(grade(
+            &teacher,
+            &first,
+            Some("1"),
+            &serde_json::json!({ "action": "publish",
+                                  "item_grades": [{ "item_id": &essay_id, "score": 0 }] }),
         ))
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -1769,3 +1780,93 @@ async fn grade_path_edges_over_http(pool: PgPool) {
     assert_eq!(graded.json()["attempt_number"], 2);
     assert_eq!(graded.json()["final_score"], 72.0, "(100 − 20 %) − 10 %");
 }
+
+/// BUG-197: a save that leaves an essay unscored is a draft — the attempt
+/// stays `pending` (feedback kept), out of the bulk release, and a publish
+/// is 409; scoring every manual item makes it `graded`, then released.
+#[sqlx::test(migrations = "../../migrations")]
+async fn feedback_only_save_keeps_the_attempt_pending(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+
+    let saved = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("1"),
+            &serde_json::json!({ "action": "save", "feedback": "read so far",
+                "item_grades": [{ "item_id": &essay_id, "feedback": "expand this" }] }),
+        ))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    assert_eq!(saved.json()["status"], "pending");
+    assert_eq!(saved.json()["release_state"], "hidden");
+    assert_eq!(saved.json()["grading"]["needs_manual_review"], true);
+    assert_eq!(saved.json()["grading"]["feedback"], "read so far");
+    assert_eq!(saved.json()["feedback"][0]["comment"], "expand this");
+    let stats = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions/stats"),
+        )
+        .await;
+    assert_eq!(stats.json()["needs_grading"], 1);
+    assert_eq!(stats.json()["graded"], 0);
+    let released = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/publish-grades"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(released.status, StatusCode::OK, "{}", released.text());
+    assert_eq!(released.json()["published_count"], 0);
+    assert_eq!(
+        released.json()["needs_grading_count"],
+        0,
+        "pending rows are not releasable"
+    );
+    let refused = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("2"),
+            &serde_json::json!({ "action": "publish" }),
+        ))
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+
+    // Scoring the essay grades it; the bulk release then takes it.
+    let graded = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("2"),
+            &serde_json::json!({ "action": "save",
+                "item_grades": [{ "item_id": &essay_id, "score": 6 }] }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    assert_eq!(graded.json()["status"], "graded");
+    assert_eq!(graded.json()["final_score"], 80.0);
+    assert_eq!(graded.json()["grading"]["feedback"], "read so far");
+    let released = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/publish-grades"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(released.json()["published_count"], 1);
+    let mine = app
+        .get_as(&alice, &format!("/api/v2/submissions/{alice_sub}"))
+        .await;
+    assert_eq!(mine.json()["status"], "published");
+    assert_eq!(mine.json()["final_score"], 80.0);
+}
+

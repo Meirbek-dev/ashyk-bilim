@@ -44,6 +44,9 @@ const MIN_DISCRIMINATION_SAMPLE: usize = 6;
 /// 409 for grading or analysing work the learner has not handed in yet
 /// (`ai::subject` uses the same words — one rule, BUG-198).
 pub(crate) const OPEN_DRAFT: &str = "an open draft cannot be graded";
+/// 409 for a publish while an item still awaits its manual score (BUG-197).
+const UNSCORED_MANUAL_ITEMS: &str =
+    "every item awaiting manual review must be scored before the grade is published";
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct UserSummary {
@@ -168,7 +171,7 @@ pub struct ItemFeedbackView {
 /// Where a grade save lands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GradeAction {
-    /// Teacher-only (`graded`).
+    /// Teacher-only (`graded`; `pending` while a manual item is unscored).
     Save,
     /// Visible to the learner (`published`).
     Publish,
@@ -238,6 +241,8 @@ pub struct ItemAnalytics {
 pub struct PublishSummary {
     pub published_count: i64,
     pub already_published_count: i64,
+    /// Graded rows held back: an item still awaits its manual score (BUG-197).
+    pub needs_grading_count: i64,
 }
 
 /// One graded activity of a learner: an assessment submission
@@ -1163,14 +1168,26 @@ impl GradingService {
                 .await?
                 .map(|e| e.raw_score),
         };
-        let raw = match input.final_score {
-            Some(Some(score)) => round2(score),
-            _ if annulled => stored_raw.unwrap_or(0.0),
-            Some(None) => derived_raw(&breakdown),
+        let (raw, overridden) = match input.final_score {
+            Some(Some(score)) => (round2(score), true),
+            _ if annulled => (stored_raw.unwrap_or(0.0), false),
+            Some(None) => (derived_raw(&breakdown), false),
             None => match stored_raw {
-                Some(stored) if !same_score(stored, derived_before) => stored,
-                _ => derived_raw(&breakdown),
+                Some(stored) if !same_score(stored, derived_before) => (stored, true),
+                _ => (derived_raw(&breakdown), false),
             },
+        };
+        // BUG-197: without a score of record — an item still awaiting manual
+        // review and no override — a save is a draft: feedback and partial
+        // scores are stored, the attempt stays `pending` (in the queue, out of
+        // the bulk release); publishing it is refused.
+        let unscored = breakdown.needs_manual_review && !overridden;
+        let target = match target {
+            SubmissionStatus::Graded if unscored => SubmissionStatus::Pending,
+            SubmissionStatus::Published if unscored => {
+                return Err(Error::conflict(UNSCORED_MANUAL_ITEMS));
+            }
+            other => other,
         };
         // Same order as the auto path (`penalties::apply`): cap, then late.
         let final_score = apply_late(
@@ -1323,6 +1340,7 @@ impl GradingService {
         let rows = ab_db::submissions::list_releasable(&self.pool, assessment_id).await?;
         let mut published = 0;
         let mut already = 0;
+        let mut needs_grading = 0;
         for row in rows {
             if ab_db::submissions::has_published_entry(&self.pool, row.id).await? {
                 already += 1;
@@ -1331,6 +1349,10 @@ impl GradingService {
             let latest = ab_db::submissions::latest_grading_entry(&self.pool, row.id).await?;
             let fallback_score = row.final_score.or(row.auto_score).unwrap_or(0.0);
             let breakdown = GradingBreakdown::from_value(&row.grading);
+            if unscored(&breakdown, latest.as_ref().map(|e| e.raw_score)) {
+                needs_grading += 1;
+                continue;
+            }
             let (raw_score, penalty_pct, final_score, feedback, raw_breakdown, effective) =
                 match &latest {
                     Some(e) => (
@@ -1407,6 +1429,7 @@ impl GradingService {
         Ok(PublishSummary {
             published_count: published,
             already_published_count: already,
+            needs_grading_count: needs_grading,
         })
     }
 
@@ -1617,6 +1640,14 @@ fn derived_raw(breakdown: &GradingBreakdown) -> f64 {
     } else {
         0.0
     }
+}
+
+/// BUG-197: no score of record yet — an item still awaits its manual score
+/// and the stored raw (if any) is the item-derived one, not an override.
+/// Such a row is held back from the bulk release, as a single publish is.
+fn unscored(breakdown: &GradingBreakdown, stored_raw: Option<f64>) -> bool {
+    breakdown.needs_manual_review
+        && stored_raw.is_none_or(|raw| same_score(raw, derived_raw(breakdown)))
 }
 
 /// Equal to the 2-decimal precision raw scores are stored at.
