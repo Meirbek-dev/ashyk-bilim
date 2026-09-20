@@ -39,8 +39,11 @@ pub struct UpdatePlatformRequest {
     pub about: Option<String>,
     #[garde(inner(email, length(max = 320)))]
     pub email: Option<String>,
-    #[garde(inner(length(max = 500)))]
-    pub label: Option<String>,
+    /// `null` clears the label; blank is stored as cleared too (UX-135).
+    #[garde(inner(inner(length(max = 500))))]
+    #[serde(default, deserialize_with = "super::double_option")]
+    #[schema(value_type = Option<String>)]
+    pub label: Option<Option<String>>,
     /// Finalized `platform-logo` upload to claim as the new logo.
     #[garde(skip)]
     pub logo_upload_id: Option<uuid::Uuid>,

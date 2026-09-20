@@ -1508,6 +1508,8 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     let line = text.lines().nth(1).unwrap();
     // …,submission_rate,pass_rate,median_score,difficulty,signals
     assert!(line.contains(",0,30,"), "{line}");
+    // UX-135: the «Сигналы» cell is the watchlist label, not the wire code.
+    assert!(line.ends_with(",Низкая точность"), "{line}");
 
     // BUG-196: a learner-controlled cell that starts a formula is defused
     // in every export (one `csv_field`).

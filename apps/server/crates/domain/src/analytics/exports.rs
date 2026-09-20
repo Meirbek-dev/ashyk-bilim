@@ -3,8 +3,8 @@
 //! RFC 4180, CRLF, UTF-8 with BOM; headers and enum cells follow
 //! `Accept-Language` through the shared [`CsvLanguage`] (UX-114); the
 //! at-risk `reason_codes` / `recommended_action` cells carry the same labels
-//! the watchlist shows (UX-123). Other diagnostic codes (`signals`,
-//! `outlier_reason_codes`) stay stable identifiers.
+//! the watchlist shows (UX-123), as do the outcomes `outlier_reason_codes`
+//! (UX-135). Other diagnostic codes (`signals`) stay stable identifiers.
 
 use super::assessments::build_assessment_rows;
 use super::context::{AnalyticsContext, is_reviewable, progress_snapshots, submitted_at};
@@ -50,9 +50,10 @@ const fn risk_level(language: CsvLanguage, level: RiskLevel) -> &'static str {
     }
 }
 
-/// The watchlist's label for an at-risk reason or recommended action
-/// (`labels.reasonCode.*` / `labels.recommendedAction.*` in the web
-/// catalogs); an unknown code is written as-is.
+/// The watchlist's label for an at-risk reason, recommended action or
+/// assessment outlier signal (`labels.reasonCode.*` /
+/// `labels.recommendedAction.*` in the web catalogs); an unknown code is
+/// written as-is.
 fn code_label(language: CsvLanguage, code: &str) -> String {
     use CsvLanguage as L;
     let label = match (language, code) {
@@ -67,6 +68,12 @@ fn code_label(language: CsvLanguage, code: &str) -> String {
         (L::Ru, "remind_missing_work") => "Напомнить о пропущенных работах",
         (L::Ru, "schedule_pace_meeting") => "Назначить встречу о темпе",
         (L::Ru, "send_personal_message") => "Отправить личное сообщение",
+        (L::Ru, "low_submission_rate") => "Низкая доля отправок",
+        (L::Ru, "low_success_rate") => "Низкая доля успешных попыток",
+        (L::Ru, "grading_latency") => "Задержка проверки",
+        (L::Ru, "low_completion_rate") => "Низкая доля завершения",
+        (L::Ru, "below_threshold") => "Ниже порога",
+        (L::Ru, "low_accuracy") => "Низкая точность",
         (L::Kk, "inactive_7d") => "7 күн белсенділік жоқ",
         (L::Kk, "low_progress") => "Төмен прогресс",
         (L::Kk, "repeated_failures") => "Қайталанатын сәтсіздіктер",
@@ -78,6 +85,12 @@ fn code_label(language: CsvLanguage, code: &str) -> String {
         (L::Kk, "remind_missing_work") => "Өткізілген жұмыстар туралы еске салу",
         (L::Kk, "schedule_pace_meeting") => "Қарқын туралы кездесу тағайындау",
         (L::Kk, "send_personal_message") => "Жеке хабарлама жіберу",
+        (L::Kk, "low_submission_rate") => "Тапсыру үлесі төмен",
+        (L::Kk, "low_success_rate") => "Сәттілік үлесі төмен",
+        (L::Kk, "grading_latency") => "Бағалау кешігуде",
+        (L::Kk, "low_completion_rate") => "Аяқтау үлесі төмен",
+        (L::Kk, "below_threshold") => "Шектен төмен",
+        (L::Kk, "low_accuracy") => "Дәлдік төмен",
         (L::En, "inactive_7d") => "Inactive for 7 days",
         (L::En, "low_progress") => "Low progress",
         (L::En, "repeated_failures") => "Repeated failures",
@@ -89,6 +102,12 @@ fn code_label(language: CsvLanguage, code: &str) -> String {
         (L::En, "remind_missing_work") => "Remind about missing work",
         (L::En, "schedule_pace_meeting") => "Schedule a pace meeting",
         (L::En, "send_personal_message") => "Send a personal message",
+        (L::En, "low_submission_rate") => "Low submission rate",
+        (L::En, "low_success_rate") => "Low success rate",
+        (L::En, "grading_latency") => "Grading latency",
+        (L::En, "low_completion_rate") => "Low completion rate",
+        (L::En, "below_threshold") => "Below threshold",
+        (L::En, "low_accuracy") => "Low accuracy",
         (_, other) => other,
     };
     label.to_owned()
@@ -356,7 +375,11 @@ pub fn assessment_outcomes_csv(
                 opt(r.pass_rate),
                 opt(r.median_score),
                 opt(r.difficulty_score),
-                r.outlier_reason_codes.join(";"),
+                r.outlier_reason_codes
+                    .iter()
+                    .map(|c| code_label(language, c))
+                    .collect::<Vec<_>>()
+                    .join("; "),
             ]
         }),
     )

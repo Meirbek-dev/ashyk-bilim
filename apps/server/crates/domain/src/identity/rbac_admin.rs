@@ -111,10 +111,11 @@ impl RbacAdminService {
             return Err(Error::not_found("role assignment"));
         }
         // Last-admin guard: some *other* active admin must remain (the
-        // target's own status is irrelevant, BUG-144).
+        // target's own status is irrelevant, BUG-144); the count locks the
+        // role row so concurrent guards serialise (UX-135).
+        let mut tx = self.pool.begin().await?;
         if slug == "admin"
-            && ab_db::identity::count_other_active_role_holders(&self.pool, "admin", user_id)
-                .await?
+            && ab_db::identity::count_other_active_role_holders(&mut tx, "admin", user_id).await?
                 == 0
         {
             return Err(Error::app(
@@ -122,9 +123,10 @@ impl RbacAdminService {
                 "cannot remove the last admin",
             ));
         }
-        let version = ab_db::identity::unassign_role(&self.pool, user_id, role.id)
+        let version = ab_db::identity::unassign_role(&mut tx, user_id, role.id)
             .await?
             .ok_or_else(|| Error::not_found("user"))?;
+        tx.commit().await?;
         self.propagate(user_id, version).await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
@@ -295,10 +297,11 @@ impl RbacAdminService {
                 "cannot disable your own account",
             ));
         }
+        let mut tx = self.pool.begin().await?;
         if disabled {
             let (roles, _) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
             if roles.iter().any(|r| r == "admin")
-                && ab_db::identity::count_other_active_role_holders(&self.pool, "admin", user_id)
+                && ab_db::identity::count_other_active_role_holders(&mut tx, "admin", user_id)
                     .await?
                     == 0
             {
@@ -309,9 +312,10 @@ impl RbacAdminService {
             }
         }
         let status = if disabled { "disabled" } else { "active" };
-        if !ab_db::identity::set_user_status(&self.pool, user_id, status).await? {
+        if !ab_db::identity::set_user_status(&mut tx, user_id, status).await? {
             return Err(Error::not_found("user"));
         }
+        tx.commit().await?;
         if disabled {
             let revoked = self.sessions.revoke_all(user_id).await?;
             tracing::info!(%user_id, revoked, "account disabled, sessions revoked");

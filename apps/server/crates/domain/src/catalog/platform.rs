@@ -29,7 +29,8 @@ pub struct PlatformChanges<'a> {
     pub description: Option<&'a str>,
     pub about: Option<&'a str>,
     pub email: Option<&'a str>,
-    pub label: Option<&'a str>,
+    /// `Some(None)` clears the label.
+    pub label: Option<Option<&'a str>>,
 }
 
 #[derive(Clone)]
@@ -95,6 +96,12 @@ impl PlatformService {
             .name
             .map(|n| ab_core::required_str("name", n))
             .transpose()?;
+        // UX-135: free-text fields are stored trimmed; a blank label is no label.
+        let description = changes.description.map(str::trim);
+        let about = changes.about.map(str::trim);
+        let label = changes
+            .label
+            .map(|l| l.map(str::trim).filter(|l| !l.is_empty()));
         let previous = self.get().await?;
 
         let logo_key = match logo_upload_id {
@@ -110,10 +117,10 @@ impl PlatformService {
             &self.pool,
             ab_db::platform::PlatformChanges {
                 name,
-                description: changes.description,
-                about: changes.about,
+                description,
+                about,
                 email: changes.email,
-                label: changes.label,
+                label,
                 logo_key: logo_key.as_deref(),
                 thumbnail_key: thumbnail_key.as_deref(),
             },

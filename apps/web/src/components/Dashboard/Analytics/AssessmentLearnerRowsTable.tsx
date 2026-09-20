@@ -4,6 +4,7 @@ import { fromUnix } from '@/lib/api/contract'
 import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { getAnalyticsStatusLabel } from '@/lib/analytics/labels'
 import type { AssessmentLearnerRow } from '@/types/analytics'
 import { useLocale, useTranslations } from 'next-intl'
@@ -18,6 +19,7 @@ interface AssessmentLearnerRowsTableProps {
 export default function AssessmentLearnerRowsTable({ rows, storageKey }: AssessmentLearnerRowsTableProps) {
   const t = useTranslations('TeacherAnalytics')
   const locale = useLocale()
+  const percent = usePercentFormat()
 
   const columns: DataTableColumnDef<AssessmentLearnerRow>[] = [
     {
@@ -31,12 +33,12 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
     {
       accessorKey: 'best_score',
       header: t('pages.assessmentColBestScore'),
-      cell: ({ row }) => row.original.best_score ?? t('atRisk.na'),
+      cell: ({ row }) => (row.original.best_score == null ? t('atRisk.na') : percent(row.original.best_score)),
     },
     {
       accessorKey: 'last_score',
       header: t('pages.assessmentColLastScore'),
-      cell: ({ row }) => row.original.last_score ?? t('atRisk.na'),
+      cell: ({ row }) => (row.original.last_score == null ? t('atRisk.na') : percent(row.original.last_score)),
     },
     {
       accessorKey: 'submitted_at',

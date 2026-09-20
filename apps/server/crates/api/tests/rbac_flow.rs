@@ -271,6 +271,47 @@ async fn last_admin_role_cannot_be_removed(pool: PgPool) {
     assert_eq!(removed.status, StatusCode::NO_CONTENT);
 }
 
+/// UX-135: two admins stripping each other at the same time — the guard
+/// counts under a row lock on the `admin` role in the write's transaction,
+/// so exactly one removal lands and one active admin always remains.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_last_admin_removals_leave_one_admin(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let deputy = app
+        .create_user("deputy", "deputy@example.com", &["admin"])
+        .await;
+    let boss_session = app.mint_session_for(boss, &["role:manage:platform"]).await;
+    let deputy_session = app
+        .mint_session_for(deputy, &["role:manage:platform"])
+        .await;
+    let strip_deputy = format!("/api/v2/users/{deputy}/roles/admin");
+    let strip_boss = format!("/api/v2/users/{boss}/roles/admin");
+    let (a, b) = tokio::join!(
+        app.delete_as(&boss_session, &strip_deputy),
+        app.delete_as(&deputy_session, &strip_boss),
+    );
+    let mut statuses = [a.status, b.status];
+    statuses.sort();
+    assert_eq!(
+        statuses,
+        [StatusCode::NO_CONTENT, StatusCode::CONFLICT],
+        "{} / {}",
+        a.text(),
+        b.text()
+    );
+    let admins: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+         JOIN users u ON u.id = ur.user_id WHERE r.slug = 'admin' AND u.status = 'active'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(admins, 1);
+}
+
 /// BUG-118 / UX-043 / UX-045: unknown user → 404 (not an FK 500); removing a
 /// role the user does not hold → 404 before the last-admin guard; a bad grant
 /// names itself without the `internal:` prefix.

@@ -113,6 +113,52 @@ async fn read_is_public_and_update_is_gated(pool: PgPool) {
     assert_eq!(trimmed.status, StatusCode::OK, "{}", trimmed.text());
     assert_eq!(trimmed.json()["name"], "Ashyq");
     assert_eq!(app.get("/api/v2/platform").await.json()["name"], "Ashyq");
+
+    // UX-135: label / description are trimmed, an omitted label is kept,
+    // `null` (or blank) clears it.
+    let padded = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "label": "  beta  ", "description": "  hi  " }),
+        )
+        .await;
+    assert_eq!(padded.status, StatusCode::OK, "{}", padded.text());
+    assert_eq!(padded.json()["label"], "beta");
+    assert_eq!(padded.json()["description"], "hi");
+    let kept = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "about": "x" }),
+        )
+        .await;
+    assert_eq!(kept.json()["label"], "beta", "{}", kept.text());
+    let cleared = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "label": null }),
+        )
+        .await;
+    assert_eq!(cleared.status, StatusCode::OK, "{}", cleared.text());
+    assert!(cleared.json()["label"].is_null(), "{}", cleared.text());
+    let blank = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "label": "beta" }),
+        )
+        .await;
+    assert_eq!(blank.json()["label"], "beta");
+    let blank = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "label": "   " }),
+        )
+        .await;
+    assert!(blank.json()["label"].is_null(), "{}", blank.text());
 }
 
 #[sqlx::test(migrations = "../../migrations")]

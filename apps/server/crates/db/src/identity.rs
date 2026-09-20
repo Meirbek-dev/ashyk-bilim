@@ -190,26 +190,27 @@ pub async fn assign_role(
 
 /// Remove a role and bump rbac_version. Returns the new version (`None` if
 /// the user does not exist).
+///
+/// Runs in the caller's transaction — after the last-admin guard
+/// ([`count_other_active_role_holders`]) when the role is `admin` (UX-135).
 pub async fn unassign_role(
-    pool: &PgPool,
+    conn: &mut sqlx::PgConnection,
     user_id: UserId,
     role_id: uuid::Uuid,
 ) -> Result<Option<i64>> {
-    let mut tx = pool.begin().await?;
     sqlx::query!(
         "DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2",
         user_id.0,
         role_id
     )
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await?;
     let version = sqlx::query_scalar!(
         "UPDATE users SET rbac_version = rbac_version + 1 WHERE id = $1 RETURNING rbac_version",
         user_id.0
     )
-    .fetch_optional(&mut *tx)
+    .fetch_optional(&mut *conn)
     .await?;
-    tx.commit().await?;
     Ok(version)
 }
 
@@ -497,13 +498,18 @@ pub async fn get_admin_user(pool: &PgPool, user_id: UserId) -> Result<Option<Adm
 }
 
 /// Flip active/disabled; bumps `rbac_version` so stale state cannot linger.
-pub async fn set_user_status(pool: &PgPool, user_id: UserId, status: &str) -> Result<bool> {
+/// Runs in the caller's transaction (see [`unassign_role`]).
+pub async fn set_user_status(
+    conn: &mut sqlx::PgConnection,
+    user_id: UserId,
+    status: &str,
+) -> Result<bool> {
     let updated = sqlx::query!(
         "UPDATE users SET status = $2, rbac_version = rbac_version + 1 WHERE id = $1",
         user_id.0,
         status
     )
-    .execute(pool)
+    .execute(conn)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -518,11 +524,18 @@ pub async fn user_status(pool: &PgPool, user_id: UserId) -> Result<Option<String
 /// Active holders of `slug` other than `except` (the last-admin guard's
 /// "would anyone be left" count — the target's own status is irrelevant,
 /// BUG-144).
+///
+/// Locks the role row for the rest of the caller's transaction (UX-135):
+/// two admins stripping / disabling each other serialise on it, so the
+/// second one counts after the first one's write.
 pub async fn count_other_active_role_holders(
-    pool: &PgPool,
+    conn: &mut sqlx::PgConnection,
     slug: &str,
     except: UserId,
 ) -> Result<i64> {
+    sqlx::query!("SELECT id FROM roles WHERE slug = $1 FOR UPDATE", slug)
+        .fetch_optional(&mut *conn)
+        .await?;
     let count = sqlx::query_scalar!(
         r#"SELECT count(*) AS "count!" FROM user_roles ur
            JOIN roles r ON r.id = ur.role_id
@@ -531,7 +544,7 @@ pub async fn count_other_active_role_holders(
         slug,
         except.0
     )
-    .fetch_one(pool)
+    .fetch_one(conn)
     .await?;
     Ok(count)
 }

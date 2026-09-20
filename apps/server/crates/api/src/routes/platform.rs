@@ -49,7 +49,7 @@ pub async fn update_platform(
                 description: request.description.as_deref(),
                 about: request.about.as_deref(),
                 email: request.email.as_deref(),
-                label: request.label.as_deref(),
+                label: request.label.as_ref().map(Option::as_deref),
             },
             request.logo_upload_id,
             request.thumbnail_upload_id,

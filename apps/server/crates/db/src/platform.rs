@@ -29,7 +29,8 @@ pub struct PlatformChanges<'a> {
     pub description: Option<&'a str>,
     pub about: Option<&'a str>,
     pub email: Option<&'a str>,
-    pub label: Option<&'a str>,
+    /// `Some(None)` clears the label.
+    pub label: Option<Option<&'a str>>,
     pub logo_key: Option<&'a str>,
     pub thumbnail_key: Option<&'a str>,
 }
@@ -41,7 +42,7 @@ pub async fn update_platform(pool: &PgPool, changes: PlatformChanges<'_>) -> Res
                description = COALESCE($2, description),
                about = COALESCE($3, about),
                email = COALESCE($4, email),
-               label = COALESCE($5, label),
+               label = CASE WHEN $8 THEN $5 ELSE label END,
                logo_key = COALESCE($6, logo_key),
                thumbnail_key = COALESCE($7, thumbnail_key)
            WHERE singleton"#,
@@ -49,9 +50,10 @@ pub async fn update_platform(pool: &PgPool, changes: PlatformChanges<'_>) -> Res
         changes.description,
         changes.about,
         changes.email,
-        changes.label,
+        changes.label.flatten(),
         changes.logo_key,
-        changes.thumbnail_key
+        changes.thumbnail_key,
+        changes.label.is_some()
     )
     .execute(pool)
     .await?;
