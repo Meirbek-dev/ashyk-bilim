@@ -8205,6 +8205,8 @@
         "late": "Late",
         "attempts": "{count, plural, =0 {# attempts} one {# attempt} other {# attempts}}",
         "pendingAttempt": "Awaiting grading · attempt {attempt}",
+        "awaitingReleaseAttempt": "Awaiting release · attempt {attempt}",
+        "teacherActions": "Awaiting the teacher",
         "refresh": "Refresh",
         "export": "Export",
         "noScore": "No score yet",
@@ -8214,6 +8216,7 @@
           "learners": "Learners",
           "activities": "Activities",
           "needsGrading": "Needs grading",
+          "awaitingRelease": "Awaiting release",
           "overdue": "Overdue",
           "notStarted": "Not started",
           "selected": "Selected"

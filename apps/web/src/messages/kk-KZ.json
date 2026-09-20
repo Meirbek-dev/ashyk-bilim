@@ -8235,6 +8235,8 @@
         "late": "Кеш",
         "attempts": "{count, plural, other {# әрекет}}",
         "pendingAttempt": "Тексеруде · {attempt}-әрекет",
+        "awaitingReleaseAttempt": "Жариялауды күтуде · {attempt}-әрекет",
+        "teacherActions": "Оқытушыны күтеді",
         "refresh": "Жаңарту",
         "export": "Экспорт",
         "noScore": "Баға әлі жоқ",
@@ -8244,6 +8246,7 @@
           "learners": "Білім алушылар",
           "activities": "Оқу әрекеттері",
           "needsGrading": "Тексеру керек",
+          "awaitingRelease": "Жариялауды күтеді",
           "overdue": "Мерзімі өтті",
           "notStarted": "Басталмаған",
           "selected": "Таңдалған"

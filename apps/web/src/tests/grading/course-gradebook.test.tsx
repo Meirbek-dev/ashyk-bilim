@@ -184,6 +184,7 @@ function baseGradebook(): CourseGradebookResponse {
       student_count: 2,
       activity_count: 2,
       needs_grading_count: 1,
+      awaiting_release_count: 0,
       overdue_count: 1,
       not_started_count: 1,
       completed_count: 1,

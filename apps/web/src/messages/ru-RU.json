@@ -8220,6 +8220,8 @@
         "late": "Поздно",
         "attempts": "{count, plural, =0 {# попыток} one {# попытка} few {# попытки} many {# попыток} other {# попытки}}",
         "pendingAttempt": "На проверке · попытка {attempt}",
+        "awaitingReleaseAttempt": "Ожидает публикации · попытка {attempt}",
+        "teacherActions": "Ждут учителя",
         "refresh": "Обновить",
         "export": "Экспорт",
         "noScore": "Оценки пока нет",
@@ -8229,6 +8231,7 @@
           "learners": "Студенты",
           "activities": "Учебные задачи",
           "needsGrading": "На проверке",
+          "awaitingRelease": "Ожидают публикации",
           "overdue": "Просрочено",
           "notStarted": "Не начато",
           "selected": "Выбрано"

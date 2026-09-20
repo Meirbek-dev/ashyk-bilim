@@ -92,6 +92,23 @@ describe('gradebookFromWire (UX-013)', () => {
     expect(matchesGradebookSavedFilter(extended.cells[0]!, 'overdue')).toBe(false)
   })
 
+  // UX-146: scored-unreleased is owed a release, pending is owed a grade — the
+  // header counts them apart while both stay teacher actions.
+  it('counts awaiting-release apart from needs-grading', () => {
+    const data = gradebookFromWire(
+      [
+        page([
+          examCell('graded'),
+          { ...fileCell('published', 70), pending_attempt: 3, pending_attempt_id: 'attempt_3', pending_attempt_status: 'pending' },
+        ], true),
+      ],
+      course,
+    )
+    expect(data.cells.map(c => c.awaiting_release)).toEqual([true, false])
+    expect(data.summary.needs_grading_count).toBe(2)
+    expect(data.summary.awaiting_release_count).toBe(1)
+  })
+
   it('leaves published work out of the teacher queue', () => {
     const data = gradebookFromWire([page([examCell('published')])], course)
     expect(data.cells[0]!.teacher_action_required).toBe(false)

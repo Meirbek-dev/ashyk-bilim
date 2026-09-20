@@ -370,6 +370,9 @@ pub struct GradebookCell {
     /// id, whichever the cell is about — so the review deep link opens the
     /// work awaiting grading rather than the grade of record (UX-123).
     pub pending_attempt_id: Option<Uuid>,
+    /// UX-146: what that attempt waits for — `pending` (a grade) or
+    /// `graded` (a release) — so the gradebook counts and labels the two apart.
+    pub pending_attempt_status: Option<SubmissionStatus>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// The learner's active due-date override for this assessment (UX-113):
@@ -427,6 +430,7 @@ impl From<domain::GradebookPage> for GradebookPage {
                     attempts: c.attempts,
                     pending_attempt: c.pending_attempt,
                     pending_attempt_id: c.pending_attempt_id,
+                    pending_attempt_status: c.pending_attempt_status,
                     final_score: c.final_score,
                     is_late: c.is_late,
                     due_at_override_unix: c.due_at_override,

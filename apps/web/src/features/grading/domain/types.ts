@@ -69,6 +69,8 @@ export interface ActivityProgressCell extends ProgressCell {
   pending_attempt?: number | null
   /** UX-123: that attempt's id — the «На проверке» deep link opens it, not the grade of record. */
   pending_attempt_id?: string | null
+  /** UX-146: the teacher-owed attempt is scored and waits for a release, not a grade. */
+  awaiting_release?: boolean
 }
 export interface GradebookActivity {
   id: string
@@ -81,7 +83,10 @@ export type GradebookStudent = SubmissionUser
 export interface GradebookSummary {
   activity_count: number
   completed_count: number
+  /** Every cell owed a teacher action (a grade or a release). */
   needs_grading_count: number
+  /** UX-146: the subset of `needs_grading_count` that is scored and only awaits a release. */
+  awaiting_release_count: number
   not_started_count: number
   overdue_count: number
   student_count: number

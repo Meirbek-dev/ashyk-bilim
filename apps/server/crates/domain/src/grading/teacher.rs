@@ -267,6 +267,8 @@ pub struct GradebookCell {
     pub pending_attempt: Option<i32>,
     /// Its id (submission or file attempt), for the «pending» deep link (UX-123).
     pub pending_attempt_id: Option<uuid::Uuid>,
+    /// UX-146: `pending` (owed a grade) or `graded` (owed a release).
+    pub pending_attempt_status: Option<SubmissionStatus>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// UX-113: the learner's active due-date override (the gradebook's
@@ -703,7 +705,7 @@ impl GradingService {
         filter: ReviewFilter<'_>,
     ) -> Result<ReviewPage> {
         self.grader_context(actor, assessment_id).await?;
-        let limit = filter.limit.clamp(1, MAX_REVIEW_PAGE);
+        let limit = ab_core::page_limit(filter.limit, MAX_REVIEW_PAGE)?;
         let mut rows = ab_db::submissions::list_for_review(
             &self.pool,
             assessment_id,
@@ -1538,6 +1540,7 @@ impl GradingService {
                     attempts: r.attempts,
                     pending_attempt: r.pending_attempt,
                     pending_attempt_id: r.pending_attempt_id,
+                    pending_attempt_status: r.pending_attempt_status,
                     final_score: r.final_score,
                     is_late: r.is_late,
                     due_at_override: r.due_at_override,

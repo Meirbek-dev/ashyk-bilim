@@ -493,6 +493,8 @@ pub struct GradebookCellRow {
     /// That attempt's id (a submission id or a file attempt id) — the
     /// gradebook's «pending» deep link (UX-123).
     pub pending_attempt_id: Option<uuid::Uuid>,
+    /// UX-146: `pending` (owed a grade) or `graded` (owed a release).
+    pub pending_attempt_status: Option<SubmissionStatus>,
     pub final_score: Option<f64>,
     pub is_late: bool,
     /// The learner's active (unexpired) per-assessment due-date override, if any.
@@ -562,6 +564,8 @@ pub async fn gradebook_cells(
                       AS "pending_attempt?",
                   CASE WHEN c.status IN ('pending', 'graded')
                        THEN COALESCE(c.submission_id, c.attempt_id) END AS "pending_attempt_id?",
+                  CASE WHEN c.status IN ('pending', 'graded') THEN c.status END
+                      AS "pending_attempt_status?: SubmissionStatus",
                   c.final_score AS "final_score?", c.is_late AS "is_late!",
                   (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
                   (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",
@@ -586,16 +590,23 @@ pub async fn gradebook_cells(
         };
         let attempts = cell.attempts + 1;
         // Attempts arrive in order: the newest teacher-owned one wins.
-        let pending = row
-            .pending_attempt
-            .map_or((cell.pending_attempt, cell.pending_attempt_id), |n| {
-                (Some(n), row.pending_attempt_id)
-            });
+        let pending = row.pending_attempt.map_or(
+            (
+                cell.pending_attempt,
+                cell.pending_attempt_id,
+                cell.pending_attempt_status,
+            ),
+            |n| (Some(n), row.pending_attempt_id, row.pending_attempt_status),
+        );
         if row.grade_key().order(cell.grade_key()) == std::cmp::Ordering::Greater {
             *cell = row;
         }
         cell.attempts = attempts;
-        (cell.pending_attempt, cell.pending_attempt_id) = pending;
+        (
+            cell.pending_attempt,
+            cell.pending_attempt_id,
+            cell.pending_attempt_status,
+        ) = pending;
     }
     Ok(cells)
 }

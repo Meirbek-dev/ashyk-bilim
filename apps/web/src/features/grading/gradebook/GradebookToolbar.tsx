@@ -47,7 +47,12 @@ export default function GradebookToolbar({
             label={t('summary.activities')}
             value={data.page_info?.total_activities ?? data.summary.activity_count}
           />
-          <SummaryTile label={t('summary.needsGrading')} value={data.summary.needs_grading_count} tone="amber" />
+          <SummaryTile
+            label={t('summary.needsGrading')}
+            value={data.summary.needs_grading_count - data.summary.awaiting_release_count}
+            tone="amber"
+          />
+          <SummaryTile label={t('summary.awaitingRelease')} value={data.summary.awaiting_release_count} tone="amber" />
           <SummaryTile label={t('summary.overdue')} value={data.summary.overdue_count} tone="rose" />
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">

@@ -429,6 +429,22 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         )
         .await;
     assert_eq!(none.json()["items"].as_array().unwrap().len(), 0);
+    // UX-146: an out-of-range page size is refused, not clamped.
+    for limit in ["0", "101"] {
+        let bad = app
+            .get_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}/submissions?limit={limit}"),
+            )
+            .await;
+        assert_eq!(
+            bad.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            bad.text()
+        );
+        assert_eq!(bad.json()["field_errors"][0]["code"], "out-of-range");
+    }
     let grader_view = app
         .get_as(
             &teacher,

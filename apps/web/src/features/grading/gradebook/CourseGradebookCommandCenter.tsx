@@ -242,11 +242,14 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
                           attempts: t('attempts', { count: cell.attempt_count }),
                           late: t('late'),
                           state: t(progressStateLabelKey(cell.state)),
-                          // Only when the pending attempt is not the one the cell ranks (BUG-175).
+                          // UX-146: a scored attempt waits for a release; otherwise only when the
+                          // pending attempt is not the one the cell ranks (BUG-175).
                           pendingAttempt:
-                            cell.pending_attempt != null && cell.latest_submission_status !== 'PENDING'
-                              ? t('pendingAttempt', { attempt: cell.pending_attempt })
-                              : null,
+                            cell.pending_attempt != null && cell.awaiting_release
+                              ? t('awaitingReleaseAttempt', { attempt: cell.pending_attempt })
+                              : cell.pending_attempt != null && cell.latest_submission_status !== 'PENDING'
+                                ? t('pendingAttempt', { attempt: cell.pending_attempt })
+                                : null,
                         }}
                         onOpen={() => openCell(cell)}
                       />
@@ -379,7 +382,7 @@ function TeacherActionsPanel({
   return (
     <section className="rounded-lg border p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">{t('summary.needsGrading')}</h2>
+        <h2 className="text-sm font-semibold">{t('teacherActions')}</h2>
         <span className="text-muted-foreground text-xs">{data.teacher_actions.length}</span>
       </div>
       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">

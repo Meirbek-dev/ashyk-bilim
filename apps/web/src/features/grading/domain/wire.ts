@@ -82,6 +82,8 @@ export function gradebookFromWire(pages: GradebookPage[], course: Course, curric
       teacher_action_required: c.status === 'pending' || c.status === 'graded' || c.pending_attempt != null,
       pending_attempt: c.pending_attempt ?? null,
       pending_attempt_id: c.pending_attempt_id ?? null,
+      // UX-146: scored-unreleased is owed a release, not a grade — counted and labelled apart.
+      awaiting_release: (c.pending_attempt_status ?? c.status) === 'graded',
     }
   })
   const columnName = (activityId: string, fallback: string) => activityNames.get(activityId) ?? fallback
@@ -102,6 +104,7 @@ export function gradebookFromWire(pages: GradebookPage[], course: Course, curric
       activity_count: activities.length, student_count: users.size,
       completed_count: cells.filter(c => isActivityProgressComplete(c.state)).length,
       needs_grading_count: cells.filter(c => c.teacher_action_required).length,
+      awaiting_release_count: cells.filter(c => c.teacher_action_required && c.awaiting_release).length,
       not_started_count: users.size * activities.length - cells.length,
       overdue_count: cells.filter(c => c.due_at && Date.parse(c.due_at) < now && !isActivityProgressComplete(c.state)).length,
     },

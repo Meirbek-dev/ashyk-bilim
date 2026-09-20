@@ -68,6 +68,7 @@ describe('gradebook rollup taxonomy', () => {
         student_count: 0,
         activity_count: 1,
         needs_grading_count: 0,
+        awaiting_release_count: 0,
         overdue_count: 0,
         not_started_count: 0,
         completed_count: 0,

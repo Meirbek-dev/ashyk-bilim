@@ -46,6 +46,19 @@ pub fn required_str<'a>(field: &str, value: &'a str) -> Result<&'a str> {
     Ok(value)
 }
 
+/// A page size within `1..=max`, or 422 `limit`/`out-of-range` (UX-146:
+/// the grading lists refuse a silent clamp, like the work queue does).
+pub fn page_limit(limit: i64, max: i64) -> Result<i64> {
+    if !(1..=max).contains(&limit) {
+        return Err(Error::validation(vec![FieldError {
+            field: "limit".into(),
+            code: "out-of-range".into(),
+            message: format!("limit must be between 1 and {max}"),
+        }]));
+    }
+    Ok(limit)
+}
+
 /// The workspace error type.
 ///
 /// - `App` carries a stable [`ErrorCode`] and is safe to show to clients.

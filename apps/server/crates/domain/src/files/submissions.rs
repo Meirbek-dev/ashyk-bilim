@@ -1002,7 +1002,7 @@ impl FileSubmissionsService {
     ) -> Result<ReviewPage> {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Grade, "grading").await?;
-        let limit = filter.limit.clamp(1, MAX_REVIEW_PAGE);
+        let limit = ab_core::page_limit(filter.limit, MAX_REVIEW_PAGE)?;
         let mut rows = ab_db::file_submissions::list_for_review(
             &self.pool,
             id,

@@ -988,6 +988,7 @@ async fn gradebook_flags_a_pending_attempt_behind_the_grade_of_record(pool: PgPo
     assert_eq!(cell["pending_attempt"], 2, "{cell}");
     // UX-123: the «pending» deep link names the attempt awaiting grading.
     assert_eq!(cell["pending_attempt_id"], second, "{cell}");
+    assert_eq!(cell["pending_attempt_status"], "pending", "{cell}");
 }
 
 /// BUG-180: a pending retake never becomes the grade of record, however
@@ -1122,6 +1123,8 @@ async fn returned_or_unreleased_retake_never_outranks_the_released_grade(pool: P
     assert_eq!(cell["attempts"], 3, "{cell}");
     assert_eq!(cell["pending_attempt"], 3, "{cell}");
     assert_eq!(cell["pending_attempt_id"], third, "{cell}");
+    // UX-146: saved-unreleased is owed a release, not a grade.
+    assert_eq!(cell["pending_attempt_status"], "graded", "{cell}");
     let state = app
         .get_as(&bob, &format!("/api/v2/courses/{course_id}/learner-state"))
         .await;
