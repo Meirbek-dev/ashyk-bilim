@@ -670,6 +670,24 @@ impl AssessmentsService {
         Ok(AssessmentDetail { assessment, items })
     }
 
+    /// BUG-218: the row lock plus a fresh read inside `tx`. Publish and the
+    /// item/policy writes serialize on it, so each gate sees the other's
+    /// committed result instead of the state it loaded before the lock.
+    async fn lock_detail(
+        tx: &mut sqlx::PgConnection,
+        id: AssessmentId,
+    ) -> Result<AssessmentDetail> {
+        let assessment = ab_db::assessments::lock_assessment(&mut *tx, id)
+            .await?
+            .ok_or_else(|| Error::not_found("assessment"))?;
+        let items = ab_db::assessments::list_items(&mut *tx, id)
+            .await?
+            .into_iter()
+            .map(Item::try_from)
+            .collect::<Result<Vec<_>>>()?;
+        Ok(AssessmentDetail { assessment, items })
+    }
+
     /// Read: authors always; otherwise a published assessment on a visible
     /// course for holders of `assessment:read:assigned` (course access
     /// itself is the assignment until 3.4 adds allowlists).
@@ -774,9 +792,11 @@ impl AssessmentsService {
         id: AssessmentId,
         policy: PolicyInput,
     ) -> Result<AssessmentDetail> {
-        let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment).await?;
+        self.load_for_author(actor, id).await?;
         policy.validate()?;
+        let mut tx = self.pool.begin().await?;
+        let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
+        self.ensure_editable(&assessment).await?;
         // BUG-207: the readiness gate publish took, re-run on the would-be
         // policy (no policy rule blocks today — they warn — but the gate
         // stays one function).
@@ -786,10 +806,11 @@ impl AssessmentsService {
             allow_late: policy.allow_late,
             late_policy_kind: late_kind,
             late_cutoff_at,
-            ..assessment.clone()
+            ..assessment
         };
-        Self::ensure_stays_ready(&would_be, &self.detail(id).await?.items)?;
-        ab_db::assessments::update_policy(&self.pool, id, &policy.to_values()).await?;
+        Self::ensure_stays_ready(&would_be, &items)?;
+        ab_db::assessments::update_policy(&mut *tx, id, &policy.to_values()).await?;
+        tx.commit().await?;
 
         self.detail(id).await
     }
@@ -932,6 +953,8 @@ impl AssessmentsService {
         let course = self.courses.get(actor, assessment.course_id).await?;
         Self::require_scoped(actor, &course, Action::Publish, "publish")?;
 
+        let mut tx = self.pool.begin().await?;
+        let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
         let from = assessment.lifecycle;
         if !from.can_transition_to(to) {
             let allowed: Vec<_> = Lifecycle::ALL
@@ -947,7 +970,6 @@ impl AssessmentsService {
 
         let now = now_unix();
         if matches!(to, Lifecycle::Scheduled | Lifecycle::Published) {
-            let items = self.detail(id).await?.items;
             let readiness = Self::build_readiness(&assessment, &items, scheduled_at);
             if !readiness.ok {
                 return Err(Error::validation(
@@ -994,8 +1016,8 @@ impl AssessmentsService {
             ),
             Lifecycle::Draft => (None, assessment.published_at, assessment.archived_at, false),
         };
-        ab_db::assessments::set_lifecycle(&self.pool, id, to, scheduled, published, archived)
-            .await?;
+        ab_db::assessments::set_lifecycle(&mut *tx, id, to, scheduled, published, archived).await?;
+        tx.commit().await?;
         ProgressProjector::new(self.pool.clone())
             .set_activity_published(assessment.activity_id, assessment.course_id, activity_live)
             .await?;
@@ -1196,8 +1218,13 @@ impl AssessmentsService {
         let title = ab_core::required_str("title", title)?;
         let metadata = metadata.normalized();
         if assessment.lifecycle == Lifecycle::Published {
-            let mut items = self.detail(id).await?.items;
+            self.ensure_editable(&assessment).await?;
             items.push(Item {
+        let mut tx = self.pool.begin().await?;
+        let AssessmentDetail {
+            assessment,
+            mut items,
+        } = Self::lock_detail(&mut tx, id).await?;
                 id: AssessmentItemId::default(),
                 position: 0,
                 kind: body.kind(),
@@ -1213,7 +1240,7 @@ impl AssessmentsService {
             Self::ensure_stays_ready(&assessment, &items)?;
         }
         let item_id = ab_db::assessments::insert_item(
-            &self.pool,
+            &mut *tx,
             id,
             body.kind(),
             title,
@@ -1222,7 +1249,8 @@ impl AssessmentsService {
             metadata.as_db(),
         )
         .await?;
-        ab_db::assessments::bump_content_version(&self.pool, id).await?;
+        ab_db::assessments::bump_content_version(&mut *tx, id).await?;
+        tx.commit().await?;
         self.item(item_id).await
     }
 
@@ -1252,7 +1280,12 @@ impl AssessmentsService {
         item_id: AssessmentItemId,
         changes: ItemChanges,
     ) -> Result<Item> {
-        let (assessment, row) = self.item_for_author(actor, item_id).await?;
+        let (_, row) = self.item_for_author(actor, item_id).await?;
+        let mut tx = self.pool.begin().await?;
+        let AssessmentDetail {
+            assessment,
+            mut items,
+        } = Self::lock_detail(&mut tx, row.assessment_id).await?;
         self.ensure_editable(&assessment).await?;
         if changes.body.is_some() || changes.max_score.is_some() {
             self.ensure_content_unlocked(&assessment).await?;
@@ -1274,7 +1307,6 @@ impl AssessmentsService {
             .map(|t| ab_core::required_str("title", t))
             .transpose()?;
         if assessment.lifecycle == Lifecycle::Published {
-            let mut items = self.detail(row.assessment_id).await?.items;
             if let Some(item) = items.iter_mut().find(|i| i.id == item_id) {
                 if let Some(title) = title {
                     title.clone_into(&mut item.title);
@@ -1292,7 +1324,7 @@ impl AssessmentsService {
         let stored = changes.body.as_ref().map(|b| (b.kind(), b.to_stored()));
         let metadata = changes.metadata.map(ItemMetadataInput::normalized);
         ab_db::assessments::update_item(
-            &self.pool,
+            &mut *tx,
             item_id,
             title,
             stored.as_ref().map(|(kind, value)| (*kind, value)),
@@ -1300,12 +1332,16 @@ impl AssessmentsService {
             metadata.as_ref().map(ItemMetadataInput::as_db),
         )
         .await?;
-        ab_db::assessments::bump_content_version(&self.pool, row.assessment_id).await?;
+        ab_db::assessments::bump_content_version(&mut *tx, row.assessment_id).await?;
+        tx.commit().await?;
         self.item(item_id).await
     }
 
     pub async fn delete_item(&self, actor: &Actor, item_id: AssessmentItemId) -> Result<()> {
-        let (assessment, row) = self.item_for_author(actor, item_id).await?;
+        let (_, row) = self.item_for_author(actor, item_id).await?;
+        let mut tx = self.pool.begin().await?;
+        let AssessmentDetail { assessment, items } =
+            Self::lock_detail(&mut tx, row.assessment_id).await?;
         self.ensure_editable(&assessment).await?;
         self.ensure_content_unlocked(&assessment).await?;
         // A live (or scheduled) assessment keeps at least one item: readiness
@@ -1313,19 +1349,21 @@ impl AssessmentsService {
         if matches!(
             assessment.lifecycle,
             Lifecycle::Published | Lifecycle::Scheduled
-        ) && ab_db::assessments::list_item_ids(&self.pool, row.assessment_id)
-            .await?
-            .len()
-            == 1
+        ) && items.len() == 1
         {
             return Err(Error::conflict(
                 "a published assessment needs at least one item; unpublish first",
             ));
         }
-        ab_db::assessments::delete_item(&self.pool, item_id).await?;
-        let remaining = ab_db::assessments::list_item_ids(&self.pool, row.assessment_id).await?;
-        ab_db::assessments::renumber_items(&self.pool, &remaining).await?;
-        ab_db::assessments::bump_content_version(&self.pool, row.assessment_id).await
+        ab_db::assessments::delete_item(&mut *tx, item_id).await?;
+        let remaining: Vec<AssessmentItemId> = items
+            .iter()
+            .map(|i| i.id)
+            .filter(|i| *i != item_id)
+            .collect();
+        ab_db::assessments::renumber_items(&mut tx, &remaining).await?;
+        ab_db::assessments::bump_content_version(&mut *tx, row.assessment_id).await?;
+        Ok(tx.commit().await?)
     }
 
     /// Reorder: `ordered` lists item ids in the desired order; items it
@@ -1363,8 +1401,10 @@ impl AssessmentsService {
             .filter(|i| !final_order.contains(i))
             .collect();
         final_order.extend(remainder);
-        ab_db::assessments::renumber_items(&self.pool, &final_order).await?;
-        ab_db::assessments::bump_content_version(&self.pool, id).await?;
+        let mut tx = self.pool.begin().await?;
+        ab_db::assessments::renumber_items(&mut tx, &final_order).await?;
+        ab_db::assessments::bump_content_version(&mut *tx, id).await?;
+        tx.commit().await?;
         Ok(self.detail(id).await?.items)
     }
 

@@ -1898,3 +1898,75 @@ async fn scores_and_weights_are_bounded(pool: PgPool) {
         submitted.text()
     );
 }
+
+/// BUG-218: publish racing an item edit (or the delete of the only item)
+/// must never leave a published assessment unready — `transition` and the
+/// item writes serialize on the assessment row.
+#[sqlx::test(migrations = "../../migrations")]
+async fn publish_and_item_writes_serialize(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+
+    for round in 0..20 {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/assessments",
+                &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz",
+                                      "title": format!("Race {round}") }),
+            )
+            .await;
+        let id = created.json()["id"].as_str().unwrap().to_owned();
+        let item = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/items"),
+                &choice_item("1+1?"),
+            )
+            .await;
+        let item_id = item.json()["id"].as_str().unwrap().to_owned();
+
+        let lifecycle_path = format!("/api/v2/assessments/{id}/lifecycle");
+        let to_published = serde_json::json!({ "to": "published" });
+        let publish = app.post_as(&teacher, &lifecycle_path, &to_published);
+        let path = format!("/api/v2/assessment-items/{item_id}");
+        let empty = serde_json::json!({ "body": { "kind": "choice", "prompt": "empty?",
+                                                  "options": [] } });
+        let edit = async {
+            if round % 2 == 0 {
+                app.patch_as(&teacher, &path, &empty).await
+            } else {
+                app.delete_as(&teacher, &path).await
+            }
+        };
+        let (published, edited) = tokio::join!(publish, edit);
+
+        let detail = app
+            .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+            .await;
+        let lifecycle = detail.json()["lifecycle"].clone();
+        let readiness = app
+            .get_as(&teacher, &format!("/api/v2/assessments/{id}/readiness"))
+            .await;
+        if lifecycle == "published" {
+            assert_eq!(edited.status, StatusCode::CONFLICT, "{}", edited.text());
+            assert_eq!(
+                readiness.json()["ok"],
+                true,
+                "round {round}: {}",
+                readiness.text()
+            );
+        } else {
+            // The edit won: the publish must have refused an unready draft.
+            assert_eq!(
+                published.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "round {round}: {}",
+                published.text()
+            );
+            assert_eq!(readiness.json()["ok"], false, "round {round}");
+        }
+    }
+}

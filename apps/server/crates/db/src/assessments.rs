@@ -213,7 +213,10 @@ pub async fn insert_assessment(pool: &PgPool, new: NewAssessment<'_>) -> Result<
     Ok(AssessmentId(id))
 }
 
-pub async fn get_assessment(pool: &PgPool, id: AssessmentId) -> Result<Option<AssessmentRow>> {
+pub async fn get_assessment<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: AssessmentId,
+) -> Result<Option<AssessmentRow>> {
     let row = sqlx::query_as!(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
@@ -245,9 +248,21 @@ pub async fn get_assessment(pool: &PgPool, id: AssessmentId) -> Result<Option<As
            FROM assessments WHERE id = $1"#,
         id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
+}
+
+/// BUG-218: `SELECT … FOR UPDATE` on the assessment row, then the row as the
+/// previous writer left it — publish and item/policy writes serialize here.
+pub async fn lock_assessment(
+    conn: &mut sqlx::PgConnection,
+    id: AssessmentId,
+) -> Result<Option<AssessmentRow>> {
+    sqlx::query!("SELECT id FROM assessments WHERE id = $1 FOR UPDATE", id.0)
+        .fetch_optional(&mut *conn)
+        .await?;
+    get_assessment(conn, id).await
 }
 
 pub async fn get_assessment_by_activity(
@@ -358,7 +373,11 @@ pub async fn update_assessment_details<'e>(
 }
 
 /// Replace the whole policy block and bump `policy_version`.
-pub async fn update_policy(pool: &PgPool, id: AssessmentId, p: &PolicyValues) -> Result<bool> {
+pub async fn update_policy<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: AssessmentId,
+    p: &PolicyValues,
+) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE assessments SET
                grading_mode = $2, grade_release_mode = $3, completion_rule = $4,
@@ -403,15 +422,15 @@ pub async fn update_policy(pool: &PgPool, id: AssessmentId, p: &PolicyValues) ->
         p.violation_threshold,
         p.attempt_penalty_percent
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
 
 /// Lifecycle write. Timestamps are set explicitly by the service per the
 /// legacy field-effect table (keep vs clear vs stamp-if-missing).
-pub async fn set_lifecycle(
-    pool: &PgPool,
+pub async fn set_lifecycle<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
     lifecycle: Lifecycle,
     scheduled_at: Option<i64>,
@@ -431,7 +450,7 @@ pub async fn set_lifecycle(
         epoch(published_at),
         epoch(archived_at)
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -462,12 +481,15 @@ pub async fn publish_due(pool: &PgPool, id: AssessmentId) -> Result<bool> {
     Ok(updated.rows_affected() == 1)
 }
 
-pub async fn bump_content_version(pool: &PgPool, id: AssessmentId) -> Result<()> {
+pub async fn bump_content_version<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: AssessmentId,
+) -> Result<()> {
     sqlx::query!(
         "UPDATE assessments SET content_version = content_version + 1 WHERE id = $1",
         id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
@@ -509,8 +531,8 @@ pub struct ItemMetadata<'a> {
     pub estimated_minutes: Option<i32>,
 }
 
-pub async fn insert_item(
-    pool: &PgPool,
+pub async fn insert_item<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     assessment_id: AssessmentId,
     kind: ItemKind,
     title: &str,
@@ -538,7 +560,7 @@ pub async fn insert_item(
         meta.outcome_ids,
         meta.estimated_minutes
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(AssessmentItemId(id))
 }
@@ -559,7 +581,10 @@ pub async fn get_item(pool: &PgPool, id: AssessmentItemId) -> Result<Option<Item
     Ok(row)
 }
 
-pub async fn list_items(pool: &PgPool, assessment_id: AssessmentId) -> Result<Vec<ItemRow>> {
+pub async fn list_items<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    assessment_id: AssessmentId,
+) -> Result<Vec<ItemRow>> {
     let rows = sqlx::query_as!(
         ItemRow,
         r#"SELECT id AS "id: AssessmentItemId",
@@ -570,25 +595,28 @@ pub async fn list_items(pool: &PgPool, assessment_id: AssessmentId) -> Result<Ve
            FROM assessment_items WHERE assessment_id = $1 ORDER BY position, id"#,
         assessment_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }
 
-pub async fn count_items(pool: &PgPool, assessment_id: AssessmentId) -> Result<i64> {
+pub async fn count_items<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    assessment_id: AssessmentId,
+) -> Result<i64> {
     let count = sqlx::query_scalar!(
         r#"SELECT count(*) AS "count!" FROM assessment_items WHERE assessment_id = $1"#,
         assessment_id.0
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(count)
 }
 
 /// Partial update; `body` (when given) also rewrites `kind`; `meta` (when
 /// given) replaces the whole metadata block.
-pub async fn update_item(
-    pool: &PgPool,
+pub async fn update_item<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: AssessmentItemId,
     title: Option<&str>,
     body: Option<(ItemKind, &serde_json::Value)>,
@@ -626,20 +654,20 @@ pub async fn update_item(
         meta.as_ref().map_or(empty, |m| m.outcome_ids),
         meta.as_ref().and_then(|m| m.estimated_minutes)
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
 
-pub async fn delete_item(pool: &PgPool, id: AssessmentItemId) -> Result<bool> {
+pub async fn delete_item<'e>(db: impl sqlx::PgExecutor<'e>, id: AssessmentItemId) -> Result<bool> {
     let deleted = sqlx::query!("DELETE FROM assessment_items WHERE id = $1", id.0)
-        .execute(pool)
+        .execute(db)
         .await?;
     Ok(deleted.rows_affected() == 1)
 }
 
-pub async fn list_item_ids(
-    pool: &PgPool,
+pub async fn list_item_ids<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     assessment_id: AssessmentId,
 ) -> Result<Vec<AssessmentItemId>> {
     let ids = sqlx::query_scalar!(
@@ -647,14 +675,16 @@ pub async fn list_item_ids(
            WHERE assessment_id = $1 ORDER BY position, id"#,
         assessment_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(ids)
 }
 
-/// Rewrite positions 1..n in one transaction.
-pub async fn renumber_items(pool: &PgPool, ordered_ids: &[AssessmentItemId]) -> Result<()> {
-    let mut tx = pool.begin().await?;
+/// Rewrite positions 1..n — call inside the caller's transaction.
+pub async fn renumber_items(
+    conn: &mut sqlx::PgConnection,
+    ordered_ids: &[AssessmentItemId],
+) -> Result<()> {
     for (index, id) in ordered_ids.iter().enumerate() {
         let position = i32::try_from(index).unwrap_or(i32::MAX).saturating_add(1);
         sqlx::query!(
@@ -662,10 +692,9 @@ pub async fn renumber_items(pool: &PgPool, ordered_ids: &[AssessmentItemId]) -> 
             id.0,
             position
         )
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
     }
-    tx.commit().await?;
     Ok(())
 }
 
