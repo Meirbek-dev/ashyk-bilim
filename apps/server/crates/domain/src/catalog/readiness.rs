@@ -9,7 +9,9 @@
 //!   no assessment behind it (the same lifecycle/readiness rules as above
 //!   apply once one exists, reported as `assessment-not-ready`).
 //! - `file-submission-unpublished` — a published file-submission activity
-//!   whose config is missing, not `published`, or has empty instructions.
+//!   whose config is missing or not `published`.
+//! - `file-submission-not-ready` — a published config with empty
+//!   instructions (legacy rows; BUG-219 refuses the edit today).
 //!
 //! Warnings (informational):
 //! - `activity-unpublished` — a draft activity learners cannot see yet.
@@ -92,12 +94,13 @@ pub async fn course_readiness(
                 let config =
                     ab_db::file_submissions::get_file_submission_by_activity(pool, activity.id)
                         .await?;
-                let ok = config.is_some_and(|c| {
-                    c.lifecycle == FileSubmissionLifecycle::Published
-                        && !c.instructions.trim().is_empty()
-                });
-                if !ok {
-                    blockers.push(item("file-submission-unpublished", Some(activity)));
+                match config {
+                    Some(c) if c.lifecycle == FileSubmissionLifecycle::Published => {
+                        if c.instructions.trim().is_empty() {
+                            blockers.push(item("file-submission-not-ready", Some(activity)));
+                        }
+                    }
+                    _ => blockers.push(item("file-submission-unpublished", Some(activity))),
                 }
             }
             _ => {}

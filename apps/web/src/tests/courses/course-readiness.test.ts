@@ -10,6 +10,9 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 const mocks = vi.hoisted(() => ({ apiJson: vi.fn(), apiResult: vi.fn() }))
 vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson, apiResult: mocks.apiResult }))
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string, values?: Record<string, string>) => `${key}:${values?.title ?? ''}`,
+}))
 vi.mock('@services/config/config', () => ({ getAPIUrl: () => 'http://api.test/api/v2' }))
 
 import { getCourseReadiness } from '@services/courses/courses'
@@ -75,5 +78,18 @@ describe('courseReadinessQueryOptions', () => {
     const options = courseReadinessQueryOptions(courseId)
     expect(options.refetchOnWindowFocus).toBe(true)
     expect(options.staleTime).toBe(0)
+  })
+})
+
+// BUG-219: a published config with blank instructions is its own code, told
+// apart from an unpublished one.
+describe('useReadinessIssueMessage', () => {
+  it('localizes file-submission-not-ready separately from -unpublished', async () => {
+    const { useReadinessIssueMessage } = await import('@components/Dashboard/Courses/courseWorkflowUi')
+    const { renderHook } = await import('@testing-library/react')
+    const { result } = renderHook(() => useReadinessIssueMessage())
+    const issue = { severity: 'blocker' as const, activity_id: activityId, title: 'Essay', path: '' }
+    expect(result.current({ ...issue, code: 'file-submission-not-ready' })).toBe('fileSubmissionUnready:Essay')
+    expect(result.current({ ...issue, code: 'file-submission-unpublished' })).toBe('fileSubmissionUnpublished:Essay')
   })
 })

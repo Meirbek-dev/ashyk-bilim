@@ -37,22 +37,33 @@ export function useReadinessIssueMessage() {
   return (issue: CourseReadinessIssue): string => {
     const title = issue.title ?? ''
     switch (issue.code) {
-      case 'no-live-activity':
+      case 'no-live-activity': {
         return t('noVisibleActivities')
-      case 'activity-unpublished':
+      }
+      case 'activity-unpublished': {
         return t('activityUnpublished', { title })
-      case 'assessment-not-ready':
+      }
+      case 'assessment-not-ready': {
         return t('assessmentUnready', { title })
-      case 'code-challenge-unconfigured':
+      }
+      case 'code-challenge-unconfigured': {
         return t('codeChallengeUnconfigured', { title })
-      case 'file-submission-unpublished':
+      }
+      case 'file-submission-unpublished': {
+        return t('fileSubmissionUnpublished', { title })
+      }
+      case 'file-submission-not-ready': {
         return t('fileSubmissionUnready', { title })
-      case 'thumbnail-missing':
+      }
+      case 'thumbnail-missing': {
         return t('thumbnailMissing')
-      case 'certificate-not-configured':
+      }
+      case 'certificate-not-configured': {
         return t('certificateMissing')
-      default:
+      }
+      default: {
         return t('unknown')
+      }
     }
   }
 }

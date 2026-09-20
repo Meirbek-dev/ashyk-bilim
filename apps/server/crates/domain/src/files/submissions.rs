@@ -567,6 +567,18 @@ impl FileSubmissionsService {
         let merged = merge(&row, &patch);
         let values = values_of(&merged);
         validate_config(&values)?;
+        // BUG-219: a published config passed the publish gate (title +
+        // instructions); an edit must not undo it — 409 like BUG-207. The
+        // title patch above is already non-blank.
+        if row.lifecycle == FileSubmissionLifecycle::Published
+            && merged.instructions.trim().is_empty()
+        {
+            return Err(Error::app_with_details(
+                ErrorCode::Conflict,
+                "the change would make a published file submission unready; unpublish first",
+                serde_json::json!({ "readiness": ["file-submission.instructions_missing"] }),
+            ));
+        }
         ab_db::file_submissions::update_file_submission(&self.pool, id, values).await?;
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await

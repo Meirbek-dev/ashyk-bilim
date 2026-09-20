@@ -1048,3 +1048,65 @@ async fn hidden_activity_is_404_for_learner_writes_too(pool: PgPool) {
         by_author.text()
     );
 }
+
+/// BUG-219: a live config passed the publish gate; an edit that would blank
+/// the instructions is a 409 with the readiness code, learners keep the old
+/// text, and course readiness names a published-but-blank config
+/// `file-submission-not-ready` (not `-unpublished`).
+#[sqlx::test(migrations = "../../migrations")]
+async fn live_config_edits_must_keep_it_ready(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+
+    let blanked = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "instructions": "   " }),
+        )
+        .await;
+    assert_eq!(blanked.status, StatusCode::CONFLICT, "{}", blanked.text());
+    assert_eq!(blanked.json()["code"], "conflict");
+    assert_eq!(
+        blanked.json()["details"]["readiness"],
+        serde_json::json!(["file-submission.instructions_missing"])
+    );
+    let seen = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+        .await;
+    assert_eq!(seen.json()["instructions"], "Upload your essay as a PDF.");
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/readiness"))
+        .await;
+    assert_eq!(readiness.json()["ready"], true, "{}", readiness.text());
+
+    // A ready edit still lands.
+    let edited = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "instructions": "Upload the PDF." }),
+        )
+        .await;
+    assert_eq!(edited.status, StatusCode::OK, "{}", edited.text());
+
+    // A legacy row that is published with blank instructions is its own code.
+    let uuid: uuid::Uuid = id.parse().unwrap();
+    sqlx::query("UPDATE file_submissions SET instructions = '' WHERE id = $1")
+        .bind(uuid)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/readiness"))
+        .await;
+    assert_eq!(
+        readiness.json()["blockers"][0]["code"],
+        "file-submission-not-ready",
+        "{}",
+        readiness.text()
+    );
+}

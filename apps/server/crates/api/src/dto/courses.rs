@@ -238,7 +238,7 @@ pub struct CourseReadiness {
 
 /// `code` ∈ `no-live-activity | assessment-not-ready |
 /// code-challenge-unconfigured | file-submission-unpublished |
-/// activity-unpublished | thumbnail-missing | certificate-not-configured`.
+/// file-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ReadinessItem {
     pub code: String,
