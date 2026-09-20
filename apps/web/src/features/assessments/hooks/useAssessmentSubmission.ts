@@ -147,7 +147,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     enabled: Boolean(assessmentUuid) && hasOpenDraft,
   })
 
-  const draft = draftQuery.data?.submission ?? null
+  // The attempt list is the source of truth for «is a draft open»: a submit
+  // that landed while the reply was lost leaves the draft cache one row behind
+  // (BUG-212 nit) — the list's refetch must swap the form for the result.
+  const draft = hasOpenDraft ? (draftQuery.data?.submission ?? null) : null
   const submission = draft ?? submissionsQuery.data?.[0] ?? null
   const version = submission?.draft_version
   const draftVersion = submission?.draft_version
@@ -293,7 +296,16 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       try {
         return await submitAssessmentDraft(active.id, active.version, answers, submitRetryRef.current.key, violationCount)
       } catch (error) {
-        if (!isApiError(error) || error.code !== 'idempotency-in-progress') throw error
+        if (!isApiError(error)) throw error
+        if (isOfflineRecoverable(error)) {
+          // The reply was lost, not necessarily the submit (BUG-204 keeps the
+          // action running server-side): if the attempt already landed, that
+          // is the result — otherwise the BUG-178 re-queue below.
+          const latest = await getMySubmission(active.id).catch(() => null)
+          if (latest && latest.status !== 'DRAFT') return latest
+          throw error
+        }
+        if (error.code !== 'idempotency-in-progress') throw error
         // BUG-204: the earlier submit under this key is still running (or its
         // reservation is stranded). Give it a moment; if it landed, that is
         // the result — otherwise mint a fresh key and submit again. Never the

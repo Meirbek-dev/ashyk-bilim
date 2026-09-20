@@ -8,13 +8,23 @@ use ab_domain::assessments::service::{self, LatePolicy as DomainLatePolicy, Poli
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+use super::EPOCH_MAX;
+
 /// Late-submission handling.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, garde::Validate, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum LatePolicy {
     None,
-    Penalty { percent_per_day: f64, max_days: i32 },
-    Cutoff { cutoff_at_unix: i64 },
+    Penalty {
+        #[garde(skip)]
+        percent_per_day: f64,
+        #[garde(skip)]
+        max_days: i32,
+    },
+    Cutoff {
+        #[garde(range(min = 0, max = EPOCH_MAX))]
+        cutoff_at_unix: i64,
+    },
 }
 
 impl From<DomainLatePolicy> for LatePolicy {
@@ -74,11 +84,11 @@ pub struct Policy {
     /// `null` = no limit.
     #[garde(skip)]
     pub time_limit_seconds: Option<i32>,
-    #[garde(skip)]
+    #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
     pub due_at_unix: Option<i64>,
     #[garde(skip)]
     pub allow_late: bool,
-    #[garde(skip)]
+    #[garde(dive)]
     pub late_policy: LatePolicy,
     #[garde(skip)]
     pub required: bool,
@@ -340,7 +350,7 @@ pub struct LifecycleRequest {
     #[garde(skip)]
     pub to: Lifecycle,
     /// Required when `to` is `scheduled`; must be in the future.
-    #[garde(skip)]
+    #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
     pub scheduled_at_unix: Option<i64>,
     #[garde(inner(length(max = 1000)))]
     pub note: Option<String>,
@@ -533,7 +543,7 @@ pub struct OverrideRequest {
     /// 1..=10; `null` keeps the assessment's limit.
     #[garde(skip)]
     pub max_attempts_override: Option<i32>,
-    #[garde(skip)]
+    #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
     pub due_at_override_unix: Option<i64>,
     #[garde(skip)]
     #[serde(default)]
@@ -542,7 +552,7 @@ pub struct OverrideRequest {
     #[serde(default)]
     pub note: String,
     /// After this the override is ignored.
-    #[garde(skip)]
+    #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
     pub expires_at_unix: Option<i64>,
 }
 

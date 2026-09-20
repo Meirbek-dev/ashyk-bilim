@@ -296,7 +296,7 @@ pub struct DeadlineExtensionRequest {
     #[garde(length(min = 1, max = 500))]
     pub user_ids: Vec<UserId>,
     /// Unix seconds, at most 9999-12-31 (the timestamp range).
-    #[garde(range(min = 0, max = 253_402_300_799))]
+    #[garde(range(min = 0, max = super::EPOCH_MAX))]
     pub new_due_at_unix: i64,
     #[garde(length(chars, max = 500))]
     #[serde(default)]

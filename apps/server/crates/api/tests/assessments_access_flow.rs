@@ -515,3 +515,130 @@ async fn unknown_users_and_drafts_are_client_errors(pool: PgPool) {
     assert_eq!(preview.status, StatusCode::OK, "{}", preview.text());
     assert_eq!(preview.json()["is_teacher_preview"], true);
 }
+
+/// BUG-212: every `*_unix` request field is bounded by the `timestamptz`
+/// range — a huge epoch is a 422 with the field named, not a Postgres
+/// «timestamp out of range» 500 (BUG-206 bounded only `new_due_at_unix`).
+#[sqlx::test(migrations = "../../migrations")]
+async fn out_of_range_epochs_are_client_errors(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let (alice, _) = learner(&app, "alice").await;
+    let huge = 4_611_686_018_427_387_904_i64;
+    let chapter_id = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &serde_json::json!({ "name": "Week 2" }),
+        )
+        .await
+        .json()["id"]
+        .clone();
+    let mut policy = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await
+        .json()["policy"]
+        .clone();
+    policy["due_at_unix"] = serde_json::json!(huge);
+    policy["late_policy"] = serde_json::json!({ "kind": "cutoff", "cutoff_at_unix": huge });
+    let put_policy = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/policy"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(policy.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(
+        put_policy.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        put_policy.text()
+    );
+    let fields: Vec<String> = put_policy.json()["field_errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["field"].as_str().unwrap().to_owned())
+        .collect();
+    assert!(fields.contains(&"due_at_unix".into()), "{fields:?}");
+    assert!(
+        fields.contains(&"late_policy.cutoff_at_unix".into()),
+        "{fields:?}"
+    );
+
+    let fs = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({ "chapter_id": chapter_id, "title": "Essay", "instructions": "Upload it." }),
+        )
+        .await;
+    assert_eq!(fs.status, StatusCode::CREATED, "{}", fs.text());
+    let fs_id = fs.json()["id"].as_str().unwrap().to_owned();
+
+    let doors = [
+        (
+            "POST",
+            "/api/v2/assessments".to_owned(),
+            serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Q2",
+                                "policy": policy }),
+        ),
+        (
+            "POST",
+            format!("/api/v2/assessments/{id}/lifecycle"),
+            serde_json::json!({ "to": "scheduled", "scheduled_at_unix": huge }),
+        ),
+        (
+            "POST",
+            format!("/api/v2/assessments/{id}/overrides/{alice}"),
+            serde_json::json!({ "due_at_override_unix": huge }),
+        ),
+        (
+            "POST",
+            format!("/api/v2/assessments/{id}/overrides/{alice}"),
+            serde_json::json!({ "expires_at_unix": huge }),
+        ),
+        (
+            "PATCH",
+            format!("/api/v2/file-submissions/{fs_id}"),
+            serde_json::json!({ "due_at_unix": huge }),
+        ),
+        (
+            "PATCH",
+            format!("/api/v2/file-submissions/{fs_id}"),
+            serde_json::json!({ "late_policy": { "kind": "cutoff", "cutoff_at_unix": huge } }),
+        ),
+    ];
+    for (method, path, body) in doors {
+        let response = app
+            .send(
+                axum::http::Request::builder()
+                    .method(method)
+                    .uri(&path)
+                    .header(axum::http::header::CONTENT_TYPE, "application/json")
+                    .header(axum::http::header::COOKIE, &teacher.cookie)
+                    .body(axum::body::Body::from(body.to_string()))
+                    .unwrap(),
+            )
+            .await;
+        assert_eq!(
+            response.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{method} {path}: {}",
+            response.text()
+        );
+        assert!(
+            response.json()["field_errors"][0]["field"]
+                .as_str()
+                .unwrap()
+                .ends_with("_unix"),
+            "{method} {path}: {}",
+            response.text()
+        );
+    }
+}

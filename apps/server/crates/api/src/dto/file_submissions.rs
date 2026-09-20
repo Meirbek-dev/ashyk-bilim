@@ -11,7 +11,7 @@ use ab_domain::files::submissions as domain;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::double_option;
+use super::{EPOCH_MAX, double_option};
 use crate::dto::assessments::LatePolicy;
 pub use ab_domain::files::submissions::AttachedFile;
 pub use ab_domain::grading::teacher::UserSummary;
@@ -36,13 +36,13 @@ pub struct ConfigPatch {
     #[serde(default, deserialize_with = "double_option")]
     #[schema(value_type = Option<i32>)]
     pub max_file_size_mb: Option<Option<i32>>,
-    #[garde(skip)]
+    #[garde(inner(inner(range(min = 0, max = EPOCH_MAX))))]
     #[serde(default, deserialize_with = "double_option")]
     #[schema(value_type = Option<i64>)]
     pub due_at_unix: Option<Option<i64>>,
     #[garde(skip)]
     pub allow_late: Option<bool>,
-    #[garde(skip)]
+    #[garde(dive)]
     pub late_policy: Option<LatePolicy>,
     #[garde(skip)]
     #[serde(default, deserialize_with = "double_option")]
