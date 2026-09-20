@@ -2138,3 +2138,89 @@ async fn queued_extension_fails_for_a_demoted_maintainer(pool: PgPool) {
         .await;
     assert_eq!(review.json()["is_late"], true, "the extension did not run");
 }
+
+/// BUG-215: an integrity-annulled attempt's 0 is an explicit override —
+/// right or wrong choice, a feedback-only save keeps it `graded 0`, the
+/// review reports `score_override 0`, and the bulk release takes it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn annulled_attempt_is_a_score_of_record(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "tab_switch_detection": true, "violation_threshold": 1 }),
+    )
+    .await;
+    let mut subs = Vec::new();
+    for (name, selected) in [("right", "a"), ("wrong", "b")] {
+        let who = learner(&app, name).await;
+        let draft = app
+            .post_as(
+                &who,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        let sub = draft.json()["id"].as_str().unwrap().to_owned();
+        app.post_as(
+            &who,
+            &format!("/api/v2/submissions/{sub}/violations"),
+            &serde_json::json!({ "kind": "tab_switch" }),
+        )
+        .await;
+        let submitted = app
+            .post_as(
+                &who,
+                &format!("/api/v2/submissions/{sub}/submit"),
+                &serde_json::json!({ "answers": {
+                    &choice_id: { "kind": "choice", "selected": [selected] },
+                    &essay_id: { "kind": "open_text", "text": "Because." },
+                } }),
+            )
+            .await;
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        assert_eq!(submitted.json()["status"], "graded", "{}", submitted.text());
+        let review = app
+            .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
+            .await;
+        assert_eq!(
+            review.json()["score_override"],
+            0.0,
+            "{name}: {}",
+            review.text()
+        );
+        let saved = app
+            .send(grade(
+                &teacher,
+                &sub,
+                Some("1"),
+                &serde_json::json!({ "action": "save", "feedback": "annulled" }),
+            ))
+            .await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+        assert_eq!(saved.json()["status"], "graded", "{name}: {}", saved.text());
+        assert_eq!(saved.json()["final_score"], 0.0, "{name}");
+        assert_eq!(saved.json()["score_override"], 0.0, "{name}");
+        subs.push(sub);
+    }
+    let released = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/publish-grades"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(released.status, StatusCode::OK, "{}", released.text());
+    assert_eq!(released.json()["published_count"], 2, "{}", released.text());
+    assert_eq!(released.json()["needs_grading_count"], 0);
+    for sub in subs {
+        let review = app
+            .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
+            .await;
+        assert_eq!(review.json()["status"], "published");
+        assert_eq!(review.json()["final_score"], 0.0);
+    }
+}

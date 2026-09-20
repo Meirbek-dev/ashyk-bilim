@@ -735,7 +735,7 @@ impl SubmissionsService {
         }
         let violation_exceeded = violation_exceeded(&assessment, opts.violation_count);
 
-        let grade = Self::auto_grade(
+        let mut grade = Self::auto_grade(
             runner,
             &submission,
             &assessment,
@@ -760,6 +760,12 @@ impl SubmissionsService {
             waive_late_penalty: effective.waive_late_penalty,
         });
         let verdict = Verdict::decide(&assessment, &grade, &penalty, opts.auto_submit_reason);
+        // BUG-215: the annulled 0 is an explicit override — the score of
+        // record for `save_grade` / `publish_all` however many manual items
+        // are still unscored (UX-117: only a typed override changes it).
+        if penalty.violation_zeroed {
+            grade.breakdown.score_override = Some(0.0);
+        }
         let breakdown = grade.breakdown.to_value();
         let answers_value = answers_to_value(&answers);
         let written = ab_db::submissions::persist_submit(

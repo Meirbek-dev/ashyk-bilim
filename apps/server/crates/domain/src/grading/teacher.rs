@@ -981,7 +981,7 @@ impl GradingService {
         let latest_raw = ab_db::submissions::latest_grading_entry(&self.pool, row.id)
             .await?
             .map(|e| e.raw_score);
-        let score_override = override_of(&grading, latest_raw);
+        let score_override = override_of(&grading, latest_raw, is_annulled(&row));
         Ok(TeacherSubmission {
             id: row.id,
             assessment_id: row.assessment_id,
@@ -1168,7 +1168,7 @@ impl GradingService {
         // silently replaced by an item recomputation, an integrity-annulled
         // attempt keeps its 0, and re-sending the penalised final would
         // penalise twice. Dropping an override takes an explicit `null`.
-        let annulled = row.auto_submit_reason == Some(AutoSubmitReason::IntegrityViolation);
+        let annulled = is_annulled(&row);
         let stored_raw = match input.final_score {
             Some(Some(_)) => None,
             Some(None) if !annulled => None,
@@ -1184,7 +1184,14 @@ impl GradingService {
                 breakdown.score_override = Some(round2(score));
                 (round2(score), true)
             }
-            _ if annulled => (stored_raw.unwrap_or(0.0), false),
+            // BUG-215: the annulled 0 (or the override typed since) is the
+            // score of record — the flag is (re)written so `unscored()` and
+            // the view agree, rows annulled before the flag included.
+            _ if annulled => {
+                let raw = breakdown.score_override.or(stored_raw).unwrap_or(0.0);
+                breakdown.score_override = Some(raw);
+                (raw, true)
+            }
             Some(None) => {
                 breakdown.score_override = None;
                 (derived_raw(&breakdown), false)
@@ -1376,7 +1383,7 @@ impl GradingService {
             let latest = ab_db::submissions::latest_grading_entry(&self.pool, row.id).await?;
             let fallback_score = row.final_score.or(row.auto_score).unwrap_or(0.0);
             let breakdown = GradingBreakdown::from_value(&row.grading);
-            if unscored(&breakdown, latest.as_ref().map(|e| e.raw_score)) {
+            if unscored(&row, &breakdown, latest.as_ref().map(|e| e.raw_score)) {
                 needs_grading += 1;
                 continue;
             }
@@ -1672,14 +1679,24 @@ fn derived_raw(breakdown: &GradingBreakdown) -> f64 {
 /// BUG-197: no score of record yet — an item still awaits its manual score
 /// and no override is stored. Such a row is held back from the bulk
 /// release, as a single publish is.
-fn unscored(breakdown: &GradingBreakdown, stored_raw: Option<f64>) -> bool {
-    breakdown.needs_manual_review && override_of(breakdown, stored_raw).is_none()
+fn unscored(row: &SubmissionRow, breakdown: &GradingBreakdown, stored_raw: Option<f64>) -> bool {
+    breakdown.needs_manual_review && override_of(breakdown, stored_raw, is_annulled(row)).is_none()
+}
+
+fn is_annulled(row: &SubmissionRow) -> bool {
+    row.auto_submit_reason == Some(AutoSubmitReason::IntegrityViolation)
 }
 
 /// The stored override (BUG-205), or — for rows written before the flag
-/// existed — a latest ledger raw that differs from the item-derived one.
-fn override_of(breakdown: &GradingBreakdown, ledger_raw: Option<f64>) -> Option<f64> {
+/// existed — a latest ledger raw that differs from the item-derived one;
+/// an integrity-annulled attempt's 0 counts as one (BUG-215).
+fn override_of(
+    breakdown: &GradingBreakdown,
+    ledger_raw: Option<f64>,
+    annulled: bool,
+) -> Option<f64> {
     override_of_before(breakdown, ledger_raw, derived_raw(breakdown))
+        .or_else(|| annulled.then(|| ledger_raw.unwrap_or(0.0)))
 }
 
 /// `override_of` against a derived score computed before an item merge.
