@@ -1,5 +1,6 @@
 'use client'
 
+import { csvField } from '@/lib/download'
 import { useTranslations } from 'next-intl'
 import * as React from 'react'
 
@@ -104,11 +105,6 @@ interface StoredDataTableState {
   globalFilter?: string
   columnVisibility?: ColumnVisibilityState
   pagination?: PaginationState
-}
-
-const escapeCsv = (value: unknown) => {
-  const normalized = value === null || value === undefined ? '' : String(value)
-  return `"${normalized.replace(/"/g, '""')}"`
 }
 
 const resolveUpdater = <TValue,>(updater: TValue | ((old: TValue) => TValue), old: TValue) =>
@@ -388,7 +384,7 @@ export default function DataTable<TData extends RowData>({
       const label =
         column.columnDef.meta?.label ??
         (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id)
-      return escapeCsv(label)
+      return csvField(label)
     })
 
     const bodyRows = sourceRows.map(row =>
@@ -396,7 +392,7 @@ export default function DataTable<TData extends RowData>({
         const value = column.columnDef.meta?.exportValue
           ? column.columnDef.meta.exportValue(row.original as never)
           : row.getValue(column.id)
-        return escapeCsv(value)
+        return csvField(value)
       }),
     )
 

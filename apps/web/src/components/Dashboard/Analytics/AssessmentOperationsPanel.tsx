@@ -1,5 +1,6 @@
 'use client'
 
+import { csvField } from '@/lib/download'
 import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
 
 import { fromUnix } from '@/lib/api/contract'
@@ -16,10 +17,6 @@ import { useLocale, useTranslations } from 'next-intl'
 
 interface AssessmentOperationsPanelProps {
   detail: TeacherAssessmentDetailResponse
-}
-
-function escapeCsvValue(value: string | number | null | undefined) {
-  return `"${String(value ?? '').replaceAll('"', '""')}"`
 }
 
 // One decimal, locale separators («68,8 %» in ru) — same as the summary tiles.
@@ -209,9 +206,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       event.affected_count ?? '',
       auditSummary(event),
     ])
-    const csv = [headers.map(escapeCsvValue).join(','), ...rows.map(row => row.map(escapeCsvValue).join(','))].join(
-      '\n',
-    )
+    const csv = [headers.map(csvField).join(','), ...rows.map(row => row.map(csvField).join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')

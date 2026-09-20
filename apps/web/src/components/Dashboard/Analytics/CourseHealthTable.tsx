@@ -7,7 +7,7 @@ import type { TeacherCourseRow } from '@/types/analytics'
 import AnalyticsDataTable from './AnalyticsDataTable'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
@@ -20,6 +20,7 @@ interface CourseHealthTableProps {
 export default function CourseHealthTable({ rows, storageKey, serverPaginated }: CourseHealthTableProps) {
   const t = useTranslations('TeacherAnalytics')
   const percent = usePercentFormat()
+  const format = useFormatter()
   const columns: DataTableColumnDef<TeacherCourseRow>[] = [
     {
       accessorKey: 'course_name',
@@ -44,7 +45,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
             <div>{percent(course.completion_rate)}</div>
             <div className="text-muted-foreground text-[11px]">
               {course.teacher_completion_delta_pct !== null && course.teacher_completion_delta_pct !== undefined
-                ? `${course.teacher_completion_delta_pct > 0 ? '+' : ''}${course.teacher_completion_delta_pct} ${t('courseHealth.vsTeacherAvg')}`
+                ? `${format.number(course.teacher_completion_delta_pct, { maximumFractionDigits: 1, signDisplay: 'exceptZero' })} ${t('courseHealth.vsTeacherAvg')}`
                 : ''}
             </div>
           </div>

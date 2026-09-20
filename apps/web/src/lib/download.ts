@@ -22,3 +22,14 @@ export function filenameFromContentDisposition(header: string | null | undefined
   const plain = /filename="?([^";]+)"?/i.exec(header)?.[1]?.trim()
   return plain || fallback
 }
+
+/**
+ * One CSV cell: RFC-4180 quoting plus a `'` prefix on cells that a spreadsheet
+ * would evaluate as a formula (`=`, `+`, `-`, `@`, tab, CR) — the web mirror of
+ * `ab_domain::csv::csv_field` (BUG-196).
+ */
+export function csvField(value: unknown): string {
+  const text = value === null || value === undefined ? '' : String(value)
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text
+  return `"${safe.replaceAll('"', '""')}"`
+}
