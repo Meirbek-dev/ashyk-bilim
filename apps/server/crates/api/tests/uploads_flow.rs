@@ -253,7 +253,12 @@ async fn authoring_and_platform_purposes_need_their_grant(pool: PgPool) {
                 &serde_json::json!({ "purpose": purpose, "mime": "image/png", "size_bytes": 10 }),
             )
             .await;
-        assert_eq!(refused.status, StatusCode::FORBIDDEN, "{purpose}: {}", refused.text());
+        assert_eq!(
+            refused.status,
+            StatusCode::FORBIDDEN,
+            "{purpose}: {}",
+            refused.text()
+        );
     }
     let allowed = app
         .post_as(

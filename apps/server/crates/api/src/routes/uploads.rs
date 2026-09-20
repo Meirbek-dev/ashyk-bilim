@@ -9,10 +9,11 @@ use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, ValidJson, idempotent};
 use crate::state::AppState;
 
-/// Start an upload: validates the purpose policy and returns a presigned PUT
-/// (requires `file:create:own`; `platform-*` purposes also need
+/// Start an upload: validates the purpose policy and returns a presigned PUT.
+///
+/// Requires `file:create:own`; `platform-*` purposes also need
 /// `platform:update:platform`, `course-thumbnail`/`block-*` course write
-/// access). Bytes go directly to storage, not this API.
+/// access. Bytes go directly to storage, not this API.
 #[utoipa::path(
     post,
     path = "/uploads",
