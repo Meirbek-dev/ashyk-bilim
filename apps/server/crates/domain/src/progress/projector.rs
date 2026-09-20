@@ -641,7 +641,11 @@ pub(crate) fn aggregate_course(
         total_required_count: count(total),
         progress_pct: pct,
         grade_average,
-        weighted_grade_average: (denominator > 0.0).then(|| round2(numerator / denominator)),
+        // BUG-208: inf/inf is NaN → JSON null; skip the average instead.
+        weighted_grade_average: (denominator > 0.0)
+            .then(|| numerator / denominator)
+            .filter(|avg| avg.is_finite())
+            .map(round2),
         missing_required_count: count(total.saturating_sub(completed)),
         needs_grading_count: count(needs_grading),
         last_activity_at,

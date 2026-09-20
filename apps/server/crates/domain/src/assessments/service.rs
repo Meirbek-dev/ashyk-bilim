@@ -26,6 +26,9 @@ use crate::progress::ProgressProjector;
 
 /// Legacy `ITEM_LIMIT_EXCEEDED` ceiling.
 pub const MAX_ITEMS: i64 = 200;
+/// BUG-208: per-item score ceiling (the DTO enforces it too); readiness
+/// catches legacy rows. `!(x > 0 && x <= MAX)` also rejects NaN.
+pub const MAX_ITEM_SCORE: f64 = 10_000.0;
 
 /// Archived and scheduled assessments are read-only; a published one with
 /// any submission cannot be edited (BUG-162). Shared with the curriculum
@@ -859,10 +862,10 @@ impl AssessmentsService {
                     "questions",
                 ));
             }
-            if item.max_score <= 0.0 {
+            if !(item.max_score > 0.0 && item.max_score <= MAX_ITEM_SCORE) {
                 item_issues.push(blocker(
                     "item.max_score_invalid",
-                    "max score must be positive",
+                    "max score must be positive and at most 10000",
                     "questions",
                 ));
             }
@@ -1066,6 +1069,8 @@ impl AssessmentsService {
         let chapter = ab_db::catalog::get_chapter(&self.pool, target_chapter)
             .await?
             .ok_or_else(|| Error::not_found("chapter"))?;
+        // BUG-208: an invisible course's chapter is a 404, not a 422 oracle.
+        self.authorable_course(actor, chapter.course_id).await?;
         if chapter.course_id != source.course_id {
             return Err(Error::validation(vec![FieldError {
                 field: "chapter_id".into(),

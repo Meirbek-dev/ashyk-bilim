@@ -310,7 +310,8 @@ pub struct CreateAssessmentRequest {
     pub title: String,
     #[garde(length(chars, max = 20_000))]
     pub description: Option<String>,
-    #[garde(inner(range(min = 0.0)))]
+    /// BUG-208: 0–100 — an unbounded weight overflows the course average.
+    #[garde(inner(range(min = 0.0, max = 100.0)))]
     pub weight: Option<f64>,
     #[garde(skip)]
     pub grading_type: Option<GradingType>,
@@ -326,7 +327,8 @@ pub struct UpdateAssessmentRequest {
     pub title: Option<String>,
     #[garde(inner(length(max = 20_000)))]
     pub description: Option<String>,
-    #[garde(inner(range(min = 0.0)))]
+    /// BUG-208: 0–100 — an unbounded weight overflows the course average.
+    #[garde(inner(range(min = 0.0, max = 100.0)))]
     pub weight: Option<f64>,
     #[garde(skip)]
     pub grading_type: Option<GradingType>,
@@ -352,7 +354,8 @@ pub struct CreateItemRequest {
     /// Tagged on `kind`; must be a kind the assessment allows.
     #[garde(skip)]
     pub body: ItemBody,
-    #[garde(inner(range(min = 0.0)))]
+    /// BUG-208: at most 10 000 — an unbounded score overflows the grade shares.
+    #[garde(inner(range(min = 0.0, max = 10_000.0)))]
     pub max_score: Option<f64>,
     #[garde(dive)]
     pub metadata: Option<ItemMetadata>,
@@ -365,7 +368,8 @@ pub struct UpdateItemRequest {
     pub title: Option<String>,
     #[garde(skip)]
     pub body: Option<ItemBody>,
-    #[garde(inner(range(min = 0.0)))]
+    /// BUG-208: at most 10 000 — an unbounded score overflows the grade shares.
+    #[garde(inner(range(min = 0.0, max = 10_000.0)))]
     pub max_score: Option<f64>,
     /// Replaces the whole metadata block when present.
     #[garde(dive)]

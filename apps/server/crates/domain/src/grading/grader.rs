@@ -79,7 +79,8 @@ impl Verdict {
 /// Points per item as its `max_score` share of 100, or an even split.
 fn item_points(items: &[Item]) -> Vec<f64> {
     let total: f64 = items.iter().map(|i| i.max_score).sum();
-    if total > 0.0 {
+    // BUG-208: an overflowed total (inf) would zero every share.
+    if total > 0.0 && total.is_finite() {
         items.iter().map(|i| i.max_score / total * 100.0).collect()
     } else {
         let each = 100.0 / count(items.len().max(1));

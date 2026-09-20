@@ -1750,3 +1750,134 @@ async fn live_assessment_edits_must_keep_it_ready(pool: PgPool) {
         .await;
     assert_eq!(items.json()["items"].as_array().unwrap().len(), 1);
 }
+
+/// BUG-208: `max_score` is capped at 10 000 and `weight` at 100 (422), so
+/// the grade shares and the course average stay finite; a perfect attempt
+/// on capped scores is still 100. UX-143: item body size caps.
+#[sqlx::test(migrations = "../../migrations")]
+async fn scores_and_weights_are_bounded(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Bounds" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let mut huge = choice_item("huge");
+    huge["max_score"] = serde_json::json!(1e308);
+    let refused = app
+        .post_as(&teacher, &format!("/api/v2/assessments/{id}/items"), &huge)
+        .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
+    let heavy = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}"),
+            &serde_json::json!({ "weight": 1e308 }),
+        )
+        .await;
+    assert_eq!(
+        heavy.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        heavy.text()
+    );
+    // UX-143: 201 options / a 20 001-char prompt are refused.
+    let options: Vec<serde_json::Value> = (0..201)
+        .map(|i| serde_json::json!({ "id": i.to_string(), "text": i.to_string(), "is_correct": i == 0 }))
+        .collect();
+    let too_many = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &serde_json::json!({ "title": "many", "max_score": 1,
+                                  "body": { "kind": "choice", "prompt": "p", "options": options } }),
+        )
+        .await;
+    assert_eq!(
+        too_many.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        too_many.text()
+    );
+    let mut long_prompt = choice_item("long");
+    long_prompt["body"]["prompt"] = serde_json::json!("x".repeat(20_001));
+    let too_long = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &long_prompt,
+        )
+        .await;
+    assert_eq!(
+        too_long.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        too_long.text()
+    );
+
+    let mut capped = choice_item("capped");
+    capped["max_score"] = serde_json::json!(10_000);
+    let mut ids = Vec::new();
+    for body in [capped, choice_item("small")] {
+        let item = app
+            .post_as(&teacher, &format!("/api/v2/assessments/{id}/items"), &body)
+            .await;
+        assert_eq!(item.status, StatusCode::CREATED, "{}", item.text());
+        ids.push(item.json()["id"].as_str().unwrap().to_owned());
+    }
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    let user = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let learner = app
+        .mint_session_for(
+            user,
+            &["assessment:read:assigned", "assessment:submit:assigned"],
+        )
+        .await;
+    let draft = app
+        .post_as(
+            &learner,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &learner,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": {
+                &ids[0]: { "kind": "choice", "selected": ["a"] },
+                &ids[1]: { "kind": "choice", "selected": ["a"] },
+            } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(
+        submitted.json()["auto_score"],
+        100.0,
+        "{}",
+        submitted.text()
+    );
+}

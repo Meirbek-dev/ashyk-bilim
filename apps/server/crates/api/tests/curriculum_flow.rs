@@ -285,6 +285,20 @@ async fn curriculum_respects_course_access(pool: PgPool) {
         .await;
     assert_eq!(denied.status, StatusCode::NOT_FOUND);
 
+    // BUG-208 nit: moving one's own activity into a chapter of an invisible
+    // course is the same 404 as a random id — not the same-course 422.
+    let rivals_course = create_course(&app, &rival, "Rival").await;
+    let rivals_chapter = create_chapter(&app, &rival, &rivals_course, "R1").await;
+    let rivals_activity = create_activity(&app, &rival, &rivals_chapter, "Clip").await;
+    let probe = app
+        .post_as(
+            &rival,
+            &format!("/api/v2/activities/{rivals_activity}/move"),
+            &serde_json::json!({ "position": 1, "chapter_id": chapter }),
+        )
+        .await;
+    assert_eq!(probe.status, StatusCode::NOT_FOUND, "{}", probe.text());
+
     let learner = app.mint_session(&[]).await;
     let hidden = app
         .get_as(&learner, &format!("/api/v2/courses/{course}/curriculum"))

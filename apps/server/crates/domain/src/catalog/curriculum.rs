@@ -486,9 +486,9 @@ impl CurriculumService {
         let destination = match target_chapter {
             None => activity.chapter_id,
             Some(chapter_id) => {
-                let chapter = ab_db::catalog::get_chapter(&self.pool, chapter_id)
-                    .await?
-                    .ok_or_else(|| Error::not_found("chapter"))?;
+                // BUG-208: 404 for a chapter the actor cannot see — the
+                // same-course 422 must not be an existence oracle.
+                let chapter = self.writable_chapter(actor, chapter_id).await?;
                 if chapter.course_id != activity.course_id {
                     return Err(Error::validation(vec![FieldError {
                         field: "chapter_id".into(),
