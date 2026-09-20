@@ -1069,8 +1069,14 @@ impl AssessmentsService {
         let chapter = ab_db::catalog::get_chapter(&self.pool, target_chapter)
             .await?
             .ok_or_else(|| Error::not_found("chapter"))?;
-        // BUG-208: an invisible course's chapter is a 404, not a 422 oracle.
-        self.authorable_course(actor, chapter.course_id).await?;
+        // BUG-208: an invisible course's chapter is a 404, not a 422 oracle;
+        // BUG-209: with the same detail as an unknown chapter.
+        self.authorable_course(actor, chapter.course_id)
+            .await
+            .map_err(|err| match err.code() {
+                ab_core::ErrorCode::NotFound => Error::not_found("chapter"),
+                _ => err,
+            })?;
         if chapter.course_id != source.course_id {
             return Err(Error::validation(vec![FieldError {
                 field: "chapter_id".into(),

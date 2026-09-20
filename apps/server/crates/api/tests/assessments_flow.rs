@@ -1826,6 +1826,23 @@ async fn scores_and_weights_are_bounded(pool: PgPool) {
         "{}",
         too_long.text()
     );
+    // BUG-209: every free-text body field is capped like the prompt.
+    let mut long_option = choice_item("long option");
+    long_option["body"]["options"][1]["text"] = serde_json::json!("x".repeat(20_001));
+    let too_long = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &long_option,
+        )
+        .await;
+    assert_eq!(too_long.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(
+        too_long.json()["field_errors"][0]["field"],
+        "body.options[1].text",
+        "{}",
+        too_long.text()
+    );
 
     let mut capped = choice_item("capped");
     capped["max_score"] = serde_json::json!(10_000);

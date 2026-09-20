@@ -20,8 +20,11 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 pub const ITEM_BODY_SCHEMA_VERSION: u32 = 1;
-/// UX-143: item body size caps, refused at write time.
-pub const MAX_PROMPT_CHARS: usize = 20_000;
+/// UX-143 / BUG-209: item body size caps, refused at write time.
+///
+/// Every free-text field (prompt, option text, explanation, rubric, labels,
+/// pairs, code specs / starters / tests) is bounded by `MAX_TEXT_CHARS`.
+pub const MAX_TEXT_CHARS: usize = 20_000;
 pub const MAX_BODY_ENTRIES: usize = 200;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -570,31 +573,118 @@ impl ItemBody {
                 "option ids must be unique",
             );
         }
-        // UX-143: size caps — a prompt is bounded like a description, and a
-        // list of options/fields/pairs like the item count.
-        let (prompt, entries) = match self {
-            Self::Choice(b) => (&b.prompt, b.options.len()),
-            Self::OpenText(b) => (&b.prompt, 0),
-            Self::Form(b) => (&b.prompt, b.fields.len()),
-            Self::Code(b) => (&b.prompt, 0),
-            Self::Matching(b) => (&b.prompt, b.pairs.len()),
-            Self::MatchingLearner(b) => (&b.prompt, b.left.len().max(b.right.len())),
-        };
-        if prompt.chars().count() > MAX_PROMPT_CHARS {
+        // UX-143: size caps — a list of options/fields/pairs is bounded like
+        // the item count; BUG-209: every free-text field like a description
+        // (1.9 MB option texts sailed through on the prompt cap alone).
+        let (texts, entries) = self.sized_fields();
+        if let Some((field, _)) = texts
+            .iter()
+            .find(|(_, text)| text.chars().count() > MAX_TEXT_CHARS)
+        {
             return fail(
-                "body.prompt",
+                field,
                 "too-long",
-                "a prompt holds at most 20000 characters",
+                "a text field holds at most 20000 characters",
             );
         }
         if entries > MAX_BODY_ENTRIES {
             return fail(
                 "body",
                 "limit-exceeded",
-                "an item holds at most 200 options, fields or pairs",
+                "an item holds at most 200 options, fields, pairs or tests",
             );
         }
         Ok(())
+    }
+
+    /// Every free-text field with its wire path, and the size of the
+    /// bounded list (options / fields / pairs / tests).
+    fn sized_fields(&self) -> (Vec<(String, &str)>, usize) {
+        let mut texts: Vec<(String, &str)> = Vec::new();
+        let entries = match self {
+            Self::Choice(b) => {
+                texts.push(("body.prompt".into(), &b.prompt));
+                texts.extend(
+                    b.options
+                        .iter()
+                        .enumerate()
+                        .map(|(i, o)| (format!("body.options[{i}].text"), o.text.as_str())),
+                );
+                texts.extend(
+                    b.explanation
+                        .as_deref()
+                        .map(|e| ("body.explanation".into(), e)),
+                );
+                b.options.len()
+            }
+            Self::OpenText(b) => {
+                texts.push(("body.prompt".into(), &b.prompt));
+                texts.extend(b.rubric.as_deref().map(|r| ("body.rubric".into(), r)));
+                0
+            }
+            Self::Form(b) => {
+                texts.push(("body.prompt".into(), &b.prompt));
+                texts.extend(
+                    b.fields
+                        .iter()
+                        .enumerate()
+                        .map(|(i, f)| (format!("body.fields[{i}].label"), f.label.as_str())),
+                );
+                b.fields.len()
+            }
+            Self::Code(b) => {
+                texts.push(("body.prompt".into(), &b.prompt));
+                texts.push(("body.input_spec".into(), &b.input_spec));
+                texts.push(("body.output_spec".into(), &b.output_spec));
+                texts.extend(
+                    b.constraints
+                        .iter()
+                        .enumerate()
+                        .map(|(i, c)| (format!("body.constraints[{i}]"), c.as_str())),
+                );
+                texts.extend(
+                    b.starter_code
+                        .iter()
+                        .map(|(k, v)| (format!("body.starter_code.{k}"), v.as_str())),
+                );
+                texts.extend(
+                    b.reference_solutions
+                        .iter()
+                        .map(|(k, v)| (format!("body.reference_solutions.{k}"), v.as_str())),
+                );
+                for (i, t) in b.tests.iter().enumerate() {
+                    texts.push((format!("body.tests[{i}].input"), &t.input));
+                    texts.push((
+                        format!("body.tests[{i}].expected_output"),
+                        &t.expected_output,
+                    ));
+                    texts.extend(
+                        t.description
+                            .as_deref()
+                            .map(|d| (format!("body.tests[{i}].description"), d)),
+                    );
+                }
+                b.tests.len()
+            }
+            Self::Matching(b) => {
+                texts.push(("body.prompt".into(), &b.prompt));
+                for (i, p) in b.pairs.iter().enumerate() {
+                    texts.push((format!("body.pairs[{i}].left"), &p.left));
+                    texts.push((format!("body.pairs[{i}].right"), &p.right));
+                }
+                texts.extend(
+                    b.explanation
+                        .as_deref()
+                        .map(|e| ("body.explanation".into(), e)),
+                );
+                b.pairs.len()
+            }
+            Self::MatchingLearner(b) => {
+                texts.push(("body.prompt".into(), &b.prompt));
+                b.left.len().max(b.right.len())
+            }
+        };
+        (texts, entries)
     }
 
     /// Per-kind readiness rules (legacy `_item_readiness_issues`). The

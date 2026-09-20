@@ -373,6 +373,76 @@ async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
         .patch_as(&teacher, &path, &serde_json::json!({ "name": "Thumbs 2" }))
         .await;
     assert_eq!(renamed.json()["thumbnail_key"], third_key);
+
+    // BUG-209: claiming the same upload again is a no-op on the counter, so
+    // `null` afterwards really releases it (count 0, reaper clock running).
+    let again = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "thumbnail_upload_id": third }),
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::OK, "{}", again.text());
+    assert_eq!(upload_refs(&app, &third).await, (1, false));
+    app.patch_as(
+        &teacher,
+        &path,
+        &serde_json::json!({ "thumbnail_upload_id": null }),
+    )
+    .await;
+    assert_eq!(upload_refs(&app, &third).await, (0, true));
+
+    // BUG-209: deleting the course releases its thumbnail and the media
+    // blocks under it (the FK cascade alone left them pinned forever).
+    let (fourth, _) = finalized_upload(&app, &teacher, "course-thumbnail").await;
+    app.patch_as(
+        &teacher,
+        &path,
+        &serde_json::json!({ "thumbnail_upload_id": fourth }),
+    )
+    .await;
+    let chapter = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{id}/chapters"),
+            &serde_json::json!({ "name": "One" }),
+        )
+        .await;
+    let chapter_id = chapter.json()["id"].as_str().unwrap().to_owned();
+    let activity = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/chapters/{chapter_id}/activities"),
+            &serde_json::json!({ "name": "Page", "activity_type": "dynamic",
+                                  "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    let activity_id = activity.json()["id"].as_str().unwrap().to_owned();
+    let (image, _) = finalized_upload(&app, &teacher, "block-image").await;
+    let block = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}/blocks"),
+            &serde_json::json!({ "block_type": "image", "upload_id": image }),
+        )
+        .await;
+    assert_eq!(block.status, StatusCode::CREATED, "{}", block.text());
+    assert_eq!(upload_refs(&app, &fourth).await, (1, false));
+    assert_eq!(upload_refs(&app, &image).await, (1, false));
+    let gone = app.delete_as(&teacher, &path).await;
+    assert_eq!(gone.status, StatusCode::NO_CONTENT);
+    assert_eq!(upload_refs(&app, &fourth).await, (0, true));
+    assert_eq!(upload_refs(&app, &image).await, (0, true));
+}
+
+/// `(referenced_count, expires_at IS NOT NULL)` of an upload row.
+async fn upload_refs(app: &TestApp, upload_id: &str) -> (i32, bool) {
+    sqlx::query_as("SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(upload_id).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
 }
 
 #[sqlx::test(migrations = "../../migrations")]

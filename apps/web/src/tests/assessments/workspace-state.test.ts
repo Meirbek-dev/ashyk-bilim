@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vite-plus/test'
 
-import { summarizeSaveLedger } from '@/features/assessments/studio/workspace/saveLedger'
+import { SAVE_STATE_LABEL_KEY, summarizeSaveLedger } from '@/features/assessments/studio/workspace/saveLedger'
 import {
   readAssessmentWorkspaceUrlState,
   writeAssessmentWorkspaceUrlState,
@@ -43,6 +43,20 @@ describe('assessment workspace save ledger', () => {
     expect(summary.hasBlockingSaveState).toBe(true)
     expect(summary.entries).toHaveLength(2)
     expect(summary.liveMessage).toContain('Selected item: dirty')
+  })
+
+  it('reads the aria-live text through the localized save-state labels (BUG-209)', () => {
+    const labels = { unsaved: 'Не сохранено', saving: 'Сохранение...', saved: 'Сохранено', saveFailed: 'Ошибка' }
+    const summary = summarizeSaveLedger(
+      [
+        { id: 'assessment', label: 'Тест', state: 'saved', updatedAt: 1 },
+        { id: 'item', label: 'Выбранный элемент', state: 'dirty', updatedAt: 2 },
+      ],
+      state => labels[SAVE_STATE_LABEL_KEY[state]],
+    )
+
+    expect(summary.liveMessage).toBe('Тест: Сохранено, Выбранный элемент: Не сохранено')
+    expect(summary.liveMessage).not.toMatch(/(dirty|saved)/)
   })
 
   it('treats idle-only entries as clean', () => {

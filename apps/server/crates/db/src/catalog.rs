@@ -348,10 +348,37 @@ pub async fn set_course_public(pool: &PgPool, id: CourseId, public: bool) -> Res
     Ok(previous)
 }
 
-pub async fn delete_course(pool: &PgPool, id: CourseId) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM courses WHERE id = $1", id.0)
-        .execute(pool)
-        .await?;
+/// Delete a course and release every upload it owns.
+///
+/// Its thumbnail and the media blocks under it re-enter the reaper's queue
+/// after `grace_secs`. BUG-209: the FK cascade drops the rows but not the
+/// `referenced_count`s, which pinned the objects forever. One statement:
+/// the CTEs read the pre-delete snapshot, so the cascaded blocks are still
+/// visible to the release.
+pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Result<bool> {
+    let deleted = sqlx::query!(
+        r#"WITH owned AS (
+               SELECT thumbnail_image_key AS key FROM courses WHERE id = $1
+               UNION ALL
+               SELECT b.content->>'file_key' FROM blocks b
+               JOIN activities a ON a.id = b.activity_id
+               WHERE a.course_id = $1
+           ), refs AS (
+               SELECT key, count(*)::int AS n FROM owned WHERE key IS NOT NULL GROUP BY key
+           ), released AS (
+               UPDATE uploads u
+               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
+                   expires_at = CASE WHEN u.referenced_count <= refs.n
+                                     THEN now() + make_interval(secs => $2)
+                                     ELSE u.expires_at END
+               FROM refs WHERE u.key = refs.key AND u.referenced_count > 0
+           )
+           DELETE FROM courses WHERE id = $1"#,
+        id.0,
+        grace_secs
+    )
+    .execute(pool)
+    .await?;
     Ok(deleted.rows_affected() == 1)
 }
 
@@ -434,10 +461,29 @@ pub async fn update_chapter(
     Ok(updated.rows_affected() == 1)
 }
 
-pub async fn delete_chapter(pool: &PgPool, id: ChapterId) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM chapters WHERE id = $1", id.0)
-        .execute(pool)
-        .await?;
+/// Delete a chapter, releasing the uploads of the media blocks under it
+/// (BUG-209 — see [`delete_course`]).
+pub async fn delete_chapter(pool: &PgPool, id: ChapterId, grace_secs: f64) -> Result<bool> {
+    let deleted = sqlx::query!(
+        r#"WITH refs AS (
+               SELECT b.content->>'file_key' AS key, count(*)::int AS n
+               FROM blocks b JOIN activities a ON a.id = b.activity_id
+               WHERE a.chapter_id = $1 AND b.content->>'file_key' IS NOT NULL
+               GROUP BY 1
+           ), released AS (
+               UPDATE uploads u
+               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
+                   expires_at = CASE WHEN u.referenced_count <= refs.n
+                                     THEN now() + make_interval(secs => $2)
+                                     ELSE u.expires_at END
+               FROM refs WHERE u.key = refs.key AND u.referenced_count > 0
+           )
+           DELETE FROM chapters WHERE id = $1"#,
+        id.0,
+        grace_secs
+    )
+    .execute(pool)
+    .await?;
     Ok(deleted.rows_affected() == 1)
 }
 
@@ -564,10 +610,29 @@ pub async fn update_activity<'e>(
     Ok(updated.rows_affected() == 1)
 }
 
-pub async fn delete_activity(pool: &PgPool, id: ActivityId) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM activities WHERE id = $1", id.0)
-        .execute(pool)
-        .await?;
+/// Delete an activity, releasing the uploads of its media blocks
+/// (BUG-209 — see [`delete_course`]).
+pub async fn delete_activity(pool: &PgPool, id: ActivityId, grace_secs: f64) -> Result<bool> {
+    let deleted = sqlx::query!(
+        r#"WITH refs AS (
+               SELECT b.content->>'file_key' AS key, count(*)::int AS n
+               FROM blocks b
+               WHERE b.activity_id = $1 AND b.content->>'file_key' IS NOT NULL
+               GROUP BY 1
+           ), released AS (
+               UPDATE uploads u
+               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
+                   expires_at = CASE WHEN u.referenced_count <= refs.n
+                                     THEN now() + make_interval(secs => $2)
+                                     ELSE u.expires_at END
+               FROM refs WHERE u.key = refs.key AND u.referenced_count > 0
+           )
+           DELETE FROM activities WHERE id = $1"#,
+        id.0,
+        grace_secs
+    )
+    .execute(pool)
+    .await?;
     Ok(deleted.rows_affected() == 1)
 }
 

@@ -298,6 +298,16 @@ async fn curriculum_respects_course_access(pool: PgPool) {
         )
         .await;
     assert_eq!(probe.status, StatusCode::NOT_FOUND, "{}", probe.text());
+    // BUG-209 nit: … with the same detail, so the 404 is not an oracle.
+    let random = app
+        .post_as(
+            &rival,
+            &format!("/api/v2/activities/{rivals_activity}/move"),
+            &serde_json::json!({ "position": 1, "chapter_id": uuid::Uuid::now_v7() }),
+        )
+        .await;
+    assert_eq!(random.status, StatusCode::NOT_FOUND);
+    assert_eq!(probe.json()["detail"], random.json()["detail"]);
 
     let learner = app.mint_session(&[]).await;
     let hidden = app

@@ -17,7 +17,7 @@ import { studioDetailFromWire, toWorkspaceReadinessIssues } from './utils'
 import { getActivityAssessment } from '@/lib/api/generated/assessments/assessments'
 import type { AssessmentWorkspaceView, WorkspaceReadinessIssue } from './studioTypes'
 import type { SaveLedgerEntry, SaveLedgerSummary } from './workspace/saveLedger'
-import { summarizeSaveLedger } from './workspace/saveLedger'
+import { SAVE_STATE_LABEL_KEY, summarizeSaveLedger } from './workspace/saveLedger'
 import { readAssessmentWorkspaceUrlState, writeAssessmentWorkspaceUrlState } from './workspace/urlState'
 
 export interface AssessmentStudioContextValue {
@@ -172,21 +172,24 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
     return issues
       .filter(issue => issue.severity !== 'warning')
       .map(issue => ({
-      code: issue.code,
-      message: localizeIssue(issue),
-      ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
-      ...(issue.field ? { field: issue.field } : {}),
-      ...(issue.action_label ? { actionLabel: issue.action_label } : {}),
-    }))
+        code: issue.code,
+        message: localizeIssue(issue),
+        ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
+        ...(issue.field ? { field: issue.field } : {}),
+        ...(issue.action_label ? { actionLabel: issue.action_label } : {}),
+      }))
   }, [issues, localizeIssue])
 
   const readinessIssues = useMemo(
-    () =>
-      toWorkspaceReadinessIssues(readinessQuery.data).map(issue => ({ ...issue, message: localizeIssue(issue) })),
+    () => toWorkspaceReadinessIssues(readinessQuery.data).map(issue => ({ ...issue, message: localizeIssue(issue) })),
     [readinessQuery.data, localizeIssue],
   )
 
-  const saveLedger = useMemo(() => summarizeSaveLedger(saveLedgerEntries), [saveLedgerEntries])
+  const tSaveState = useTranslations('Components.SaveStateBadge')
+  const saveLedger = useMemo(
+    () => summarizeSaveLedger(saveLedgerEntries, state => tSaveState(SAVE_STATE_LABEL_KEY[state])),
+    [saveLedgerEntries, tSaveState],
+  )
 
   const setSaveLedgerEntry = useCallback((entry: Omit<SaveLedgerEntry, 'updatedAt'>) => {
     setSaveLedgerEntries(current => {

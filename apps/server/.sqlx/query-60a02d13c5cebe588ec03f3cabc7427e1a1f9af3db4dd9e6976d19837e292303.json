@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH refs AS (\n               SELECT b.content->>'file_key' AS key, count(*)::int AS n\n               FROM blocks b JOIN activities a ON a.id = b.activity_id\n               WHERE a.chapter_id = $1 AND b.content->>'file_key' IS NOT NULL\n               GROUP BY 1\n           ), released AS (\n               UPDATE uploads u\n               SET referenced_count = greatest(u.referenced_count - refs.n, 0),\n                   expires_at = CASE WHEN u.referenced_count <= refs.n\n                                     THEN now() + make_interval(secs => $2)\n                                     ELSE u.expires_at END\n               FROM refs WHERE u.key = refs.key AND u.referenced_count > 0\n           )\n           DELETE FROM chapters WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "60a02d13c5cebe588ec03f3cabc7427e1a1f9af3db4dd9e6976d19837e292303"
+}

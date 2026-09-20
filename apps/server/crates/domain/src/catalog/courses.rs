@@ -239,10 +239,12 @@ impl CoursesService {
         .ok_or_else(|| Error::not_found("course"))?;
         // UX-143: the key the UPDATE actually replaced is released — not the
         // one this request read, which a concurrent PATCH may have replaced.
+        // BUG-209: also when it equals the new key — the claim above counted
+        // it once more, so releasing the "old" one nets to a no-op (holds
+        // for two identical concurrent PATCHes: each swap returns one key).
         if let Some(key) = thumbnail_key
             && let Some(old) =
                 ab_db::catalog::set_course_thumbnail(&self.pool, id, key.as_deref()).await?
-            && Some(old.as_str()) != key.as_deref()
         {
             ab_db::uploads::release_reference_by_key(
                 &self.pool,
@@ -329,7 +331,9 @@ impl CoursesService {
         {
             return Err(Error::forbidden("no delete access to this course"));
         }
-        ab_db::catalog::delete_course(&self.pool, id).await?;
+        // BUG-209: the cascade drops the rows; the thumbnail and block
+        // uploads are released inside the same statement.
+        ab_db::catalog::delete_course(&self.pool, id, UNREFERENCED_GRACE.as_secs_f64()).await?;
         Ok(())
     }
 }

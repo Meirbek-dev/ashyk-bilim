@@ -173,7 +173,14 @@ impl CurriculumService {
         let chapter = ab_db::catalog::get_chapter(&self.pool, chapter_id)
             .await?
             .ok_or_else(|| Error::not_found("chapter"))?;
-        self.writable_course(actor, chapter.course_id).await?;
+        // BUG-209: an invisible course's chapter reads exactly like an
+        // unknown one — the detail must not leak that the chapter exists.
+        self.writable_course(actor, chapter.course_id)
+            .await
+            .map_err(|err| match err.code() {
+                ab_core::ErrorCode::NotFound => Error::not_found("chapter"),
+                _ => err,
+            })?;
         Ok(chapter)
     }
 
@@ -194,7 +201,9 @@ impl CurriculumService {
 
     pub async fn delete_chapter(&self, actor: &Actor, chapter_id: ChapterId) -> Result<()> {
         let chapter = self.writable_chapter(actor, chapter_id).await?;
-        ab_db::catalog::delete_chapter(&self.pool, chapter_id).await?;
+        // BUG-209: block uploads under it are released with the cascade.
+        ab_db::catalog::delete_chapter(&self.pool, chapter_id, UNREFERENCED_GRACE.as_secs_f64())
+            .await?;
         // Close the gap left behind.
         let remaining: Vec<ChapterId> =
             ab_db::catalog::list_chapters(&self.pool, chapter.course_id)
@@ -464,7 +473,9 @@ impl CurriculumService {
 
     pub async fn delete_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<()> {
         let activity = self.writable_activity(actor, activity_id).await?;
-        ab_db::catalog::delete_activity(&self.pool, activity_id).await?;
+        // BUG-209: block uploads under it are released with the cascade.
+        ab_db::catalog::delete_activity(&self.pool, activity_id, UNREFERENCED_GRACE.as_secs_f64())
+            .await?;
         let remaining =
             ab_db::catalog::list_chapter_activity_ids(&self.pool, activity.chapter_id).await?;
         ab_db::catalog::renumber_activities(&self.pool, &remaining).await?;
