@@ -7350,6 +7350,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Unknown or inaccessible",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         }
       },
@@ -7393,6 +7403,16 @@
           },
           "403": {
             "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown, inaccessible, or an attached course is unreadable",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11151,7 +11171,8 @@
         "tags": [
           "uploads"
         ],
-        "summary": "Start an upload: validates the purpose policy and returns a presigned PUT\n(requires `file:create:own`). Bytes go directly to storage, not this API.",
+        "summary": "Start an upload: validates the purpose policy and returns a presigned PUT.",
+        "description": "Requires `file:create:own`; `platform-*` purposes also need\n`platform:update:platform`, `course-thumbnail`/`block-*` course write\naccess. Bytes go directly to storage, not this API.",
         "operationId": "create_upload",
         "requestBody": {
           "content": {
@@ -17226,6 +17247,7 @@
           "forbidden",
           "unauthenticated",
           "conflict",
+          "idempotency-in-progress",
           "validation-failed",
           "precondition-failed",
           "rate-limited",
@@ -20356,12 +20378,18 @@
         "type": "object",
         "required": [
           "published_count",
-          "already_published_count"
+          "already_published_count",
+          "needs_grading_count"
         ],
         "properties": {
           "already_published_count": {
             "type": "integer",
             "format": "int64"
+          },
+          "needs_grading_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Graded rows held back: an item still awaits its manual score (BUG-197)."
           },
           "published_count": {
             "type": "integer",
@@ -23861,7 +23889,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "`null` clears the label; blank is stored as cleared too (UX-135)."
           },
           "logo_upload_id": {
             "type": [

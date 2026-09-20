@@ -15,6 +15,7 @@ export const ErrorCode = zod
     'forbidden',
     'unauthenticated',
     'conflict',
+    'idempotency-in-progress',
     'validation-failed',
     'precondition-failed',
     'rate-limited',

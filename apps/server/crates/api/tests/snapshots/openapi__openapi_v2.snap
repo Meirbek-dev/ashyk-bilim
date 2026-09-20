@@ -4915,6 +4915,7 @@ expression: json
           "forbidden",
           "unauthenticated",
           "conflict",
+          "idempotency-in-progress",
           "validation-failed",
           "precondition-failed",
           "rate-limited",
@@ -8048,6 +8049,11 @@ expression: json
             "format": "int64",
             "type": "integer"
           },
+          "needs_grading_count": {
+            "description": "Graded rows held back: an item still awaits its manual score (BUG-197).",
+            "format": "int64",
+            "type": "integer"
+          },
           "published_count": {
             "format": "int64",
             "type": "integer"
@@ -8055,7 +8061,8 @@ expression: json
         },
         "required": [
           "published_count",
-          "already_published_count"
+          "already_published_count",
+          "needs_grading_count"
         ],
         "type": "object"
       },
@@ -11548,6 +11555,7 @@ expression: json
             ]
           },
           "label": {
+            "description": "`null` clears the label; blank is stored as cleared too (UX-135).",
             "type": [
               "string",
               "null"
@@ -19568,6 +19576,16 @@ expression: json
               }
             },
             "description": "No delete access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
           }
         },
         "summary": "Delete a collection (membership rows cascade; courses stay).",
@@ -19658,6 +19676,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, inaccessible, or an attached course is unreadable"
           }
         },
         "summary": "Partial update; `courses` replaces the whole membership when present.",
@@ -23410,6 +23438,7 @@ expression: json
     },
     "/api/v2/uploads": {
       "post": {
+        "description": "Requires `file:create:own`; `platform-*` purposes also need\n`platform:update:platform`, `course-thumbnail`/`block-*` course write\naccess. Bytes go directly to storage, not this API.",
         "operationId": "create_upload",
         "requestBody": {
           "content": {
@@ -23453,7 +23482,7 @@ expression: json
             "description": "Policy violation (size/mime/purpose)"
           }
         },
-        "summary": "Start an upload: validates the purpose policy and returns a presigned PUT\n(requires `file:create:own`). Bytes go directly to storage, not this API.",
+        "summary": "Start an upload: validates the purpose policy and returns a presigned PUT.",
         "tags": [
           "uploads"
         ]

@@ -50,8 +50,10 @@ export const getCreateUploadUrl = () => {
 }
 
 /**
- * @summary Start an upload: validates the purpose policy and returns a presigned PUT
-(requires `file:create:own`). Bytes go directly to storage, not this API.
+ * Requires `file:create:own`; `platform-*` purposes also need
+ * `platform:update:platform`, `course-thumbnail`/`block-*` course write
+ * access. Bytes go directly to storage, not this API.
+ * @summary Start an upload: validates the purpose policy and returns a presigned PUT.
  */
 export const createUpload = async (
   createUploadRequest: CreateUploadRequest,
@@ -119,8 +121,7 @@ export type CreateUploadMutationError = ErrorType<Problem>
 export type CreateUploadMutationVariables = { data: BodyType<CreateUploadRequest> }
 
 /**
- * @summary Start an upload: validates the purpose policy and returns a presigned PUT
-(requires `file:create:own`). Bytes go directly to storage, not this API.
+ * @summary Start an upload: validates the purpose policy and returns a presigned PUT.
  */
 export const useCreateUpload = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
