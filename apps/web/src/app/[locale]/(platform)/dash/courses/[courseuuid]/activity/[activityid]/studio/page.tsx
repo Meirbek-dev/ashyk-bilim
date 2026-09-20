@@ -94,10 +94,15 @@ async function PlatformAssessmentStudioContent({ params }: PlatformAssessmentStu
       </div>
     ) : (
       <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        {t('studioNotAvailableForType', {
-          type: activity.activity_type?.replace('TYPE_', '').toLowerCase() || 'this',
-        })}
+        {t('studioNotAvailableForType', { type: await activityTypeLabel(activity.activity_type) })}
       </div>
     ),
   })
+}
+
+/** UX-139: the localized type name («Видео»), not the raw wire token. */
+async function activityTypeLabel(type: string | null | undefined) {
+  const t = await getTranslations('ActivityIndicators')
+  const key = { TYPE_VIDEO: 'video', TYPE_DOCUMENT: 'document', TYPE_DYNAMIC: 'interactive' }[type ?? '']
+  return key ? t(`activityTypes.${key}`) : t('unknownActivity')
 }

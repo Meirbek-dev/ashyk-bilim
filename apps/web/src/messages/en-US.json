@@ -10853,6 +10853,9 @@
       "replaceFeedbackConfirm": "Replace",
       "generateGate": "Generate remediation gate",
       "gateAlreadyAssigned": "A gate is already assigned",
+      "gateConfirmTitle": "Assign a remediation gate?",
+      "gateConfirmDescription": "The learner cannot continue this activity until they pass the remediation. The gate cannot be undone.",
+      "gateConfirmAction": "Assign",
       "emptyTitle": "No analysis yet",
       "emptyDescription": "Run an analysis to see knowledge gaps and evidence for this submission."
     },

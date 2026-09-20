@@ -1466,6 +1466,47 @@ async fn blank_titles_are_rejected_and_trimmed(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
         .await;
     assert_eq!(activity.json()["name"], "Quiz 2", "{}", activity.text());
+
+    // UX-139: the same rule for an item title, on add and on PATCH.
+    let blank_item = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("   "),
+        )
+        .await;
+    assert_eq!(
+        blank_item.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        blank_item.text()
+    );
+    assert_eq!(blank_item.json()["field_errors"][0]["field"], "title");
+    let item = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item(" Q1 "),
+        )
+        .await;
+    assert_eq!(item.status, StatusCode::CREATED, "{}", item.text());
+    assert_eq!(item.json()["title"], "Q1");
+    let item_id = item.json()["id"].as_str().unwrap().to_owned();
+    let blank_item = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{item_id}"),
+            &serde_json::json!({ "title": "   " }),
+        )
+        .await;
+    assert_eq!(
+        blank_item.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        blank_item.text()
+    );
+    assert_eq!(blank_item.json()["field_errors"][0]["field"], "title");
+    assert_eq!(blank_item.json()["field_errors"][0]["code"], "required");
 }
 
 /// BUG-199: the grader matches choice answers by option id, so an item whose

@@ -9,6 +9,7 @@ import { APIError } from '@/lib/api/assertSuccess'
 
 const mocks = vi.hoisted(() => ({
   apiJson: vi.fn(),
+  start: vi.fn(),
 }))
 
 vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
@@ -30,7 +31,7 @@ vi.mock('@/features/ai-experience', async importOriginal => ({
     error: null,
     latestArtifact: undefined,
     pending: false,
-    start: vi.fn(),
+    start: mocks.start,
     state: 'idle',
   }),
 }))
@@ -129,6 +130,21 @@ describe('SubmissionAIEntry on the v2 wire', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'AiExperience.submissionAIEntry.replaceFeedbackConfirm' }))
     expect(onDraftFeedback).toHaveBeenCalledTimes(1)
     // BUG-172: confirming closes the dialog.
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+  })
+
+  // UX-139: a gate locks the learner out — the run starts only after the confirm.
+  it('asks before assigning a remediation gate', async () => {
+    answerLatest(parse => parse(wire))
+
+    render(<SubmissionAIEntry submissionUuid={SUBMISSION_ID} />, { wrapper })
+
+    const gate = screen.getByRole('button', { name: 'AiExperience.submissionAIEntry.generateGate' })
+    await waitFor(() => expect(gate).toBeEnabled())
+    fireEvent.click(gate)
+    expect(mocks.start).not.toHaveBeenCalled()
+    fireEvent.click(await screen.findByRole('button', { name: 'AiExperience.submissionAIEntry.gateConfirmAction' }))
+    expect(mocks.start).toHaveBeenCalledWith(expect.objectContaining({ gate_mode: true }))
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   })
 

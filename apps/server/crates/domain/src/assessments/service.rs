@@ -1135,12 +1135,14 @@ impl AssessmentsService {
                 message: "cannot be negative".into(),
             }]));
         }
+        // UX-139: an item title is trimmed and never blank, like the assessment's.
+        let title = ab_core::required_str("title", title)?;
         let metadata = metadata.normalized();
         let item_id = ab_db::assessments::insert_item(
             &self.pool,
             id,
             body.kind(),
-            title.trim(),
+            title,
             &body.to_stored(),
             max_score,
             metadata.as_db(),
@@ -1192,12 +1194,17 @@ impl AssessmentsService {
                 message: "cannot be negative".into(),
             }]));
         }
+        let title = changes
+            .title
+            .as_deref()
+            .map(|t| ab_core::required_str("title", t))
+            .transpose()?;
         let stored = changes.body.as_ref().map(|b| (b.kind(), b.to_stored()));
         let metadata = changes.metadata.map(ItemMetadataInput::normalized);
         ab_db::assessments::update_item(
             &self.pool,
             item_id,
-            changes.title.as_deref().map(str::trim),
+            title,
             stored.as_ref().map(|(kind, value)| (*kind, value)),
             changes.max_score,
             metadata.as_ref().map(ItemMetadataInput::as_db),

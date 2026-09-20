@@ -53,6 +53,8 @@ export function SubmissionAIEntry({
 }) {
   const t = useTranslations('AiExperience.submissionAIEntry')
   const [confirmReplace, setConfirmReplace] = useState(false)
+  // UX-139: a gate locks the learner out of the activity — ask first.
+  const [confirmGate, setConfirmGate] = useState(false)
   const locale = useLocale()
   const latest = useLatestSubmissionAnalysis(submissionUuid ?? '')
   const queueAnalysis = useQueueSubmissionAnalysis(submissionUuid ?? '')
@@ -149,11 +151,30 @@ export function SubmissionAIEntry({
           className="w-full"
           variant="secondary"
           disabled={remediation.pending || !latest.data || gateActive}
-          onClick={() => void remediation.start({ gate_mode: true, language: aiLanguageFor(locale) })}
+          onClick={() => setConfirmGate(true)}
         >
           <Route data-icon="inline-start" aria-hidden="true" />
           {gateActive ? t('gateAlreadyAssigned') : t('generateGate')}
         </Button>
+        <AlertDialog open={confirmGate} onOpenChange={setConfirmGate}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('gateConfirmTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>{t('gateConfirmDescription')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('replaceFeedbackCancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setConfirmGate(false)
+                  void remediation.start({ gate_mode: true, language: aiLanguageFor(locale) })
+                }}
+              >
+                {t('gateConfirmAction')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <AIRunProgress state={remediation.state} onCancel={remediation.pending ? remediation.cancel : undefined} />
         {remediationSession ? <RemediationResultShell session={remediationSession} /> : null}
         {remediation.error ? <AIErrorRecovery error={remediation.error} /> : null}
