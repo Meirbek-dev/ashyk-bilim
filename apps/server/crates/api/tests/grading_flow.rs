@@ -1870,3 +1870,73 @@ async fn feedback_only_save_keeps_the_attempt_pending(pool: PgPool) {
     assert_eq!(mine.json()["final_score"], 80.0);
 }
 
+/// UX-136: a maintainer's queued deadline extension fails at execution
+/// once the creator has set them inactive — the grant is checked when the
+/// worker runs, not only at the enqueue.
+#[sqlx::test(migrations = "../../migrations")]
+async fn queued_extension_fails_for_a_demoted_maintainer(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let maint = instructor(&app, "maint").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": maint.user_id, "role": "maintainer" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let queued = app
+        .post_as(
+            &maint,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [alice.user_id], "new_due_at_unix": now_unix() + 86_400 }),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let action_id = queued.json()["id"].as_str().unwrap().to_owned();
+    let demoted = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors/{}", maint.user_id),
+            &serde_json::json!({ "status": "inactive" }),
+        )
+        .await;
+    assert_eq!(demoted.status, StatusCode::OK, "{}", demoted.text());
+
+    ab_domain::grading::GradingService::execute_bulk_action(
+        &app.pool,
+        None,
+        ab_core::id::BulkActionId(uuid::Uuid::parse_str(&action_id).unwrap()),
+    )
+    .await
+    .unwrap();
+    let done = app
+        .get_as(&teacher, &format!("/api/v2/bulk-actions/{action_id}"))
+        .await;
+    assert_eq!(done.json()["status"], "failed", "{}", done.text());
+    assert_eq!(done.json()["affected_count"], 0);
+    assert!(
+        done.json()["error_log"]
+            .as_str()
+            .unwrap()
+            .contains("no longer has grading access"),
+        "{}",
+        done.text()
+    );
+    let review = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{alice_sub}/review"))
+        .await;
+    assert_eq!(review.json()["is_late"], true, "the extension did not run");
+}

@@ -11,12 +11,14 @@
 
 use ab_core::assessments::{BulkActionStatus, BulkActionType};
 use ab_core::id::{AssessmentId, BulkActionId, UserId};
+use ab_core::permission::Action;
 use ab_core::{Error, FieldError, Result};
 use ab_db::assessments::OverrideValues;
 use ab_db::queue::NewJob;
 use ab_db::submissions::NewGradingEntry;
 use sqlx::PgPool;
 
+use crate::assessments::service::AssessmentsService;
 use crate::events::GradingEvents;
 use crate::grading::penalties::attempt_cap;
 use crate::grading::teacher::GradingService;
@@ -160,7 +162,9 @@ impl GradingService {
     }
 
     /// Run a queued action (job handler + tests). A failure is recorded on
-    /// the row and not retried — the grader sees it and re-requests.
+    /// the row and not retried — the grader sees it and re-requests. The
+    /// performer's grading access is checked again here (UX-136: a
+    /// maintainer demoted between the enqueue and the worker run).
     pub async fn execute_bulk_action(
         pool: &PgPool,
         events: Option<&GradingEvents>,
@@ -175,12 +179,15 @@ impl GradingService {
         }
         ab_db::submissions::set_bulk_action_status(pool, id, BulkActionStatus::Running, 0, "")
             .await?;
-        let outcome = match row.action_type {
-            BulkActionType::ExtendDeadline => run_deadline_extension(pool, events, &row).await,
-            other => Err(Error::app(
-                ab_core::ErrorCode::Internal,
-                format!("bulk action type {other} is not implemented"),
-            )),
+        let outcome = match performer_may_grade(pool, &row).await {
+            Err(err) => Err(err),
+            Ok(()) => match row.action_type {
+                BulkActionType::ExtendDeadline => run_deadline_extension(pool, events, &row).await,
+                other => Err(Error::app(
+                    ab_core::ErrorCode::Internal,
+                    format!("bulk action type {other} is not implemented"),
+                )),
+            },
         };
         match outcome {
             Ok(affected) => {
@@ -206,6 +213,22 @@ impl GradingService {
             }
         }
     }
+}
+
+/// The performer's grading access on the action's course as of now.
+async fn performer_may_grade(pool: &PgPool, row: &ab_db::submissions::BulkActionRow) -> Result<()> {
+    let performer = row
+        .performed_by
+        .ok_or_else(|| Error::app(ab_core::ErrorCode::Internal, "action has no performer"))?;
+    let assessment = ab_db::assessments::get_assessment(pool, row.assessment_id)
+        .await?
+        .ok_or_else(|| Error::not_found("assessment"))?;
+    let course = ab_db::catalog::get_course(pool, assessment.course_id)
+        .await?
+        .ok_or_else(|| Error::not_found("course"))?;
+    let actor = Actor::current(pool, performer).await?;
+    AssessmentsService::require_scoped(&actor, &course, Action::Grade, "grading")
+        .map_err(|_| Error::forbidden("the performer no longer has grading access to this course"))
 }
 
 async fn run_deadline_extension(

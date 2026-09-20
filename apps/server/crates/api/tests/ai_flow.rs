@@ -1976,3 +1976,93 @@ async fn ai_refuses_an_open_draft(pool: PgPool) {
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
 }
 
+/// UX-136: a maintainer queues an analysis, the creator sets them
+/// inactive before the worker runs — the run fails (`AI_ACCESS_REVOKED`),
+/// no analysis is recorded, and the demoted user's run reads answer 404.
+#[sqlx::test(migrations = "../../migrations")]
+async fn queued_analysis_fails_for_a_demoted_maintainer(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let maint = instructor(&app, "maint").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Demoted").await;
+    let sub_id = submitted_essay(&app, &teacher, &alice, &course_id).await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": maint.user_id, "role": "maintainer" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    mount_json_reply(&app.llm, &analysis_reply(&sub_id)).await;
+
+    // A finished run of the maintainer's own stays readable while active…
+    let done = app
+        .post_as(
+            &maint,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/analyze"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    let done_run = done.json()["run_id"].as_str().unwrap().to_owned();
+    let artifacts = format!("/api/v2/ai/runs/{done_run}/artifacts");
+    assert_eq!(app.get_as(&maint, &artifacts).await.status, StatusCode::OK);
+    let queued = app
+        .post_as(
+            &maint,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/analyze/queue"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let queued_id = queued.json()["id"].as_str().unwrap().to_owned();
+    let demoted = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors/{}", maint.user_id),
+            &serde_json::json!({ "status": "inactive" }),
+        )
+        .await;
+    assert_eq!(demoted.status, StatusCode::OK, "{}", demoted.text());
+
+    app.ai_service()
+        .execute_queued(AiRunId(uuid::Uuid::parse_str(&queued_id).unwrap()))
+        .await
+        .unwrap();
+    let run = app
+        .get_as(&teacher, &format!("/api/v2/ai/runs/{queued_id}"))
+        .await;
+    assert_eq!(run.status, StatusCode::NOT_FOUND, "not the teacher's run");
+    let (status, error_code): (String, Option<String>) =
+        sqlx::query_as("SELECT status, error_code FROM ai_runs WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&queued_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(status, "failed");
+    assert_eq!(error_code.as_deref(), Some("AI_ACCESS_REVOKED"));
+    let latest = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/latest"),
+        )
+        .await;
+    assert_eq!(
+        latest.json()["run_id"],
+        done_run,
+        "no analysis from the failed run"
+    );
+    // …and the demoted user's reads follow the current grant.
+    assert_eq!(
+        app.get_as(&maint, &artifacts).await.status,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        app.get_as(&maint, &format!("/api/v2/ai/runs/{queued_id}"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+}

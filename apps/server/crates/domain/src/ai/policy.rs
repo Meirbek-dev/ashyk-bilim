@@ -6,8 +6,8 @@
 //! course (`ai::subject`, for assessment submissions and file attempts
 //! alike). Runs: the thread owner, or `platform:read:platform`.
 
-use ab_core::ai::AiThreadRole;
-use ab_core::id::AiRemediationSessionId;
+use ab_core::ai::{AiRunKind, AiThreadRole};
+use ab_core::id::{AiRemediationSessionId, CourseId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
 use ab_db::ai::{RemediationSessionRow, RunRow};
@@ -16,6 +16,8 @@ use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
 
 use super::AiService;
+use super::agents::metadata_optional_id;
+use super::subject::run_subject;
 
 pub(crate) const READ_PLATFORM: Permission = Permission {
     resource: ResourceType::Platform,
@@ -69,12 +71,41 @@ impl AiService {
     }
 
     /// Legacy `require_ai_run_access`: thread owner or platform reader.
-    /// Anyone else gets 404 — a run id must not leak that it exists.
+    /// Anyone else gets 404 — a run id must not leak that it exists. The
+    /// owner also needs their current standing on the run's work (UX-136:
+    /// a demoted maintainer kept reading a learner's analysis through
+    /// `runs/{id}/artifacts`).
     pub(crate) async fn require_run_access(&self, actor: &Actor, run: &RunRow) -> Result<()> {
-        let thread = ab_db::ai::get_thread(&self.pool, run.thread_id).await?;
-        if thread.is_some_and(|t| t.user_id == Some(actor.user_id)) || actor.has(READ_PLATFORM) {
+        if actor.has(READ_PLATFORM) {
             return Ok(());
         }
-        Err(Error::not_found("ai run"))
+        let thread = ab_db::ai::get_thread(&self.pool, run.thread_id).await?;
+        if thread.is_none_or(|t| t.user_id != Some(actor.user_id)) {
+            return Err(Error::not_found("ai run"));
+        }
+        self.require_run_scope(actor, run)
+            .await
+            .map_err(|_| Error::not_found("ai run"))
+    }
+
+    /// What the run's work asks of its performer — the subject rule for
+    /// submission analyses and remediations, course write access for the
+    /// teacher agents, course visibility otherwise. Checked at the enqueue,
+    /// again at execution and on every read (UX-136).
+    pub(crate) async fn require_run_scope(&self, actor: &Actor, run: &RunRow) -> Result<()> {
+        if let Ok(subject) = run_subject(run) {
+            let subject = self.load_subject_by(subject).await?;
+            return self.require_subject_access(actor, &subject).await;
+        }
+        let Some(course_id) = metadata_optional_id::<CourseId>(run, "course_id") else {
+            return Ok(());
+        };
+        let course = self.courses.get(actor, course_id).await?;
+        match run.kind {
+            AiRunKind::CourseAnalysis | AiRunKind::LectureReview => {
+                require_course_update(actor, &course)
+            }
+            _ => Ok(()),
+        }
     }
 }

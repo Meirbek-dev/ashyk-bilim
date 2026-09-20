@@ -500,30 +500,39 @@ impl AiService {
             return Ok(());
         }
         let watch = self.cancel_watch(run.id);
-        let outcome = match run.kind {
-            AiRunKind::CourseAnalysis => {
-                self.execute_queued_course_analysis(&run, &watch.token)
-                    .await
+        let outcome = async {
+            // UX-136: the performer's standing as of now, not as of the enqueue.
+            self.settle(run.id, "AI_ACCESS_REVOKED", async {
+                let actor = Actor::current(&self.pool, super::agents::run_user(&run)?).await?;
+                self.require_run_scope(&actor, &run).await
+            })
+            .await?;
+            match run.kind {
+                AiRunKind::CourseAnalysis => {
+                    self.execute_queued_course_analysis(&run, &watch.token)
+                        .await
+                }
+                AiRunKind::SubmissionAnalysis => {
+                    self.execute_queued_submission_analysis(&run, &watch.token)
+                        .await
+                }
+                AiRunKind::Remediation => {
+                    Box::pin(self.execute_queued_remediation(&run, &watch.token)).await
+                }
+                AiRunKind::StudyCompanion => {
+                    self.execute_queued_study_companion(&run, &watch.token)
+                        .await
+                }
+                AiRunKind::LectureReview => {
+                    self.execute_queued_lecture_review(&run, &watch.token).await
+                }
+                AiRunKind::CourseQa => {
+                    self.fail_run(run.id, "AI_RUN_KIND_UNSUPPORTED").await;
+                    Err(Error::conflict("course_qa runs are streamed, not queued"))
+                }
             }
-            AiRunKind::SubmissionAnalysis => {
-                self.execute_queued_submission_analysis(&run, &watch.token)
-                    .await
-            }
-            AiRunKind::Remediation => {
-                Box::pin(self.execute_queued_remediation(&run, &watch.token)).await
-            }
-            AiRunKind::StudyCompanion => {
-                self.execute_queued_study_companion(&run, &watch.token)
-                    .await
-            }
-            AiRunKind::LectureReview => {
-                self.execute_queued_lecture_review(&run, &watch.token).await
-            }
-            AiRunKind::CourseQa => {
-                self.fail_run(run.id, "AI_RUN_KIND_UNSUPPORTED").await;
-                Err(Error::conflict("course_qa runs are streamed, not queued"))
-            }
-        };
+        }
+        .await;
         match outcome {
             Ok(()) => Ok(()),
             Err(err) if is_cancelled(&err) => Ok(()),

@@ -40,6 +40,32 @@ impl Actor {
         })
     }
 
+    /// The user's standing as of now — status, roles and grants read from
+    /// the database, no session behind it. For queued work that re-checks
+    /// its performer at execution (UX-136: an enqueue-time grant may be gone
+    /// by the time the worker runs); requests keep using the session actor.
+    /// A disabled account has no grants (its sessions are revoked already).
+    pub async fn current(pool: &sqlx::PgPool, user_id: UserId) -> Result<Self> {
+        let active = ab_db::identity::user_status(pool, user_id)
+            .await?
+            .is_some_and(|s| s == "active");
+        let (roles, permission_strings) = if active {
+            ab_db::identity::load_user_grants(pool, user_id).await?
+        } else {
+            (Vec::new(), Vec::new())
+        };
+        Ok(Self {
+            user_id,
+            zitadel_user_id: String::new(),
+            session_id: String::new(),
+            permissions: PermissionSet::parse(permission_strings.iter().map(String::as_str))?,
+            roles,
+            permission_strings,
+            rbac_version: 0,
+            mfa_enabled: false,
+        })
+    }
+
     /// The unauthenticated viewer: nil user id, zero grants. Catalog read
     /// services treat it like any other actor — nothing is owned and nothing
     /// is granted, so only public data is visible. Mutations always fail
