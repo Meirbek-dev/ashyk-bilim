@@ -118,9 +118,9 @@ pub struct CreateInterventionRequest {
     pub outcome: Option<String>,
     #[garde(length(chars, max = 4_000))]
     pub notes: Option<String>,
-    /// Free-form details (an object).
+    /// Free-form details (an object of at most 16 KiB serialized, UX-148).
     #[serde(default = "empty_object")]
-    #[garde(skip)]
+    #[garde(custom(json_object_16k))]
     #[schema(value_type = Object)]
     pub payload: serde_json::Value,
 }
@@ -140,9 +140,22 @@ pub struct SaveViewRequest {
     #[serde(default = "default_view_type")]
     #[garde(length(max = 50))]
     pub view_type: String,
-    /// The saved filter state (an object).
+    /// The saved filter state (an object of at most 16 KiB serialized, UX-148).
     #[serde(default = "empty_object")]
-    #[garde(skip)]
+    #[garde(custom(json_object_16k))]
     #[schema(value_type = Object)]
     pub query: serde_json::Value,
+}
+
+const MAX_JSON_BYTES: usize = 16 * 1024;
+
+// garde's custom-validator contract fixes this signature (&field, &context).
+fn json_object_16k(value: &serde_json::Value, _ctx: &()) -> garde::Result {
+    if !value.is_object() {
+        return Err(garde::Error::new("must be a JSON object"));
+    }
+    if value.to_string().len() > MAX_JSON_BYTES {
+        return Err(garde::Error::new("must be at most 16384 bytes serialized"));
+    }
+    Ok(())
 }

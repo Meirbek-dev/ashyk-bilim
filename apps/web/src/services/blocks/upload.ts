@@ -35,6 +35,11 @@ export function getBlockFileUrl(content: BlockFileContent | null | undefined): s
   return getContentUrl(content.file_key ?? `${content.file_id}.${content.file_format}`)
 }
 
+/** UX-147: removing a block from the editor releases its upload on the server. */
+export async function deleteBlock(blockId: string): Promise<void> {
+  await apiJson(`blocks/${encodeURIComponent(blockId)}`, { method: 'DELETE' })
+}
+
 export async function uploadBlockFile(
   file: File,
   activityId: string,

@@ -1,4 +1,4 @@
-import { ArrowBigUpDash, UploadCloud } from 'lucide-react'
+import { ArrowBigUpDash, Trash2, UploadCloud } from 'lucide-react'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useSaveSection } from '@/hooks/useSaveSection'
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
@@ -125,6 +125,12 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
     [showError, validateFile, validateImageAspectRatio, saveWithoutRefresh, updateThumbnail, t],
   )
 
+  const handleRemove = useCallback(async () => {
+    await saveWithoutRefresh(async () => updateThumbnail(null), {
+      successMessage: t('thumbnailRemoved'),
+    })
+  }, [saveWithoutRefresh, updateThumbnail, t])
+
   const previewUrl = localUrl ?? getCourseThumbnailUrl(course.courseStructure.thumbnail_image)
 
   return (
@@ -171,6 +177,12 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
             <UploadCloud className="mr-2 h-4 w-4" />
             {t('uploadImageButton')}
           </Button>
+          {course.courseStructure.thumbnail_image ? (
+            <Button type="button" variant="outline" size="default" disabled={disabled} onClick={handleRemove}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              {t('removeImageButton')}
+            </Button>
+          ) : null}
         </div>
       )}
 

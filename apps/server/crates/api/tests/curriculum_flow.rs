@@ -308,6 +308,43 @@ async fn curriculum_respects_course_access(pool: PgPool) {
         .await;
     assert_eq!(random.status, StatusCode::NOT_FOUND);
     assert_eq!(probe.json()["detail"], random.json()["detail"]);
+    // UX-147: an activity of an invisible course reads and edits like an
+    // unknown one — one detail on every `/activities/{id}` route.
+    let unknown_activity = uuid::Uuid::now_v7();
+    let invisible = app
+        .get_as(&teacher, &format!("/api/v2/activities/{rivals_activity}"))
+        .await;
+    let unknown = app
+        .get_as(&teacher, &format!("/api/v2/activities/{unknown_activity}"))
+        .await;
+    assert_eq!(
+        invisible.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        invisible.text()
+    );
+    assert_eq!(invisible.json()["detail"], unknown.json()["detail"]);
+    let invisible = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{rivals_activity}"),
+            &serde_json::json!({ "name": "Hijack" }),
+        )
+        .await;
+    let unknown = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{unknown_activity}"),
+            &serde_json::json!({ "name": "Hijack" }),
+        )
+        .await;
+    assert_eq!(
+        invisible.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        invisible.text()
+    );
+    assert_eq!(invisible.json()["detail"], unknown.json()["detail"]);
     // UX-145: creating an assessment / file submission in that chapter is
     // the same 404 as a random id (one `authorable_chapter`).
     for (path, body) in [

@@ -7,6 +7,7 @@ const catalog: Record<string, string> = {
   'pages.scopeDenied': 'scope denied',
   'pages.teacherFilterDenied': 'teacher filter denied',
   'pages.invalidFilters': 'invalid filters',
+  'pages.teacherFilterUnknown': 'teacher unknown',
   'codes.not-found': 'not found (ru)',
   'codes.internal': 'internal (ru)',
 }
@@ -27,6 +28,16 @@ describe('describeAnalyticsError', () => {
   it('names the teacher filter when the server refused it', () => {
     const error = new APIError({ status: 403, code: 'forbidden', message: 'x', details: { filter: 'teacher_user_id' } })
     expect(describeAnalyticsError(error, t, t, 'fallback')).toBe('teacher filter denied')
+  })
+
+  it('names the teacher filter when the server does not know the teacher (UX-148)', () => {
+    const error = new APIError({
+      status: 422,
+      code: 'validation-failed',
+      message: 'x',
+      fieldErrors: [{ field: 'teacher_user_id', code: 'unknown', message: 'user … does not exist' }],
+    })
+    expect(describeAnalyticsError(error, t, t, 'fallback')).toBe('teacher unknown')
   })
 
   it('uses the fallback for non-API errors', () => {

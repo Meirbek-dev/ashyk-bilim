@@ -28,7 +28,8 @@ import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useMemo, useRef, useState } from 'react'
 import type React from 'react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useFormatter, useLocale, useTranslations } from 'next-intl'
+import type { NumberFormatOptions } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { ClipboardList, MessageSquare, Route, UserCheck } from 'lucide-react'
 import { useApiError } from '@/hooks/useApiError'
@@ -74,6 +75,7 @@ export default function AtRiskLearnersTable({
   const t = useTranslations('TeacherAnalytics')
   const locale = useLocale()
   const percent = usePercentFormat()
+  const format = useFormatter()
   const resolvedTitle = title ?? t('atRisk.defaultTitle')
   const resolvedDescription = description ?? t('atRisk.defaultDescription')
   // The server component hands a fresh `query` object on every refresh; key
@@ -89,10 +91,13 @@ export default function AtRiskLearnersTable({
   tRef.current = t
   const percentRef = useRef(percent)
   percentRef.current = percent
+  const formatRef = useRef(format)
+  formatRef.current = format
   const columns = useMemo((): DataTableColumnDef<AtRiskLearnerRow>[] => {
     const memoQuery: AnalyticsQuery | undefined = queryKey === 'null' ? undefined : JSON.parse(queryKey)
     const t = (key: string, values?: Record<string, string | number>) => (values ? tRef.current(key, values) : tRef.current(key))
     const percent = (value: number) => percentRef.current(value)
+    const format = { number: (v: number, o: NumberFormatOptions) => formatRef.current.number(v, o) }
     return [
       {
         accessorKey: 'user_display_name',
@@ -140,13 +145,13 @@ export default function AtRiskLearnersTable({
           return (
             <div className="space-y-1">
               <Badge variant={riskVariant(riskRow.risk_level)}>
-                {getAnalyticsRiskLevelLabel(t, riskRow.risk_level)} · {riskRow.risk_score}
+                {getAnalyticsRiskLevelLabel(t, riskRow.risk_level)} · {format.number(riskRow.risk_score, { maximumFractionDigits: 1 })}
               </Badge>
               {riskRow.risk_trend && riskRow.risk_trend !== 'stable' && (
                 <div className="text-muted-foreground text-[11px]">
                   {getAnalyticsCodeLabel(t, riskRow.risk_trend)}
                   {riskRow.risk_score_delta !== null && riskRow.risk_score_delta !== undefined
-                    ? ` (${riskRow.risk_score_delta > 0 ? '+' : ''}${riskRow.risk_score_delta})`
+                    ? ` (${format.number(riskRow.risk_score_delta, { maximumFractionDigits: 1, signDisplay: 'exceptZero' })})`
                     : ''}
                 </div>
               )}
@@ -233,6 +238,7 @@ export default function AtRiskLearnersTable({
 
 export function InterventionStateBadge({ row }: { row: EnhancedAtRiskLearnerRow }) {
   const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
   if (row.risk_trend === 'recovered' || row.last_intervention_type === 'learner_recovered') {
     return (
       <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
@@ -244,7 +250,7 @@ export function InterventionStateBadge({ row }: { row: EnhancedAtRiskLearnerRow 
   if (typeof row.risk_score_delta === 'number' && row.risk_score_delta < 0) {
     return (
       <Badge variant="outline" className="border-blue-300 text-blue-700 dark:text-blue-300">
-        {t('intervention.improving')} {row.risk_score_delta}
+        {t('intervention.improving')} {format.number(row.risk_score_delta, { maximumFractionDigits: 1 })}
       </Badge>
     )
   }

@@ -81,8 +81,9 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatSubmissionRate')}
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
-                {detail.summary.submission_rate ?? t('atRisk.na')}
-                {detail.summary.submission_rate != null ? '%' : ''}
+                {detail.summary.submission_rate == null
+                  ? t('atRisk.na')
+                  : `${format.number(detail.summary.submission_rate, { maximumFractionDigits: 1 })}%`}
               </div>
             </div>
             <div className="px-4 py-3">

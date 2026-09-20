@@ -1,31 +1,70 @@
 'use client'
 
-import type { ButtonHTMLAttributes, FC, HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, FC, HTMLAttributes, ReactNode } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Loader2, Upload } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-const FileUploadBlockInput: FC<InputHTMLAttributes<HTMLInputElement> & { ariaLabel?: string }> = ({
-  onChange,
-  className,
-  ariaLabel,
-  ...props
-}) => {
+interface FileUploadBlockInputProps {
+  /** MIME allowlist (`accept`); a dropped file outside it is ignored. */
+  accept: string
+  onFileSelect: (file: File | null) => void
+  /** The chosen file, echoed back in the zone. */
+  file: File | null
+  /** Format/size hint under the prompt. */
+  hint: string
+  ariaLabel?: string
+}
+
+/**
+ * UX-147: the same dropzone as the image block — a hidden native input
+ * behind a click/drop area with localized copy (the bare `<input type=file>`
+ * showed «Choose File / No file chosen» in the browser language).
+ */
+const FileUploadBlockInput: FC<FileUploadBlockInputProps> = ({ accept, onFileSelect, file, hint, ariaLabel }) => {
   const t = useTranslations('DashPage.Editor.FileUploadBlock')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const allowed = accept.split(',')
+  const select = (candidate: File | null | undefined) => {
+    onFileSelect(candidate && allowed.includes(candidate.type) ? candidate : null)
+  }
   return (
-    <input
-      className={cn(
-        'cursor-pointer rounded-lg p-3 file:mr-4 file:rounded-full file:border-0 file:bg-gray-200 file:px-4 file:py-2 file:text-gray-500 hover:file:cursor-pointer',
-        className,
-      )}
-      onChange={onChange}
-      type="file"
-      required
+    <div
+      role="button"
+      tabIndex={0}
       aria-label={ariaLabel || t('selectFile')}
-      title={ariaLabel || t('selectFile')}
-      {...props}
-    />
+      onClick={() => inputRef.current?.click()}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click()
+      }}
+      onDrop={e => {
+        e.preventDefault()
+        setIsDragOver(false)
+        select(e.dataTransfer.files[0])
+      }}
+      onDragOver={e => {
+        e.preventDefault()
+        setIsDragOver(true)
+      }}
+      onDragLeave={() => setIsDragOver(false)}
+      className={cn(
+        'flex cursor-pointer flex-col items-center rounded-lg border-2 border-dashed px-6 py-4 text-center transition-colors',
+        isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 bg-white hover:border-gray-400',
+      )}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        onChange={e => select(e.target.files?.[0])}
+        className="hidden"
+      />
+      <p className="text-sm font-medium text-gray-700">{file ? file.name : t('dropOrClick')}</p>
+      <p className="mt-1 text-xs text-gray-500">{hint}</p>
+    </div>
   )
 }
 

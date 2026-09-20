@@ -429,6 +429,24 @@ async fn unknown_users_and_drafts_are_client_errors(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
     let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    // UX-147: an override for a real user outside the private course is
+    // `not-in-course`, like an access-list entry.
+    let (outsider, _) = learner(&app, "outsider").await;
+    let outside = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{outsider}"),
+            &serde_json::json!({ "max_attempts_override": 3 }),
+        )
+        .await;
+    assert_eq!(
+        outside.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        outside.text()
+    );
+    assert_eq!(outside.json()["field_errors"][0]["field"], "user_id");
+    assert_eq!(outside.json()["field_errors"][0]["code"], "not-in-course");
     // Public: `user_has_course_access` short-circuits, so the existence
     // check has to stand on its own.
     app.publish_course(&course_id).await;

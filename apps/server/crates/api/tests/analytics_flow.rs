@@ -912,6 +912,44 @@ async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool)
         fields,
         [("name".to_owned(), true), ("view_type".to_owned(), true)]
     );
+
+    // UX-148: free-form JSON on interventions / saved views is capped at 16 KiB
+    // serialized (a 400 KB payload was a 201).
+    let blob = serde_json::json!({ "note": "x".repeat(17 * 1024) });
+    let fat_view = app
+        .post_as(
+            &teacher,
+            "/api/v2/analytics/teacher/saved-views",
+            &serde_json::json!({ "name": "fat", "query": blob }),
+        )
+        .await;
+    assert_eq!(
+        fat_view.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        fat_view.text()
+    );
+    assert_eq!(fat_view.json()["field_errors"][0]["field"], "query");
+    let fat_intervention = app
+        .post_as(
+            &teacher,
+            "/api/v2/analytics/teacher/interventions",
+            &serde_json::json!({
+                "user_id": uuid::Uuid::now_v7(), "course_id": course_id,
+                "intervention_type": "message_sent", "payload": blob
+            }),
+        )
+        .await;
+    assert_eq!(
+        fat_intervention.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        fat_intervention.text()
+    );
+    assert_eq!(
+        fat_intervention.json()["field_errors"][0]["field"],
+        "payload"
+    );
 }
 
 /// BUG-121: `cohort_ids` need usergroup read + existing groups;

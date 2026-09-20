@@ -8,6 +8,7 @@ import {
   GripHorizontal,
   ImageIcon,
   Loader2,
+  Trash2,
   Upload,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -18,7 +19,7 @@ import { useTranslations } from 'next-intl'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { uploadNewImageFile } from '@services/blocks/Image/images'
-import { getBlockFileUrl } from '@services/blocks/upload'
+import { deleteBlock, getBlockFileUrl } from '@services/blocks/upload'
 import type { BlockFileContent } from '@services/blocks/upload'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { constructAcceptValue } from '@/lib/constants'
@@ -45,6 +46,7 @@ interface ImageBlockProps {
     }
   }
   updateAttributes: (attrs: Partial<ImageBlockProps['node']['attrs']>) => void
+  deleteNode: () => void
   extension: {
     options: {
       activity: { activity_uuid: string }
@@ -336,10 +338,11 @@ interface ImageToolbarProps {
   alignment: Alignment
   onAlignmentChange: (alignment: Alignment) => void
   onExpand: () => void
+  onRemove: () => void
   t: ReturnType<typeof useTranslations>
 }
 
-function ImageToolbar({ alignment, onAlignmentChange, onExpand, t }: ImageToolbarProps) {
+function ImageToolbar({ alignment, onAlignmentChange, onExpand, onRemove, t }: ImageToolbarProps) {
   return (
     <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/95 p-1 opacity-0 shadow-lg backdrop-blur-sm transition-opacity group-hover:opacity-100">
       {(Object.keys(ALIGNMENT_CONFIG) as Alignment[]).map(align => {
@@ -356,6 +359,7 @@ function ImageToolbar({ alignment, onAlignmentChange, onExpand, t }: ImageToolba
       })}
       <div className="mx-1 h-4 w-px bg-gray-200" />
       <IconButton onClick={onExpand} icon={Expand} title={t('expand')} />
+      <IconButton onClick={onRemove} icon={Trash2} title={t('remove')} className="hover:text-red-600" />
     </div>
   )
 }
@@ -399,7 +403,7 @@ function ViewerControls({ onExpand, onDownload, t }: ViewerControlsProps) {
 // Main Component
 // ============================================================================
 
-export default function ImageBlockComponent({ node, updateAttributes, extension }: ImageBlockProps) {
+export default function ImageBlockComponent({ node, updateAttributes, deleteNode, extension }: ImageBlockProps) {
   const t = useTranslations('DashPage.Editor.ImageBlock')
   usePlatform()
   const { isEditable } = useEditorProvider()
@@ -440,6 +444,20 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
     },
     [updateAttributes],
   )
+
+  // UX-147: removing the block releases its upload on the server, then the
+  // node goes. ponytail: a backspaced node still keeps its reference until
+  // the activity is deleted; hook the node's destroy if that ever matters.
+  const handleRemove = useCallback(async () => {
+    if (blockObject) {
+      try {
+        await deleteBlock(blockObject.block_uuid)
+      } catch (removeError) {
+        console.error('Block delete failed; removing the node anyway', removeError)
+      }
+    }
+    deleteNode()
+  }, [blockObject, deleteNode])
 
   // Download handler
   const handleDownload = useCallback(() => {
@@ -489,6 +507,7 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
               alignment={alignment}
               onAlignmentChange={handleAlignmentChange}
               onExpand={() => setIsModalOpen(true)}
+              onRemove={handleRemove}
               t={t}
             />
             <ResizeHandle onResizeStart={handleResizeStart} isResizing={isResizing} />

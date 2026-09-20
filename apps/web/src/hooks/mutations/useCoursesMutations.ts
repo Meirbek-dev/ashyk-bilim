@@ -43,6 +43,6 @@ export function useCoursesMutations(courseUuid: string, withUnpublishedActivitie
     ) => updateAccessMutation.mutateAsync({ options, payload }),
     updateMetadata: async (payload: Partial<CourseGeneralValues>, options: MutationOptions) =>
       updateMetadataMutation.mutateAsync({ options, payload }),
-    updateThumbnail: async (file: File) => updateThumbnailMutation.mutateAsync({ file }),
+    updateThumbnail: async (file: File | null) => updateThumbnailMutation.mutateAsync({ file }),
   }
 }

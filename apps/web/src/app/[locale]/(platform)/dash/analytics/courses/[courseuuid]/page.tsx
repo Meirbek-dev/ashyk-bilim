@@ -133,8 +133,12 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
                 <div className="text-muted-foreground mt-3 text-sm leading-6">
                   {getAnalyticsCodeLabel(t, item.note)}
                 </div>
-                {item.value !== null ? (
-                  <div className="text-foreground mt-3 text-2xl font-semibold">{item.value}</div>
+                {item.value != null ? (
+                  <div className="text-foreground mt-3 text-2xl font-semibold">
+                    {item.signal === 'average_progress'
+                      ? formatPercent(format, item.value)
+                      : format.number(item.value, { maximumFractionDigits: 1 })}
+                  </div>
                 ) : null}
               </div>
             ))

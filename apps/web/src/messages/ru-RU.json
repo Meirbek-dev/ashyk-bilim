@@ -2711,6 +2711,8 @@
         "mediaActionsTitle": "Медиафайлы применяются немедленно",
         "mediaUpdatesIsolated": "Обновления медиафайлов намеренно отделены от сохраняемых полей выше.",
         "uploadImageButton": "Загрузить изображение",
+        "removeImageButton": "Удалить изображение",
+        "thumbnailRemoved": "Миниатюра удалена",
         "uploading": "Загрузка..."
       },
       "thumbnailType": "Тип миниатюры",
@@ -4391,6 +4393,7 @@
         "embeddedContentFallback": "Не удалось отобразить встроенный элемент"
       },
       "FileUploadBlock": {
+        "dropOrClick": "Перетащите файл сюда или нажмите, чтобы выбрать",
         "browseFiles": "Обзор файлов",
         "chooseFile": "Выбрать файл",
         "dragAndDrop": "Перетащите файлы сюда или",
@@ -4430,6 +4433,7 @@
         "smallSize": "Маленький размер"
       },
       "ImageBlock": {
+        "remove": "Удалить изображение",
         "alignCenter": "Выровнять по центру",
         "alignLeft": "Выровнять по левому краю",
         "alignRight": "Выровнять по правому краю",
@@ -4499,6 +4503,7 @@
         "title": "Математическое уравнение"
       },
       "PDFBlock": {
+        "supportedFormats": "PDF (до 50 МБ)",
         "download": "Скачать",
         "expand": "Расширять",
         "pdfDocument": "PDF документ",
@@ -7956,7 +7961,8 @@
       "assessmentOpsAuditBulkSummary": "{action} для {count, plural, one {# учащегося} few {# учащихся} other {# учащихся}}",
       "assessmentItemAccuracy": "Точность {value}%",
       "courseContentHealthNoLearners": "Пока нет данных: в курсе ещё нет учащихся.",
-      "teacherFilterDenied": "Фильтр по преподавателю недоступен: просмотр аналитики другого преподавателя требует платформенного доступа."
+      "teacherFilterDenied": "Фильтр по преподавателю недоступен: просмотр аналитики другого преподавателя требует платформенного доступа.",
+      "teacherFilterUnknown": "Преподаватель из фильтра не найден. Выберите преподавателя из списка."
     },
     "codes": {
       "active_learners": "Активные учащиеся",
@@ -8076,7 +8082,7 @@
       },
       "engagement_dropped": {
         "title": "Вовлечённость снизилась",
-        "body": "Активных учащихся стало меньше на {delta_pct}% по сравнению с предыдущим периодом."
+        "body": "Активных учащихся стало меньше на {delta_pct, number}% по сравнению с предыдущим периодом."
       },
       "content_stale": {
         "title": "Контент мог устареть",
@@ -8088,11 +8094,11 @@
       },
       "grading_slo_breached": {
         "title": "{assessment_title}: превышен срок проверки",
-        "body": "{breaches, plural, one {# работа} few {# работы} other {# работ}} в курсе «{course_name}» превысили целевой срок проверки {target_hours} ч; в очереди ещё {awaiting}, самая старая отправлена {oldest_hours} ч назад."
+        "body": "{breaches, plural, one {# работа} few {# работы} other {# работ}} в курсе «{course_name}» превысили целевой срок проверки {target_hours, number} ч; в очереди ещё {awaiting, number}, самая старая отправлена {oldest_hours, number} ч назад."
       },
       "grading_slo_watch": {
         "title": "{assessment_title}: срок проверки на исходе",
-        "body": "{awaiting, plural, one {# работа ожидает} few {# работы ожидают} other {# работ ожидают}} в курсе «{course_name}»; самая старая открыта уже {oldest_hours} ч при цели {target_hours} ч."
+        "body": "{awaiting, plural, one {# работа ожидает} few {# работы ожидают} other {# работ ожидают}} в курсе «{course_name}»; самая старая открыта уже {oldest_hours, number} ч при цели {target_hours, number} ч."
       },
       "completion_target_miss": {
         "title": "{course_name}: учащиеся рискуют не достичь цели по завершению",
@@ -8100,7 +8106,7 @@
       },
       "course_completion_deadline": {
         "title": "{course_name}: прогноз завершения на 14 дней",
-        "body": "Ожидаемая доля завершения — {expected_pct}% при текущем темпе."
+        "body": "Ожидаемая доля завершения — {expected_pct, number}% при текущем темпе."
       },
       "grading_backlog_7d": {
         "title": "Ожидаемая очередь проверки через 7 дней",
@@ -8108,7 +8114,7 @@
       },
       "assessment_failure_risk": {
         "title": "{assessment_title}: повышенный риск провала",
-        "body": "Ожидаемая доля провалов — {expected_pct}% до следующего дедлайна."
+        "body": "Ожидаемая доля провалов — {expected_pct, number}% до следующего дедлайна."
       },
       "sharp_engagement_drop": {
         "title": "{course_name}: резкое падение вовлечённости",
@@ -8131,11 +8137,11 @@
         "body": "Риск вырос относительно собственной базы каждого учащегося; просмотрите список наблюдения."
       },
       "low_pass_rate": {
-        "title": "Доля сдавших «{assessment_title}» — {pass_rate}%",
+        "title": "Доля сдавших «{assessment_title}» — {pass_rate, number}%",
         "body": "Низкая доля сдавших выделяет это оценивание."
       },
       "low_pass_rate_with_diagnostics": {
-        "title": "Доля сдавших «{assessment_title}» — {pass_rate}%",
+        "title": "Доля сдавших «{assessment_title}» — {pass_rate, number}%",
         "body": "Диагностика качества выделяет это оценивание."
       },
       "content_bottleneck": {
@@ -8144,10 +8150,10 @@
       },
       "workload_backlog": {
         "title": "{count, plural, one {# работа ожидает} few {# работы ожидают} other {# работ ожидают}} проверки",
-        "body": "{breaches} превысили целевой срок проверки {target_hours} ч; прогноз на 7 дней — {forecast_7d}."
+        "body": "{breaches, number} превысили целевой срок проверки {target_hours, number} ч; прогноз на 7 дней — {forecast_7d, number}."
       },
       "completion_improved": {
-        "title": "Завершение курса «{course_name}» выросло на {delta_pts} п.",
+        "title": "Завершение курса «{course_name}» выросло на {delta_pts, number} п.",
         "body": "Эта когорта опережает исторический базовый уровень курса."
       },
       "missing_event_sources": {

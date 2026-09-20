@@ -279,10 +279,20 @@ impl AssessmentsService {
         user_id: UserId,
         input: OverrideInput,
     ) -> Result<Override> {
-        self.load_for_author(actor, id).await?;
+        let assessment = self.load_for_author(actor, id).await?;
         input.validate()?;
         if let Some(e) = self.unknown_user(user_id, "user_id").await? {
             return Err(Error::validation(vec![e]));
+        }
+        // UX-147: an override is for a student of the course, like an
+        // access-list entry.
+        let course = self.courses.get(actor, assessment.course_id).await?;
+        if !self.user_has_course_access(&course, user_id).await? {
+            return Err(Error::validation(vec![FieldError {
+                field: "user_id".into(),
+                code: "not-in-course".into(),
+                message: format!("user {user_id} has no access to this course"),
+            }]));
         }
         let created = ab_db::assessments::insert_override(
             &self.pool,

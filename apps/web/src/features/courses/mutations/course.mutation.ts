@@ -94,9 +94,10 @@ export function updateCourseThumbnailMutationOptions(
   detailKey: readonly unknown[],
 ) {
   return mutationOptions({
-    // Presigned PUT → finalize, then the course claims the finalized upload.
-    mutationFn: async ({ file }: { file: File }) =>
-      updateCourseThumbnail(courseUuid, (await uploadFile(file, 'course-thumbnail')).id),
+    // Presigned PUT → finalize, then the course claims the finalized upload;
+    // `null` removes the current one.
+    mutationFn: async ({ file }: { file: File | null }) =>
+      updateCourseThumbnail(courseUuid, file ? (await uploadFile(file, 'course-thumbnail')).id : null),
     onSuccess: async (response: Awaited<ReturnType<typeof updateCourseThumbnail>>) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([

@@ -18,7 +18,7 @@ vi.mock('@services/config/env', () => ({ getPublicConfig: () => ({ mediaUrl: 'ht
 
 import { uploadNewImageFile } from '@services/blocks/Image/images'
 import { uploadNewPDFFile } from '@services/blocks/Pdf/pdf'
-import { getBlockFileUrl } from '@services/blocks/upload'
+import { deleteBlock, getBlockFileUrl } from '@services/blocks/upload'
 import { uploadNewVideoFile } from '@services/blocks/Video/video'
 
 const ACTIVITY_ID = '01a09100-0000-7000-8000-0000000000a1'
@@ -82,6 +82,13 @@ describe('editor block uploads (v2)', () => {
     await uploadNewVideoFile(cases[2].file, ACTIVITY_ID, onProgress)
     expect(mocks.uploadFile).toHaveBeenCalledWith(cases[2].file, 'block-video', { onProgress: expect.any(Function) })
     expect(onProgress).toHaveBeenCalledWith({ uploadedBytes: 5, totalBytes: 10, percentage: 50 })
+  })
+
+  // UX-147: removing a block from the editor releases its upload server-side.
+  it('deleteBlock issues DELETE blocks/{id}', async () => {
+    mocks.apiJson.mockResolvedValueOnce(undefined)
+    await deleteBlock(BLOCK_ID)
+    expect(mocks.apiJson).toHaveBeenCalledWith(`blocks/${BLOCK_ID}`, { method: 'DELETE' })
   })
 
   it('legacy (ETL-migrated) block objects still resolve <file_id>.<file_format>', () => {

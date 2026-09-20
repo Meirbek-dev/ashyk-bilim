@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Area, AreaChart, CartesianGrid, Legend, XAxis, YAxis } from 'recharts'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 interface KpiSubmissionAreaChartProps {
   data: { bucket: string; submissions: number; grading: number }[]
@@ -17,6 +17,7 @@ interface KpiSubmissionAreaChartProps {
 
 export default function KpiSubmissionAreaChart({ data }: KpiSubmissionAreaChartProps) {
   const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -43,7 +44,12 @@ export default function KpiSubmissionAreaChart({ data }: KpiSubmissionAreaChartP
             <AreaChart data={data}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="bucket" tickLine={false} axisLine={false} minTickGap={20} />
-              <YAxis tickLine={false} axisLine={false} />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                tickFormatter={(v: number) => format.number(v)}
+              />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Legend content={<ChartLegendContent />} />
               <Area

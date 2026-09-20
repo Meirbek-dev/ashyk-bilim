@@ -104,6 +104,15 @@ impl CurriculumService {
         CoursesService::require_write(actor, course).is_ok()
     }
 
+    /// UX-147: an activity of an invisible course reads exactly like an
+    /// unknown one (BUG-209 did the same for chapters).
+    fn as_activity_404(err: Error) -> Error {
+        match err.code() {
+            ab_core::ErrorCode::NotFound => Error::not_found("activity"),
+            _ => err,
+        }
+    }
+
     /// An activity the actor may read: the course must be visible and,
     /// unless the actor edits the course, the activity published — drafts
     /// do not exist for learners (404, no leak).
@@ -111,7 +120,11 @@ impl CurriculumService {
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
-        let course = self.courses.get(actor, activity.course_id).await?;
+        let course = self
+            .courses
+            .get(actor, activity.course_id)
+            .await
+            .map_err(Self::as_activity_404)?;
         if !activity.published && !Self::is_editor(actor, &course) {
             return Err(Error::not_found("activity"));
         }
@@ -273,7 +286,9 @@ impl CurriculumService {
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
-        self.writable_course(actor, activity.course_id).await?;
+        self.writable_course(actor, activity.course_id)
+            .await
+            .map_err(Self::as_activity_404)?;
         Ok(activity)
     }
 

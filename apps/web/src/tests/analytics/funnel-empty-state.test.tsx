@@ -4,6 +4,8 @@ import { cleanup, render, screen } from '@testing-library/react'
 import CompletionFunnelChart from '@/components/Dashboard/Analytics/CompletionFunnelChart'
 import AnalyticsMultiSeriesTrendChart from '@/components/Dashboard/Analytics/AnalyticsMultiSeriesTrendChart'
 import EngagementAreaChart from '@/components/Dashboard/Analytics/EngagementAreaChart'
+import KpiActiveLearnerLineChart from '@/components/Dashboard/Analytics/KpiActiveLearnerLineChart'
+import KpiSubmissionAreaChart from '@/components/Dashboard/Analytics/KpiSubmissionAreaChart'
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -25,6 +27,8 @@ vi.mock('@/components/ui/chart', async importOriginal => ({
 vi.mock('recharts', () => ({
   BarChart: passthrough,
   AreaChart: passthrough,
+  LineChart: passthrough,
+  Line: none,
   Bar: none,
   Area: none,
   CartesianGrid: none,
@@ -77,6 +81,17 @@ describe('UX-138 learner-count axes', () => {
 
   it('course-detail engagement axis renders integer ticks with locale digits', () => {
     render(<EngagementAreaChart title="" description="" data={[{ bucket_start_unix: 1_756_684_800, value: 2 }]} />)
+    integerLocaleTicks(axes.y!)
+  })
+
+  // UX-148: the overview KPI charts still let recharts pick «0 0.75 1.5».
+  it('overview KPI active-learner axis renders integer ticks with locale digits', () => {
+    render(<KpiActiveLearnerLineChart data={[{ bucket: '1 сен', active: 3 }]} />)
+    integerLocaleTicks(axes.y!)
+  })
+
+  it('overview KPI submission axis renders integer ticks with locale digits', () => {
+    render(<KpiSubmissionAreaChart data={[{ bucket: '1 сен', submissions: 2, grading: 1 }]} />)
     integerLocaleTicks(axes.y!)
   })
 })

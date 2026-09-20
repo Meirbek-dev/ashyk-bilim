@@ -110,7 +110,9 @@ const toUpdateCourseRequest = (data: AppPayload) => ({
   ...(data.about === undefined ? {} : { about: data.about }),
   ...(data.tags === undefined ? {} : { tags: toTagArray(data.tags) }),
   ...(typeof data.open_to_contributors === 'boolean' ? { open_to_contributors: data.open_to_contributors } : {}),
-  ...(typeof data.thumbnail_upload_id === 'string' ? { thumbnail_upload_id: data.thumbnail_upload_id } : {}),
+  ...(typeof data.thumbnail_upload_id === 'string' || data.thumbnail_upload_id === null
+    ? { thumbnail_upload_id: data.thumbnail_upload_id }
+    : {}),
 })
 
 async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdateCourseRequest>) {
@@ -198,7 +200,8 @@ export async function updateCourseLifecycle(courseUuid: string, makePublic: bool
 }
 
 /** Claim a finalized `course-thumbnail` upload (`uploadFile(file, 'course-thumbnail').id`) as the thumbnail. */
-export async function updateCourseThumbnail(course_uuid: string, uploadId: string) {
+/** `null` removes the current thumbnail (UX-147). */
+export async function updateCourseThumbnail(course_uuid: string, uploadId: string | null) {
   return patchCourse(course_uuid, { thumbnail_upload_id: uploadId })
 }
 

@@ -21,7 +21,10 @@ export function describeAnalyticsError(
     // `details.filter` names the filter the server refused (teacher_user_id without platform scope).
     return error.details?.filter === 'teacher_user_id' ? t('pages.teacherFilterDenied') : t('pages.scopeDenied')
   }
-  if (error.status === 422) return t('pages.invalidFilters')
+  if (error.status === 422) {
+    // UX-148: `field_errors[].field` names the filter; an unknown teacher id gets its own copy.
+    return error.fieldErrors.some(f => f.field === 'teacher_user_id') ? t('pages.teacherFilterUnknown') : t('pages.invalidFilters')
+  }
   const key = `codes.${error.code}`
   return tErrors.has(key) ? tErrors(key) : fallback
 }

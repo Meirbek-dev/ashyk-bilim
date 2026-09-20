@@ -2710,6 +2710,8 @@
         "mediaActionsTitle": "Медиафайл әрекеттері бірден қолданылады",
         "mediaUpdatesIsolated": "Медиафайл жаңартулары жоғарғы өрістерден арнайы оқшауланған.",
         "uploadImageButton": "Кескінді жүктеу",
+        "removeImageButton": "Кескінді өшіру",
+        "thumbnailRemoved": "Нобай өшірілді",
         "uploading": "Жүктелуде..."
       },
       "thumbnailType": "Нобай түрі",
@@ -4394,6 +4396,7 @@
         "embeddedContentFallback": "Енгізілген элементті көрсету мүмкін болмады"
       },
       "FileUploadBlock": {
+        "dropOrClick": "Файлды осында тастаңыз немесе таңдау үшін басыңыз",
         "browseFiles": "Файлдарды шолыңыз",
         "chooseFile": "Файлды таңдаңыз",
         "dragAndDrop": "Файлдарды осы жерге апарып, тастаңыз",
@@ -4433,6 +4436,7 @@
         "smallSize": "Кіші өлшем"
       },
       "ImageBlock": {
+        "remove": "Кескінді өшіру",
         "alignCenter": "Ортасына туралау",
         "alignLeft": "Солға туралау",
         "alignRight": "Оңға туралау",
@@ -4502,6 +4506,7 @@
         "title": "Математикалық теңдеу"
       },
       "PDFBlock": {
+        "supportedFormats": "PDF (ең көбі 50 МБ)",
         "download": "Жүктеп алу",
         "expand": "Кеңейту",
         "pdfDocument": "PDF құжаты",
@@ -7971,7 +7976,8 @@
       "assessmentOpsAuditBulkSummary": "{action}: {count} оқушы",
       "assessmentItemAccuracy": "Дәлдік {value}%",
       "courseContentHealthNoLearners": "Әзірге деректер жоқ: курста әлі оқушылар жоқ.",
-      "teacherFilterDenied": "Оқытушы бойынша сүзгі қолжетімсіз: басқа оқытушының аналитикасын көру үшін платформалық рұқсат қажет."
+      "teacherFilterDenied": "Оқытушы бойынша сүзгі қолжетімсіз: басқа оқытушының аналитикасын көру үшін платформалық рұқсат қажет.",
+      "teacherFilterUnknown": "Сүзгідегі оқытушы табылмады. Оқытушыны тізімнен таңдаңыз."
     },
     "codes": {
       "active_learners": "Белсенді оқушылар",
@@ -8091,7 +8097,7 @@
       },
       "engagement_dropped": {
         "title": "Белсенділік төмендеді",
-        "body": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда {delta_pct}%-ға азайды."
+        "body": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда {delta_pct, number}%-ға азайды."
       },
       "content_stale": {
         "title": "Контент ескірген болуы мүмкін",
@@ -8103,11 +8109,11 @@
       },
       "grading_slo_breached": {
         "title": "{assessment_title}: тексеру мерзімі асып кетті",
-        "body": "«{course_name}» курсындағы {breaches} жұмыс {target_hours} сағаттық тексеру мерзімінен асып кетті; кезекте әлі {awaiting} жұмыс, ең ескісі {oldest_hours} сағат бұрын жіберілген."
+        "body": "«{course_name}» курсындағы {breaches, number} жұмыс {target_hours, number} сағаттық тексеру мерзімінен асып кетті; кезекте әлі {awaiting, number} жұмыс, ең ескісі {oldest_hours, number} сағат бұрын жіберілген."
       },
       "grading_slo_watch": {
         "title": "{assessment_title}: тексеру мерзімі таусылуда",
-        "body": "«{course_name}» курсында {awaiting} жұмыс күтуде; ең ескісі {target_hours} сағаттық мақсатқа қарсы {oldest_hours} сағат ашық тұр."
+        "body": "«{course_name}» курсында {awaiting, number} жұмыс күтуде; ең ескісі {target_hours, number} сағаттық мақсатқа қарсы {oldest_hours, number} сағат ашық тұр."
       },
       "completion_target_miss": {
         "title": "{course_name}: оқушылар аяқтау мақсатына жетпеуі мүмкін",
@@ -8115,7 +8121,7 @@
       },
       "course_completion_deadline": {
         "title": "{course_name}: 14 күндік аяқтау болжамы",
-        "body": "Ағымдағы қарқында күтілетін аяқтау үлесі — {expected_pct}%."
+        "body": "Ағымдағы қарқында күтілетін аяқтау үлесі — {expected_pct, number}%."
       },
       "grading_backlog_7d": {
         "title": "7 күннен кейінгі күтілетін тексеру кезегі",
@@ -8123,7 +8129,7 @@
       },
       "assessment_failure_risk": {
         "title": "{assessment_title}: сәтсіздік тәуекелі жоғары",
-        "body": "Келесі мерзімге дейін күтілетін сәтсіздік үлесі — {expected_pct}%."
+        "body": "Келесі мерзімге дейін күтілетін сәтсіздік үлесі — {expected_pct, number}%."
       },
       "sharp_engagement_drop": {
         "title": "{course_name}: белсенділіктің күрт төмендеуі",
@@ -8146,11 +8152,11 @@
         "body": "Тәуекел әр оқушының өз базалық деңгейіне қарағанда өсті; бақылау тізімін қараңыз."
       },
       "low_pass_rate": {
-        "title": "«{assessment_title}» тапсырғандар үлесі — {pass_rate}%",
+        "title": "«{assessment_title}» тапсырғандар үлесі — {pass_rate, number}%",
         "body": "Төмен тапсыру үлесі осы бағалауды ерекшелейді."
       },
       "low_pass_rate_with_diagnostics": {
-        "title": "«{assessment_title}» тапсырғандар үлесі — {pass_rate}%",
+        "title": "«{assessment_title}» тапсырғандар үлесі — {pass_rate, number}%",
         "body": "Сапа диагностикасы осы бағалауды ерекшелейді."
       },
       "content_bottleneck": {
@@ -8159,10 +8165,10 @@
       },
       "workload_backlog": {
         "title": "{count} жұмыс тексеруді күтуде",
-        "body": "{breaches} жұмыс {target_hours} сағаттық тексеру мерзімінен асып кетті; 7 күндік болжам — {forecast_7d}."
+        "body": "{breaches, number} жұмыс {target_hours, number} сағаттық тексеру мерзімінен асып кетті; 7 күндік болжам — {forecast_7d, number}."
       },
       "completion_improved": {
-        "title": "«{course_name}» курсын аяқтау {delta_pts} тармаққа өсті",
+        "title": "«{course_name}» курсын аяқтау {delta_pts, number} тармаққа өсті",
         "body": "Бұл когорта курстың тарихи базалық деңгейінен озып тұр."
       },
       "missing_event_sources": {

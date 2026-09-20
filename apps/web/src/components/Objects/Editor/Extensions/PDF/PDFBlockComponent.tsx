@@ -109,10 +109,6 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     props.updateAttributes({ size: sizeRef.current })
   }, [props])
 
-  const handlePDFChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPDF(event.target.files?.[0] ?? null)
-  }
-
   const handleSubmit = async () => {
     if (!pdf) return // Guard: only proceed if pdf is not null
     setIsLoading(true)
@@ -205,7 +201,7 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     <>
       <NodeViewWrapper className="block-pdf w-full py-2">
         <FileUploadBlock isEditable={isEditable} isLoading={isLoading} isEmpty={!blockObject} Icon={FileText}>
-          <FileUploadBlockInput onChange={handlePDFChange} accept={SUPPORTED_FILES} />
+          <FileUploadBlockInput onFileSelect={setPDF} file={pdf} accept={SUPPORTED_FILES} hint={t('supportedFormats')} />
           <FileUploadBlockButton onClick={handleSubmit} disabled={!pdf} />
         </FileUploadBlock>
         {blockObject ? (

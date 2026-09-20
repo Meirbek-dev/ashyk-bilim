@@ -2712,6 +2712,8 @@
         "mediaActionsTitle": "Media actions apply immediately",
         "mediaUpdatesIsolated": "Media updates are intentionally isolated from the draft fields above.",
         "uploadImageButton": "Upload Image",
+        "removeImageButton": "Remove image",
+        "thumbnailRemoved": "Thumbnail removed",
         "uploading": "Uploading..."
       },
       "thumbnailType": "Thumbnail Type",
@@ -4379,6 +4381,7 @@
         "embeddedContentFallback": "Embed failed to render"
       },
       "FileUploadBlock": {
+        "dropOrClick": "Drop a file here or click to select",
         "browseFiles": "Browse Files",
         "chooseFile": "Choose File",
         "dragAndDrop": "Drag and drop files here or",
@@ -4418,6 +4421,7 @@
         "smallSize": "Small Size"
       },
       "ImageBlock": {
+        "remove": "Remove image",
         "alignCenter": "Align center",
         "alignLeft": "Align left",
         "alignRight": "Align right",
@@ -4487,6 +4491,7 @@
         "title": "Math Equation"
       },
       "PDFBlock": {
+        "supportedFormats": "PDF (max 50 MB)",
         "download": "Download",
         "expand": "Expand",
         "pdfDocument": "PDF Document",
@@ -7941,7 +7946,8 @@
       "assessmentOpsAuditBulkSummary": "{action} for {count, plural, one {# learner} other {# learners}}",
       "assessmentItemAccuracy": "Accuracy {value}%",
       "courseContentHealthNoLearners": "No data yet: the course has no learners.",
-      "teacherFilterDenied": "The teacher filter is unavailable: viewing another teacher’s analytics needs platform-wide access."
+      "teacherFilterDenied": "The teacher filter is unavailable: viewing another teacher’s analytics needs platform-wide access.",
+      "teacherFilterUnknown": "The teacher in the filter does not exist. Pick a teacher from the list."
     },
     "codes": {
       "active_learners": "Active learners",
@@ -8061,7 +8067,7 @@
       },
       "engagement_dropped": {
         "title": "Engagement dropped",
-        "body": "Active learners fell by {delta_pct}% compared with the previous period."
+        "body": "Active learners fell by {delta_pct, number}% compared with the previous period."
       },
       "content_stale": {
         "title": "Content may be stale",
@@ -8073,11 +8079,11 @@
       },
       "grading_slo_breached": {
         "title": "{assessment_title}: outside the grading target",
-        "body": "{breaches, plural, one {# submission} other {# submissions}} in {course_name} exceeded the {target_hours} h grading target; {awaiting} still queued, the oldest submitted {oldest_hours} h ago."
+        "body": "{breaches, plural, one {# submission} other {# submissions}} in {course_name} exceeded the {target_hours, number} h grading target; {awaiting, number} still queued, the oldest submitted {oldest_hours, number} h ago."
       },
       "grading_slo_watch": {
         "title": "{assessment_title}: approaching the grading target",
-        "body": "{awaiting, plural, one {# submission is} other {# submissions are}} waiting in {course_name}; the oldest has been open for {oldest_hours} h against a {target_hours} h target."
+        "body": "{awaiting, plural, one {# submission is} other {# submissions are}} waiting in {course_name}; the oldest has been open for {oldest_hours, number} h against a {target_hours, number} h target."
       },
       "completion_target_miss": {
         "title": "{course_name}: learners likely to miss the completion target",
@@ -8085,7 +8091,7 @@
       },
       "course_completion_deadline": {
         "title": "{course_name}: 14-day completion forecast",
-        "body": "Expected completion rate is {expected_pct}% if the current pace holds."
+        "body": "Expected completion rate is {expected_pct, number}% if the current pace holds."
       },
       "grading_backlog_7d": {
         "title": "Expected grading backlog in 7 days",
@@ -8093,7 +8099,7 @@
       },
       "assessment_failure_risk": {
         "title": "{assessment_title}: elevated failure risk",
-        "body": "Expected failure rate is {expected_pct}% before the next deadline."
+        "body": "Expected failure rate is {expected_pct, number}% before the next deadline."
       },
       "sharp_engagement_drop": {
         "title": "{course_name}: sharp engagement drop",
@@ -8116,11 +8122,11 @@
         "body": "Risk rose against each learner's own baseline; review the watchlist."
       },
       "low_pass_rate": {
-        "title": "Pass rate for {assessment_title} is {pass_rate}%",
+        "title": "Pass rate for {assessment_title} is {pass_rate, number}%",
         "body": "The low pass rate flags this assessment."
       },
       "low_pass_rate_with_diagnostics": {
-        "title": "Pass rate for {assessment_title} is {pass_rate}%",
+        "title": "Pass rate for {assessment_title} is {pass_rate, number}%",
         "body": "The quality diagnostics flag this assessment."
       },
       "content_bottleneck": {
@@ -8129,10 +8135,10 @@
       },
       "workload_backlog": {
         "title": "{count, plural, one {# submission is} other {# submissions are}} awaiting review",
-        "body": "{breaches} breached the {target_hours} h grading target; the 7-day forecast is {forecast_7d}."
+        "body": "{breaches, number} breached the {target_hours, number} h grading target; the 7-day forecast is {forecast_7d, number}."
       },
       "completion_improved": {
-        "title": "Completion for {course_name} improved by {delta_pts} points",
+        "title": "Completion for {course_name} improved by {delta_pts, number} points",
         "body": "This cohort outperforms the course's historical baseline."
       },
       "missing_event_sources": {
