@@ -230,8 +230,8 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | id | area | route(s) | roles | status | last critic verdict |
 |---|---|---|---|---|---|
 | F01 | login + session | `/ru/auth/login` | all | pass | pass 18 (reverify-A): session touch atomic — 0 resurrections in 15/8/16/6/10 race cycles (BUG-191); pass 17 (identity clean); pass 16 (reverify-A) |
-| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 17 (identity clean); pass 16 (reverify-A): reset enrolment copy |
-| F03 | Google login intent | `/ru/auth/login` → `/api/v2/auth/google` | any | pass | pass 17 (identity clean); pass 16 (identity clean); pass 6: Google → `/api/v2/auth/google` → 303 with `?error=service-unavailable`; host-relative redirect is correct behind the production nginx (Q-2026-09-12-2 #10) |
+| F02 | MFA (TOTP enroll/verify/remove) | `/ru/dash/user-account/settings/security` | any | pass | pass 18 (identity clean); pass 17 (identity clean); pass 16 (reverify-A): reset enrolment copy |
+| F03 | Google login intent | `/ru/auth/login` → `/api/v2/auth/google` | any | pass | pass 18 (identity clean); pass 17 (identity clean); pass 16 (identity clean); pass 6: Google → `/api/v2/auth/google` → 303 with `?error=service-unavailable`; host-relative redirect is correct behind the production nginx (Q-2026-09-12-2 #10) |
 | F04 | sessions list + revoke + logout | `/ru/dash/user-account/settings/security` | any | pass | pass 18 (reverify-A): revoked sessions stay revoked, no ghosts (BUG-191); pass 17 (reverify-A); pass 16 (reverify-A) |
 | F05 | unauthorized / error pages | `/ru/unauthorized`, any bad path | all | pass | pass 18 (reverify-C); pass 17 (analytics-admin clean); pass 16 (analytics-admin clean); pass 15 (reverify-C) |
 | F06 | locale switch ru/kz/en | all routes | any | pass | pass 18 (reverify-C); pass 17 (analytics-admin clean); pass 16 (analytics-admin clean); pass 15 (reverify-C) |
@@ -240,12 +240,12 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F09 | collections | `/ru/collections`, `/ru/collections/new`, `/ru/collection/[id]` | learner (browse) + teacher (create) | pass | pass 18 (reverify-A): collection update validates first, unreadable → 404 (BUG-192); pass 17 (reverify-A); pass 16 (reverify-A): private-only collections hidden; delete affordance carried as UX-124 |
 | F10 | activity viewer | `/course/[uuid]/activity/[id]` | learner | pass | pass 18 (reverify-A); pass 17 (reverify-A): attempt numbering (BUG-184), empty video / course-end copy (UX-127); certificate preview fallbacks carried as UX-131; pass 16 (reverify-A) |
 | F11 | trail / progress | `/trail` | learner | pass | pass 18 (reverify-A); pass 17 (reverify-A): leaving an unpublished course works, invisible runs hidden (BUG-183); pass 16 (reverify-A): trail route refuses quizzes (BUG-176) |
-| F12 | user profile | `/ru/user/[username]` | learner | pass | pass 17 (learner-course clean); pass 16 (reverify-A) |
+| F12 | user profile | `/ru/user/[username]` | learner | pass | pass 18 (learner-course clean); pass 17 (learner-course clean); pass 16 (reverify-A) |
 | F13 | taking a quiz/exam | `/ru/course/[id]/activity/[id]` | learner | pass | pass 18 (reverify-A): duplicate picks count once, never >100 (BUG-193); pass 17 (learner-assess clean); pass 16 (reverify-B): failed submit re-queues answers (BUG-178) |
 | F14 | code arena run | `/assessments/[uuid]` (code item) | learner | blocked | Judge0 not in the local stack (`code/languages` 503); e2e code tests skip on the probe. Needs an environment with the executor |
-| F15 | file submission upload | `/assessments/[uuid]` (file item) | learner | pass | pass 17 (learner-assess clean); pass 16 (reverify-B): late penalty applied to file grades |
-| F16 | discussions | course discussion surfaces | learner+teacher | pass | pass 17 (learner-assess clean); pass 16 (reverify-B) |
-| F17 | certificates + verify | `/certificates/[uuid]/verify`, `/dash/courses/[uuid]/certificate` | any | pass | pass 17 (reverify-D): certificate preview/verify fallbacks (UX-131); pass 17 (learner-assess clean); pass 16 (reverify-B) |
+| F15 | file submission upload | `/assessments/[uuid]` (file item) | learner | pass | pass 18 (learner-assess clean); pass 17 (learner-assess clean); pass 16 (reverify-B): late penalty applied to file grades |
+| F16 | discussions | course discussion surfaces | learner+teacher | pass | pass 18 (learner-assess clean); pass 17 (learner-assess clean); pass 16 (reverify-B) |
+| F17 | certificates + verify | `/certificates/[uuid]/verify`, `/dash/courses/[uuid]/certificate` | any | pass | pass 18 (learner-assess clean); pass 17 (reverify-D): certificate preview/verify fallbacks (UX-131); pass 17 (learner-assess clean); pass 16 (reverify-B) |
 | F18 | gamification | `/dash/user-account/settings/gamification` | learner | pass | pass 18 (reverify-A); pass 17 (learner-assess clean); pass 16 (reverify-B) |
 | F19 | course create + details + publish | `/ru/dash/courses/new`, `/ru/dash/courses/[id]/{details,review}` | teacher | pass | pass 18 (reverify-B); pass 17 (teacher-authoring clean); pass 16 (reverify-A): course-create title trimmed inline |
 | F20 | curriculum (chapters/activities) | `/ru/dash/courses/[id]/curriculum` | teacher | pass | pass 18 (reverify-B): attached assessment pins the type, duplicate title validated (BUG-201); pass 17 (reverify-B): refused PATCH writes nothing (BUG-186), localized lock toast + hand-in confirm (UX-128); pass 16 (reverify-A) |
@@ -273,19 +273,19 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | F42 | password change + MFA state on load | `/dash/user-account/settings/security` | any | pass | pass 18 (reverify-A); pass 17 (identity clean); pass 16 (reverify-A) |
 | F43 | admin user creation | `/dash/admin/users` | admin | pass | pass 18 (reverify-C); pass 17 (reverify-A): password-policy inline on the field (UX-130); hint a11y carried as UX-131; pass 16 (analytics-admin clean); pass 15 (reverify-C) |
 | F44 | RBAC codes + custom role text | `/dash/admin/{users,roles}` | admin | pass | pass 18 (reverify-C); pass 17 (analytics-admin clean); pass 16 (analytics-admin clean); pass 15 (reverify-C) |
-| F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 17 (identity clean); pass 16 (identity clean); pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
+| F45 | request_id + web-origin redirects | problem+json, Google error | any | pass | pass 18 (identity clean); pass 17 (identity clean); pass 16 (identity clean); pass 9 N6/N7: body `request_id` = header; Google error lands on `http://localhost:3000/ru/auth/login?error=…` with a localized banner |
 | F46 | teacher course list (server-side) | `/dash/courses?mine…` | teacher | pass | pass 18 (reverify-B); pass 17 (teacher-authoring clean); pass 16 (reverify-A) |
-| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 17 (reverify-C); pass 16 (reverify-A) |
+| F47 | course collaboration | `/dash/courses/[id]/collaboration`, landing apply | teacher+learner | pass | pass 18 (learner-course clean); pass 17 (reverify-C); pass 16 (reverify-A) |
 | F48 | course readiness (server) + file-submission publish gate | review page, curriculum toggle | teacher | pass | pass 18 (reverify-B); pass 17 (teacher-authoring clean); pass 16 (reverify-A) |
 | F49 | gradebook: file cells, CSV export, live stream | `/dash/courses/[id]/gradebook` | teacher | pass | pass 18 (reverify-C): gradebook CSV defused (BUG-196); pass 17 (reverify-C); pass 16 (reverify-B): released grade outranks a pending retake (BUG-180) |
 | F50 | grader feedback codes + learner verdicts | review, result card | teacher+learner | pass | pass 18 (reverify-A); pass 17 (reverify-B); pass 16 (reverify-B): headline follows a re-grade |
 | F51 | matching items (learner body) | quiz attempt + review | learner+teacher | pass | pass 18 (reverify-A): one right per left (BUG-193); pass 17 (learner-assess clean); pass 16 (reverify-B) |
-| F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 17 (reverify-D); pass 17 (learner-assess clean); pass 16 (reverify-B) |
+| F52 | certificate PDF | `/trail`, verify page | learner | pass | pass 18 (learner-assess clean); pass 17 (reverify-D); pass 17 (learner-assess clean); pass 16 (reverify-B) |
 | F53 | AI on file-submission attempts | file review page | teacher | pass | pass 18 (reverify-B): drafts refused (BUG-198); pass 17 (reverify-C): history row opens the released feedback beside an open draft (UX-129); pass 16 (reverify-B) |
 | F54 | link preview block | lecture editor | teacher | pass | pass 18 (reverify-B); pass 17 (teacher-authoring clean); pass 16 (reverify-A) |
 | F55 | analytics codes + retention | `/dash/analytics/*` (ru/kz) | teacher | pass | pass 18 (reverify-C); pass 17 (reverify-A); pass 16 (analytics-admin clean); pass 15 (reverify-C) |
 | F56 | kk Intl polyfill | every `/kz` page in Chromium | any | pass | pass 18 (reverify-C); pass 17 (analytics-admin clean); pass 16 (analytics-admin clean); pass 15 (reverify-C) |
-| F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 17 (learner-course clean); pass 16 (reverify-A) |
+| F57 | public profile courses (anonymous) | `/user/[username]` | anonymous | pass | pass 18 (learner-course clean); pass 17 (learner-course clean); pass 16 (reverify-A) |
 
 ## Bugs
 
