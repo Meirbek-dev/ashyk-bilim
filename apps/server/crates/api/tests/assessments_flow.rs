@@ -570,7 +570,12 @@ async fn duplicate_copies_policy_and_items_as_a_fresh_draft(pool: PgPool) {
             &serde_json::json!({ "title": "   " }),
         )
         .await;
-    assert_eq!(blank.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", blank.text());
+    assert_eq!(
+        blank.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        blank.text()
+    );
     assert_eq!(blank.json()["field_errors"][0]["field"], "title");
     let padded = app
         .post_as(
@@ -1521,5 +1526,92 @@ async fn duplicate_choice_option_ids_are_refused(pool: PgPool) {
     assert_eq!(
         patched.json()["field_errors"][0]["code"],
         "choice.option_id_duplicate"
+    );
+}
+
+/// UX-137: item titles are stored trimmed; legal-but-odd policy combinations
+/// (due date in the past, cutoff before due, penalty while late is off) show
+/// up as readiness warnings that never block publishing.
+#[sqlx::test(migrations = "../../migrations")]
+async fn policy_oddities_warn_and_item_titles_are_trimmed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = scaffold(&app, &teacher).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let mut item = choice_item("Q1");
+    item["title"] = serde_json::json!("  Q1 renamed ");
+    let item = app
+        .post_as(&teacher, &format!("/api/v2/assessments/{id}/items"), &item)
+        .await;
+    assert_eq!(item.status, StatusCode::CREATED, "{}", item.text());
+    assert_eq!(item.json()["title"], "Q1 renamed");
+
+    let mut policy = created.json()["policy"].clone();
+    policy["due_at_unix"] = serde_json::json!(1_000_000);
+    policy["allow_late"] = serde_json::json!(false);
+    policy["late_policy"] =
+        serde_json::json!({ "kind": "penalty", "percent_per_day": 10, "max_days": 5 });
+    let set = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/policy"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(policy.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(set.status, StatusCode::OK, "{}", set.text());
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/readiness"))
+        .await;
+    let body = readiness.json();
+    assert_eq!(body["ok"], true, "{body}");
+    let mut warnings: Vec<_> = body["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|i| i["severity"] == "warning")
+        .map(|i| i["code"].as_str().unwrap().to_owned())
+        .collect();
+    warnings.sort();
+    assert_eq!(
+        warnings,
+        ["policy.due_at_past", "policy.penalty_without_late"]
+    );
+    assert_eq!(body["warning_count"], 2);
+
+    policy["late_policy"] = serde_json::json!({ "kind": "cutoff", "cutoff_at_unix": 999 });
+    let set = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/policy"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(policy.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(set.status, StatusCode::OK, "{}", set.text());
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/readiness"))
+        .await;
+    assert!(
+        readiness.json()["issues"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|i| i["code"] == "policy.cutoff_before_due"),
+        "{}",
+        readiness.text()
     );
 }

@@ -43,6 +43,8 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { countItemActionPrompts, getItemActionPrompt, summarizeIntegrityEvents } from './operateViewUtils'
+import { ITEM_KIND_LABEL_KEYS, type UnifiedItemKind } from '@/features/assessments/domain/items'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 const itemAnalyticsQueryOptions = (assessmentUuid: string) =>
   queryOptions({
@@ -68,7 +70,10 @@ const LIVE = { refetchOnWindowFocus: true, refetchInterval: 30_000, refetchInter
 
 export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityUuid }: ResultsReviewTabProps) {
   const t = useTranslations('Features.Assessments.Studio.ResultsReview')
+  const tStudio = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const locale = useLocale()
+  // UX-137: one percent format on this tab (locale decimals, ≤ 2 digits).
+  const formatPercent = usePercentFormat()
   const [analyticsExpanded, setAnalyticsExpanded] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [search, setSearch] = useState('')
@@ -164,13 +169,13 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         <ResultMetric
           icon={TrendingUp}
           label={t('averageScore')}
-          value={stats?.avg_score !== null && stats?.avg_score !== undefined ? `${stats.avg_score.toFixed(1)}%` : '--'}
+          value={stats?.avg_score !== null && stats?.avg_score !== undefined ? formatPercent(stats.avg_score) : '--'}
           accent="blue"
         />
         <ResultMetric
           icon={BookOpenCheck}
           label={t('passRate')}
-          value={stats?.pass_rate !== null && stats?.pass_rate !== undefined ? `${stats.pass_rate.toFixed(0)}%` : '--'}
+          value={stats?.pass_rate !== null && stats?.pass_rate !== undefined ? formatPercent(stats.pass_rate) : '--'}
           accent="lime"
         />
       </div>
@@ -306,7 +311,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                           <Badge variant="outline">{releaseStateLabel(readReleaseState(submission), t)}</Badge>
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : '--'}
+                          {typeof submission.final_score === 'number' ? formatPercent(submission.final_score) : '--'}
                         </TableCell>
                         <TableCell>
                           {violations.length > 0 ? (
@@ -458,12 +463,18 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                           <TableCell className="max-w-[280px] truncate px-4 py-2.5 font-medium" title={item.title}>
                             {item.title || '--'}
                           </TableCell>
-                          <TableCell className="text-muted-foreground px-4 py-2.5 text-xs tracking-wide uppercase">
-                            {item.kind.replace(/_/g, ' ')}
+                          <TableCell className="text-muted-foreground px-4 py-2.5 text-xs">
+                            {tStudio(
+                              `kindLabels.${ITEM_KIND_LABEL_KEYS[item.kind.toUpperCase() as UnifiedItemKind] ?? 'unknown'}`,
+                            )}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.response_count}</TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {typeof item.correct_pct === 'number' ? <PercentBadge value={item.correct_pct} /> : '--'}
+                            {typeof item.correct_pct === 'number' ? (
+                              <PercentBadge value={item.correct_pct} format={formatPercent} />
+                            ) : (
+                              '--'
+                            )}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
                             {typeof item.discrimination_index === 'number' ? (
@@ -507,9 +518,9 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   )
 }
 
-function PercentBadge({ value }: { value: number }) {
+function PercentBadge({ value, format }: { value: number; format: (percent: number) => string }) {
   const color = value >= 70 ? 'text-lime-600' : value >= 40 ? 'text-amber-600' : 'text-red-600'
-  return <span className={cn('font-medium', color)}>{value.toFixed(1)}%</span>
+  return <span className={cn('font-medium', color)}>{format(value)}</span>
 }
 
 function DiscriminationBadge({ value }: { value: number }) {

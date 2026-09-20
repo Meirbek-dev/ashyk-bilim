@@ -69,6 +69,21 @@ async fn crud_lifecycle_and_visibility(pool: PgPool) {
     let hidden = app.get_as(&learner, &format!("/api/v2/courses/{id}")).await;
     assert_eq!(hidden.status, StatusCode::NOT_FOUND);
 
+    // UX-137: free text is trimmed, tags trimmed and de-duplicated
+    // case-insensitively (first spelling wins), blanks dropped.
+    let tidied = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/courses/{id}"),
+            &serde_json::json!({ "description": "  spaced  ", "about": "   ",
+                                  "tags": ["  ", "g18", " G18 ", "g18", "rust"] }),
+        )
+        .await;
+    assert_eq!(tidied.status, StatusCode::OK, "{}", tidied.text());
+    assert_eq!(tidied.json()["description"], "spaced");
+    assert_eq!(tidied.json()["about"], "");
+    assert_eq!(tidied.json()["tags"], serde_json::json!(["g18", "rust"]));
+
     // Publish → learners can see it.
     app.publish_course(&id).await;
     let visible = app.get_as(&learner, &format!("/api/v2/courses/{id}")).await;

@@ -775,6 +775,36 @@ impl AssessmentsService {
                 "publish",
             ));
         }
+        // UX-137: policy combinations that are legal but almost certainly
+        // not what the teacher meant — warnings, never blockers.
+        let warning = |code: &str, message: &str| ReadinessIssue {
+            severity: "warning",
+            ..blocker(code, message, "policy")
+        };
+        if matches!(
+            assessment.lifecycle,
+            Lifecycle::Draft | Lifecycle::Scheduled
+        ) && assessment.due_at.is_some_and(|due| due < now_unix())
+        {
+            issues.push(warning(
+                "policy.due_at_past",
+                "the due date is already in the past",
+            ));
+        }
+        if let (Some(due), Some(cutoff)) = (assessment.due_at, assessment.late_cutoff_at)
+            && cutoff < due
+        {
+            issues.push(warning(
+                "policy.cutoff_before_due",
+                "the late cutoff is before the due date",
+            ));
+        }
+        if assessment.late_policy_kind == LatePolicyKind::Penalty && !assessment.allow_late {
+            issues.push(warning(
+                "policy.penalty_without_late",
+                "a late penalty has no effect while late submissions are not allowed",
+            ));
+        }
         for item in items {
             let mut item_issues = Vec::new();
             if !assessment.kind.allowed_item_kinds().contains(&item.kind) {
@@ -1110,7 +1140,7 @@ impl AssessmentsService {
             &self.pool,
             id,
             body.kind(),
-            title,
+            title.trim(),
             &body.to_stored(),
             max_score,
             metadata.as_db(),
@@ -1167,7 +1197,7 @@ impl AssessmentsService {
         ab_db::assessments::update_item(
             &self.pool,
             item_id,
-            changes.title.as_deref(),
+            changes.title.as_deref().map(str::trim),
             stored.as_ref().map(|(kind, value)| (*kind, value)),
             changes.max_score,
             metadata.as_ref().map(ItemMetadataInput::as_db),

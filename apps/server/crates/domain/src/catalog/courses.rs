@@ -20,6 +20,7 @@ pub use ab_db::catalog::{
 };
 use uuid::Uuid;
 
+use crate::assessments::items::normalize_tags;
 use crate::catalog::sees_private;
 use crate::files::uploads::{UNREFERENCED_GRACE, claim_upload};
 use crate::identity::Actor;
@@ -101,14 +102,15 @@ impl CoursesService {
         tags: Vec<String>,
     ) -> Result<Course> {
         actor.require(perm(Action::Create, Scope::Platform))?;
-        // BUG-168: names are trimmed and never blank (shared rule, UX-106).
+        // BUG-168: names are trimmed and never blank (shared rule, UX-106);
+        // UX-137: free text is trimmed, tags trimmed + de-duplicated.
         let name = ab_core::required_str("name", name)?;
         let id = ab_db::catalog::insert_course(
             &self.pool,
             name,
-            description,
-            about,
-            &tags,
+            description.trim(),
+            about.trim(),
+            &normalize_tags(&tags),
             actor.user_id,
         )
         .await?;
@@ -219,14 +221,15 @@ impl CoursesService {
             ),
             None => None,
         };
+        let tags = changes.tags.as_deref().map(normalize_tags);
         let updated = ab_db::catalog::update_course(
             &self.pool,
             id,
             ab_db::catalog::CourseChanges {
                 name,
-                description: changes.description.as_deref(),
-                about: changes.about.as_deref(),
-                tags: changes.tags.as_deref(),
+                description: changes.description.as_deref().map(str::trim),
+                about: changes.about.as_deref().map(str::trim),
+                tags: tags.as_deref(),
                 open_to_contributors: changes.open_to_contributors,
                 thumbnail_key: thumbnail_key.as_deref(),
             },

@@ -21,6 +21,10 @@ export function courseReadinessQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.readiness(courseUuid),
     queryFn: () => getCourseReadiness(courseUuid),
+    // UX-137: a blocker fixed in another tab (the studio) clears «Исправить»
+    // when the teacher comes back — the client disables focus refetch globally.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   })
 }
 

@@ -14,7 +14,13 @@ vi.mock('@tanstack/react-query', async importOriginal => ({
   ...(await importOriginal<typeof import('@tanstack/react-query')>()),
   useQuery: mocks.useQuery,
 }))
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key, useLocale: () => 'ru' }))
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => 'ru',
+  // ru digits: «100» and «66,7» — the decimal comma is the tell.
+  useFormatter: () => ({ number: (value: number, opts?: { maximumFractionDigits?: number }) =>
+    value.toFixed(opts?.maximumFractionDigits ?? 0).replace(/\.?0+$/, '').replace('.', ',') }),
+}))
 vi.mock('recharts', () => ({
   Bar: () => null,
   BarChart: () => null,
@@ -47,5 +53,36 @@ describe('studio results view', () => {
       expect.stringContaining('"submissions"'),
     ])
     expect(live.every(option => option.refetchIntervalInBackground === false)).toBe(true)
+  })
+
+  // UX-137: every number on the tab goes through the shared percent format
+  // (locale decimals, no «100.0%» beside «100%»), and the item-analytics type
+  // column shows the kind label, never the raw «CHOICE».
+  it('formats percents through usePercentFormat and labels item kinds', () => {
+    mocks.useQuery.mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
+      const key = JSON.stringify(queryKey)
+      if (key.includes('submission-stats')) {
+        return { isSuccess: true, data: { total: 1, needs_grading_count: 0, avg_score: 100, pass_rate: 66.666, distribution: [] }, refetch: vi.fn() }
+      }
+      if (key.includes('item-analytics')) {
+        return {
+          isSuccess: true,
+          isError: false,
+          data: [{ item_id: 'i1', title: 'Q1', kind: 'choice', response_count: 1, correct_pct: 100, discrimination_index: null }],
+          refetch: vi.fn(),
+        }
+      }
+      return { isSuccess: false, data: undefined, refetch: vi.fn() }
+    })
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ResultsReviewTab assessmentUuid="asm-1" activityUuid="act-1" courseUuid="course-1" />
+      </QueryClientProvider>,
+    )
+    const text = container.textContent ?? ''
+    expect(text).toContain('66,67%')
+    expect(text).not.toMatch(/100\.0%/)
+    expect(text).toContain('kindLabels.choice')
+    expect(text).not.toContain('CHOICE')
   })
 })

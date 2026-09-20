@@ -65,3 +65,15 @@ describe('getCourseReadiness', () => {
     expect(mocks.apiJson.mock.calls.some(call => String(call[0]).includes('curriculum'))).toBe(false)
   })
 })
+
+// UX-137: the review page keeps «Исправить» after a blocker is fixed in
+// another tab; the client disables focus refetch globally, so the readiness
+// query opts back in and is always stale when the teacher returns.
+describe('courseReadinessQueryOptions', () => {
+  it('refetches on window focus', async () => {
+    const { courseReadinessQueryOptions } = await import('@components/Dashboard/Courses/courseWorkflowUi')
+    const options = courseReadinessQueryOptions(courseId)
+    expect(options.refetchOnWindowFocus).toBe(true)
+    expect(options.staleTime).toBe(0)
+  })
+})

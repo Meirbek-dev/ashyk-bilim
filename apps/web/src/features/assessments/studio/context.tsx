@@ -164,9 +164,14 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
   const isEditable = assessment ? isAssessmentEditable(assessment.lifecycle) : false
 
   const issues = readinessQuery.data?.issues
+  // Inline field markers and the publish gate see blockers only; policy
+  // warnings (UX-137: past due, cutoff before due, penalty with late off)
+  // show in the readiness strip and never disable «Опубликовать».
   const validationIssues = useMemo(() => {
     if (!issues) return []
-    return issues.map(issue => ({
+    return issues
+      .filter(issue => issue.severity !== 'warning')
+      .map(issue => ({
       code: issue.code,
       message: localizeIssue(issue),
       ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),

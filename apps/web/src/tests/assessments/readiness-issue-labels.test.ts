@@ -41,6 +41,9 @@ const SERVER_READINESS_CODES = [
   'matching.right_duplicate',
   'open_text.min_words_invalid',
   'open_text.prompt_missing',
+  'policy.cutoff_before_due',
+  'policy.due_at_past',
+  'policy.penalty_without_late',
   'schedule.after_due_at',
 ]
 
