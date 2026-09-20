@@ -787,8 +787,10 @@ impl GradingService {
         })
     }
 
-    /// Per-item statistics over graded/published work (legacy
-    /// `get_item_analytics`).
+    /// Per-item statistics over the grade-of-record attempts — released
+    /// scores only, the analytics drilldown's population (`GradeKey::quiz`,
+    /// UX-144); an item still awaiting manual review has no outcome, as in
+    /// `analytics::assessments::item_correct`. Legacy `get_item_analytics`.
     pub async fn item_analytics(
         &self,
         actor: &Actor,
@@ -797,15 +799,21 @@ impl GradingService {
         self.grader_context(actor, assessment_id).await?;
         let items = self.items(assessment_id).await?;
         let graded = ab_db::submissions::list_releasable(&self.pool, assessment_id).await?;
-        let breakdowns: Vec<(Option<f64>, GradingBreakdown)> = graded
+        let breakdowns: Vec<(f64, GradingBreakdown)> = graded
             .iter()
-            .map(|s| (s.final_score, GradingBreakdown::from_value(&s.grading)))
+            .filter_map(|s| {
+                let score = s.grade_key().score?;
+                Some((score, GradingBreakdown::from_value(&s.grading)))
+            })
             .collect();
 
         let mut score_pcts: HashMap<AssessmentItemId, Vec<f64>> = HashMap::new();
         let mut corrects: HashMap<AssessmentItemId, Vec<bool>> = HashMap::new();
         for (_, breakdown) in &breakdowns {
             for gi in &breakdown.items {
+                if gi.needs_manual_review {
+                    continue;
+                }
                 let pct = if gi.max_score > 0.0 {
                     gi.score / gi.max_score * 100.0
                 } else {
@@ -824,11 +832,7 @@ impl GradingService {
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
             let cutoff = ((count(breakdowns.len()) * 0.27) as usize).max(1);
             let mut order: Vec<usize> = (0..breakdowns.len()).collect();
-            order.sort_by(|a, b| {
-                let sa = breakdowns[*a].0.unwrap_or(0.0);
-                let sb = breakdowns[*b].0.unwrap_or(0.0);
-                sa.total_cmp(&sb)
-            });
+            order.sort_by(|a, b| breakdowns[*a].0.total_cmp(&breakdowns[*b].0));
             let bottom = &order[..cutoff];
             let top = &order[order.len() - cutoff..];
             let mut top_correct: HashMap<AssessmentItemId, i64> = HashMap::new();
@@ -836,7 +840,7 @@ impl GradingService {
             for (group, tally) in [(top, &mut top_correct), (bottom, &mut bottom_correct)] {
                 for &index in group {
                     for gi in &breakdowns[index].1.items {
-                        if let Some(c) = gi.correct {
+                        if let Some(c) = gi.correct.filter(|_| !gi.needs_manual_review) {
                             *tally.entry(gi.item_id).or_default() += i64::from(c);
                         }
                     }

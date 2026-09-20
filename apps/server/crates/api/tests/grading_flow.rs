@@ -497,6 +497,20 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
         .await;
     assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
     assert_eq!(saved.json()["final_score"], 75.0);
+    // UX-144: item-analytics count released grades only — carol's saved
+    // (unreleased) grade and bob's returned one are not responses yet.
+    let unreleased = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/item-analytics"),
+        )
+        .await;
+    assert_eq!(
+        unreleased.json()[0]["response_count"],
+        1,
+        "{}",
+        unreleased.text()
+    );
     let released = app
         .post_as(
             &teacher,

@@ -621,7 +621,13 @@ struct ItemTally {
     weak_correct: i64,
 }
 
+/// The item's outcome, if it has one: an item still awaiting manual review
+/// carries a placeholder score, not a result (UX-144) — it is excluded
+/// from accuracy / impact, not counted as wrong.
 fn item_correct(item: &crate::grading::breakdown::GradedItem) -> Option<bool> {
+    if item.needs_manual_review {
+        return None;
+    }
     item.correct
         .or_else(|| (item.max_score > 0.0).then_some(item.score >= item.max_score))
 }
@@ -1123,7 +1129,9 @@ pub fn build_detail(
                     crate::grading::breakdown::GradingBreakdown::from_value(&s.grading)
                         .items
                         .iter()
-                        .any(|i| i.item_id.to_string() == q.question_id)
+                        .any(|i| {
+                            i.item_id.to_string() == q.question_id && item_correct(i).is_some()
+                        })
                 })
                 .count(),
         );

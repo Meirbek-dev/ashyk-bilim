@@ -408,6 +408,19 @@ pub struct GradeKey {
 }
 
 impl GradeKey {
+    /// A quiz attempt is released once `published` with a score — the one
+    /// rule behind [`SubmissionRow::grade_key`], `SubmissionInfoRow::grade_key`
+    /// and every analytics / studio population (BUG-194, UX-144).
+    #[must_use]
+    pub fn quiz(status: SubmissionStatus, final_score: Option<f64>, attempt_number: i32) -> Self {
+        let released = status == SubmissionStatus::Published && final_score.is_some();
+        Self {
+            released,
+            score: final_score.filter(|_| released),
+            attempt_number,
+        }
+    }
+
     #[must_use]
     pub fn order(self, other: Self) -> std::cmp::Ordering {
         self.released
@@ -425,12 +438,7 @@ impl SubmissionRow {
     /// A quiz attempt is released once `published` with a score.
     #[must_use]
     pub fn grade_key(&self) -> GradeKey {
-        let released = self.status == SubmissionStatus::Published && self.final_score.is_some();
-        GradeKey {
-            released,
-            score: self.final_score.filter(|_| released),
-            attempt_number: self.attempt_number,
-        }
+        GradeKey::quiz(self.status, self.final_score, self.attempt_number)
     }
 }
 

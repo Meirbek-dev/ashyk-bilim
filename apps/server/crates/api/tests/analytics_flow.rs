@@ -1518,6 +1518,54 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
         .expect("Q1 item");
     assert_eq!(q1_item["population_count"], 1, "{q1_item}");
     assert_eq!(q1_item["impacted_count"], 0, "{q1_item}");
+    // UX-144: the essay was published under an override without being
+    // scored — no outcome, so it is neither a «critical» question nor an
+    // impacted item.
+    assert!(
+        body["question_breakdown"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|q| q["question_id"] != essay_id),
+        "{}",
+        body["question_breakdown"]
+    );
+    assert!(
+        body["item_analytics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|i| i["item_key"] != essay_id),
+        "{}",
+        body["item_analytics"]
+    );
+    // UX-144: the studio Results item-analytics count the same population —
+    // the published attempt only, not the returned / saved retakes, and the
+    // unscored essay has no responses.
+    let studio = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{quiz_id}/item-analytics"),
+        )
+        .await;
+    assert_eq!(studio.status, StatusCode::OK, "{}", studio.text());
+    let studio = studio.json();
+    let choice = studio
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["item_id"] == choice_id)
+        .expect("Q1 studio row");
+    assert_eq!(choice["response_count"], 1, "{choice}");
+    assert_eq!(choice["correct_pct"], 100.0, "{choice}");
+    let essay = studio
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["item_id"] == essay_id)
+        .expect("essay studio row");
+    assert_eq!(essay["response_count"], 0, "{essay}");
+    assert!(essay["avg_score_pct"].is_null(), "{essay}");
 
     let pass_rate = app
         .get_as(

@@ -216,12 +216,7 @@ impl SubmissionInfoRow {
     /// [`crate::submissions::SubmissionRow::grade_key`].
     #[must_use]
     pub fn grade_key(&self) -> crate::submissions::GradeKey {
-        let released = self.status == SubmissionStatus::Published && self.final_score.is_some();
-        crate::submissions::GradeKey {
-            released,
-            score: self.final_score.filter(|_| released),
-            attempt_number: self.attempt_number,
-        }
+        crate::submissions::GradeKey::quiz(self.status, self.final_score, self.attempt_number)
     }
 }
 
