@@ -10,6 +10,7 @@ use axum_extra::extract::cookie::{Cookie, SameSite};
 use secrecy::SecretString;
 use serde::Deserialize;
 
+use crate::detach::detached;
 use crate::dto::auth::{
     ChangePasswordRequest, LoginRequest, RegisterRequest, SessionInfo, SessionSummary,
     VerifyEmailRequest,
@@ -127,29 +128,34 @@ pub async fn register(
             .get(axum::http::header::ACCEPT_LANGUAGE)
             .and_then(|v| v.to_str().ok()),
     );
-    idempotent_anonymous(
-        &state.pool,
-        "register",
-        &headers,
-        &body,
-        || async {
-            let profile = state
-                .identity
-                .register(NewAccount {
-                    username: request.username,
-                    email: request.email,
-                    password: Some(SecretString::from(request.password)),
-                    first_name: request.first_name,
-                    last_name: request.last_name,
-                    ip,
-                    user_agent: user_agent(&headers),
-                    language,
-                })
-                .await?;
-            Ok((StatusCode::CREATED, UserProfile::from(profile)))
-        },
-        |profile: &UserProfile| profile.id,
-    )
+    // Lookup → Zitadel create → `users` row → code → key, as one unit the
+    // client cannot abort by dropping the connection (BUG-213).
+    detached(async move {
+        idempotent_anonymous(
+            &state.pool,
+            "register",
+            &headers,
+            &body,
+            || async {
+                let profile = state
+                    .identity
+                    .register(NewAccount {
+                        username: request.username,
+                        email: request.email,
+                        password: Some(SecretString::from(request.password)),
+                        first_name: request.first_name,
+                        last_name: request.last_name,
+                        ip,
+                        user_agent: user_agent(&headers),
+                        language,
+                    })
+                    .await?;
+                Ok((StatusCode::CREATED, UserProfile::from(profile)))
+            },
+            |profile: &UserProfile| profile.id,
+        )
+        .await
+    })
     .await
 }
 

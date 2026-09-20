@@ -609,16 +609,23 @@ impl IdentityService {
             &format!("{first_name} {last_name}"),
             account.language.map(Language::locale),
         )
-        .await?;
-        let Some(user_id) = inserted else {
-            // Lost a race since `require_unique`: undo the Zitadel side.
-            if let Err(err) = self.zitadel.delete_user(&created.user_id).await {
-                tracing::warn!(%err, "compensating zitadel user delete failed");
+        .await;
+        let user_id = match inserted {
+            Ok(Some(user_id)) => user_id,
+            // Lost a race since `require_unique`, or the insert itself
+            // failed: undo the Zitadel side — a Zitadel user without a row
+            // burns the login name for good (BUG-213).
+            other => {
+                if let Err(err) = self.zitadel.delete_user(&created.user_id).await {
+                    tracing::warn!(%err, "compensating zitadel user delete failed");
+                }
+                return Err(other.err().unwrap_or_else(|| {
+                    Error::app(
+                        ErrorCode::UsernameTaken,
+                        "username or email is already taken",
+                    )
+                }));
             }
-            return Err(Error::app(
-                ErrorCode::UsernameTaken,
-                "username or email is already taken",
-            ));
         };
         ab_db::identity::insert_auth_audit(
             &self.pool,

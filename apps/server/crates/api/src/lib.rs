@@ -6,6 +6,7 @@
 //! in [`dto`]; database row types never derive `Serialize`.
 
 pub mod app;
+pub mod detach;
 pub mod dto;
 pub mod error;
 pub mod extract;

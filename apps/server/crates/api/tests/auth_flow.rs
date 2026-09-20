@@ -1578,3 +1578,138 @@ async fn code_less_login_in_flight_during_totp_activation_is_mfa_required(pool: 
         "no code-less session opened"
     );
 }
+
+// ── BUG-213/214: a dropped connection never leaves a half-done mutation ────
+// `app.send` drives the router directly, so dropping the request future is
+// exactly what hyper does when the client resets the socket mid-request:
+// the handler must have handed the work to a task of its own by then.
+
+async fn users_named(app: &TestApp, username: &str) -> i64 {
+    sqlx::query_scalar("SELECT count(*) FROM users WHERE username = $1")
+        .bind(username)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+}
+
+async fn audited(app: &TestApp, event: &str) -> i64 {
+    sqlx::query_scalar("SELECT count(*) FROM auth_audit_log WHERE event = $1")
+        .bind(event)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+}
+
+/// Polls `reached` every 200 µs while `request` runs and drops the request
+/// future the moment it reports true (a request that completes first is
+/// asserted with `on_done` instead).
+async fn drop_request_when<R>(
+    request: impl std::future::Future<Output = R>,
+    mut reached: impl AsyncFnMut() -> bool,
+    on_done: impl FnOnce(R),
+) {
+    let mut request = std::pin::pin!(request);
+    loop {
+        tokio::select! {
+            biased;
+            () = tokio::time::sleep(std::time::Duration::from_micros(200)) => {
+                if reached().await { break; }
+            }
+            response = &mut request => { on_done(response); break; }
+        }
+    }
+}
+
+async fn wait_until(what: &str, mut done: impl AsyncFnMut() -> bool) {
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+    while !done().await {
+        assert!(tokio::time::Instant::now() < deadline, "{what}");
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+}
+
+/// BUG-213: the connection drops while Zitadel is still answering (its user
+/// exists, our row does not yet) and again once our row exists (code and
+/// key still pending). Either way the account, the code and the key land,
+/// and the same-key retry replays the 201 instead of 409 `username-taken`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn registration_dropped_mid_flight_still_completes_and_replays(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({ "id": "em-3" })))
+        .expect(2)
+        .mount(&app.resend)
+        .await;
+    for (username, drop_once_row_exists) in [("dropz", false), ("dropr", true)] {
+        Mock::given(method("POST"))
+            .and(path("/v2/users/human"))
+            .and(wiremock::matchers::body_partial_json(
+                serde_json::json!({ "username": username }),
+            ))
+            .respond_with(
+                ResponseTemplate::new(201)
+                    .set_delay(std::time::Duration::from_millis(150))
+                    .set_body_json(serde_json::json!({
+                        "userId": format!("z-{username}"),
+                        "details": {},
+                        "emailCode": "CODE42"
+                    })),
+            )
+            .expect(1)
+            .mount(&app.zitadel)
+            .await;
+        let body = register_body(username, &format!("{username}@example.com"));
+        let key = format!("signup-{username}");
+        let send = || {
+            app.send(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/auth/register")
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header("Idempotency-Key", &key)
+                    .body(Body::from(body.to_string()))
+                    .expect("request build"),
+            )
+        };
+        drop_request_when(
+            send(),
+            async || {
+                if drop_once_row_exists {
+                    users_named(&app, username).await == 1
+                } else {
+                    app.zitadel
+                        .received_requests()
+                        .await
+                        .unwrap_or_default()
+                        .iter()
+                        .any(|r| {
+                            r.url.path() == "/v2/users/human"
+                                && String::from_utf8_lossy(&r.body).contains(username)
+                        })
+                }
+            },
+            |response| assert_eq!(response.status, StatusCode::CREATED, "{}", response.text()),
+        )
+        .await;
+        wait_until("registration aborted with the connection", async || {
+            sqlx::query_scalar::<_, i32>("SELECT status_code FROM idempotency_keys WHERE key = $1")
+                .bind(format!("register:{key}"))
+                .fetch_optional(&app.pool)
+                .await
+                .unwrap()
+                == Some(201)
+        })
+        .await;
+        assert_eq!(users_named(&app, username).await, 1);
+        let replay = send().await;
+        assert_eq!(replay.status, StatusCode::CREATED, "{}", replay.text());
+        assert_eq!(replay.json()["username"], username);
+    }
+    assert_eq!(
+        app.resend.received_requests().await.unwrap().len(),
+        2,
+        "one verification code per account"
+    );
+    assert_eq!(audited(&app, "account-created").await, 2);
+}

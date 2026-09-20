@@ -6,6 +6,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use secrecy::SecretString;
 
+use crate::detach::detached;
 use crate::dto::courses::CoursePage;
 use crate::dto::search::UserHit;
 use crate::dto::users::{
@@ -95,24 +96,28 @@ pub async fn create_user(
     ClientIp(ip): ClientIp,
     ValidJson(request): ValidJson<CreateUserRequest>,
 ) -> ApiResult<(StatusCode, Json<AdminUser>)> {
-    let user = state
-        .identity
-        .admin_create_user(
-            &actor,
-            NewAccount {
-                username: request.username,
-                email: request.email,
-                password: request.password.map(SecretString::from),
-                first_name: request.first_name,
-                last_name: request.last_name,
-                ip,
-                user_agent: user_agent(&headers),
-                language: None,
-            },
-            request.roles.as_deref().unwrap_or_default(),
-        )
-        .await?;
-    Ok((StatusCode::CREATED, Json(user.into())))
+    // Zitadel create → `users` row → roles as one unit (BUG-213).
+    detached(async move {
+        let user = state
+            .identity
+            .admin_create_user(
+                &actor,
+                NewAccount {
+                    username: request.username,
+                    email: request.email,
+                    password: request.password.map(SecretString::from),
+                    first_name: request.first_name,
+                    last_name: request.last_name,
+                    ip,
+                    user_agent: user_agent(&headers),
+                    language: None,
+                },
+                request.roles.as_deref().unwrap_or_default(),
+            )
+            .await?;
+        Ok((StatusCode::CREATED, Json(user.into())))
+    })
+    .await
 }
 
 /// Admin listing of all users with roles (requires `platform:read:platform`).

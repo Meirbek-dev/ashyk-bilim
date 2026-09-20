@@ -29,9 +29,9 @@ pub struct RegisterRequest {
     pub email: String,
     #[garde(length(min = 8, max = 200))]
     pub password: String,
-    #[garde(length(min = 1, max = 100))]
+    #[garde(length(chars, min = 1, max = 100))]
     pub first_name: String,
-    #[garde(length(min = 1, max = 100))]
+    #[garde(length(chars, min = 1, max = 100))]
     pub last_name: String,
 }
 
