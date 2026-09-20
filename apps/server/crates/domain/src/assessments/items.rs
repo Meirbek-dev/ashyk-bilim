@@ -20,6 +20,9 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 pub const ITEM_BODY_SCHEMA_VERSION: u32 = 1;
+/// UX-143: item body size caps, refused at write time.
+pub const MAX_PROMPT_CHARS: usize = 20_000;
+pub const MAX_BODY_ENTRIES: usize = 200;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ChoiceOption {
@@ -551,14 +554,45 @@ impl ItemBody {
     /// whose options share an id can never grade right — 422
     /// `choice.option_id_duplicate` on `body.options`.
     pub fn validate(&self) -> ab_core::Result<()> {
+        let fail = |field: &str, code: &str, message: &str| {
+            Err(ab_core::Error::validation(vec![ab_core::FieldError {
+                field: field.into(),
+                code: code.into(),
+                message: message.into(),
+            }]))
+        };
         if let Self::Choice(body) = self
             && has_duplicates(body.options.iter().map(|o| o.id.as_str()))
         {
-            return Err(ab_core::Error::validation(vec![ab_core::FieldError {
-                field: "body.options".into(),
-                code: "choice.option_id_duplicate".into(),
-                message: "option ids must be unique".into(),
-            }]));
+            return fail(
+                "body.options",
+                "choice.option_id_duplicate",
+                "option ids must be unique",
+            );
+        }
+        // UX-143: size caps — a prompt is bounded like a description, and a
+        // list of options/fields/pairs like the item count.
+        let (prompt, entries) = match self {
+            Self::Choice(b) => (&b.prompt, b.options.len()),
+            Self::OpenText(b) => (&b.prompt, 0),
+            Self::Form(b) => (&b.prompt, b.fields.len()),
+            Self::Code(b) => (&b.prompt, 0),
+            Self::Matching(b) => (&b.prompt, b.pairs.len()),
+            Self::MatchingLearner(b) => (&b.prompt, b.left.len().max(b.right.len())),
+        };
+        if prompt.chars().count() > MAX_PROMPT_CHARS {
+            return fail(
+                "body.prompt",
+                "too-long",
+                "a prompt holds at most 20000 characters",
+            );
+        }
+        if entries > MAX_BODY_ENTRIES {
+            return fail(
+                "body",
+                "limit-exceeded",
+                "an item holds at most 200 options, fields or pairs",
+            );
         }
         Ok(())
     }

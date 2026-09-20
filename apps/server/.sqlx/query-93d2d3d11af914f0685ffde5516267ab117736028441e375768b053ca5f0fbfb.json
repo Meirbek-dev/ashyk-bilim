@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE course_visible(courses, $2, $1)\n             AND (NOT $5 OR $1 OR creator_id = $2\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = courses.id AND ra.user_id = $2\n                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))\n             AND ($6::text IS NULL OR name ILIKE '%' || $6 || '%'\n                  OR description ILIKE '%' || $6 || '%')\n             AND CASE $7::text\n                   WHEN 'drafts' THEN NOT public\n                   WHEN 'published' THEN public\n                   WHEN 'recent' THEN updated_at > now() - interval '7 days'\n                   WHEN 'attention' THEN\n                     (public AND NOT EXISTS (SELECT 1 FROM activities a\n                                             WHERE a.course_id = courses.id AND a.published))\n                     OR (NOT public AND created_at < now() - interval '30 days')\n                   ELSE true\n                 END\n             AND ($3::uuid IS NULL OR CASE WHEN $8::bool\n                   THEN (name, id) > (SELECT c.name, c.id FROM courses c WHERE c.id = $3)\n                   ELSE (updated_at, id) < (SELECT c.updated_at, c.id FROM courses c WHERE c.id = $3)\n                 END)\n           ORDER BY CASE WHEN $8 THEN name END ASC,\n                    CASE WHEN $8 THEN id END ASC,\n                    CASE WHEN NOT $8 THEN updated_at END DESC,\n                    id DESC\n           LIMIT $4",
+  "query": "UPDATE courses SET\n               name = COALESCE($2, name),\n               description = COALESCE($3, description),\n               about = COALESCE($4, about),\n               tags = COALESCE($5, tags),\n               open_to_contributors = COALESCE($6, open_to_contributors)\n           WHERE id = $1\n           RETURNING id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"",
   "describe": {
     "columns": [
       {
@@ -123,13 +123,11 @@
     ],
     "parameters": {
       "Left": [
-        "Bool",
         "Uuid",
-        "Uuid",
-        "Int8",
-        "Bool",
         "Text",
         "Text",
+        "Text",
+        "TextArray",
         "Bool"
       ]
     },
@@ -148,5 +146,5 @@
       null
     ]
   },
-  "hash": "50baf5e84f57374d0b7e3dee830ab61c67a53d2c01264f2afeffbd5636fa9064"
+  "hash": "93d2d3d11af914f0685ffde5516267ab117736028441e375768b053ca5f0fbfb"
 }

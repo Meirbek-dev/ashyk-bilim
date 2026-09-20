@@ -922,6 +922,7 @@ function ItemCanvas({
   ]).map(classifyValidationIssue)
   const itemMetadataIssues = itemIssueList.filter(issue => issue.area === 'item-metadata')
   const hasMetadataIssue = (field: string) => itemMetadataIssues.some(issue => issue.field === field)
+  const titleIssue = itemMetadataIssues.find(issue => issue.field === 'title')
   const itemIndex = items.findIndex(i => i.item_uuid === item.item_uuid)
 
   return (
@@ -983,6 +984,11 @@ function ItemCanvas({
               className={cn(hasMetadataIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
               onChange={e => onChange({ ...item, title: e.target.value })}
             />
+            {titleIssue ? (
+              <p className="text-sm text-amber-700 dark:text-amber-400" role="alert">
+                <InlineIssueMessage issue={titleIssue} />
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="canvas-item-points">{t('pointsLabel')}</Label>

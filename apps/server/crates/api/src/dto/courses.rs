@@ -102,9 +102,12 @@ pub struct UpdateCourseRequest {
     pub tags: Option<Vec<String>>,
     #[garde(skip)]
     pub open_to_contributors: Option<bool>,
-    /// Finalized `course-thumbnail` upload to claim as the thumbnail.
+    /// Finalized `course-thumbnail` upload to claim as the thumbnail;
+    /// `null` removes the current one.
     #[garde(skip)]
-    pub thumbnail_upload_id: Option<uuid::Uuid>,
+    #[serde(default, deserialize_with = "super::double_option")]
+    #[schema(value_type = Option<uuid::Uuid>)]
+    pub thumbnail_upload_id: Option<Option<uuid::Uuid>>,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]

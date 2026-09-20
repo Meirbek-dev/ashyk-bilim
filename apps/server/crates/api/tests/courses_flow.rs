@@ -343,6 +343,36 @@ async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
         released,
         "replaced thumbnail must re-enter the reaper's queue"
     );
+
+    // UX-143: `null` removes the thumbnail and releases its upload.
+    let removed = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "thumbnail_upload_id": null }),
+        )
+        .await;
+    assert_eq!(removed.status, StatusCode::OK, "{}", removed.text());
+    assert!(removed.json()["thumbnail_key"].is_null());
+    let released: bool =
+        sqlx::query_scalar("SELECT expires_at IS NOT NULL FROM uploads WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&second).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert!(released, "removed thumbnail must be released");
+    // Absent = untouched (an unrelated PATCH keeps the thumbnail).
+    let (third, third_key) = finalized_upload(&app, &teacher, "course-thumbnail").await;
+    app.patch_as(
+        &teacher,
+        &path,
+        &serde_json::json!({ "thumbnail_upload_id": third }),
+    )
+    .await;
+    let renamed = app
+        .patch_as(&teacher, &path, &serde_json::json!({ "name": "Thumbs 2" }))
+        .await;
+    assert_eq!(renamed.json()["thumbnail_key"], third_key);
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -415,6 +445,15 @@ async fn mine_listing_filters_sorts_and_summarizes(pool: PgPool) {
         .await;
     assert_eq!(searched.json()["items"].as_array().unwrap().len(), 1);
     assert_eq!(searched.json()["summary"]["total"], 3);
+    // UX-143: `q` is a literal substring — `%` / `_` are not wildcards.
+    let wildcard = app
+        .get_as(&teacher, "/api/v2/courses?mine=true&q=%25")
+        .await;
+    assert!(wildcard.json()["items"].as_array().unwrap().is_empty());
+    let underscore = app
+        .get_as(&teacher, "/api/v2/courses?mine=true&q=Alph_")
+        .await;
+    assert!(underscore.json()["items"].as_array().unwrap().is_empty());
 
     // A platform updater's `mine` is everything; a learner's is empty.
     let staff = app

@@ -40,9 +40,10 @@ pub struct CourseChanges {
     pub about: Option<String>,
     pub tags: Option<Vec<String>>,
     pub open_to_contributors: Option<bool>,
-    /// Finalized `course-thumbnail` upload to claim; the replaced object is
-    /// released for reaping.
-    pub thumbnail_upload_id: Option<Uuid>,
+    /// `Some(Some(id))`: claim that finalized `course-thumbnail` upload;
+    /// `Some(None)`: remove the thumbnail. The replaced object is released
+    /// for reaping either way.
+    pub thumbnail_upload_id: Option<Option<Uuid>>,
 }
 
 /// `GET /courses` filters (see `ab_db::catalog::CourseFilter`).
@@ -209,7 +210,7 @@ impl CoursesService {
             .map(|n| ab_core::required_str("name", n))
             .transpose()?;
         let thumbnail_key = match changes.thumbnail_upload_id {
-            Some(upload_id) => Some(
+            Some(Some(upload_id)) => Some(Some(
                 claim_upload(
                     &self.pool,
                     actor,
@@ -218,11 +219,12 @@ impl CoursesService {
                     "thumbnail_upload_id",
                 )
                 .await?,
-            ),
+            )),
+            Some(None) => Some(None),
             None => None,
         };
         let tags = changes.tags.as_deref().map(normalize_tags);
-        let updated = ab_db::catalog::update_course(
+        ab_db::catalog::update_course(
             &self.pool,
             id,
             ab_db::catalog::CourseChanges {
@@ -231,22 +233,27 @@ impl CoursesService {
                 about: changes.about.as_deref().map(str::trim),
                 tags: tags.as_deref(),
                 open_to_contributors: changes.open_to_contributors,
-                thumbnail_key: thumbnail_key.as_deref(),
             },
         )
         .await?
         .ok_or_else(|| Error::not_found("course"))?;
-        if thumbnail_key.is_some()
-            && let Some(old) = course.thumbnail_key.as_deref()
+        // UX-143: the key the UPDATE actually replaced is released — not the
+        // one this request read, which a concurrent PATCH may have replaced.
+        if let Some(key) = thumbnail_key
+            && let Some(old) =
+                ab_db::catalog::set_course_thumbnail(&self.pool, id, key.as_deref()).await?
+            && Some(old.as_str()) != key.as_deref()
         {
             ab_db::uploads::release_reference_by_key(
                 &self.pool,
-                old,
+                &old,
                 UNREFERENCED_GRACE.as_secs_f64(),
             )
             .await?;
         }
-        Ok(updated)
+        ab_db::catalog::get_course(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))
     }
 
     /// Publish/unpublish (legacy `CourseLifecycleUpdate` semantics).

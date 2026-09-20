@@ -211,6 +211,10 @@ export function NativeItemAuthor({
     const serialized = serializeItemState(itemState)
     if (serialized === lastSavedItemRef.current) return
     setItemSaveState('dirty')
+    // UX-143 (UX-120 pattern): a blank item title is flagged inline
+    // (`item.title_missing`); the server would only 422 it, so nothing is
+    // PATCHed until it is back.
+    if (!itemState.title.trim()) return
     const timeout = setTimeout(() => {
       void saveItem(itemState)
     }, 900)

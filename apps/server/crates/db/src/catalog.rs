@@ -131,6 +131,15 @@ pub async fn list_courses(
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
     let by_name = filter.sort == "name";
+    // UX-143: `q` is a literal substring — escape the LIKE metacharacters.
+    let pattern = filter.q.map(|q| {
+        format!(
+            "%{}%",
+            q.replace('\\', "\\\\")
+                .replace('%', "\\%")
+                .replace('_', "\\_")
+        )
+    });
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
@@ -148,8 +157,7 @@ pub async fn list_courses(
                   OR EXISTS (SELECT 1 FROM resource_authors ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $2
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))
-             AND ($6::text IS NULL OR name ILIKE '%' || $6 || '%'
-                  OR description ILIKE '%' || $6 || '%')
+             AND ($6::text IS NULL OR name ILIKE $6 OR description ILIKE $6)
              AND CASE $7::text
                    WHEN 'drafts' THEN NOT public
                    WHEN 'published' THEN public
@@ -174,7 +182,7 @@ pub async fn list_courses(
         cursor.map(|c| c.0),
         limit,
         filter.mine,
-        filter.q,
+        pattern,
         filter.preset,
         by_name
     )
@@ -267,7 +275,6 @@ pub struct CourseChanges<'a> {
     pub about: Option<&'a str>,
     pub tags: Option<&'a [String]>,
     pub open_to_contributors: Option<bool>,
-    pub thumbnail_key: Option<&'a str>,
 }
 
 pub async fn update_course(
@@ -282,8 +289,7 @@ pub async fn update_course(
                description = COALESCE($3, description),
                about = COALESCE($4, about),
                tags = COALESCE($5, tags),
-               open_to_contributors = COALESCE($6, open_to_contributors),
-               thumbnail_image_key = COALESCE($7, thumbnail_image_key)
+               open_to_contributors = COALESCE($6, open_to_contributors)
            WHERE id = $1
            RETURNING id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
@@ -299,12 +305,32 @@ pub async fn update_course(
         changes.description,
         changes.about,
         changes.tags,
-        changes.open_to_contributors,
-        changes.thumbnail_key
+        changes.open_to_contributors
     )
     .fetch_optional(pool)
     .await?;
     Ok(row)
+}
+
+/// Set or clear (`None`) the thumbnail; returns the key it replaced.
+///
+/// The caller releases exactly that upload (UX-143: two concurrent PATCHes
+/// each released the key they had read, leaking the loser's).
+pub async fn set_course_thumbnail(
+    pool: &PgPool,
+    id: CourseId,
+    key: Option<&str>,
+) -> Result<Option<String>> {
+    let row = sqlx::query!(
+        r#"UPDATE courses SET thumbnail_image_key = $2
+           WHERE id = $1
+           RETURNING (SELECT c.thumbnail_image_key FROM courses c WHERE c.id = $1) AS "previous?""#,
+        id.0,
+        key
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.and_then(|r| r.previous))
 }
 
 /// Flip visibility; returns the previous value (`None` if no such course).
