@@ -1194,6 +1194,15 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         "{}",
         stranger.text()
     );
+    // …and the read says the same thing as an unknown id (no subject detail).
+    let peek = app
+        .get_as(
+            &bob,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}"),
+        )
+        .await;
+    assert_eq!(peek.status, StatusCode::NOT_FOUND, "{}", peek.text());
+    assert_eq!(peek.json()["detail"], "remediation session not found");
     let passed = app
         .post_as(
             &alice,

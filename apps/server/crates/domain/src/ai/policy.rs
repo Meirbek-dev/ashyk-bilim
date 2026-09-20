@@ -64,8 +64,21 @@ impl AiService {
             .await?
             .ok_or_else(|| Error::not_found("remediation session"))?;
         if session.student_user_id != actor.user_id {
+            // One 404 detail whatever fails underneath — the session id must
+            // not leak that it exists (UX-134).
             let subject = self.load_subject_by(session.subject).await?;
-            self.require_subject_access(actor, &subject).await?;
+            self.require_subject_access(actor, &subject)
+                .await
+                .map_err(|e| {
+                    if matches!(
+                        e.code(),
+                        ab_core::ErrorCode::NotFound | ab_core::ErrorCode::Forbidden
+                    ) {
+                        Error::not_found("remediation session")
+                    } else {
+                        e
+                    }
+                })?;
         }
         Ok(session)
     }
