@@ -333,7 +333,15 @@ async fn touch_in_flight_never_outlives_a_revoke_or_a_grant_rewrite(pool: PgPool
     let victim = app.mint_session_for(user, &[]).await;
     let other = app.mint_session_for(user, &[]).await;
     let list = app.get_as(&other, "/api/v2/auth/sessions").await;
-    let handle = list.json().as_array().unwrap()[0]["handle"]
+    // The list order is not stable for two sessions minted in the same
+    // millisecond: the victim is the row that is not `other` itself.
+    let handle = list
+        .json()
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["current"] == false)
+        .unwrap()["handle"]
         .as_str()
         .unwrap()
         .to_owned();
