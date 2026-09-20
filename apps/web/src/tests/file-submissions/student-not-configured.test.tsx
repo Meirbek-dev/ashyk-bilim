@@ -12,7 +12,7 @@ import { APIError } from '@/lib/api/assertSuccess'
 
 const mocks = vi.hoisted(() => ({ getActivity: vi.fn(), can: vi.fn(() => false) }))
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
+vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key, useLocale: () => 'ru' }))
 vi.mock('@components/ui/AppLink', () => ({ default: (props: React.ComponentProps<'a'>) => <a {...props} /> }))
 vi.mock('@/hooks/useSession', () => ({ useSession: () => ({ can: mocks.can }) }))
 vi.mock('@/hooks/useApiError', () => ({

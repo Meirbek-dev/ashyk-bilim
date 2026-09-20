@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useFormatter: () => ({ number: (n: number) => String(n), dateTime: () => '' }),
+  useLocale: () => 'ru',
 }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }))
 vi.mock('@components/ui/AppLink', () => ({ default: (props: React.ComponentProps<'a'>) => <a {...props} /> }))
@@ -33,10 +34,17 @@ vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
 vi.mock('@/hooks/useSession', () => ({ useSession: () => ({ user: { id: 'u1' }, can: () => false }) }))
 vi.mock('@/hooks/useContributorStatus', () => ({ useContributorStatus: () => ({ contributorStatus: null }) }))
 vi.mock('@/hooks/useApiError', () => ({
-  useApiError: () => ({ toastApiError: mocks.toastApiError, handleApiError: () => ({ message: '', showRetry: false }) }),
+  useApiError: () => ({
+    toastApiError: mocks.toastApiError,
+    handleApiError: () => ({ message: '', showRetry: false }),
+  }),
 }))
 vi.mock('@/features/assessments/hooks/useAssessment', () => ({
-  useAssessmentAttempt: () => ({ vm: { surface: 'ATTEMPT', kind: 'TYPE_CUSTOM', vm: mocks.vm }, isLoading: false, error: null }),
+  useAssessmentAttempt: () => ({
+    vm: { surface: 'ATTEMPT', kind: 'TYPE_CUSTOM', vm: mocks.vm },
+    isLoading: false,
+    error: null,
+  }),
 }))
 vi.mock('@/features/assessments/shell/ActivityLayoutContext', () => ({
   useActivityLayout: () => ({
@@ -106,7 +114,9 @@ describe('disabledReasonOf', () => {
   it('reads the DisabledReason out of a start 403 and ignores everything else', () => {
     expect(disabledReasonOf(gate403())).toBe('REMEDIATION_REQUIRED')
     expect(disabledReasonOf(new APIError({ code: 'forbidden', status: 403, message: 'denied' }))).toBeNull()
-    expect(disabledReasonOf(new APIError({ code: 'conflict', status: 409, message: 'MAX_ATTEMPTS_REACHED' }))).toBeNull()
+    expect(
+      disabledReasonOf(new APIError({ code: 'conflict', status: 409, message: 'MAX_ATTEMPTS_REACHED' })),
+    ).toBeNull()
     expect(disabledReasonOf(new Error('REMEDIATION_REQUIRED'))).toBeNull()
   })
 })
@@ -135,9 +145,17 @@ describe('InlineAssessmentWorkspace (BUG-158)', () => {
 
 describe('InlineAssessmentWorkspace pending retake (UX-097)', () => {
   it('keeps the bar on «pending grade» and offers the retake on the card', () => {
-    mocks.vm = { ...base, recommendedAction: 'start', releaseState: 'AWAITING_RELEASE', canSubmit: true, canStart: true }
+    mocks.vm = {
+      ...base,
+      recommendedAction: 'start',
+      releaseState: 'AWAITING_RELEASE',
+      canSubmit: true,
+      canStart: true,
+    }
     renderWorkspace()
-    expect(mocks.setBottomBarAction).toHaveBeenLastCalledWith(expect.objectContaining({ label: 'pendingGrade', disabled: true }))
+    expect(mocks.setBottomBarAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({ label: 'pendingGrade', disabled: true }),
+    )
     expect(screen.getByTestId('start-new-attempt')).toBeInTheDocument()
   })
 

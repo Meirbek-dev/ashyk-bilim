@@ -14,7 +14,8 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { toast } from 'sonner'
 
 import { reportSubmissionViolation, startAssessmentSubmission } from '@/features/assessments/submission-client'
@@ -103,10 +104,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     submission: (typeof submissionState.submissions)[number],
     index: number,
   ): AttemptHistoryItem => {
-    const label =
-      index === 0
-        ? t('latestSubmission')
-        : t('attemptNumber', { number: submission.attempt_number })
+    const label = index === 0 ? t('latestSubmission') : t('attemptNumber', { number: submission.attempt_number })
     const submittedAt = submission.submitted_at ?? submission.updated_at ?? null
 
     return {
@@ -316,6 +314,7 @@ function ExamTakingContent({
 }) {
   const t = useTranslations('Activities.ExamActivity')
   const formatPercent = usePercentFormat()
+  const locale = useLocale()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false)
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false)
@@ -637,7 +636,7 @@ function ExamTakingContent({
           <AlertTitle>{t('resumedDraft')}</AlertTitle>
           <AlertDescription>
             {t('resumedDraftDescription', {
-              time: formatDateTime(attempt.updated_at),
+              time: formatDate(attempt.updated_at, locale, DATE_TIME_LONG_OPTIONS),
             })}
           </AlertDescription>
         </Alert>
@@ -826,6 +825,7 @@ function ExamSubmissionStatePanel({
 }) {
   const t = useTranslations('Activities.ExamActivity')
   const formatPercent = usePercentFormat()
+  const locale = useLocale()
   if (submission.status === 'PENDING') {
     return (
       <Alert>
@@ -833,7 +833,7 @@ function ExamSubmissionStatePanel({
         <AlertDescription>
           {submission.submitted_at
             ? t('submissionReceivedWithDateDescription', {
-                date: formatDateTime(submission.submitted_at),
+                date: formatDate(submission.submitted_at, locale, DATE_TIME_LONG_OPTIONS),
               })
             : t('submissionReceivedDescription')}
         </AlertDescription>
@@ -879,13 +879,4 @@ function isAntiCheatWarningVisible(policy: typeof DEFAULT_POLICY_VIEW): boolean 
   return (
     policy.antiCheat.tabSwitchDetection || policy.antiCheat.copyPasteProtection || policy.antiCheat.devtoolsDetection
   )
-}
-
-function formatDateTime(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date)
 }

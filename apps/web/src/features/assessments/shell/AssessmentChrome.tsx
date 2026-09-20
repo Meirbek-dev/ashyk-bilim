@@ -6,7 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { TimerRing } from './TimerRing'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import type { PolicyView } from '@/features/assessments/domain/policy'
 import type { ReleaseState } from '@/features/assessments/domain/release'
 import type { SubmissionStatus } from '@/features/assessments/domain/submission-status'
@@ -63,6 +64,7 @@ export function AssessmentChrome({
   className,
 }: AssessmentChromeProps) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
+  const locale = useLocale()
   const releaseNotice = getReleaseNotice(
     releaseState === undefined
       ? {
@@ -96,7 +98,7 @@ export function AssessmentChrome({
             {dueAt ? (
               <Badge variant="outline">
                 <Clock className="size-3" />
-                {t('dueLabel')} {formatDate(dueAt)}
+                {t('dueLabel')} {formatDate(dueAt, locale, DATE_TIME_LONG_OPTIONS)}
               </Badge>
             ) : null}
           </div>
@@ -188,13 +190,4 @@ function getReleaseNotice({
   }
 
   return null
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date)
 }

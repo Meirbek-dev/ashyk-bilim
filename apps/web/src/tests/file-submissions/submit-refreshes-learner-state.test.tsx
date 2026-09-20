@@ -9,11 +9,18 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import FileSubmissionWorkspace from '@/features/file-submissions/student/FileSubmissionWorkspace'
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
 
-const mocks = vi.hoisted(() => ({ getActivity: vi.fn(), submit: vi.fn(), start: vi.fn(), refresh: vi.fn(), apiJson: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  getActivity: vi.fn(),
+  submit: vi.fn(),
+  start: vi.fn(),
+  refresh: vi.fn(),
+  apiJson: vi.fn(),
+}))
 
 vi.mock('next-intl', () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
   useFormatter: () => ({ number: (n: number) => String(n) }),
+  useLocale: () => 'ru',
 }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh, push: vi.fn() }) }))
 vi.mock('@components/ui/AppLink', () => ({ default: (props: React.ComponentProps<'a'>) => <a {...props} /> }))
@@ -84,7 +91,12 @@ describe('FileSubmissionWorkspace submit', () => {
   it('refetches the attempt and the gate on a gated new attempt', async () => {
     const { APIError } = await import('@/lib/api/assertSuccess')
     const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
-    mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 2, current_attempt: published, attempts: [published] })
+    mocks.getActivity.mockResolvedValue({
+      ...config,
+      max_attempts: 2,
+      current_attempt: published,
+      attempts: [published],
+    })
     mocks.start.mockRejectedValue(
       new APIError({ code: 'forbidden', status: 403, message: 'cannot start: REMEDIATION_REQUIRED' }),
     )
@@ -106,7 +118,12 @@ describe('FileSubmissionWorkspace submit', () => {
   // UX-089: a released attempt with attempts to spare offers the next one.
   it('offers «Новая попытка» after a released grade while attempts remain', async () => {
     const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
-    mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 2, current_attempt: published, attempts: [published] })
+    mocks.getActivity.mockResolvedValue({
+      ...config,
+      max_attempts: 2,
+      current_attempt: published,
+      attempts: [published],
+    })
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <FileSubmissionWorkspace
@@ -122,7 +139,12 @@ describe('FileSubmissionWorkspace submit', () => {
   // UX-100: the header chip kept «Завершено»/«Не пройдено» after «Новая попытка» until a reload.
   it('refreshes the learner-state projection after a new attempt', async () => {
     const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
-    mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 2, current_attempt: published, attempts: [published] })
+    mocks.getActivity.mockResolvedValue({
+      ...config,
+      max_attempts: 2,
+      current_attempt: published,
+      attempts: [published],
+    })
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const invalidate = vi.spyOn(client, 'invalidateQueries')
     render(
@@ -141,7 +163,12 @@ describe('FileSubmissionWorkspace submit', () => {
 
   it('offers no new attempt once the cap is spent', async () => {
     const published = { ...draft, status: 'published', final_score: 70, late_penalty_pct: 0, feedback: '' }
-    mocks.getActivity.mockResolvedValue({ ...config, max_attempts: 1, current_attempt: published, attempts: [published] })
+    mocks.getActivity.mockResolvedValue({
+      ...config,
+      max_attempts: 1,
+      current_attempt: published,
+      attempts: [published],
+    })
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <FileSubmissionWorkspace

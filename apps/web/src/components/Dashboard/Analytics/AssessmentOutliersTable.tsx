@@ -10,7 +10,7 @@ import type { AssessmentOutlierRow } from '@/types/analytics'
 import AnalyticsDataTable from './AnalyticsDataTable'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
@@ -23,6 +23,9 @@ interface AssessmentOutliersTableProps {
 export default function AssessmentOutliersTable({ rows, storageKey, serverPaginated }: AssessmentOutliersTableProps) {
   const t = useTranslations('TeacherAnalytics')
   const percent = usePercentFormat()
+  const format = useFormatter()
+  // UX-149: one precision per column set — rates (submission, pass, difficulty) 1 dp, scores ≤ 2 dp via `percent`.
+  const rate = (value: number) => `${format.number(value, { maximumFractionDigits: 1 })}%`
   const columns: DataTableColumnDef<AssessmentOutlierRow>[] = [
     {
       accessorKey: 'title',
@@ -48,13 +51,12 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
     {
       accessorKey: 'submission_rate',
       header: t('assessmentOutliers.colSubmission'),
-      cell: ({ row }) =>
-        row.original.submission_rate == null ? t('atRisk.na') : percent(row.original.submission_rate),
+      cell: ({ row }) => (row.original.submission_rate == null ? t('atRisk.na') : rate(row.original.submission_rate)),
     },
     {
       accessorKey: 'pass_rate',
       header: t('assessmentOutliers.colPass'),
-      cell: ({ row }) => (row.original.pass_rate == null ? t('atRisk.na') : percent(row.original.pass_rate)),
+      cell: ({ row }) => (row.original.pass_rate == null ? t('atRisk.na') : rate(row.original.pass_rate)),
     },
     {
       accessorKey: 'median_score',
@@ -67,11 +69,11 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
       cell: ({ row }) => {
         const assessment = row.original
         const v = assessment.difficulty_score
-        if (v === null) return t('atRisk.na')
+        if (v == null) return t('atRisk.na')
         // difficulty_score = round(100 - pass_rate, 2) → already on a 0–100 scale.
         return (
           <div>
-            <div>{percent(Math.round(v ?? 0))}</div>
+            <div>{rate(v)}</div>
             {assessment.discrimination_index !== null && assessment.discrimination_index !== undefined && (
               <div className="text-muted-foreground text-[11px]">D {assessment.discrimination_index}</div>
             )}

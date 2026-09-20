@@ -1,7 +1,8 @@
 'use client'
 
 import { useQueryClient } from '@tanstack/react-query'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { Badge } from '@/components/ui/badge'
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment'
@@ -33,6 +34,7 @@ const ATTEMPT_POLICY_TYPES = new Set(['TYPE_EXAM', 'TYPE_CUSTOM', 'TYPE_CODE_CHA
  */
 export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   const t = useTranslations('ActivityPage')
+  const locale = useLocale()
   const tKinds = useTranslations('Features.Assessments.Studio.kinds')
   const formatTimeLimit = useTimeLimitLabel()
   const { mode } = useActivityLayout()
@@ -96,7 +98,7 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   if (dueAt) {
     const dueDate = new Date(dueAt)
     const isOverdue = dueDate < new Date() && state !== 'complete' && state !== 'passed' && state !== 'published'
-    const duePart = `${t('dueDate')}: ${formatDate(dueAt)}`
+    const duePart = `${t('dueDate')}: ${formatDate(dueAt, locale, DATE_TIME_LONG_OPTIONS)}`
     if (isOverdue) {
       items.push(`⚠ ${duePart}`)
     } else {
@@ -149,11 +151,4 @@ function getStateChip(state: string, t: (key: string) => string): string | null 
       return null
     }
   }
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
 }

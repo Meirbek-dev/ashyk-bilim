@@ -4,7 +4,8 @@ import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, CheckCircle2, Eye, Loader2, Save, Send, SlidersHorizontal } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { useApiError } from '@/hooks/useApiError'
 import { APIError } from '@/lib/api/assertSuccess'
 import { toast } from 'sonner'
@@ -106,6 +107,7 @@ const MIME_PRESETS: { id: string; key: MimeCategoryKey; mimes: string[] }[] = [
 export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileSubmissionStudioProps) {
   const cleanActivityUuid = activityUuid.replace(/^activity_/, '')
   const queryClient = useQueryClient()
+  const locale = useLocale()
   const [title, setTitle] = useState('')
   const [instructions, setInstructions] = useState('')
   const [dueAt, setDueAt] = useState('')
@@ -270,7 +272,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               {data.due_at_unix ? (
                 <Badge variant="outline">
                   <CalendarClock className="mr-1 size-3" />
-                  {formatDate(fromUnix(data.due_at_unix))}
+                  {formatDate(fromUnix(data.due_at_unix), locale, DATE_TIME_LONG_OPTIONS)}
                 </Badge>
               ) : null}
             </div>
@@ -454,11 +456,4 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
 function toDateTimeLocal(date: Date) {
   const offset = date.getTimezoneOffset()
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16)
-}
-
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date)
 }

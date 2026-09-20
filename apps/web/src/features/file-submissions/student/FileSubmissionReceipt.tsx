@@ -1,20 +1,14 @@
 'use client'
 
 import { CheckCircle2, Clock, Files, Hash } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 
 import { Badge } from '@/components/ui/badge'
 import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
 import { fromUnix } from '@/lib/api/contract'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatDateTime(unix: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(fromUnix(unix))
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -28,6 +22,7 @@ interface FileSubmissionReceiptProps {
  */
 export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceiptProps) {
   const t = useTranslations('FileSubmission')
+  const locale = useLocale()
   return (
     <div className="bg-muted/30 border-border mx-auto max-w-2xl space-y-4 rounded-xl border p-6">
       {/* Header */}
@@ -36,7 +31,9 @@ export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceipt
         <div>
           <h3 className="font-semibold">{t('submissionReceived')}</h3>
           {attempt.submitted_at_unix ? (
-            <p className="text-muted-foreground text-sm">{formatDateTime(attempt.submitted_at_unix)}</p>
+            <p className="text-muted-foreground text-sm">
+              {formatDate(fromUnix(attempt.submitted_at_unix), locale, DATE_TIME_LONG_OPTIONS)}
+            </p>
           ) : null}
         </div>
         {attempt.is_late ? (

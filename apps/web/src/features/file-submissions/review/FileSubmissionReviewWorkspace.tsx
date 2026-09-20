@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -513,7 +514,7 @@ export default function FileSubmissionReviewWorkspace({
                   <p className="text-muted-foreground text-sm">
                     {selected.submitted_at_unix
                       ? t('submittedAt', {
-                          date: formatDate(selected.submitted_at_unix),
+                          date: formatDate(fromUnix(selected.submitted_at_unix), locale, DATE_TIME_LONG_OPTIONS),
                         })
                       : t('submittedAsDraft')}
                   </p>
@@ -1007,11 +1008,4 @@ function AttemptStatusBadge({ status }: { status: string }) {
   const variant = status === 'submitted' ? 'default' : status === 'returned' ? 'destructive' : 'secondary'
   const key = STATUS_LABEL_KEYS[status as keyof typeof STATUS_LABEL_KEYS]
   return <Badge variant={variant}>{key ? t(key) : status}</Badge>
-}
-
-function formatDate(unix: number) {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(fromUnix(unix))
 }

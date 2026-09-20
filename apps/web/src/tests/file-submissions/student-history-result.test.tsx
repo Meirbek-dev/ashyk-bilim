@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({ getActivity: vi.fn(), apiJson: vi.fn() }))
 vi.mock('next-intl', () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
   useFormatter: () => ({ number: (n: number) => String(n) }),
+  useLocale: () => 'ru',
 }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }))
 vi.mock('@components/ui/AppLink', () => ({ default: (props: React.ComponentProps<'a'>) => <a {...props} /> }))

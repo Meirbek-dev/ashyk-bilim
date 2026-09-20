@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { AlertTriangle, LoaderCircle, Maximize2 } from 'lucide-react'
 
 import {
@@ -27,7 +28,12 @@ import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptG
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 
 import { AssessmentChrome } from './AssessmentChrome'
-import { ActionBarContext, AssessmentActionBar, resolvePrimaryButtonLabelKey, useActionBarState } from './AssessmentActionBar'
+import {
+  ActionBarContext,
+  AssessmentActionBar,
+  resolvePrimaryButtonLabelKey,
+  useActionBarState,
+} from './AssessmentActionBar'
 import type { AttemptConflictState, AttemptRecoveryState } from './AssessmentActionBar'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -169,11 +175,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
             <AttemptContent activityUuid={vm.activityUuid} courseUuid={courseUuid} vm={vm} />
           </div>
         </div>
-        <AssessmentActionBar
-          controls={controls}
-          returned={returned}
-          primaryButtonLabelKey={primaryButtonLabelKey}
-        />
+        <AssessmentActionBar controls={controls} returned={returned} primaryButtonLabelKey={primaryButtonLabelKey} />
         <RecoveryDialog recovery={controls.recovery ?? null} />
         <ConflictDialog conflict={controls.conflict ?? null} />
         <UnsavedDialog guard={unsavedGuard} />
@@ -234,11 +236,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           </section>
         </div>
 
-        <AssessmentActionBar
-          controls={controls}
-          returned={returned}
-          primaryButtonLabelKey={primaryButtonLabelKey}
-        />
+        <AssessmentActionBar controls={controls} returned={returned} primaryButtonLabelKey={primaryButtonLabelKey} />
       </div>
 
       {/* ── Recovery dialog (driven by kind controls) ───────────────────── */}
@@ -276,6 +274,7 @@ function UnsavedDialog({ guard }: { guard: ReturnType<typeof useUnsavedChangesGu
 
 function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null }) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
+  const locale = useLocale()
   return (
     <AlertDialog open={Boolean(recovery?.open)}>
       <AlertDialogContent>
@@ -287,7 +286,7 @@ function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null })
           <AlertDialogDescription>
             {recovery?.lastSavedAt
               ? t('recoverLocalDraftWithTime', {
-                  time: formatDate(recovery.lastSavedAt),
+                  time: formatDate(recovery.lastSavedAt, locale, DATE_TIME_LONG_OPTIONS),
                 })
               : t('recoverLocalDraft')}
           </AlertDialogDescription>
@@ -303,6 +302,7 @@ function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null })
 
 function ConflictDialog({ conflict }: { conflict: AttemptConflictState | null }) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
+  const locale = useLocale()
   return (
     <AlertDialog open={Boolean(conflict?.open)}>
       <AlertDialogContent>
@@ -315,7 +315,9 @@ function ConflictDialog({ conflict }: { conflict: AttemptConflictState | null })
             {conflict
               ? t('draftConflictDescription', {
                   latestVersion: conflict.latestVersion,
-                  latestSavedAt: conflict.latestSavedAt ? formatDate(conflict.latestSavedAt) : '',
+                  latestSavedAt: conflict.latestSavedAt
+                    ? formatDate(conflict.latestSavedAt, locale, DATE_TIME_LONG_OPTIONS)
+                    : '',
                 })
               : t('draftConflictAvailable')}
           </AlertDialogDescription>
@@ -335,15 +337,6 @@ function ConflictDialog({ conflict }: { conflict: AttemptConflictState | null })
       </AlertDialogContent>
     </AlertDialog>
   )
-}
-
-function formatDate(value: string | number): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date)
 }
 
 function formatTimerDisplay(seconds: number): string {

@@ -14,7 +14,8 @@ import {
   RotateCcw,
   Send,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -107,13 +108,6 @@ export function fileRejection(
     mime.endsWith('/*') ? file.type.startsWith(mime.slice(0, -1)) : file.type === mime,
   )
   return allowed ? null : { key: 'fileTypeNotAllowed', type: file.type || file.name.split('.').pop() || '?' }
-}
-
-function formatDueDate(unix: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(fromUnix(unix))
 }
 
 // ── Status badge config ───────────────────────────────────────────────────────
@@ -595,6 +589,7 @@ function Header({
   const t = useTranslations('FileSubmission')
   const tMime = useTranslations('FileSubmission.mimeCategories')
   const tLifecycle = useTranslations('Features.Assessments.Studio.lifecycle')
+  const locale = useLocale()
   const categories = useMemo(() => getMimeCategories(allowedMimes), [allowedMimes])
   const lifecycleKey = lifecycle.toLowerCase()
 
@@ -620,7 +615,9 @@ function Header({
         {dueAt ? (
           <div className="flex items-center gap-1.5 text-sm">
             <CalendarClock className="text-muted-foreground size-3.5 shrink-0" />
-            <span className="font-medium">{t('due', { date: formatDueDate(dueAt) })}</span>
+            <span className="font-medium">
+              {t('due', { date: formatDate(fromUnix(dueAt), locale, DATE_TIME_LONG_OPTIONS) })}
+            </span>
           </div>
         ) : null}
 
@@ -823,6 +820,7 @@ function hasResult(attempt: FileSubmissionAttempt) {
 
 function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) {
   const t = useTranslations('FileSubmission')
+  const locale = useLocale()
   const formatPercent = usePercentFormat()
   const [openId, setOpenId] = useState<string | null>(null)
   if (attempts.length === 0) return null
@@ -837,10 +835,7 @@ function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) 
                 <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
                 <p className="text-muted-foreground text-xs">
                   {attempt.submitted_at_unix
-                    ? new Intl.DateTimeFormat(undefined, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      }).format(fromUnix(attempt.submitted_at_unix))
+                    ? formatDate(fromUnix(attempt.submitted_at_unix), locale, DATE_TIME_LONG_OPTIONS)
                     : t('draft')}{' '}
                   / {t('fileCount', { count: attempt.files.length })}
                 </p>

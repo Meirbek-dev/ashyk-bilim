@@ -2,7 +2,8 @@
 
 import type { ReactNode } from 'react'
 import { AlertTriangle, BookOpen, Clock, Eye, FileEdit, Layers, Lock, RotateCcw, Timer } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -13,13 +14,6 @@ import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
 import { useTimeLimitLabel } from '@/features/assessments/shared/useTimeLimitLabel'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
 
 interface AttemptEntryCardProps {
   vm: AttemptViewModel
@@ -36,6 +30,7 @@ export default function AttemptEntryCard({
   startPending = false,
 }: AttemptEntryCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
+  const locale = useLocale()
   const tKinds = useTranslations('Features.Assessments.Studio.kinds')
   const tReasons = useTranslations('AttemptActions.blockedReasons')
   const formatTimeLimit = useTimeLimitLabel()
@@ -65,8 +60,8 @@ export default function AttemptEntryCard({
           <RemediationGate activityId={vm.activityUuid} />
         ) : (
           <p className="text-muted-foreground max-w-md text-sm">
-            {vm.disabledActionReasons.find((r) => tReasons.has(r))
-              ? tReasons(vm.disabledActionReasons.find((r) => tReasons.has(r)) as never)
+            {vm.disabledActionReasons.find(r => tReasons.has(r))
+              ? tReasons(vm.disabledActionReasons.find(r => tReasons.has(r)) as never)
               : t('assessmentBlocked')}
           </p>
         )}
@@ -206,7 +201,7 @@ export default function AttemptEntryCard({
               <div
                 className={cn('mt-1 text-sm font-medium', new Date(policy.dueAt) < new Date() && 'text-destructive')}
               >
-                {formatDate(policy.dueAt)}
+                {formatDate(policy.dueAt, locale, DATE_TIME_LONG_OPTIONS)}
               </div>
             </div>
           ) : null}

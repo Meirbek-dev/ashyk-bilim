@@ -8,6 +8,9 @@ export const DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   minute: '2-digit',
 }
 
+/** Medium date + short time (`20 қыр. 2026 ж., 22:03`) for attempt/submission stamps (UX-149). */
+export const DATE_TIME_LONG_OPTIONS: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }
+
 /**
  * Locale-aware `d MMM y` date for UI badges. `locale` is the app locale
  * (`ru-RU`, `kk-KZ`, `en-US`); invalid input renders as ''. Browsers without
