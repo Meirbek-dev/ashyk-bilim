@@ -1,6 +1,6 @@
 'use client'
 
-import { csvField } from '@/lib/download'
+import { csvBlob, saveBlob } from '@/lib/download'
 import { useTranslations } from 'next-intl'
 import * as React from 'react'
 
@@ -384,26 +384,18 @@ export default function DataTable<TData extends RowData>({
       const label =
         column.columnDef.meta?.label ??
         (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id)
-      return csvField(label)
+      return label
     })
 
     const bodyRows = sourceRows.map(row =>
-      exportableColumns.map(column => {
-        const value = column.columnDef.meta?.exportValue
+      exportableColumns.map(column =>
+        column.columnDef.meta?.exportValue
           ? column.columnDef.meta.exportValue(row.original as never)
-          : row.getValue(column.id)
-        return csvField(value)
-      }),
+          : row.getValue(column.id),
+      ),
     )
 
-    const csv = [headerRow.join(','), ...bodyRows.map(row => row.join(','))].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = csvFileName
-    link.click()
-    URL.revokeObjectURL(url)
+    saveBlob(csvBlob([headerRow, ...bodyRows]), csvFileName)
     toast.success(resolvedLabels.exportStarted)
   }
 

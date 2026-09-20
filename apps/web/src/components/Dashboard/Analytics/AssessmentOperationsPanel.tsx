@@ -1,6 +1,6 @@
 'use client'
 
-import { csvField } from '@/lib/download'
+import { csvBlob, saveBlob } from '@/lib/download'
 import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
 
 import { fromUnix } from '@/lib/api/contract'
@@ -197,24 +197,17 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       t('pages.assessmentOpsAuditColumnAffected'),
       t('pages.assessmentOpsAuditColumnSummary'),
     ]
+    // UX-142: the labels the panel shows, never the wire codes.
     const rows = filteredAuditHistory.map(event => [
       fromUnix(event.occurred_at_unix).toLocaleString(locale),
-      event.source,
-      event.status ?? '',
-      event.action,
+      getAnalyticsCodeLabel(t, event.source),
+      event.status ? getAnalyticsCodeLabel(t, event.status) : '',
+      getAnalyticsCodeLabel(t, event.action),
       event.actor_display_name ?? t('pages.assessmentOpsAuditSystem'),
       event.affected_count ?? '',
       auditSummary(event),
     ])
-    const csv = [headers.map(csvField).join(','), ...rows.map(row => row.map(csvField).join(','))].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    const slug = `${detail.assessment_type}-${detail.assessment_id}-audit`
-    link.href = url
-    link.download = `${slug}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+    saveBlob(csvBlob([headers, ...rows]), `${detail.assessment_type}-${detail.assessment_id}-audit.csv`)
   }
 
   const resetAuditFilters = () => {

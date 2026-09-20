@@ -203,7 +203,7 @@ describe('AssessmentOperationsPanel', () => {
     expect(screen.getByText('pages.assessmentCohortEmpty')).toBeInTheDocument()
   })
 
-  it('filters and exports audit history from the current payload', () => {
+  it('filters and exports audit history from the current payload', async () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
     render(
@@ -251,6 +251,18 @@ describe('AssessmentOperationsPanel', () => {
 
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
     expect(clickSpy).toHaveBeenCalledTimes(1)
+    // UX-142: the panel's own labels (never `grading_entry` / `draft_saved` /
+    // `save_grade`), BOM + CRLF like the server CSVs, every cell quoted.
+    const bytes = new Uint8Array(await (createObjectUrlMock.mock.calls[0] as unknown as [Blob])[0].arrayBuffer())
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    const csv = new TextDecoder().decode(bytes)
+    expect(csv.startsWith('"pages.assessmentOpsAuditColumnOccurredAt",')).toBe(true)
+    expect(csv.endsWith('\r\n')).toBe(true)
+    expect(csv.split('\r\n')).toHaveLength(3)
+    expect(csv).toContain(
+      ',"codes.grading_entry","codes.draft_saved","codes.save_grade","Teacher Analytics","1","codes.save_grade: 87.5%"',
+    )
+    expect(csv).not.toMatch(/"(grading_entry|draft_saved|save_grade)"/)
 
     clickSpy.mockRestore()
   })

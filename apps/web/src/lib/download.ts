@@ -33,3 +33,12 @@ export function csvField(value: unknown): string {
   const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text
   return `"${safe.replaceAll('"', '""')}"`
 }
+
+/**
+ * A client-built CSV in the shape the server exports use (`ab_domain::csv`):
+ * UTF-8 BOM so Excel opens Cyrillic, CRLF rows, every cell through `csvField`.
+ */
+export function csvBlob(rows: readonly (readonly unknown[])[]): Blob {
+  const text = rows.map(row => row.map(csvField).join(',')).join('\r\n')
+  return new Blob([`\uFEFF${text}\r\n`], { type: 'text/csv;charset=utf-8' })
+}

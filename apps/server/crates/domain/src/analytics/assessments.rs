@@ -644,8 +644,10 @@ fn question_tallies(submissions: &[&SubmissionInfoRow]) -> BTreeMap<String, Item
     } else {
         (HashSet::new(), HashSet::new())
     };
+    // UX-142: items of the grade-of-record attempts only — the same
+    // population as the strong / weak groups, pass rate and median.
     let mut tallies: BTreeMap<String, ItemTally> = BTreeMap::new();
-    for s in submissions {
+    for (_, s) in &scored {
         let breakdown = crate::grading::breakdown::GradingBreakdown::from_value(&s.grading);
         for item in &breakdown.items {
             let Some(correct) = item_correct(item) else {
@@ -1116,6 +1118,7 @@ pub fn build_detail(
         let population = count_i64(
             records
                 .iter()
+                .filter(|s| score_of(s).is_some())
                 .filter(|s| {
                     crate::grading::breakdown::GradingBreakdown::from_value(&s.grading)
                         .items

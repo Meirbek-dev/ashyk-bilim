@@ -14,7 +14,7 @@ use ab_core::id::{AssessmentId, CourseId, UserId};
 use sqlx::PgPool;
 
 use super::context::{
-    AnalyticsContext, SnapshotKey, build_activity_events, days_between, is_graded, is_reviewable,
+    AnalyticsContext, SnapshotKey, build_activity_events, days_between, is_reviewable,
     progress_snapshots, round1, score_of, utc_date,
 };
 use super::filters::{AnalyticsFilters, SortOrder};
@@ -247,13 +247,15 @@ pub fn build_risk_rows(
                     *failed.entry(key).or_default() += 1;
                 }
             }
-            AssessmentKind::CodeChallenge => {
-                if score.is_some_and(|v| v >= assessment.passing_score) {
+            // UX-142: only a released score is an outcome — a graded but
+            // unreleased attempt is still in the teacher's hands.
+            AssessmentKind::CodeChallenge => match score {
+                Some(v) if v >= assessment.passing_score => {
                     code_passed.entry(key).or_default().insert(assessment.id);
-                } else if is_graded(s) {
-                    *failed.entry(key).or_default() += 1;
                 }
-            }
+                Some(_) => *failed.entry(key).or_default() += 1,
+                None => {}
+            },
             // Legacy never counted quiz outcomes towards risk.
             AssessmentKind::Quiz => {}
         }

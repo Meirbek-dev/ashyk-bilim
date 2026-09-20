@@ -183,6 +183,18 @@ async fn submit_attempt(
     choice_id: &str,
     essay_id: &str,
 ) -> String {
+    submit_attempt_answering(app, learner, assessment_id, choice_id, essay_id, "a").await
+}
+
+/// Start + submit choosing `selected` («a» is the correct option).
+async fn submit_attempt_answering(
+    app: &TestApp,
+    learner: &MintedSession,
+    assessment_id: &str,
+    choice_id: &str,
+    essay_id: &str,
+    selected: &str,
+) -> String {
     let draft = app
         .post_as(
             learner,
@@ -197,7 +209,7 @@ async fn submit_attempt(
             learner,
             &format!("/api/v2/submissions/{sub_id}/submit"),
             &serde_json::json!({ "answers": {
-                choice_id: { "kind": "choice", "selected": ["a"] },
+                choice_id: { "kind": "choice", "selected": [selected] },
                 essay_id: { "kind": "open_text", "text": "Because." },
             } }),
         )
@@ -1450,8 +1462,9 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     .await;
     let bob = learner(&app, "bob").await;
     let first = submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
-    let second = submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
-    let third = submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
+    // The retakes miss Q1: their items must not reach the question tallies.
+    let second = submit_attempt_answering(&app, &bob, &quiz_id, &choice_id, &essay_id, "b").await;
+    let third = submit_attempt_answering(&app, &bob, &quiz_id, &choice_id, &essay_id, "b").await;
     for (sub, body) in [
         (
             &first,
@@ -1488,6 +1501,23 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     // (unreleased) retake is flagged like the gradebook cell.
     assert_eq!(row["status"], "published", "{row}");
     assert_eq!(row["pending_attempt"], 3, "{row}");
+    // UX-142: question tallies and item populations count the grade-of-record
+    // attempts only — Q1 is 1/1 correct, not 1/3.
+    let q1 = body["question_breakdown"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|q| q["question_id"] == choice_id)
+        .expect("Q1 row");
+    assert_eq!(q1["accuracy_pct"], 100.0, "{q1}");
+    let q1_item = body["item_analytics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["item_key"] == choice_id)
+        .expect("Q1 item");
+    assert_eq!(q1_item["population_count"], 1, "{q1_item}");
+    assert_eq!(q1_item["impacted_count"], 0, "{q1_item}");
 
     let pass_rate = app
         .get_as(
@@ -1535,4 +1565,71 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
         "{text}"
     );
     assert!(!text.contains(",=HYPERLINK"), "{text}");
+}
+
+/// UX-142: a code-challenge attempt that is graded but not released is not
+/// an outcome — `repeated_failures` appears only once the failing score is
+/// published.
+#[sqlx::test(migrations = "../../migrations")]
+async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Algorithms").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "code_challenge", "title": "Square" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let code_id = uuid::Uuid::parse_str(created.json()["id"].as_str().unwrap()).unwrap();
+    let bob = learner(&app, "bob").await;
+    let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
+    sqlx::query(
+        "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, 100)",
+    )
+    .bind(course_uuid)
+    .bind(bob.user_id.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let submission_id: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,          submitted_at, graded_at) VALUES ($1, $2, $3, 'graded', 1, 10, now(), now()) RETURNING id",
+    )
+    .bind(code_id)
+    .bind(course_uuid)
+    .bind(bob.user_id.0)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    let reasons = |body: serde_json::Value| -> Vec<serde_json::Value> {
+        find_row(&body["items"], "user_id", &bob.user_id.to_string())
+            .map(|row| row["reason_codes"].as_array().unwrap().clone())
+            .unwrap_or_default()
+    };
+    let held = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/learners/at-risk")
+        .await;
+    assert_eq!(held.status, StatusCode::OK, "{}", held.text());
+    assert!(
+        !reasons(held.json()).contains(&serde_json::json!("repeated_failures")),
+        "{}",
+        held.text()
+    );
+
+    sqlx::query("UPDATE submissions SET status = 'published' WHERE id = $1")
+        .bind(submission_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let released = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/learners/at-risk")
+        .await;
+    assert!(
+        reasons(released.json()).contains(&serde_json::json!("repeated_failures")),
+        "{}",
+        released.text()
+    );
 }
