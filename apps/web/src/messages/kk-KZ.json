@@ -4432,11 +4432,11 @@
         "smallSize": "Кіші өлшем"
       },
       "ImageBlock": {
-        "alignCenter": "Ортаңғы орталық",
-        "alignLeft": "Солға туралаңыз",
-        "alignRight": "Дұрыс туралаңыз",
+        "alignCenter": "Ортасына туралау",
+        "alignLeft": "Солға туралау",
+        "alignRight": "Оңға туралау",
         "cancel": "Болдырмау",
-        "download": "Сайлау",
+        "download": "Жүктеп алу",
         "dropOrClick": "Кескінді осы жерге сүйреңіз немесе таңдау үшін басыңыз",
         "expand": "Кеңейту",
         "imageViewer": "Суретті қарау құралы",
@@ -4444,7 +4444,7 @@
         "previewImageAlt": "Алдын ала қарау",
         "supportedFormats": "Қолдау көрсетілетін пішімдер: JPG, PNG, WebP, GIF, AVIF (макс. 10 МБ)",
         "uploadFailed": "Кескінді жүктеу мүмкін болмады",
-        "upload": "Жүктеп алу",
+        "upload": "Жүктеп салу",
         "uploading": "Жүктеп салынуда..."
       },
       "LinkInputTooltip": {
@@ -4501,7 +4501,7 @@
         "title": "Математикалық теңдеу"
       },
       "PDFBlock": {
-        "download": "Сайлау",
+        "download": "Жүктеп алу",
         "expand": "Кеңейту",
         "pdfDocument": "PDF құжаты",
         "pdfViewer": "PDF қарау құралы"

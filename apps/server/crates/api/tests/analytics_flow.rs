@@ -1567,6 +1567,72 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     assert_eq!(essay["response_count"], 0, "{essay}");
     assert!(essay["avg_score_pct"].is_null(), "{essay}");
 
+    // UX-145: the essay scored 7/10 under the same override is partial
+    // credit above the pass threshold (50) — a correct item for the
+    // breakdown, not a «critical» one; the studio keeps its avg 70.
+    let published = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{first}/review"))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let version = published.json()["version"].as_i64().unwrap();
+    let scored = app
+        .send(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{first}/grade"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::IF_MATCH, format!("\"{version}\""))
+                .body(Body::from(
+                    serde_json::json!({
+                        "action": "publish",
+                        "item_grades": [{ "item_id": essay_id, "score": 7 }]
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(scored.status, StatusCode::OK, "{}", scored.text());
+    let body = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/assessments/quiz/{quiz_id}"),
+        )
+        .await
+        .json();
+    let essay_q = body["question_breakdown"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|q| q["question_id"] == essay_id)
+        .expect("essay row");
+    assert_eq!(essay_q["accuracy_pct"], 100.0, "{essay_q}");
+    let essay_item = body["item_analytics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["item_key"] == essay_id)
+        .expect("essay item");
+    assert_eq!(essay_item["impacted_count"], 0, "{essay_item}");
+    assert_eq!(essay_item["signal"], "healthy", "{essay_item}");
+    let studio = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{quiz_id}/item-analytics"),
+        )
+        .await
+        .json();
+    let essay = studio
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["item_id"] == essay_id)
+        .expect("essay studio row");
+    assert_eq!(essay["response_count"], 1, "{essay}");
+    assert_eq!(essay["avg_score_pct"], 70.0, "{essay}");
+    assert!(essay["correct_pct"].is_null(), "{essay}");
+
     let pass_rate = app
         .get_as(
             &teacher,

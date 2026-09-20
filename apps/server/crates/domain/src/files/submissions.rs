@@ -458,15 +458,7 @@ impl FileSubmissionsService {
         title: &str,
         patch: ConfigPatch,
     ) -> Result<FileSubmission> {
-        let chapter = ab_db::catalog::get_chapter(&self.pool, chapter_id)
-            .await?
-            .ok_or_else(|| Error::not_found("chapter"))?;
-        let course = self
-            .assessments
-            .courses
-            .get(actor, chapter.course_id)
-            .await?;
-        AssessmentsService::require_scoped(actor, &course, Action::Author, "authoring")?;
+        let chapter = self.assessments.authorable_chapter(actor, chapter_id).await?;
         if title.trim().is_empty() {
             return Err(Error::validation(vec![field(
                 "title",
@@ -477,7 +469,7 @@ impl FileSubmissionsService {
         let defaults = FileSubmissionRow {
             id: FileSubmissionId::default(),
             activity_id: ActivityId::default(),
-            course_id: course.id,
+            course_id: chapter.course_id,
             instructions: String::new(),
             rubric: serde_json::json!({}),
             allowed_mime_types: Vec::new(),
@@ -505,7 +497,7 @@ impl FileSubmissionsService {
         let activity_id = ab_db::catalog::insert_activity(
             &self.pool,
             chapter_id,
-            course.id,
+            chapter.course_id,
             title.trim(),
             "file_submission",
             "file_submission_standard",
@@ -515,7 +507,7 @@ impl FileSubmissionsService {
         let id = ab_db::file_submissions::insert_file_submission(
             &self.pool,
             activity_id,
-            course.id,
+            chapter.course_id,
             actor.user_id,
             values,
         )

@@ -488,6 +488,26 @@ impl AssessmentsService {
         Ok(course)
     }
 
+    /// The chapter, when its course is visible and authorable. BUG-209 /
+    /// UX-145: an invisible course's chapter reads exactly like an unknown
+    /// one — the detail must not leak that the chapter exists.
+    pub(crate) async fn authorable_chapter(
+        &self,
+        actor: &Actor,
+        chapter_id: ChapterId,
+    ) -> Result<ab_db::catalog::ChapterRow> {
+        let chapter = ab_db::catalog::get_chapter(&self.pool, chapter_id)
+            .await?
+            .ok_or_else(|| Error::not_found("chapter"))?;
+        self.authorable_course(actor, chapter.course_id)
+            .await
+            .map_err(|err| match err.code() {
+                ab_core::ErrorCode::NotFound => Error::not_found("chapter"),
+                _ => err,
+            })?;
+        Ok(chapter)
+    }
+
     pub(crate) async fn load(&self, id: AssessmentId) -> Result<Assessment> {
         ab_db::assessments::get_assessment(&self.pool, id)
             .await?
@@ -591,10 +611,7 @@ impl AssessmentsService {
         actor: &Actor,
         input: CreateAssessment<'_>,
     ) -> Result<AssessmentDetail> {
-        let chapter = ab_db::catalog::get_chapter(&self.pool, input.chapter_id)
-            .await?
-            .ok_or_else(|| Error::not_found("chapter"))?;
-        self.authorable_course(actor, chapter.course_id).await?;
+        let chapter = self.authorable_chapter(actor, input.chapter_id).await?;
         // BUG-177: titles are trimmed and never blank (shared rule, BUG-168).
         let title = ab_core::required_str("title", input.title)?;
         let kind = input.kind;
@@ -1066,17 +1083,8 @@ impl AssessmentsService {
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
         let target_chapter = chapter_id.unwrap_or(source_activity.chapter_id);
-        let chapter = ab_db::catalog::get_chapter(&self.pool, target_chapter)
-            .await?
-            .ok_or_else(|| Error::not_found("chapter"))?;
-        // BUG-208: an invisible course's chapter is a 404, not a 422 oracle;
-        // BUG-209: with the same detail as an unknown chapter.
-        self.authorable_course(actor, chapter.course_id)
-            .await
-            .map_err(|err| match err.code() {
-                ab_core::ErrorCode::NotFound => Error::not_found("chapter"),
-                _ => err,
-            })?;
+        // BUG-208: an invisible course's chapter is a 404, not a 422 oracle.
+        let chapter = self.authorable_chapter(actor, target_chapter).await?;
         if chapter.course_id != source.course_id {
             return Err(Error::validation(vec![FieldError {
                 field: "chapter_id".into(),

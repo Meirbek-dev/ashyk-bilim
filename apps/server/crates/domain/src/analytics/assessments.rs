@@ -623,16 +623,23 @@ struct ItemTally {
 
 /// The item's outcome, if it has one: an item still awaiting manual review
 /// carries a placeholder score, not a result (UX-144) — it is excluded
-/// from accuracy / impact, not counted as wrong.
-fn item_correct(item: &crate::grading::breakdown::GradedItem) -> Option<bool> {
+/// from accuracy / impact, not counted as wrong. A teacher-scored item
+/// without a verdict is correct when its share reaches the assessment's
+/// pass threshold (`pass_pct`, 0–100) — partial credit above it is not an
+/// error (UX-145).
+fn item_correct(item: &crate::grading::breakdown::GradedItem, pass_pct: f64) -> Option<bool> {
     if item.needs_manual_review {
         return None;
     }
-    item.correct
-        .or_else(|| (item.max_score > 0.0).then_some(item.score >= item.max_score))
+    item.correct.or_else(|| {
+        (item.max_score > 0.0).then(|| item.score / item.max_score * 100.0 >= pass_pct)
+    })
 }
 
-fn question_tallies(submissions: &[&SubmissionInfoRow]) -> BTreeMap<String, ItemTally> {
+fn question_tallies(
+    submissions: &[&SubmissionInfoRow],
+    pass_pct: f64,
+) -> BTreeMap<String, ItemTally> {
     let mut scored: Vec<(f64, &SubmissionInfoRow)> = submissions
         .iter()
         .filter_map(|s| score_of(s).map(|score| (score, *s)))
@@ -656,7 +663,7 @@ fn question_tallies(submissions: &[&SubmissionInfoRow]) -> BTreeMap<String, Item
     for (_, s) in &scored {
         let breakdown = crate::grading::breakdown::GradingBreakdown::from_value(&s.grading);
         for item in &breakdown.items {
-            let Some(correct) = item_correct(item) else {
+            let Some(correct) = item_correct(item, pass_pct) else {
                 continue;
             };
             let tally = tallies.entry(item.item_id.to_string()).or_default();
@@ -689,8 +696,11 @@ fn as_f64(n: i64) -> f64 {
 }
 
 #[must_use]
-pub fn build_question_breakdown(submissions: &[&SubmissionInfoRow]) -> Vec<QuestionDifficultyRow> {
-    let mut rows: Vec<QuestionDifficultyRow> = question_tallies(submissions)
+pub fn build_question_breakdown(
+    submissions: &[&SubmissionInfoRow],
+    pass_pct: f64,
+) -> Vec<QuestionDifficultyRow> {
+    let mut rows: Vec<QuestionDifficultyRow> = question_tallies(submissions, pass_pct)
         .into_iter()
         .map(|(id, t)| {
             let strong_acc = safe_pct(as_f64(t.strong - t.strong_miss), as_f64(t.strong));
@@ -1057,7 +1067,7 @@ pub fn build_detail(
         .collect();
     learner_rows.sort_by(|x, y| x.user_display_name.cmp(&y.user_display_name));
 
-    let question_breakdown = build_question_breakdown(&records);
+    let question_breakdown = build_question_breakdown(&records, a.passing_score);
     let mut common_failures: Vec<CommonFailureRow> = match a.kind {
         AssessmentKind::Quiz => question_breakdown
             .iter()
@@ -1130,7 +1140,8 @@ pub fn build_detail(
                         .items
                         .iter()
                         .any(|i| {
-                            i.item_id.to_string() == q.question_id && item_correct(i).is_some()
+                            i.item_id.to_string() == q.question_id
+                                && item_correct(i, a.passing_score).is_some()
                         })
                 })
                 .count(),
