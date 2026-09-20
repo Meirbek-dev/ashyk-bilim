@@ -1475,6 +1475,24 @@ pub async fn reserve_idempotent(
     Ok(inserted.rows_affected() == 1)
 }
 
+/// Heartbeat of a running action: keeps its IN_PROGRESS reservation fresh.
+///
+/// Without it [`reserve_idempotent`] takes the key over mid-run — a keyed
+/// submit with several code items legitimately outlives
+/// [`IDEMPOTENT_STALE_SECS`].
+pub async fn touch_idempotent(pool: &PgPool, user_id: UserId, key: &str) -> Result<()> {
+    sqlx::query!(
+        "UPDATE idempotency_keys SET created_at = now()
+         WHERE user_id = $1 AND key = $2 AND status_code = $3",
+        user_id.0,
+        key,
+        IDEMPOTENT_IN_PROGRESS
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 pub async fn complete_idempotent(
     pool: &PgPool,
     user_id: UserId,

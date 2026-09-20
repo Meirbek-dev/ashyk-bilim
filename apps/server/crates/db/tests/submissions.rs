@@ -242,3 +242,50 @@ async fn idempotency_keys_replay_and_sweep(pool: PgPool) {
     assert_eq!(submissions::sweep_idempotency(&pool, 0.0).await.unwrap(), 1);
     let _ = SubmissionId::new();
 }
+
+/// BUG-212 nit: a heartbeat keeps a long-running reservation from being
+/// taken over; without one the stale window (30 s) still applies.
+#[sqlx::test(migrations = "../../migrations")]
+async fn idempotency_heartbeat_defers_the_stale_takeover(pool: PgPool) {
+    let (user, _, _) = seed(&pool).await;
+    let backdate = async |secs: i32| {
+        sqlx::query("UPDATE idempotency_keys SET created_at = now() - make_interval(secs => $1)")
+            .bind(f64::from(secs))
+            .execute(&pool)
+            .await
+            .unwrap();
+    };
+    assert!(
+        submissions::reserve_idempotent(&pool, user, "k", "h")
+            .await
+            .unwrap()
+    );
+    backdate(31).await;
+    submissions::touch_idempotent(&pool, user, "k")
+        .await
+        .unwrap();
+    assert!(
+        !submissions::reserve_idempotent(&pool, user, "k", "h")
+            .await
+            .unwrap()
+    );
+    backdate(31).await;
+    assert!(
+        submissions::reserve_idempotent(&pool, user, "k", "h")
+            .await
+            .unwrap()
+    );
+    // A completed key is never touched back to life.
+    submissions::complete_idempotent(&pool, user, "k", 200, &serde_json::json!({}))
+        .await
+        .unwrap();
+    backdate(31).await;
+    submissions::touch_idempotent(&pool, user, "k")
+        .await
+        .unwrap();
+    assert!(
+        !submissions::reserve_idempotent(&pool, user, "k", "h")
+            .await
+            .unwrap()
+    );
+}
