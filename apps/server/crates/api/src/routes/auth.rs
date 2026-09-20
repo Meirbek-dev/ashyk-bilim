@@ -205,15 +205,19 @@ pub async fn change_password(
     CurrentActor(actor): CurrentActor,
     ValidJson(request): ValidJson<ChangePasswordRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .identity
-        .change_password(
-            &actor,
-            &SecretString::from(request.current_password),
-            &SecretString::from(request.new_password),
-        )
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    // Zitadel change → revoke_others → audit outlive the connection (BUG-214).
+    detached(async move {
+        state
+            .identity
+            .change_password(
+                &actor,
+                &SecretString::from(request.current_password),
+                &SecretString::from(request.new_password),
+            )
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Logout: revoke the current session and clear the cookie. Idempotent.
@@ -318,8 +322,11 @@ pub async fn totp_verify(
     CurrentActor(actor): CurrentActor,
     ValidJson(request): ValidJson<crate::dto::auth::TotpVerifyRequest>,
 ) -> ApiResult<StatusCode> {
-    state.identity.totp_activate(&actor, &request.code).await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state.identity.totp_activate(&actor, &request.code).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Remove the TOTP authenticator.
@@ -333,8 +340,11 @@ pub async fn totp_remove(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<StatusCode> {
-    state.identity.totp_remove(&actor).await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state.identity.totp_remove(&actor).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 // ── Google sign-in (browser navigation endpoints: errors redirect, never

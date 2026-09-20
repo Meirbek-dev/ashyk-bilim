@@ -3,6 +3,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 
+use crate::detach::detached;
 use crate::dto::rbac::{
     AssignRoleRequest, CreateRoleRequest, Role, SetRolePermissionsRequest, UpdateRoleRequest,
 };
@@ -51,11 +52,15 @@ pub async fn assign_role(
     Path(user_id): Path<UserId>,
     ValidJson(request): ValidJson<AssignRoleRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .rbac
-        .assign_role(&actor, user_id, &request.role)
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    // Grant → propagate → audit outlive the connection (BUG-214).
+    detached(async move {
+        state
+            .rbac
+            .assign_role(&actor, user_id, &request.role)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Remove a role from a user (requires `role:manage:platform`).
@@ -82,8 +87,11 @@ pub async fn unassign_role(
     CurrentActor(actor): CurrentActor,
     Path((user_id, slug)): Path<(UserId, String)>,
 ) -> ApiResult<StatusCode> {
-    state.rbac.unassign_role(&actor, user_id, &slug).await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state.rbac.unassign_role(&actor, user_id, &slug).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Create a custom role (requires `role:manage:platform`).
@@ -167,8 +175,11 @@ pub async fn delete_role(
     CurrentActor(actor): CurrentActor,
     Path(slug): Path<String>,
 ) -> ApiResult<StatusCode> {
-    state.rbac.delete_role(&actor, &slug).await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state.rbac.delete_role(&actor, &slug).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Replace a custom role's grant set; holders' sessions update live.
@@ -192,9 +203,12 @@ pub async fn set_role_permissions(
     Path(slug): Path<String>,
     ValidJson(request): ValidJson<SetRolePermissionsRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .rbac
-        .set_role_permissions(&actor, &slug, request.permissions)
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state
+            .rbac
+            .set_role_permissions(&actor, &slug, request.permissions)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }

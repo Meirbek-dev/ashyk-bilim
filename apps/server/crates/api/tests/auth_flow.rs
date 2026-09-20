@@ -1713,3 +1713,105 @@ async fn registration_dropped_mid_flight_still_completes_and_replays(pool: PgPoo
     );
     assert_eq!(audited(&app, "account-created").await, 2);
 }
+
+/// BUG-214: the admin connection drops right after `status = disabled` is
+/// committed; `revoke_all` and the audit must still run — no session of a
+/// disabled account answers afterwards.
+#[sqlx::test(migrations = "../../migrations")]
+async fn disable_dropped_mid_flight_still_revokes_every_session(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+    let user = app
+        .create_user("ghost", "ghost@example.com", &["user"])
+        .await;
+    let first = app.mint_session_for(user, &[]).await;
+    let second = app.mint_session_for(user, &[]).await;
+    assert_eq!(app.sessions.list(user).await.unwrap().len(), 2);
+
+    drop_request_when(
+        app.patch_as(
+            &admin,
+            &format!("/api/v2/users/{user}/status"),
+            &serde_json::json!({ "disabled": true }),
+        ),
+        async || {
+            sqlx::query_scalar::<_, String>("SELECT status FROM users WHERE username = 'ghost'")
+                .fetch_one(&app.pool)
+                .await
+                .unwrap()
+                == "disabled"
+        },
+        |response| {
+            assert_eq!(
+                response.status,
+                StatusCode::NO_CONTENT,
+                "{}",
+                response.text()
+            );
+        },
+    )
+    .await;
+    wait_until("sessions outlived the disable", async || {
+        app.sessions.list(user).await.unwrap().is_empty()
+    })
+    .await;
+    assert_eq!(app.sessions.list(user).await.unwrap().len(), 0);
+    for session in [&first, &second] {
+        assert_eq!(
+            app.get_as(session, "/api/v2/auth/session").await.status,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    wait_until("audit never landed", async || {
+        audited(&app, "account-disabled").await == 1
+    })
+    .await;
+}
+
+/// BUG-214 nit: a login whose connection drops while Zitadel is still
+/// checking the password is not a guess against the IP window.
+#[sqlx::test(migrations = "../../migrations")]
+async fn ip_limit_ignores_dropped_logins(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("slow", "slow@example.com", &["user"]).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(
+            ResponseTemplate::new(400)
+                .set_delay(std::time::Duration::from_millis(300))
+                .set_body_json(serde_json::json!({
+                    "code": 3,
+                    "message": "Password is invalid (COMMAND-3M0fs)",
+                    "details": [{ "failedAttempts": 1 }]
+                })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    let ip = unique_ip();
+    let body = serde_json::json!({ "login": "slow", "password": "x" });
+    let mut redis = app.sessions.redis();
+    let mut count = async || -> Option<u32> {
+        redis::AsyncCommands::get(&mut redis, format!("rl:login:ip:{ip}"))
+            .await
+            .unwrap()
+    };
+    for _ in 0..5 {
+        let dropped = tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            login_from(&app, &ip, &body),
+        )
+        .await;
+        assert!(dropped.is_err(), "the login should still be in flight");
+    }
+    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+    assert_eq!(count().await, None, "dropped logins were counted");
+    // A rejected password does count.
+    assert_eq!(
+        login_from(&app, &ip, &body).await.status,
+        StatusCode::UNAUTHORIZED
+    );
+    assert_eq!(count().await, Some(1));
+}

@@ -279,13 +279,28 @@ impl IdentityService {
         }
     }
 
-    /// Per-IP limit, checked before any Zitadel round-trip. Returns the
-    /// key (released once the password is accepted).
+    /// Per-IP limit, read before any Zitadel round-trip and counted only on
+    /// a rejected credential (BUG-214 nit: a connection dropped mid-check is
+    /// not a guess). Returns the key to count against.
     async fn enforce_login_ip_limit(&self, input: &LoginInput) -> Result<Option<String>> {
         let Some(ip) = &input.ip else { return Ok(None) };
         let key = format!("rl:login:ip:{ip}");
-        self.enforce(&key, IP_LIMIT, "login").await?;
+        let (limit, window) = IP_LIMIT;
+        if self.limiter.count(&key).await? >= limit {
+            return Err(self
+                .rate_limited(&key, window, "too many login attempts")
+                .await?);
+        }
         Ok(Some(key))
+    }
+
+    /// One rejected credential against the caller's IP.
+    async fn count_login_failure(&self, ip_key: Option<&str>) -> Result<()> {
+        if let Some(key) = ip_key {
+            let (limit, window) = IP_LIMIT;
+            self.limiter.check(key, limit, window).await?;
+        }
+        Ok(())
     }
 
     /// Map a Zitadel check outcome to a session or the audited uniform error.
@@ -368,6 +383,7 @@ impl IdentityService {
         let user = ab_db::identity::find_user_for_login(&self.pool, input.login.trim()).await?;
         let login_key = self.enforce_login_name_limit(&input, user.as_ref()).await?;
         let Some(user) = user else {
+            self.count_login_failure(ip_key.as_deref()).await?;
             self.audit(
                 None,
                 "login-failed",
@@ -395,11 +411,13 @@ impl IdentityService {
                 input.totp_code.as_deref(),
             )
             .await?;
-        let zsession = self.resolve_session_outcome(outcome, &input).await?;
-        // Password accepted: not a brute-force attempt against this IP.
-        if let Some(key) = &ip_key {
-            self.limiter.release(key).await?;
-        }
+        let zsession = match self.resolve_session_outcome(outcome, &input).await {
+            Ok(zsession) => zsession,
+            Err(err) => {
+                self.count_login_failure(ip_key.as_deref()).await?;
+                return Err(err);
+            }
+        };
         // Status is re-read after the epoch, not taken from the row looked up
         // before it — the fence only covers state read after the epoch.
         let status = ab_db::identity::user_status(&self.pool, user.id)

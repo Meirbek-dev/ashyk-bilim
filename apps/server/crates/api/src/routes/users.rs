@@ -178,11 +178,15 @@ pub async fn set_user_status(
     Path(user_id): Path<UserId>,
     ValidJson(request): ValidJson<SetUserStatusRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .rbac
-        .set_user_status(&actor, user_id, request.disabled)
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    // Commit → revoke_all → audit outlive the connection (BUG-214).
+    detached(async move {
+        state
+            .rbac
+            .set_user_status(&actor, user_id, request.disabled)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Public profile card by username (legacy `GET /users/username/{username}`).
