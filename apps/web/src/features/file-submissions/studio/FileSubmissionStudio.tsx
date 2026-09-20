@@ -6,6 +6,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { CalendarClock, CheckCircle2, Eye, Loader2, Save, Send, SlidersHorizontal } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useApiError } from '@/hooks/useApiError'
+import { APIError } from '@/lib/api/assertSuccess'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -184,6 +185,11 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
       toast.success(t('saveSuccess'))
     },
     onError: saveError => {
+      // BUG-219: a live task refused an edit that would leave it unready.
+      if (saveError instanceof APIError && saveError.code === 'conflict' && saveError.details?.readiness) {
+        toast.error(t('fixInstructionsBeforeSaving'))
+        return
+      }
       toastApiError(saveError, undefined, t('saveError'))
     },
   })
@@ -210,7 +216,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
       intent: 'draft',
       required: true,
     })
-    if (!gate.canSave) {
+    if (!gate.canSave || (isPublished && isMarkdownStructurallyEmpty(instructions))) {
       toast.error(gate.errors[0]?.message ?? t('fixInstructionsBeforeSaving'))
       return
     }

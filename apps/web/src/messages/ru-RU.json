@@ -2666,7 +2666,9 @@
         "uploadImageButton": "Загрузить изображение",
         "uploadVideo": "Загрузить видео",
         "uploading": "Загрузка...",
-        "video": "Видео"
+        "video": "Видео",
+        "removeImageButton": "Удалить изображение",
+        "thumbnailRemoved": "Миниатюра удалена"
       },
       "about": {
         "label": "О курсе",
@@ -2711,8 +2713,6 @@
         "mediaActionsTitle": "Медиафайлы применяются немедленно",
         "mediaUpdatesIsolated": "Обновления медиафайлов намеренно отделены от сохраняемых полей выше.",
         "uploadImageButton": "Загрузить изображение",
-        "removeImageButton": "Удалить изображение",
-        "thumbnailRemoved": "Миниатюра удалена",
         "uploading": "Загрузка..."
       },
       "thumbnailType": "Тип миниатюры",

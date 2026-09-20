@@ -2665,7 +2665,9 @@
         "uploadImageButton": "Кескінді жүктеу",
         "uploadVideo": "Бейнені жүктеу",
         "uploading": "Жүктелуде...",
-        "video": "Бейне"
+        "video": "Бейне",
+        "removeImageButton": "Кескінді өшіру",
+        "thumbnailRemoved": "Нобай өшірілді"
       },
       "about": {
         "label": "Сипаттамасы",
@@ -2710,8 +2712,6 @@
         "mediaActionsTitle": "Медиафайл әрекеттері бірден қолданылады",
         "mediaUpdatesIsolated": "Медиафайл жаңартулары жоғарғы өрістерден арнайы оқшауланған.",
         "uploadImageButton": "Кескінді жүктеу",
-        "removeImageButton": "Кескінді өшіру",
-        "thumbnailRemoved": "Нобай өшірілді",
         "uploading": "Жүктелуде..."
       },
       "thumbnailType": "Нобай түрі",

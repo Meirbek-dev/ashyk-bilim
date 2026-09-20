@@ -2667,7 +2667,9 @@
         "uploadImageButton": "Upload Image",
         "uploadVideo": "Upload Video",
         "uploading": "Uploading...",
-        "video": "Video"
+        "video": "Video",
+        "removeImageButton": "Remove image",
+        "thumbnailRemoved": "Thumbnail removed"
       },
       "about": {
         "label": "About",
@@ -2712,8 +2714,6 @@
         "mediaActionsTitle": "Media actions apply immediately",
         "mediaUpdatesIsolated": "Media updates are intentionally isolated from the draft fields above.",
         "uploadImageButton": "Upload Image",
-        "removeImageButton": "Remove image",
-        "thumbnailRemoved": "Thumbnail removed",
         "uploading": "Uploading..."
       },
       "thumbnailType": "Thumbnail Type",
