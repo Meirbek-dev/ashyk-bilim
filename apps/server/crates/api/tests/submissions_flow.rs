@@ -1123,7 +1123,7 @@ async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgP
         loop {
             tokio::select! {
                 biased;
-                _ = tokio::time::sleep(Duration::from_micros(200)) => {
+                () = tokio::time::sleep(Duration::from_micros(200)) => {
                     if key_row(&app, &dropped).await.is_some() { break; }
                 }
                 response = &mut request => {

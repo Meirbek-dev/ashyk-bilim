@@ -1438,9 +1438,10 @@ pub const IDEMPOTENT_IN_PROGRESS: i32 = 0;
 /// or panicked mid-action) and the next caller takes it over (BUG-204).
 pub const IDEMPOTENT_STALE_SECS: f64 = 30.0;
 
-/// Reserve `key` before the action; `true` when this caller now owns it
-/// (a fresh row, or a stale IN_PROGRESS one taken over). The row is
-/// completed by [`complete_idempotent`] or dropped by
+/// Reserve `key` before the action; `true` when this caller now owns it.
+///
+/// Ownership means a fresh row or a stale IN_PROGRESS one taken over. The
+/// row is completed by [`complete_idempotent`] or dropped by
 /// [`release_idempotent`] when the action fails.
 pub async fn reserve_idempotent(
     pool: &PgPool,
