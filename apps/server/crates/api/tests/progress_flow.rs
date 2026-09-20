@@ -799,3 +799,71 @@ async fn learner_can_always_leave_an_unpublished_course(pool: PgPool) {
         .await;
     assert_eq!(state.json()["enrolled"], false);
 }
+
+/// Mark ∥ leave for the same course never 500s and never leaves the trail
+/// and the projection disagreeing: either the step exists and the lesson
+/// is complete, or neither does (BUG-210). Twenty rounds of both orders.
+#[sqlx::test(migrations = "../../migrations")]
+async fn mark_and_leave_race_stays_consistent(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Race 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let alice = learner(&app, "alice").await;
+    let mark_path = format!("/api/v2/trail/activities/{a1}");
+    let leave_path = format!("/api/v2/trail/courses/{course_id}");
+    let state_path = format!("/api/v2/courses/{course_id}/learner-state");
+    let empty = serde_json::json!({});
+    for round in 0..20 {
+        // Start each round enrolled so the leave has something to delete.
+        let joined = app
+            .post_as(&alice, &leave_path, &serde_json::json!({}))
+            .await;
+        assert_eq!(joined.status, StatusCode::OK, "{}", joined.text());
+        // The mark reads activity, course and access before it writes; a
+        // leave that starts a little later lands between those reads and
+        // the run/step writes. Sweep the offset so both orders happen.
+        let offset = std::time::Duration::from_micros(500 * (round % 20));
+        let (mark, leave) = tokio::join!(app.post_as(&alice, &mark_path, &empty), async {
+            tokio::time::sleep(offset).await;
+            app.delete_as(&alice, &leave_path).await
+        },);
+        assert!(
+            [StatusCode::OK, StatusCode::NOT_FOUND, StatusCode::CONFLICT].contains(&mark.status),
+            "round {round}: mark {} {}",
+            mark.status,
+            mark.text()
+        );
+        assert!(
+            [StatusCode::OK, StatusCode::NOT_FOUND].contains(&leave.status),
+            "round {round}: leave {} {}",
+            leave.status,
+            leave.text()
+        );
+        let trail = app.get_as(&alice, "/api/v2/trail").await.json();
+        let has_step = trail["runs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|r| !r["steps"].as_array().unwrap().is_empty());
+        let state = app.get_as(&alice, &state_path).await.json();
+        let complete = activity(&state, &a1)["state"] == "complete";
+        assert_eq!(
+            has_step, complete,
+            "round {round}: trail step {has_step} vs projection {complete}: {trail} {state}"
+        );
+        // Marking again always lands (never a silent no-op on a stuck step).
+        let again = app
+            .post_as(&alice, &mark_path, &serde_json::json!({}))
+            .await;
+        assert_eq!(again.status, StatusCode::OK, "{}", again.text());
+        let state = app.get_as(&alice, &state_path).await.json();
+        assert_eq!(
+            activity(&state, &a1)["state"],
+            "complete",
+            "round {round}: {state}"
+        );
+        let left = app.delete_as(&alice, &leave_path).await;
+        assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    }
+}

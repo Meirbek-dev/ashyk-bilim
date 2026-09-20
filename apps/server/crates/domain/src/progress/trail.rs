@@ -198,6 +198,8 @@ impl TrailService {
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("trail"))?;
+        // BUG-210: leave and mark for this (user, course) run one at a time.
+        let lock = ab_db::progress::lock_trail_run(&self.pool, actor.user_id, course_id).await?;
         if !ab_db::progress::delete_trail_run(&self.pool, trail.id, course_id).await? {
             return Err(Error::not_found("trail run"));
         }
@@ -206,6 +208,7 @@ impl TrailService {
                 .unmark_complete(&activity, actor.user_id)
                 .await?;
         }
+        lock.commit().await?;
         self.hydrate(actor, trail).await
     }
 
@@ -230,6 +233,10 @@ impl TrailService {
                 "activity is completed through its submissions, not marked by hand",
             ));
         }
+        // BUG-210: run → step → projection is one critical section against
+        // `remove_course`, so a leave can neither pull the run from under
+        // the step (23503 → 500) nor reset the projection after the mark.
+        let lock = ab_db::progress::lock_trail_run(&self.pool, actor.user_id, course.id).await?;
         let trail = ab_db::progress::ensure_trail(&self.pool, actor.user_id).await?;
         let run = ab_db::progress::ensure_trail_run(&self.pool, trail.id, course.id, actor.user_id)
             .await?;
@@ -241,6 +248,7 @@ impl TrailService {
             crate::gamification::hooks::activity_completed(&self.pool, actor.user_id, activity.id)
                 .await;
         }
+        lock.commit().await?;
         self.hydrate(actor, trail).await
     }
 

@@ -466,6 +466,29 @@ pub async fn ensure_trail_run(
         .ok_or_else(|| ab_core::Error::not_found("trail run"))
 }
 
+/// Serialize trail writes for one (user, course) pair (BUG-210).
+///
+/// The transaction carries only a `pg_advisory_xact_lock`, released on
+/// commit or drop, so mark (run → step → projection) and leave (run →
+/// un-projection loop) never interleave. Callers keep it alive across
+/// their pool statements and commit at the end.
+// ponytail: holds one pool connection while the caller uses another —
+// route trail + projector statements through the tx if the pool ever
+// runs short under a mark/leave stampede.
+pub async fn lock_trail_run(
+    pool: &PgPool,
+    user_id: UserId,
+    course_id: CourseId,
+) -> Result<sqlx::Transaction<'static, sqlx::Postgres>> {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1::text || $2::text, 0))")
+        .bind(user_id.0.to_string())
+        .bind(course_id.0.to_string())
+        .execute(&mut *tx)
+        .await?;
+    Ok(tx)
+}
+
 /// Remove the run and its steps (cascade).
 pub async fn delete_trail_run(
     pool: &PgPool,
@@ -532,7 +555,14 @@ pub async fn insert_trail_step(
         run.user_id.0
     )
     .execute(pool)
-    .await?;
+    .await
+    .map_err(
+        |e| match e.as_database_error().and_then(|d| d.constraint()) {
+            // The run vanished under us (course deleted, …): a 404, not a 500.
+            Some("trail_steps_trail_run_id_fkey") => ab_core::Error::not_found("trail run"),
+            _ => e.into(),
+        },
+    )?;
     Ok(inserted.rows_affected() == 1)
 }
 
