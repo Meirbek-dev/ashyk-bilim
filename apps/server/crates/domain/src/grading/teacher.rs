@@ -555,24 +555,8 @@ pub(crate) fn iso8601(unix: i64) -> String {
     jiff::Timestamp::from_second(unix).map_or_else(|_| unix.to_string(), |t| t.to_string())
 }
 
-/// Quote a CSV field when it needs it (RFC 4180).
-fn csv_field(value: &str) -> String {
-    if value.contains([',', '"', '\n', '\r']) {
-        format!("\"{}\"", value.replace('"', "\"\""))
-    } else {
-        value.to_owned()
-    }
-}
-
-pub(crate) fn csv_row(fields: &[String]) -> String {
-    let mut line = fields
-        .iter()
-        .map(|f| csv_field(f))
-        .collect::<Vec<_>>()
-        .join(",");
-    line.push_str("\r\n");
-    line
-}
+// One CSV cell writer for every export (BUG-196): `crate::csv`.
+pub(crate) use crate::csv::csv_row;
 
 fn now_unix() -> i64 {
     std::time::SystemTime::now()
@@ -1722,13 +1706,5 @@ mod tests {
             CsvLanguage::from_accept_language(Some("de")),
             CsvLanguage::Ru
         );
-    }
-
-    #[test]
-    fn csv_fields_are_quoted_when_needed() {
-        assert_eq!(csv_field("plain"), "plain");
-        assert_eq!(csv_field("a,b"), "\"a,b\"");
-        assert_eq!(csv_field("say \"hi\""), "\"say \"\"hi\"\"\"");
-        assert_eq!(csv_row(&["a".into(), "b,c".into()]), "a,\"b,c\"\r\n");
     }
 }

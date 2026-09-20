@@ -11,27 +11,10 @@ use super::context::{AnalyticsContext, is_reviewable, progress_snapshots, submit
 use super::filters::AnalyticsFilters;
 use super::risk::build_risk_rows;
 use super::types::RiskLevel;
+use crate::csv::csv_row;
 use crate::grading::teacher::CsvLanguage;
 
 pub const MAX_EXPORT_ROWS: usize = 50_000;
-
-fn csv_field(value: &str) -> String {
-    if value.contains([',', '"', '\n', '\r']) {
-        format!("\"{}\"", value.replace('"', "\"\""))
-    } else {
-        value.to_owned()
-    }
-}
-
-fn csv_row(fields: &[String]) -> String {
-    let mut line = fields
-        .iter()
-        .map(|f| csv_field(f))
-        .collect::<Vec<_>>()
-        .join(",");
-    line.push_str("\r\n");
-    line
-}
 
 fn opt<T: ToString>(v: Option<T>) -> String {
     v.map(|v| v.to_string()).unwrap_or_default()
@@ -385,10 +368,6 @@ mod tests {
 
     #[test]
     fn fields_are_quoted_per_rfc_4180() {
-        assert_eq!(csv_field("plain"), "plain");
-        assert_eq!(csv_field("a,b"), "\"a,b\"");
-        assert_eq!(csv_field("say \"hi\""), "\"say \"\"hi\"\"\"");
-        assert_eq!(csv_row(&["a".into(), "b\nc".into()]), "a,\"b\nc\"\r\n");
         let doc = document(&["h1", "h2"], std::iter::once(vec!["1".into(), "2".into()]));
         assert_eq!(doc, "\u{feff}h1,h2\r\n1,2\r\n");
     }

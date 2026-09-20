@@ -18,6 +18,7 @@ pub mod catalog;
 pub mod certifications;
 pub mod code;
 pub mod community;
+mod csv;
 pub mod events;
 pub mod files;
 pub mod gamification;

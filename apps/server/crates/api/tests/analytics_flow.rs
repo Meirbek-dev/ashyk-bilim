@@ -1438,7 +1438,7 @@ fn grade(session: &MintedSession, id: &str, body: &serde_json::Value) -> Request
 /// the outcomes CSV (the BUG-187 `GradeKey` rule).
 #[sqlx::test(migrations = "../../migrations")]
 async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
-    let app = TestApp::spawn(pool).await;
+    let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
     let (_course_id, chapter_id) = public_course(&app, &teacher, "Grade of record").await;
     let (quiz_id, choice_id, essay_id) = quiz_with_essay(
@@ -1508,4 +1508,25 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     let line = text.lines().nth(1).unwrap();
     // …,submission_rate,pass_rate,median_score,difficulty,signals
     assert!(line.contains(",0,30,"), "{line}");
+
+    // BUG-196: a learner-controlled cell that starts a formula is defused
+    // in every export (one `csv_field`).
+    sqlx::query("UPDATE users SET username = $1 WHERE id = $2")
+        .bind("=HYPERLINK(\"http://evil\",\"x\") +1-1")
+        .bind(bob.user_id.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let progress = app
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/exports/course-progress.csv",
+        )
+        .await;
+    let text = progress.text();
+    assert!(
+        text.contains(",\"'=HYPERLINK(\"\"http://evil\"\",\"\"x\"\") +1-1\","),
+        "{text}"
+    );
+    assert!(!text.contains(",=HYPERLINK"), "{text}");
 }
