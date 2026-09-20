@@ -83,7 +83,9 @@ async fn policy_rejects_oversize_and_wrong_mime(pool: PgPool) {
     let user = app
         .create_user("policied", "p@example.com", &["user"])
         .await;
-    let session = app.mint_session_for(user, &["file:create:own"]).await;
+    let session = app
+        .mint_session_for(user, &["file:create:own", "course:update:own"])
+        .await;
 
     let oversize = app
         .post_as(
@@ -231,4 +233,39 @@ async fn finalize_rejects_a_content_type_mismatch(pool: PgPool) {
     assert_eq!(finalized.json()["code"], "unsupported-media-type");
     assert_eq!(finalized.json()["details"]["declared"], "image/png");
     assert_eq!(storage.head(Bucket::Public, &key).await.unwrap(), None);
+}
+
+/// BUG-200: `file:create:own` covers the learner purposes only — platform
+/// branding needs the platform grant, thumbnails and content blocks course
+/// write access; a learner gets 403 before any presign.
+#[sqlx::test(migrations = "../../migrations")]
+async fn authoring_and_platform_purposes_need_their_grant(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("learner", "learner@example.com", &["user"])
+        .await;
+    let learner = app.mint_session_for(user, &["file:create:own"]).await;
+    for purpose in ["platform-logo", "course-thumbnail", "block-video"] {
+        let refused = app
+            .post_as(
+                &learner,
+                "/api/v2/uploads",
+                &serde_json::json!({ "purpose": purpose, "mime": "image/png", "size_bytes": 10 }),
+            )
+            .await;
+        assert_eq!(refused.status, StatusCode::FORBIDDEN, "{purpose}: {}", refused.text());
+    }
+    let allowed = app
+        .post_as(
+            &learner,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "avatar", "mime": "image/png", "size_bytes": 10 }),
+        )
+        .await;
+    assert_eq!(allowed.status, StatusCode::OK, "{}", allowed.text());
+    let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM uploads")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(pending, 1, "refused purposes never reach the ledger");
 }

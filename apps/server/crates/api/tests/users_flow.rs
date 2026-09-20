@@ -201,7 +201,7 @@ async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
         .post_as(
             &session,
             "/api/v2/uploads",
-            &serde_json::json!({ "purpose": "block-image", "mime": "image/png",
+            &serde_json::json!({ "purpose": "file-submission", "mime": "image/png",
                                   "size_bytes": 4 }),
         )
         .await;

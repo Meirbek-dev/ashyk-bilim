@@ -56,6 +56,38 @@ fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
     }
 }
 
+/// BUG-200: `file:create:own` alone only covers the learner-facing purposes.
+/// Platform branding needs the platform grant; course thumbnails and
+/// content blocks need course write access (the curriculum gate is
+/// `course:update:own` as author or `course:update:platform`) — otherwise
+/// any learner could park a 500 MB video on the public bucket for the
+/// reap grace and serve it from `/content/…`.
+fn require_purpose_grant(actor: &Actor, purpose: &str) -> Result<()> {
+    let course_update = |scope| Permission {
+        resource: ResourceType::Course,
+        action: Action::Update,
+        scope: Some(scope),
+    };
+    let granted = match purpose {
+        "platform-logo" | "platform-thumbnail" => actor.has(Permission {
+            resource: ResourceType::Platform,
+            action: Action::Update,
+            scope: Some(Scope::Platform),
+        }),
+        "course-thumbnail" | "block-image" | "block-pdf" | "block-video" => {
+            actor.has(course_update(Scope::Own)) || actor.has(course_update(Scope::Platform))
+        }
+        _ => true,
+    };
+    if granted {
+        Ok(())
+    } else {
+        Err(Error::forbidden(format!(
+            "'{purpose}' uploads need authoring rights"
+        )))
+    }
+}
+
 const fn bucket_name(bucket: Bucket) -> &'static str {
     match bucket {
         Bucket::Public => "public",
@@ -117,6 +149,7 @@ impl UploadsService {
                 message: format!("unknown upload purpose '{purpose}'"),
             }]));
         };
+        require_purpose_grant(actor, purpose)?;
         if size_bytes > max_bytes {
             return Err(Error::validation(vec![FieldError {
                 field: "size_bytes".into(),
