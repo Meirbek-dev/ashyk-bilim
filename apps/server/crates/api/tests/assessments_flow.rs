@@ -1656,3 +1656,97 @@ async fn policy_oddities_warn_and_item_titles_are_trimmed(pool: PgPool) {
         readiness.text()
     );
 }
+
+/// BUG-207: a published assessment (no submissions) stays ready — an item
+/// add/patch that would fail readiness is a 409 carrying the codes, while a
+/// ready edit still lands.
+#[sqlx::test(migrations = "../../migrations")]
+async fn live_assessment_edits_must_keep_it_ready(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Live" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("1+1?"),
+        )
+        .await;
+    let item_id = item.json()["id"].as_str().unwrap().to_owned();
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    let no_options = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &serde_json::json!({ "title": "noopts", "max_score": 5,
+                                  "body": { "kind": "choice", "prompt": "empty?", "options": [] } }),
+        )
+        .await;
+    assert_eq!(
+        no_options.status,
+        StatusCode::CONFLICT,
+        "{}",
+        no_options.text()
+    );
+    assert_eq!(no_options.json()["code"], "conflict");
+    let codes = no_options.json()["details"]["readiness"].clone();
+    assert!(
+        codes
+            .as_array()
+            .unwrap()
+            .contains(&serde_json::json!("choice.options_missing")),
+        "{codes}"
+    );
+
+    let mut no_correct = choice_item("1+1?")["body"].clone();
+    no_correct["options"][0]["is_correct"] = serde_json::json!(false);
+    let patched = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{item_id}"),
+            &serde_json::json!({ "body": no_correct }),
+        )
+        .await;
+    assert_eq!(patched.status, StatusCode::CONFLICT, "{}", patched.text());
+    assert!(
+        patched.json()["details"]["readiness"]
+            .as_array()
+            .unwrap()
+            .contains(&serde_json::json!("choice.correct_missing"))
+    );
+
+    // A ready edit still lands; readiness stays ok.
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{item_id}"),
+            &serde_json::json!({ "title": "2+2?" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/readiness"))
+        .await;
+    assert_eq!(readiness.json()["ok"], true, "{}", readiness.text());
+    let items = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(items.json()["items"].as_array().unwrap().len(), 1);
+}

@@ -533,6 +533,31 @@ impl AssessmentsService {
         Ok(())
     }
 
+    /// BUG-207: a live assessment passed the readiness gate at publish time;
+    /// an edit that would undo it (blank prompt, no options, no correct
+    /// option, …) is refused with the would-be readiness codes — 409, like
+    /// the delete-last-item guard. `items` is the post-edit item list.
+    fn ensure_stays_ready(assessment: &Assessment, items: &[Item]) -> Result<()> {
+        if assessment.lifecycle != Lifecycle::Published {
+            return Ok(());
+        }
+        let readiness = Self::build_readiness(assessment, items, None);
+        if readiness.ok {
+            return Ok(());
+        }
+        let codes: Vec<&str> = readiness
+            .issues
+            .iter()
+            .filter(|i| i.severity == "blocker")
+            .map(|i| i.code.as_str())
+            .collect();
+        Err(Error::app_with_details(
+            ab_core::ErrorCode::Conflict,
+            "the change would make a published assessment unready; unpublish first",
+            serde_json::json!({ "readiness": codes }),
+        ))
+    }
+
     fn check_kind_allowed(assessment_kind: AssessmentKind, item_kind: ItemKind) -> Result<()> {
         if assessment_kind.allowed_item_kinds().contains(&item_kind) {
             Ok(())
@@ -732,7 +757,20 @@ impl AssessmentsService {
         let assessment = self.load_for_author(actor, id).await?;
         self.ensure_editable(&assessment).await?;
         policy.validate()?;
+        // BUG-207: the readiness gate publish took, re-run on the would-be
+        // policy (no policy rule blocks today — they warn — but the gate
+        // stays one function).
+        let (late_kind, _, _, late_cutoff_at) = policy.late_policy.columns();
+        let would_be = Assessment {
+            due_at: policy.due_at,
+            allow_late: policy.allow_late,
+            late_policy_kind: late_kind,
+            late_cutoff_at,
+            ..assessment.clone()
+        };
+        Self::ensure_stays_ready(&would_be, &self.detail(id).await?.items)?;
         ab_db::assessments::update_policy(&self.pool, id, &policy.to_values()).await?;
+
         self.detail(id).await
     }
 
@@ -1138,6 +1176,23 @@ impl AssessmentsService {
         // UX-139: an item title is trimmed and never blank, like the assessment's.
         let title = ab_core::required_str("title", title)?;
         let metadata = metadata.normalized();
+        if assessment.lifecycle == Lifecycle::Published {
+            let mut items = self.detail(id).await?.items;
+            items.push(Item {
+                id: AssessmentItemId::default(),
+                position: 0,
+                kind: body.kind(),
+                title: title.to_owned(),
+                body: body.clone(),
+                max_score,
+                section_label: None,
+                difficulty: None,
+                tags: Vec::new(),
+                outcome_ids: Vec::new(),
+                estimated_minutes: None,
+            });
+            Self::ensure_stays_ready(&assessment, &items)?;
+        }
         let item_id = ab_db::assessments::insert_item(
             &self.pool,
             id,
@@ -1199,6 +1254,22 @@ impl AssessmentsService {
             .as_deref()
             .map(|t| ab_core::required_str("title", t))
             .transpose()?;
+        if assessment.lifecycle == Lifecycle::Published {
+            let mut items = self.detail(row.assessment_id).await?.items;
+            if let Some(item) = items.iter_mut().find(|i| i.id == item_id) {
+                if let Some(title) = title {
+                    title.clone_into(&mut item.title);
+                }
+                if let Some(body) = &changes.body {
+                    item.kind = body.kind();
+                    item.body = body.clone();
+                }
+                if let Some(max_score) = changes.max_score {
+                    item.max_score = max_score;
+                }
+            }
+            Self::ensure_stays_ready(&assessment, &items)?;
+        }
         let stored = changes.body.as_ref().map(|b| (b.kind(), b.to_stored()));
         let metadata = changes.metadata.map(ItemMetadataInput::normalized);
         ab_db::assessments::update_item(
