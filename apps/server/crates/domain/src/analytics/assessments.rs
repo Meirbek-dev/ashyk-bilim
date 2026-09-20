@@ -631,9 +631,8 @@ fn item_correct(item: &crate::grading::breakdown::GradedItem, pass_pct: f64) -> 
     if item.needs_manual_review {
         return None;
     }
-    item.correct.or_else(|| {
-        (item.max_score > 0.0).then(|| item.score / item.max_score * 100.0 >= pass_pct)
-    })
+    item.correct
+        .or_else(|| (item.max_score > 0.0).then(|| item.score / item.max_score * 100.0 >= pass_pct))
 }
 
 fn question_tallies(

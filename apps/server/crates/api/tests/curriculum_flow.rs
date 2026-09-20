@@ -311,17 +311,33 @@ async fn curriculum_respects_course_access(pool: PgPool) {
     // UX-145: creating an assessment / file submission in that chapter is
     // the same 404 as a random id (one `authorable_chapter`).
     for (path, body) in [
-        ("/api/v2/assessments", serde_json::json!({ "kind": "quiz", "title": "Probe" })),
-        ("/api/v2/file-submissions", serde_json::json!({ "title": "Probe" })),
+        (
+            "/api/v2/assessments",
+            serde_json::json!({ "kind": "quiz", "title": "Probe" }),
+        ),
+        (
+            "/api/v2/file-submissions",
+            serde_json::json!({ "title": "Probe" }),
+        ),
     ] {
         let mut hidden = body.clone();
         hidden["chapter_id"] = serde_json::json!(chapter);
         let probe = app.post_as(&rival, path, &hidden).await;
-        assert_eq!(probe.status, StatusCode::NOT_FOUND, "{path}: {}", probe.text());
+        assert_eq!(
+            probe.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            probe.text()
+        );
         let mut unknown = body;
         unknown["chapter_id"] = serde_json::json!(uuid::Uuid::now_v7());
         let random = app.post_as(&rival, path, &unknown).await;
-        assert_eq!(random.status, StatusCode::NOT_FOUND, "{path}: {}", random.text());
+        assert_eq!(
+            random.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            random.text()
+        );
         assert_eq!(probe.json()["detail"], random.json()["detail"], "{path}");
     }
 

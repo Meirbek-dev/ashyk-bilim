@@ -458,7 +458,10 @@ impl FileSubmissionsService {
         title: &str,
         patch: ConfigPatch,
     ) -> Result<FileSubmission> {
-        let chapter = self.assessments.authorable_chapter(actor, chapter_id).await?;
+        let chapter = self
+            .assessments
+            .authorable_chapter(actor, chapter_id)
+            .await?;
         if title.trim().is_empty() {
             return Err(Error::validation(vec![field(
                 "title",
