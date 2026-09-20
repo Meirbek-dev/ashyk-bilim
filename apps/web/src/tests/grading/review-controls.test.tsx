@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulkActionBar'
 import GradeForm from '@/features/grading/review/components/GradeForm'
+import SubmissionList from '@/features/grading/review/components/SubmissionList'
 import type { Submission } from '@/features/grading/domain'
 import { AnnotationProvider } from '@/features/grading/review/AnnotationContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -856,6 +857,34 @@ describe('teacher review controls', () => {
       await waitFor(() => expect(publish).toBeEnabled())
       fireEvent.click(publish)
       await waitFor(() => expect(mocks.toastErrorMock).toHaveBeenCalledWith('toasts.unscoredItems'))
+    })
+
+    it('the queue row shows no percent until a score of record exists (BUG-202)', () => {
+      render(
+        <SubmissionList
+          submissions={[
+            createSubmission({ submission_uuid: 'pending', status: 'PENDING', final_score: null, auto_score: 50 }),
+            createSubmission({ submission_uuid: 'graded', status: 'GRADED', final_score: 80 }),
+          ]}
+          total={2}
+          pages={1}
+          page={1}
+          activeFilter="ALL"
+          search=""
+          sortBy="submitted_at"
+          isLoading={false}
+          selectedUuid={null}
+          selectedUuids={new Set()}
+          onFilterChange={vi.fn()}
+          onSearchChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onPageChange={vi.fn()}
+          onSelectSubmission={vi.fn()}
+          onToggleSelected={vi.fn()}
+        />,
+      )
+      expect(screen.getAllByText(/%$/)).toHaveLength(1)
+      expect(screen.getByText('80%')).toBeInTheDocument()
     })
 
     it('the bulk release reports the rows held back for grading', async () => {

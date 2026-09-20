@@ -1958,6 +1958,29 @@ async fn ai_refuses_an_open_draft(pool: PgPool) {
             refused.text()
         );
     }
+    // BUG-202: a stranger sees 404 whether or not the id is a draft.
+    let stranger = learner(&app, "stranger").await;
+    for path in [
+        format!("/api/v2/submissions/{draft_id}/review"),
+        format!("/api/v2/submissions/{draft_id}/grading-history"),
+        format!("/api/v2/ai/submission-analysis/{draft_id}/latest"),
+    ] {
+        let hidden = app.get_as(&stranger, &path).await;
+        assert_eq!(
+            hidden.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            hidden.text()
+        );
+    }
+    let hidden = app
+        .patch_as(
+            &stranger,
+            &format!("/api/v2/submissions/{draft_id}/grade"),
+            &serde_json::json!({ "action": "save", "feedback": "x" }),
+        )
+        .await;
+    assert_eq!(hidden.status, StatusCode::NOT_FOUND, "{}", hidden.text());
     // The learner is not gated out of their own open attempt.
     let state = app
         .get_as(

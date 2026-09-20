@@ -1809,6 +1809,16 @@ async fn feedback_only_save_keeps_the_attempt_pending(pool: PgPool) {
     assert_eq!(saved.json()["grading"]["needs_manual_review"], true);
     assert_eq!(saved.json()["grading"]["feedback"], "read so far");
     assert_eq!(saved.json()["feedback"][0]["comment"], "expand this");
+    // BUG-202: no score of record yet — the queue row shows no percent.
+    assert!(saved.json()["final_score"].is_null(), "{}", saved.text());
+    let queue = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions"),
+        )
+        .await;
+    assert_eq!(queue.status, StatusCode::OK, "{}", queue.text());
+    assert!(queue.json()["items"][0]["final_score"].is_null(), "{}", queue.text());
     let stats = app
         .get_as(
             &teacher,
@@ -1828,8 +1838,8 @@ async fn feedback_only_save_keeps_the_attempt_pending(pool: PgPool) {
     assert_eq!(released.json()["published_count"], 0);
     assert_eq!(
         released.json()["needs_grading_count"],
-        0,
-        "pending rows are not releasable"
+        1,
+        "the pending row is owed a grade (BUG-202)"
     );
     let refused = app
         .send(grade(

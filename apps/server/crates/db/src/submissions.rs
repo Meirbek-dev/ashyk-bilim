@@ -302,7 +302,7 @@ pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
     expected_version: i64,
     status: SubmissionStatus,
     grading: &serde_json::Value,
-    final_score: f64,
+    final_score: Option<f64>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET

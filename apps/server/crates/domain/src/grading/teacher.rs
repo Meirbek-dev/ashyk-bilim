@@ -241,7 +241,9 @@ pub struct ItemAnalytics {
 pub struct PublishSummary {
     pub published_count: i64,
     pub already_published_count: i64,
-    /// Graded rows held back: an item still awaits its manual score (BUG-197).
+    /// Rows held back: `pending` attempts plus graded ones whose manual
+    /// item is still unscored (BUG-197 / BUG-202) — the same count as
+    /// `stats.needs_grading`.
     pub needs_grading_count: i64,
 }
 
@@ -666,16 +668,14 @@ impl GradingService {
     /// A submission the actor may grade. Unknown and not-gradable answer
     /// the same 404: the id is the secret (UX-134 — a 403 confirmed
     /// another learner's submission ids). An open draft is 409 for the
-    /// review read and the save alike (BUG-198).
+    /// review read and the save alike (BUG-198) — after the access check,
+    /// so a stranger never learns which ids are drafts (BUG-202).
     async fn gradable_submission(
         &self,
         actor: &Actor,
         id: SubmissionId,
     ) -> Result<(SubmissionRow, Assessment)> {
         let row = self.load_submission(id).await?;
-        if row.status == SubmissionStatus::Draft {
-            return Err(Error::conflict(OPEN_DRAFT));
-        }
         let (assessment, _) = self
             .grader_context(actor, row.assessment_id)
             .await
@@ -686,6 +686,9 @@ impl GradingService {
                 } => Error::not_found("submission"),
                 other => other,
             })?;
+        if row.status == SubmissionStatus::Draft {
+            return Err(Error::conflict(OPEN_DRAFT));
+        }
         Ok((row, assessment))
     }
 
@@ -1204,7 +1207,9 @@ impl GradingService {
             expected_version,
             target,
             &effective,
-            final_score,
+            // BUG-202: no score of record while the attempt stays pending —
+            // the queue row must not read the auto part as a grade.
+            (target != SubmissionStatus::Pending).then_some(final_score),
         )
         .await?;
         if !written {
@@ -1340,7 +1345,11 @@ impl GradingService {
         let rows = ab_db::submissions::list_releasable(&self.pool, assessment_id).await?;
         let mut published = 0;
         let mut already = 0;
-        let mut needs_grading = 0;
+        // BUG-202: a feedback-only save keeps the attempt `pending` (not
+        // releasable) — the UI still has to warn that grading is owed.
+        let mut needs_grading = ab_db::submissions::stats(&self.pool, assessment_id)
+            .await?
+            .pending;
         for row in rows {
             if ab_db::submissions::has_published_entry(&self.pool, row.id).await? {
                 already += 1;
