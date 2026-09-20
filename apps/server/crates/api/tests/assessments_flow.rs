@@ -560,6 +560,34 @@ async fn duplicate_copies_policy_and_items_as_a_fresh_draft(pool: PgPool) {
         )
         .await;
     assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // BUG-201: a blank title is refused (422 `title`/`required`), a padded
+    // one is trimmed for the copy and its activity.
+    let blank = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/duplicate"),
+            &serde_json::json!({ "title": "   " }),
+        )
+        .await;
+    assert_eq!(blank.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", blank.text());
+    assert_eq!(blank.json()["field_errors"][0]["field"], "title");
+    let padded = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/duplicate"),
+            &serde_json::json!({ "title": "  Retake " }),
+        )
+        .await;
+    assert_eq!(padded.status, StatusCode::CREATED, "{}", padded.text());
+    assert_eq!(padded.json()["title"], "Retake");
+    let activity_id = padded.json()["activity_id"].as_str().unwrap().to_owned();
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+            .await
+            .json()["name"],
+        "Retake"
+    );
 }
 
 /// Q-2026-09-12-1: a learner reads a matching item as `MatchingLearnerBody`

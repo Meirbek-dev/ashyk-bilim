@@ -324,21 +324,25 @@ impl CurriculumService {
         }
     }
 
-    /// A published/scheduled assessment or a published file-submission
-    /// config: content learners can reach through this activity.
-    async fn has_live_content(&self, activity_id: ActivityId, activity_type: &str) -> Result<bool> {
+    /// An assessment or file-submission config attached to this activity,
+    /// whatever its lifecycle (BUG-201): a draft or archived assessment can
+    /// still be published later, and its transition flips the activity
+    /// `published` — so a `dynamic` row would go live with a quiz behind it.
+    async fn has_attached_content(
+        &self,
+        activity_id: ActivityId,
+        activity_type: &str,
+    ) -> Result<bool> {
         Ok(match activity_type {
             "quiz" | "exam" | "code_challenge" => {
                 ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id)
                     .await?
-                    .is_some_and(|a| {
-                        matches!(a.lifecycle, Lifecycle::Published | Lifecycle::Scheduled)
-                    })
+                    .is_some()
             }
             "file_submission" => {
                 ab_db::file_submissions::get_file_submission_by_activity(&self.pool, activity_id)
                     .await?
-                    .is_some_and(|c| c.lifecycle == FileSubmissionLifecycle::Published)
+                    .is_some()
             }
             _ => false,
         })
@@ -385,16 +389,16 @@ impl CurriculumService {
         if merged_published && (type_changes || !activity.published) {
             self.require_publishable(activity_id, merged_type).await?;
         }
-        // UX-104/UX-112: a live (or scheduled) assessment — or a published
-        // file-submission config — stays attached to its activity; the type
-        // cannot move away from it until it is unpublished.
+        // UX-104/UX-112/BUG-201: an assessment or file-submission config
+        // stays attached to its activity in every lifecycle; the type cannot
+        // move away from it while the row exists.
         if type_changes
             && self
-                .has_live_content(activity_id, &activity.activity_type)
+                .has_attached_content(activity_id, &activity.activity_type)
                 .await?
         {
             return Err(Error::conflict(
-                "the activity has a live assessment; unpublish it before changing the type",
+                "the activity has an assessment attached; delete it before changing the type",
             ));
         }
         // UX-112/UX-120: one name — the assessment title follows the activity

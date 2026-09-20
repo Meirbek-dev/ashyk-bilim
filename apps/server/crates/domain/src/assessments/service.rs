@@ -1005,7 +1005,11 @@ impl AssessmentsService {
                 message: "copies stay within the source course".into(),
             }]));
         }
-        let copy_title = title.map_or_else(|| format!("{} (copy)", source.title), str::to_owned);
+        // BUG-201 (BUG-177 class): a given title is trimmed and never blank.
+        let copy_title = match title {
+            Some(title) => ab_core::required_str("title", title)?.to_owned(),
+            None => format!("{} (copy)", source.title),
+        };
 
         let (activity_type, sub_type) = source.kind.activity_type();
         let activity_id = ab_db::catalog::insert_activity(

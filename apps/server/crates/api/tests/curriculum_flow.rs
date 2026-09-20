@@ -880,3 +880,53 @@ async fn deleting_a_quiz_activity_cascades_its_hand_ins(pool: PgPool) {
         .await;
     assert_eq!(submission.status, StatusCode::NOT_FOUND);
 }
+
+/// BUG-201: a draft (or archived) assessment pins its activity's type just
+/// like a live one — otherwise its later `published` transition would flip a
+/// `dynamic` activity live with a quiz behind it (409 `conflict`, row
+/// untouched). Archived: BUG-186's `refused_activity_patch_writes_nothing`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn draft_assessment_pins_the_activity_type(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("drafter", "drafter@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Drafts").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+
+    let refused = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "conflict");
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+            .await
+            .json()["activity_type"],
+        "quiz"
+    );
+}
