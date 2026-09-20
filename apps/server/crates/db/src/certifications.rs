@@ -48,8 +48,8 @@ pub async fn get_certification(
     Ok(row)
 }
 
-pub async fn list_course_certifications(
-    pool: &PgPool,
+pub async fn list_course_certifications<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
 ) -> Result<Vec<CertificationRow>> {
     let rows = sqlx::query_as!(
@@ -60,7 +60,7 @@ pub async fn list_course_certifications(
            FROM certifications WHERE course_id = $1 ORDER BY id"#,
         course_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }
@@ -103,8 +103,8 @@ pub struct CertificateRow {
 }
 
 /// Issue once per (certification, user); `false` when it already existed.
-pub async fn issue_certificate(
-    pool: &PgPool,
+pub async fn issue_certificate<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     certification_id: CertificationId,
     user_id: UserId,
     verify_code: &str,
@@ -117,7 +117,7 @@ pub async fn issue_certificate(
         user_id.0,
         verify_code
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(inserted.rows_affected() == 1)
 }

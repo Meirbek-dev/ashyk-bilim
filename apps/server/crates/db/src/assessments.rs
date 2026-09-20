@@ -265,8 +265,8 @@ pub async fn lock_assessment(
     get_assessment(conn, id).await
 }
 
-pub async fn get_assessment_by_activity(
-    pool: &PgPool,
+pub async fn get_assessment_by_activity<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     activity_id: ActivityId,
 ) -> Result<Option<AssessmentRow>> {
     let row = sqlx::query_as!(
@@ -300,7 +300,7 @@ pub async fn get_assessment_by_activity(
            FROM assessments WHERE activity_id = $1"#,
         activity_id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }

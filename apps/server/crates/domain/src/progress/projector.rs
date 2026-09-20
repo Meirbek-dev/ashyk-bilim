@@ -18,7 +18,7 @@ use ab_db::progress::{
     ActivityProgressRow, ActivityProgressWrite, CourseProgressRow, CourseProgressWrite,
 };
 use ab_db::submissions::SubmissionRow;
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 
 /// Default passing score for file submissions (legacy hard-coded 60).
 const FILE_SUBMISSION_PASSING_SCORE: f64 = 60.0;
@@ -119,13 +119,21 @@ impl ProgressProjector {
     /// Mark a lesson/video/document complete (legacy
     /// `mark_manual_activity_complete`). Assessment and file-submission
     /// activities are owned by their pipelines and are left alone.
-    pub async fn mark_complete(&self, activity: &ActivityRow, user_id: UserId) -> Result<()> {
-        if self.is_pipeline_owned(activity).await? {
+    ///
+    /// Runs on the caller's connection (the trail lock transaction, BUG-220 /
+    /// BUG-221): the step and the projection commit together.
+    pub async fn mark_complete(
+        &self,
+        conn: &mut PgConnection,
+        activity: &ActivityRow,
+        user_id: UserId,
+    ) -> Result<()> {
+        if is_pipeline_owned(&mut *conn, activity).await? {
             return Ok(());
         }
         let now = now_unix();
         let existing =
-            ab_db::progress::get_activity_progress(&self.pool, activity.id, user_id).await?;
+            ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?;
         let write = ActivityProgressWrite {
             course_id: activity.course_id,
             activity_id: activity.id,
@@ -147,7 +155,7 @@ impl ProgressProjector {
             teacher_action_required: false,
             status_reason: None,
         };
-        ab_db::progress::upsert_activity_progress(&self.pool, &write).await?;
+        ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
         crate::analytics::events::hooks::activity_completed(
             &self.pool,
             activity.course_id,
@@ -155,17 +163,23 @@ impl ProgressProjector {
             user_id,
         )
         .await;
-        self.recalculate_course(activity.course_id, user_id).await?;
+        self.recalculate_course_on(conn, activity.course_id, user_id)
+            .await?;
         Ok(())
     }
 
-    /// Undo an explicit completion.
-    pub async fn unmark_complete(&self, activity: &ActivityRow, user_id: UserId) -> Result<()> {
-        if self.is_pipeline_owned(activity).await? {
+    /// Undo an explicit completion (same connection rule as `mark_complete`).
+    pub async fn unmark_complete(
+        &self,
+        conn: &mut PgConnection,
+        activity: &ActivityRow,
+        user_id: UserId,
+    ) -> Result<()> {
+        if is_pipeline_owned(&mut *conn, activity).await? {
             return Ok(());
         }
         let Some(existing) =
-            ab_db::progress::get_activity_progress(&self.pool, activity.id, user_id).await?
+            ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?
         else {
             return Ok(());
         };
@@ -190,22 +204,16 @@ impl ProgressProjector {
             teacher_action_required: false,
             status_reason: None,
         };
-        ab_db::progress::upsert_activity_progress(&self.pool, &write).await?;
-        self.recalculate_course(activity.course_id, user_id).await?;
+        ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
+        self.recalculate_course_on(conn, activity.course_id, user_id)
+            .await?;
         Ok(())
     }
 
     /// Assessment and file-submission activities complete through their
     /// pipelines (submit → grade → project), never by an explicit mark.
     pub async fn is_pipeline_owned(&self, activity: &ActivityRow) -> Result<bool> {
-        if activity.activity_type == "file_submission" {
-            return Ok(true);
-        }
-        Ok(
-            ab_db::assessments::get_assessment_by_activity(&self.pool, activity.id)
-                .await?
-                .is_some(),
-        )
+        is_pipeline_owned(&self.pool, activity).await
     }
 
     // ── Recalculation ───────────────────────────────────────────────────
@@ -214,8 +222,9 @@ impl ProgressProjector {
     /// `learner-state.enrolled` reads, and the legacy created it on the
     /// first submission too.
     async fn ensure_enrolled(&self, course_id: CourseId, user_id: UserId) -> Result<()> {
-        let trail = ab_db::progress::ensure_trail(&self.pool, user_id).await?;
-        ab_db::progress::ensure_trail_run(&self.pool, trail.id, course_id, user_id).await?;
+        let mut conn = self.pool.acquire().await?;
+        let trail = ab_db::progress::ensure_trail(&mut conn, user_id).await?;
+        ab_db::progress::ensure_trail_run(&mut conn, trail.id, course_id, user_id).await?;
         Ok(())
     }
 
@@ -291,17 +300,30 @@ impl ProgressProjector {
         course_id: CourseId,
         user_id: UserId,
     ) -> Result<CourseProgressRow> {
-        ab_db::progress::ensure_course_rows(&self.pool, course_id, user_id).await?;
+        let mut conn = self.pool.acquire().await?;
+        self.recalculate_course_on(&mut conn, course_id, user_id)
+            .await
+    }
+
+    /// [`Self::recalculate_course`] on the caller's connection, so a trail
+    /// mark / leave commits the aggregate with its step (BUG-221).
+    pub async fn recalculate_course_on(
+        &self,
+        conn: &mut PgConnection,
+        course_id: CourseId,
+        user_id: UserId,
+    ) -> Result<CourseProgressRow> {
+        ab_db::progress::ensure_course_rows(&mut *conn, course_id, user_id).await?;
         let rows =
-            ab_db::progress::list_course_progress_rows(&self.pool, course_id, user_id).await?;
-        let weights = ab_db::progress::list_assessment_weights(&self.pool, course_id).await?;
+            ab_db::progress::list_course_progress_rows(&mut *conn, course_id, user_id).await?;
+        let weights = ab_db::progress::list_assessment_weights(&mut *conn, course_id).await?;
         let write = aggregate_course(course_id, user_id, &rows, &weights);
-        ab_db::progress::upsert_course_progress(&self.pool, &write).await?;
+        ab_db::progress::upsert_course_progress(&mut *conn, &write).await?;
         if write.certificate_eligible {
-            crate::certifications::issue_for_completion(&self.pool, course_id, user_id).await?;
+            crate::certifications::issue_for_completion(&mut *conn, course_id, user_id).await?;
             crate::gamification::hooks::course_completed(&self.pool, user_id, course_id).await;
         }
-        ab_db::progress::get_course_progress(&self.pool, course_id, user_id)
+        ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
             .await?
             .ok_or_else(|| Error::not_found("course progress"))
     }
@@ -357,6 +379,20 @@ impl ProgressProjector {
         }
         Ok(report)
     }
+}
+
+async fn is_pipeline_owned<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    activity: &ActivityRow,
+) -> Result<bool> {
+    if activity.activity_type == "file_submission" {
+        return Ok(true);
+    }
+    Ok(
+        ab_db::assessments::get_assessment_by_activity(db, activity.id)
+            .await?
+            .is_some(),
+    )
 }
 
 // ── Pure projection logic ───────────────────────────────────────────────────

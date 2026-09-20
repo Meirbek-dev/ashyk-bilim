@@ -8,7 +8,7 @@ use ab_core::id::{
     ActivityId, ActivityProgressId, CourseId, CourseProgressId, SubmissionId, TrailId, TrailRunId,
     TrailStepId, UserId,
 };
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 
 /// `to_timestamp($n)` wants double precision; epoch seconds fit exactly.
 #[allow(clippy::cast_precision_loss)]
@@ -70,7 +70,10 @@ pub struct ActivityProgressWrite {
     pub status_reason: Option<String>,
 }
 
-pub async fn upsert_activity_progress(pool: &PgPool, w: &ActivityProgressWrite) -> Result<()> {
+pub async fn upsert_activity_progress<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    w: &ActivityProgressWrite,
+) -> Result<()> {
     sqlx::query!(
         r#"INSERT INTO activity_progress
                (course_id, activity_id, user_id, state, required, score, passed,
@@ -111,13 +114,13 @@ pub async fn upsert_activity_progress(pool: &PgPool, w: &ActivityProgressWrite) 
         w.teacher_action_required,
         w.status_reason.as_deref()
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
 
-pub async fn get_activity_progress(
-    pool: &PgPool,
+pub async fn get_activity_progress<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     activity_id: ActivityId,
     user_id: UserId,
 ) -> Result<Option<ActivityProgressRow>> {
@@ -140,7 +143,7 @@ pub async fn get_activity_progress(
         activity_id.0,
         user_id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
@@ -148,8 +151,8 @@ pub async fn get_activity_progress(
 /// One learner's rows across a course: every published activity (once
 /// [`ensure_course_rows`] ran) — rows of drafts and since-unpublished
 /// activities are excluded so totals follow the published set.
-pub async fn list_course_progress_rows(
-    pool: &PgPool,
+pub async fn list_course_progress_rows<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<Vec<ActivityProgressRow>> {
@@ -174,7 +177,7 @@ pub async fn list_course_progress_rows(
         course_id.0,
         user_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }
@@ -184,7 +187,11 @@ pub async fn list_course_progress_rows(
 /// Every activity is required unless its `settings.required` is `false`
 /// (legacy: the assessment-level flag is not consulted); `due_at` comes
 /// from the assessment / file submission behind it.
-pub async fn ensure_course_rows(pool: &PgPool, course_id: CourseId, user_id: UserId) -> Result<()> {
+pub async fn ensure_course_rows<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<()> {
     sqlx::query!(
         r#"INSERT INTO activity_progress (course_id, activity_id, user_id, required, due_at)
            SELECT a.course_id, a.id, $2,
@@ -198,7 +205,7 @@ pub async fn ensure_course_rows(pool: &PgPool, course_id: CourseId, user_id: Use
         course_id.0,
         user_id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
@@ -209,8 +216,8 @@ pub struct ActivityWeightRow {
     pub weight: f64,
 }
 
-pub async fn list_assessment_weights(
-    pool: &PgPool,
+pub async fn list_assessment_weights<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
 ) -> Result<Vec<ActivityWeightRow>> {
     let rows = sqlx::query_as!(
@@ -219,7 +226,7 @@ pub async fn list_assessment_weights(
            FROM assessments WHERE course_id = $1"#,
         course_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }
@@ -260,7 +267,10 @@ pub struct CourseProgressWrite {
     pub certificate_eligible: bool,
 }
 
-pub async fn upsert_course_progress(pool: &PgPool, w: &CourseProgressWrite) -> Result<()> {
+pub async fn upsert_course_progress<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    w: &CourseProgressWrite,
+) -> Result<()> {
     sqlx::query!(
         r#"INSERT INTO course_progress
                (course_id, user_id, completed_required_count, total_required_count,
@@ -290,13 +300,13 @@ pub async fn upsert_course_progress(pool: &PgPool, w: &CourseProgressWrite) -> R
         epoch(w.completed_at),
         w.certificate_eligible
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
 
-pub async fn get_course_progress(
-    pool: &PgPool,
+pub async fn get_course_progress<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<Option<CourseProgressRow>> {
@@ -314,7 +324,7 @@ pub async fn get_course_progress(
         course_id.0,
         user_id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
@@ -356,7 +366,10 @@ pub struct TrailRow {
     pub updated_at: i64,
 }
 
-pub async fn get_trail(pool: &PgPool, user_id: UserId) -> Result<Option<TrailRow>> {
+pub async fn get_trail<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    user_id: UserId,
+) -> Result<Option<TrailRow>> {
     let row = sqlx::query_as!(
         TrailRow,
         r#"SELECT id AS "id: TrailId", user_id AS "user_id: UserId",
@@ -365,20 +378,20 @@ pub async fn get_trail(pool: &PgPool, user_id: UserId) -> Result<Option<TrailRow
            FROM trails WHERE user_id = $1"#,
         user_id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
 
 /// Create-or-get (one trail per user).
-pub async fn ensure_trail(pool: &PgPool, user_id: UserId) -> Result<TrailRow> {
+pub async fn ensure_trail(conn: &mut PgConnection, user_id: UserId) -> Result<TrailRow> {
     sqlx::query!(
         "INSERT INTO trails (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
         user_id.0
     )
-    .execute(pool)
+    .execute(&mut *conn)
     .await?;
-    get_trail(pool, user_id)
+    get_trail(&mut *conn, user_id)
         .await?
         .ok_or_else(|| ab_core::Error::not_found("trail"))
 }
@@ -411,8 +424,8 @@ pub async fn list_trail_runs(pool: &PgPool, trail_id: TrailId) -> Result<Vec<Tra
     Ok(rows)
 }
 
-pub async fn get_trail_run(
-    pool: &PgPool,
+pub async fn get_trail_run<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     trail_id: TrailId,
     course_id: CourseId,
 ) -> Result<Option<TrailRunRow>> {
@@ -427,7 +440,7 @@ pub async fn get_trail_run(
         trail_id.0,
         course_id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
@@ -447,7 +460,7 @@ pub async fn has_trail_run(pool: &PgPool, course_id: CourseId, user_id: UserId) 
 
 /// Create-or-get the run for a course.
 pub async fn ensure_trail_run(
-    pool: &PgPool,
+    conn: &mut PgConnection,
     trail_id: TrailId,
     course_id: CourseId,
     user_id: UserId,
@@ -459,39 +472,44 @@ pub async fn ensure_trail_run(
         course_id.0,
         user_id.0
     )
-    .execute(pool)
+    .execute(&mut *conn)
     .await?;
-    get_trail_run(pool, trail_id, course_id)
+    get_trail_run(&mut *conn, trail_id, course_id)
         .await?
         .ok_or_else(|| ab_core::Error::not_found("trail run"))
 }
 
-/// Serialize trail writes for one (user, course) pair (BUG-210).
+/// Try to serialize trail writes for one (user, course) pair (BUG-210).
 ///
-/// The transaction carries only a `pg_advisory_xact_lock`, released on
-/// commit or drop, so mark (run → step → projection) and leave (run →
-/// un-projection loop) never interleave. Callers keep it alive across
-/// their pool statements and commit at the end.
-// ponytail: holds one pool connection while the caller uses another —
-// route trail + projector statements through the tx if the pool ever
-// runs short under a mark/leave stampede.
-pub async fn lock_trail_run(
+/// `pg_try_advisory_xact_lock` on a fresh transaction: `Some(tx)` holds
+/// the lock until commit or drop, `None` means another mark/leave owns it
+/// and the connection is already back in the pool — a waiter never
+/// parks a connection (BUG-220). The caller does every write through the
+/// returned transaction, so the run, the step and the projection land or
+/// vanish together (BUG-221).
+pub async fn try_lock_trail_run(
     pool: &PgPool,
     user_id: UserId,
     course_id: CourseId,
-) -> Result<sqlx::Transaction<'static, sqlx::Postgres>> {
+) -> Result<Option<sqlx::Transaction<'static, sqlx::Postgres>>> {
     let mut tx = pool.begin().await?;
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1::text || $2::text, 0))")
-        .bind(user_id.0.to_string())
-        .bind(course_id.0.to_string())
-        .execute(&mut *tx)
-        .await?;
-    Ok(tx)
+    let locked: bool = sqlx::query_scalar(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended($1::text || $2::text, 0))",
+    )
+    .bind(user_id.0.to_string())
+    .bind(course_id.0.to_string())
+    .fetch_one(&mut *tx)
+    .await?;
+    if locked {
+        return Ok(Some(tx));
+    }
+    tx.rollback().await?;
+    Ok(None)
 }
 
 /// Remove the run and its steps (cascade).
-pub async fn delete_trail_run(
-    pool: &PgPool,
+pub async fn delete_trail_run<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     trail_id: TrailId,
     course_id: CourseId,
 ) -> Result<bool> {
@@ -500,7 +518,7 @@ pub async fn delete_trail_run(
         trail_id.0,
         course_id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(deleted.rows_affected() > 0)
 }
@@ -539,8 +557,8 @@ pub async fn list_trail_steps(pool: &PgPool, trail_id: TrailId) -> Result<Vec<Tr
 }
 
 /// Insert a completed step; `false` when it already existed.
-pub async fn insert_trail_step(
-    pool: &PgPool,
+pub async fn insert_trail_step<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     run: &TrailRunRow,
     activity_id: ActivityId,
 ) -> Result<bool> {
@@ -554,7 +572,7 @@ pub async fn insert_trail_step(
         run.course_id.0,
         run.user_id.0
     )
-    .execute(pool)
+    .execute(db)
     .await
     .map_err(
         |e| match e.as_database_error().and_then(|d| d.constraint()) {
@@ -566,8 +584,8 @@ pub async fn insert_trail_step(
     Ok(inserted.rows_affected() == 1)
 }
 
-pub async fn delete_trail_step(
-    pool: &PgPool,
+pub async fn delete_trail_step<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     trail_id: TrailId,
     activity_id: ActivityId,
 ) -> Result<bool> {
@@ -576,7 +594,7 @@ pub async fn delete_trail_step(
         trail_id.0,
         activity_id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(deleted.rows_affected() > 0)
 }

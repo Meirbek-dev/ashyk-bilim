@@ -13,7 +13,7 @@ use ab_core::language::Language;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, FieldError, Result};
 use ab_db::certifications::{CertificateRow, CertificationRow};
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 
 use crate::assessments::service::AssessmentsService;
 use crate::catalog::courses::{Course, CoursesService};
@@ -86,20 +86,22 @@ pub fn normalize_verify_code(raw: &str) -> String {
 /// Issue every configured certificate of the course to the learner when
 /// their course progress says so. Returns how many were newly issued.
 pub async fn issue_for_completion(
-    pool: &PgPool,
+    conn: &mut PgConnection,
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<usize> {
-    let eligible = ab_db::progress::get_course_progress(pool, course_id, user_id)
+    let eligible = ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
         .await?
         .is_some_and(|p| p.certificate_eligible);
     if !eligible {
         return Ok(0);
     }
     let mut issued = 0;
-    for certification in ab_db::certifications::list_course_certifications(pool, course_id).await? {
+    for certification in
+        ab_db::certifications::list_course_certifications(&mut *conn, course_id).await?
+    {
         if ab_db::certifications::issue_certificate(
-            pool,
+            &mut *conn,
             certification.id,
             user_id,
             &new_verify_code(),
@@ -280,7 +282,7 @@ impl CertificationsService {
         self.projector
             .recalculate_course(course_id, actor.user_id)
             .await?;
-        issue_for_completion(&self.pool, course_id, actor.user_id).await?;
+        issue_for_completion(&mut *self.pool.acquire().await?, course_id, actor.user_id).await?;
         let rows = ab_db::certifications::list_user_certificates_for_course(
             &self.pool,
             course_id,

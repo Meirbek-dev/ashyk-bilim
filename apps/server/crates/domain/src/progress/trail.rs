@@ -11,7 +11,7 @@ use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
 use ab_db::catalog::ActivityRow;
 use ab_db::progress::{TrailRow, TrailRunRow, TrailStepRow};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::assessments::service::AssessmentsService;
 use crate::catalog::courses::{Course, CoursesService};
@@ -57,6 +57,10 @@ const fn trail_perm(action: Action, scope: Scope) -> Permission {
         scope: Some(scope),
     }
 }
+
+/// How long a mark / leave spins for the (user, course) lock before 409.
+const LOCK_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+const LOCK_RETRY: std::time::Duration = std::time::Duration::from_millis(15);
 
 /// A 404 from the course behind an activity reads as the activity's own
 /// 404: the detail must not tell an unknown id from an invisible course.
@@ -162,6 +166,31 @@ impl TrailService {
         })
     }
 
+    /// The (user, course) lock transaction (BUG-210): every trail write
+    /// and its projection go through it. Waiters poll `try_lock` instead
+    /// of blocking on the server, so a stampede of marks never parks a
+    /// pool connection per waiter (BUG-220); past `LOCK_WAIT` → 409.
+    async fn lock(
+        &self,
+        user_id: UserId,
+        course_id: CourseId,
+    ) -> Result<Transaction<'static, Postgres>> {
+        let deadline = tokio::time::Instant::now() + LOCK_WAIT;
+        loop {
+            if let Some(tx) =
+                ab_db::progress::try_lock_trail_run(&self.pool, user_id, course_id).await?
+            {
+                return Ok(tx);
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(Error::conflict(
+                    "another change to this course on your trail is in progress; retry",
+                ));
+            }
+            tokio::time::sleep(LOCK_RETRY).await;
+        }
+    }
+
     /// Visible course (404) the learner may access (403).
     async fn accessible_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.courses.get(actor, course_id).await?;
@@ -179,8 +208,10 @@ impl TrailService {
     pub async fn add_course(&self, actor: &Actor, course_id: CourseId) -> Result<Trail> {
         Self::require_write(actor)?;
         let course = self.accessible_course(actor, course_id).await?;
-        let trail = ab_db::progress::ensure_trail(&self.pool, actor.user_id).await?;
-        ab_db::progress::ensure_trail_run(&self.pool, trail.id, course.id, actor.user_id).await?;
+        let mut conn = self.pool.acquire().await?;
+        let trail = ab_db::progress::ensure_trail(&mut conn, actor.user_id).await?;
+        ab_db::progress::ensure_trail_run(&mut conn, trail.id, course.id, actor.user_id).await?;
+        drop(conn);
         self.hydrate(actor, trail).await
     }
 
@@ -198,17 +229,18 @@ impl TrailService {
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("trail"))?;
-        // BUG-210: leave and mark for this (user, course) run one at a time.
-        let lock = ab_db::progress::lock_trail_run(&self.pool, actor.user_id, course_id).await?;
-        if !ab_db::progress::delete_trail_run(&self.pool, trail.id, course_id).await? {
+        // BUG-210: leave and mark for this (user, course) run one at a time;
+        // BUG-221: the run and the un-projection commit together.
+        let mut tx = self.lock(actor.user_id, course_id).await?;
+        if !ab_db::progress::delete_trail_run(&mut *tx, trail.id, course_id).await? {
             return Err(Error::not_found("trail run"));
         }
         for activity in ab_db::catalog::list_activities(&self.pool, course_id).await? {
             self.projector
-                .unmark_complete(&activity, actor.user_id)
+                .unmark_complete(&mut tx, &activity, actor.user_id)
                 .await?;
         }
-        lock.commit().await?;
+        tx.commit().await?;
         self.hydrate(actor, trail).await
     }
 
@@ -235,20 +267,24 @@ impl TrailService {
         }
         // BUG-210: run → step → projection is one critical section against
         // `remove_course`, so a leave can neither pull the run from under
-        // the step (23503 → 500) nor reset the projection after the mark.
-        let lock = ab_db::progress::lock_trail_run(&self.pool, actor.user_id, course.id).await?;
-        let trail = ab_db::progress::ensure_trail(&self.pool, actor.user_id).await?;
-        let run = ab_db::progress::ensure_trail_run(&self.pool, trail.id, course.id, actor.user_id)
-            .await?;
-        let created = ab_db::progress::insert_trail_step(&self.pool, &run, activity.id).await?;
+        // the step (23503 → 500) nor reset the projection after the mark;
+        // BUG-221: all three are one transaction, so they land or vanish
+        // together.
+        let mut tx = self.lock(actor.user_id, course.id).await?;
+        let trail = ab_db::progress::ensure_trail(&mut tx, actor.user_id).await?;
+        let run =
+            ab_db::progress::ensure_trail_run(&mut tx, trail.id, course.id, actor.user_id).await?;
+        let created = ab_db::progress::insert_trail_step(&mut *tx, &run, activity.id).await?;
         if created {
             self.projector
-                .mark_complete(&activity, actor.user_id)
+                .mark_complete(&mut tx, &activity, actor.user_id)
                 .await?;
+        }
+        tx.commit().await?;
+        if created {
             crate::gamification::hooks::activity_completed(&self.pool, actor.user_id, activity.id)
                 .await;
         }
-        lock.commit().await?;
         self.hydrate(actor, trail).await
     }
 
@@ -266,11 +302,14 @@ impl TrailService {
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
-        if ab_db::progress::delete_trail_step(&self.pool, trail.id, activity.id).await? {
+        let mut tx = self.lock(actor.user_id, activity.course_id).await?;
+        if ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await? {
             self.projector
-                .unmark_complete(&activity, actor.user_id)
+                .unmark_complete(&mut tx, &activity, actor.user_id)
                 .await?;
+            tx.commit().await?;
         } else {
+            drop(tx);
             self.courses
                 .get(actor, activity.course_id)
                 .await

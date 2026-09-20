@@ -868,6 +868,38 @@ async fn mark_and_leave_race_stays_consistent(pool: PgPool) {
     }
 }
 
+/// BUG-220: thirty marks of one lesson by one learner at once all answer
+/// 200, and a bystander's request in the middle of the stampede is not
+/// starved of a pool connection (the waiters spin on `try_lock`, they do
+/// not park a connection each).
+#[sqlx::test(migrations = "../../migrations")]
+async fn mark_stampede_never_exhausts_the_pool(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher, "Stampede 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    let mark_path = format!("/api/v2/trail/activities/{a1}");
+    let empty = serde_json::json!({});
+    let marks = futures::future::join_all((0..30).map(|_| app.post_as(&alice, &mark_path, &empty)));
+    let bystander = async {
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        let started = tokio::time::Instant::now();
+        let response = app.get_as(&bob, "/api/v2/trail").await;
+        (response, started.elapsed())
+    };
+    let (marks, (bystander, took)) = tokio::join!(marks, bystander);
+    for (i, mark) in marks.iter().enumerate() {
+        assert_eq!(mark.status, StatusCode::OK, "mark {i}: {}", mark.text());
+    }
+    assert_eq!(bystander.status, StatusCode::OK, "{}", bystander.text());
+    assert!(
+        took < std::time::Duration::from_secs(1),
+        "bystander waited {took:?} behind the stampede"
+    );
+}
+
 /// The (user, course) trail lock is held by some transaction of this test
 /// database — the mark / leave is past its first write.
 async fn trail_lock_held(pool: &PgPool) -> bool {
