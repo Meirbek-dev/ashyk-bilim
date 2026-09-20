@@ -205,7 +205,7 @@ pub struct QaWireMessage {
     pub id: Option<String>,
     #[garde(length(min = 1, max = 32))]
     pub role: String,
-    #[garde(length(max = 20_000))]
+    #[garde(length(chars, max = 20_000))]
     pub content: Option<String>,
     /// `[{type: "text", content: "…"}, …]` — an alternative to `content`.
     #[garde(skip)]
@@ -366,7 +366,7 @@ pub struct FindingReviewRequest {
     pub finding_id: String,
     #[garde(skip)]
     pub action: FindingReviewAction,
-    #[garde(length(max = 1000))]
+    #[garde(length(chars, max = 1000))]
     pub note: Option<String>,
 }
 
@@ -408,7 +408,7 @@ pub struct RemediationCompletionRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct StudyRequest {
-    #[garde(length(min = 1, max = 4000))]
+    #[garde(length(chars, min = 1, max = 4000))]
     pub question: String,
     #[garde(skip)]
     #[serde(default = "StudyRequest::default_mode")]

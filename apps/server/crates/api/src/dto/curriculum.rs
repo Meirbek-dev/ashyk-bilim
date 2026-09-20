@@ -80,9 +80,9 @@ pub struct Curriculum {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CreateChapterRequest {
-    #[garde(length(max = 500))]
+    #[garde(length(chars, max = 500))]
     pub name: String,
-    #[garde(length(max = 5000))]
+    #[garde(length(chars, max = 5000))]
     pub description: Option<String>,
 }
 
@@ -107,7 +107,7 @@ pub struct MoveChapterRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CreateActivityRequest {
-    #[garde(length(max = 500))]
+    #[garde(length(chars, max = 500))]
     pub name: String,
     /// One of the closed activity-type set (e.g. `video`, `exam`).
     #[garde(length(min = 1, max = 64))]

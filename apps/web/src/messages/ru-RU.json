@@ -1087,7 +1087,7 @@
       "youAreMakingProgress": "Вы отлично продвигаетесь в",
       "readyToBegin": "Готовы начать?",
       "notEnrolledMessage": "Начните курс, чтобы отслеживать прогресс и получить сертификат:",
-      "startLearning": "Начать обучение"
+      "goToCourse": "Перейти к курсу"
     },
     "EditCourseCertification": {
       "basicInfo": "Основная информация",
@@ -10263,6 +10263,7 @@
     "quitCourseConfirmDescription": "Отметки о прохождении уроков будут сброшены; отправленные работы и оценки сохранятся. Это действие нельзя отменить.",
     "quitCourseCancel": "Остаться",
     "quitCourseDone": "Вы покинули курс «{course}»",
+    "quitCourseAlreadyLeft": "Вы уже покинули курс",
     "quitCourseFailed": "Не удалось покинуть курс. Пожалуйста, повторите попытку позже."
   },
   "TrailPage": {

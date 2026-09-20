@@ -20,9 +20,9 @@ pub use ab_domain::grading::teacher::UserSummary;
 #[derive(Debug, Default, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigPatch {
-    #[garde(length(max = 500))]
+    #[garde(length(chars, max = 500))]
     pub title: Option<String>,
-    #[garde(length(max = 50_000))]
+    #[garde(length(chars, max = 50_000))]
     pub instructions: Option<String>,
     #[garde(skip)]
     #[schema(value_type = Option<Object>)]
@@ -79,7 +79,7 @@ impl From<ConfigPatch> for domain::ConfigPatch {
 pub struct CreateFileSubmissionRequest {
     #[garde(skip)]
     pub chapter_id: ChapterId,
-    #[garde(length(min = 1, max = 500))]
+    #[garde(length(chars, min = 1, max = 500))]
     pub title: String,
     #[garde(dive)]
     #[serde(flatten)]
@@ -230,7 +230,7 @@ impl From<domain::Attempt> for Attempt {
 pub struct FileRefRequest {
     #[garde(skip)]
     pub upload_id: uuid::Uuid,
-    #[garde(length(max = 255))]
+    #[garde(length(chars, max = 255))]
     pub display_name: Option<String>,
 }
 

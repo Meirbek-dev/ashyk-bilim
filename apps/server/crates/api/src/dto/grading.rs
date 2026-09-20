@@ -232,7 +232,7 @@ pub struct ItemGradeRequest {
     /// Points for this item (its `max_score` scale).
     #[garde(range(min = 0.0))]
     pub score: Option<f64>,
-    #[garde(length(max = 5000))]
+    #[garde(length(chars, max = 5000))]
     #[serde(default)]
     pub feedback: String,
 }
@@ -251,13 +251,13 @@ pub struct GradeRequest {
     #[schema(value_type = Option<f64>)]
     pub final_score: Option<Option<f64>>,
     /// Overall feedback shown to the learner; omitted = keep the stored one.
-    #[garde(length(max = 10_000))]
+    #[garde(length(chars, max = 10_000))]
     pub feedback: Option<String>,
     #[garde(dive)]
     #[serde(default)]
     pub item_grades: Vec<ItemGradeRequest>,
     /// Grader's note for the audit trail; never shown to the learner.
-    #[garde(length(max = 1000))]
+    #[garde(length(chars, max = 1000))]
     pub audit_note: Option<String>,
 }
 
@@ -296,7 +296,7 @@ pub struct DeadlineExtensionRequest {
     pub user_ids: Vec<UserId>,
     #[garde(skip)]
     pub new_due_at_unix: i64,
-    #[garde(length(max = 500))]
+    #[garde(length(chars, max = 500))]
     #[serde(default)]
     pub reason: String,
 }

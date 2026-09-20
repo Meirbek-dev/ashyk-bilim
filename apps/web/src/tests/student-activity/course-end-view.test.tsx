@@ -102,6 +102,8 @@ describe('CourseEndView (BUG-165)', () => {
 
   // UX-109: after «Покинуть курс» the page reads like the landing («Готовы
   // начать?»), not «Так держать! 40 %» over kept submissions; one «Назад к курсу».
+  // UX-140: the CTA reads as navigation («Перейти к курсу»), not as a start
+  // that only navigates.
   it('not enrolled → landing-style copy without the stale progress', () => {
     const s = state()
     s.enrolled = false
@@ -109,7 +111,8 @@ describe('CourseEndView (BUG-165)', () => {
     s.progress = { ...s.progress, completed_at_unix: null, completed_required_count: 2, progress_pct: 40 }
     renderView(s)
     expect(screen.getByText('Готовы начать?')).toBeInTheDocument()
-    expect(screen.getByText('Начать обучение')).toBeInTheDocument()
+    expect(screen.getByText('Перейти к курсу').closest('a')).toHaveAttribute('href', expect.stringContaining(`/course/${courseId}`))
+    expect(screen.queryByText('Начать обучение')).toBeNull()
     expect(screen.queryByText(/Так держать!/)).toBeNull()
     expect(screen.queryByText('40%')).toBeNull()
   })
@@ -130,7 +133,7 @@ describe('CourseEndView (BUG-165)', () => {
     s.outline = []
     renderView(s)
     expect(screen.getByText('В этом курсе пока нет опубликованных уроков')).toBeInTheDocument()
-    expect(screen.queryByText('Начать обучение')).toBeNull()
+    expect(screen.queryByText('Перейти к курсу')).toBeNull()
     expect(screen.queryByText('Готовы начать?')).toBeNull()
   })
 

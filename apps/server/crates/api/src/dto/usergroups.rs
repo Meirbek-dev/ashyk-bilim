@@ -63,9 +63,9 @@ impl From<ab_domain::identity::usergroups::Member> for UsergroupMember {
 #[serde(deny_unknown_fields)]
 pub struct CreateUsergroupRequest {
     /// Blank → 422 `required` (trimmed in the service).
-    #[garde(length(max = 500))]
+    #[garde(length(chars, max = 500))]
     pub name: String,
-    #[garde(length(max = 5000))]
+    #[garde(length(chars, max = 5000))]
     pub description: Option<String>,
 }
 

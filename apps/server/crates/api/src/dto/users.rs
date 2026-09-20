@@ -48,9 +48,9 @@ pub struct CreateUserRequest {
     pub email: String,
     #[garde(inner(length(min = 8, max = 200)))]
     pub password: Option<String>,
-    #[garde(length(min = 1, max = 100))]
+    #[garde(length(chars, min = 1, max = 100))]
     pub first_name: String,
-    #[garde(length(min = 1, max = 100))]
+    #[garde(length(chars, min = 1, max = 100))]
     pub last_name: String,
     /// Extra role slugs on top of the default `user`.
     #[garde(inner(length(max = 10)))]
@@ -61,9 +61,9 @@ pub struct CreateUserRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateProfileRequest {
-    #[garde(length(max = 120))]
+    #[garde(length(chars, max = 120))]
     pub display_name: Option<String>,
-    #[garde(length(max = 2000))]
+    #[garde(length(chars, max = 2000))]
     pub bio: Option<String>,
     /// One of the platform locales.
     #[garde(custom(valid_locale))]

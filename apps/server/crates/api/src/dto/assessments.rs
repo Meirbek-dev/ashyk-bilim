@@ -306,9 +306,9 @@ pub struct CreateAssessmentRequest {
     pub chapter_id: ChapterId,
     #[garde(skip)]
     pub kind: AssessmentKind,
-    #[garde(length(min = 1, max = 500))]
+    #[garde(length(chars, min = 1, max = 500))]
     pub title: String,
-    #[garde(length(max = 20_000))]
+    #[garde(length(chars, max = 20_000))]
     pub description: Option<String>,
     #[garde(inner(range(min = 0.0)))]
     pub weight: Option<f64>,

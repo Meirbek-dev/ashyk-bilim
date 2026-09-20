@@ -200,7 +200,7 @@ pub struct AdminAwardRequest {
     pub user_id: UserId,
     #[garde(range(min = 1, max = 100_000))]
     pub amount: i32,
-    #[garde(length(max = 500))]
+    #[garde(length(chars, max = 500))]
     pub reason: Option<String>,
     #[garde(length(max = 200))]
     pub idempotency_key: Option<String>,

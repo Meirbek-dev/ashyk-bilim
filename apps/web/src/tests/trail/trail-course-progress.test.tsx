@@ -14,7 +14,6 @@ vi.mock('@/i18n/navigation', () => ({ Link: (props: React.ComponentProps<'a'>) =
 vi.mock('@/features/certifications/hooks/useCertifications', () => ({
   useUserCertificateByCourse: () => ({ data: undefined, isPending: false }),
 }))
-vi.mock('@services/courses/activity', () => ({ removeCourse: vi.fn() }))
 vi.mock('@/lib/cache/revalidate', () => ({ revalidateTags: vi.fn() }))
 vi.mock('@services/media/media', () => ({ getCourseThumbnailMediaDirectory: () => '' }))
 vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p, getSiteUrl: () => 'http://localhost:3000' }))

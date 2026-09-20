@@ -1087,7 +1087,7 @@
       "youAreMakingProgress": "You're making great progress in",
       "readyToBegin": "Ready to begin?",
       "notEnrolledMessage": "Start the course to track your progress and earn a certificate:",
-      "startLearning": "Start learning"
+      "goToCourse": "Go to the course"
     },
     "EditCourseCertification": {
       "basicInfo": "Basic Information",
@@ -10249,6 +10249,7 @@
     "quitCourseConfirmDescription": "Lesson completion marks will be reset; submitted work and grades are kept. This cannot be undone.",
     "quitCourseCancel": "Stay",
     "quitCourseDone": "You left “{course}”",
+    "quitCourseAlreadyLeft": "You have already left this course",
     "quitCourseFailed": "Could not quit the course. Please try again later."
   },
   "TrailPage": {

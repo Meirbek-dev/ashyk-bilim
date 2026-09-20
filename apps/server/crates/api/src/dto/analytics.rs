@@ -114,9 +114,9 @@ pub struct CreateInterventionRequest {
     #[serde(default = "default_status")]
     #[garde(length(min = 1, max = 20))]
     pub status: String,
-    #[garde(length(max = 2_000))]
+    #[garde(length(chars, max = 2_000))]
     pub outcome: Option<String>,
-    #[garde(length(max = 4_000))]
+    #[garde(length(chars, max = 4_000))]
     pub notes: Option<String>,
     /// Free-form details (an object).
     #[serde(default = "empty_object")]
@@ -134,7 +134,7 @@ fn default_view_type() -> String {
 #[serde(deny_unknown_fields)]
 pub struct SaveViewRequest {
     /// Blank → 422 `required` (trimmed in the service).
-    #[garde(length(max = 200))]
+    #[garde(length(chars, max = 200))]
     pub name: String,
     /// Defaults to `overview`.
     #[serde(default = "default_view_type")]

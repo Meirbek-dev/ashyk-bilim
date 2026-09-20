@@ -10,8 +10,9 @@ import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 import { localizeItemFeedback } from '@/features/grading/domain/status'
 import { answerLines } from '@/features/assessments/domain/answer-lines'
+import { gradeOfRecord } from '@/features/assessments/domain/grade-of-record'
+import type { ActivityProgress } from '@/features/assessments/domain/grade-of-record'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
-import type { LearnerCourseState } from '@/features/learner-course/api'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
 
@@ -20,7 +21,7 @@ import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
 interface AttemptResultCardProps {
   vm: AttemptViewModel
   /** The progress projection's row for this activity (learner-state outline); decides passed/score. */
-  activityState?: LearnerCourseState['outline'][number]['activities'][number] | undefined
+  activityState?: ActivityProgress | undefined
   onRetry?: () => void
   onNext?: () => void
   onStartRevision?: () => void
@@ -50,18 +51,13 @@ export default function AttemptResultCard({
   const percent = usePercentFormat()
   const formatPercent = (value: number | null) => (value === null ? '--' : percent(value))
 
-  const { isResultVisible, score, isReturnedForRevision, canStartRevision, canSubmit } = vm
-  const latestPct = score.percent
-  // Headline = the projection (best submitted attempt), the same source the
-  // outline sidebar ticks from; fall back to the latest attempt when absent.
-  const pct = activityState?.score ?? latestPct
+  const { isResultVisible, isReturnedForRevision, canStartRevision, canSubmit } = vm
+  // Headline + review = the grade of record (projection score, its released
+  // attempt) — one helper shared with the exam entry panel (UX-116, UX-140).
+  const { pct, latestPct, reviews, recordAttempt } = gradeOfRecord(vm, activityState)
   const passing = activityState?.passed ?? (pct !== null && pct >= (vm.passingScore ?? 60))
   const showScore = isResultVisible && pct !== null
   const showLatest = showScore && latestPct !== null && latestPct !== pct
-  // UX-116: the review follows the grade-of-record attempt (the one the
-  // projection scored), not the latest; a switcher reaches the others.
-  const reviews = vm.attemptReviews ?? []
-  const recordAttempt = reviews.find(r => r.percent === pct) ?? reviews[0] ?? null
   const [selectedAttempt, setSelectedAttempt] = useState<number | null>(null)
   const shown = reviews.find(r => r.attemptNumber === selectedAttempt) ?? recordAttempt
   const itemScores = shown ? shown.itemScores : vm.itemScores

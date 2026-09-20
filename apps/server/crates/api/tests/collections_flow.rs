@@ -270,6 +270,25 @@ async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
     }
 }
 
+/// UX-140: `length(max = 500)` counted UTF-8 bytes, so a 260-char Cyrillic
+/// name (520 bytes) was refused as «length is greater than 500». Text limits
+/// count chars.
+#[sqlx::test(migrations = "../../migrations")]
+async fn text_limits_count_chars_not_bytes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let name = "я".repeat(260);
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": name }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    assert_eq!(created.json()["name"], name);
+}
+
 /// UX-119: a public collection whose attached courses are all invisible to
 /// the viewer is left out of the list (it would render as «0 courses»),
 /// and so is an empty one (UX-127); the creator still sees both.

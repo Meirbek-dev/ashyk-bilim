@@ -13,7 +13,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { queryOptions, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -28,6 +28,8 @@ import { courseKeys } from '@/hooks/courses/courseKeys'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
 import { useApiError } from '@/hooks/useApiError'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
+import { gradeOfRecord } from '@/features/assessments/domain/grade-of-record'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
@@ -51,6 +53,9 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
   const { toastApiError } = useApiError()
   const { contributorStatus } = useContributorStatus(courseUuid)
   const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null)
+  // UX-140: the entry panel's score is the grade of record (projection), the
+  // same source the result card and the outline sidebar use — not the latest attempt.
+  const learnerState = useQuery(learnerCourseStateQueryOptions(courseUuid))
   const formatPercent = usePercentFormat()
   const [isStarting, setIsStarting] = useState(false)
   const policy = vm?.policy ?? DEFAULT_POLICY_VIEW
@@ -116,6 +121,12 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
 
   const latestCompletedSubmission =
     submissionState.submissions.find(submission => submission.status !== 'DRAFT') ?? null
+  const record = gradeOfRecord(
+    vm,
+    learnerState.data?.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === vm.activityUuid),
+  )
+  const recordScore = vm.isResultVisible ? record.pct : null
+  const recordFeedback = vm.isResultVisible ? (record.recordAttempt?.generalFeedback ?? null) : null
   const historyItems = submissionState.submissions
     .filter(submission => submission.status !== 'DRAFT')
     .map(buildHistoryItem)
@@ -244,6 +255,8 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
             {latestCompletedSubmission ? (
               <ExamSubmissionStatePanel
                 submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
+                score={recordScore}
+                feedback={recordFeedback}
               />
             ) : null}
           </div>
@@ -266,6 +279,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       timerExpiresAt={vm.timerExpiresAt}
       passingScore={vm.passingScore}
       latestCompletedSubmission={latestCompletedSubmission}
+      recordFeedback={recordFeedback}
       historyItems={historyItems}
     />
   )
@@ -283,6 +297,7 @@ function ExamTakingContent({
   timerExpiresAt,
   passingScore,
   latestCompletedSubmission,
+  recordFeedback,
   historyItems,
 }: {
   title: string
@@ -296,6 +311,7 @@ function ExamTakingContent({
   timerExpiresAt: string | null
   passingScore: number | null
   latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission']
+  recordFeedback: string | null
   historyItems: AttemptHistoryItem[]
 }) {
   const t = useTranslations('Activities.ExamActivity')
@@ -634,6 +650,8 @@ function ExamTakingContent({
       {latestCompletedSubmission?.status === 'RETURNED' ? (
         <ExamSubmissionStatePanel
           submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
+          score={null}
+          feedback={recordFeedback}
         />
       ) : null}
 
@@ -795,13 +813,16 @@ function ExamTakingContent({
 
 function ExamSubmissionStatePanel({
   submission,
+  score,
+  feedback,
 }: {
   submission: {
     status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
-    final_score?: number | null
-    grading_json?: { feedback?: string } | null
     submitted_at?: string | null
   }
+  /** Grade of record (`gradeOfRecord`), null when not released. */
+  score: number | null
+  feedback: string | null
 }) {
   const t = useTranslations('Activities.ExamActivity')
   const formatPercent = usePercentFormat()
@@ -833,15 +854,13 @@ function ExamSubmissionStatePanel({
     <Alert>
       <AlertTitle>{submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}</AlertTitle>
       <AlertDescription className="space-y-3">
-        {typeof submission.final_score === 'number' ? (
+        {score !== null ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
             <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">{t('scoreLabel')}</span>
-            {formatPercent(submission.final_score)}
+            {formatPercent(score)}
           </span>
         ) : null}
-        {submission.grading_json?.feedback ? (
-          <p className="whitespace-pre-wrap">{submission.grading_json.feedback}</p>
-        ) : null}
+        {feedback ? <p className="whitespace-pre-wrap">{feedback}</p> : null}
       </AlertDescription>
     </Alert>
   )

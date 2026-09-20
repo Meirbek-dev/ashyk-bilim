@@ -20,7 +20,8 @@ import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCo
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { Award, ExternalLink, Loader2, X } from 'lucide-react'
-import { removeCourse } from '@services/courses/activity'
+import { apiJson } from '@/lib/api-client'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import { getAbsoluteUrl } from '@services/config/config'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -50,7 +51,9 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
   const { toastApiError } = useApiError()
 
   const quitCourse = useMutation({
-    mutationFn: () => removeCourse(course.course_uuid),
+    // Client apiJson, not a 'use server' action: the problem+json code must
+    // reach the toast (BUG-035 class, UX-140).
+    mutationFn: () => apiJson(`trail/courses/${courseid}`, { method: 'DELETE' }),
     onSuccess: async () => {
       setConfirmQuit(false)
       // The card reads the trail query: drop it first so the card goes with the toast (UX-081).
@@ -60,7 +63,9 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
       router.refresh()
     },
     onError: async error => {
-      toastApiError(error, { fallback: t('quitCourseFailed') })
+      // UX-140: the run is already gone (left in another tab) — say so, not «Не удалось».
+      if (hasErrorCode(error, 'not-found')) toast.info(t('quitCourseAlreadyLeft'))
+      else toastApiError(error, { fallback: t('quitCourseFailed') })
       // UX-133: a stale card (already left elsewhere / unpublished) goes away too.
       await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
     },

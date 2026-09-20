@@ -1086,7 +1086,7 @@
       "youAreMakingProgress": "Сіз үлкен прогресс жасаудасыз",
       "readyToBegin": "Бастауға дайынсыз ба?",
       "notEnrolledMessage": "Прогресті бақылап, сертификат алу үшін курсты бастаңыз:",
-      "startLearning": "Оқуды бастау"
+      "goToCourse": "Курсқа өту"
     },
     "EditCourseCertification": {
       "basicInfo": "Негізгі ақпарат",
@@ -10433,6 +10433,7 @@
     "quitCourseConfirmDescription": "Сабақтарды өту белгілері қалпына келтіріледі; жіберілген жұмыстар мен бағалар сақталады. Бұл әрекетті кері қайтару мүмкін емес.",
     "quitCourseCancel": "Қалу",
     "quitCourseDone": "Сіз «{course}» курсынан шықтыңыз",
+    "quitCourseAlreadyLeft": "Сіз бұл курстан шығып қойғансыз",
     "quitCourseFailed": "Курстан шығу мүмкін болмады. Кейінірек қайталап көріңіз."
   },
   "TrailPage": {

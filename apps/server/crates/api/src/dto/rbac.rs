@@ -60,9 +60,9 @@ pub struct CreateRoleRequest {
     #[garde(length(min = 1, max = 64), custom(kebab_slug))]
     pub slug: String,
     /// Blank → 422 `required` (trimmed in the service).
-    #[garde(length(max = 200))]
+    #[garde(length(chars, max = 200))]
     pub display_name: String,
-    #[garde(length(max = 1000))]
+    #[garde(length(chars, max = 1000))]
     pub description: Option<String>,
     /// Ordering weight (system roles: guest 0 … admin 100).
     #[garde(range(min = 0, max = 99))]

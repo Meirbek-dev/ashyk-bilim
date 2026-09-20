@@ -482,6 +482,8 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </p>
         )}
 
+        {/* UX-140: not enrolled → the link is navigation to the landing (which
+            enrols), never a «Начать обучение» promise that only navigates. */}
         {noLiveActivities ? null : (
           <div className="pt-6">
             <AppLink
@@ -489,7 +491,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               className="inline-flex items-center space-x-2 rounded-full bg-blue-600 px-6 py-3 text-white transition duration-200 hover:bg-blue-700"
             >
               <ArrowLeft className="h-5 w-5" />
-              <span>{notEnrolled ? t('startLearning') : t('continueActivity')}</span>
+              <span>{notEnrolled ? t('goToCourse') : t('continueActivity')}</span>
             </AppLink>
           </div>
         )}

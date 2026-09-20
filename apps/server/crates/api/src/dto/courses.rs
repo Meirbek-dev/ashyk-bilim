@@ -79,11 +79,11 @@ pub struct CoursePage {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CreateCourseRequest {
-    #[garde(length(max = 500))]
+    #[garde(length(chars, max = 500))]
     pub name: String,
-    #[garde(length(max = 5000))]
+    #[garde(length(chars, max = 5000))]
     pub description: Option<String>,
-    #[garde(length(max = 20_000))]
+    #[garde(length(chars, max = 20_000))]
     pub about: Option<String>,
     #[garde(inner(inner(length(min = 1, max = 64))), inner(length(max = 20)))]
     pub tags: Option<Vec<String>>,
@@ -290,9 +290,9 @@ impl From<ab_domain::catalog::courses::CourseUpdate> for CourseUpdate {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CreateCourseUpdateRequest {
-    #[garde(length(min = 1, max = 500))]
+    #[garde(length(chars, min = 1, max = 500))]
     pub title: String,
-    #[garde(length(min = 1, max = 50_000))]
+    #[garde(length(chars, min = 1, max = 50_000))]
     pub content: String,
 }
 
