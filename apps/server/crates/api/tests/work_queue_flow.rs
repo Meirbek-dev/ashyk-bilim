@@ -616,11 +616,12 @@ async fn pending_manual_items_reach_graders_only(pool: PgPool) {
         assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
     }
     assert_eq!(queue(&app, &reporter, "?role=teacher").await["total"], 0);
+    // UX-134: a non-grader's review read is 404 (the id is the secret).
     assert_eq!(
         app.get_as(&reporter, &format!("/api/v2/submissions/{sub}/review"))
             .await
             .status,
-        StatusCode::FORBIDDEN
+        StatusCode::NOT_FOUND
     );
     assert_eq!(queue(&app, &contrib, "?role=teacher").await["total"], 1);
 }
