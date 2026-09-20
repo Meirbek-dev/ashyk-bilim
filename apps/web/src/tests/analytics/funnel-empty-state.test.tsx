@@ -3,9 +3,11 @@ import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 import { cleanup, render, screen } from '@testing-library/react'
 import CompletionFunnelChart from '@/components/Dashboard/Analytics/CompletionFunnelChart'
 import AnalyticsMultiSeriesTrendChart from '@/components/Dashboard/Analytics/AnalyticsMultiSeriesTrendChart'
+import EngagementAreaChart from '@/components/Dashboard/Analytics/EngagementAreaChart'
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => 'ru',
   useFormatter: () => ({ number: (v: number) => v.toLocaleString('ru-RU') }),
 }))
 
@@ -70,6 +72,11 @@ describe('UX-138 learner-count axes', () => {
         ]}
       />,
     )
+    integerLocaleTicks(axes.y!)
+  })
+
+  it('course-detail engagement axis renders integer ticks with locale digits', () => {
+    render(<EngagementAreaChart title="" description="" data={[{ bucket_start_unix: 1_756_684_800, value: 2 }]} />)
     integerLocaleTicks(axes.y!)
   })
 })
