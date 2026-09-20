@@ -1434,3 +1434,64 @@ async fn blank_titles_are_rejected_and_trimmed(pool: PgPool) {
         .await;
     assert_eq!(activity.json()["name"], "Quiz 2", "{}", activity.text());
 }
+
+/// BUG-199: the grader matches choice answers by option id, so an item whose
+/// options share an id is refused at create and patch (422
+/// `choice.option_id_duplicate` on `body.options`), not stored and graded
+/// as «correct» for whichever text the learner picked.
+#[sqlx::test(migrations = "../../migrations")]
+async fn duplicate_choice_option_ids_are_refused(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = scaffold(&app, &teacher).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let mut item = choice_item("1+1?");
+    item["body"]["options"][1]["id"] = serde_json::json!("a");
+    let refused = app
+        .post_as(&teacher, &format!("/api/v2/assessments/{id}/items"), &item)
+        .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
+    assert_eq!(
+        refused.json()["field_errors"][0]["code"],
+        "choice.option_id_duplicate"
+    );
+
+    let ok = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("1+1?"),
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::CREATED, "{}", ok.text());
+    let item_id = ok.json()["id"].as_str().unwrap().to_owned();
+    let patched = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{item_id}"),
+            &serde_json::json!({ "body": item["body"] }),
+        )
+        .await;
+    assert_eq!(
+        patched.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        patched.text()
+    );
+    assert_eq!(
+        patched.json()["field_errors"][0]["code"],
+        "choice.option_id_duplicate"
+    );
+}

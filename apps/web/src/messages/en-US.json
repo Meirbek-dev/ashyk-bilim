@@ -6912,7 +6912,10 @@
       "unknown-field": "Unknown field.",
       "unsafe": "This address cannot be used.",
       "password-policy": "The password must be at least 8 characters and include an uppercase and a lowercase letter, a digit and a symbol.",
-      "password-unchanged": "The new password is the same as the current one."
+      "password-unchanged": "The new password is the same as the current one.",
+      "choice": {
+        "option_id_duplicate": "Choice option ids must be unique."
+      }
     },
     "requestFailed": "Request failed"
   },
@@ -9185,6 +9188,7 @@
             "choice_options_missing": "Choice items need at least two options.",
             "choice_option_text_missing": "Every choice option needs visible text.",
             "choice_option_duplicate": "Choice options should be unique.",
+            "choice_option_id_duplicate": "Choice option ids must be unique.",
             "choice_correct_missing": "Mark at least one correct choice.",
             "choice_too_many_correct": "Single-choice items can only have one correct option.",
             "matching_prompt_missing": "Matching prompt is required.",

@@ -166,6 +166,16 @@ export function localItemValidationIssues(
         field: 'options',
       })
     }
+    // BUG-199: the grader matches by option id — shared ids never grade right.
+    const optionIds = item.body.options.map(option => option.id.trim().toLowerCase())
+    if (new Set(optionIds).size !== optionIds.length) {
+      issues.push({
+        code: 'choice.option_id_duplicate',
+        message: 'Choice option ids must be unique.',
+        itemUuid: item.item_uuid,
+        field: 'options',
+      })
+    }
     const correctCount = item.body.options.filter(option => option.is_correct).length
     if (correctCount === 0) {
       issues.push({
@@ -287,7 +297,8 @@ function readinessFieldForIssueCode(code: string): string | undefined {
   if (
     code === 'choice.options_missing' ||
     code === 'choice.option_text_missing' ||
-    code === 'choice.option_duplicate'
+    code === 'choice.option_duplicate' ||
+    code === 'choice.option_id_duplicate'
   ) {
     return 'options'
   }

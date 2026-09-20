@@ -17,6 +17,7 @@ const SERVER_READINESS_CODES = [
   'assessment.title_missing',
   'choice.correct_missing',
   'choice.option_duplicate',
+  'choice.option_id_duplicate',
   'choice.option_text_missing',
   'choice.options_missing',
   'choice.prompt_missing',

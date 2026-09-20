@@ -1086,6 +1086,7 @@ impl AssessmentsService {
         let assessment = self.load_for_author(actor, id).await?;
         self.ensure_editable(&assessment).await?;
         Self::check_kind_allowed(assessment.kind, body.kind())?;
+        body.validate()?;
         if ab_db::assessments::count_items(&self.pool, id).await? >= MAX_ITEMS {
             return Err(Error::validation(vec![FieldError {
                 field: "items".into(),
@@ -1148,6 +1149,7 @@ impl AssessmentsService {
         }
         if let Some(body) = &changes.body {
             Self::check_kind_allowed(assessment.kind, body.kind())?;
+            body.validate()?;
         }
         if changes.max_score.is_some_and(|s| s < 0.0) {
             return Err(Error::validation(vec![FieldError {

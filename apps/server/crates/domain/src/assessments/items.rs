@@ -418,6 +418,11 @@ impl ChoiceBody {
                 "options must be distinct",
             ),
             (
+                has_duplicates(self.options.iter().map(|o| o.id.as_str())),
+                "choice.option_id_duplicate",
+                "option ids must be unique",
+            ),
+            (
                 correct == 0,
                 "choice.correct_missing",
                 "mark at least one correct option",
@@ -541,6 +546,23 @@ impl MatchingBody {
 }
 
 impl ItemBody {
+    /// Structural rules refused at write time, not just at publish: the
+    /// grader matches choice answers by option id (BUG-199), so an item
+    /// whose options share an id can never grade right — 422
+    /// `choice.option_id_duplicate` on `body.options`.
+    pub fn validate(&self) -> ab_core::Result<()> {
+        if let Self::Choice(body) = self
+            && has_duplicates(body.options.iter().map(|o| o.id.as_str()))
+        {
+            return Err(ab_core::Error::validation(vec![ab_core::FieldError {
+                field: "body.options".into(),
+                code: "choice.option_id_duplicate".into(),
+                message: "option ids must be unique".into(),
+            }]));
+        }
+        Ok(())
+    }
+
     /// Per-kind readiness rules (legacy `_item_readiness_issues`). The
     /// caller adds the kind-agnostic ones (title, max score) and stamps
     /// `item_id`.
@@ -652,6 +674,23 @@ mod tests {
                 "choice.option_duplicate",
                 "choice.too_many_correct"
             ]
+        );
+        // BUG-199: shared option ids are refused at write time and flagged
+        // by readiness (the grader matches by id).
+        let ItemBody::Choice(mut dup) = bad.clone() else {
+            panic!("choice")
+        };
+        dup.options[1].id = "a".into();
+        let dup = ItemBody::Choice(dup);
+        assert!(matches!(
+            dup.validate().unwrap_err(),
+            ab_core::Error::Validation { field_errors }
+                if field_errors[0].code == "choice.option_id_duplicate"
+        ));
+        assert!(
+            dup.readiness_issues("")
+                .iter()
+                .any(|i| i.code == "choice.option_id_duplicate")
         );
 
         let code_titled = ItemBody::Code(CodeBody {
