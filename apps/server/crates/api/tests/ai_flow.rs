@@ -1884,3 +1884,95 @@ async fn course_analysis_rejects_unknown_language_and_finding(pool: PgPool) {
         suggestion_id.as_str()
     );
 }
+
+/// BUG-198: an open draft is 409 for the AI surface as for the grader —
+/// analysis (inline and queued), remediation, `latest` and the review read.
+#[sqlx::test(migrations = "../../migrations")]
+async fn ai_refuses_an_open_draft(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Draft").await;
+    let sub_id = submitted_essay(&app, &teacher, &alice, &course_id).await;
+    let assessment_id = app
+        .get_as(&alice, &format!("/api/v2/submissions/{sub_id}"))
+        .await
+        .json()["assessment_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{assessment_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let draft_id = draft.json()["id"].as_str().unwrap().to_owned();
+
+    for (path, body) in [
+        (
+            format!("/api/v2/ai/submission-analysis/{draft_id}/analyze"),
+            serde_json::json!({}),
+        ),
+        (
+            format!("/api/v2/ai/submission-analysis/{draft_id}/analyze/queue"),
+            serde_json::json!({}),
+        ),
+        (
+            format!("/api/v2/ai/remediation/{draft_id}/generate"),
+            serde_json::json!({ "gate_mode": true }),
+        ),
+        (
+            format!("/api/v2/ai/remediation/{draft_id}/generate/queue"),
+            serde_json::json!({ "gate_mode": true }),
+        ),
+    ] {
+        let refused = app.post_as(&teacher, &path, &body).await;
+        assert_eq!(
+            refused.status,
+            StatusCode::CONFLICT,
+            "{path}: {}",
+            refused.text()
+        );
+        assert!(
+            refused.json()["detail"]
+                .as_str()
+                .unwrap()
+                .contains("open draft"),
+            "{path}: {}",
+            refused.text()
+        );
+    }
+    for path in [
+        format!("/api/v2/ai/submission-analysis/{draft_id}/latest"),
+        format!("/api/v2/ai/remediation/{draft_id}/latest"),
+        format!("/api/v2/submissions/{draft_id}/review"),
+    ] {
+        let refused = app.get_as(&teacher, &path).await;
+        assert_eq!(
+            refused.status,
+            StatusCode::CONFLICT,
+            "{path}: {}",
+            refused.text()
+        );
+    }
+    // The learner is not gated out of their own open attempt.
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/assessments/{assessment_id}/attempt-state"),
+        )
+        .await;
+    assert_eq!(state.json()["can_continue"], true, "{}", state.text());
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{draft_id}/submit"),
+            &serde_json::json!({ "answers": {} }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+}
+

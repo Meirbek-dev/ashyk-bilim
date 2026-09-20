@@ -41,6 +41,9 @@ pub const MAX_REVIEW_PAGE: i64 = 100;
 pub const MAX_GRADEBOOK_PAGE: i64 = 500;
 /// Discrimination index needs at least this many graded attempts.
 const MIN_DISCRIMINATION_SAMPLE: usize = 6;
+/// 409 for grading or analysing work the learner has not handed in yet
+/// (`ai::subject` uses the same words — one rule, BUG-198).
+pub(crate) const OPEN_DRAFT: &str = "an open draft cannot be graded";
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct UserSummary {
@@ -657,13 +660,17 @@ impl GradingService {
 
     /// A submission the actor may grade. Unknown and not-gradable answer
     /// the same 404: the id is the secret (UX-134 — a 403 confirmed
-    /// another learner's submission ids).
+    /// another learner's submission ids). An open draft is 409 for the
+    /// review read and the save alike (BUG-198).
     async fn gradable_submission(
         &self,
         actor: &Actor,
         id: SubmissionId,
     ) -> Result<(SubmissionRow, Assessment)> {
         let row = self.load_submission(id).await?;
+        if row.status == SubmissionStatus::Draft {
+            return Err(Error::conflict(OPEN_DRAFT));
+        }
         let (assessment, _) = self
             .grader_context(actor, row.assessment_id)
             .await
@@ -1082,9 +1089,6 @@ impl GradingService {
                 message: "If-Match with the submission's current version is required".into(),
             }])
         })?;
-        if row.status == SubmissionStatus::Draft {
-            return Err(Error::conflict("an open draft cannot be graded"));
-        }
         if row.version != expected_version {
             return Err(stale_version(expected_version, row.version));
         }

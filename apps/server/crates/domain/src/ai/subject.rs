@@ -3,7 +3,7 @@
 //! (`AiSubjectId`, looked up in both tables — DECISIONS 2026-09-12).
 
 use ab_clients::storage::Bucket;
-use ab_core::assessments::FileAttemptStatus;
+use ab_core::assessments::{FileAttemptStatus, SubmissionStatus};
 use ab_core::id::{ActivityId, AiSubjectId, CourseId, FileAttemptId, SubmissionId, UserId};
 use ab_core::{Error, ErrorCode, Result};
 use ab_db::ai::{AiSubject, RunRow};
@@ -101,7 +101,9 @@ impl AiService {
     /// owner once the grade is released to them (BUG-182: 403
     /// `grade-not-released` before that — the analysis reads the grading),
     /// or someone who can update the course — anyone else gets 404 (an id
-    /// must not leak that it exists).
+    /// must not leak that it exists). Work the learner has not handed in
+    /// yet is 409, as for the grader (BUG-198: an analysis on a draft could
+    /// gate the learner out of their own open attempt).
     pub(crate) async fn accessible_subject(
         &self,
         actor: &Actor,
@@ -109,6 +111,13 @@ impl AiService {
     ) -> Result<Subject> {
         let subject = self.load_subject(id).await?;
         self.require_subject_access(actor, &subject).await?;
+        let draft = match &subject {
+            Subject::Submission(s) => s.status == SubmissionStatus::Draft,
+            Subject::FileAttempt(a) => a.status == FileAttemptStatus::Draft,
+        };
+        if draft {
+            return Err(Error::conflict(crate::grading::teacher::OPEN_DRAFT));
+        }
         Ok(subject)
     }
 
