@@ -498,7 +498,35 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
             &serde_json::json!({ "action": "save", "final_score": 90 }),
         )
         .await;
-    assert_eq!(stranger_grade.status, StatusCode::NOT_FOUND, "{}", stranger_grade.text());
+    assert_eq!(
+        stranger_grade.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        stranger_grade.text()
+    );
+    // UX-141: `rubric_scores` is an object of bounded size — 422 otherwise.
+    for bad in [
+        serde_json::json!("notobj"),
+        serde_json::json!({ "blob": "x".repeat(5000) }),
+    ] {
+        let bad_rubric = app
+            .patch_as(
+                &teacher,
+                &format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+                &serde_json::json!({ "action": "save", "final_score": 90, "rubric_scores": bad }),
+            )
+            .await;
+        assert_eq!(
+            bad_rubric.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            bad_rubric.text()
+        );
+        assert_eq!(
+            bad_rubric.json()["field_errors"][0]["field"],
+            "rubric_scores"
+        );
+    }
     let saved_grade = app
         .send(with_if_match(
             &teacher,

@@ -1203,6 +1203,20 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         .await;
     assert_eq!(peek.status, StatusCode::NOT_FOUND, "{}", peek.text());
     assert_eq!(peek.json()["detail"], "remediation session not found");
+    // UX-141: the grader can read the session but not complete it — 403, not 404.
+    let grader_complete = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
+            &serde_json::json!({ "score": 80 }),
+        )
+        .await;
+    assert_eq!(
+        grader_complete.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        grader_complete.text()
+    );
     let passed = app
         .post_as(
             &alice,

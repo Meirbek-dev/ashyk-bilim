@@ -437,12 +437,13 @@ impl AiService {
                 message: "score must be between 0 and 100".into(),
             }]));
         }
-        let session = ab_db::ai::get_remediation_session(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("remediation session"))?;
-        // Another learner's session answers like an unknown one (UX-134).
+        // UX-134 / UX-141: a stranger sees an unknown session (404); a reader
+        // who is not the learner — the grader — may not complete it (403).
+        let session = self.accessible_remediation(actor, id).await?;
         if session.student_user_id != actor.user_id {
-            return Err(Error::not_found("remediation session"));
+            return Err(Error::forbidden(
+                "only the learner of this session can complete it",
+            ));
         }
         // UX-099: a passed session is final — re-completing it with a lower
         // score must not re-lock the gate.

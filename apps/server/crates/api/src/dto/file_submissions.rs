@@ -271,10 +271,25 @@ pub struct FileGradeRequest {
     /// Omit to keep the stored feedback (UX-113; same rule as quiz grades).
     #[garde(inner(length(max = 10_000)))]
     pub feedback: Option<String>,
-    /// Omit to keep the stored rubric scores.
-    #[garde(skip)]
+    /// Omit to keep the stored rubric scores. An object of at most 4 KiB
+    /// serialized (UX-141).
+    #[garde(custom(rubric_object))]
     #[schema(value_type = Option<Object>)]
     pub rubric_scores: Option<serde_json::Value>,
+}
+
+const MAX_RUBRIC_BYTES: usize = 4096;
+
+// garde's custom-validator contract fixes this signature (&field, &context).
+#[allow(clippy::trivially_copy_pass_by_ref, clippy::ref_option)]
+fn rubric_object(value: &Option<serde_json::Value>, _ctx: &()) -> garde::Result {
+    match value {
+        Some(v) if !v.is_object() => Err(garde::Error::new("must be a JSON object")),
+        Some(v) if v.to_string().len() > MAX_RUBRIC_BYTES => {
+            Err(garde::Error::new("must be at most 4096 bytes serialized"))
+        }
+        _ => Ok(()),
+    }
 }
 
 #[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
