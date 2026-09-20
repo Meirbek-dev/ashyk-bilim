@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Home, Compass, BookOpen } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -14,6 +15,13 @@ interface ResourceNotFoundProps {
 export default function ResourceNotFound({ courseuuid, session, type = 'generic' }: ResourceNotFoundProps) {
   const tErrors = useTranslations('Errors')
   const router = useRouter()
+  // BUG-221 nit: an activity unpublished under an open tab shows this card;
+  // once it is republished, coming back to the tab re-reads the page.
+  useEffect(() => {
+    const refresh = () => router.refresh()
+    globalThis.addEventListener('focus', refresh)
+    return () => globalThis.removeEventListener('focus', refresh)
+  }, [router])
 
   const heading =
     type === 'activity'

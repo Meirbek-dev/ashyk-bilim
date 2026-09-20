@@ -1,11 +1,12 @@
 /** @vitest-environment jsdom */
 // UX-133: «Отметить как завершенное» toasted the raw English server message
 // and a double click sent two POSTs (two «Активность выполнена» toasts).
+// BUG-221 nit: a 404 (lesson unpublished under the tab) names the cause.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import { toast } from 'sonner'
-import { describe, expect, it, vi } from 'vite-plus/test'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import BottomActionBar from '@/features/student-activity/shell/BottomActionBar'
 import { runStudentActivityAction, type StudentActivityRuntime } from '@/features/student-activity/api/runtime'
@@ -36,6 +37,7 @@ function renderBar() {
 }
 
 describe('BottomActionBar mark complete', () => {
+  beforeEach(() => vi.mocked(toast.error).mockClear())
   it('sends one request for a double click', async () => {
     let finish: (() => void) | undefined
     vi.mocked(runStudentActivityAction).mockImplementation(
@@ -58,6 +60,15 @@ describe('BottomActionBar mark complete', () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
     const [message] = vi.mocked(toast.error).mock.calls[0]!
     expect(message).not.toContain('activity not found')
-    expect(message).toBe(ruMessages.Errors.codes['not-found'])
+    expect(message).toBe(ruMessages.ActivityPage.activityGone)
+  })
+
+  it('toasts the generic code for a non-404 failure', async () => {
+    vi.mocked(runStudentActivityAction).mockRejectedValue(
+      new APIError({ status: 403, code: 'forbidden', message: 'no access to this course' }),
+    )
+    fireEvent.click(renderBar())
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(toast.error).mock.calls[0]![0]).toBe(ruMessages.Errors.codes['forbidden'])
   })
 })

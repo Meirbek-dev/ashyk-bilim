@@ -2,7 +2,7 @@
 // Critic 9: `/ru/collection/<unknown>` rendered the crash page and
 // `/ru/user/<unknown>` a generic "could not load" — both are localized
 // not-found cards now, and an unknown username resolves to `null`, not a throw.
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, it, vi } from 'vite-plus/test'
 
@@ -12,6 +12,8 @@ import { getUserByUsername } from '@/services/users/users'
 import kkMessages from '@/messages/kk-KZ.json'
 import ruMessages from '@/messages/ru-RU.json'
 
+const refresh = vi.fn()
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh }) }))
 vi.mock('@/lib/api-client', () => ({
   apiJson: vi.fn(async () => {
     throw new APIError({ code: 'not-found', status: 404, message: 'user not found' })
@@ -36,6 +38,17 @@ describe('not-found variants', () => {
       </NextIntlClientProvider>,
     )
     expect(screen.getByRole('heading', { name: kk })).toBeInTheDocument()
+  })
+
+  // BUG-221 nit: an activity unpublished under an open tab re-reads on focus.
+  it('re-reads the page when the tab regains focus', () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages}>
+        <ResourceNotFound type="activity" courseuuid="c1" />
+      </NextIntlClientProvider>,
+    )
+    fireEvent.focus(globalThis.window)
+    expect(refresh).toHaveBeenCalledTimes(1)
   })
 
   it('resolves an unknown username to null instead of throwing', async () => {

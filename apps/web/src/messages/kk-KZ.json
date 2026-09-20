@@ -723,6 +723,7 @@
   },
   "ActivityPage": {
     "activityCompleted": "Әрекет аяқталды",
+    "activityGone": "Оқу тапсырмасы енді қолжетімсіз",
     "unsupportedActivityType": "Қолдау көрсетілмейтін әрекет түрі: {type}",
     "activityCounter": "{current} / {total}",
     "activityNotPublished": "Бұл белсенділік әлі жарияланған жоқ",

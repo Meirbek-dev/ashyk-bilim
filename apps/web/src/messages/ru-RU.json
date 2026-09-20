@@ -724,6 +724,7 @@
   },
   "ActivityPage": {
     "activityCompleted": "Активность выполнена",
+    "activityGone": "Учебная задача больше недоступна",
     "unsupportedActivityType": "Неподдерживаемый тип активности: {type}",
     "activityCounter": "{current} из {total}",
     "activityNotPublished": "Эта активность еще не опубликована",

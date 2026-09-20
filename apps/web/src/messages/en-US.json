@@ -724,6 +724,7 @@
   },
   "ActivityPage": {
     "activityCompleted": "Activity completed",
+    "activityGone": "This activity is no longer available",
     "unsupportedActivityType": "Unsupported activity type: {type}",
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",

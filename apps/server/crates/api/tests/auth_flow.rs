@@ -1,7 +1,7 @@
 //! End-to-end auth flows: real router + DB + Redis, wiremock Zitadel.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::TestApp;
+use ab_testkit::{TestApp, drop_request_when, wait_until};
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
@@ -1527,11 +1527,24 @@ async fn old_password_login_in_flight_during_a_password_change_gets_no_session(p
                 )
                 .await;
             assert_eq!(res.status, StatusCode::NO_CONTENT, "{}", res.text());
+            // From now on Zitadel rejects the old password (the fenced
+            // login retries once as a fresh one — BUG-222 — and must fail).
+            Mock::given(method("POST"))
+                .and(path("/v2/sessions"))
+                .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+                    "code": 3,
+                    "message": "Password is invalid (COMMAND-3M0fs)",
+                    "details": [{ "failedAttempts": 1 }]
+                })))
+                .with_priority(1)
+                .mount(&app.zitadel)
+                .await;
         })
     );
     assert_eq!(login.status, StatusCode::UNAUTHORIZED, "{}", login.text());
     assert_eq!(login.json()["code"], "invalid-credentials");
     assert!(login.session_cookie().is_none());
+    assert_eq!(audited(&app, "login-fenced").await, 1, "the retry ran");
     let own = current.cookie.split_once('=').unwrap().1.to_owned();
     assert_eq!(
         app.sessions.list(user).await.unwrap(),
@@ -1587,6 +1600,137 @@ async fn code_less_login_in_flight_during_totp_activation_is_mfa_required(pool: 
     );
 }
 
+/// BUG-222 nit: a login fenced by a role-only epoch bump (an admin grant
+/// rewrite mid-flight) is retried once inside `login` and opens a session
+/// with the new grants instead of answering 401 to a correct password.
+#[sqlx::test(migrations = "../../migrations")]
+async fn login_in_flight_during_a_role_rewrite_retries_with_the_new_grants(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("roler", "roler@example.com", &["user"])
+        .await;
+    mock_password_ok(&app.zitadel).await;
+    mock_methods(&app, "z-roler", false, 400, 5).await;
+
+    let body = login_body("roler");
+    let (login, ()) = tokio::join!(
+        app.post_json("/api/v2/auth/login", &body),
+        after(100, async {
+            sqlx::query(
+                "INSERT INTO user_roles (user_id, role_id)
+                 SELECT $1, id FROM roles WHERE slug = 'instructor'",
+            )
+            .bind(user.0)
+            .execute(&app.pool)
+            .await
+            .unwrap();
+            app.sessions
+                .rewrite_user_sessions(user, &["user".into(), "instructor".into()], &[], 2)
+                .await
+                .unwrap();
+        })
+    );
+    assert_eq!(login.status, StatusCode::OK, "{}", login.text());
+    assert!(login.session_cookie().is_some());
+    assert!(
+        login.json()["roles"]
+            .as_array()
+            .unwrap()
+            .contains(&serde_json::json!("instructor")),
+        "{}",
+        login.text()
+    );
+    assert_eq!(audited(&app, "login-fenced").await, 1);
+    assert_eq!(audited(&app, "login").await, 1);
+}
+
+/// BUG-222 nit: two concurrent password changes with the same current
+/// password from two sessions of one user → one 204, the other 409 (both
+/// used to pass Zitadel and revoke each other).
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_password_changes_are_serialized(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("pwtwice", "pwtwice@example.com", &["user"])
+        .await;
+    let first = app.mint_session_for(user, &[]).await;
+    let second = app.mint_session_for(user, &[]).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{user}/password")))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(300))
+                .set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    let body =
+        serde_json::json!({ "current_password": "old horse", "new_password": "new horse battery" });
+    let (a, b) = tokio::join!(
+        app.post_as(&first, "/api/v2/auth/password", &body),
+        app.post_as(&second, "/api/v2/auth/password", &body)
+    );
+    let mut statuses = [a.status, b.status];
+    statuses.sort();
+    assert_eq!(
+        statuses,
+        [StatusCode::NO_CONTENT, StatusCode::CONFLICT],
+        "{} / {}",
+        a.text(),
+        b.text()
+    );
+    assert_eq!(
+        app.sessions.list(user).await.unwrap().len(),
+        1,
+        "the winner's session survives"
+    );
+}
+
+/// BUG-222 nit: two registrations racing on one email (distinct usernames)
+/// → one 201 and one 409 `email-taken`, not `username-taken`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn register_race_on_the_email_names_the_email(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    for username in ["racea", "raceb"] {
+        Mock::given(method("POST"))
+            .and(path("/v2/users/human"))
+            .and(wiremock::matchers::body_partial_json(
+                serde_json::json!({ "username": username }),
+            ))
+            .respond_with(
+                ResponseTemplate::new(201)
+                    .set_delay(std::time::Duration::from_millis(200))
+                    .set_body_json(serde_json::json!({
+                        "userId": format!("z-{username}"),
+                        "details": {},
+                        "emailCode": "CODE42"
+                    })),
+            )
+            .mount(&app.zitadel)
+            .await;
+    }
+    Mock::given(method("DELETE"))
+        .and(wiremock::matchers::path_regex("^/v2/users/z-race[ab]$"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+        .mount(&app.zitadel)
+        .await;
+    let body_a = register_body("racea", "shared@example.com");
+    let body_b = register_body("raceb", "shared@example.com");
+    let (a, b) = tokio::join!(
+        app.post_json("/api/v2/auth/register", &body_a),
+        app.post_json("/api/v2/auth/register", &body_b)
+    );
+    let (won, lost) = if a.status == StatusCode::CREATED {
+        (a, b)
+    } else {
+        (b, a)
+    };
+    assert_eq!(won.status, StatusCode::CREATED, "{}", won.text());
+    assert_eq!(lost.status, StatusCode::CONFLICT, "{}", lost.text());
+    assert_eq!(lost.json()["code"], "email-taken");
+}
+
 // ── BUG-213/214: a dropped connection never leaves a half-done mutation ────
 // `app.send` drives the router directly, so dropping the request future is
 // exactly what hyper does when the client resets the socket mid-request:
@@ -1606,34 +1750,6 @@ async fn audited(app: &TestApp, event: &str) -> i64 {
         .fetch_one(&app.pool)
         .await
         .unwrap()
-}
-
-/// Polls `reached` every 200 µs while `request` runs and drops the request
-/// future the moment it reports true (a request that completes first is
-/// asserted with `on_done` instead).
-async fn drop_request_when<R>(
-    request: impl std::future::Future<Output = R>,
-    mut reached: impl AsyncFnMut() -> bool,
-    on_done: impl FnOnce(R),
-) {
-    let mut request = std::pin::pin!(request);
-    loop {
-        tokio::select! {
-            biased;
-            () = tokio::time::sleep(std::time::Duration::from_micros(200)) => {
-                if reached().await { break; }
-            }
-            response = &mut request => { on_done(response); break; }
-        }
-    }
-}
-
-async fn wait_until(what: &str, mut done: impl AsyncFnMut() -> bool) {
-    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
-    while !done().await {
-        assert!(tokio::time::Instant::now() < deadline, "{what}");
-        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-    }
 }
 
 /// BUG-213: the connection drops while Zitadel is still answering (its user
@@ -1779,12 +1895,22 @@ async fn disable_dropped_mid_flight_still_revokes_every_session(pool: PgPool) {
     .await;
 }
 
-/// BUG-214 nit: a login whose connection drops while Zitadel is still
-/// checking the password is not a guess against the IP window.
+/// BUG-222: the IP cap is counted before the Zitadel round-trip, so a burst
+/// of 40 concurrent wrong passwords against 40 accounts from one IP lets at
+/// most the cap (20) reach Zitadel — the rest are 429 at once, and so is the
+/// next sequential attempt. (A connection dropped mid-check now costs its
+/// attempt: accepted, the alternative was an uncounted spray.)
 #[sqlx::test(migrations = "../../migrations")]
-async fn ip_limit_ignores_dropped_logins(pool: PgPool) {
+async fn ip_limit_holds_under_a_concurrent_burst(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    app.create_user("slow", "slow@example.com", &["user"]).await;
+    for i in 0..40 {
+        app.create_user(
+            &format!("spray{i}"),
+            &format!("spray{i}@example.com"),
+            &["user"],
+        )
+        .await;
+    }
     Mock::given(method("POST"))
         .and(path("/v2/sessions"))
         .respond_with(
@@ -1799,27 +1925,37 @@ async fn ip_limit_ignores_dropped_logins(pool: PgPool) {
         .mount(&app.zitadel)
         .await;
     let ip = unique_ip();
-    let body = serde_json::json!({ "login": "slow", "password": "x" });
-    let mut redis = app.sessions.redis();
-    let mut count = async || -> Option<u32> {
-        redis::AsyncCommands::get(&mut redis, format!("rl:login:ip:{ip}"))
-            .await
-            .unwrap()
-    };
-    for _ in 0..5 {
-        let dropped = tokio::time::timeout(
-            std::time::Duration::from_millis(50),
-            login_from(&app, &ip, &body),
-        )
-        .await;
-        assert!(dropped.is_err(), "the login should still be in flight");
-    }
-    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
-    assert_eq!(count().await, None, "dropped logins were counted");
-    // A rejected password does count.
+    let bodies: Vec<_> = (0..40)
+        .map(|i| serde_json::json!({ "login": format!("spray{i}"), "password": "x" }))
+        .collect();
+    let results =
+        futures::future::join_all(bodies.iter().map(|body| login_from(&app, &ip, body))).await;
+    let rejected = results
+        .iter()
+        .filter(|r| r.status == StatusCode::UNAUTHORIZED)
+        .count();
+    let throttled = results
+        .iter()
+        .filter(|r| r.status == StatusCode::TOO_MANY_REQUESTS)
+        .count();
+    assert_eq!(
+        (rejected, throttled),
+        (20, 20),
+        "{:?}",
+        results.iter().map(|r| r.status).collect::<Vec<_>>()
+    );
+    let checked = app
+        .zitadel
+        .received_requests()
+        .await
+        .unwrap()
+        .iter()
+        .filter(|r| r.url.path() == "/v2/sessions")
+        .count();
+    assert_eq!(checked, 20, "only the cap reaches Zitadel");
+    let body = serde_json::json!({ "login": "spray0", "password": "x" });
     assert_eq!(
         login_from(&app, &ip, &body).await.status,
-        StatusCode::UNAUTHORIZED
+        StatusCode::TOO_MANY_REQUESTS
     );
-    assert_eq!(count().await, Some(1));
 }

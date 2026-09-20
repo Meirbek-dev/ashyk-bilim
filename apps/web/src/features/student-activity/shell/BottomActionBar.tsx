@@ -15,6 +15,7 @@ import type { StudentActivityRuntime } from '@/features/student-activity/api/run
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useApiError } from '@/hooks/useApiError'
+import { isApiError } from '@/lib/api/assertSuccess'
 
 type RuntimeNavItem = NonNullable<StudentActivityRuntime['next']>
 type RuntimeActionId = StudentActivityRuntime['primary_action']['id']
@@ -276,7 +277,15 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
       toast.success(t('activityCompleted'))
     },
     // UX-133: problem+json codes reach the toast (`activity not found` was raw English).
-    onError: error => toastApiError(error, { fallback: t('markCompleteError') }),
+    // BUG-221 nit: a 404 here means the lesson was unpublished under the open
+    // tab — name that instead of the generic «resource not found».
+    onError: error => {
+      if (isApiError(error) && error.status === 404) {
+        toast.error(t('activityGone'))
+        return
+      }
+      toastApiError(error, { fallback: t('markCompleteError') })
+    },
     onSettled: () => {
       inFlight.current = false
     },

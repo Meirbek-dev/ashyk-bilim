@@ -4,6 +4,7 @@ use ab_core::id::{ActivityId, CourseId};
 use axum::Json;
 use axum::extract::State;
 
+use crate::detach::detached;
 use crate::dto::progress::{LearnerCourseState, Trail};
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, MaybeActor, Path};
@@ -37,10 +38,13 @@ pub async fn add_course(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Trail>> {
-    Ok(Json(state.trail.add_course(&actor, id).await?.into()))
+    detached(async move { Ok(Json(state.trail.add_course(&actor, id).await?.into())) }).await
 }
 
 /// Drop the run for a course and every step in it.
+///
+/// Trail mutations run `detached()` (BUG-221): a client that hangs up
+/// mid-request must not leave the step without its projection.
 #[utoipa::path(
     delete, path = "/trail/courses/{id}", tag = "progress",
     params(("id" = CourseId, Path, description = "Course id")),
@@ -51,7 +55,7 @@ pub async fn remove_course(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Trail>> {
-    Ok(Json(state.trail.remove_course(&actor, id).await?.into()))
+    detached(async move { Ok(Json(state.trail.remove_course(&actor, id).await?.into())) }).await
 }
 
 /// Mark an activity done (lesson-type activities also complete in the
@@ -66,7 +70,7 @@ pub async fn add_activity(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
 ) -> ApiResult<Json<Trail>> {
-    Ok(Json(state.trail.add_activity(&actor, id).await?.into()))
+    detached(async move { Ok(Json(state.trail.add_activity(&actor, id).await?.into())) }).await
 }
 
 /// Un-mark an activity.
@@ -80,7 +84,7 @@ pub async fn remove_activity(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
 ) -> ApiResult<Json<Trail>> {
-    Ok(Json(state.trail.remove_activity(&actor, id).await?.into()))
+    detached(async move { Ok(Json(state.trail.remove_activity(&actor, id).await?.into())) }).await
 }
 
 /// The learner-facing course state: outline with per-activity work state,

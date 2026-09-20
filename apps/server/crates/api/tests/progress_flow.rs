@@ -4,7 +4,7 @@
 //! the assessment pipeline projecting into the same state.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::{MintedSession, TestApp};
+use ab_testkit::{MintedSession, TestApp, drop_request_when, wait_until};
 use axum::http::StatusCode;
 use sqlx::PgPool;
 
@@ -866,4 +866,74 @@ async fn mark_and_leave_race_stays_consistent(pool: PgPool) {
         let left = app.delete_as(&alice, &leave_path).await;
         assert_eq!(left.status, StatusCode::OK, "{}", left.text());
     }
+}
+
+/// The (user, course) trail lock is held by some transaction of this test
+/// database — the mark / leave is past its first write.
+async fn trail_lock_held(pool: &PgPool) -> bool {
+    sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND granted
+           AND database = (SELECT oid FROM pg_database WHERE datname = current_database()))",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap()
+}
+
+/// BUG-221: the client hangs up while a mark (then a leave) is inside its
+/// transaction. Both still land whole: the step with its completion, the
+/// run's removal with every un-completion — never one without the other.
+#[sqlx::test(migrations = "../../migrations")]
+async fn mark_and_leave_dropped_mid_flight_still_land_whole(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Hangup 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let a2 = lesson(&app, &teacher, &chapter_id, "Next").await;
+    let alice = learner(&app, "alice").await;
+    let mark_path = format!("/api/v2/trail/activities/{a1}");
+    let leave_path = format!("/api/v2/trail/courses/{course_id}");
+    let state_path = format!("/api/v2/courses/{course_id}/learner-state");
+    let empty = serde_json::json!({});
+    let steps = async || {
+        let trail = app.get_as(&alice, "/api/v2/trail").await.json();
+        trail["runs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["steps"].as_array().unwrap().len())
+            .sum::<usize>()
+    };
+
+    drop_request_when(
+        app.post_as(&alice, &mark_path, &empty),
+        async || trail_lock_held(&app.pool).await,
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    wait_until("the dropped mark never landed", async || steps().await == 1).await;
+    let state = app.get_as(&alice, &state_path).await.json();
+    assert_eq!(activity(&state, &a1)["state"], "complete", "{state}");
+    assert_eq!(state["progress"]["completed_required_count"], 1, "{state}");
+
+    let second = app
+        .post_as(&alice, &format!("/api/v2/trail/activities/{a2}"), &empty)
+        .await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    drop_request_when(
+        app.delete_as(&alice, &leave_path),
+        async || trail_lock_held(&app.pool).await,
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    wait_until("the dropped leave never landed", async || {
+        steps().await == 0
+    })
+    .await;
+    let state = app.get_as(&alice, &state_path).await.json();
+    assert_eq!(state["enrolled"], false, "{state}");
+    for id in [&a1, &a2] {
+        assert_ne!(activity(&state, id)["state"], "complete", "{state}");
+    }
+    assert_eq!(state["progress"]["completed_required_count"], 0, "{state}");
 }

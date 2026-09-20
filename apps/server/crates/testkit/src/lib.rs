@@ -468,3 +468,35 @@ impl TestResponse {
         &self.body
     }
 }
+
+/// Polls `reached` every 200 µs while `request` runs and drops the request
+/// future the moment it reports true (a request that completes first is
+/// asserted with `on_done` instead) — a client hanging up mid-request.
+pub async fn drop_request_when<R>(
+    request: impl std::future::Future<Output = R>,
+    mut reached: impl AsyncFnMut() -> bool,
+    on_done: impl FnOnce(R),
+) {
+    let mut request = std::pin::pin!(request);
+    loop {
+        tokio::select! {
+            biased;
+            () = tokio::time::sleep(std::time::Duration::from_micros(200)) => {
+                if reached().await { break; }
+            }
+            response = &mut request => { on_done(response); break; }
+        }
+    }
+}
+
+/// Polls `done` every 20 ms for up to 5 s; panics with `what` otherwise.
+///
+/// # Panics
+/// When `done` is still false at the deadline.
+pub async fn wait_until(what: &str, mut done: impl AsyncFnMut() -> bool) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !done().await {
+        assert!(tokio::time::Instant::now() < deadline, "{what}");
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+}
