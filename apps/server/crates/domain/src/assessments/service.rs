@@ -1198,6 +1198,9 @@ impl AssessmentsService {
     ) -> Result<Item> {
         let assessment = self.load_for_author(actor, id).await?;
         self.ensure_editable(&assessment).await?;
+        // BUG-217: a new item reweights every graded attempt, like a max
+        // score change does.
+        self.ensure_content_unlocked(&assessment).await?;
         Self::check_kind_allowed(assessment.kind, body.kind())?;
         body.validate()?;
         if ab_db::assessments::count_items(&self.pool, id).await? >= MAX_ITEMS {

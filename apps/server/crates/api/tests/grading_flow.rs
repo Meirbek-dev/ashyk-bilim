@@ -2306,3 +2306,63 @@ async fn deadline_extension_racing_a_publish_settles_on_the_unpenalised_score(po
         }
     }
 }
+
+/// BUG-217: an item added between an unpublish and a republish, graded on
+/// an attempt that predates it, joins the breakdown as a share of 100 —
+/// the raw score weights it like its siblings (10/30), not 10/110.
+#[sqlx::test(migrations = "../../migrations")]
+async fn item_added_after_a_republish_is_weighted_into_the_set(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let lifecycle = format!("/api/v2/assessments/{id}/lifecycle");
+    let unpublished = app
+        .post_as(&teacher, &lifecycle, &serde_json::json!({ "to": "draft" }))
+        .await;
+    assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &serde_json::json!({ "title": "Late", "max_score": 10,
+                                 "body": { "kind": "open_text", "prompt": "Later" } }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let late_id = added.json()["id"].as_str().unwrap().to_owned();
+    let republished = app
+        .post_as(
+            &teacher,
+            &lifecycle,
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(republished.status, StatusCode::OK, "{}", republished.text());
+    let graded = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "item_grades": [
+                { "item_id": &essay_id, "score": 10 },
+                { "item_id": &late_id, "score": 5 },
+            ] }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    let body = graded.json();
+    assert_eq!(body["final_score"], 83.33, "{body}");
+    let late = body["grading"]["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["item_id"] == late_id)
+        .unwrap()
+        .clone();
+    assert_eq!(late["max_score"], 33.33, "{late}");
+    assert_eq!(late["score"], 16.66, "{late}");
+}

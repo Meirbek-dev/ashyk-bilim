@@ -1721,6 +1721,7 @@ fn merge_item_grades(
     items: &[Item],
     answers: &Answers,
 ) {
+    let mut pushed = false;
     for grade in grades {
         let item = items.iter().find(|i| i.id == grade.item_id);
         if let Some(existing) = breakdown
@@ -1747,6 +1748,9 @@ fn merge_item_grades(
             }
             continue;
         }
+        // On the item's own scale for now — the reweighting below turns the
+        // whole set into shares of 100 (BUG-217).
+        pushed = true;
         breakdown.items.push(GradedItem {
             item_id: grade.item_id,
             item_text: item.map(|i| i.title.clone()).unwrap_or_default(),
@@ -1763,6 +1767,40 @@ fn merge_item_grades(
                 .unwrap_or(serde_json::Value::Null),
             correct_answer: serde_json::Value::Null,
         });
+    }
+    if pushed {
+        reweight(breakdown, items);
+    }
+}
+
+/// BUG-217: an item graded after the auto-grader ran (added between an
+/// unpublish and a republish) joins the set — every breakdown item's
+/// `max_score` becomes its share of 100 over the set's assessment max
+/// scores (`grader::item_points`), the earned ratio carried along.
+/// Items no longer on the assessment keep their stored share.
+fn reweight(breakdown: &mut GradingBreakdown, items: &[Item]) {
+    let known: Vec<(usize, &Item)> = breakdown
+        .items
+        .iter()
+        .enumerate()
+        .filter_map(|(i, g)| items.iter().find(|it| it.id == g.item_id).map(|it| (i, it)))
+        .collect();
+    let total: f64 = known.iter().map(|(_, it)| it.max_score).sum();
+    let equal = 100.0 / count(known.len().max(1));
+    for (i, item) in known {
+        let share = if total > 0.0 && total.is_finite() {
+            round2(item.max_score / total * 100.0)
+        } else {
+            equal
+        };
+        let graded = &mut breakdown.items[i];
+        let ratio = if graded.max_score > 0.0 {
+            graded.score / graded.max_score
+        } else {
+            0.0
+        };
+        graded.max_score = share;
+        graded.score = round2(ratio * share);
     }
 }
 
