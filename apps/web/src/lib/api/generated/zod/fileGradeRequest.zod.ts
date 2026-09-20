@@ -11,7 +11,10 @@ export const FileGradeRequest = zod.object({
   action: zod.enum(['save', 'publish', 'return']),
   feedback: zod.string().nullish().describe('Omit to keep the stored feedback (UX-113; same rule as quiz grades).'),
   final_score: zod.number().nullish().describe('Required for save/publish; 0..=100.'),
-  rubric_scores: zod.looseObject({}).nullish().describe('Omit to keep the stored rubric scores.'),
+  rubric_scores: zod
+    .looseObject({})
+    .nullish()
+    .describe('Omit to keep the stored rubric scores. An object of at most 4 KiB\nserialized (UX-141).'),
 })
 
 export type FileGradeRequest = zod.input<typeof FileGradeRequest>

@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const DeadlineExtensionRequest = zod.object({
-  new_due_at_unix: zod.int(),
+  new_due_at_unix: zod.int().describe('Unix seconds, at most 9999-12-31 (the timestamp range).'),
   reason: zod.string().optional(),
   user_ids: zod.array(zod.uuid()),
 })

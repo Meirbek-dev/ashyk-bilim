@@ -905,7 +905,9 @@ export const getRecordStreakUrl = (kind: StreakKind) => {
 }
 
 /**
- * @summary Touch a streak for today (same day keeps, next day extends, a gap resets).
+ * @summary Touch the login streak for today (same day keeps, next day extends, a
+gap resets). `learning` is 422: that streak is recorded by completing
+an activity.
  */
 export const recordStreak = async (
   kind: StreakKind,
@@ -923,7 +925,7 @@ export const recordStreak = async (
 
 export const getRecordStreakMutationKey = () => ['recordStreak'] as const
 
-export const getRecordStreakMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getRecordStreakMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof recordStreak>>,
     TError,
@@ -953,13 +955,15 @@ export const getRecordStreakMutationOptions = <TError = ErrorType<unknown>, TCon
 
 export type RecordStreakMutationResult = NonNullable<Awaited<ReturnType<typeof recordStreak>>>
 
-export type RecordStreakMutationError = ErrorType<unknown>
+export type RecordStreakMutationError = ErrorType<Problem>
 export type RecordStreakMutationVariables = { kind: StreakKind }
 
 /**
- * @summary Touch a streak for today (same day keeps, next day extends, a gap resets).
+ * @summary Touch the login streak for today (same day keeps, next day extends, a
+gap resets). `learning` is 422: that streak is recorded by completing
+an activity.
  */
-export const useRecordStreak = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useRecordStreak = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof recordStreak>>,

@@ -11,7 +11,7 @@ export const UpdateAssessmentBody = zod.object({
   description: zod.string().nullish(),
   grading_type: zod.union([zod.null(), zod.enum(['numeric', 'percentage'])]).optional(),
   title: zod.string().nullish(),
-  weight: zod.number().nullish(),
+  weight: zod.number().nullish().describe('BUG-208: 0–100 — an unbounded weight overflows the course average.'),
 })
 
 export type UpdateAssessmentBody = zod.input<typeof UpdateAssessmentBody>

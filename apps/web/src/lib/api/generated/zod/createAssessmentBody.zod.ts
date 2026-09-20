@@ -62,7 +62,7 @@ export const CreateAssessmentBody = zod.object({
     ])
     .optional(),
   title: zod.string(),
-  weight: zod.number().nullish(),
+  weight: zod.number().nullish().describe('BUG-208: 0–100 — an unbounded weight overflows the course average.'),
 })
 
 export type CreateAssessmentBody = zod.input<typeof CreateAssessmentBody>

@@ -69,7 +69,8 @@ export const getExtendDeadlineUrl = (id: AssessmentId) => {
 
 /**
  * Recorded as a bulk action and executed by the worker; poll
- * `GET /bulk-actions/{id}` for the outcome.
+ * `GET /bulk-actions/{id}` for the outcome. Retry-safe with
+ * `Idempotency-Key`: a replay returns the stored 202 (BUG-206).
  * @summary Extend the due date for selected learners.
  */
 export const extendDeadline = async (

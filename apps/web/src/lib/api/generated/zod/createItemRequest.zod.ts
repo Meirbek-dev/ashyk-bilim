@@ -154,7 +154,10 @@ export const CreateItemRequest = zod.object({
         ),
     ])
     .describe('Tagged on `kind`; must be a kind the assessment allows.'),
-  max_score: zod.number().nullish(),
+  max_score: zod
+    .number()
+    .nullish()
+    .describe('BUG-208: at most 10 000 — an unbounded score overflows the grade shares.'),
   metadata: zod
     .union([
       zod.null(),

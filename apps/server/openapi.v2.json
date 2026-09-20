@@ -5072,7 +5072,7 @@
           "grading"
         ],
         "summary": "Extend the due date for selected learners.",
-        "description": "Recorded as a bulk action and executed by the worker; poll\n`GET /bulk-actions/{id}` for the outcome.",
+        "description": "Recorded as a bulk action and executed by the worker; poll\n`GET /bulk-actions/{id}` for the outcome. Retry-safe with\n`Idempotency-Key`: a replay returns the stored 202 (BUG-206).",
         "operationId": "extend_deadline",
         "parameters": [
           {
@@ -9992,13 +9992,13 @@
         "tags": [
           "gamification"
         ],
-        "summary": "Touch a streak for today (same day keeps, next day extends, a gap resets).",
+        "summary": "Touch the login streak for today (same day keeps, next day extends, a\ngap resets). `learning` is 422: that streak is recorded by completing\nan activity.",
         "operationId": "record_streak",
         "parameters": [
           {
             "name": "kind",
             "in": "path",
-            "description": "login or learning",
+            "description": "login (learning is 422)",
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/StreakKind"
@@ -10012,6 +10012,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StreakUpdate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "learning is not touched manually",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -16343,7 +16353,8 @@
               "number",
               "null"
             ],
-            "format": "double"
+            "format": "double",
+            "description": "BUG-208: 0–100 — an unbounded weight overflows the course average."
           }
         },
         "additionalProperties": false
@@ -16593,7 +16604,8 @@
               "number",
               "null"
             ],
-            "format": "double"
+            "format": "double",
+            "description": "BUG-208: at most 10 000 — an unbounded score overflows the grade shares."
           },
           "metadata": {
             "oneOf": [
@@ -16858,7 +16870,8 @@
         "properties": {
           "new_due_at_unix": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Unix seconds, at most 9999-12-31 (the timestamp range)."
           },
           "reason": {
             "type": "string"
@@ -17513,7 +17526,7 @@
               "object",
               "null"
             ],
-            "description": "Omit to keep the stored rubric scores."
+            "description": "Omit to keep the stored rubric scores. An object of at most 4 KiB\nserialized (UX-141)."
           }
         },
         "additionalProperties": false
@@ -18443,6 +18456,14 @@
           },
           "needs_manual_review": {
             "type": "boolean"
+          },
+          "score_override": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "BUG-205: the teacher's explicit raw override — the score of record\nregardless of whether it equals the item-derived one. `None` = derived."
           }
         }
       },
@@ -18452,7 +18473,6 @@
           "id",
           "raw_score",
           "penalty_pct",
-          "final_score",
           "overall_feedback",
           "created_at_unix"
         ],
@@ -18462,8 +18482,12 @@
             "format": "int64"
           },
           "final_score": {
-            "type": "number",
-            "format": "double"
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Absent for a draft save that left the attempt pending."
           },
           "graded_by": {
             "oneOf": [
@@ -23658,7 +23682,8 @@
               "number",
               "null"
             ],
-            "format": "double"
+            "format": "double",
+            "description": "BUG-208: 0–100 — an unbounded weight overflows the course average."
           }
         },
         "additionalProperties": false
@@ -23789,7 +23814,7 @@
               "null"
             ],
             "format": "uuid",
-            "description": "Finalized `course-thumbnail` upload to claim as the thumbnail."
+            "description": "Finalized `course-thumbnail` upload to claim as the thumbnail;\n`null` removes the current one."
           }
         },
         "additionalProperties": false
@@ -23850,7 +23875,8 @@
               "number",
               "null"
             ],
-            "format": "double"
+            "format": "double",
+            "description": "BUG-208: at most 10 000 — an unbounded score overflows the grade shares."
           },
           "metadata": {
             "oneOf": [

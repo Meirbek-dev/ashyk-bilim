@@ -33,6 +33,12 @@ export const GradingBreakdown = zod.object({
     )
     .optional(),
   needs_manual_review: zod.boolean().optional(),
+  score_override: zod
+    .number()
+    .nullish()
+    .describe(
+      "BUG-205: the teacher's explicit raw override — the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
+    ),
 })
 
 export type GradingBreakdown = zod.input<typeof GradingBreakdown>

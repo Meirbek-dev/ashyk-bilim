@@ -4003,6 +4003,7 @@ expression: json
             "type": "string"
           },
           "weight": {
+            "description": "BUG-208: 0–100 — an unbounded weight overflows the course average.",
             "format": "double",
             "type": [
               "number",
@@ -4255,6 +4256,7 @@ expression: json
             "description": "Tagged on `kind`; must be a kind the assessment allows."
           },
           "max_score": {
+            "description": "BUG-208: at most 10 000 — an unbounded score overflows the grade shares.",
             "format": "double",
             "type": [
               "number",
@@ -4522,6 +4524,7 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "new_due_at_unix": {
+            "description": "Unix seconds, at most 9999-12-31 (the timestamp range).",
             "format": "int64",
             "type": "integer"
           },
@@ -5175,7 +5178,7 @@ expression: json
             ]
           },
           "rubric_scores": {
-            "description": "Omit to keep the stored rubric scores.",
+            "description": "Omit to keep the stored rubric scores. An object of at most 4 KiB\nserialized (UX-141).",
             "type": [
               "object",
               "null"
@@ -6111,6 +6114,14 @@ expression: json
           },
           "needs_manual_review": {
             "type": "boolean"
+          },
+          "score_override": {
+            "description": "BUG-205: the teacher's explicit raw override — the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           }
         },
         "type": "object"
@@ -6122,8 +6133,12 @@ expression: json
             "type": "integer"
           },
           "final_score": {
+            "description": "Absent for a draft save that left the attempt pending.",
             "format": "double",
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "graded_by": {
             "oneOf": [
@@ -6162,7 +6177,6 @@ expression: json
           "id",
           "raw_score",
           "penalty_pct",
-          "final_score",
           "overall_feedback",
           "created_at_unix"
         ],
@@ -11323,6 +11337,7 @@ expression: json
             ]
           },
           "weight": {
+            "description": "BUG-208: 0–100 — an unbounded weight overflows the course average.",
             "format": "double",
             "type": [
               "number",
@@ -11453,7 +11468,7 @@ expression: json
             ]
           },
           "thumbnail_upload_id": {
-            "description": "Finalized `course-thumbnail` upload to claim as the thumbnail.",
+            "description": "Finalized `course-thumbnail` upload to claim as the thumbnail;\n`null` removes the current one.",
             "format": "uuid",
             "type": [
               "string",
@@ -11515,6 +11530,7 @@ expression: json
             ]
           },
           "max_score": {
+            "description": "BUG-208: at most 10 000 — an unbounded score overflows the grade shares.",
             "format": "double",
             "type": [
               "number",
@@ -17346,7 +17362,7 @@ expression: json
     },
     "/api/v2/assessments/{id}/deadline-extensions": {
       "post": {
-        "description": "Recorded as a bulk action and executed by the worker; poll\n`GET /bulk-actions/{id}` for the outcome.",
+        "description": "Recorded as a bulk action and executed by the worker; poll\n`GET /bulk-actions/{id}` for the outcome. Retry-safe with\n`Idempotency-Key`: a replay returns the stored 202 (BUG-206).",
         "operationId": "extend_deadline",
         "parameters": [
           {
@@ -22270,7 +22286,7 @@ expression: json
         "operationId": "record_streak",
         "parameters": [
           {
-            "description": "login or learning",
+            "description": "login (learning is 422)",
             "in": "path",
             "name": "kind",
             "required": true,
@@ -22289,9 +22305,19 @@ expression: json
               }
             },
             "description": "Streak"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "learning is not touched manually"
           }
         },
-        "summary": "Touch a streak for today (same day keeps, next day extends, a gap resets).",
+        "summary": "Touch the login streak for today (same day keeps, next day extends, a\ngap resets). `learning` is 422: that streak is recorded by completing\nan activity.",
         "tags": [
           "gamification"
         ]
