@@ -1220,14 +1220,16 @@ impl AssessmentsService {
         // UX-139: an item title is trimmed and never blank, like the assessment's.
         let title = ab_core::required_str("title", title)?;
         let metadata = metadata.normalized();
-        if assessment.lifecycle == Lifecycle::Published {
-            self.ensure_editable(&assessment).await?;
-            items.push(Item {
+        // BUG-218: the readiness gate runs on the locked state, in the same
+        // transaction as the insert, so a concurrent publish cannot slip in.
         let mut tx = self.pool.begin().await?;
         let AssessmentDetail {
             assessment,
             mut items,
         } = Self::lock_detail(&mut tx, id).await?;
+        if assessment.lifecycle == Lifecycle::Published {
+            self.ensure_editable(&assessment).await?;
+            items.push(Item {
                 id: AssessmentItemId::default(),
                 position: 0,
                 kind: body.kind(),

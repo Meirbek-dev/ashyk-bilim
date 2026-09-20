@@ -236,6 +236,8 @@ pub struct CourseReadiness {
     pub warnings: Vec<ReadinessItem>,
 }
 
+/// One readiness blocker.
+///
 /// `code` ∈ `no-live-activity | assessment-not-ready |
 /// code-challenge-unconfigured | file-submission-unpublished |
 /// file-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.

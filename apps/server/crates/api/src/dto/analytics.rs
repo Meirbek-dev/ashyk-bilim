@@ -150,6 +150,7 @@ pub struct SaveViewRequest {
 const MAX_JSON_BYTES: usize = 16 * 1024;
 
 // garde's custom-validator contract fixes this signature (&field, &context).
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn json_object_16k(value: &serde_json::Value, _ctx: &()) -> garde::Result {
     if !value.is_object() {
         return Err(garde::Error::new("must be a JSON object"));
