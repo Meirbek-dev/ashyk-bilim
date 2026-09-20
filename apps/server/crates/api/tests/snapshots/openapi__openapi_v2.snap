@@ -1648,8 +1648,16 @@ expression: json
               "null"
             ]
           },
+          "pending_attempt": {
+            "description": "The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any — it may be newer than the ranked attempt.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "status": {
-            "description": "Submission status of the latest attempt (`pending`, `graded`, …).",
+            "description": "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) — the gradebook cell's rule.",
             "type": [
               "string",
               "null"
@@ -8050,7 +8058,7 @@ expression: json
             "type": "integer"
           },
           "needs_grading_count": {
-            "description": "Graded rows held back: an item still awaits its manual score (BUG-197).",
+            "description": "Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) — the same count as\n`stats.needs_grading`.",
             "format": "int64",
             "type": "integer"
           },

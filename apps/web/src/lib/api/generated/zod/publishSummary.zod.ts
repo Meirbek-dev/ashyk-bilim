@@ -9,7 +9,11 @@ import * as zod from 'zod'
 
 export const PublishSummary = zod.object({
   already_published_count: zod.int(),
-  needs_grading_count: zod.int().describe('Graded rows held back: an item still awaits its manual score (BUG-197).'),
+  needs_grading_count: zod
+    .int()
+    .describe(
+      'Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) — the same count as\n`stats.needs_grading`.',
+    ),
   published_count: zod.int(),
 })
 

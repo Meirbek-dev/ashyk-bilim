@@ -13985,12 +13985,20 @@
             ],
             "format": "double"
           },
+          "pending_attempt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any — it may be newer than the ranked attempt."
+          },
           "status": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Submission status of the latest attempt (`pending`, `graded`, …)."
+            "description": "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) — the gradebook cell's rule."
           },
           "submitted_at_unix": {
             "type": [
@@ -20389,7 +20397,7 @@
           "needs_grading_count": {
             "type": "integer",
             "format": "int64",
-            "description": "Graded rows held back: an item still awaits its manual score (BUG-197)."
+            "description": "Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) — the same count as\n`stats.needs_grading`."
           },
           "published_count": {
             "type": "integer",
