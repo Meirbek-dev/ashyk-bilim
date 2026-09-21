@@ -520,8 +520,8 @@ pub struct ActivityRow {
     pub version: i32,
 }
 
-pub async fn insert_activity(
-    pool: &PgPool,
+pub async fn insert_activity<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     chapter_id: ChapterId,
     course_id: CourseId,
     name: &str,
@@ -542,7 +542,7 @@ pub async fn insert_activity(
         activity_sub_type,
         creator_id.0
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(ActivityId(id))
 }
@@ -745,8 +745,8 @@ pub struct BlockRow {
     pub created_at: i64,
 }
 
-pub async fn insert_block(
-    pool: &PgPool,
+pub async fn insert_block<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     activity_id: ActivityId,
     block_type: &str,
     content: &serde_json::Value,
@@ -759,7 +759,7 @@ pub async fn insert_block(
         block_type,
         content
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(BlockId(id))
 }

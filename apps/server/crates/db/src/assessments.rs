@@ -152,7 +152,10 @@ pub struct NewAssessment<'a> {
     pub policy: &'a PolicyValues,
 }
 
-pub async fn insert_assessment(pool: &PgPool, new: NewAssessment<'_>) -> Result<AssessmentId> {
+pub async fn insert_assessment<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    new: NewAssessment<'_>,
+) -> Result<AssessmentId> {
     let p = new.policy;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO assessments (
@@ -208,7 +211,7 @@ pub async fn insert_assessment(pool: &PgPool, new: NewAssessment<'_>) -> Result<
         p.violation_threshold,
         p.attempt_penalty_percent
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(AssessmentId(id))
 }

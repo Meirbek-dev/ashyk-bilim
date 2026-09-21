@@ -65,8 +65,8 @@ pub struct FileSubmissionValues<'a> {
     pub settings: &'a serde_json::Value,
 }
 
-pub async fn insert_file_submission(
-    pool: &PgPool,
+pub async fn insert_file_submission<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     activity_id: ActivityId,
     course_id: CourseId,
     creator_id: UserId,
@@ -99,7 +99,7 @@ pub async fn insert_file_submission(
         v.settings,
         creator_id.0
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(id)
 }

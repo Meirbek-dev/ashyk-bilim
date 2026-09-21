@@ -91,7 +91,7 @@ pub enum Error {
     Config { message: String },
 
     #[error(transparent)]
-    Db(#[from] sqlx::Error),
+    Db(sqlx::Error),
 
     #[error("{context}")]
     Internal {
@@ -99,6 +99,27 @@ pub enum Error {
         #[source]
         source: anyhow::Error,
     },
+}
+
+/// BUG-233/234: an INSERT/UPDATE that references a parent row a concurrent
+/// DELETE just removed is a 404 on that parent, not an opaque 500. The
+/// parent's name comes from the constraint (`<table>_<parent>_id_fkey`);
+/// delete-side violations (`ON DELETE RESTRICT`) stay internal.
+impl From<sqlx::Error> for Error {
+    fn from(err: sqlx::Error) -> Self {
+        let Some(db) = err.as_database_error() else {
+            return Self::Db(err);
+        };
+        if !db.is_foreign_key_violation() || !db.message().starts_with("insert or update") {
+            return Self::Db(err);
+        }
+        let parent = db
+            .constraint()
+            .and_then(|c| c.strip_suffix("_id_fkey"))
+            .and_then(|c| c.rsplit('_').next())
+            .unwrap_or("parent");
+        Self::not_found(parent)
+    }
 }
 
 impl Error {

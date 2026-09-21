@@ -1023,3 +1023,53 @@ async fn draft_assessment_pins_the_activity_type(pool: PgPool) {
         "quiz"
     );
 }
+
+/// BUG-233: the chapter vanishes between the authoring check and the
+/// insert (a DELETE holds the row until the create's FK check lines up
+/// behind it). The create is one transaction: 404 on the chapter, no
+/// orphan activity left behind, never a 500.
+#[sqlx::test(migrations = "../../migrations")]
+async fn create_against_a_vanishing_chapter_is_a_404_without_an_orphan(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("teacher", "teacher@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Race").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Doomed").await;
+    let chapter_uuid = uuid::Uuid::parse_str(&chapter_id).unwrap();
+
+    // The uncommitted DELETE is invisible to the create's chapter read but
+    // blocks its activity insert; committing it makes that insert fail.
+    let mut tx = app.pool.begin().await.unwrap();
+    sqlx::query("DELETE FROM chapters WHERE id = $1")
+        .bind(chapter_uuid)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let body = serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" });
+    let create = app.post_as(&teacher, "/api/v2/assessments", &body);
+    let commit = async {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tx.commit().await.unwrap();
+    };
+    let (created, ()) = tokio::join!(create, commit);
+    assert_eq!(created.status, StatusCode::NOT_FOUND, "{}", created.text());
+
+    let orphans: i64 = sqlx::query_scalar("SELECT count(*) FROM activities WHERE course_id = $1")
+        .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(orphans, 0, "no activity may outlive its create");
+}

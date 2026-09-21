@@ -619,8 +619,12 @@ impl AssessmentsService {
         policy.validate()?;
 
         let (activity_type, sub_type) = kind.activity_type();
+        // BUG-233: activity + assessment (+ default item) land together — a
+        // dropped socket or a concurrent chapter DELETE (FK → 404) leaves no
+        // orphan activity behind.
+        let mut tx = self.pool.begin().await?;
         let activity_id = ab_db::catalog::insert_activity(
-            &self.pool,
+            &mut *tx,
             input.chapter_id,
             chapter.course_id,
             title,
@@ -630,7 +634,7 @@ impl AssessmentsService {
         )
         .await?;
         let id = ab_db::assessments::insert_assessment(
-            &self.pool,
+            &mut *tx,
             NewAssessment {
                 activity_id,
                 course_id: chapter.course_id,
@@ -647,7 +651,7 @@ impl AssessmentsService {
         if kind == AssessmentKind::CodeChallenge {
             let body = ItemBody::default_code();
             ab_db::assessments::insert_item(
-                &self.pool,
+                &mut *tx,
                 id,
                 ItemKind::Code,
                 "",
@@ -657,6 +661,7 @@ impl AssessmentsService {
             )
             .await?;
         }
+        tx.commit().await?;
         self.detail(id).await
     }
 

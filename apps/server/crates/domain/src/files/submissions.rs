@@ -491,8 +491,10 @@ impl FileSubmissionsService {
         let merged = merge(&defaults, &patch);
         let values = values_of(&merged);
         validate_config(&values)?;
+        // BUG-233: activity + config in one tx (see `AssessmentsService::create`).
+        let mut tx = self.pool.begin().await?;
         let activity_id = ab_db::catalog::insert_activity(
-            &self.pool,
+            &mut *tx,
             chapter_id,
             chapter.course_id,
             title,
@@ -502,13 +504,14 @@ impl FileSubmissionsService {
         )
         .await?;
         let id = ab_db::file_submissions::insert_file_submission(
-            &self.pool,
+            &mut *tx,
             activity_id,
             chapter.course_id,
             actor.user_id,
             values,
         )
         .await?;
+        tx.commit().await?;
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await
     }
