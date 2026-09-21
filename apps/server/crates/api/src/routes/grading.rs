@@ -16,6 +16,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
+use crate::detach::detached;
 use crate::dto::grading::{
     BulkAction, DeadlineExtensionRequest, GradeRequest, GradebookPage, GradebookQuery,
     GradingEntry, ItemAnalytics, PublishSummary, ReviewPage, ReviewQuery, Stats, TeacherSubmission,
@@ -169,6 +170,10 @@ pub async fn review_submission(
 /// `{expected, actual}`. Item scores merge into the breakdown, the raw
 /// score is given or computed from them, and the late penalty recorded at
 /// submit applies on top. Each save appends to the grading history.
+///
+/// Runs `detached()` (BUG-227): a client that hangs up after the row and
+/// ledger commit must not skip the SSE events, the progress projection
+/// and the analytics hook.
 #[utoipa::path(
     patch, path = "/submissions/{id}/grade", tag = "grading",
     params(
@@ -194,30 +199,27 @@ pub async fn save_grade(
     ValidJson(request): ValidJson<GradeRequest>,
 ) -> ApiResult<Json<TeacherSubmission>> {
     let expected_version = if_match(&headers)?;
-    let saved = state
-        .grading
-        .save_grade(
-            &actor,
-            id,
-            GradeInput {
-                action: request.action.into(),
-                final_score: request.final_score,
-                feedback: request.feedback,
-                audit_note: request.audit_note,
-                item_grades: request
-                    .item_grades
-                    .into_iter()
-                    .map(|g| ItemGrade {
-                        item_id: g.item_id,
-                        score: g.score,
-                        feedback: g.feedback,
-                    })
-                    .collect(),
-                expected_version,
-            },
-        )
-        .await?;
-    Ok(Json(saved.into()))
+    let input = GradeInput {
+        action: request.action.into(),
+        final_score: request.final_score,
+        feedback: request.feedback,
+        audit_note: request.audit_note,
+        item_grades: request
+            .item_grades
+            .into_iter()
+            .map(|g| ItemGrade {
+                item_id: g.item_id,
+                score: g.score,
+                feedback: g.feedback,
+            })
+            .collect(),
+        expected_version,
+    };
+    detached(async move {
+        let saved = state.grading.save_grade(&actor, id, input).await?;
+        Ok(Json(saved.into()))
+    })
+    .await
 }
 
 /// The append-only grading ledger of a submission, newest first.
@@ -250,6 +252,9 @@ pub async fn my_feedback(
 }
 
 /// Release every held grade of a batch-mode assessment.
+///
+/// Runs `detached()` (BUG-227): each row's release and its projection
+/// outlive a client that hangs up mid-batch.
 #[utoipa::path(
     post, path = "/assessments/{id}/publish-grades", tag = "grading",
     params(("id" = AssessmentId, Path, description = "Assessment id")),
@@ -260,7 +265,7 @@ pub async fn publish_grades(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
 ) -> ApiResult<Json<PublishSummary>> {
-    Ok(Json(state.grading.publish_all(&actor, id).await?))
+    detached(async move { Ok(Json(state.grading.publish_all(&actor, id).await?)) }).await
 }
 
 /// Extend the due date for selected learners.

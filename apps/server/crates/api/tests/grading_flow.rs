@@ -5,7 +5,7 @@
 //! queued bulk action.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::{MintedSession, TestApp};
+use ab_testkit::{MintedSession, TestApp, drop_request_when, wait_until};
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
@@ -2533,4 +2533,88 @@ async fn publish_all_racing_a_save_or_return_never_releases_the_stale_row(pool: 
             }
         }
     }
+}
+
+/// BUG-227: the client hangs up right after a publish (single or bulk)
+/// committed its row and ledger. The SSE fan-out, the progress projection
+/// and the analytics hook still run — the learner sees the score, not a
+/// hidden grade forever.
+#[sqlx::test(migrations = "../../migrations")]
+async fn publish_dropped_after_the_commit_still_projects(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let state_path = format!("/api/v2/courses/{course_id}/learner-state");
+    let row_published = async |sub: &str| {
+        sqlx::query_scalar::<_, String>("SELECT status FROM submissions WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(sub).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+            == "published"
+    };
+    let learner_score = async |who: &MintedSession| {
+        app.get_as(who, &state_path).await.json()["outline"][0]["activities"][0]["score"].as_f64()
+    };
+
+    let alice = learner(&app, "alice").await;
+    let single = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    drop_request_when(
+        app.send(grade(
+            &teacher,
+            &single,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+        )),
+        async || row_published(&single).await,
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    wait_until("the dropped publish never projected", async || {
+        learner_score(&alice).await == Some(80.0)
+    })
+    .await;
+
+    let bob = learner(&app, "bob").await;
+    let bulk = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    let graded = app
+        .send(grade(
+            &teacher,
+            &bulk,
+            Some("1"),
+            &serde_json::json!({ "action": "save", "final_score": 57 }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    drop_request_when(
+        app.post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/publish-grades"),
+            &serde_json::json!({}),
+        ),
+        async || row_published(&bulk).await,
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    wait_until("the dropped bulk release never projected", async || {
+        learner_score(&bob).await == Some(57.0)
+    })
+    .await;
+    let history = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/submissions/{bulk}/grading-history"),
+        )
+        .await
+        .json();
+    assert!(
+        history
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|e| !e["published_at_unix"].is_null()),
+        "{history}"
+    );
 }
