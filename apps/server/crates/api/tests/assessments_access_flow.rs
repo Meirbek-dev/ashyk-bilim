@@ -301,7 +301,12 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
     assert_eq!(tab_a.status, StatusCode::OK, "{}", tab_a.text());
     assert_ne!(etag(&tab_a), loaded);
     let tab_b = app.send(put_access(loaded)).await;
-    assert_eq!(tab_b.status, StatusCode::PRECONDITION_FAILED, "{}", tab_b.text());
+    assert_eq!(
+        tab_b.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        tab_b.text()
+    );
     assert_eq!(tab_b.json()["code"], "precondition-failed");
 }
 
