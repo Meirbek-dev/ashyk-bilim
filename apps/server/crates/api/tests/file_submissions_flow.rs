@@ -5,7 +5,7 @@
 //! CSV export, the attempt cap, and late handling.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::{MintedSession, TestApp};
+use ab_testkit::{MintedSession, TestApp, drop_request_when, wait_until};
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
@@ -1147,4 +1147,116 @@ async fn live_config_edits_must_keep_it_ready(pool: PgPool) {
         "{}",
         readiness.text()
     );
+}
+
+/// BUG-229: publish racing a blank-instructions PATCH never leaves a
+/// published config with blank instructions — both run under the config
+/// row lock. BUG-232: publish flips the activity flag in the same
+/// transaction, so a client that hangs up mid-publish leaves no torn pair.
+#[sqlx::test(migrations = "../../migrations")]
+async fn publish_and_config_edits_serialize(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let create = async |title: String| {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/file-submissions",
+                &serde_json::json!({ "chapter_id": chapter_id, "title": title,
+                                      "instructions": "Upload the PDF." }),
+            )
+            .await;
+        assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+        created.json()["id"].as_str().unwrap().to_owned()
+    };
+
+    for round in 0..20 {
+        let id = create(format!("Race {round}")).await;
+        let path = format!("/api/v2/file-submissions/{id}");
+        let publish_path = format!("{path}/publish");
+        let none = serde_json::json!({});
+        let publish = app.post_as(&teacher, &publish_path, &none);
+        let blank = serde_json::json!({ "instructions": "   " });
+        let edit = app.patch_as(&teacher, &path, &blank);
+        let (published, edited) = if round % 2 == 0 {
+            tokio::join!(publish, edit)
+        } else {
+            let (edited, published) = tokio::join!(edit, publish);
+            (published, edited)
+        };
+        let seen = app.get_as(&teacher, &path).await.json();
+        if seen["lifecycle"] == "published" {
+            assert_eq!(
+                edited.status,
+                StatusCode::CONFLICT,
+                "round {round}: {}",
+                edited.text()
+            );
+            assert_eq!(seen["instructions"], "Upload the PDF.", "round {round}");
+        } else {
+            assert_eq!(
+                edited.status,
+                StatusCode::OK,
+                "round {round}: {}",
+                edited.text()
+            );
+            assert_eq!(
+                published.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "round {round}: {}",
+                published.text()
+            );
+        }
+    }
+
+    let id = create("Dropped".into()).await;
+    let path = format!("/api/v2/file-submissions/{id}");
+    let seen = async || app.get_as(&teacher, &path).await.json();
+    drop_request_when(
+        app.post_as(&teacher, &format!("{path}/publish"), &serde_json::json!({})),
+        async || seen().await["lifecycle"] == "published",
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    wait_until("the dropped publish left the activity hidden", async || {
+        let seen = seen().await;
+        seen["lifecycle"] == "published" && seen["published"] == true
+    })
+    .await;
+}
+
+/// BUG-230: a refused config PATCH writes nothing — the title travels in
+/// the same transaction as the config it was refused with.
+#[sqlx::test(migrations = "../../migrations")]
+async fn refused_config_patch_keeps_the_title(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let path = format!("/api/v2/file-submissions/{id}");
+
+    let invalid = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "title": "Renamed", "max_files": 0 }),
+        )
+        .await;
+    assert_eq!(
+        invalid.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        invalid.text()
+    );
+    let unready = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "title": "Renamed", "instructions": "  " }),
+        )
+        .await;
+    assert_eq!(unready.status, StatusCode::CONFLICT, "{}", unready.text());
+    let seen = app.get_as(&teacher, &path).await;
+    assert_eq!(seen.json()["title"], "Essay PDF", "{}", seen.text());
 }

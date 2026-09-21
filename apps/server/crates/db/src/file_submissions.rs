@@ -104,8 +104,8 @@ pub async fn insert_file_submission<'e>(
     Ok(id)
 }
 
-pub async fn get_file_submission(
-    pool: &PgPool,
+pub async fn get_file_submission<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: FileSubmissionId,
 ) -> Result<Option<FileSubmissionRow>> {
     let row = sqlx::query_as!(
@@ -127,13 +127,13 @@ pub async fn get_file_submission(
            FROM file_submissions WHERE id = $1"#,
         id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
 
-pub async fn get_file_submission_by_activity(
-    pool: &PgPool,
+pub async fn get_file_submission_by_activity<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     activity_id: ActivityId,
 ) -> Result<Option<FileSubmissionRow>> {
     let row = sqlx::query_as!(
@@ -155,13 +155,43 @@ pub async fn get_file_submission_by_activity(
            FROM file_submissions WHERE activity_id = $1"#,
         activity_id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
 
-pub async fn update_file_submission(
-    pool: &PgPool,
+/// BUG-229: `SELECT … FOR UPDATE` on the config row, then the row as the
+/// previous writer left it — publish, the config PATCH and the curriculum
+/// publish toggle serialize here.
+pub async fn lock_file_submission(
+    conn: &mut sqlx::PgConnection,
+    id: FileSubmissionId,
+) -> Result<Option<FileSubmissionRow>> {
+    sqlx::query!(
+        "SELECT id FROM file_submissions WHERE id = $1 FOR UPDATE",
+        id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    get_file_submission(conn, id).await
+}
+
+/// [`lock_file_submission`] by the activity it backs (BUG-232).
+pub async fn lock_file_submission_by_activity(
+    conn: &mut sqlx::PgConnection,
+    activity_id: ActivityId,
+) -> Result<Option<FileSubmissionRow>> {
+    sqlx::query!(
+        "SELECT id FROM file_submissions WHERE activity_id = $1 FOR UPDATE",
+        activity_id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    get_file_submission_by_activity(conn, activity_id).await
+}
+
+pub async fn update_file_submission<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: FileSubmissionId,
     v: FileSubmissionValues<'_>,
 ) -> Result<bool> {
@@ -189,15 +219,15 @@ pub async fn update_file_submission(
         v.grade_release_mode.as_str(),
         v.settings
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
 
 /// Publishing stamps `published_at` once; archiving stamps `archived_at`;
 /// going back to draft clears `archived_at` only.
-pub async fn set_file_submission_lifecycle(
-    pool: &PgPool,
+pub async fn set_file_submission_lifecycle<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: FileSubmissionId,
     lifecycle: FileSubmissionLifecycle,
 ) -> Result<bool> {
@@ -211,7 +241,7 @@ pub async fn set_file_submission_lifecycle(
         id.0,
         lifecycle.as_str()
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }

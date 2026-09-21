@@ -538,6 +538,10 @@ impl FileSubmissionsService {
     }
 
     /// Partial update (authors); archived activities are read-only.
+    ///
+    /// BUG-229/230: every gate reads the config row under its lock (a
+    /// concurrent publish sees this edit or refuses on it), and the title
+    /// and config land in one transaction — a refused PATCH writes nothing.
     pub async fn update(
         &self,
         actor: &Actor,
@@ -547,12 +551,15 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Author, "authoring")
             .await?;
+        let title = patch
+            .title
+            .as_deref()
+            .map(|t| ab_core::required_str("title", t))
+            .transpose()?;
+        let mut tx = self.pool.begin().await?;
+        let row = self.lock(&mut tx, id).await?;
         if row.lifecycle == FileSubmissionLifecycle::Archived {
             return Err(Error::conflict("archived file submissions are read-only"));
-        }
-        if let Some(title) = &patch.title {
-            let title = ab_core::required_str("title", title)?;
-            ab_db::catalog::update_activity(&self.pool, row.activity_id, Some(title), None).await?;
         }
         let merged = merge(&row, &patch);
         let values = values_of(&merged);
@@ -569,12 +576,30 @@ impl FileSubmissionsService {
                 serde_json::json!({ "readiness": ["file-submission.instructions_missing"] }),
             ));
         }
-        ab_db::file_submissions::update_file_submission(&self.pool, id, values).await?;
+        if let Some(title) = title {
+            ab_db::catalog::update_activity(&mut *tx, row.activity_id, Some(title), None).await?;
+        }
+        ab_db::file_submissions::update_file_submission(&mut *tx, id, values).await?;
+        tx.commit().await?;
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await
     }
 
+    async fn lock(
+        &self,
+        tx: &mut sqlx::PgConnection,
+        id: FileSubmissionId,
+    ) -> Result<FileSubmissionRow> {
+        ab_db::file_submissions::lock_file_submission(tx, id)
+            .await?
+            .ok_or_else(|| Error::not_found("file submission"))
+    }
+
     /// Publish: title and instructions required; the activity goes live.
+    ///
+    /// The gate runs on the locked row (BUG-229) and the lifecycle and the
+    /// activity flag flip in the same transaction (BUG-232): a client that
+    /// hangs up never leaves them disagreeing.
     pub async fn publish(&self, actor: &Actor, id: FileSubmissionId) -> Result<FileSubmission> {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Author, "publishing")
@@ -582,6 +607,8 @@ impl FileSubmissionsService {
         let activity = ab_db::catalog::get_activity(&self.pool, row.activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
+        let mut tx = self.pool.begin().await?;
+        let row = self.lock(&mut tx, id).await?;
         let mut errors = Vec::new();
         if ab_core::trim_blank(&activity.name).is_empty() {
             errors.push(field("title", "required", "title is required to publish"));
@@ -597,13 +624,15 @@ impl FileSubmissionsService {
             return Err(Error::validation(errors));
         }
         ab_db::file_submissions::set_file_submission_lifecycle(
-            &self.pool,
+            &mut *tx,
             id,
             FileSubmissionLifecycle::Published,
         )
         .await?;
+        ab_db::catalog::update_activity(&mut *tx, row.activity_id, None, Some(true)).await?;
+        tx.commit().await?;
         self.projector
-            .set_activity_published(row.activity_id, row.course_id, true)
+            .recalculate_course_for_all(row.course_id)
             .await?;
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await
