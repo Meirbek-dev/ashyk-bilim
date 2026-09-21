@@ -97,7 +97,9 @@ export function buildDashboardWorkQueue({
   const adminSection = buildAdminSection({ access, adminSignal, t })
   const sections: WorkQueueSection[] = []
 
-  if (access.hasCoursesAccess || access.hasAnalyticsAccess) {
+  // UX-155: the section is the grading queue's — an analytics-only grant
+  // gets the analytics tool card, not an empty «teacher work» list.
+  if (access.hasCoursesAccess) {
     sections.push(teacherSection)
   }
 

@@ -16,7 +16,7 @@ use crate::collections::CollectionRow;
 /// `to_tsquery` text for `query`: every word a quoted prefix term.
 ///
 /// `'крит':*` matches «Критик», `'gauntlet21-analytics':*` the hyphenated
-/// name; `-word` negates; all ANDed. Quoting keeps the operators ours, so
+/// name; `-word` negates (as a prefix too, UX-155); all ANDed. Quoting keeps the operators ours, so
 /// the text is always valid tsquery syntax.
 #[must_use]
 pub fn prefix_tsquery(query: &str) -> String {
@@ -27,12 +27,9 @@ pub fn prefix_tsquery(query: &str) -> String {
                 Some(rest) if !rest.is_empty() => (true, rest),
                 _ => (false, word),
             };
+            let not = if negate { "!" } else { "" };
             let quoted = word.replace('\'', "''");
-            if negate {
-                format!("!'{quoted}'")
-            } else {
-                format!("'{quoted}':*")
-            }
+            format!("{not}'{quoted}':*")
         })
         .collect::<Vec<_>>()
         .join(" & ")
@@ -161,7 +158,7 @@ mod tests {
     fn words_are_quoted_prefixes_and_dashes_negate() {
         assert_eq!(
             prefix_tsquery("  gauntlet21-analytics Крит -live it's - "),
-            "'gauntlet21-analytics':* & 'Крит':* & !'live' & 'it''s':* & '-':*"
+            "'gauntlet21-analytics':* & 'Крит':* & !'live':* & 'it''s':* & '-':*"
         );
         assert_eq!(prefix_tsquery("   "), "");
     }

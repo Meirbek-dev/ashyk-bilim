@@ -71,7 +71,8 @@ describe('buildDashboardWorkQueue', () => {
       t,
     })
     expect(analyticsOnly.tools.map(tool => tool.id)).toEqual(['browse-courses', 'analytics', 'account'])
-    expect(analyticsOnly.sections[0]?.items).toEqual([])
+    // UX-155: no empty teacher section either — the learner fallback instead.
+    expect(analyticsOnly.sections.map(section => section.audience)).toEqual(['learner'])
 
     const coursesOnly = buildDashboardWorkQueue({
       access: { hasCoursesAccess: true, hasAnalyticsAccess: false, hasUsersAccess: false, hasAdminAccess: false },

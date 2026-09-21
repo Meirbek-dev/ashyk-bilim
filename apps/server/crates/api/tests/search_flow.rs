@@ -138,7 +138,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
 
     // UX-152: partial words hit like the people search does — a prefix of a
     // hyphenated name, a Cyrillic stem — and `-word` still excludes.
-    course(
+    let gauntlet = course(
         &app,
         &teacher,
         "gauntlet21-analytics-live Критик pass",
@@ -159,6 +159,20 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
             hits.text()
         );
     }
+    // UX-155: `-word` negates as a prefix too — `-gaunt` excludes the course.
+    let negated = app.get_as(&teacher, "/api/v2/search?q=-gaunt").await;
+    let hits = negated.json()["courses"].clone();
+    let hits: Vec<&str> = hits
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|c| c["id"].as_str())
+        .collect();
+    assert!(
+        !hits.is_empty() && !hits.contains(&gauntlet.as_str()),
+        "{}",
+        negated.text()
+    );
     let quirky = app
         .get_as(&teacher, "/api/v2/search?q=it%27s%20%26%20%22")
         .await;

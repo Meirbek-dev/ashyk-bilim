@@ -492,14 +492,26 @@ fn allowed(user_id: UserId, allowed: Option<&HashSet<UserId>>) -> bool {
 
 /// Legacy `build_activity_events`, plus the discussion / completion rows of
 /// the event log (the legacy log was never written).
+///
+/// Only current members' activity counts (UX-150 / UX-155): a leaver's
+/// progress and submissions survive the leave but no longer make the course
+/// look active.
 #[must_use]
 pub fn build_activity_events(
     ctx: &AnalyticsContext,
     allowed_users: Option<&HashSet<UserId>>,
 ) -> Vec<ActivityEvent> {
+    let members: HashSet<SnapshotKey> = ctx
+        .trail_runs
+        .iter()
+        .map(|r| (r.course_id, r.user_id))
+        .collect();
+    let counted = |course_id: CourseId, user_id: UserId| {
+        members.contains(&(course_id, user_id)) && allowed(user_id, allowed_users)
+    };
     let mut events = Vec::new();
     for p in &ctx.activity_progress {
-        if !allowed(p.user_id, allowed_users) {
+        if !counted(p.course_id, p.user_id) {
             continue;
         }
         let Some(ts) = p
@@ -521,7 +533,7 @@ pub fn build_activity_events(
         });
     }
     for s in &ctx.submissions {
-        if !allowed(s.user_id, allowed_users) {
+        if !counted(s.course_id, s.user_id) {
             continue;
         }
         let Some(assessment) = ctx.assessment(s.assessment_id) else {
@@ -540,7 +552,7 @@ pub fn build_activity_events(
         let (Some(user_id), Some(course_id)) = (e.user_id, e.course_id) else {
             continue;
         };
-        if !allowed(user_id, allowed_users) {
+        if !counted(course_id, user_id) {
             continue;
         }
         let source = match e.event_type.as_str() {

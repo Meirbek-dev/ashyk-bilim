@@ -1304,8 +1304,19 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
 
     // UX-150: a learner who left (run gone, projection row kept) is not
     // enrolled anywhere — not at risk, not counted, not a valid target.
+    // UX-155: nor active — only members' activity counts.
     let bob = learner(&app, "bob").await;
     enrol(&pool, &course_id, bob.user_id, 0.0).await;
+    for user in [alice.user_id, bob.user_id] {
+        sqlx::query(
+            "INSERT INTO analytics_events (event_type, course_id, user_id) VALUES ('activity.completed', $1, $2)",
+        )
+        .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+        .bind(user.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
     let left = app
         .delete_as(&bob, &format!("/api/v2/trail/courses/{course_id}"))
         .await;
@@ -1333,6 +1344,12 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
         detail.json()["summary"]["enrolled_learners"],
         1,
         "{}",
+        detail.text()
+    );
+    assert_eq!(
+        detail.json()["summary"]["active_learners_7d"],
+        1,
+        "the leaver's activity no longer counts: {}",
         detail.text()
     );
     let gone = app
