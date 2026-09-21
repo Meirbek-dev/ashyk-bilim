@@ -33,7 +33,6 @@ interface TeacherDashboardSignal {
   }[]
   signalAvailable: boolean
   errorMessage?: string | null
-  workItems?: LearnerDashboardSignal['items']
 }
 
 interface AdminDashboardSignal {
@@ -73,6 +72,8 @@ interface DashboardWorkQueueInput {
   access: DashboardAccess
   courseSummary: EditableCourseSummary | null
   teacherSignal: TeacherDashboardSignal | null
+  /** Grading queue (`work?role=teacher`): course management, not analytics. */
+  teacherWorkItems?: LearnerDashboardSignal['items']
   adminSignal: AdminDashboardSignal | null
   learnerSignal: LearnerDashboardSignal | null
   t: WorkQueueTranslate
@@ -87,11 +88,12 @@ export function buildDashboardWorkQueue({
   access,
   courseSummary,
   teacherSignal,
+  teacherWorkItems,
   adminSignal,
   learnerSignal,
   t,
 }: DashboardWorkQueueInput): DashboardWorkQueueModel {
-  const teacherSection = buildTeacherSection({ access, courseSummary, teacherSignal, t })
+  const teacherSection = buildTeacherSection({ access, courseSummary, teacherSignal, teacherWorkItems, t })
   const adminSection = buildAdminSection({ access, adminSignal, t })
   const sections: WorkQueueSection[] = []
 
@@ -188,29 +190,39 @@ interface TeacherSectionInput {
   access: DashboardAccess
   courseSummary: EditableCourseSummary | null
   teacherSignal: TeacherDashboardSignal | null
+  teacherWorkItems: LearnerDashboardSignal['items'] | undefined
   t: WorkQueueTranslate
 }
 
-function buildTeacherSection({ access, courseSummary, teacherSignal, t }: TeacherSectionInput): WorkQueueSection {
+function buildTeacherSection({
+  access,
+  courseSummary,
+  teacherSignal,
+  teacherWorkItems,
+  t,
+}: TeacherSectionInput): WorkQueueSection {
   const items: WorkQueueItem[] = []
 
-  teacherSignal?.workItems?.forEach(item => {
-    items.push({
-      id: item.id,
-      audience: 'teacher',
-      title: item.title,
-      description: item.description,
-      href: item.href,
-      primaryActionLabel: item.primary_action,
-      source: 'course-management',
-      sourceLabel: t('sourceLabels.gradingQueue'),
-      status: item.priority === 'critical' ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
-      priority: item.priority,
-      ...(item.due_at ? { dueAt: item.due_at } : {}),
-      ...(item.created_at ? { createdAt: item.created_at } : {}),
-      ...(item.groupLabel ? { groupLabel: item.groupLabel } : {}),
+  // UX-151: every item and card is gated by its own grant (BUG-046 class) —
+  // grading work lands on course routes an analytics-only grant cannot open.
+  if (access.hasCoursesAccess)
+    teacherWorkItems?.forEach(item => {
+      items.push({
+        id: item.id,
+        audience: 'teacher',
+        title: item.title,
+        description: item.description,
+        href: item.href,
+        primaryActionLabel: item.primary_action,
+        source: 'course-management',
+        sourceLabel: t('sourceLabels.gradingQueue'),
+        status: item.priority === 'critical' ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
+        priority: item.priority,
+        ...(item.due_at ? { dueAt: item.due_at } : {}),
+        ...(item.created_at ? { createdAt: item.created_at } : {}),
+        ...(item.groupLabel ? { groupLabel: item.groupLabel } : {}),
+      })
     })
-  })
 
   if (access.hasCoursesAccess && courseSummary?.signalAvailable) {
     if (courseSummary.attention > 0) {
@@ -560,7 +572,8 @@ function buildDashboardTools(access: DashboardAccess, t: WorkQueueTranslate): Da
 
   return tools.filter(tool => {
     if (tool.audience === 'all' || tool.audience === 'learner') return true
-    if (tool.audience === 'teacher') return access.hasCoursesAccess || access.hasAnalyticsAccess
+    if (tool.id === 'courses') return access.hasCoursesAccess
+    if (tool.id === 'analytics') return access.hasAnalyticsAccess
     // The users card is the only admin-audience tool an instructor may open
     // (usergroups); `/dash/admin` needs the platform/role grants.
     if (tool.id === 'users') return access.hasUsersAccess || access.hasAdminAccess

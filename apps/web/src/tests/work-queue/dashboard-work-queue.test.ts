@@ -48,6 +48,44 @@ describe('buildDashboardWorkQueue', () => {
     expect(queue.sections.map(section => section.audience)).toEqual(['teacher'])
   })
 
+  // UX-151: an analytics-only grant gets the analytics card and the analytics
+  // items, never the courses card or the grading queue (its routes are 403).
+  it('gates each teacher card and the grading queue by its own grant', () => {
+    const gradingItem = {
+      id: 'teacher-grade-1',
+      kind: 'needs_grading',
+      status: 'needs_grading',
+      priority: 'high' as const,
+      title: 'Grade',
+      description: 'Course',
+      href: '/dash/courses/c1/grading',
+      primary_action: 'Grade',
+    }
+    const analyticsOnly = buildDashboardWorkQueue({
+      access: { hasCoursesAccess: false, hasAnalyticsAccess: true, hasUsersAccess: false, hasAdminAccess: false },
+      courseSummary: null,
+      teacherSignal: null,
+      teacherWorkItems: [gradingItem],
+      adminSignal: null,
+      learnerSignal: null,
+      t,
+    })
+    expect(analyticsOnly.tools.map(tool => tool.id)).toEqual(['browse-courses', 'analytics', 'account'])
+    expect(analyticsOnly.sections[0]?.items).toEqual([])
+
+    const coursesOnly = buildDashboardWorkQueue({
+      access: { hasCoursesAccess: true, hasAnalyticsAccess: false, hasUsersAccess: false, hasAdminAccess: false },
+      courseSummary: null,
+      teacherSignal: null,
+      teacherWorkItems: [gradingItem],
+      adminSignal: null,
+      learnerSignal: null,
+      t,
+    })
+    expect(coursesOnly.tools.map(tool => tool.id)).toEqual(['browse-courses', 'courses', 'account'])
+    expect(coursesOnly.sections[0]?.items.map(item => item.id)).toContain('teacher-grade-1')
+  })
+
   // UX-093: the count badge is one ICU plural message («1 работа», not «1 работ»).
   it('passes the count into the metric message', () => {
     const queue = buildDashboardWorkQueue({

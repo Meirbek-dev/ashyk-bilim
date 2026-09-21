@@ -81,9 +81,7 @@ export default async function PlatformDashHomePage() {
       access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve({ data: null, error: null }),
       access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve({ data: null, error: null }),
       getSafeLearnerWork(),
-      access.hasCoursesAccess || access.hasAnalyticsAccess
-        ? getSafeTeacherWork()
-        : Promise.resolve({ data: null, error: null }),
+      access.hasCoursesAccess ? getSafeTeacherWork() : Promise.resolve({ data: null, error: null }),
     ])
 
   const courseSummary = access.hasCoursesAccess ? courseSummaryResult.data : null
@@ -197,7 +195,6 @@ export default async function PlatformDashHomePage() {
           })),
           signalAvailable: true,
           errorMessage: null,
-          workItems: teacherWork?.items.map(localizeWorkItem) ?? [],
         }
       : access.hasAnalyticsAccess
         ? {
@@ -209,9 +206,9 @@ export default async function PlatformDashHomePage() {
             backlogItems: [],
             signalAvailable: false,
             errorMessage: teacherOverviewResult.error,
-            workItems: teacherWork?.items.map(localizeWorkItem) ?? [],
           }
         : null,
+    teacherWorkItems: teacherWork?.items.map(localizeWorkItem) ?? [],
     adminSignal: adminOverview
       ? {
           aiMonthlyBudget: aiUsage?.monthly_budget ?? null,
