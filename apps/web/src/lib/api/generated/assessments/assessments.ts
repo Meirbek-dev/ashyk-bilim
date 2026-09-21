@@ -1003,6 +1003,9 @@ export const getSetAccessUrl = (id: AssessmentId) => {
 }
 
 /**
+ * With `If-Match: "<version>"` (the `ETag` of the last read) a stale tab
+ * is 412 `precondition-failed` with `details {expected, actual}` instead
+ * of a silent overwrite (UX-154).
  * @summary Replace the access policy. Restricted lists are validated against the
 course (users need course access, groups must be linked); switching to
 all-course-learners wipes both lists.

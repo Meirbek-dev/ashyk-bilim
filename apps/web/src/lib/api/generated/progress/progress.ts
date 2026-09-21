@@ -621,6 +621,8 @@ export const getRemoveCourseUrl = (id: CourseId) => {
 }
 
 /**
+ * Trail mutations run `detached()` (BUG-221): a client that hangs up
+ * mid-request must not leave the step without its projection.
  * @summary Drop the run for a course and every step in it.
  */
 export const removeCourse = async (id: CourseId, options?: Parameters<typeof orvalMutator>[1]): Promise<Trail> => {

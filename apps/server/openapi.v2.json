@@ -4917,6 +4917,14 @@
         "responses": {
           "200": {
             "description": "Access policy",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted version"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -4932,6 +4940,7 @@
           "assessments"
         ],
         "summary": "Replace the access policy. Restricted lists are validated against the\ncourse (users need course access, groups must be linked); switching to\nall-course-learners wipes both lists.",
+        "description": "With `If-Match: \"<version>\"` (the `ETag` of the last read) a stale tab\nis 412 `precondition-failed` with `details {expected, actual}` instead\nof a silent overwrite (UX-154).",
         "operationId": "set_access",
         "parameters": [
           {
@@ -4941,6 +4950,19 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Version from the last read's ETag",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
             }
           }
         ],
@@ -4957,10 +4979,28 @@
         "responses": {
           "200": {
             "description": "Updated",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted new version"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AccessView"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Stale version",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -5621,6 +5661,7 @@
           "grading"
         ],
         "summary": "Release every held grade of a batch-mode assessment.",
+        "description": "Runs `detached()` (BUG-227): each row's release and its projection\noutlive a client that hangs up mid-batch.",
         "operationId": "publish_grades",
         "parameters": [
           {
@@ -10426,7 +10467,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Search terms (websearch syntax)",
+            "description": "Search terms: every word matches by prefix, `-word` excludes",
             "required": true,
             "schema": {
               "type": "string"
@@ -10706,7 +10747,7 @@
           "grading"
         ],
         "summary": "Save, publish or return a grade.",
-        "description": "Requires `If-Match: \"<version>\"`; a mismatch is 412 with\n`{expected, actual}`. Item scores merge into the breakdown, the raw\nscore is given or computed from them, and the late penalty recorded at\nsubmit applies on top. Each save appends to the grading history.",
+        "description": "Requires `If-Match: \"<version>\"`; a mismatch is 412 with\n`{expected, actual}`. Item scores merge into the breakdown, the raw\nscore is given or computed from them, and the late penalty recorded at\nsubmit applies on top. Each save appends to the grading history.\n\nRuns `detached()` (BUG-227): a client that hangs up after the row and\nledger commit must not skip the SSE events, the progress projection\nand the analytics hook.",
         "operationId": "save_grade",
         "parameters": [
           {
@@ -11150,6 +11191,7 @@
           "progress"
         ],
         "summary": "Drop the run for a course and every step in it.",
+        "description": "Trail mutations run `detached()` (BUG-221): a client that hangs up\nmid-request must not leave the step without its projection.",
         "operationId": "remove_course",
         "parameters": [
           {
@@ -15695,7 +15737,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "description": "A JSON object of at most 4 KiB serialized (UX-154; same rule as the\ngrade route's `rubric_scores`)."
           },
           "settings": {
             "type": [
@@ -16392,7 +16435,8 @@
         ],
         "properties": {
           "config": {
-            "type": "object"
+            "type": "object",
+            "description": "The designer document: an object of at most 16 KiB serialized."
           },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
@@ -23706,7 +23750,8 @@
         ],
         "properties": {
           "config": {
-            "type": "object"
+            "type": "object",
+            "description": "The designer document: an object of at most 16 KiB serialized."
           }
         },
         "additionalProperties": false

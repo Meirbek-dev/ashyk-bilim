@@ -363,6 +363,8 @@ export const getPublishGradesUrl = (id: AssessmentId) => {
 }
 
 /**
+ * Runs `detached()` (BUG-227): each row's release and its projection
+ * outlive a client that hangs up mid-batch.
  * @summary Release every held grade of a batch-mode assessment.
  */
 export const publishGrades = async (
@@ -1873,6 +1875,10 @@ export const getSaveGradeUrl = (id: SubmissionId) => {
  * `{expected, actual}`. Item scores merge into the breakdown, the raw
  * score is given or computed from them, and the late penalty recorded at
  * submit applies on top. Each save appends to the grading history.
+ *
+ * Runs `detached()` (BUG-227): a client that hangs up after the row and
+ * ledger commit must not skip the SSE events, the progress projection
+ * and the analytics hook.
  * @summary Save, publish or return a grade.
  */
 export const saveGrade = async (

@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const CreateCertificationBody = zod.object({
-  config: zod.looseObject({}).optional(),
+  config: zod.looseObject({}).optional().describe('The designer document: an object of at most 16 KiB serialized.'),
   course_id: zod.uuid(),
 })
 

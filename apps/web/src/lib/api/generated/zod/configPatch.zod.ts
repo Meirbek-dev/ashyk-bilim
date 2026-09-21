@@ -38,7 +38,10 @@ export const ConfigPatch = zod
     max_attempts: zod.int().nullish(),
     max_file_size_mb: zod.int().nullish().describe('`null` clears the limit.'),
     max_files: zod.int().nullish(),
-    rubric: zod.looseObject({}).nullish(),
+    rubric: zod
+      .looseObject({})
+      .nullish()
+      .describe("A JSON object of at most 4 KiB serialized (UX-154; same rule as the\ngrade route's `rubric_scores`)."),
     settings: zod.looseObject({}).nullish(),
     title: zod.string().nullish(),
   })

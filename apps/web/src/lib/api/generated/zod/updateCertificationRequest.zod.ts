@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const UpdateCertificationRequest = zod.object({
-  config: zod.looseObject({}),
+  config: zod.looseObject({}).describe('The designer document: an object of at most 16 KiB serialized.'),
 })
 
 export type UpdateCertificationRequest = zod.input<typeof UpdateCertificationRequest>
