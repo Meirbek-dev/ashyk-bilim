@@ -138,7 +138,8 @@ impl CoursesService {
         cursor: Option<CourseId>,
         limit: i64,
     ) -> Result<(Vec<Course>, Option<CourseId>)> {
-        let limit = limit.clamp(1, 100);
+        // UX-154: out-of-range `limit` is a 422 like the other lists (UX-146).
+        let limit = ab_core::page_limit(limit, 100)?;
         let filter = ab_db::catalog::CourseFilter {
             viewer: Some(actor.user_id),
             see_all: sees_private(actor, ResourceType::Course),
@@ -176,7 +177,7 @@ impl CoursesService {
         cursor: Option<CourseId>,
         limit: i64,
     ) -> Result<(Vec<Course>, Option<CourseId>)> {
-        let limit = limit.clamp(1, 100);
+        let limit = ab_core::page_limit(limit, 100)?;
         let mut rows = ab_db::catalog::list_user_courses(
             &self.pool,
             user,

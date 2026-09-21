@@ -2,6 +2,16 @@ import { ArrowBigUpDash, Trash2, UploadCloud } from 'lucide-react'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useSaveSection } from '@/hooks/useSaveSection'
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 import { getCourseThumbnailUrl } from '@services/media/media'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -38,6 +48,7 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
   const t = useTranslations('CourseEdit.General.Thumbnail')
 
   const [localUrl, setLocalUrl] = useState<string | null>(null)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const { isSaving, saveWithoutRefresh } = useSaveSection({
     section: 'general',
     errorMessage: t('errors.updateFailed'),
@@ -126,6 +137,7 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
   )
 
   const handleRemove = useCallback(async () => {
+    setConfirmRemove(false)
     await saveWithoutRefresh(async () => updateThumbnail(null), {
       successMessage: t('thumbnailRemoved'),
     })
@@ -178,10 +190,31 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
             {t('uploadImageButton')}
           </Button>
           {course.courseStructure.thumbnail_image ? (
-            <Button type="button" variant="outline" size="default" disabled={disabled} onClick={handleRemove}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t('removeImageButton')}
-            </Button>
+            // UX-154: a destructive click confirms first, like every other delete.
+            <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
+              <Button
+                type="button"
+                variant="outline"
+                size="default"
+                disabled={disabled}
+                onClick={() => setConfirmRemove(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t('removeImageButton')}
+              </Button>
+              <AlertDialogContent size="sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('removeConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('removeConfirmDescription')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isSaving} />
+                  <AlertDialogAction variant="destructive" onClick={handleRemove} disabled={isSaving}>
+                    {t('removeImageButton')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           ) : null}
         </div>
       )}

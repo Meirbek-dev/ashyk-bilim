@@ -33,6 +33,9 @@ pub struct AccessView {
     pub users: Vec<AccessUser>,
     pub usergroups: Vec<AccessGroup>,
     pub effective_user_count: i64,
+    /// The assessment's `policy_version` — the access tab's `If-Match`
+    /// (UX-154); every access save bumps it.
+    pub version: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -198,6 +201,7 @@ impl AssessmentsService {
             usergroups: ab_db::assessments::list_access_usergroups(&self.pool, id).await?,
             effective_user_count: ab_db::assessments::effective_access_count(&self.pool, id)
                 .await?,
+            version: assessment.policy_version,
         })
     }
 
@@ -205,7 +209,9 @@ impl AssessmentsService {
     /// the course: users must already have course access, groups must be
     /// linked to it (the legacy's "no linked groups → every group is
     /// eligible" fallback is gone). Switching to all-course-learners wipes
-    /// both lists (legacy).
+    /// both lists (legacy). UX-154: `expected_version` (`If-Match`) is
+    /// checked under the row lock — a stale tab gets 412, never a silent
+    /// overwrite.
     pub async fn set_access(
         &self,
         actor: &Actor,
@@ -213,6 +219,7 @@ impl AssessmentsService {
         mode: AccessMode,
         user_ids: &[UserId],
         usergroup_ids: &[UsergroupId],
+        expected_version: Option<i32>,
     ) -> Result<AccessView> {
         let assessment = self.load_for_author(actor, id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
@@ -252,16 +259,30 @@ impl AssessmentsService {
                 (user_ids.to_vec(), usergroup_ids.to_vec())
             }
         };
-        ab_db::assessments::set_access_mode(&self.pool, id, mode).await?;
-        ab_db::assessments::replace_access_lists(&self.pool, id, &users, &groups).await?;
+        let mut tx = self.pool.begin().await?;
+        let current = ab_db::assessments::lock_assessment(&mut tx, id)
+            .await?
+            .ok_or_else(|| Error::not_found("assessment"))?;
+        if let Some(expected) = expected_version
+            && expected != current.policy_version
+        {
+            return Err(Error::app_with_details(
+                ab_core::ErrorCode::PreconditionFailed,
+                "access changed since you loaded it",
+                serde_json::json!({ "expected": expected, "actual": current.policy_version }),
+            ));
+        }
+        ab_db::assessments::set_access_mode(&mut *tx, id, mode).await?;
+        ab_db::assessments::replace_access_lists(&mut tx, id, &users, &groups).await?;
         ab_db::assessments::insert_audit_event(
-            &self.pool,
+            &mut *tx,
             id,
             Some(actor.user_id),
             "access-changed",
             serde_json::json!({ "mode": mode, "users": users.len(), "usergroups": groups.len() }),
         )
         .await?;
+        tx.commit().await?;
         self.access(actor, id).await
     }
 

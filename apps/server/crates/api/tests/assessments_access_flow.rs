@@ -274,6 +274,35 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/assessments/{id}/access"))
         .await;
     assert_eq!(view.json()["mode"], "all_course_learners");
+
+    // UX-154: the view carries an ETag; a save that echoes it lands and
+    // bumps it, a save with the old one is 412 — tab B never silently
+    // overwrites tab A.
+    let etag = |r: &ab_testkit::TestResponse| {
+        r.headers[axum::http::header::ETAG]
+            .to_str()
+            .unwrap()
+            .to_owned()
+    };
+    let put_access = |if_match: String| {
+        axum::http::Request::builder()
+            .method("PUT")
+            .uri(format!("/api/v2/assessments/{id}/access"))
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &teacher.cookie)
+            .header(axum::http::header::IF_MATCH, if_match)
+            .body(axum::body::Body::from(
+                serde_json::json!({ "mode": "restricted", "user_ids": [alice] }).to_string(),
+            ))
+            .unwrap()
+    };
+    let loaded = etag(&view);
+    let tab_a = app.send(put_access(loaded.clone())).await;
+    assert_eq!(tab_a.status, StatusCode::OK, "{}", tab_a.text());
+    assert_ne!(etag(&tab_a), loaded);
+    let tab_b = app.send(put_access(loaded)).await;
+    assert_eq!(tab_b.status, StatusCode::PRECONDITION_FAILED, "{}", tab_b.text());
+    assert_eq!(tab_b.json()["code"], "precondition-failed");
 }
 
 #[sqlx::test(migrations = "../../migrations")]

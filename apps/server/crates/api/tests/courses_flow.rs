@@ -150,6 +150,13 @@ async fn listing_paginates_and_respects_visibility(pool: PgPool) {
 
     // A learner pages through public courses only (4), two at a time.
     let learner = app.mint_session(&[]).await;
+    // UX-154: an out-of-range page size is refused, not clamped.
+    for bad in ["0", "101"] {
+        let refused = app
+            .get_as(&learner, &format!("/api/v2/courses?limit={bad}"))
+            .await;
+        assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+    }
     let page1 = app.get_as(&learner, "/api/v2/courses?limit=2").await;
     assert_eq!(page1.status, StatusCode::OK);
     let body1 = page1.json();

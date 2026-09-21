@@ -1260,3 +1260,27 @@ async fn refused_config_patch_keeps_the_title(pool: PgPool) {
     let seen = app.get_as(&teacher, &path).await;
     assert_eq!(seen.json()["title"], "Essay PDF", "{}", seen.text());
 }
+
+/// UX-154: the config `rubric` is an object, like the grade route's
+/// `rubric_scores` — a list or a string is a 422, on create and on patch.
+#[sqlx::test(migrations = "../../migrations")]
+async fn config_rubric_must_be_an_object(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    for bad in [serde_json::json!([1, 2]), serde_json::json!("str")] {
+        let refused = app
+            .post_as(
+                &teacher,
+                "/api/v2/file-submissions",
+                &serde_json::json!({ "chapter_id": chapter_id, "title": "Essay", "rubric": bad }),
+            )
+            .await;
+        assert_eq!(
+            refused.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            refused.text()
+        );
+    }
+}

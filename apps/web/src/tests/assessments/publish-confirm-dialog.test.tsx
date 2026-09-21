@@ -14,6 +14,12 @@ import { APIError } from '@/lib/api/assertSuccess'
 
 vi.mock('@/lib/api-client', () => ({
   apiJson: vi.fn(() => Promise.resolve({ effective_user_count: 12 })),
+  apiResult: vi.fn(() =>
+    Promise.resolve({
+      data: { mode: 'all_course_learners', effective_user_count: 12, users: [], usergroups: [] },
+      headers: { etag: '"1"' },
+    }),
+  ),
 }))
 vi.mock('@/i18n/navigation', () => ({
   Link: (props: React.ComponentProps<'a'>) => <a {...props} />,

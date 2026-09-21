@@ -2669,7 +2669,9 @@
         "uploading": "Загрузка...",
         "video": "Видео",
         "removeImageButton": "Удалить изображение",
-        "thumbnailRemoved": "Миниатюра удалена"
+        "thumbnailRemoved": "Миниатюра удалена",
+        "removeConfirmTitle": "Удалить миниатюру?",
+        "removeConfirmDescription": "Курс останется без обложки, пока вы не загрузите новую."
       },
       "about": {
         "label": "О курсе",

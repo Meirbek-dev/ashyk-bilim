@@ -24,7 +24,9 @@ pub struct ConfigPatch {
     pub title: Option<String>,
     #[garde(length(chars, max = 50_000))]
     pub instructions: Option<String>,
-    #[garde(skip)]
+    /// A JSON object of at most 4 KiB serialized (UX-154; same rule as the
+    /// grade route's `rubric_scores`).
+    #[garde(custom(rubric_object))]
     #[schema(value_type = Option<Object>)]
     pub rubric: Option<serde_json::Value>,
     #[garde(skip)]

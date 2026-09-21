@@ -2670,7 +2670,9 @@
         "uploading": "Uploading...",
         "video": "Video",
         "removeImageButton": "Remove image",
-        "thumbnailRemoved": "Thumbnail removed"
+        "thumbnailRemoved": "Thumbnail removed",
+        "removeConfirmTitle": "Remove the thumbnail?",
+        "removeConfirmDescription": "The course stays without a cover until you upload a new one."
       },
       "about": {
         "label": "About",

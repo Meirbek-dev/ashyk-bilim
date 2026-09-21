@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useQuery, queryOptions } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
 import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
 import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
@@ -27,8 +27,7 @@ import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/do
 import type { ClassifiedValidationIssue } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
-import { getAccess } from '@/lib/api/generated/assessments/assessments'
-import { queryKeys } from '@/lib/react-query/queryKeys'
+import { assessmentAccessQueryOptions } from '@/features/assessments/queries'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -77,13 +76,6 @@ interface PublishDashboardTabProps {
     auditNote?: string | null,
   ) => void | Promise<void>
 }
-
-const assessmentAccessQueryOptions = (assessmentUuid: string) =>
-  queryOptions({
-    queryKey: queryKeys.assessments.access(assessmentUuid),
-    queryFn: () => getAccess(assessmentUuid),
-    staleTime: 30_000,
-  })
 
 export default function PublishDashboardTab({
   assessmentUuid,

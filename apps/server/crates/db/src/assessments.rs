@@ -512,15 +512,22 @@ pub async fn bump_content_version<'e>(
     Ok(())
 }
 
-pub async fn set_access_mode(pool: &PgPool, id: AssessmentId, mode: AccessMode) -> Result<()> {
-    sqlx::query!(
-        "UPDATE assessments SET access_mode = $2 WHERE id = $1",
+/// Set the access mode and bump `policy_version` (UX-154: the access tab's
+/// `If-Match`); returns the new version.
+pub async fn set_access_mode<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: AssessmentId,
+    mode: AccessMode,
+) -> Result<Option<i32>> {
+    let version = sqlx::query_scalar!(
+        r#"UPDATE assessments SET access_mode = $2, policy_version = policy_version + 1
+           WHERE id = $1 RETURNING policy_version"#,
         id.0,
         mode.as_str()
     )
-    .execute(pool)
+    .fetch_optional(db)
     .await?;
-    Ok(())
+    Ok(version)
 }
 
 // ── Items ───────────────────────────────────────────────────────────────────
@@ -839,13 +846,13 @@ pub async fn list_access_usergroups(
 }
 
 /// Replace both allowlists wholesale (legacy delete-then-insert).
+/// Runs inside the caller's transaction (with the mode + version bump).
 pub async fn replace_access_lists(
-    pool: &PgPool,
+    tx: &mut sqlx::PgConnection,
     id: AssessmentId,
     user_ids: &[UserId],
     usergroup_ids: &[UsergroupId],
 ) -> Result<()> {
-    let mut tx = pool.begin().await?;
     sqlx::query!(
         "DELETE FROM assessment_access_users WHERE assessment_id = $1",
         id.0
@@ -878,7 +885,6 @@ pub async fn replace_access_lists(
         .execute(&mut *tx)
         .await?;
     }
-    tx.commit().await?;
     Ok(())
 }
 

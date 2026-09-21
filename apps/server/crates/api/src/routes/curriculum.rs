@@ -16,7 +16,7 @@ use crate::extract::{CurrentActor, MaybeActor, Path, ValidJson};
 use crate::state::AppState;
 
 /// `If-Match: "<version>"` → version; absent → `None`; malformed → 422.
-fn if_match(headers: &HeaderMap) -> ApiResult<Option<i32>> {
+pub(crate) fn if_match(headers: &HeaderMap) -> ApiResult<Option<i32>> {
     let Some(raw) = headers.get(header::IF_MATCH) else {
         return Ok(None);
     };

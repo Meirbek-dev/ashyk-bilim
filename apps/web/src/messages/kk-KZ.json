@@ -2668,7 +2668,9 @@
         "uploading": "Жүктелуде...",
         "video": "Бейне",
         "removeImageButton": "Кескінді өшіру",
-        "thumbnailRemoved": "Нобай өшірілді"
+        "thumbnailRemoved": "Нобай өшірілді",
+        "removeConfirmTitle": "Нобайды өшіру керек пе?",
+        "removeConfirmDescription": "Жаңасын жүктегенше курс мұқабасыз қалады."
       },
       "about": {
         "label": "Сипаттамасы",

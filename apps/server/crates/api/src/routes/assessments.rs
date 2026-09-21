@@ -4,7 +4,8 @@ use ab_domain::assessments::service::{
 };
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::response::{IntoResponse, Response};
 
 use crate::detach::detached;
 use crate::dto::assessments::{
@@ -14,7 +15,18 @@ use crate::dto::assessments::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson};
+use crate::routes::curriculum::if_match;
 use crate::state::AppState;
+
+/// The access view with an `ETag` carrying its version (UX-154), echoed
+/// back as `If-Match` by the access tab.
+fn access_with_etag(view: ab_domain::assessments::access::AccessView) -> Response {
+    let etag = HeaderValue::from_str(&format!("\"{}\"", view.version))
+        .unwrap_or_else(|_| HeaderValue::from_static("\"0\""));
+    let mut response = Json(crate::dto::assessments::AccessView::from(view)).into_response();
+    response.headers_mut().insert(header::ETAG, etag);
+    response
+}
 
 /// Create an assessment with its backing activity (appended to the chapter).
 ///
@@ -387,25 +399,38 @@ pub async fn reorder_items(
 #[utoipa::path(
     get, path = "/assessments/{id}/access", tag = "assessments",
     params(("id" = AssessmentId, Path, description = "Assessment id")),
-    responses((status = 200, description = "Access policy", body = crate::dto::assessments::AccessView)),
+    responses((status = 200, description = "Access policy", body = crate::dto::assessments::AccessView,
+               headers(("ETag" = String, description = "Quoted version")))),
 )]
 pub async fn get_access(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-) -> ApiResult<Json<crate::dto::assessments::AccessView>> {
-    Ok(Json(state.assessments.access(&actor, id).await?.into()))
+) -> ApiResult<Response> {
+    Ok(access_with_etag(
+        state.assessments.access(&actor, id).await?,
+    ))
 }
 
 /// Replace the access policy. Restricted lists are validated against the
 /// course (users need course access, groups must be linked); switching to
 /// all-course-learners wipes both lists.
+///
+/// With `If-Match: "<version>"` (the `ETag` of the last read) a stale tab
+/// is 412 `precondition-failed` with `details {expected, actual}` instead
+/// of a silent overwrite (UX-154).
 #[utoipa::path(
     put, path = "/assessments/{id}/access", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    params(
+        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("If-Match" = Option<i32>, Header, description = "Version from the last read's ETag"),
+    ),
     request_body = crate::dto::assessments::SetAccessRequest,
     responses(
-        (status = 200, description = "Updated", body = crate::dto::assessments::AccessView),
+        (status = 200, description = "Updated", body = crate::dto::assessments::AccessView,
+         headers(("ETag" = String, description = "Quoted new version"))),
+        (status = 412, description = "Stale version", body = Problem,
+         content_type = "application/problem+json"),
         (status = 422, description = "User/group outside the course", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -414,8 +439,10 @@ pub async fn set_access(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    headers: HeaderMap,
     ValidJson(request): ValidJson<crate::dto::assessments::SetAccessRequest>,
-) -> ApiResult<Json<crate::dto::assessments::AccessView>> {
+) -> ApiResult<Response> {
+    let expected_version = if_match(&headers)?;
     let view = state
         .assessments
         .set_access(
@@ -424,9 +451,10 @@ pub async fn set_access(
             request.mode,
             &request.user_ids,
             &request.usergroup_ids,
+            expected_version,
         )
         .await?;
-    Ok(Json(view.into()))
+    Ok(access_with_etag(view))
 }
 
 // ── Per-student overrides ───────────────────────────────────────────────────

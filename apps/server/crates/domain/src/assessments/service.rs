@@ -8,8 +8,8 @@
 //! can see plus `assessment:read:assigned`.
 
 use ab_core::assessments::{
-    AccessMode, AssessmentKind, CompletionRule, GradeReleaseMode, GradingMode, GradingType,
-    ItemKind, LatePolicyKind, Lifecycle, ReviewVisibility,
+    AssessmentKind, CompletionRule, GradeReleaseMode, GradingMode, GradingType, ItemKind,
+    LatePolicyKind, Lifecycle, ReviewVisibility,
 };
 use ab_core::id::{ActivityId, AssessmentId, AssessmentItemId, ChapterId, CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
@@ -1435,17 +1435,5 @@ impl AssessmentsService {
         ab_db::assessments::bump_content_version(&mut *tx, id).await?;
         tx.commit().await?;
         Ok(self.detail(id).await?.items)
-    }
-
-    // ── Access mode (3.4 adds the allowlists) ───────────────────────────
-
-    pub async fn set_access_mode(
-        &self,
-        actor: &Actor,
-        id: AssessmentId,
-        mode: AccessMode,
-    ) -> Result<()> {
-        self.load_for_author(actor, id).await?;
-        ab_db::assessments::set_access_mode(&self.pool, id, mode).await
     }
 }

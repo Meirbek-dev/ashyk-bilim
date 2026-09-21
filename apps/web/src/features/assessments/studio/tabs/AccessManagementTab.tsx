@@ -22,14 +22,14 @@ import { toast } from 'sonner'
 import {
   createOverride,
   deleteOverride,
-  getAccess,
   listOverrides,
-  setAccess,
   updateOverride,
 } from '@/lib/api/generated/assessments/assessments'
+import { assessmentAccessQueryOptions, setVersionedAccess } from '@/features/assessments/queries'
 import { usergroupsForCourse } from '@/lib/api/generated/usergroups/usergroups'
 import type { OverrideRequest, StudentOverride } from '@/lib/api/generated/zod'
 import { toUnix } from '@/lib/api/contract'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { collectGradebookPages } from '@/features/grading/queries/grading.query'
 import { useApiError } from '@/hooks/useApiError'
@@ -88,7 +88,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
 
   const accessKey = queryKeys.assessments.access(assessmentUuid)
   const overridesKey = queryKeys.assessments.overrides(assessmentUuid)
-  const accessQuery = useQuery({ queryKey: accessKey, queryFn: () => getAccess(assessmentUuid) })
+  const accessQuery = useQuery(assessmentAccessQueryOptions(assessmentUuid))
   const overridesQuery = useQuery({ queryKey: overridesKey, queryFn: () => listOverrides(assessmentUuid) })
   // v2 has no `access/eligible-*` search routes: the pickers are the course's
   // linked groups and the gradebook's learners, filtered client-side.
@@ -165,12 +165,17 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   )
 
   const saveMutation = useMutation({
+    // UX-154: echo the loaded version; another tab's save makes this a 412.
     mutationFn: () =>
-      setAccess(assessmentUuid, {
-        mode,
-        user_ids: mode === 'restricted' ? [...selectedUsers] : [],
-        usergroup_ids: mode === 'restricted' ? [...selectedGroups] : [],
-      }),
+      setVersionedAccess(
+        assessmentUuid,
+        {
+          mode,
+          user_ids: mode === 'restricted' ? [...selectedUsers] : [],
+          usergroup_ids: mode === 'restricted' ? [...selectedGroups] : [],
+        },
+        access?.version ?? null,
+      ),
     onMutate: () => {
       setLastSaveError(null)
       setFieldErrors(new Map())
@@ -180,6 +185,12 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       toast.success(t('saved'))
     },
     onError: error => {
+      if (hasErrorCode(error, 'precondition-failed')) {
+        // The other tab's policy replaces the stale form; the toast says why.
+        void queryClient.invalidateQueries({ queryKey: accessKey })
+        setLastSaveError(toastApiError(error, { fallback: t('saveFailed') }).message)
+        return
+      }
       const byField = collectFieldErrors(error, handleApiError, t('saveFailed'))
       if (byField.size === 0) {
         setLastSaveError(toastApiError(error, { fallback: t('saveFailed') }).message)

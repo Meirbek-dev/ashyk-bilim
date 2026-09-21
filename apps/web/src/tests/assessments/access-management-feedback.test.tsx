@@ -1,6 +1,8 @@
 /** @vitest-environment jsdom */
 // UX-057: restricted access with an empty list asks before locking everyone
 // out; 422 field errors land on the chip / input they name, not in a toast.
+// UX-154: the save echoes the loaded ETag as If-Match; a 412 reloads the
+// policy instead of silently overwriting the other tab.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
@@ -18,15 +20,26 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError, success: mocks.toastSuccess } }))
+vi.mock('@/lib/api-client', () => ({
+  apiJson: vi.fn(),
+  apiResult: async (path: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => {
+    if (init?.method === 'PUT') {
+      const data = await mocks.setAccess(path, JSON.parse(init.body ?? '{}'), init.headers?.['If-Match'])
+      return { data, headers: { etag: '"4"' } }
+    }
+    return {
+      data: {
+        mode: 'restricted',
+        effective_user_count: 1,
+        users: [{ id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null }],
+        usergroups: [],
+      },
+      headers: { etag: '"3"' },
+    }
+  },
+}))
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({
-  getAccess: async () => ({
-    mode: 'restricted',
-    effective_user_count: 1,
-    users: [{ id: 'u1', username: 'mira', display_name: 'Mira' }],
-    usergroups: [],
-  }),
   listOverrides: async () => [],
-  setAccess: mocks.setAccess,
   createOverride: mocks.createOverride,
   updateOverride: vi.fn(),
   deleteOverride: vi.fn(),
@@ -71,8 +84,23 @@ describe('access management feedback (UX-057)', () => {
     mocks.setAccess.mockResolvedValue({ mode: 'restricted', effective_user_count: 0, users: [], usergroups: [] })
     fireEvent.click(within(dialog).getByRole('button', { name: 'Сохранить всё равно' }))
     await waitFor(() =>
-      expect(mocks.setAccess).toHaveBeenCalledWith('a1', { mode: 'restricted', user_ids: [], usergroup_ids: [] }),
+      expect(mocks.setAccess).toHaveBeenCalledWith(
+        'assessments/a1/access',
+        { mode: 'restricted', user_ids: [], usergroup_ids: [] },
+        '"3"',
+      ),
     )
+  })
+
+  it('a stale save (412) reloads the policy and says why instead of overwriting (UX-154)', async () => {
+    mocks.setAccess.mockRejectedValue(
+      new APIError({ status: 412, code: 'precondition-failed', message: 'access changed since you loaded it' }),
+    )
+    renderTab()
+    await screen.findAllByText('Mira')
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить доступ' }))
+    await screen.findByText(/изменена другим пользователем/)
+    expect(mocks.setAccess).toHaveBeenCalledTimes(1)
   })
 
   it('renders a not-in-course 422 on the learner chip, not as a toast', async () => {
