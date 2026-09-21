@@ -44,7 +44,7 @@ pub async fn insert_upload(pool: &PgPool, new: NewUpload<'_>) -> Result<Uuid> {
     Ok(id)
 }
 
-pub async fn get_upload(pool: &PgPool, id: Uuid) -> Result<Option<UploadRow>> {
+pub async fn get_upload<'e>(db: impl sqlx::PgExecutor<'e>, id: Uuid) -> Result<Option<UploadRow>> {
     let row = sqlx::query_as!(
         UploadRow,
         r#"SELECT id, created_by AS "created_by: UserId", purpose, bucket, key,
@@ -52,7 +52,7 @@ pub async fn get_upload(pool: &PgPool, id: Uuid) -> Result<Option<UploadRow>> {
            FROM uploads WHERE id = $1"#,
         id
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
@@ -80,21 +80,25 @@ pub async fn mark_finalized(
 }
 
 /// Claim a reference to a finalized upload (clears the reaper clock).
-pub async fn add_reference(pool: &PgPool, id: Uuid) -> Result<bool> {
+pub async fn add_reference<'e>(db: impl sqlx::PgExecutor<'e>, id: Uuid) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE uploads
            SET referenced_count = referenced_count + 1, expires_at = NULL
            WHERE id = $1 AND status = 'finalized'"#,
         id
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
 
 /// [`release_reference`] addressed by storage key (keys are UNIQUE) — used
 /// when only the key was persisted, e.g. replacing platform branding.
-pub async fn release_reference_by_key(pool: &PgPool, key: &str, grace_secs: f64) -> Result<bool> {
+pub async fn release_reference_by_key<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    key: &str,
+    grace_secs: f64,
+) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE uploads
            SET referenced_count = referenced_count - 1,
@@ -105,7 +109,7 @@ pub async fn release_reference_by_key(pool: &PgPool, key: &str, grace_secs: f64)
         key,
         grace_secs
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }

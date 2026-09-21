@@ -209,10 +209,14 @@ impl CoursesService {
             .as_deref()
             .map(|n| ab_core::required_str("name", n))
             .transpose()?;
+        // BUG-234: the claim commits with the UPDATE that references it; a
+        // concurrent course DELETE turns the UPDATE into a 404 and the
+        // rollback drops the reference instead of leaking the upload.
+        let mut tx = self.pool.begin().await?;
         let thumbnail_key = match changes.thumbnail_upload_id {
             Some(Some(upload_id)) => Some(Some(
                 claim_upload(
-                    &self.pool,
+                    &mut tx,
                     actor,
                     upload_id,
                     "course-thumbnail",
@@ -225,7 +229,7 @@ impl CoursesService {
         };
         let tags = changes.tags.as_deref().map(normalize_tags);
         ab_db::catalog::update_course(
-            &self.pool,
+            &mut *tx,
             id,
             ab_db::catalog::CourseChanges {
                 name,
@@ -244,15 +248,16 @@ impl CoursesService {
         // for two identical concurrent PATCHes: each swap returns one key).
         if let Some(key) = thumbnail_key
             && let Some(old) =
-                ab_db::catalog::set_course_thumbnail(&self.pool, id, key.as_deref()).await?
+                ab_db::catalog::set_course_thumbnail(&mut *tx, id, key.as_deref()).await?
         {
             ab_db::uploads::release_reference_by_key(
-                &self.pool,
+                &mut *tx,
                 &old,
                 UNREFERENCED_GRACE.as_secs_f64(),
             )
             .await?;
         }
+        tx.commit().await?;
         ab_db::catalog::get_course(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("course"))

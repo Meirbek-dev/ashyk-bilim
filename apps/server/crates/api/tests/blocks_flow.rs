@@ -260,3 +260,40 @@ async fn block_lifecycle_over_the_upload_pipeline(pool: PgPool) {
             .unwrap();
     assert!(expiring, "released upload must re-enter the reaper's queue");
 }
+
+/// BUG-234: the upload claim commits with the block that references it.
+/// An activity DELETE that wins the race turns the insert into a 404 and
+/// the claim rolls back — the upload re-enters the reaper's queue instead
+/// of sitting at `referenced_count 1, expires_at null` forever.
+#[sqlx::test(migrations = "../../migrations")]
+async fn block_claim_rolls_back_when_the_activity_vanishes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "teacher").await;
+    let (_, activity) = scaffold_activity(&app, &teacher).await;
+    let upload = finalized_upload(&app, &teacher, "block-image", "image/png").await;
+
+    let mut tx = app.pool.begin().await.unwrap();
+    sqlx::query("DELETE FROM activities WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&activity).unwrap())
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let path = format!("/api/v2/activities/{activity}/blocks");
+    let body = serde_json::json!({ "block_type": "image", "upload_id": upload });
+    let create = app.post_as(&teacher, &path, &body);
+    let commit = async {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tx.commit().await.unwrap();
+    };
+    let (created, ()) = tokio::join!(create, commit);
+    assert_eq!(created.status, StatusCode::NOT_FOUND, "{}", created.text());
+
+    let (referenced, expiring): (i32, bool) = sqlx::query_as(
+        "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&upload).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((referenced, expiring), (0, true), "claim must roll back");
+}

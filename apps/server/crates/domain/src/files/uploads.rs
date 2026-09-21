@@ -266,13 +266,13 @@ impl UploadsService {
 /// request field in the validation error) and return its storage key.
 /// Same mechanics as block media, avatars and platform branding.
 pub async fn claim_upload(
-    pool: &PgPool,
+    conn: &mut sqlx::PgConnection,
     actor: &Actor,
     upload_id: Uuid,
     required_purpose: &str,
     field: &str,
 ) -> Result<String> {
-    let upload = ab_db::uploads::get_upload(pool, upload_id)
+    let upload = ab_db::uploads::get_upload(&mut *conn, upload_id)
         .await?
         .ok_or_else(|| Error::not_found("upload"))?;
     if upload.created_by != actor.user_id {
@@ -288,7 +288,7 @@ pub async fn claim_upload(
             ),
         }]));
     }
-    if !ab_db::uploads::add_reference(pool, upload_id).await? {
+    if !ab_db::uploads::add_reference(conn, upload_id).await? {
         return Err(Error::conflict("upload is not finalized"));
     }
     Ok(upload.key)

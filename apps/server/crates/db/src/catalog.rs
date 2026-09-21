@@ -277,8 +277,8 @@ pub struct CourseChanges<'a> {
     pub open_to_contributors: Option<bool>,
 }
 
-pub async fn update_course(
-    pool: &PgPool,
+pub async fn update_course<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: CourseId,
     changes: CourseChanges<'_>,
 ) -> Result<Option<CourseRow>> {
@@ -307,7 +307,7 @@ pub async fn update_course(
         changes.tags,
         changes.open_to_contributors
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
@@ -316,8 +316,8 @@ pub async fn update_course(
 ///
 /// The caller releases exactly that upload (UX-143: two concurrent PATCHes
 /// each released the key they had read, leaking the loser's).
-pub async fn set_course_thumbnail(
-    pool: &PgPool,
+pub async fn set_course_thumbnail<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: CourseId,
     key: Option<&str>,
 ) -> Result<Option<String>> {
@@ -328,7 +328,7 @@ pub async fn set_course_thumbnail(
         id.0,
         key
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row.and_then(|r| r.previous))
 }
@@ -355,7 +355,16 @@ pub async fn set_course_public(pool: &PgPool, id: CourseId, public: bool) -> Res
 /// `referenced_count`s, which pinned the objects forever. One statement:
 /// the CTEs read the pre-delete snapshot, so the cascaded blocks are still
 /// visible to the release.
+///
+/// BUG-234: the parent row is locked in its own statement first, so a
+/// concurrent block/thumbnail create that already holds the row (its FK
+/// check) commits before the release CTEs take their snapshot — otherwise
+/// the cascade dropped a block the CTE never saw and its upload leaked.
 pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Result<bool> {
+    let mut tx = pool.begin().await?;
+    sqlx::query_scalar!("SELECT id FROM courses WHERE id = $1 FOR UPDATE", id.0)
+        .fetch_optional(&mut *tx)
+        .await?;
     let deleted = sqlx::query!(
         r#"WITH owned AS (
                SELECT thumbnail_image_key AS key FROM courses WHERE id = $1
@@ -377,8 +386,9 @@ pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Resu
         id.0,
         grace_secs
     )
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
+    tx.commit().await?;
     Ok(deleted.rows_affected() == 1)
 }
 
@@ -464,6 +474,10 @@ pub async fn update_chapter(
 /// Delete a chapter, releasing the uploads of the media blocks under it
 /// (BUG-209 — see [`delete_course`]).
 pub async fn delete_chapter(pool: &PgPool, id: ChapterId, grace_secs: f64) -> Result<bool> {
+    let mut tx = pool.begin().await?;
+    sqlx::query_scalar!("SELECT id FROM chapters WHERE id = $1 FOR UPDATE", id.0)
+        .fetch_optional(&mut *tx)
+        .await?;
     let deleted = sqlx::query!(
         r#"WITH refs AS (
                SELECT b.content->>'file_key' AS key, count(*)::int AS n
@@ -482,8 +496,9 @@ pub async fn delete_chapter(pool: &PgPool, id: ChapterId, grace_secs: f64) -> Re
         id.0,
         grace_secs
     )
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
+    tx.commit().await?;
     Ok(deleted.rows_affected() == 1)
 }
 
@@ -613,6 +628,10 @@ pub async fn update_activity<'e>(
 /// Delete an activity, releasing the uploads of its media blocks
 /// (BUG-209 — see [`delete_course`]).
 pub async fn delete_activity(pool: &PgPool, id: ActivityId, grace_secs: f64) -> Result<bool> {
+    let mut tx = pool.begin().await?;
+    sqlx::query_scalar!("SELECT id FROM activities WHERE id = $1 FOR UPDATE", id.0)
+        .fetch_optional(&mut *tx)
+        .await?;
     let deleted = sqlx::query!(
         r#"WITH refs AS (
                SELECT b.content->>'file_key' AS key, count(*)::int AS n
@@ -631,8 +650,9 @@ pub async fn delete_activity(pool: &PgPool, id: ActivityId, grace_secs: f64) -> 
         id.0,
         grace_secs
     )
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
+    tx.commit().await?;
     Ok(deleted.rows_affected() == 1)
 }
 

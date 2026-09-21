@@ -576,7 +576,11 @@ impl CurriculumService {
                 ),
             }]));
         }
-        if !ab_db::uploads::add_reference(&self.pool, upload_id).await? {
+        // BUG-234: the claim and the row that holds it commit together — a
+        // concurrent activity DELETE makes the insert a 404 (FK) and rolls
+        // the reference back instead of pinning the upload forever.
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::uploads::add_reference(&mut *tx, upload_id).await? {
             return Err(Error::conflict("upload is not finalized"));
         }
 
@@ -587,8 +591,8 @@ impl CurriculumService {
             "file_size": upload.size_bytes,
             "file_type": upload.mime,
         });
-        let id =
-            ab_db::catalog::insert_block(&self.pool, activity_id, block_type, &content).await?;
+        let id = ab_db::catalog::insert_block(&mut *tx, activity_id, block_type, &content).await?;
+        tx.commit().await?;
         ab_db::catalog::get_block(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("block"))
