@@ -43,6 +43,23 @@ pub fn trim_blank(value: &str) -> &str {
     })
 }
 
+/// `value` without control (Cc) and format (Cf) characters — bidi overrides
+/// in a display name render the neighbours reversed (UX-152 nit). The
+/// zero-width joiner stays: it glues emoji sequences together.
+#[must_use]
+pub fn strip_controls(value: &str) -> String {
+    value
+        .chars()
+        .filter(|&c| {
+            c == '\u{200D}'
+                || !matches!(
+                    c.general_category(),
+                    GeneralCategory::Control | GeneralCategory::Format
+                )
+        })
+        .collect()
+}
+
 /// The shared "blank string" rule (UX-106).
 ///
 /// `value` trimmed, or 422 `{field}`/`required` when nothing is left —

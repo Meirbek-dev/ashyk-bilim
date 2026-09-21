@@ -46,21 +46,19 @@ impl UsersService {
             action: Action::Update,
             scope: Some(Scope::Own),
         })?;
-        let display_name = changes.display_name.as_deref().map(str::trim);
-        if display_name == Some("") {
-            return Err(Error::validation(vec![FieldError {
-                field: "display_name".into(),
-                code: "required".into(),
-                message: "display name must not be blank".into(),
-            }]));
-        }
+        let display_name = changes
+            .display_name
+            .as_deref()
+            .map(ab_core::strip_controls)
+            .map(|name| ab_core::required_str("display_name", &name).map(str::to_owned))
+            .transpose()?;
         if let Some(upload_id) = changes.avatar_upload_id {
             self.claim_avatar(actor, upload_id).await?;
         }
         ab_db::identity::update_profile(
             &self.pool,
             actor.user_id,
-            display_name,
+            display_name.as_deref(),
             changes.bio.as_deref().map(str::trim),
             changes.locale.as_deref(),
         )

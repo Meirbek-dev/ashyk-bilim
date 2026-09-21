@@ -62,7 +62,7 @@ impl From<ab_db::search::UserHitRow> for UserHit {
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct SearchQuery {
-    /// Search terms (websearch syntax: quoted phrases, `-` exclusions).
+    /// Search terms: every word matches by prefix, `-word` excludes.
     pub q: String,
     /// Per-section cap, 1..=50 (default 10).
     pub limit: Option<i64>,

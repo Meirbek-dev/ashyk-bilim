@@ -14,4 +14,6 @@ pub mod permission;
 pub mod telemetry;
 pub mod time;
 
-pub use error::{Error, ErrorCode, FieldError, Result, page_limit, required_str, trim_blank};
+pub use error::{
+    Error, ErrorCode, FieldError, Result, page_limit, required_str, strip_controls, trim_blank,
+};

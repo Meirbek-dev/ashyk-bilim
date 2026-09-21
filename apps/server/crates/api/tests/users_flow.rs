@@ -118,6 +118,35 @@ async fn blank_display_name_is_rejected_and_names_are_trimmed(pool: PgPool) {
         .await;
     assert_eq!(res.status, StatusCode::OK, "{}", res.text());
     assert_eq!(res.json()["display_name"], "Aigerim");
+
+    // UX-152 nit: bidi overrides and other controls are stripped, the
+    // zero-width joiner inside an emoji sequence is kept.
+    let res = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "display_name": "\u{1F468}\u{200D}\u{1F469} \u{202E}evil\u{202C}\u{7}" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    assert_eq!(
+        res.json()["display_name"],
+        "\u{1F468}\u{200D}\u{1F469} evil"
+    );
+    let res = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "display_name": "\u{202E}\u{200B}" }),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["code"], "required");
 }
 
 #[sqlx::test(migrations = "../../migrations")]

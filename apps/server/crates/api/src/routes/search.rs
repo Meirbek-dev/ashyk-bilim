@@ -13,7 +13,7 @@ use crate::state::AppState;
     path = "/search",
     tag = "search",
     params(
-        ("q" = String, Query, description = "Search terms (websearch syntax)"),
+        ("q" = String, Query, description = "Search terms: every word matches by prefix, `-word` excludes"),
         ("limit" = Option<i64>, Query, description = "Per-section cap, 1..=50 (default 10)"),
     ),
     responses((status = 200, description = "Grouped results", body = SearchResults)),

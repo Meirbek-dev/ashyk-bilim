@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections\n           WHERE search @@ websearch_to_tsquery('simple', $1)\n             AND (public OR $2 OR creator_id = $3)\n             AND collection_listable(id, $3, $5)\n           ORDER BY ts_rank_cd(search, websearch_to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
+  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections\n           WHERE search @@ to_tsquery('simple', $1)\n             AND (public OR $2 OR creator_id = $3)\n             AND collection_listable(id, $3, $5)\n           ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -90,5 +90,5 @@
       null
     ]
   },
-  "hash": "3ffb2b4dee21de7cf356ea819084d2a8b9a41e44d3812c15b9d7aa23d35a2133"
+  "hash": "76012a6b35d75bd14f5c025c4185ab6f76b47613c3864076c498738ad20adbd6"
 }

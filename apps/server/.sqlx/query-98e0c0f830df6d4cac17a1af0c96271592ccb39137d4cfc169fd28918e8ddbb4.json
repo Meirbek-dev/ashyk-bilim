@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE search @@ websearch_to_tsquery('simple', $1)\n             AND course_visible(courses, $3, $2)\n           ORDER BY ts_rank_cd(search, websearch_to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE search @@ to_tsquery('simple', $1)\n             AND course_visible(courses, $3, $2)\n           ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -144,5 +144,5 @@
       null
     ]
   },
-  "hash": "bb5ec3ca480e6eba0a5720c087801794f248ecf6f61af98bdefffb8168b869ae"
+  "hash": "98e0c0f830df6d4cac17a1af0c96271592ccb39137d4cfc169fd28918e8ddbb4"
 }

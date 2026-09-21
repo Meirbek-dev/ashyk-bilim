@@ -135,6 +135,34 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
     let blank = app.get_as(&teacher, "/api/v2/search?q=%20").await;
     assert_eq!(blank.status, StatusCode::OK);
     assert!(blank.json()["courses"].as_array().unwrap().is_empty());
+
+    // UX-152: partial words hit like the people search does — a prefix of a
+    // hyphenated name, a Cyrillic stem — and `-word` still excludes.
+    course(
+        &app,
+        &teacher,
+        "gauntlet21-analytics-live Критик pass",
+        true,
+    )
+    .await;
+    for q in [
+        "gaunt",
+        "gauntlet21-analytics",
+        "%D0%9A%D1%80%D0%B8%D1%82",
+        "prog%20-secrets",
+    ] {
+        let hits = app.get_as(&teacher, &format!("/api/v2/search?q={q}")).await;
+        assert_eq!(
+            hits.json()["courses"].as_array().unwrap().len(),
+            1,
+            "{q}: {}",
+            hits.text()
+        );
+    }
+    let quirky = app
+        .get_as(&teacher, "/api/v2/search?q=it%27s%20%26%20%22")
+        .await;
+    assert_eq!(quirky.status, StatusCode::OK, "{}", quirky.text());
 }
 
 /// BUG-190: search uses the catalogue's visibility predicate, usergroup arm
