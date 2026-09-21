@@ -1970,3 +1970,77 @@ async fn publish_and_item_writes_serialize(pool: PgPool) {
         }
     }
 }
+
+/// BUG-231: a schedule racing an unready item add must never leave a
+/// scheduled assessment the scheduler will refuse to open — every item
+/// write re-reads the lifecycle under the row lock.
+#[sqlx::test(migrations = "../../migrations")]
+async fn schedule_and_item_add_serialize(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+
+    for round in 0..20 {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/assessments",
+                &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz",
+                                      "title": format!("Race {round}") }),
+            )
+            .await;
+        let id = created.json()["id"].as_str().unwrap().to_owned();
+        let items_path = format!("/api/v2/assessments/{id}/items");
+        app.post_as(&teacher, &items_path, &choice_item("1+1?"))
+            .await;
+
+        let to_scheduled =
+            serde_json::json!({ "to": "scheduled", "scheduled_at_unix": far_future() });
+        let lifecycle_path = format!("/api/v2/assessments/{id}/lifecycle");
+        let schedule = app.post_as(&teacher, &lifecycle_path, &to_scheduled);
+        let empty = serde_json::json!({ "title": "empty?", "max_score": 1,
+            "body": { "kind": "choice", "prompt": "empty?", "options": [] } });
+        let add = app.post_as(&teacher, &items_path, &empty);
+        let (scheduled, added) = if round % 2 == 0 {
+            tokio::join!(schedule, add)
+        } else {
+            let (added, scheduled) = tokio::join!(add, schedule);
+            (scheduled, added)
+        };
+
+        let detail = app
+            .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+            .await;
+        let readiness = app
+            .get_as(&teacher, &format!("/api/v2/assessments/{id}/readiness"))
+            .await;
+        if detail.json()["lifecycle"] == "scheduled" {
+            assert_eq!(
+                added.status,
+                StatusCode::CONFLICT,
+                "round {round}: {}",
+                added.text()
+            );
+            assert_eq!(
+                readiness.json()["ok"],
+                true,
+                "round {round}: {}",
+                readiness.text()
+            );
+        } else {
+            assert_eq!(
+                added.status,
+                StatusCode::CREATED,
+                "round {round}: {}",
+                added.text()
+            );
+            assert_eq!(
+                scheduled.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "round {round}: {}",
+                scheduled.text()
+            );
+        }
+    }
+}

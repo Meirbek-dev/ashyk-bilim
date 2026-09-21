@@ -1232,8 +1232,11 @@ impl AssessmentsService {
             assessment,
             mut items,
         } = Self::lock_detail(&mut tx, id).await?;
+        // BUG-231: a schedule (or publish) that landed since the load above
+        // makes the row read-only — the same gates, on the locked row.
+        self.ensure_editable(&assessment).await?;
+        self.ensure_content_unlocked(&assessment).await?;
         if assessment.lifecycle == Lifecycle::Published {
-            self.ensure_editable(&assessment).await?;
             items.push(Item {
                 id: AssessmentItemId::default(),
                 position: 0,
@@ -1412,6 +1415,9 @@ impl AssessmentsService {
             .collect();
         final_order.extend(remainder);
         let mut tx = self.pool.begin().await?;
+        // BUG-231: the lifecycle gate re-runs on the locked row.
+        let AssessmentDetail { assessment, .. } = Self::lock_detail(&mut tx, id).await?;
+        self.ensure_editable(&assessment).await?;
         ab_db::assessments::renumber_items(&mut tx, &final_order).await?;
         ab_db::assessments::bump_content_version(&mut *tx, id).await?;
         tx.commit().await?;
