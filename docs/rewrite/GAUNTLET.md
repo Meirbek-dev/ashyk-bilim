@@ -136,6 +136,11 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 - **Stack rebuilt a seventh time 2026-09-20 14:05** (machine reboot overnight after the weekly usage
   limit killed three builders mid-batch; same script, ~5 min incl. accounts + names). Resumed builders
   by `SendMessage` to their ids — uncommitted edits survive a reboot, un-saved agent work does not.
+- **Stack rebuilt an eighth time 2026-09-21 15:15** (podman machine restarted while the session limit
+  had the loop paused; same script; `ashyq migrate` before the first build since sqlx `query!` checks
+  the live DB — `relation "ai_threads" does not exist` at `cargo check` means an unmigrated DB, not code).
+  Agents killed by a session limit are NOT resumable after a restart (`ListAgents` empty) — respawn
+  from the brief; a builder's uncommitted edits are still in the tree and compile-checked first.
 - **Builders must never run `bun run lint`** (it auto-fixes ~60 unrelated files; reverting them wiped two
   other builders' in-progress edits twice in pass 20). Shared-index hazard: concurrent `git commit`s
   swept other builders' staged hunks into the wrong commits and once committed a torn `add_item`
