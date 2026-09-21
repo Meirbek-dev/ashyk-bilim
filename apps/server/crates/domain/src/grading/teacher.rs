@@ -1368,6 +1368,10 @@ impl GradingService {
     /// Release every graded submission of a batch-mode assessment: each one
     /// without a published entry gets one (copied from its latest entry or
     /// from the stored breakdown) and flips to `published`.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the per-row release pipeline order is the contract; kept in one place"
+    )]
     pub async fn publish_all(
         &self,
         actor: &Actor,
