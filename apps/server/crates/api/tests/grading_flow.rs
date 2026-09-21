@@ -2396,3 +2396,62 @@ async fn item_added_after_a_republish_is_weighted_into_the_set(pool: PgPool) {
     assert_eq!(late["max_score"], 33.33, "{late}");
     assert_eq!(late["score"], 16.66, "{late}");
 }
+
+/// BUG-225: an item whose `max_score` was set to 0 while the quiz was
+/// unpublished accepts only a 0 — a 500 on it used to be stored on the
+/// item's 50-point share (final 556 %).
+#[sqlx::test(migrations = "../../migrations")]
+async fn zero_max_item_accepts_only_zero(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let unpublished = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "draft" }),
+        )
+        .await;
+    assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
+    let zeroed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{essay_id}"),
+            &serde_json::json!({ "max_score": 0 }),
+        )
+        .await;
+    assert_eq!(zeroed.status, StatusCode::OK, "{}", zeroed.text());
+
+    let inflated = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "save",
+                                  "item_grades": [{ "item_id": &essay_id, "score": 500 }] }),
+        ))
+        .await;
+    assert_eq!(
+        inflated.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        inflated.text()
+    );
+    assert_eq!(inflated.json()["field_errors"][0]["field"], "item_grades");
+    assert_eq!(inflated.json()["field_errors"][0]["code"], "range");
+    let zero = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "save",
+                                  "item_grades": [{ "item_id": &essay_id, "score": 0 }] }),
+        ))
+        .await;
+    assert_eq!(zero.status, StatusCode::OK, "{}", zero.text());
+    assert_eq!(zero.json()["final_score"], 50.0, "{}", zero.text());
+}

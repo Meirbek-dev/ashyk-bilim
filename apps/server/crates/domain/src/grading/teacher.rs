@@ -1139,10 +1139,10 @@ impl GradingService {
             };
             // Item scores arrive on the item's own scale; anything above it would
             // be multiplied into the breakdown (a 33.33 on a 1-point item became
-            // 1110.89 once) — refuse it at the boundary.
+            // 1110.89 once) — refuse it at the boundary. BUG-225: a 0-max item
+            // (unpublished, `max_score` set to 0) accepts only 0.
             if let Some(score) = grade.score
-                && item.max_score > 0.0
-                && score > item.max_score
+                && !(0.0..=item.max_score).contains(&score)
             {
                 return Err(Error::validation(vec![FieldError {
                     field: "item_grades".into(),
@@ -1744,7 +1744,9 @@ fn merge_item_grades(
                     Some(i) if i.max_score > 0.0 && existing.max_score > 0.0 => {
                         round2(score / i.max_score * existing.max_score)
                     }
-                    _ => score,
+                    // BUG-225: a 0-max item or a 0 share earns nothing — the
+                    // raw score used to land here (500 on a 43.48 share → 556 %).
+                    _ => 0.0,
                 };
                 existing.needs_manual_review = false;
             }
