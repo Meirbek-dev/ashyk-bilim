@@ -3,7 +3,7 @@
 //! lifecycle transitions, audit trail, access rules.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::{MintedSession, TestApp};
+use ab_testkit::{MintedSession, TestApp, drop_request_when, wait_until};
 use axum::http::StatusCode;
 use sqlx::PgPool;
 
@@ -2042,5 +2042,85 @@ async fn schedule_and_item_add_serialize(pool: PgPool) {
                 scheduled.text()
             );
         }
+    }
+}
+
+/// BUG-232: the assessment lifecycle and `activities.published` change in
+/// one transaction — an unpublish racing the curriculum publish toggle, or
+/// a client that hangs up mid-transition, never leaves a torn pair (a
+/// listed quiz that answers 404).
+#[sqlx::test(migrations = "../../migrations")]
+async fn lifecycle_and_activity_flag_never_disagree(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Q" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{id}/items"),
+        &choice_item("1+1?"),
+    )
+    .await;
+    let detail_path = format!("/api/v2/assessments/{id}");
+    let lifecycle_path = format!("{detail_path}/lifecycle");
+    let activity_path = format!("/api/v2/activities/{activity_id}");
+    let lifecycle = async || app.get_as(&teacher, &detail_path).await.json()["lifecycle"].clone();
+    let agree = async || {
+        let activity = app.get_as(&teacher, &activity_path).await;
+        (lifecycle().await == "published") == (activity.json()["published"] == true)
+    };
+
+    for round in 0..10 {
+        let published = app
+            .post_as(
+                &teacher,
+                &lifecycle_path,
+                &serde_json::json!({ "to": "published" }),
+            )
+            .await;
+        assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+        let to_draft = serde_json::json!({ "to": "draft" });
+        let on = serde_json::json!({ "published": true });
+        let unpublish = app.post_as(&teacher, &lifecycle_path, &to_draft);
+        let toggle_on = app.patch_as(&teacher, &activity_path, &on);
+        let (unpublished, toggled) = tokio::join!(unpublish, toggle_on);
+        assert_eq!(
+            unpublished.status,
+            StatusCode::OK,
+            "round {round}: {}",
+            unpublished.text()
+        );
+        assert!(
+            matches!(toggled.status, StatusCode::OK | StatusCode::CONFLICT),
+            "round {round}: {}",
+            toggled.text()
+        );
+        assert!(
+            agree().await,
+            "round {round}: lifecycle and activity flag disagree"
+        );
+    }
+
+    // A socket drop mid-transition: the flag flipped with the lifecycle.
+    for to in ["published", "draft"] {
+        drop_request_when(
+            app.post_as(&teacher, &lifecycle_path, &serde_json::json!({ "to": to })),
+            async || lifecycle().await == to,
+            |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+        )
+        .await;
+        wait_until("the dropped transition left a torn pair", async || {
+            lifecycle().await == to && agree().await
+        })
+        .await;
     }
 }

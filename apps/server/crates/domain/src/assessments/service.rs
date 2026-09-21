@@ -1022,9 +1022,18 @@ impl AssessmentsService {
             Lifecycle::Draft => (None, assessment.published_at, assessment.archived_at, false),
         };
         ab_db::assessments::set_lifecycle(&mut *tx, id, to, scheduled, published, archived).await?;
+        // BUG-232: the activity flag flips with the lifecycle, under the same
+        // lock the curriculum toggle takes — never a torn pair.
+        ab_db::catalog::update_activity(
+            &mut *tx,
+            assessment.activity_id,
+            None,
+            Some(activity_live),
+        )
+        .await?;
         tx.commit().await?;
         ProgressProjector::new(self.pool.clone())
-            .set_activity_published(assessment.activity_id, assessment.course_id, activity_live)
+            .recalculate_course_for_all(assessment.course_id)
             .await?;
         ab_db::assessments::insert_audit_event(
             &self.pool,
@@ -1074,11 +1083,15 @@ impl AssessmentsService {
                 .await?;
                 continue;
             }
-            if !ab_db::assessments::publish_due(pool, id).await? {
+            let mut tx = pool.begin().await?;
+            if !ab_db::assessments::publish_due(&mut *tx, id).await? {
                 continue;
             }
+            ab_db::catalog::update_activity(&mut *tx, assessment.activity_id, None, Some(true))
+                .await?;
+            tx.commit().await?;
             ProgressProjector::new(pool.clone())
-                .set_activity_published(assessment.activity_id, assessment.course_id, true)
+                .recalculate_course_for_all(assessment.course_id)
                 .await?;
             ab_db::assessments::insert_audit_event(
                 pool,

@@ -310,25 +310,25 @@ impl CurriculumService {
     /// both) or, for quiz/exam/code, a `published` assessment (its lifecycle
     /// transition flips the activity). The raw toggle refuses otherwise so
     /// learners never see an activity that answers 404 when opened.
+    ///
+    /// BUG-232: the lifecycle is read under the backing row's lock, inside
+    /// the toggle's transaction — a transition in flight commits its flag
+    /// first or sees this one.
     async fn require_publishable(
-        &self,
+        tx: &mut sqlx::PgConnection,
         activity_id: ActivityId,
         activity_type: &str,
     ) -> Result<()> {
         let reason = match activity_type {
             "file_submission" => {
-                let published = ab_db::file_submissions::get_file_submission_by_activity(
-                    &self.pool,
-                    activity_id,
-                )
-                .await?
-                .is_some_and(|c| c.lifecycle == FileSubmissionLifecycle::Published);
+                let published =
+                    ab_db::file_submissions::lock_file_submission_by_activity(tx, activity_id)
+                        .await?
+                        .is_some_and(|c| c.lifecycle == FileSubmissionLifecycle::Published);
                 (!published).then_some("file-submission-unpublished")
             }
             "quiz" | "exam" | "code_challenge" => {
-                match ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id)
-                    .await?
-                {
+                match ab_db::assessments::lock_assessment_by_activity(tx, activity_id).await? {
                     None if activity_type == "code_challenge" => {
                         Some("code-challenge-unconfigured")
                     }
@@ -410,8 +410,9 @@ impl CurriculumService {
             .map_or(activity.activity_type.as_str(), |(t, _)| t);
         let merged_published = changes.published.unwrap_or(activity.published);
         let type_changes = merged_type != activity.activity_type;
+        let mut tx = self.pool.begin().await?;
         if merged_published && (type_changes || !activity.published) {
-            self.require_publishable(activity_id, merged_type).await?;
+            Self::require_publishable(&mut tx, activity_id, merged_type).await?;
         }
         // UX-104/UX-112/BUG-201: an assessment or file-submission config
         // stays attached to its activity in every lifecycle; the type cannot
@@ -439,7 +440,6 @@ impl CurriculumService {
             crate::assessments::service::ensure_editable(&self.pool, assessment).await?;
         }
 
-        let mut tx = self.pool.begin().await?;
         if let Some((activity_type, sub_type)) = changes.type_pair {
             ab_db::catalog::set_activity_type(&mut *tx, activity_id, activity_type, sub_type)
                 .await?;

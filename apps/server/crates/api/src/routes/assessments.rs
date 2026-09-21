@@ -6,6 +6,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 
+use crate::detach::detached;
 use crate::dto::assessments::{
     Assessment, AssessmentDetail, AssessmentItem, AuditEvent, AuditQuery, CreateAssessmentRequest,
     CreateItemRequest, DuplicateRequest, LifecycleRequest, Policy, ReorderItemsRequest,
@@ -192,17 +193,22 @@ pub async fn lifecycle(
     Path(id): Path<AssessmentId>,
     ValidJson(request): ValidJson<LifecycleRequest>,
 ) -> ApiResult<Json<AssessmentDetail>> {
-    let detail = state
-        .assessments
-        .transition(
-            &actor,
-            id,
-            request.to,
-            request.scheduled_at_unix,
-            request.note.as_deref(),
-        )
-        .await?;
-    Ok(Json(detail.into()))
+    // BUG-232: the projection and audit row after the commit must not die
+    // with the socket.
+    detached(async move {
+        let detail = state
+            .assessments
+            .transition(
+                &actor,
+                id,
+                request.to,
+                request.scheduled_at_unix,
+                request.note.as_deref(),
+            )
+            .await?;
+        Ok(Json(detail.into()))
+    })
+    .await
 }
 
 /// Deep-copy as a new draft (policy + items; not access lists or

@@ -12,6 +12,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
+use crate::detach::detached;
 use crate::dto::file_submissions::{
     Attempt, ConfigPatch, CreateFileSubmissionRequest, DraftRequest, FileGradeAction,
     FileGradeRequest, FileRefRequest, FileReviewPage, FileReviewQuery, FileSubmission,
@@ -133,9 +134,13 @@ pub async fn publish_file_submission(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileSubmissionId>,
 ) -> ApiResult<Json<FileSubmission>> {
-    Ok(Json(
-        state.file_submissions.publish(&actor, id).await?.into(),
-    ))
+    // BUG-232: the projection after the commit must not die with the socket.
+    detached(async move {
+        Ok(Json(
+            state.file_submissions.publish(&actor, id).await?.into(),
+        ))
+    })
+    .await
 }
 
 /// The caller's open attempt (draft or returned), 404 when none.

@@ -268,6 +268,21 @@ pub async fn lock_assessment(
     get_assessment(conn, id).await
 }
 
+/// [`lock_assessment`] by the activity it backs (BUG-232): the curriculum
+/// publish toggle reads the lifecycle under the same lock a transition holds.
+pub async fn lock_assessment_by_activity(
+    conn: &mut sqlx::PgConnection,
+    activity_id: ActivityId,
+) -> Result<Option<AssessmentRow>> {
+    sqlx::query!(
+        "SELECT id FROM assessments WHERE activity_id = $1 FOR UPDATE",
+        activity_id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    get_assessment_by_activity(conn, activity_id).await
+}
+
 pub async fn get_assessment_by_activity<'e>(
     db: impl sqlx::PgExecutor<'e>,
     activity_id: ActivityId,
@@ -472,14 +487,14 @@ pub async fn list_due(pool: &PgPool) -> Result<Vec<AssessmentId>> {
 
 /// Flip one due schedule live; `false` when it is no longer due (unscheduled
 /// or published by hand since [`list_due`]).
-pub async fn publish_due(pool: &PgPool, id: AssessmentId) -> Result<bool> {
+pub async fn publish_due<'e>(db: impl sqlx::PgExecutor<'e>, id: AssessmentId) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE assessments
            SET lifecycle = 'published', published_at = now(), scheduled_at = NULL
            WHERE id = $1 AND lifecycle = 'scheduled' AND scheduled_at <= now()"#,
         id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }

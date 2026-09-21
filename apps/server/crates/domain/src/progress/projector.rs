@@ -328,23 +328,12 @@ impl ProgressProjector {
             .ok_or_else(|| Error::not_found("course progress"))
     }
 
-    /// The one path that flips `activities.published`: the curriculum
-    /// toggle, assessment lifecycle transitions (studio + scheduler) and
-    /// file-submission publish all go through here so learner totals follow
-    /// the published set.
-    pub async fn set_activity_published(
-        &self,
-        activity_id: ActivityId,
-        course_id: CourseId,
-        published: bool,
-    ) -> Result<()> {
-        ab_db::catalog::update_activity(&self.pool, activity_id, None, Some(published)).await?;
-        self.recalculate_course_for_all(course_id).await
-    }
-
     /// Re-aggregate every known learner of a course — after an activity is
     /// (un)published or deleted, so `total_required_count` follows the
-    /// published set.
+    /// published set. Every writer of `activities.published` (the curriculum
+    /// toggle, assessment lifecycle transitions — studio + scheduler — and
+    /// file-submission publish) flips the flag in its own transaction and
+    /// calls this once it committed (BUG-232).
     pub async fn recalculate_course_for_all(&self, course_id: CourseId) -> Result<()> {
         for user_id in ab_db::progress::known_course_users(&self.pool, course_id).await? {
             self.recalculate_course(course_id, user_id).await?;
