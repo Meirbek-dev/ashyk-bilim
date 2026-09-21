@@ -29,10 +29,9 @@ pub mod users;
 pub mod utils;
 pub mod work_queue;
 
-/// Largest unix second a `timestamptz` holds (9999-12-31T23:59:59Z). Every
-/// `*_unix` request field is bounded by it (BUG-206/212): past it Postgres
-/// raises 22008 «timestamp out of range» → 500 instead of a 422.
-pub(crate) const EPOCH_MAX: i64 = 253_402_300_799;
+/// Every `*_unix` request field is bounded by it (BUG-206/212): past it
+/// Postgres raises 22008 «timestamp out of range» → 500 instead of a 422.
+pub(crate) use ab_core::time::EPOCH_MAX;
 
 /// Distinguish an absent field (keep) from an explicit `null` (clear).
 #[allow(clippy::option_option, reason = "three-state patch field")]

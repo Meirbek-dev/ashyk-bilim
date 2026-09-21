@@ -952,6 +952,38 @@ async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool)
     );
 }
 
+/// BUG-228: a 19-digit `page` or `bucket_start` used to panic (500) in
+/// `offset()` / week arithmetic; the page is clamped (empty), the epoch is 422.
+#[sqlx::test(migrations = "../../migrations")]
+async fn extreme_page_and_bucket_start_are_not_panics(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    public_course(&app, &teacher, "Analytics 101").await;
+
+    let far = app
+        .get_as(
+            &teacher,
+            "/api/v2/analytics/teacher/courses?page=9223372036854775807&page_size=200",
+        )
+        .await;
+    assert_eq!(far.status, StatusCode::OK, "{}", far.text());
+    assert_eq!(far.json()["items"].as_array().unwrap().len(), 0);
+
+    for path in [
+        "/api/v2/analytics/teacher/overview?bucket=week&bucket_start=9223372036854775807",
+        "/api/v2/analytics/teacher/learners/at-risk?bucket_start=-9223372036854775807",
+    ] {
+        let bad = app.get_as(&teacher, path).await;
+        assert_eq!(
+            bad.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{path}: {}",
+            bad.text()
+        );
+        assert_eq!(bad.json()["field_errors"][0]["field"], "bucket_start");
+    }
+}
+
 /// BUG-121: `cohort_ids` need usergroup read + existing groups;
 /// `teacher_user_id` is refused (not ignored) under the assigned scope.
 #[sqlx::test(migrations = "../../migrations")]

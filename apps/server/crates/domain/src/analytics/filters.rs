@@ -6,6 +6,7 @@
 //! jiff in the requested IANA zone.
 
 use ab_core::id::{CourseId, UserId, UsergroupId};
+use ab_core::time::EPOCH_MAX;
 use ab_core::{Error, FieldError, Result};
 use jiff::tz::TimeZone;
 use jiff::{Timestamp, ToSpan, Zoned};
@@ -196,7 +197,11 @@ impl AnalyticsFilters {
         }
         if let Some(bs) = raw.bucket_start.as_deref().filter(|s| !s.is_empty()) {
             match parse_timestamp(bs) {
-                Some(ts) => filters.bucket_start = Some(ts),
+                Some(ts) if (0..=EPOCH_MAX).contains(&ts) => filters.bucket_start = Some(ts),
+                Some(_) => errors.push(invalid(
+                    "bucket_start",
+                    format!("expected epoch seconds in 0..={EPOCH_MAX}"),
+                )),
                 None => errors.push(invalid(
                     "bucket_start",
                     "expected an RFC 3339 timestamp or epoch seconds",
@@ -280,7 +285,8 @@ impl AnalyticsFilters {
 
     #[must_use]
     pub const fn offset(&self) -> usize {
-        (self.page - 1) * self.page_size
+        // Pages are clamped, not rejected: a page past the end is empty.
+        (self.page - 1).saturating_mul(self.page_size)
     }
 
     /// Legacy `supports_rollup_reads`: only the default comparison over a
@@ -311,9 +317,11 @@ impl AnalyticsFilters {
         let fallback = || match self.bucket {
             Bucket::Day => ts.div_euclid(DAY_SECS) * DAY_SECS,
             // 1970-01-01 was a Thursday; shift so weeks start on Monday.
-            Bucket::Week => {
-                (ts + 3 * DAY_SECS).div_euclid(7 * DAY_SECS) * 7 * DAY_SECS - 3 * DAY_SECS
-            }
+            Bucket::Week => ts
+                .saturating_add(3 * DAY_SECS)
+                .div_euclid(7 * DAY_SECS)
+                .saturating_mul(7 * DAY_SECS)
+                .saturating_sub(3 * DAY_SECS),
         };
         let Some(zoned) = self.zoned(ts) else {
             return fallback();
@@ -342,9 +350,10 @@ impl AnalyticsFilters {
         self.zoned(bucket_start)
             .and_then(|z| z.checked_add(span_days.days()).ok())
             .and_then(|z| z.start_of_day().ok())
-            .map_or(bucket_start + span_days * DAY_SECS, |z| {
-                z.timestamp().as_second()
-            })
+            .map_or_else(
+                || bucket_start.saturating_add(span_days * DAY_SECS),
+                |z| z.timestamp().as_second(),
+            )
     }
 
     /// `[start, end)` of the bucket selected with `bucket_start`, if any.
@@ -373,6 +382,34 @@ mod tests {
         assert_eq!(f.page, 1);
         assert_eq!(f.page_size, MAX_PAGE_SIZE);
         assert!(f.supports_teacher_rollup_reads());
+    }
+
+    #[test]
+    fn extreme_page_and_bucket_start_never_overflow() {
+        let f = AnalyticsFilters::parse(&RawFilters {
+            page: Some(i64::MAX),
+            page_size: Some(200),
+            ..RawFilters::default()
+        })
+        .unwrap();
+        assert_eq!(f.offset(), usize::MAX);
+        for bs in ["9223372036854775807", "-9223372036854775807"] {
+            let err = AnalyticsFilters::parse(&RawFilters {
+                bucket_start: Some(bs.into()),
+                ..RawFilters::default()
+            })
+            .unwrap_err();
+            let ab_core::Error::Validation { field_errors } = err else {
+                panic!("expected validation error");
+            };
+            assert_eq!(field_errors[0].field, "bucket_start");
+        }
+        let f = AnalyticsFilters::parse(&RawFilters {
+            bucket: Some("week".into()),
+            ..RawFilters::default()
+        })
+        .unwrap();
+        assert_eq!(f.next_bucket(f.bucket_start_of(i64::MAX)), i64::MAX);
     }
 
     #[test]
