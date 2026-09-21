@@ -1413,8 +1413,12 @@ impl GradingService {
                         row.grading.clone(),
                     ),
                 };
+            // BUG-226/227: the entry and the flip land together, and only
+            // on the row as snapshotted — a save or return that committed
+            // since keeps its version and the row is skipped.
+            let mut tx = self.pool.begin().await?;
             ab_db::submissions::insert_grading_entry(
-                &self.pool,
+                &mut *tx,
                 NewGradingEntry {
                     submission_id: row.id,
                     graded_by: Some(actor.user_id),
@@ -1428,7 +1432,12 @@ impl GradingService {
                 },
             )
             .await?;
-            ab_db::submissions::mark_published(&self.pool, row.id, final_score).await?;
+            if !ab_db::submissions::mark_published(&mut *tx, row.id, row.version, final_score)
+                .await?
+            {
+                continue;
+            }
+            tx.commit().await?;
             ProgressProjector::new(self.pool.clone())
                 .after_submission(assessment_id, row.user_id)
                 .await;

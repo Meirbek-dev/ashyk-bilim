@@ -2455,3 +2455,82 @@ async fn zero_max_item_accepts_only_zero(pool: PgPool) {
     assert_eq!(zero.status, StatusCode::OK, "{}", zero.text());
     assert_eq!(zero.json()["final_score"], 50.0, "{}", zero.text());
 }
+
+/// BUG-226: the bulk release races a teacher's save / return on one graded
+/// row. Whoever commits first wins; the other is a 412 (save) or a skipped
+/// row (release) — never a `published` row with the stale ledger score
+/// over a 200 save, and a returned attempt is never released.
+#[sqlx::test(migrations = "../../migrations")]
+async fn publish_all_racing_a_save_or_return_never_releases_the_stale_row(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let release_path = format!("/api/v2/assessments/{id}/publish-grades");
+    let empty = serde_json::json!({});
+    for round in 0..10 {
+        for (action, release_first) in [
+            ("save", false),
+            ("save", true),
+            ("return", false),
+            ("return", true),
+        ] {
+            let who = learner(&app, &format!("l{round}{action}{release_first}")).await;
+            let sub = submit_attempt(&app, &who, &id, &choice_id, &essay_id).await;
+            let graded = app
+                .send(grade(
+                    &teacher,
+                    &sub,
+                    Some("1"),
+                    &serde_json::json!({ "action": "save", "final_score": 57 }),
+                ))
+                .await;
+            assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+            let body = if action == "save" {
+                serde_json::json!({ "action": "save", "final_score": 80 })
+            } else {
+                serde_json::json!({ "action": "return", "feedback": "redo" })
+            };
+            let teacher_write = app.send(grade(&teacher, &sub, Some("2"), &body));
+            let release = app.post_as(&teacher, &release_path, &empty);
+            let (written, released) = if release_first {
+                let (released, written) = tokio::join!(release, teacher_write);
+                (written, released)
+            } else {
+                tokio::join!(teacher_write, release)
+            };
+            assert_eq!(released.status, StatusCode::OK, "{}", released.text());
+            let review = app
+                .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
+                .await
+                .json();
+            let tag = format!("round {round} {action} release_first={release_first}: {review}");
+            match written.status {
+                StatusCode::OK => {
+                    if action == "save" {
+                        assert_eq!(review["status"], "graded", "{tag}");
+                        assert_eq!(review["final_score"], 80.0, "{tag}");
+                    } else {
+                        assert_eq!(review["status"], "returned", "{tag}");
+                    }
+                }
+                StatusCode::PRECONDITION_FAILED => {
+                    assert_eq!(review["status"], "published", "{tag}");
+                    assert_eq!(review["final_score"], 57.0, "{tag}");
+                }
+                other => panic!("{other} {}: {tag}", written.text()),
+            }
+            // A returned attempt stays out of the release for good.
+            let again = app.post_as(&teacher, &release_path, &empty).await;
+            assert_eq!(again.status, StatusCode::OK, "{}", again.text());
+            let after = app
+                .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
+                .await
+                .json();
+            if action == "return" && written.status == StatusCode::OK {
+                assert_eq!(after["status"], "returned", "{tag}");
+            }
+        }
+    }
+}

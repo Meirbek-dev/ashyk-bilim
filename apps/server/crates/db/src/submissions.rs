@@ -360,16 +360,24 @@ pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
 }
 
 /// Bulk release: flip graded → published carrying the entry's final score.
-pub async fn mark_published(pool: &PgPool, id: SubmissionId, final_score: f64) -> Result<()> {
-    sqlx::query!(
+/// `false` = the row moved on since the snapshot (BUG-226: a concurrent
+/// save or return wins; the caller skips the row).
+pub async fn mark_published<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
+    id: SubmissionId,
+    expected_version: i64,
+    final_score: f64,
+) -> Result<bool> {
+    let updated = sqlx::query!(
         r#"UPDATE submissions SET status = 'published', final_score = $2, version = version + 1
-           WHERE id = $1"#,
+           WHERE id = $1 AND version = $3"#,
         id.0,
-        final_score
+        final_score,
+        expected_version
     )
-    .execute(pool)
+    .execute(executor)
     .await?;
-    Ok(())
+    Ok(updated.rows_affected() == 1)
 }
 
 /// The scoring fields a deadline change re-reads under the row lock a
