@@ -18,7 +18,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { ErrorState } from '@/components/ui/error-state'
 import Link from '@components/ui/AppLink'
 import { apiJson } from '@/lib/api-client'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import { useSession } from '@/hooks/useSession'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -136,15 +136,18 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       setMode('ACTIVE_ATTEMPT')
       router.refresh()
     } catch (error) {
-      if (disabledReasonOf(error)) {
+      const gated = disabledReasonOf(error)
+      if (gated || (isApiError(error) && error.status === 403)) {
         // BUG-158: the server's attempt-state moved under us (a gate was
         // assigned, the last attempt was spent) — show it, don't toast «no permission».
+        // UX-153: any other 403 (the teacher restricted access) refetches too,
+        // so the page follows the server instead of keeping «Start».
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: queryKeys.assessments.attemptState(vm.assessmentUuid) }),
           queryClient.invalidateQueries({ queryKey: queryKeys.assessments.mySubmissions(vm.assessmentUuid) }),
           queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
         ])
-        return
+        if (gated) return
       }
       toastApiError(error, { fallback: t('startActivityFailed') })
     } finally {
@@ -217,7 +220,9 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
           <Button
             variant="outline"
             nativeButton={false}
-            render={<Link href={`/dash/courses/${courseUuid.replace(/^course_/, '')}/activity/${activityUuid}/studio`} />}
+            render={
+              <Link href={`/dash/courses/${courseUuid.replace(/^course_/, '')}/activity/${activityUuid}/studio`} />
+            }
           >
             {t('openStudio')}
           </Button>

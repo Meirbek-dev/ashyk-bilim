@@ -134,12 +134,13 @@ describe('InlineAssessmentWorkspace (BUG-158)', () => {
     expect(mocks.toastApiError).not.toHaveBeenCalled()
   })
 
-  it('still toasts a plain 403', async () => {
+  it('still toasts a plain 403 — and refetches attempt-state so the page follows (UX-153)', async () => {
     mocks.vm = { ...base, recommendedAction: 'viewResult', isResultVisible: true, canSubmit: true }
     mocks.apiJson.mockRejectedValueOnce(new APIError({ code: 'forbidden', status: 403, message: 'denied' }))
-    renderWorkspace()
+    const { invalidate } = renderWorkspace()
     fireEvent.click(screen.getByRole('button', { name: 'retryAssessment' }))
     await waitFor(() => expect(mocks.toastApiError).toHaveBeenCalledTimes(1))
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.assessments.attemptState('asm-1') })
   })
 })
 

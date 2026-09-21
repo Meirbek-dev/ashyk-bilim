@@ -15,6 +15,7 @@
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { apiJson } from '@/lib/api-client'
+import { isApiError } from '@/lib/api/assertSuccess'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { reportClientError } from '@/services/telemetry/client'
 
@@ -212,6 +213,12 @@ function useAssessment(
     }
   }
   if (submissions.error) return { vm: null, isLoading: false, error: submissions.error }
+  // UX-153: a focus/poll refetch that the server refuses (access restricted,
+  // assessment gone) replaces the stale «Start» with the refusal; transient
+  // failures keep the last good state.
+  if (attempt.error && isApiError(attempt.error) && attempt.error.status < 500) {
+    return { vm: null, isLoading: false, error: attempt.error }
+  }
 
   const state = attempt.data
   const { latest, pendingAttemptNumber } = shownSubmission(submissions.data ?? [], state.draft_id)
@@ -304,7 +311,9 @@ function useAssessment(
  * not hide the grade of record (UX-123), which then names the pending attempt
  * as a secondary line; else the newest.
  */
-export function shownSubmission<T extends { id: string; status: string; release_state: string; attempt_number: number }>(
+export function shownSubmission<
+  T extends { id: string; status: string; release_state: string; attempt_number: number },
+>(
   rows: readonly T[],
   draftId: string | null | undefined,
 ): { latest: T | undefined; pendingAttemptNumber: number | null } {
