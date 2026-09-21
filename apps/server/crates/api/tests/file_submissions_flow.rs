@@ -520,10 +520,15 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         "{}",
         stranger_grade.text()
     );
-    // UX-141: `rubric_scores` is an object of bounded size — 422 otherwise.
-    for bad in [
-        serde_json::json!("notobj"),
-        serde_json::json!({ "blob": "x".repeat(5000) }),
+    // UX-141: `rubric_scores` is an object of bounded size — 422 otherwise;
+    // BUG-223: a NUL in an object key is refused at the door like a value.
+    for (bad, field) in [
+        (serde_json::json!("notobj"), "rubric_scores"),
+        (
+            serde_json::json!({ "blob": "x".repeat(5000) }),
+            "rubric_scores",
+        ),
+        (serde_json::json!({ "a\u{0}b": 1 }), "body"),
     ] {
         let bad_rubric = app
             .patch_as(
@@ -538,10 +543,7 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
             "{}",
             bad_rubric.text()
         );
-        assert_eq!(
-            bad_rubric.json()["field_errors"][0]["field"],
-            "rubric_scores"
-        );
+        assert_eq!(bad_rubric.json()["field_errors"][0]["field"], field);
     }
     let saved_grade = app
         .send(with_if_match(

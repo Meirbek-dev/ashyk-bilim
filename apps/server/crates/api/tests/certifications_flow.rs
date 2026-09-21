@@ -97,16 +97,26 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         .status,
         StatusCode::FORBIDDEN
     );
-    assert_eq!(
-        app.post_as(
-            &teacher,
-            "/api/v2/certifications",
-            &serde_json::json!({ "course_id": course_id, "config": [1, 2] })
-        )
-        .await
-        .status,
-        StatusCode::UNPROCESSABLE_ENTITY
-    );
+    // …with no NUL in a key (BUG-223).
+    for bad in [
+        serde_json::json!([1, 2]),
+        serde_json::json!({ "a\u{0}b": 1 }),
+        serde_json::json!({ "name": "x".repeat(20_000) }),
+    ] {
+        let res = app
+            .post_as(
+                &teacher,
+                "/api/v2/certifications",
+                &serde_json::json!({ "course_id": course_id, "config": bad }),
+            )
+            .await;
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+    }
     let created = app
         .post_as(
             &teacher,

@@ -136,12 +136,13 @@ fn nul_free(field: &str, raw: &str) -> Result<(), ApiError> {
     Ok(())
 }
 
-/// The same for a JSON body: any string value (at any depth) holding NUL.
+/// The same for a JSON body: any string value or object key (at any depth)
+/// holding NUL — keys reach the jsonb bind too (BUG-223, 22P05).
 fn has_nul(value: &serde_json::Value) -> bool {
     match value {
         serde_json::Value::String(s) => s.contains('\0'),
         serde_json::Value::Array(items) => items.iter().any(has_nul),
-        serde_json::Value::Object(map) => map.values().any(has_nul),
+        serde_json::Value::Object(map) => map.iter().any(|(k, v)| k.contains('\0') || has_nul(v)),
         _ => false,
     }
 }
