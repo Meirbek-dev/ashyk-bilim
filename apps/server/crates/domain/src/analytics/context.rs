@@ -560,8 +560,11 @@ pub fn build_activity_events(
     events
 }
 
-/// Legacy `progress_snapshots`: one row per (course, learner) seen in
-/// activity/course progress, trail runs or certificates.
+/// Legacy `progress_snapshots`: one row per enrolled (course, learner).
+///
+/// Enrolment is the trail run — the same predicate `learner-state.enrolled`
+/// reads (DECISIONS «Leaving a course», UX-150): projection rows and
+/// certificates survive a leave, so they carry data but not membership.
 #[must_use]
 pub fn progress_snapshots(
     ctx: &AnalyticsContext,
@@ -603,11 +606,7 @@ pub fn progress_snapshots(
         *entry = (*entry).max(e.ts);
     }
 
-    let mut keys: BTreeSet<SnapshotKey> = BTreeSet::new();
-    keys.extend(activity_rows.keys().copied());
-    keys.extend(course_rows.keys().copied());
-    keys.extend(trail_runs.keys().copied());
-    keys.extend(certificate_pairs.iter().copied());
+    let keys: BTreeSet<SnapshotKey> = trail_runs.keys().copied().collect();
 
     let mut snapshots = BTreeMap::new();
     for key in keys {

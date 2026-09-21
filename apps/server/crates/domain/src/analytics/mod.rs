@@ -462,10 +462,11 @@ impl AnalyticsService {
                 code: "unknown".into(),
                 message: format!("user {} does not exist", input.user_id),
             });
-        } else if !ab_db::analytics::learner_in_course(&self.pool, input.course_id, input.user_id)
+        } else if !ab_db::progress::has_trail_run(&self.pool, input.course_id, input.user_id)
             .await?
         {
-            // BUG-157: an intervention targets a learner of the course.
+            // BUG-157: an intervention targets a learner of the course —
+            // UX-150: enrolment is the trail run, as `learner-state` reads it.
             errors.push(FieldError {
                 field: "user_id".into(),
                 code: "not-in-course".into(),

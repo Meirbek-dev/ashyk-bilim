@@ -256,6 +256,35 @@ async fn grade_and_publish(
     assert_eq!(released.json()["published_count"], 1);
 }
 
+/// Enrol straight into the tables: the trail run (what `enrolled` means,
+/// UX-150) plus a course-progress row at `pct`.
+async fn enrol(pool: &PgPool, course_id: &str, user_id: ab_core::id::UserId, pct: f64) {
+    let course_uuid = uuid::Uuid::parse_str(course_id).unwrap();
+    let trail_id: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO trails (user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id",
+    )
+    .bind(user_id.0)
+    .fetch_one(pool)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2, $3)")
+        .bind(trail_id)
+        .bind(course_uuid)
+        .bind(user_id.0)
+        .execute(pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, $3)",
+    )
+    .bind(course_uuid)
+    .bind(user_id.0)
+    .bind(pct)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
 async fn event_count(pool: &PgPool, event_type: &str) -> i64 {
     sqlx::query_scalar::<_, i64>("SELECT count(*) FROM analytics_events WHERE event_type = $1")
         .bind(event_type)
@@ -1064,21 +1093,12 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
 
     // Progress rows straight into the table: the teacher enrolled in his
     // own course, alice at 0 % (score 30), bob at 40 % (score 18).
-    let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
     for (user, pct) in [
         (teacher.user_id, 0.0),
         (alice.user_id, 0.0),
         (bob.user_id, 40.0),
     ] {
-        sqlx::query(
-            "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, $3)",
-        )
-        .bind(course_uuid)
-        .bind(user.0)
-        .bind(pct)
-        .execute(&pool)
-        .await
-        .unwrap();
+        enrol(&pool, &course_id, user, pct).await;
     }
 
     let at_risk = app
@@ -1258,15 +1278,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
     let (course_id, _) = public_course(&app, &teacher, "Analytics 101").await;
     let alice = learner(&app, "alice").await;
     let outsider = learner(&app, "outsider").await;
-    sqlx::query(
-        "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, $3)",
-    )
-    .bind(uuid::Uuid::parse_str(&course_id).unwrap())
-    .bind(alice.user_id.0)
-    .bind(0.0)
-    .execute(&pool)
-    .await
-    .unwrap();
+    enrol(&pool, &course_id, alice.user_id, 0.0).await;
 
     let not_enrolled = app
         .post_as(
@@ -1289,6 +1301,57 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
         not_enrolled.json()["field_errors"][0]["code"],
         "not-in-course"
     );
+
+    // UX-150: a learner who left (run gone, projection row kept) is not
+    // enrolled anywhere — not at risk, not counted, not a valid target.
+    let bob = learner(&app, "bob").await;
+    enrol(&pool, &course_id, bob.user_id, 0.0).await;
+    let left = app
+        .delete_as(&bob, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    let at_risk = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/learners/at-risk")
+        .await;
+    assert!(
+        find_row(
+            &at_risk.json()["items"],
+            "user_id",
+            &bob.user_id.to_string()
+        )
+        .is_none(),
+        "{}",
+        at_risk.text()
+    );
+    let detail = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/courses/{course_id}"),
+        )
+        .await;
+    assert_eq!(
+        detail.json()["summary"]["enrolled_learners"],
+        1,
+        "{}",
+        detail.text()
+    );
+    let gone = app
+        .post_as(
+            &teacher,
+            "/api/v2/analytics/teacher/interventions",
+            &serde_json::json!({
+                "user_id": bob.user_id, "course_id": course_id,
+                "intervention_type": "message_sent"
+            }),
+        )
+        .await;
+    assert_eq!(
+        gone.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        gone.text()
+    );
+    assert_eq!(gone.json()["field_errors"][0]["code"], "not-in-course");
 
     // An admin inspecting the teacher writes rows as themself.
     let boss = app
@@ -1376,15 +1439,7 @@ async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(poo
     let teacher = instructor(&app, "teacher").await;
     let (course_id, _) = public_course(&app, &teacher, "Analytics 101").await;
     let alice = learner(&app, "alice").await;
-    sqlx::query(
-        "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, $3)",
-    )
-    .bind(uuid::Uuid::parse_str(&course_id).unwrap())
-    .bind(alice.user_id.0)
-    .bind(0.0)
-    .execute(&pool)
-    .await
-    .unwrap();
+    enrol(&pool, &course_id, alice.user_id, 0.0).await;
 
     let saved = app
         .post_as(
@@ -1770,14 +1825,7 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
     let code_id = uuid::Uuid::parse_str(created.json()["id"].as_str().unwrap()).unwrap();
     let bob = learner(&app, "bob").await;
     let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
-    sqlx::query(
-        "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, 100)",
-    )
-    .bind(course_uuid)
-    .bind(bob.user_id.0)
-    .execute(&pool)
-    .await
-    .unwrap();
+    enrol(&pool, &course_id, bob.user_id, 100.0).await;
     let submission_id: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,          submitted_at, graded_at) VALUES ($1, $2, $3, 'graded', 1, 10, now(), now()) RETURNING id",
     )
