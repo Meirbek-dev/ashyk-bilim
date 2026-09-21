@@ -63,6 +63,7 @@ garde = { version = "0.23.0", features = ["derive", "email", "url"] }
 figment = { version = "0.10.19", features = ["env"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 thiserror = "2.0.20"
+unicode-properties = "0.1.4"
 anyhow = "1.0.104"
 
 # Telemetry

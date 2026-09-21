@@ -1172,9 +1172,8 @@ impl GradingService {
         // penalise twice. Dropping an override takes an explicit `null`.
         let annulled = is_annulled(&row);
         let stored_raw = match input.final_score {
-            Some(Some(_)) => None,
-            Some(None) if !annulled => None,
-            _ => ab_db::submissions::latest_grading_entry(&self.pool, id)
+            Some(_) => None,
+            None => ab_db::submissions::latest_grading_entry(&self.pool, id)
                 .await?
                 .map(|e| e.raw_score),
         };
@@ -1186,10 +1185,16 @@ impl GradingService {
                 breakdown.score_override = Some(round2(score));
                 (round2(score), true)
             }
+            // BUG-224 nit: dropping the override on an annulled attempt
+            // returns it to the annulled 0, never to the derived score.
+            Some(None) if annulled => {
+                breakdown.score_override = Some(0.0);
+                (0.0, true)
+            }
             // BUG-215: the annulled 0 (or the override typed since) is the
             // score of record — the flag is (re)written so `unscored()` and
             // the view agree, rows annulled before the flag included.
-            _ if annulled => {
+            None if annulled => {
                 let raw = breakdown.score_override.or(stored_raw).unwrap_or(0.0);
                 breakdown.score_override = Some(raw);
                 (raw, true)

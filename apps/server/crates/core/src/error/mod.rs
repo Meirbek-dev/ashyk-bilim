@@ -8,6 +8,7 @@ mod code;
 
 pub use code::ErrorCode;
 use serde::Serialize;
+use unicode_properties::{GeneralCategory, UnicodeGeneralCategory};
 
 /// Workspace-wide result alias.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -33,13 +34,22 @@ impl FieldError {
     }
 }
 
+/// `trim`, but zero-width spaces and other format characters (Cf) are
+/// blank too — `trim` only knows White_Space (BUG-224 nit).
+#[must_use]
+pub fn trim_blank(value: &str) -> &str {
+    value.trim_matches(|c: char| {
+        c.is_whitespace() || c.general_category() == GeneralCategory::Format
+    })
+}
+
 /// The shared "blank string" rule (UX-106).
 ///
 /// `value` trimmed, or 422 `{field}`/`required` when nothing is left —
 /// `""` and `"   "` answer the same code. DTOs that route a name through
 /// it carry no garde `min = 1`.
 pub fn required_str<'a>(field: &str, value: &'a str) -> Result<&'a str> {
-    let value = value.trim();
+    let value = trim_blank(value);
     if value.is_empty() {
         return Err(Error::required(field));
     }
@@ -166,5 +176,18 @@ impl Error {
     #[must_use]
     pub const fn is_public(&self) -> bool {
         matches!(self, Self::App { .. } | Self::Validation { .. })
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    #[test]
+    fn required_str_treats_format_characters_as_blank() {
+        assert!(super::required_str("title", "\u{200B} \u{FEFF}").is_err());
+        assert_eq!(
+            super::required_str("title", "\u{200B} a b \u{200B}").unwrap(),
+            "a b"
+        );
     }
 }

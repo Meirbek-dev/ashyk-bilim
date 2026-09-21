@@ -2219,13 +2219,40 @@ async fn annulled_attempt_is_a_score_of_record(pool: PgPool) {
     assert_eq!(released.status, StatusCode::OK, "{}", released.text());
     assert_eq!(released.json()["published_count"], 2, "{}", released.text());
     assert_eq!(released.json()["needs_grading_count"], 0);
-    for sub in subs {
+    for sub in &subs {
         let review = app
             .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
             .await;
         assert_eq!(review.json()["status"], "published");
         assert_eq!(review.json()["final_score"], 0.0);
     }
+    // BUG-224 nit: a typed override on an annulled row is dropped by an
+    // explicit `null` — back to the annulled 0, not the derived score.
+    let sub = &subs[0];
+    let review = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
+        .await;
+    let overridden = app
+        .send(grade(
+            &teacher,
+            sub,
+            Some(&review.json()["version"].to_string()),
+            &serde_json::json!({ "action": "publish", "final_score": 40 }),
+        ))
+        .await;
+    assert_eq!(overridden.status, StatusCode::OK, "{}", overridden.text());
+    assert_eq!(overridden.json()["final_score"], 40.0);
+    let cleared = app
+        .send(grade(
+            &teacher,
+            sub,
+            Some(&overridden.json()["version"].to_string()),
+            &serde_json::json!({ "action": "publish", "final_score": null }),
+        ))
+        .await;
+    assert_eq!(cleared.status, StatusCode::OK, "{}", cleared.text());
+    assert_eq!(cleared.json()["final_score"], 0.0, "{}", cleared.text());
+    assert_eq!(cleared.json()["score_override"], 0.0);
 }
 
 /// BUG-216: a deadline extension racing a teacher publish on a late row

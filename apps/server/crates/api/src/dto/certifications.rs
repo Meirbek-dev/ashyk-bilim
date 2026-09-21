@@ -35,7 +35,8 @@ impl From<ab_db::certifications::CertificationRow> for Certification {
 pub struct CreateCertificationRequest {
     #[garde(skip)]
     pub course_id: CourseId,
-    #[garde(skip)]
+    /// The designer document: an object of at most 16 KiB serialized.
+    #[garde(custom(crate::dto::analytics::json_object_16k))]
     #[serde(default = "empty_object")]
     #[schema(value_type = Object)]
     pub config: serde_json::Value,
@@ -44,7 +45,8 @@ pub struct CreateCertificationRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateCertificationRequest {
-    #[garde(skip)]
+    /// The designer document: an object of at most 16 KiB serialized.
+    #[garde(custom(crate::dto::analytics::json_object_16k))]
     #[schema(value_type = Object)]
     pub config: serde_json::Value,
 }

@@ -49,10 +49,26 @@ pub struct SubmissionRow {
     pub updated_at: i64,
 }
 
+/// BUG-224: `SELECT … FOR SHARE` on the assessment row, then the row as the
+/// last writer left it.
+///
+/// Item/policy writers take `FOR UPDATE` (BUG-218), so
+/// a draft opened under this lock carries the content version the learner
+/// sees, and a writer queued behind it finds the draft (409) once it commits.
+pub async fn share_assessment(
+    conn: &mut sqlx::PgConnection,
+    id: AssessmentId,
+) -> Result<Option<crate::assessments::AssessmentRow>> {
+    sqlx::query!("SELECT id FROM assessments WHERE id = $1 FOR SHARE", id.0)
+        .fetch_optional(&mut *conn)
+        .await?;
+    crate::assessments::get_assessment(conn, id).await
+}
+
 /// Open a draft (started now). `None` when the learner already has one —
 /// the partial unique index turns the race into a no-op.
-pub async fn insert_draft(
-    pool: &PgPool,
+pub async fn insert_draft<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     assessment_id: AssessmentId,
     course_id: CourseId,
     user_id: UserId,
@@ -74,9 +90,32 @@ pub async fn insert_draft(
         content_version,
         policy_version
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(id)
+}
+
+/// BUG-224: re-opening an existing draft (`start` again) follows the
+/// assessment's current content and policy versions — the learner is
+/// loading the items now, so a later submit is no longer stale.
+pub async fn resync_draft(
+    conn: &mut sqlx::PgConnection,
+    assessment_id: AssessmentId,
+    user_id: UserId,
+    content_version: i32,
+    policy_version: i32,
+) -> Result<()> {
+    sqlx::query!(
+        r#"UPDATE submissions SET content_version = $3, policy_version = $4
+           WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'"#,
+        assessment_id.0,
+        user_id.0,
+        content_version,
+        policy_version
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
 }
 
 pub async fn get_submission(pool: &PgPool, id: SubmissionId) -> Result<Option<SubmissionRow>> {

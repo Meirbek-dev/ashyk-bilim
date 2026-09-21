@@ -97,7 +97,7 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         .status,
         StatusCode::FORBIDDEN
     );
-    // …with no NUL in a key (BUG-223).
+    // …with no NUL in a key (BUG-223), and at most 16 KiB (BUG-224 nit).
     for bad in [
         serde_json::json!([1, 2]),
         serde_json::json!({ "a\u{0}b": 1 }),

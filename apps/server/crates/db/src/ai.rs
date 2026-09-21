@@ -1538,23 +1538,25 @@ pub async fn active_remediation_gate(
     Ok(id.map(AiRemediationSessionId))
 }
 
+/// `false` when the session had already passed — a pass is final, so two
+/// concurrent completions cannot end on the lower score (BUG-224 nit).
 pub async fn complete_remediation_session(
     pool: &PgPool,
     id: AiRemediationSessionId,
     score: i32,
     status: RemediationStatus,
-) -> Result<()> {
-    sqlx::query!(
+) -> Result<bool> {
+    let updated = sqlx::query!(
         r#"UPDATE ai_remediation_sessions SET score = $2, status = $3,
                passed_at = CASE WHEN $3 = 'passed' THEN now() ELSE passed_at END
-           WHERE id = $1"#,
+           WHERE id = $1 AND status <> 'passed'"#,
         id.0,
         score,
         status.as_str()
     )
     .execute(pool)
     .await?;
-    Ok(())
+    Ok(updated.rows_affected() == 1)
 }
 
 // ── Context sources ─────────────────────────────────────────────────────────

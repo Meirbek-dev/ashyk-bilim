@@ -1217,14 +1217,23 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         "{}",
         grader_complete.text()
     );
-    let passed = app
-        .post_as(
-            &alice,
-            &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
-            &serde_json::json!({ "score": 80 }),
-        )
-        .await;
+    // BUG-224 nit: a pass racing a fail is final either way — the `UPDATE`
+    // itself guards `status <> 'passed'`, so the session never ends `failed`.
+    let complete_path = format!("/api/v2/ai/remediation/sessions/{session_id}/complete");
+    let (pass, fail) = (
+        serde_json::json!({ "score": 80 }),
+        serde_json::json!({ "score": 10 }),
+    );
+    let (passed, failed) = tokio::join!(
+        app.post_as(&alice, &complete_path, &pass),
+        app.post_as(&alice, &complete_path, &fail),
+    );
     assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
+    assert!(
+        matches!(failed.status, StatusCode::OK | StatusCode::CONFLICT),
+        "{}",
+        failed.text()
+    );
     // UX-115: the grader reads the pass back on the work itself (the
     // learner's list is admin-only); a stranger gets 404.
     let latest = app

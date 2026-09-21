@@ -470,8 +470,10 @@ impl TestResponse {
 }
 
 /// Polls `reached` every 200 µs while `request` runs and drops the request
-/// future the moment it reports true (a request that completes first is
-/// asserted with `on_done` instead) — a client hanging up mid-request.
+/// future the moment it reports true.
+///
+/// A request that completes first is
+/// asserted with `on_done` instead — a client hanging up mid-request.
 pub async fn drop_request_when<R>(
     request: impl std::future::Future<Output = R>,
     mut reached: impl AsyncFnMut() -> bool,

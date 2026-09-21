@@ -1169,3 +1169,134 @@ async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgP
         .await;
     assert_eq!(mine.json()["status"], "published");
 }
+
+/// BUG-224: a learner's `start` and a teacher's item write on a published
+/// quiz with no submissions serialize on the assessment row — the draft is
+/// never behind the assessment's `content_version`, and a draft that is
+/// (unpublish → add → republish) cannot be submitted until reopened.
+#[sqlx::test(migrations = "../../migrations")]
+async fn start_and_item_writes_serialize_and_stale_drafts_reopen(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+
+    for round in 0..20 {
+        let (id, _) = published_assessment(
+            &app,
+            &teacher,
+            &chapter_id,
+            "quiz",
+            serde_json::json!({}),
+            &[choice_item("First?")],
+        )
+        .await;
+        let start_path = format!("/api/v2/assessments/{id}/submissions");
+        let items_path = format!("/api/v2/assessments/{id}/items");
+        let empty = serde_json::json!({});
+        let second = choice_item("Second?");
+        let start = app.post_as(&alice, &start_path, &empty);
+        let add = app.post_as(&teacher, &items_path, &second);
+        let (started, added) = if round % 2 == 0 {
+            tokio::join!(start, add)
+        } else {
+            let (added, started) = tokio::join!(add, start);
+            (started, added)
+        };
+        let detail = app
+            .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+            .await;
+        let content_version = detail.json()["content_version"].clone();
+        assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+        if added.status == StatusCode::CREATED {
+            // The item landed first: the draft opened on the new content.
+            assert_eq!(started.json()["total_items"], 2, "round {round}");
+            let draft_version: i32 =
+                sqlx::query_scalar("SELECT content_version FROM submissions WHERE id = $1")
+                    .bind(uuid::Uuid::parse_str(started.json()["id"].as_str().unwrap()).unwrap())
+                    .fetch_one(&app.pool)
+                    .await
+                    .unwrap();
+            assert_eq!(
+                serde_json::json!(draft_version),
+                content_version,
+                "round {round}"
+            );
+        } else {
+            // The draft landed first: the item write refused a live quiz.
+            assert_eq!(
+                added.status,
+                StatusCode::CONFLICT,
+                "round {round}: {}",
+                added.text()
+            );
+            assert_eq!(started.json()["total_items"], 1, "round {round}");
+        }
+    }
+
+    // A draft left behind by a republish is stale until `start` reopens it.
+    let (id, _) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({}),
+        &[choice_item("First?")],
+    )
+    .await;
+    let lifecycle = format!("/api/v2/assessments/{id}/lifecycle");
+    let started = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+    let sub_id = started.json()["id"].as_str().unwrap().to_owned();
+    for (to, body) in [
+        ("draft", serde_json::json!({ "to": "draft" })),
+        ("published", serde_json::json!({ "to": "published" })),
+    ] {
+        if to == "published" {
+            let added = app
+                .post_as(
+                    &teacher,
+                    &format!("/api/v2/assessments/{id}/items"),
+                    &choice_item("Late?"),
+                )
+                .await;
+            assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+        }
+        let moved = app.post_as(&teacher, &lifecycle, &body).await;
+        assert_eq!(moved.status, StatusCode::OK, "{to}: {}", moved.text());
+    }
+    let stale = app
+        .send(submit(
+            &alice,
+            &sub_id,
+            None,
+            &serde_json::json!({ "answers": {} }),
+        ))
+        .await;
+    assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.text());
+    assert_eq!(stale.json()["details"]["field"], "content_version");
+    let reopened = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(reopened.status, StatusCode::OK, "{}", reopened.text());
+    assert_eq!(reopened.json()["total_items"], 2);
+    let submitted = app
+        .send(submit(
+            &alice,
+            &sub_id,
+            None,
+            &serde_json::json!({ "answers": {} }),
+        ))
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+}

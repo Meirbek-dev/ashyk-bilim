@@ -210,16 +210,36 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         "{}",
         draft_on_draft.text()
     );
-    // Publishing needs instructions.
-    let refused = app
-        .post_as(
+    // Publishing needs instructions; a zero-width space is not one, nor a
+    // title (BUG-224 nit).
+    let zero_width = app
+        .patch_as(
             &teacher,
-            &format!("/api/v2/file-submissions/{id}/publish"),
-            &serde_json::json!({}),
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "title": "\u{200B}" }),
         )
         .await;
-    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
-    assert_eq!(refused.json()["field_errors"][0]["field"], "instructions");
+    assert_eq!(zero_width.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(zero_width.json()["field_errors"][0]["field"], "title");
+    for instructions in ["", "\u{200B}"] {
+        let patched = app
+            .patch_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}"),
+                &serde_json::json!({ "instructions": instructions }),
+            )
+            .await;
+        assert_eq!(patched.status, StatusCode::OK, "{}", patched.text());
+        let refused = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}/publish"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(refused.json()["field_errors"][0]["field"], "instructions");
+    }
     let patched = app
         .patch_as(
             &teacher,

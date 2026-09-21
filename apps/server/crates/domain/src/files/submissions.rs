@@ -462,13 +462,7 @@ impl FileSubmissionsService {
             .assessments
             .authorable_chapter(actor, chapter_id)
             .await?;
-        if title.trim().is_empty() {
-            return Err(Error::validation(vec![field(
-                "title",
-                "required",
-                "title is required",
-            )]));
-        }
+        let title = ab_core::required_str("title", title)?;
         let defaults = FileSubmissionRow {
             id: FileSubmissionId::default(),
             activity_id: ActivityId::default(),
@@ -501,7 +495,7 @@ impl FileSubmissionsService {
             &self.pool,
             chapter_id,
             chapter.course_id,
-            title.trim(),
+            title,
             "file_submission",
             "file_submission_standard",
             actor.user_id,
@@ -554,15 +548,8 @@ impl FileSubmissionsService {
             return Err(Error::conflict("archived file submissions are read-only"));
         }
         if let Some(title) = &patch.title {
-            if title.trim().is_empty() {
-                return Err(Error::validation(vec![field(
-                    "title",
-                    "required",
-                    "title is required",
-                )]));
-            }
-            ab_db::catalog::update_activity(&self.pool, row.activity_id, Some(title.trim()), None)
-                .await?;
+            let title = ab_core::required_str("title", title)?;
+            ab_db::catalog::update_activity(&self.pool, row.activity_id, Some(title), None).await?;
         }
         let merged = merge(&row, &patch);
         let values = values_of(&merged);
@@ -571,7 +558,7 @@ impl FileSubmissionsService {
         // instructions); an edit must not undo it — 409 like BUG-207. The
         // title patch above is already non-blank.
         if row.lifecycle == FileSubmissionLifecycle::Published
-            && merged.instructions.trim().is_empty()
+            && ab_core::trim_blank(&merged.instructions).is_empty()
         {
             return Err(Error::app_with_details(
                 ErrorCode::Conflict,
@@ -593,10 +580,10 @@ impl FileSubmissionsService {
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
         let mut errors = Vec::new();
-        if activity.name.trim().is_empty() {
+        if ab_core::trim_blank(&activity.name).is_empty() {
             errors.push(field("title", "required", "title is required to publish"));
         }
-        if row.instructions.trim().is_empty() {
+        if ab_core::trim_blank(&row.instructions).is_empty() {
             errors.push(field(
                 "instructions",
                 "required",

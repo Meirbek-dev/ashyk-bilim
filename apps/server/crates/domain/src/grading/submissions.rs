@@ -482,15 +482,24 @@ impl SubmissionsService {
                     .join(", ")
             )));
         }
-        let assessment = self.assessments.get(actor, assessment_id).await?.assessment;
+        // Visibility gate only; the versions come from the locked row below.
+        self.assessments.get(actor, assessment_id).await?;
         let completed =
             ab_db::submissions::count_completed_attempts(&self.pool, assessment_id, actor.user_id)
                 .await?;
         let attempt_number = i32::try_from(completed)
             .unwrap_or(i32::MAX)
             .saturating_add(1);
+        // BUG-224: the draft and the assessment row lock (`FOR SHARE`) land
+        // in one transaction — an item write (`FOR UPDATE`, BUG-218) either
+        // committed before (the draft gets its content version) or waits
+        // and then sees the draft (409 «already has submissions»).
+        let mut tx = self.pool.begin().await?;
+        let assessment = ab_db::submissions::share_assessment(&mut tx, assessment_id)
+            .await?
+            .ok_or_else(|| Error::not_found("assessment"))?;
         let inserted = ab_db::submissions::insert_draft(
-            &self.pool,
+            &mut *tx,
             assessment_id,
             assessment.course_id,
             actor.user_id,
@@ -499,10 +508,22 @@ impl SubmissionsService {
             assessment.policy_version,
         )
         .await?;
+        if inserted.is_none() {
+            // Idempotent: the open draft already exists and follows the
+            // content the learner is loading now.
+            ab_db::submissions::resync_draft(
+                &mut tx,
+                assessment_id,
+                actor.user_id,
+                assessment.content_version,
+                assessment.policy_version,
+            )
+            .await?;
+        }
+        tx.commit().await?;
         let created = inserted.is_some();
         let draft = match inserted {
             Some(id) => ab_db::submissions::get_submission(&self.pool, id).await?,
-            // Idempotent: the open draft already exists.
             None => {
                 ab_db::submissions::open_draft(&self.pool, assessment_id, actor.user_id).await?
             }
@@ -671,6 +692,20 @@ impl SubmissionsService {
         }
         let violation_count = submission.violation_count.max(reported_violations);
         let ctx = self.context(actor, submission).await?;
+        // BUG-224: a draft opened against older content never scores items
+        // the learner did not see — `start` again re-syncs it to the current
+        // version once the items are reloaded.
+        if ctx.submission.content_version < ctx.assessment.content_version {
+            return Err(Error::app_with_details(
+                ErrorCode::Conflict,
+                "assessment content changed since the draft was opened; reopen it",
+                serde_json::json!({
+                    "field": "content_version",
+                    "expected": ctx.submission.content_version,
+                    "actual": ctx.assessment.content_version,
+                }),
+            ));
+        }
         let answers = match patch {
             Some(patch) => Self::merge(&ctx, patch)?,
             None => Self::merge(&ctx, Answers::new())?,

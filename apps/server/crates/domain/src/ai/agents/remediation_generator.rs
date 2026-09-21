@@ -445,17 +445,17 @@ impl AiService {
                 "only the learner of this session can complete it",
             ));
         }
-        // UX-099: a passed session is final — re-completing it with a lower
-        // score must not re-lock the gate.
-        if session.status == RemediationStatus::Passed {
-            return Err(Error::conflict("remediation session already passed"));
-        }
         let status = if score >= PASS_SCORE {
             RemediationStatus::Passed
         } else {
             RemediationStatus::Failed
         };
-        ab_db::ai::complete_remediation_session(&self.pool, id, score, status).await?;
+        // UX-099: a passed session is final — re-completing it with a lower
+        // score must not re-lock the gate (the guard is in the UPDATE, so a
+        // concurrent pass wins too).
+        if !ab_db::ai::complete_remediation_session(&self.pool, id, score, status).await? {
+            return Err(Error::conflict("remediation session already passed"));
+        }
         ab_db::ai::get_remediation_session(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("remediation session"))
