@@ -16,8 +16,9 @@ use crate::collections::CollectionRow;
 /// `to_tsquery` text for `query`: every word a quoted prefix term.
 ///
 /// `'крит':*` matches «Критик», `'gauntlet21-analytics':*` the hyphenated
-/// name; `-word` negates (as a prefix too, UX-155); all ANDed. Quoting keeps the operators ours, so
-/// the text is always valid tsquery syntax.
+/// name; `-word` negates (as a prefix too, UX-155); all ANDed. Quoting keeps the operators ours;
+/// inside quotes only `'` and `\` are special, so both are escaped (BUG-249: a trailing `\`
+/// escaped the closing quote → 42601) and the text is always valid tsquery syntax.
 #[must_use]
 pub fn prefix_tsquery(query: &str) -> String {
     query
@@ -28,7 +29,7 @@ pub fn prefix_tsquery(query: &str) -> String {
                 _ => (false, word),
             };
             let not = if negate { "!" } else { "" };
-            let quoted = word.replace('\'', "''");
+            let quoted = word.replace('\\', r"\\").replace('\'', "''");
             format!("{not}'{quoted}':*")
         })
         .collect::<Vec<_>>()
@@ -161,5 +162,6 @@ mod tests {
             "'gauntlet21-analytics':* & 'Крит':* & !'live':* & 'it''s':* & '-':*"
         );
         assert_eq!(prefix_tsquery("   "), "");
+        assert_eq!(prefix_tsquery(r"x\ \"), r"'x\\':* & '\\':*");
     }
 }

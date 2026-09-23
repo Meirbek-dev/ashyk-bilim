@@ -185,6 +185,18 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
         .get_as(&teacher, "/api/v2/search?q=it%27s%20%26%20%22")
         .await;
     assert_eq!(quirky.status, StatusCode::OK, "{}", quirky.text());
+    // BUG-249: no punctuation — alone, trailing, negated — reaches tsquery as
+    // a syntax error (`\` used to escape the closing quote → 500).
+    for c in (b'!'..=b'~').filter(u8::is_ascii_punctuation) {
+        for q in [
+            format!("%{c:02X}"),
+            format!("x%{c:02X}"),
+            format!("-%{c:02X}x%{c:02X}%20y"),
+        ] {
+            let res = app.get(&format!("/api/v2/search?q={q}")).await;
+            assert_eq!(res.status, StatusCode::OK, "{q}: {}", res.text());
+        }
+    }
 }
 
 /// BUG-190: search uses the catalogue's visibility predicate, usergroup arm

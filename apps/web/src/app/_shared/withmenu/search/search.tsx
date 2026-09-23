@@ -15,6 +15,8 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Link from '@components/ui/AppLink'
 import { extractMarkdownSummary } from '@/features/content-markdown'
+import { InlineError } from '@/components/ui/error-state'
+import { useApiError } from '@/hooks/useApiError'
 
 type ContentType = 'all' | 'courses' | 'collections' | 'users'
 
@@ -85,6 +87,7 @@ function SearchPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useTranslations('SearchPage')
+  const { handleApiError } = useApiError()
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')
 
@@ -95,6 +98,8 @@ function SearchPage() {
   const searchResultsQuery = useSearchContent(query, { limit: 30 })
   const searchResults: SearchResults = searchResultsQuery.data?.data ?? { courses: [], collections: [], users: [] }
   const isLoading = query.trim().length > 0 && searchResultsQuery.isPending
+  // BUG-249: a failed search is an error, not «Ищем…» forever or «Ничего не найдено».
+  const searchError = query.trim().length > 0 ? searchResultsQuery.error : null
 
   const updateSearchParams = (updates: Record<string, string>) => {
     const current = new URLSearchParams([...searchParams.entries()])
@@ -222,13 +227,15 @@ function SearchPage() {
       {/* Search Results */}
       <div className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-7xl">
-          {query ? (
+          {query && !searchError ? (
             <div className="text-muted-foreground mb-6 text-sm" aria-live="polite">
               {isLoading ? t('searching', { query }) : t('resultsFound', { count: totalResults, query })}
             </div>
           ) : null}
 
-          {isLoading ? (
+          {searchError ? (
+            <InlineError description={handleApiError(searchError).message} error={searchError} />
+          ) : isLoading ? (
             <LoadingState />
           ) : totalResults === 0 && query ? (
             <EmptyState query={query} t={t} />
