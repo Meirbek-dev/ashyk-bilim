@@ -383,3 +383,47 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
         100.0
     );
 }
+
+/// BUG-252: parallel awards on a fresh profile serialize on the profile row
+/// lock — the daily cap (500 by default) holds and the ledger matches totals.
+#[sqlx::test(migrations = "../../migrations")]
+async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
+    use ab_core::assessments::XpSource;
+    use ab_domain::gamification::{AwardRequest, GamificationService};
+
+    let app = TestApp::spawn(pool.clone()).await;
+    let user = app
+        .create_user("racer", "racer@example.com", &["user"])
+        .await;
+    let service = GamificationService::new(pool.clone());
+    let ids: Vec<String> = (0..16).map(|i| format!("course-{i}")).collect();
+    let results = futures::future::join_all(ids.iter().map(|id| {
+        let service = service.clone();
+        async move {
+            service
+                .award(AwardRequest {
+                    user_id: user,
+                    source: XpSource::CourseCompletion,
+                    amount: None,
+                    source_id: Some(id),
+                    reason: None,
+                    idempotency_key: None,
+                })
+                .await
+        }
+    }))
+    .await;
+    let granted = results.iter().filter(|r| r.is_ok()).count();
+    assert_eq!(granted, 2, "200 XP each under a 500 cap");
+
+    let (total, daily, ledger): (i32, i32, i64) = sqlx::query_as(
+        "SELECT p.total_xp, p.daily_xp_earned,
+                (SELECT COALESCE(sum(amount), 0) FROM xp_transactions t WHERE t.user_id = p.user_id)
+         FROM gamification_profiles p WHERE p.user_id = $1",
+    )
+    .bind(user.0)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!((total, daily, ledger), (400, 400, 400));
+}

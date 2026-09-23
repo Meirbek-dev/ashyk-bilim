@@ -111,21 +111,40 @@ pub struct NewTransaction<'a> {
     pub idempotency_key: Option<&'a str>,
 }
 
-/// Record the award and move the profile in one transaction. `None` when a
-/// unique key already held the award (replay). Returns the new row with
-/// `triggered_level_up` resolved.
+/// What [`record_award`] did.
+#[derive(Debug)]
+pub enum Recorded {
+    New(TransactionRow),
+    /// A unique key already held the award.
+    Replay,
+    /// The award would push today's total past the cap; nothing written.
+    OverDailyLimit {
+        earned_today: i32,
+    },
+}
+
+/// Record the award and move the profile in one transaction.
+///
+/// The daily cap (`daily_limit`, `None` = uncapped) is checked and the UTC-day reset
+/// decided under the profile row lock, so parallel awards serialize on it
+/// (BUG-252). Returns the new row with `triggered_level_up` resolved.
 pub async fn record_award(
     pool: &PgPool,
     new: NewTransaction<'_>,
-    reset_daily: bool,
-) -> Result<Option<TransactionRow>> {
+    daily_limit: Option<i32>,
+) -> Result<Recorded> {
     let mut tx = pool.begin().await?;
-    let previous_level: i32 = sqlx::query_scalar!(
-        r#"SELECT level AS "level!" FROM gamification_profiles WHERE user_id = $1 FOR UPDATE"#,
+    let locked = sqlx::query!(
+        r#"SELECT level AS "level!", daily_xp_earned AS "daily_xp_earned!",
+                  (last_xp_award_at IS NOT NULL
+                   AND (last_xp_award_at AT TIME ZONE 'UTC')::date
+                       = (now() AT TIME ZONE 'UTC')::date) AS "same_day!"
+           FROM gamification_profiles WHERE user_id = $1 FOR UPDATE"#,
         new.user_id.0
     )
     .fetch_one(&mut *tx)
     .await?;
+    let previous_level = locked.level;
     let inserted = sqlx::query_scalar!(
         r#"INSERT INTO xp_transactions
                (user_id, amount, source, source_id, reason, previous_level, idempotency_key)
@@ -144,21 +163,30 @@ pub async fn record_award(
     .await?;
     let Some(id) = inserted else {
         tx.rollback().await?;
-        return Ok(None);
+        return Ok(Recorded::Replay);
     };
+    let earned_today = if locked.same_day {
+        locked.daily_xp_earned
+    } else {
+        0
+    };
+    if daily_limit.is_some_and(|limit| earned_today + new.amount > limit) {
+        tx.rollback().await?;
+        return Ok(Recorded::OverDailyLimit { earned_today });
+    }
     // Level curve: XP(level) = 50(level-1)^2 + 50(level-1), capped at 100.
     let new_level: i32 = sqlx::query_scalar!(
         r#"UPDATE gamification_profiles SET
                total_xp = total_xp + $2,
                level = LEAST(100, GREATEST(1,
                    floor((-1 + sqrt(1 + 0.08 * (total_xp + $2))) / 2)::int + 1)),
-               daily_xp_earned = CASE WHEN $3 THEN $2 ELSE daily_xp_earned + $2 END,
+               daily_xp_earned = $3 + $2,
                last_xp_award_at = now()
            WHERE user_id = $1
            RETURNING level AS "level!""#,
         new.user_id.0,
         new.amount,
-        reset_daily
+        earned_today
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -175,7 +203,7 @@ pub async fn record_award(
     .fetch_one(&mut *tx)
     .await?;
     tx.commit().await?;
-    Ok(Some(row))
+    Ok(Recorded::New(row))
 }
 
 pub async fn set_streak(

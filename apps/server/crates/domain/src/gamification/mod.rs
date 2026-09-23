@@ -14,7 +14,9 @@ use ab_core::assessments::{StreakKind, XpSource};
 use ab_core::id::UserId;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, ErrorCode, FieldError, Result};
-use ab_db::gamification::{ConfigRow, LeaderboardRow, NewTransaction, ProfileRow, TransactionRow};
+use ab_db::gamification::{
+    ConfigRow, LeaderboardRow, NewTransaction, ProfileRow, Recorded, TransactionRow,
+};
 use sqlx::PgPool;
 
 use crate::identity::Actor;
@@ -211,19 +213,8 @@ impl GamificationService {
                 is_new: false,
             });
         }
-        let today = day_of(now_unix());
-        let same_day = profile.last_xp_award_at.is_some_and(|t| day_of(t) == today);
-        let earned_today = if same_day { profile.daily_xp_earned } else { 0 };
-        if req.source != XpSource::AdminAward
-            && policy.daily_limit > 0
-            && earned_today + amount > policy.daily_limit
-        {
-            return Err(Error::app_with_details(
-                ErrorCode::RateLimited,
-                "daily XP limit reached",
-                serde_json::json!({ "daily_limit": policy.daily_limit, "earned_today": earned_today }),
-            ));
-        }
+        let daily_limit = (req.source != XpSource::AdminAward && policy.daily_limit > 0)
+            .then_some(policy.daily_limit);
         let recorded = ab_db::gamification::record_award(
             &self.pool,
             NewTransaction {
@@ -234,17 +225,28 @@ impl GamificationService {
                 reason: req.reason,
                 idempotency_key: req.idempotency_key,
             },
-            !same_day,
+            daily_limit,
         )
         .await?;
-        let fresh = ab_db::gamification::ensure_profile(&self.pool, req.user_id).await?;
-        if let Some(transaction) = recorded {
-            return Ok(Award {
-                profile: fresh,
-                transaction,
-                is_new: true,
-            });
-        }
+        let fresh = match recorded {
+            Recorded::New(transaction) => {
+                return Ok(Award {
+                    profile: ab_db::gamification::ensure_profile(&self.pool, req.user_id).await?,
+                    transaction,
+                    is_new: true,
+                });
+            }
+            Recorded::OverDailyLimit { earned_today } => {
+                return Err(Error::app_with_details(
+                    ErrorCode::RateLimited,
+                    "daily XP limit reached",
+                    serde_json::json!({ "daily_limit": policy.daily_limit, "earned_today": earned_today }),
+                ));
+            }
+            Recorded::Replay => {
+                ab_db::gamification::ensure_profile(&self.pool, req.user_id).await?
+            }
+        };
         // Lost the race to a concurrent identical award.
         let existing = ab_db::gamification::find_transaction(
             &self.pool,
