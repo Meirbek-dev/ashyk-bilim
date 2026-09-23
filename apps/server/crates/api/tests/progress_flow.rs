@@ -900,6 +900,39 @@ async fn mark_stampede_never_exhausts_the_pool(pool: PgPool) {
     );
 }
 
+/// BUG-235: more first marks on distinct (learner, course) locks than the
+/// pool has connections, at once. The hooks (analytics, course XP) run after
+/// the lock commits, so no holder waits on a second connection: all 200 and
+/// every event and award lands.
+#[sqlx::test(migrations = "../../migrations")]
+async fn first_marks_past_pool_size_all_land_with_their_hooks(pool: PgPool) {
+    let learners = pool.options().get_max_connections() as usize + 2;
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher, "Crowd 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Only").await;
+    let mut sessions = Vec::new();
+    for i in 0..learners {
+        sessions.push(learner(&app, &format!("crowd{i}")).await);
+    }
+    let mark_path = format!("/api/v2/trail/activities/{a1}");
+    let empty = serde_json::json!({});
+    let marks =
+        futures::future::join_all(sessions.iter().map(|s| app.post_as(s, &mark_path, &empty)))
+            .await;
+    for (i, mark) in marks.iter().enumerate() {
+        assert_eq!(mark.status, StatusCode::OK, "mark {i}: {}", mark.text());
+    }
+    let (events, awards): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM analytics_events WHERE event_type = 'activity.completed'),
+                (SELECT count(*) FROM xp_transactions WHERE source = 'course_completion')",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((events, awards), (learners as i64, learners as i64));
+}
+
 /// The (user, course) trail lock is held by some transaction of this test
 /// database — the mark / leave is past its first write.
 async fn trail_lock_held(pool: &PgPool) -> bool {

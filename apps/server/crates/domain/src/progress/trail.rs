@@ -17,6 +17,7 @@ use crate::assessments::service::AssessmentsService;
 use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
+use crate::progress::projector::AfterCommit;
 
 /// The trail hydrated with courses and activities.
 #[derive(Debug, Clone)]
@@ -235,12 +236,17 @@ impl TrailService {
         if !ab_db::progress::delete_trail_run(&mut *tx, trail.id, course_id).await? {
             return Err(Error::not_found("trail run"));
         }
-        for activity in ab_db::catalog::list_activities(&self.pool, course_id).await? {
-            self.projector
-                .unmark_complete(&mut tx, &activity, actor.user_id)
-                .await?;
+        // BUG-235: inside the lock only `tx`, never a second pool connection.
+        let mut hooks = AfterCommit::default();
+        for activity in ab_db::catalog::list_activities(&mut *tx, course_id).await? {
+            hooks = hooks.and(
+                self.projector
+                    .unmark_complete(&mut tx, &activity, actor.user_id)
+                    .await?,
+            );
         }
         tx.commit().await?;
+        hooks.fire(&self.pool).await;
         self.hydrate(actor, trail).await
     }
 
@@ -275,12 +281,15 @@ impl TrailService {
         let run =
             ab_db::progress::ensure_trail_run(&mut tx, trail.id, course.id, actor.user_id).await?;
         let created = ab_db::progress::insert_trail_step(&mut *tx, &run, activity.id).await?;
-        if created {
+        let hooks = if created {
             self.projector
                 .mark_complete(&mut tx, &activity, actor.user_id)
-                .await?;
-        }
+                .await?
+        } else {
+            AfterCommit::default()
+        };
         tx.commit().await?;
+        hooks.fire(&self.pool).await;
         if created {
             crate::gamification::hooks::activity_completed(&self.pool, actor.user_id, activity.id)
                 .await;
@@ -304,10 +313,12 @@ impl TrailService {
             .ok_or_else(|| Error::not_found("activity"))?;
         let mut tx = self.lock(actor.user_id, activity.course_id).await?;
         if ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await? {
-            self.projector
+            let hooks = self
+                .projector
                 .unmark_complete(&mut tx, &activity, actor.user_id)
                 .await?;
             tx.commit().await?;
+            hooks.fire(&self.pool).await;
         } else {
             drop(tx);
             self.courses

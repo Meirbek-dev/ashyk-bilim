@@ -40,6 +40,42 @@ pub struct BackfillReport {
     pub activity_rows: usize,
 }
 
+/// Hooks of a projection written on a caller's transaction.
+///
+/// They go through the pool, so they fire once that transaction committed:
+/// inside the trail lock each holder would wait on a second pool connection
+/// and enough holders deadlock the pool (BUG-235).
+#[derive(Debug, Default, Clone, Copy)]
+#[must_use = "fire after the transaction commits"]
+pub struct AfterCommit {
+    activity_completed: Option<(CourseId, ActivityId, UserId)>,
+    course_completed: Option<(UserId, CourseId)>,
+}
+
+impl AfterCommit {
+    pub fn and(self, other: Self) -> Self {
+        Self {
+            activity_completed: self.activity_completed.or(other.activity_completed),
+            course_completed: self.course_completed.or(other.course_completed),
+        }
+    }
+
+    pub async fn fire(self, pool: &PgPool) {
+        if let Some((course_id, activity_id, user_id)) = self.activity_completed {
+            crate::analytics::events::hooks::activity_completed(
+                pool,
+                course_id,
+                activity_id,
+                user_id,
+            )
+            .await;
+        }
+        if let Some((user_id, course_id)) = self.course_completed {
+            crate::gamification::hooks::course_completed(pool, user_id, course_id).await;
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct ProgressProjector {
     pool: PgPool,
@@ -121,15 +157,16 @@ impl ProgressProjector {
     /// activities are owned by their pipelines and are left alone.
     ///
     /// Runs on the caller's connection (the trail lock transaction, BUG-220 /
-    /// BUG-221): the step and the projection commit together.
+    /// BUG-221): the step and the projection commit together; the caller
+    /// fires the returned hooks after that commit (BUG-235).
     pub async fn mark_complete(
         &self,
         conn: &mut PgConnection,
         activity: &ActivityRow,
         user_id: UserId,
-    ) -> Result<()> {
+    ) -> Result<AfterCommit> {
         if is_pipeline_owned(&mut *conn, activity).await? {
-            return Ok(());
+            return Ok(AfterCommit::default());
         }
         let now = now_unix();
         let existing =
@@ -156,16 +193,13 @@ impl ProgressProjector {
             status_reason: None,
         };
         ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
-        crate::analytics::events::hooks::activity_completed(
-            &self.pool,
-            activity.course_id,
-            activity.id,
-            user_id,
-        )
-        .await;
-        self.recalculate_course_on(conn, activity.course_id, user_id)
+        let course = self
+            .recalculate_course_on(conn, activity.course_id, user_id)
             .await?;
-        Ok(())
+        Ok(AfterCommit {
+            activity_completed: Some((activity.course_id, activity.id, user_id)),
+            course_completed: course_completed(&course),
+        })
     }
 
     /// Undo an explicit completion (same connection rule as `mark_complete`).
@@ -174,14 +208,14 @@ impl ProgressProjector {
         conn: &mut PgConnection,
         activity: &ActivityRow,
         user_id: UserId,
-    ) -> Result<()> {
+    ) -> Result<AfterCommit> {
         if is_pipeline_owned(&mut *conn, activity).await? {
-            return Ok(());
+            return Ok(AfterCommit::default());
         }
         let Some(existing) =
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?
         else {
-            return Ok(());
+            return Ok(AfterCommit::default());
         };
         let write = ActivityProgressWrite {
             course_id: activity.course_id,
@@ -205,9 +239,13 @@ impl ProgressProjector {
             status_reason: None,
         };
         ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
-        self.recalculate_course_on(conn, activity.course_id, user_id)
+        let course = self
+            .recalculate_course_on(conn, activity.course_id, user_id)
             .await?;
-        Ok(())
+        Ok(AfterCommit {
+            activity_completed: None,
+            course_completed: course_completed(&course),
+        })
     }
 
     /// Assessment and file-submission activities complete through their
@@ -301,12 +339,23 @@ impl ProgressProjector {
         user_id: UserId,
     ) -> Result<CourseProgressRow> {
         let mut conn = self.pool.acquire().await?;
-        self.recalculate_course_on(&mut conn, course_id, user_id)
-            .await
+        let course = self
+            .recalculate_course_on(&mut conn, course_id, user_id)
+            .await?;
+        drop(conn);
+        AfterCommit {
+            activity_completed: None,
+            course_completed: course_completed(&course),
+        }
+        .fire(&self.pool)
+        .await;
+        Ok(course)
     }
 
     /// [`Self::recalculate_course`] on the caller's connection, so a trail
-    /// mark / leave commits the aggregate with its step (BUG-221).
+    /// mark / leave commits the aggregate with its step (BUG-221). Touches
+    /// nothing but `conn`: the `course_completed` hook is the caller's, after
+    /// commit (BUG-235).
     pub async fn recalculate_course_on(
         &self,
         conn: &mut PgConnection,
@@ -321,7 +370,6 @@ impl ProgressProjector {
         ab_db::progress::upsert_course_progress(&mut *conn, &write).await?;
         if write.certificate_eligible {
             crate::certifications::issue_for_completion(&mut *conn, course_id, user_id).await?;
-            crate::gamification::hooks::course_completed(&self.pool, user_id, course_id).await;
         }
         ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
             .await?
@@ -367,6 +415,14 @@ impl ProgressProjector {
             }
         }
         Ok(report)
+    }
+}
+
+const fn course_completed(course: &CourseProgressRow) -> Option<(UserId, CourseId)> {
+    if course.certificate_eligible {
+        Some((course.user_id, course.course_id))
+    } else {
+        None
     }
 }
 

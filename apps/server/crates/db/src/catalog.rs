@@ -576,7 +576,10 @@ pub async fn get_activity(pool: &PgPool, id: ActivityId) -> Result<Option<Activi
     Ok(row)
 }
 
-pub async fn list_activities(pool: &PgPool, course_id: CourseId) -> Result<Vec<ActivityRow>> {
+pub async fn list_activities<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+) -> Result<Vec<ActivityRow>> {
     let rows = sqlx::query_as!(
         ActivityRow,
         r#"SELECT id AS "id: ActivityId", chapter_id AS "chapter_id: ChapterId",
@@ -586,7 +589,7 @@ pub async fn list_activities(pool: &PgPool, course_id: CourseId) -> Result<Vec<A
            ORDER BY chapter_id, position, id"#,
         course_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }
