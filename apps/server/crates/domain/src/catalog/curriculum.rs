@@ -576,10 +576,15 @@ impl CurriculumService {
                 ),
             }]));
         }
-        // BUG-234: the claim and the row that holds it commit together — a
-        // concurrent activity DELETE makes the insert a 404 (FK) and rolls
-        // the reference back instead of pinning the upload forever.
+        // BUG-234: the claim and the row that holds it commit together.
+        // BUG-242/243: the activity row is locked before the upload row (the
+        // order every delete takes), so a concurrent activity/chapter/course
+        // DELETE either sees this block or makes this a 404 — never a
+        // deadlock, never a leaked reference.
         let mut tx = self.pool.begin().await?;
+        if !ab_db::catalog::lock_activity_for_blocks(&mut tx, activity_id).await? {
+            return Err(Error::not_found("activity"));
+        }
         if !ab_db::uploads::add_reference(&mut *tx, upload_id).await? {
             return Err(Error::conflict("upload is not finalized"));
         }

@@ -671,32 +671,20 @@ pub async fn update_activity<'e>(
 }
 
 /// Delete an activity, releasing the uploads of its media blocks
-/// (BUG-209 — see [`delete_course`]).
+/// (BUG-209/243 — see [`delete_course`]; lock order activity → uploads).
 pub async fn delete_activity(pool: &PgPool, id: ActivityId, grace_secs: f64) -> Result<bool> {
     let mut tx = pool.begin().await?;
-    sqlx::query_scalar!("SELECT id FROM activities WHERE id = $1 FOR UPDATE", id.0)
-        .fetch_optional(&mut *tx)
+    let Some(locked) =
+        sqlx::query_scalar!("SELECT id FROM activities WHERE id = $1 FOR UPDATE", id.0)
+            .fetch_optional(&mut *tx)
+            .await?
+    else {
+        return Ok(false);
+    };
+    delete_blocks_releasing(&mut tx, &[locked], None, grace_secs).await?;
+    let deleted = sqlx::query!("DELETE FROM activities WHERE id = $1", id.0)
+        .execute(&mut *tx)
         .await?;
-    let deleted = sqlx::query!(
-        r#"WITH refs AS (
-               SELECT b.content->>'file_key' AS key, count(*)::int AS n
-               FROM blocks b
-               WHERE b.activity_id = $1 AND b.content->>'file_key' IS NOT NULL
-               GROUP BY 1
-           ), released AS (
-               UPDATE uploads u
-               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
-                   expires_at = CASE WHEN u.referenced_count <= refs.n
-                                     THEN now() + make_interval(secs => $2)
-                                     ELSE u.expires_at END
-               FROM refs WHERE u.key = refs.key AND u.referenced_count > 0
-           )
-           DELETE FROM activities WHERE id = $1"#,
-        id.0,
-        grace_secs
-    )
-    .execute(&mut *tx)
-    .await?;
     tx.commit().await?;
     Ok(deleted.rows_affected() == 1)
 }

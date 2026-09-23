@@ -330,8 +330,11 @@ pub async fn delete_activity(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
 ) -> ApiResult<StatusCode> {
-    state.curriculum.delete_activity(&actor, id).await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state.curriculum.delete_activity(&actor, id).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Move an activity within its chapter, or to another chapter of the same
@@ -387,17 +390,20 @@ pub async fn create_block(
     Path(id): Path<ActivityId>,
     ValidJson(request): ValidJson<CreateBlockRequest>,
 ) -> ApiResult<(StatusCode, Json<Block>)> {
-    let block = state
-        .curriculum
-        .add_block(
-            &actor,
-            id,
-            &request.block_type,
-            request.upload_id,
-            request.file_name.as_deref(),
-        )
-        .await?;
-    Ok((StatusCode::CREATED, Json(block.into())))
+    detached(async move {
+        let block = state
+            .curriculum
+            .add_block(
+                &actor,
+                id,
+                &request.block_type,
+                request.upload_id,
+                request.file_name.as_deref(),
+            )
+            .await?;
+        Ok((StatusCode::CREATED, Json(block.into())))
+    })
+    .await
 }
 
 /// Blocks attached to an activity.
