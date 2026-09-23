@@ -767,14 +767,21 @@ impl AssessmentsService {
         id: AssessmentId,
         changes: AssessmentChanges<'_>,
     ) -> Result<AssessmentDetail> {
-        let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment).await?;
+        self.load_for_author(actor, id).await?;
         let title = changes
             .title
             .map(|t| ab_core::required_str("title", t))
             .transpose()?;
+        // BUG-245: both titles (and the details) commit together, under the
+        // row lock the lifecycle gate reads — assessment first, then the
+        // activity, the order `update_activity` takes.
+        let mut tx = self.pool.begin().await?;
+        let assessment = ab_db::assessments::lock_assessment(&mut tx, id)
+            .await?
+            .ok_or_else(|| Error::not_found("assessment"))?;
+        self.ensure_editable(&assessment).await?;
         ab_db::assessments::update_assessment_details(
-            &self.pool,
+            &mut *tx,
             id,
             title,
             changes.description,
@@ -784,9 +791,10 @@ impl AssessmentsService {
         .await?;
         if let Some(title) = title {
             // The activity carries the title into the curriculum.
-            ab_db::catalog::update_activity(&self.pool, assessment.activity_id, Some(title), None)
+            ab_db::catalog::update_activity(&mut *tx, assessment.activity_id, Some(title), None)
                 .await?;
         }
+        tx.commit().await?;
         self.detail(id).await
     }
 
