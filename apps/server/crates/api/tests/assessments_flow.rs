@@ -2137,3 +2137,76 @@ async fn lifecycle_and_activity_flag_never_disagree(pool: PgPool) {
         .await;
     }
 }
+
+/// BUG-245/246: a client that hangs up mid-request never leaves a torn
+/// write — the title PATCH moves the assessment title and the activity name
+/// together, and a duplicate never leaves an activity without its
+/// assessment.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_title_patch_and_duplicate_are_atomic(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = scaffold(&app, &teacher).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Q" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let uuid = uuid::Uuid::parse_str(&id).unwrap();
+    let path = format!("/api/v2/assessments/{id}");
+    let titles = async || -> (String, String) {
+        sqlx::query_as(
+            "SELECT a.title, act.name FROM assessments a
+             JOIN activities act ON act.id = a.activity_id WHERE a.id = $1",
+        )
+        .bind(uuid)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+    for round in 0..5 {
+        let title = format!("drop {round}");
+        drop_request_when(
+            app.patch_as(&teacher, &path, &serde_json::json!({ "title": title })),
+            async || titles().await.0 == title,
+            |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+        )
+        .await;
+        wait_until("the dropped PATCH left a torn title", async || {
+            titles().await == (title.clone(), title.clone())
+        })
+        .await;
+    }
+
+    let duplicate = format!("{path}/duplicate");
+    for round in 0..5 {
+        let title = format!("copy {round}");
+        let copied = async || -> bool {
+            sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM activities WHERE name = $1)")
+                .bind(&title)
+                .fetch_one(&app.pool)
+                .await
+                .unwrap()
+        };
+        drop_request_when(
+            app.post_as(&teacher, &duplicate, &serde_json::json!({ "title": title })),
+            async || copied().await,
+            |response| {
+                assert_eq!(response.status, StatusCode::CREATED, "{}", response.text());
+            },
+        )
+        .await;
+        let orphans: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM activities act WHERE act.name = $1
+             AND NOT EXISTS (SELECT 1 FROM assessments a WHERE a.activity_id = act.id)",
+        )
+        .bind(&title)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        assert_eq!(orphans, 0, "round {round}: orphan activity");
+    }
+}

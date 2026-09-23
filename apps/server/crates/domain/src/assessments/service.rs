@@ -1147,8 +1147,11 @@ impl AssessmentsService {
         };
 
         let (activity_type, sub_type) = source.kind.activity_type();
+        // BUG-246 (BUG-233 sibling): activity, assessment, items and the
+        // audit row land together — a dropped socket leaves no orphan.
+        let mut tx = self.pool.begin().await?;
         let activity_id = ab_db::catalog::insert_activity(
-            &self.pool,
+            &mut *tx,
             target_chapter,
             source.course_id,
             &copy_title,
@@ -1158,7 +1161,7 @@ impl AssessmentsService {
         )
         .await?;
         let new_id = ab_db::assessments::insert_assessment(
-            &self.pool,
+            &mut *tx,
             NewAssessment {
                 activity_id,
                 course_id: source.course_id,
@@ -1172,9 +1175,9 @@ impl AssessmentsService {
             },
         )
         .await?;
-        for item in ab_db::assessments::list_items(&self.pool, id).await? {
+        for item in ab_db::assessments::list_items(&mut *tx, id).await? {
             ab_db::assessments::insert_item(
-                &self.pool,
+                &mut *tx,
                 new_id,
                 item.kind,
                 &item.title,
@@ -1191,13 +1194,14 @@ impl AssessmentsService {
             .await?;
         }
         ab_db::assessments::insert_audit_event(
-            &self.pool,
+            &mut *tx,
             new_id,
             Some(actor.user_id),
             "duplicated-from",
             serde_json::json!({ "source": id }),
         )
         .await?;
+        tx.commit().await?;
         self.detail(new_id).await
     }
 
