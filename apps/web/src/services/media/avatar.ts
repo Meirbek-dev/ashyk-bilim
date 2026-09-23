@@ -52,21 +52,34 @@ export function getUserDisplayName(user?: AvatarUser | null, fallback = ''): str
   return username || fallback
 }
 
+const graphemeSegmenter = new Intl.Segmenter()
+
+/** The first `count` user-perceived characters (UX-162: `charAt`/`slice` split surrogate pairs and ZWJ sequences). */
+function leadingGraphemes(text: string, count: number): string {
+  let out = ''
+  let taken = 0
+  for (const { segment } of graphemeSegmenter.segment(text)) {
+    if (taken++ === count) break
+    out += segment
+  }
+  return out
+}
+
 export function getAvatarInitials(user?: AvatarUser | null, fallbackText?: string): string {
   const explicitFallback = fallbackText?.trim()
-  if (explicitFallback) return explicitFallback.slice(0, 2).toUpperCase()
+  if (explicitFallback) return leadingGraphemes(explicitFallback, 2).toUpperCase()
 
   const displayName = user?.display_name?.trim()
   if (displayName) {
     const parts = displayName.split(/\s+/u).filter(Boolean)
     const initials = parts
       .slice(0, 2)
-      .map(part => part.charAt(0))
+      .map(part => leadingGraphemes(part, 1))
       .join('')
     if (initials) return initials.toUpperCase()
   }
 
-  const usernameInitial = user?.username?.trim().charAt(0)
+  const usernameInitial = leadingGraphemes(user?.username?.trim() ?? '', 1)
   return usernameInitial ? usernameInitial.toUpperCase() : '?'
 }
 

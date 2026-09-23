@@ -46,6 +46,11 @@ describe('avatar URL normalization (v2 storage keys)', () => {
     expect(getAvatarInitials({ display_name: 'Ada', username: 'ada' })).toBe('A')
     expect(getAvatarInitials({ username: 'student' })).toBe('S')
     expect(getAvatarInitials(null, 'ai')).toBe('AI')
+    // UX-162: the first grapheme, never half a surrogate pair or a ZWJ sequence.
+    expect(getAvatarInitials({ display_name: '😀  evil', username: 'x' })).toBe('😀E')
+    expect(getAvatarInitials({ display_name: '👨‍👩‍👧 family', username: 'x' })).toBe('👨‍👩‍👧F')
+    expect(getAvatarInitials({ display_name: 'ёлка Әсем', username: 'x' })).toBe('ЁӘ')
+    expect(getAvatarInitials({ username: '🙂bob' })).toBe('🙂')
   })
 
   it('prefers display_name and falls back to username', () => {
