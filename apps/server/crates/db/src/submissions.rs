@@ -251,22 +251,29 @@ pub async fn save_draft_answers(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Record anti-cheat violations on an open draft.
-pub async fn record_violations(
+/// BUG-240: one anti-cheat event on an open draft, counted atomically (the
+/// log keeps the newest `max_events`). `None` once it is no longer a draft.
+pub async fn record_violation(
     pool: &PgPool,
     id: SubmissionId,
-    violation_count: i32,
-    violations: &serde_json::Value,
-) -> Result<()> {
-    sqlx::query!(
-        "UPDATE submissions SET violation_count = $2, violations = $3 WHERE id = $1",
+    event: &serde_json::Value,
+    max_events: i32,
+) -> Result<Option<i32>> {
+    let count = sqlx::query_scalar!(
+        r#"UPDATE submissions
+           SET violation_count = violation_count + 1,
+               violations = (CASE WHEN jsonb_array_length(violations) >= $3
+                                  THEN violations - 0 ELSE violations END)
+                            || jsonb_build_array($2::jsonb)
+           WHERE id = $1 AND status = 'draft'
+           RETURNING violation_count"#,
         id.0,
-        violation_count,
-        violations
+        event,
+        max_events
     )
-    .execute(pool)
+    .fetch_optional(pool)
     .await?;
-    Ok(())
+    Ok(count)
 }
 
 /// Write-once snapshots of what the learner answered against.

@@ -1300,3 +1300,67 @@ async fn start_and_item_writes_serialize_and_stale_drafts_reopen(pool: PgPool) {
         .await;
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
 }
+
+/// BUG-240: parallel violation reports all count (no lost update), the
+/// stored count annuls the attempt, and a submitted attempt takes none.
+#[sqlx::test(migrations = "../../migrations")]
+async fn parallel_violation_reports_all_count(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "tab_switch_detection": true, "violation_threshold": 5 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let path = format!("/api/v2/submissions/{sub_id}/violations");
+    let report = serde_json::json!({ "kind": "tab_switch" });
+    let replies =
+        futures::future::join_all((0..8).map(|_| app.post_as(&alice, &path, &report))).await;
+    let mut counts: Vec<i64> = replies
+        .iter()
+        .map(|r| {
+            assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+            r.json()["violation_count"].as_i64().unwrap()
+        })
+        .collect();
+    counts.sort_unstable();
+    assert_eq!(counts, (1..=8).collect::<Vec<_>>());
+    let (count, events): (i32, serde_json::Value) =
+        sqlx::query_as("SELECT violation_count, violations FROM submissions WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(count, 8);
+    assert_eq!(events.as_array().unwrap().len(), 8);
+
+    let submitted = app
+        .send(submit(
+            &alice,
+            &sub_id,
+            None,
+            &serde_json::json!({
+                "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } },
+                "violation_count": 0,
+            }),
+        ))
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(submitted.json()["final_score"], 0.0);
+    let late = app.post_as(&alice, &path, &report).await;
+    assert_eq!(late.status, StatusCode::CONFLICT, "{}", late.text());
+}

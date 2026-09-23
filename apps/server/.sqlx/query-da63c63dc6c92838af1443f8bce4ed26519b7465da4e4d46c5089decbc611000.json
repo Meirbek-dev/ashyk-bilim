@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE submissions\n           SET violation_count = violation_count + 1,\n               violations = (CASE WHEN jsonb_array_length(violations) >= $3\n                                  THEN violations - 0 ELSE violations END)\n                            || jsonb_build_array($2::jsonb)\n           WHERE id = $1 AND status = 'draft'\n           RETURNING violation_count",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "violation_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "violation_count"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "da63c63dc6c92838af1443f8bce4ed26519b7465da4e4d46c5089decbc611000"
+}

@@ -47,7 +47,7 @@ pub const SUBMIT_WINDOW: Duration = Duration::from_secs(10);
 /// Timer backoff: 120s · 2^n capped at an hour, five attempts.
 pub const AUTO_SUBMIT_MAX_ATTEMPTS: i32 = 5;
 /// Violation events kept per draft (the count itself is unbounded).
-const MAX_VIOLATION_EVENTS: usize = 200;
+const MAX_VIOLATION_EVENTS: i32 = 200;
 
 fn now_unix() -> i64 {
     std::time::SystemTime::now()
@@ -561,25 +561,13 @@ impl SubmissionsService {
             .get(actor, submission.assessment_id)
             .await?
             .assessment;
-        let mut events = submission
-            .violations
-            .as_array()
-            .cloned()
-            .unwrap_or_default();
-        if events.len() >= MAX_VIOLATION_EVENTS {
-            events.remove(0);
-        }
-        events.push(serde_json::json!({
-            "kind": kind, "detail": detail, "at": now_unix(),
-        }));
-        let violation_count = submission.violation_count.saturating_add(1);
-        ab_db::submissions::record_violations(
-            &self.pool,
-            id,
-            violation_count,
-            &serde_json::Value::Array(events),
-        )
-        .await?;
+        // BUG-240: one atomic increment — parallel reports all count, and
+        // none lands once the draft is submitted.
+        let event = serde_json::json!({ "kind": kind, "detail": detail, "at": now_unix() });
+        let violation_count =
+            ab_db::submissions::record_violation(&self.pool, id, &event, MAX_VIOLATION_EVENTS)
+                .await?
+                .ok_or_else(|| Error::conflict("submission is no longer a draft"))?;
         Ok(ViolationState {
             violation_count,
             threshold: assessment.violation_threshold,
