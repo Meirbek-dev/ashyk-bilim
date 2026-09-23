@@ -159,6 +159,26 @@ impl AssessmentsService {
             }))
     }
 
+    /// BUG-247: a per-learner teacher action (override, deadline extension)
+    /// targets a course **member** — the trail run `learner-state.enrolled`
+    /// reads (UX-150), not anyone with access (an author or maintainer).
+    pub(crate) async fn not_member(
+        pool: &sqlx::PgPool,
+        course_id: ab_core::id::CourseId,
+        user_id: UserId,
+        field: String,
+    ) -> Result<Option<FieldError>> {
+        Ok(
+            (!ab_db::progress::has_trail_run(pool, course_id, user_id).await?).then(|| {
+                FieldError {
+                    field,
+                    code: "not-in-course".into(),
+                    message: format!("user {user_id} is not enrolled in this course"),
+                }
+            }),
+        )
+    }
+
     /// Course creators and platform authors preview without limits.
     fn is_teacher_preview(actor: &Actor, course: &Course) -> bool {
         Self::require_scoped(actor, course, Action::Author, "preview").is_ok()
@@ -305,15 +325,11 @@ impl AssessmentsService {
         if let Some(e) = self.unknown_user(user_id, "user_id").await? {
             return Err(Error::validation(vec![e]));
         }
-        // UX-147: an override is for a student of the course, like an
-        // access-list entry.
-        let course = self.courses.get(actor, assessment.course_id).await?;
-        if !self.user_has_course_access(&course, user_id).await? {
-            return Err(Error::validation(vec![FieldError {
-                field: "user_id".into(),
-                code: "not-in-course".into(),
-                message: format!("user {user_id} has no access to this course"),
-            }]));
+        // UX-147 / BUG-247: an override is for a student of the course.
+        if let Some(e) =
+            Self::not_member(&self.pool, assessment.course_id, user_id, "user_id".into()).await?
+        {
+            return Err(Error::validation(vec![e]));
         }
         let created = ab_db::assessments::insert_override(
             &self.pool,
@@ -344,8 +360,13 @@ impl AssessmentsService {
         user_id: UserId,
         input: OverrideInput,
     ) -> Result<Override> {
-        self.load_for_author(actor, id).await?;
+        let assessment = self.load_for_author(actor, id).await?;
         input.validate()?;
+        if let Some(e) =
+            Self::not_member(&self.pool, assessment.course_id, user_id, "user_id".into()).await?
+        {
+            return Err(Error::validation(vec![e]));
+        }
         let updated = ab_db::assessments::update_override(
             &self.pool,
             id,

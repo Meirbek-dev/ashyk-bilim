@@ -2164,7 +2164,7 @@ async fn queued_extension_fails_for_a_demoted_maintainer(pool: PgPool) {
 async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
-    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
     let (id, _, _) = quiz_with_essay(
         &app,
         &teacher,
@@ -2175,6 +2175,49 @@ async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
     let alice = learner(&app, "alice").await;
     let extend = |user: &str| serde_json::json!({ "user_ids": [user], "new_due_at_unix": now_unix() + 86_400 });
     let path = format!("/api/v2/assessments/{id}/deadline-extensions");
+    let enrol = || async {
+        // Opening an attempt is the learner's own work: it enrols.
+        let started = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert!(started.status.is_success(), "{}", started.text());
+    };
+    let not_member = |res: &ab_testkit::TestResponse, field: &str| {
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+        assert_eq!(res.json()["field_errors"][0]["field"], field);
+        assert_eq!(res.json()["field_errors"][0]["code"], "not-in-course");
+    };
+    // Access is not membership: the author (public course, never enrolled
+    // alice) is refused by both the extension and the override routes.
+    let me = teacher.user_id.to_string();
+    not_member(
+        &app.post_as(&teacher, &path, &extend(&me)).await,
+        &format!("user_ids.{me}"),
+    );
+    not_member(
+        &app.post_as(&teacher, &path, &extend(&alice.user_id.to_string()))
+            .await,
+        &format!("user_ids.{}", alice.user_id),
+    );
+    not_member(
+        &app.post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{me}"),
+            &serde_json::json!({ "max_attempts_override": 3 }),
+        )
+        .await,
+        "user_id",
+    );
+    enrol().await;
     let queued = app
         .post_as(&teacher, &path, &extend(&alice.user_id.to_string()))
         .await;
@@ -2182,26 +2225,12 @@ async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
     let action = ab_core::id::BulkActionId(
         uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
     );
-    // The course goes private: alice (no enrollment) is out.
-    sqlx::query("UPDATE courses SET public = false WHERE id = $1::uuid")
-        .bind(&course_id)
+    // Alice leaves before the run: skipped, named in the log.
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1")
+        .bind(alice.user_id.0)
         .execute(&app.pool)
         .await
         .unwrap();
-    let outside = app
-        .post_as(&teacher, &path, &extend(&alice.user_id.to_string()))
-        .await;
-    assert_eq!(
-        outside.status,
-        StatusCode::UNPROCESSABLE_ENTITY,
-        "{}",
-        outside.text()
-    );
-    assert_eq!(
-        outside.json()["field_errors"][0]["field"],
-        format!("user_ids.{}", alice.user_id)
-    );
-    assert_eq!(outside.json()["field_errors"][0]["code"], "not-in-course");
     ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action)
         .await
         .unwrap();
@@ -2225,9 +2254,24 @@ async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
             .await
             .unwrap();
     assert_eq!(overrides, 0);
+    let put = |max: i32| {
+        Request::builder()
+            .method("PUT")
+            .uri(format!(
+                "/api/v2/assessments/{id}/overrides/{}",
+                alice.user_id
+            ))
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &teacher.cookie)
+            .body(Body::from(
+                serde_json::json!({ "max_attempts_override": max }).to_string(),
+            ))
+            .unwrap()
+    };
+    not_member(&app.send(put(4)).await, "user_id");
 
-    // Back to public: the run ∥ PUT race keeps the PUT's max attempts.
-    app.publish_course(&course_id).await;
+    // Back in: the run ∥ PUT race keeps the PUT's max attempts.
+    enrol().await;
     let created = app
         .post_as(
             &teacher,
@@ -2248,21 +2292,9 @@ async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
         let action = ab_core::id::BulkActionId(
             uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
         );
-        let put = Request::builder()
-            .method("PUT")
-            .uri(format!(
-                "/api/v2/assessments/{id}/overrides/{}",
-                alice.user_id
-            ))
-            .header(header::CONTENT_TYPE, "application/json")
-            .header(header::COOKIE, &teacher.cookie)
-            .body(Body::from(
-                serde_json::json!({ "max_attempts_override": 5 }).to_string(),
-            ))
-            .unwrap();
         let (ran, saved) = tokio::join!(
             ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action),
-            app.send(put)
+            app.send(put(5))
         );
         ran.unwrap();
         assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());

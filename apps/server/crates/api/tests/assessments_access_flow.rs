@@ -39,6 +39,24 @@ async fn learner(app: &TestApp, name: &str) -> (UserId, MintedSession) {
     (user, session)
 }
 
+/// A trail run — course membership, what overrides target (BUG-247).
+async fn enrol(pool: &PgPool, course_id: &str, user_id: UserId) {
+    let trail_id: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO trails (user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id",
+    )
+    .bind(user_id.0)
+    .fetch_one(pool)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3)")
+        .bind(trail_id)
+        .bind(course_id)
+        .bind(user_id.0)
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
 /// A PRIVATE course with one published quiz; returns (course, assessment).
 async fn private_course_with_quiz(app: &TestApp, teacher: &MintedSession) -> (String, String) {
     let course = app
@@ -333,6 +351,7 @@ async fn overrides_shape_the_effective_policy(pool: PgPool) {
     // Make the course public so learners reach it without a cohort.
     app.publish_course(&course_id).await;
     let (alice, alice_session) = learner(&app, "alice").await;
+    enrol(&app.pool, &course_id, alice).await;
 
     // Policy: 2 attempts, a due date in the past, no late work → blocked.
     let mut policy = app

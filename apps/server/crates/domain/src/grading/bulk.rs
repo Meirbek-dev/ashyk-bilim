@@ -18,7 +18,6 @@ use ab_db::submissions::NewGradingEntry;
 use sqlx::PgPool;
 
 use crate::assessments::service::AssessmentsService;
-use crate::catalog::courses::CoursesService;
 use crate::events::GradingEvents;
 use crate::grading::penalties::attempt_cap;
 use crate::grading::teacher::GradingService;
@@ -120,20 +119,19 @@ impl GradingService {
                 serde_json::json!({ "unknown_user_ids": missing }),
             ));
         }
-        // BUG-247: the same rule as `POST overrides/{user}` (UX-147) — an
-        // extension is for a student of the course, named per id.
+        // BUG-247: the same rule as `POST overrides/{user}` — an extension
+        // is for a member of the course, named per id.
         let mut outsiders = Vec::new();
         for &user_id in &targets {
-            if !self
-                .assessments
-                .user_has_course_access(&course, user_id)
-                .await?
+            if let Some(e) = AssessmentsService::not_member(
+                &self.pool,
+                course.id,
+                user_id,
+                format!("user_ids.{user_id}"),
+            )
+            .await?
             {
-                outsiders.push(FieldError {
-                    field: format!("user_ids.{user_id}"),
-                    code: "not-in-course".into(),
-                    message: format!("user {user_id} has no access to this course"),
-                });
+                outsiders.push(e);
             }
         }
         if !outsiders.is_empty() {
@@ -333,13 +331,12 @@ async fn run_deadline_extension(
     let assessment = ab_db::assessments::get_assessment(pool, row.assessment_id)
         .await?
         .ok_or_else(|| Error::not_found("assessment"))?;
-    // BUG-247: course access is re-checked per learner (revoked between
-    // the request and the run → skipped and named in the log).
-    let access = AssessmentsService::new(pool.clone(), CoursesService::new(pool.clone()));
+    // BUG-247: membership is re-checked per learner (left between the
+    // request and the run → skipped and named in the log).
     let mut affected = 0;
     let mut skipped = Vec::new();
     for &user_id in &row.target_user_ids {
-        if !access.user_has_course_access(course, user_id).await? {
+        if !ab_db::progress::has_trail_run(pool, course.id, user_id).await? {
             skipped.push(user_id.to_string());
             continue;
         }
@@ -389,7 +386,7 @@ async fn run_deadline_extension(
     let log = if skipped.is_empty() {
         String::new()
     } else {
-        format!("skipped, no course access: {}", skipped.join(", "))
+        format!("skipped, not enrolled: {}", skipped.join(", "))
     };
     Ok((affected, log))
 }
