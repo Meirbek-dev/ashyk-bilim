@@ -141,6 +141,10 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   the live DB — `relation "ai_threads" does not exist` at `cargo check` means an unmigrated DB, not code).
   Agents killed by a session limit are NOT resumable after a restart (`ListAgents` empty) — respawn
   from the brief; a builder's uncommitted edits are still in the tree and compile-checked first.
+- **Stack rebuilt a ninth and tenth time (2026-09-23)** — two more machine restarts. The three
+  pass-22 critics that were running when the second one hit were resumed by `SendMessage` to
+  their ids this time; that works when the session itself survived. Build with
+  `SQLX_OFFLINE=true` before `ashyq migrate` on a fresh DB.
 - **Builders must never run `bun run lint`** (it auto-fixes ~60 unrelated files; reverting them wiped two
   other builders' in-progress edits twice in pass 20). Shared-index hazard: concurrent `git commit`s
   swept other builders' staged hunks into the wrong commits and once committed a torn `add_item`
