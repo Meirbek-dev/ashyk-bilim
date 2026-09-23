@@ -15,6 +15,11 @@ export const PublishSummary = zod.object({
       'Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) — the same count as\n`stats.needs_grading`.',
     ),
   published_count: zod.int(),
+  skipped_count: zod
+    .int()
+    .describe(
+      'Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them.',
+    ),
 })
 
 export type PublishSummary = zod.input<typeof PublishSummary>

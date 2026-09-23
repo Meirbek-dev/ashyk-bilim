@@ -20466,7 +20466,8 @@
         "required": [
           "published_count",
           "already_published_count",
-          "needs_grading_count"
+          "needs_grading_count",
+          "skipped_count"
         ],
         "properties": {
           "already_published_count": {
@@ -20481,6 +20482,11 @@
           "published_count": {
             "type": "integer",
             "format": "int64"
+          },
+          "skipped_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them."
           }
         }
       },
@@ -24018,7 +24024,7 @@
               "null"
             ],
             "format": "uuid",
-            "description": "Finalized `avatar` upload to claim as the new avatar."
+            "description": "Finalized `avatar` upload to claim as the new avatar; `null`\nremoves the current one."
           },
           "bio": {
             "type": [

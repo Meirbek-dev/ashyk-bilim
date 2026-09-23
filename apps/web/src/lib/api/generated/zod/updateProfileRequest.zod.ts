@@ -9,7 +9,10 @@ import * as zod from 'zod'
 
 export const UpdateProfileRequest = zod
   .object({
-    avatar_upload_id: zod.uuid().nullish().describe('Finalized `avatar` upload to claim as the new avatar.'),
+    avatar_upload_id: zod
+      .uuid()
+      .nullish()
+      .describe('Finalized `avatar` upload to claim as the new avatar; `null`\nremoves the current one.'),
     bio: zod.string().nullish(),
     display_name: zod.string().nullish(),
     locale: zod.string().nullish().describe('One of the platform locales.'),

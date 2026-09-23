@@ -8092,12 +8092,18 @@ expression: json
           "published_count": {
             "format": "int64",
             "type": "integer"
+          },
+          "skipped_count": {
+            "description": "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them.",
+            "format": "int64",
+            "type": "integer"
           }
         },
         "required": [
           "published_count",
           "already_published_count",
-          "needs_grading_count"
+          "needs_grading_count",
+          "skipped_count"
         ],
         "type": "object"
       },
@@ -11630,7 +11636,7 @@ expression: json
         "description": "Partial update; omitted fields are unchanged.",
         "properties": {
           "avatar_upload_id": {
-            "description": "Finalized `avatar` upload to claim as the new avatar.",
+            "description": "Finalized `avatar` upload to claim as the new avatar; `null`\nremoves the current one.",
             "format": "uuid",
             "type": [
               "string",
