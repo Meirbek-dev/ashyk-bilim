@@ -1494,7 +1494,11 @@ async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
         .await;
     assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
     let republished = app
-        .post_as(&teacher, &lifecycle, &serde_json::json!({ "to": "published" }))
+        .post_as(
+            &teacher,
+            &lifecycle,
+            &serde_json::json!({ "to": "published" }),
+        )
         .await;
     assert_eq!(republished.status, StatusCode::OK, "{}", republished.text());
     sqlx::query("UPDATE submissions SET started_at = now() - interval '3 minutes' WHERE id = $1")
