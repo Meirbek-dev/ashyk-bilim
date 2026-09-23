@@ -34,19 +34,25 @@ export function uniqueById<T extends { id: string }>(...lists: T[][]): T[] {
 
 export function estimateAudiencePreviewCount({
   mode,
+  persistedMode,
   persistedEffectiveCount,
   loadedEligibleUserCount,
   selectedUserCount,
   selectedGroupMemberCounts,
 }: {
   mode: AccessMode
+  persistedMode: AccessMode | null
   persistedEffectiveCount: number | null
   loadedEligibleUserCount: number
   selectedUserCount: number
   selectedGroupMemberCounts: number[]
 }): number {
   if (mode === 'all_course_learners') {
-    return persistedEffectiveCount ?? loadedEligibleUserCount
+    // UX-159: the server counts enrolled learners only for a saved
+    // course-wide policy; a saved allowlist count says nothing about them.
+    return persistedMode === 'all_course_learners' && persistedEffectiveCount !== null
+      ? persistedEffectiveCount
+      : loadedEligibleUserCount
   }
   return selectedUserCount + selectedGroupMemberCounts.reduce((sum, count) => sum + count, 0)
 }

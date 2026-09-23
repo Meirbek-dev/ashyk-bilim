@@ -274,6 +274,21 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/assessments/{id}/access"))
         .await;
     assert_eq!(view.json()["mode"], "all_course_learners");
+    // UX-159: course-wide reach is the enrolled learners, not the lists.
+    assert_eq!(view.json()["effective_user_count"], 0);
+    sqlx::query(
+        "WITH t AS (INSERT INTO trails (user_id) VALUES ($1) RETURNING id)
+         INSERT INTO trail_runs (trail_id, course_id, user_id) SELECT id, $2, $1 FROM t",
+    )
+    .bind(alice.0)
+    .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let view = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/access"))
+        .await;
+    assert_eq!(view.json()["effective_user_count"], 1);
 
     // UX-154: the view carries an ETag; a save that echoes it lands and
     // bumps it, a save with the old one is 412 — tab B never silently

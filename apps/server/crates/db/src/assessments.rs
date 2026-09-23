@@ -888,16 +888,25 @@ pub async fn replace_access_lists(
     Ok(())
 }
 
-/// Distinct people reachable through the allowlists (direct + via groups).
+/// Distinct people the access policy reaches: the allowlists (direct + via
+/// groups) when restricted, the enrolled learners when course-wide.
 pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i64> {
+    // UX-159: the course-wide mode reaches the course's enrolled learners
+    // (a trail run — the UX-150 enrolment predicate), not the empty lists.
     let count = sqlx::query_scalar!(
-        r#"SELECT count(DISTINCT reach.user_id) AS "count!" FROM (
-               SELECT user_id FROM assessment_access_users WHERE assessment_id = $1
-               UNION
-               SELECT m.user_id FROM assessment_access_usergroups g
-               JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id
-               WHERE g.assessment_id = $1
-           ) reach"#,
+        r#"SELECT CASE WHEN a.access_mode = 'all_course_learners' THEN
+               (SELECT count(DISTINCT r.user_id) FROM trail_runs r
+                WHERE r.course_id = a.course_id)
+           ELSE
+               (SELECT count(DISTINCT reach.user_id) FROM (
+                    SELECT user_id FROM assessment_access_users WHERE assessment_id = $1
+                    UNION
+                    SELECT m.user_id FROM assessment_access_usergroups g
+                    JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id
+                    WHERE g.assessment_id = $1
+                ) reach)
+           END AS "count!"
+           FROM assessments a WHERE a.id = $1"#,
         id.0
     )
     .fetch_one(pool)

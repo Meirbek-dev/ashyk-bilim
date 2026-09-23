@@ -154,6 +154,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   const overrideByUserId = useMemo(() => new Map(overrides.map(override => [override.user_id, override])), [overrides])
   const effectivePreviewCount = estimateAudiencePreviewCount({
     mode,
+    persistedMode: access?.mode ?? null,
     persistedEffectiveCount: access?.effective_user_count ?? null,
     loadedEligibleUserCount: allUsers.length,
     selectedUserCount: selectedUsers.size,

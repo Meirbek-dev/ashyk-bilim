@@ -38,6 +38,7 @@ describe('assessment access builder helpers', () => {
     expect(
       estimateAudiencePreviewCount({
         mode: 'all_course_learners',
+        persistedMode: 'all_course_learners',
         persistedEffectiveCount: 0,
         loadedEligibleUserCount: 50,
         selectedUserCount: 12,
@@ -45,9 +46,23 @@ describe('assessment access builder helpers', () => {
       }),
     ).toBe(0)
 
+    // UX-159: switching a saved allowlist to course-wide previews the
+    // enrolled learners, not the allowlist's reach.
+    expect(
+      estimateAudiencePreviewCount({
+        mode: 'all_course_learners',
+        persistedMode: 'restricted',
+        persistedEffectiveCount: 1,
+        loadedEligibleUserCount: 50,
+        selectedUserCount: 12,
+        selectedGroupMemberCounts: [20],
+      }),
+    ).toBe(50)
+
     expect(
       estimateAudiencePreviewCount({
         mode: 'restricted',
+        persistedMode: 'restricted',
         persistedEffectiveCount: 70,
         loadedEligibleUserCount: 50,
         selectedUserCount: 2,
