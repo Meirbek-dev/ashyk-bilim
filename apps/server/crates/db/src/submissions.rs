@@ -95,30 +95,53 @@ pub async fn insert_draft<'e>(
     Ok(id)
 }
 
+/// BUG-239: serialize `start` per (assessment, learner) until commit, so
+/// the attempt count and the cap are read with no other start in flight.
+pub async fn lock_attempts(
+    conn: &mut sqlx::PgConnection,
+    assessment_id: AssessmentId,
+    user_id: UserId,
+) -> Result<()> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('attempt:' || $1 || $2, 0))")
+        .bind(assessment_id.0.to_string())
+        .bind(user_id.0.to_string())
+        .execute(conn)
+        .await?;
+    Ok(())
+}
+
 /// BUG-224: re-opening an existing draft (`start` again) follows the
 /// assessment's current content and policy versions — the learner is
 /// loading the items now, so a later submit is no longer stale.
+///
+/// Returns the draft (row-locked until commit, so a concurrent submit waits),
+/// `None` when there is no open draft (BUG-239: a submit that committed
+/// first leaves none).
 pub async fn resync_draft(
     conn: &mut sqlx::PgConnection,
     assessment_id: AssessmentId,
     user_id: UserId,
     content_version: i32,
     policy_version: i32,
-) -> Result<()> {
-    sqlx::query!(
+) -> Result<Option<SubmissionId>> {
+    let id = sqlx::query_scalar!(
         r#"UPDATE submissions SET content_version = $3, policy_version = $4
-           WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'"#,
+           WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'
+           RETURNING id AS "id: SubmissionId""#,
         assessment_id.0,
         user_id.0,
         content_version,
         policy_version
     )
-    .execute(conn)
+    .fetch_optional(conn)
     .await?;
-    Ok(())
+    Ok(id)
 }
 
-pub async fn get_submission(pool: &PgPool, id: SubmissionId) -> Result<Option<SubmissionRow>> {
+pub async fn get_submission<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: SubmissionId,
+) -> Result<Option<SubmissionRow>> {
     let row = sqlx::query_as!(
         SubmissionRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
@@ -141,7 +164,7 @@ pub async fn get_submission(pool: &PgPool, id: SubmissionId) -> Result<Option<Su
            FROM submissions WHERE id = $1"#,
         id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
@@ -180,8 +203,8 @@ pub async fn open_draft(
 }
 
 /// Every attempt by one learner, newest first.
-pub async fn list_user_submissions(
-    pool: &PgPool,
+pub async fn list_user_submissions<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     assessment_id: AssessmentId,
     user_id: UserId,
 ) -> Result<Vec<SubmissionRow>> {
@@ -208,7 +231,7 @@ pub async fn list_user_submissions(
         assessment_id.0,
         user_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }

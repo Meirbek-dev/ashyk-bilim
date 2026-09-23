@@ -152,6 +152,21 @@ fn failed_cases(body: &crate::assessments::items::CodeBody) -> Vec<CaseOutcome> 
         .collect()
 }
 
+/// The attempt cap over a learner's attempts (newest first). A returned
+/// attempt lifts it for its revision — the rule `attempt-state` applies.
+fn cap_reached(prior: &[Submission], max_attempts: Option<i32>) -> bool {
+    let mut completed = prior
+        .iter()
+        .filter(|s| s.status != SubmissionStatus::Draft)
+        .peekable();
+    let revision = completed
+        .peek()
+        .is_some_and(|s| s.status == SubmissionStatus::Returned);
+    max_attempts.is_some_and(|max| {
+        !revision && completed.count() >= usize::try_from(max).unwrap_or(usize::MAX)
+    })
+}
+
 /// Anti-cheat blocks only when a detector is enabled and the threshold is hit.
 const fn violation_exceeded(assessment: &Assessment, violation_count: i32) -> bool {
     let detection_on = assessment.copy_paste_protection
@@ -484,51 +499,64 @@ impl SubmissionsService {
         }
         // Visibility gate only; the versions come from the locked row below.
         self.assessments.get(actor, assessment_id).await?;
-        let completed =
-            ab_db::submissions::count_completed_attempts(&self.pool, assessment_id, actor.user_id)
-                .await?;
-        let attempt_number = i32::try_from(completed)
-            .unwrap_or(i32::MAX)
-            .saturating_add(1);
         // BUG-224: the draft and the assessment row lock (`FOR SHARE`) land
         // in one transaction — an item write (`FOR UPDATE`, BUG-218) either
         // committed before (the draft gets its content version) or waits
         // and then sees the draft (409 «already has submissions»).
+        // BUG-239: starts of one learner serialize on `lock_attempts`, and
+        // the open draft is row-locked by the re-sync, so the count and the
+        // cap below are read after any submit of it committed. Every read
+        // until commit goes through `tx` (no second pool connection, BUG-235).
         let mut tx = self.pool.begin().await?;
         let assessment = ab_db::submissions::share_assessment(&mut tx, assessment_id)
             .await?
             .ok_or_else(|| Error::not_found("assessment"))?;
-        let inserted = ab_db::submissions::insert_draft(
-            &mut *tx,
+        ab_db::submissions::lock_attempts(&mut tx, assessment_id, actor.user_id).await?;
+        // Idempotent: the open draft follows the content being loaded now.
+        let resynced = ab_db::submissions::resync_draft(
+            &mut tx,
             assessment_id,
-            assessment.course_id,
             actor.user_id,
-            attempt_number,
             assessment.content_version,
             assessment.policy_version,
         )
         .await?;
-        if inserted.is_none() {
-            // Idempotent: the open draft already exists and follows the
-            // content the learner is loading now.
-            ab_db::submissions::resync_draft(
-                &mut tx,
+        let (id, created) = if let Some(id) = resynced {
+            (id, false)
+        } else {
+            let prior =
+                ab_db::submissions::list_user_submissions(&mut *tx, assessment_id, actor.user_id)
+                    .await?;
+            if cap_reached(&prior, state.effective.max_attempts) {
+                return Err(Error::forbidden("cannot start: MAX_ATTEMPTS_REACHED"));
+            }
+            let completed = prior
+                .iter()
+                .filter(|s| s.status != SubmissionStatus::Draft)
+                .count();
+            let attempt_number = i32::try_from(completed)
+                .unwrap_or(i32::MAX)
+                .saturating_add(1);
+            let id = ab_db::submissions::insert_draft(
+                &mut *tx,
                 assessment_id,
+                assessment.course_id,
                 actor.user_id,
+                attempt_number,
                 assessment.content_version,
                 assessment.policy_version,
             )
-            .await?;
-        }
+            .await?
+            // Unreachable under `lock_attempts`; never a second draft.
+            .ok_or_else(|| Error::conflict("an attempt is already open"))?;
+            (id, true)
+        };
+        // Read before commit: a submit racing this start cannot turn the
+        // reply into a 404.
+        let draft = ab_db::submissions::get_submission(&mut *tx, id)
+            .await?
+            .ok_or_else(|| Error::not_found("submission"))?;
         tx.commit().await?;
-        let created = inserted.is_some();
-        let draft = match inserted {
-            Some(id) => ab_db::submissions::get_submission(&self.pool, id).await?,
-            None => {
-                ab_db::submissions::open_draft(&self.pool, assessment_id, actor.user_id).await?
-            }
-        }
-        .ok_or_else(|| Error::not_found("submission"))?;
         let total =
             usize::try_from(ab_db::assessments::count_items(&self.pool, assessment_id).await?)
                 .unwrap_or(0);
@@ -753,6 +781,14 @@ impl SubmissionsService {
             effective,
         } = ctx;
 
+        // BUG-239: the cap holds on every door, the timer sweep included —
+        // a draft past it is never graded.
+        let prior =
+            ab_db::submissions::list_user_submissions(pool, assessment.id, submission.user_id)
+                .await?;
+        if cap_reached(&prior, effective.max_attempts) {
+            return Err(Error::forbidden("MAX_ATTEMPTS_REACHED"));
+        }
         if !opts.skip_constraints {
             Self::enforce_constraints(pool, &submission, &assessment, &effective, now).await?;
         }
@@ -881,24 +917,6 @@ impl SubmissionsService {
         effective: &EffectivePolicy,
         now: i64,
     ) -> Result<()> {
-        if let Some(max) = effective.max_attempts {
-            let prior =
-                ab_db::submissions::list_user_submissions(pool, assessment.id, submission.user_id)
-                    .await?;
-            // A returned attempt lifts the cap for its revision — the same rule
-            // `attempt-state` applies when it lets the learner start it.
-            let revision = prior
-                .iter()
-                .find(|s| s.status != SubmissionStatus::Draft)
-                .is_some_and(|s| s.status == SubmissionStatus::Returned);
-            let completed = prior
-                .iter()
-                .filter(|s| s.status != SubmissionStatus::Draft)
-                .count();
-            if !revision && completed >= usize::try_from(max).unwrap_or(usize::MAX) {
-                return Err(Error::forbidden("MAX_ATTEMPTS_REACHED"));
-            }
-        }
         if let (Some(limit), Some(started)) = (effective.time_limit_seconds, submission.started_at)
             && now > started + i64::from(limit) + SUBMIT_GRACE_SECONDS
         {

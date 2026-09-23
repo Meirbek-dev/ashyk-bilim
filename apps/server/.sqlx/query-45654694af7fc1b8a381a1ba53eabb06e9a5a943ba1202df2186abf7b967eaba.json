@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE submissions SET content_version = $3, policy_version = $4\n           WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'\n           RETURNING id AS \"id: SubmissionId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "45654694af7fc1b8a381a1ba53eabb06e9a5a943ba1202df2186abf7b967eaba"
+}

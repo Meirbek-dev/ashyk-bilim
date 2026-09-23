@@ -1364,3 +1364,83 @@ async fn parallel_violation_reports_all_count(pool: PgPool) {
     let late = app.post_as(&alice, &path, &report).await;
     assert_eq!(late.status, StatusCode::CONFLICT, "{}", late.text());
 }
+
+/// BUG-239: starts racing the submit of the only allowed attempt never open
+/// a second one (nor 404), and the timer sweep never grades a draft past
+/// the cap.
+#[sqlx::test(migrations = "../../migrations")]
+async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "max_attempts": 1, "time_limit_seconds": 60 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let start_path = format!("/api/v2/assessments/{id}/submissions");
+    let empty = serde_json::json!({});
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    let mut last = String::new();
+    for round in 0..10 {
+        // One learner per round: the submit limiter is per learner.
+        let who = learner(&app, &format!("learner{round}")).await;
+        let draft = app.post_as(&who, &start_path, &empty).await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+        let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+        let starts =
+            futures::future::join_all((0..4).map(|_| app.post_as(&who, &start_path, &empty)));
+        let (submitted, starts) =
+            tokio::join!(app.send(submit(&who, &sub_id, None, &answer)), starts);
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        for start in &starts {
+            assert!(
+                matches!(start.status, StatusCode::OK | StatusCode::FORBIDDEN),
+                "round {round}: {} {}",
+                start.status,
+                start.text()
+            );
+        }
+        let rows: Vec<(i32, String)> = sqlx::query_as(
+            "SELECT attempt_number, status FROM submissions
+             WHERE assessment_id = $1
+               AND user_id = (SELECT user_id FROM submissions WHERE id = $2)",
+        )
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+        .fetch_all(&app.pool)
+        .await
+        .unwrap();
+        assert_eq!(rows, vec![(1, "published".to_owned())], "round {round}");
+        last = sub_id;
+    }
+
+    // A draft past the cap (left by an older race) is never graded.
+    let orphan: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number,
+                                  content_version, policy_version, started_at)
+         SELECT assessment_id, course_id, user_id, 2, content_version, policy_version,
+                now() - interval '3 minutes'
+         FROM submissions WHERE id = $1 RETURNING id",
+    )
+    .bind(uuid::Uuid::parse_str(&last).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    let swept =
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
+            .await
+            .unwrap();
+    assert_eq!(swept, 0);
+    let status: String = sqlx::query_scalar("SELECT status FROM submissions WHERE id = $1")
+        .bind(orphan)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(status, "draft");
+}
