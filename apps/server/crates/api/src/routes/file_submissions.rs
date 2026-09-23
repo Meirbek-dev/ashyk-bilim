@@ -182,13 +182,17 @@ pub async fn start_draft(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileSubmissionId>,
 ) -> ApiResult<(StatusCode, Json<Attempt>)> {
-    let (attempt, created) = state.file_submissions.start(&actor, id).await?;
-    let status = if created {
-        StatusCode::CREATED
-    } else {
-        StatusCode::OK
-    };
-    Ok((status, Json(attempt.into())))
+    // BUG-241: the attempt and its projection must not die with the socket.
+    detached(async move {
+        let (attempt, created) = state.file_submissions.start(&actor, id).await?;
+        let status = if created {
+            StatusCode::CREATED
+        } else {
+            StatusCode::OK
+        };
+        Ok((status, Json(attempt.into())))
+    })
+    .await
 }
 
 /// Replace the draft's attached files (opens a draft when there is none).
@@ -220,11 +224,15 @@ pub async fn save_draft(
     ValidJson(request): ValidJson<DraftRequest>,
 ) -> ApiResult<Json<Attempt>> {
     let expected = if_match(&headers)?;
-    let saved = state
-        .file_submissions
-        .save_draft(&actor, id, &refs(request.files), expected)
-        .await?;
-    Ok(Json(saved.into()))
+    // BUG-241: a hang-up mid-save must not cut the attach short.
+    detached(async move {
+        let saved = state
+            .file_submissions
+            .save_draft(&actor, id, &refs(request.files), expected)
+            .await?;
+        Ok(Json(saved.into()))
+    })
+    .await
 }
 
 /// Submit the open attempt (optionally replacing files first).

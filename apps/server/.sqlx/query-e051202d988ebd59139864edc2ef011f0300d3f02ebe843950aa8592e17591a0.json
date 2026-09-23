@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM uploads\n           WHERE expires_at IS NOT NULL AND expires_at < now()\n             AND (status = 'pending'\n                  OR (status = 'finalized' AND referenced_count = 0))\n           RETURNING bucket, key",
+  "query": "DELETE FROM uploads\n           WHERE expires_at IS NOT NULL AND expires_at < now()\n             AND (status = 'pending'\n                  OR (status = 'finalized' AND referenced_count = 0))\n             AND NOT EXISTS (SELECT 1 FROM file_submission_files f WHERE f.upload_id = uploads.id)\n           RETURNING bucket, key",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "047ccb0d90862f4c1c9cbc5e5a4b0580ce54360f1ec45739dd2b8f356cf866cf"
+  "hash": "e051202d988ebd59139864edc2ef011f0300d3f02ebe843950aa8592e17591a0"
 }

@@ -803,12 +803,6 @@ impl FileSubmissionsService {
             return Err(stale(expected, attempt.version));
         }
         self.replace_files(&attempt, files, &uploads).await?;
-        if !ab_db::file_submissions::touch_attempt(&self.pool, attempt.id, attempt.version).await? {
-            let latest = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
-                .await?
-                .ok_or_else(|| Error::not_found("attempt"))?;
-            return Err(stale(attempt.version, latest.version));
-        }
         self.projector
             .after_file_attempt(row.id, actor.user_id)
             .await;
@@ -889,14 +883,25 @@ impl FileSubmissionsService {
     }
 
     /// Attach validated uploads; reference counts move from the old set to
-    /// the new one.
+    /// the new one. BUG-241: the version bump (the attempt's lock), the file
+    /// rows and the counts land in one transaction — a dropped request or a
+    /// lost race leaves no file row without its reference. Returns the new
+    /// version; a stale one is 412 with nothing changed.
     async fn replace_files(
         &self,
         attempt: &AttemptRow,
         files: &[FileRef],
         uploads: &[UploadRow],
-    ) -> Result<()> {
-        let previous = ab_db::file_submissions::list_files(&self.pool, attempt.id).await?;
+    ) -> Result<i64> {
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::file_submissions::touch_attempt(&mut *tx, attempt.id, attempt.version).await? {
+            tx.rollback().await?;
+            let latest = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
+                .await?
+                .ok_or_else(|| Error::not_found("attempt"))?;
+            return Err(stale(attempt.version, latest.version));
+        }
+        let previous = ab_db::file_submissions::list_files(&mut *tx, attempt.id).await?;
         let new_files: Vec<NewFile<'_>> = files
             .iter()
             .zip(uploads)
@@ -912,11 +917,11 @@ impl FileSubmissionsService {
                 storage_key: &upload.key,
             })
             .collect();
-        ab_db::file_submissions::replace_files(&self.pool, attempt.id, &new_files).await?;
+        ab_db::file_submissions::replace_files(&mut tx, attempt.id, &new_files).await?;
         for old in &previous {
             if !uploads.iter().any(|u| u.id == old.upload_id) {
                 ab_db::uploads::release_reference(
-                    &self.pool,
+                    &mut *tx,
                     old.upload_id,
                     UNREFERENCED_GRACE.as_secs_f64(),
                 )
@@ -925,10 +930,11 @@ impl FileSubmissionsService {
         }
         for upload in uploads {
             if !previous.iter().any(|p| p.upload_id == upload.id) {
-                ab_db::uploads::add_reference(&self.pool, upload.id).await?;
+                ab_db::uploads::add_reference(&mut *tx, upload.id).await?;
             }
         }
-        Ok(())
+        tx.commit().await?;
+        Ok(attempt.version + 1)
     }
 
     /// Submit the open attempt (optionally replacing files first). At least
@@ -965,9 +971,10 @@ impl FileSubmissionsService {
         {
             return Err(stale(expected, attempt.version));
         }
-        if let (Some(files), Some(uploads)) = (files, &uploads) {
-            self.replace_files(&attempt, files, uploads).await?;
-        }
+        let version = match (files, &uploads) {
+            (Some(files), Some(uploads)) => self.replace_files(&attempt, files, uploads).await?,
+            _ => attempt.version,
+        };
         if ab_db::file_submissions::list_files(&self.pool, attempt.id)
             .await?
             .is_empty()
@@ -978,18 +985,14 @@ impl FileSubmissionsService {
         let is_late = row.due_at.is_some_and(|due| now > due);
         let penalty = late_penalty_pct(late_policy_of(&row), row.due_at, now, row.allow_late);
         if !ab_db::file_submissions::submit_attempt(
-            &self.pool,
-            attempt.id,
-            attempt.version,
-            is_late,
-            penalty,
+            &self.pool, attempt.id, version, is_late, penalty,
         )
         .await?
         {
             let latest = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
                 .await?
                 .ok_or_else(|| Error::not_found("attempt"))?;
-            return Err(stale(attempt.version, latest.version));
+            return Err(stale(version, latest.version));
         }
         self.projector
             .after_file_attempt(row.id, actor.user_id)

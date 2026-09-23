@@ -116,7 +116,11 @@ pub async fn release_reference_by_key<'e>(
 
 /// Drop a reference; when the last one goes, restart the grace clock so the
 /// reaper eventually collects the orphaned object.
-pub async fn release_reference(pool: &PgPool, id: Uuid, grace_secs: f64) -> Result<bool> {
+pub async fn release_reference<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: Uuid,
+    grace_secs: f64,
+) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE uploads
            SET referenced_count = referenced_count - 1,
@@ -127,7 +131,7 @@ pub async fn release_reference(pool: &PgPool, id: Uuid, grace_secs: f64) -> Resu
         id,
         grace_secs
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -139,6 +143,9 @@ pub struct ReapedUpload {
 
 /// Delete expired pending rows and expired unreferenced finalized rows;
 /// returns the object locations for storage-side deletion.
+///
+/// BUG-241: a row a file submission still points at (`ON DELETE RESTRICT`) is skipped, so one
+/// miscounted upload never fails the whole sweep.
 pub async fn reap_expired(pool: &PgPool) -> Result<Vec<ReapedUpload>> {
     let rows = sqlx::query_as!(
         ReapedUpload,
@@ -146,6 +153,7 @@ pub async fn reap_expired(pool: &PgPool) -> Result<Vec<ReapedUpload>> {
            WHERE expires_at IS NOT NULL AND expires_at < now()
              AND (status = 'pending'
                   OR (status = 'finalized' AND referenced_count = 0))
+             AND NOT EXISTS (SELECT 1 FROM file_submission_files f WHERE f.upload_id = uploads.id)
            RETURNING bucket, key"#
     )
     .fetch_all(pool)

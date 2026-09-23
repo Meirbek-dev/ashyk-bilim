@@ -1284,3 +1284,77 @@ async fn config_rubric_must_be_an_object(pool: PgPool) {
         );
     }
 }
+
+/// BUG-241: a draft file swap whose client hangs up mid-request still moves
+/// both reference counts with the file rows, and the reaper skips (never
+/// fails on) an expired upload a file row still points at.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_draft_swap_keeps_references_and_the_reaper_runs(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let draft_path = format!("/api/v2/file-submissions/{id}/draft");
+    let a = finalized_upload(&app, &alice, "application/pdf", b"%PDF a").await;
+    let b = finalized_upload(&app, &alice, "application/pdf", b"%PDF b").await;
+    let first = app
+        .patch_as(
+            &alice,
+            &draft_path,
+            &serde_json::json!({ "files": [{ "upload_id": a }] }),
+        )
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let attached = async |upload: &str| -> bool {
+        sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM file_submission_files WHERE upload_id = $1)",
+        )
+        .bind(uuid::Uuid::parse_str(upload).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+    for round in 0..6 {
+        let (from, to) = if round % 2 == 0 { (&a, &b) } else { (&b, &a) };
+        drop_request_when(
+            app.patch_as(
+                &alice,
+                &draft_path,
+                &serde_json::json!({ "files": [{ "upload_id": to }] }),
+            ),
+            async || attached(to).await,
+            |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+        )
+        .await;
+        wait_until("the dropped swap left a torn reference", async || {
+            referenced_count(&app, to).await == 1 && referenced_count(&app, from).await == 0
+        })
+        .await;
+    }
+
+    // An attached upload whose count was torn by an older build: expired,
+    // count 0. The reaper skips it and still collects a genuine orphan.
+    let orphan = finalized_upload(&app, &alice, "application/pdf", b"%PDF orphan").await;
+    for upload in [&a, &orphan] {
+        sqlx::query(
+            "UPDATE uploads SET referenced_count = 0, expires_at = now() - interval '1 hour'
+             WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(upload).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    }
+    let reaped = ab_db::uploads::reap_expired(&app.pool).await.unwrap();
+    assert_eq!(reaped.len(), 1);
+    let left: Vec<uuid::Uuid> = sqlx::query_scalar("SELECT id FROM uploads WHERE id = ANY($1)")
+        .bind(vec![
+            uuid::Uuid::parse_str(&a).unwrap(),
+            uuid::Uuid::parse_str(&orphan).unwrap(),
+        ])
+        .fetch_all(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(left, vec![uuid::Uuid::parse_str(&a).unwrap()]);
+}

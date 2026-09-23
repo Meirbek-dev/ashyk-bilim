@@ -467,8 +467,8 @@ pub async fn count_completed_attempts(
 }
 
 /// Bump the lock after a file change. `false` = version mismatch.
-pub async fn touch_attempt(
-    pool: &PgPool,
+pub async fn touch_attempt<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: FileAttemptId,
     expected_version: i64,
 ) -> Result<bool> {
@@ -477,7 +477,7 @@ pub async fn touch_attempt(
         id.0,
         expected_version
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -627,7 +627,10 @@ pub struct NewFile<'a> {
     pub storage_key: &'a str,
 }
 
-pub async fn list_files(pool: &PgPool, attempt_id: FileAttemptId) -> Result<Vec<FileRow>> {
+pub async fn list_files<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    attempt_id: FileAttemptId,
+) -> Result<Vec<FileRow>> {
     let rows = sqlx::query_as!(
         FileRow,
         r#"SELECT id AS "id: FileAttemptFileId", attempt_id AS "attempt_id: FileAttemptId",
@@ -637,7 +640,7 @@ pub async fn list_files(pool: &PgPool, attempt_id: FileAttemptId) -> Result<Vec<
            FROM file_submission_files WHERE attempt_id = $1 ORDER BY position, id"#,
         attempt_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }
@@ -677,18 +680,18 @@ pub async fn get_file(pool: &PgPool, id: FileAttemptFileId) -> Result<Option<Fil
     Ok(row)
 }
 
-/// Replace an attempt's file list wholesale (positions follow the slice).
+/// Replace an attempt's file list wholesale (positions follow the slice),
+/// on the caller's transaction (BUG-241: with the reference counts).
 pub async fn replace_files(
-    pool: &PgPool,
+    conn: &mut sqlx::PgConnection,
     attempt_id: FileAttemptId,
     files: &[NewFile<'_>],
 ) -> Result<()> {
-    let mut tx = pool.begin().await?;
     sqlx::query!(
         "DELETE FROM file_submission_files WHERE attempt_id = $1",
         attempt_id.0
     )
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await?;
     for (position, f) in files.iter().enumerate() {
         sqlx::query!(
@@ -704,9 +707,8 @@ pub async fn replace_files(
             f.storage_key,
             i32::try_from(position).unwrap_or(i32::MAX)
         )
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
     }
-    tx.commit().await?;
     Ok(())
 }
