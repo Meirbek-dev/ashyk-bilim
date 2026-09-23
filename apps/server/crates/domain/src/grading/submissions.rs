@@ -803,6 +803,13 @@ impl SubmissionsService {
             opts.skip_constraints,
         )
         .await?;
+        // BUG-237: a draft behind the assessment's content never publishes
+        // an auto score — items it never showed would score `no-answer`.
+        // `submit` refuses it earlier (409, reopen); the timer sweep, which
+        // cannot ask, hands it to a teacher (pending review).
+        if submission.content_version < assessment.content_version {
+            grade.breakdown.needs_manual_review = true;
+        }
         let late_pct = penalties::late_penalty_pct(
             effective.late_policy,
             effective.due_at,

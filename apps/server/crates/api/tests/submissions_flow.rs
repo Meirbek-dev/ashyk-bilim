@@ -1444,3 +1444,78 @@ async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
         .unwrap();
     assert_eq!(status, "draft");
 }
+
+/// BUG-237: a timed draft left behind by unpublish → add item → republish
+/// is never auto-scored by the timer sweep — the item it never showed
+/// would score `no-answer`; the attempt waits for a teacher instead.
+#[sqlx::test(migrations = "../../migrations")]
+async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "time_limit_seconds": 60 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let saved = app
+        .send(patch_draft(
+            &alice,
+            &sub_id,
+            Some("1"),
+            &serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } }),
+        ))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    let lifecycle = format!("/api/v2/assessments/{id}/lifecycle");
+    let unpublished = app
+        .post_as(&teacher, &lifecycle, &serde_json::json!({ "to": "draft" }))
+        .await;
+    assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("Unseen?"),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let republished = app
+        .post_as(&teacher, &lifecycle, &serde_json::json!({ "to": "published" }))
+        .await;
+    assert_eq!(republished.status, StatusCode::OK, "{}", republished.text());
+    sqlx::query("UPDATE submissions SET started_at = now() - interval '3 minutes' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+
+    let swept =
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
+            .await
+            .unwrap();
+    assert_eq!(swept, 1);
+    let (status, final_score, reason): (String, Option<f64>, Option<String>) = sqlx::query_as(
+        "SELECT status, final_score, auto_submit_reason FROM submissions WHERE id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(status, "pending", "a teacher scores it, never the 50 %");
+    assert_eq!(final_score, None);
+    assert_eq!(reason.as_deref(), Some("time_expired"));
+}
