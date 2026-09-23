@@ -387,16 +387,18 @@ impl IdentityService {
         // a fresh login — every check including the password runs again on
         // the new epoch, so a role or MFA rewrite costs the user nothing and
         // a password change is caught by Zitadel itself (BUG-222 nit).
-        let mut ok = self.login_attempt(&input, &user).await?;
+        let hits: Vec<&str> = ip_key
+            .iter()
+            .map(String::as_str)
+            .chain([login_key.as_str()])
+            .collect();
+        let mut ok = self.login_attempt(&input, &user, &hits).await?;
         if ok.is_none() {
-            ok = self.login_attempt(&input, &user).await?;
+            ok = self.login_attempt(&input, &user, &[]).await?;
         }
         let Some(ok) = ok else {
             return Err(self.fenced_login(&user, &input).await?);
         };
-        if let Some(key) = &ip_key {
-            self.limiter.release(key).await?;
-        }
         self.limiter.clear(&login_key).await?;
         self.audit(Some(user.id), "login", &input, serde_json::json!({}))
             .await?;
@@ -408,10 +410,16 @@ impl IdentityService {
     /// One fenced login attempt: `Ok(None)` when a mutation bumped the epoch
     /// between the checks and `sessions.create` (the Zitadel session is
     /// discarded and the fence audited); the caller retries or refuses.
+    ///
+    /// `hits` are the limiter hits this login counted: handed back as soon as
+    /// Zitadel accepts the password — every answer after that (`mfa-required`,
+    /// `account-disabled`, a session) is not a guess (BUG-236). Empty on the
+    /// retry, which only runs once the first attempt was accepted.
     async fn login_attempt(
         &self,
         input: &LoginInput,
         user: &ab_db::identity::AuthUserRow,
+        hits: &[&str],
     ) -> Result<Option<LoginOk>> {
         // BUG-203: the epoch is read before every check this login rests on
         // (password, status, MFA methods, grants); `sessions.create` refuses
@@ -428,6 +436,9 @@ impl IdentityService {
             )
             .await?;
         let zsession = self.resolve_session_outcome(outcome, input).await?;
+        for key in hits {
+            self.limiter.release(key).await?;
+        }
         // Status is re-read after the epoch, not taken from the row looked up
         // before it — the fence only covers state read after the epoch.
         let status = ab_db::identity::user_status(&self.pool, user.id)

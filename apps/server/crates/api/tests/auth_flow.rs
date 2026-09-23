@@ -1009,6 +1009,47 @@ async fn ip_limit_counts_failed_logins_only(pool: PgPool) {
     assert!(res.headers.contains_key(header::RETRY_AFTER));
 }
 
+/// BUG-236: the `mfa-required` step of an MFA login is not a failure — a
+/// classroom of TOTP users behind one NAT logs in 25 times (step 1 + code)
+/// and never fills the IP window; a wrong password still counts.
+#[sqlx::test(migrations = "../../migrations")]
+async fn mfa_logins_do_not_fill_the_ip_limit(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("natmfa", "natmfa@example.com", &["user"])
+        .await;
+    mock_password_ok(&app.zitadel).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-natmfa/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": { "totalResult": "2" },
+            "authMethodTypes": ["AUTHENTICATION_METHOD_TYPE_PASSWORD", "AUTHENTICATION_METHOD_TYPE_TOTP"]
+        })))
+        .mount(&app.zitadel)
+        .await;
+    let ip = unique_ip();
+    let step1 = serde_json::json!({ "login": "natmfa", "password": "correct horse" });
+    let step2 = serde_json::json!({ "login": "natmfa", "password": "correct horse", "totp_code": "123456" });
+    for _ in 0..25 {
+        let res = login_from(&app, &ip, &step1).await;
+        assert_eq!(res.status, StatusCode::UNAUTHORIZED, "{}", res.text());
+        assert_eq!(res.json()["code"], "mfa-required");
+        let res = login_from(&app, &ip, &step2).await;
+        assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    }
+    for i in 0..20 {
+        let body = serde_json::json!({ "login": format!("ghost-{i}"), "password": "x" });
+        assert_eq!(
+            login_from(&app, &ip, &body).await.status,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    let body = serde_json::json!({ "login": "ghost-21", "password": "x" });
+    assert_eq!(
+        login_from(&app, &ip, &body).await.status,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+}
+
 /// BUG-134: the account lock keys on the resolved user, so a limit hit via
 /// the username also holds for the email of the same account.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1642,6 +1683,108 @@ async fn login_in_flight_during_a_role_rewrite_retries_with_the_new_grants(pool:
     );
     assert_eq!(audited(&app, "login-fenced").await, 1);
     assert_eq!(audited(&app, "login").await, 1);
+}
+
+/// Fenced twice (BUG-236 test task): every `authentication_methods` call
+/// parks the login 300 ms and bumps the epoch meanwhile, so both attempts
+/// are fenced; `on_second` is the mutation that lands during the second.
+/// The listing reports TOTP from the third call on when `totp_later`.
+async fn fenced_twice(
+    app: &TestApp,
+    username: &str,
+    totp_later: bool,
+    on_second: impl std::future::Future<Output = ()>,
+) -> ab_testkit::TestResponse {
+    struct Methods {
+        calls: std::sync::atomic::AtomicUsize,
+        tx: tokio::sync::mpsc::UnboundedSender<usize>,
+        totp_later: bool,
+    }
+    impl wiremock::Respond for Methods {
+        fn respond(&self, _: &wiremock::Request) -> ResponseTemplate {
+            let n = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+            let _ = self.tx.send(n);
+            let mut methods = vec!["AUTHENTICATION_METHOD_TYPE_PASSWORD"];
+            if self.totp_later && n >= 3 {
+                methods.push("AUTHENTICATION_METHOD_TYPE_TOTP");
+            }
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(300))
+                .set_body_json(serde_json::json!({
+                    "details": { "totalResult": "1" },
+                    "authMethodTypes": methods
+                }))
+        }
+    }
+    let user = app
+        .create_user(username, &format!("{username}@example.com"), &["user"])
+        .await;
+    mock_password_ok(&app.zitadel).await;
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/v2/users/z-{username}/authentication_methods"
+        )))
+        .respond_with(Methods {
+            calls: 0.into(),
+            tx,
+            totp_later,
+        })
+        .mount(&app.zitadel)
+        .await;
+    let bump = || async {
+        app.sessions
+            .rewrite_user_sessions(user, &["user".into()], &[], 1)
+            .await
+            .unwrap();
+    };
+    let body = login_body(username);
+    let (login, ()) = tokio::join!(app.post_json("/api/v2/auth/login", &body), async {
+        assert_eq!(rx.recv().await, Some(1));
+        bump().await;
+        assert_eq!(rx.recv().await, Some(2));
+        bump().await;
+        on_second.await;
+    });
+    assert!(login.session_cookie().is_none());
+    assert_eq!(
+        audited(app, "login-fenced").await,
+        2,
+        "both attempts fenced"
+    );
+    assert!(app.sessions.list(user).await.unwrap().is_empty());
+    login
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn fenced_twice_then_disabled_is_account_disabled(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let pool = app.pool.clone();
+    let login = fenced_twice(&app, "fence403", false, async {
+        sqlx::query("UPDATE users SET status = 'disabled' WHERE username = 'fence403'")
+            .execute(&pool)
+            .await
+            .unwrap();
+    })
+    .await;
+    assert_eq!(login.status, StatusCode::FORBIDDEN, "{}", login.text());
+    assert_eq!(login.json()["code"], "account-disabled");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn fenced_twice_then_totp_enrolled_is_mfa_required(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let login = fenced_twice(&app, "fencemfa", true, async {}).await;
+    assert_eq!(login.status, StatusCode::UNAUTHORIZED, "{}", login.text());
+    assert_eq!(login.json()["code"], "mfa-required");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn fenced_twice_otherwise_is_invalid_credentials(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let login = fenced_twice(&app, "fence401", false, async {}).await;
+    assert_eq!(login.status, StatusCode::UNAUTHORIZED, "{}", login.text());
+    assert_eq!(login.json()["code"], "invalid-credentials");
 }
 
 /// BUG-222 nit: two concurrent password changes with the same current
