@@ -2509,7 +2509,12 @@ async fn publish_all_racing_a_save_or_return_never_releases_the_stale_row(pool: 
             match written.status {
                 StatusCode::OK => {
                     if action == "save" {
-                        assert_eq!(review["status"], "graded", "{tag}");
+                        // Released after the save committed, or skipped: either
+                        // way the save's score, never the stale 57.
+                        assert!(
+                            review["status"] == "graded" || review["status"] == "published",
+                            "{tag}"
+                        );
                         assert_eq!(review["final_score"], 80.0, "{tag}");
                     } else {
                         assert_eq!(review["status"], "returned", "{tag}");
