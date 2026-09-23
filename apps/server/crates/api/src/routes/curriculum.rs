@@ -6,6 +6,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
+use crate::detach::detached;
 use crate::dto::curriculum::{
     Activity, ActivityDetail, Block, Chapter, CreateActivityRequest, CreateBlockRequest,
     CreateChapterRequest, Curriculum, MoveActivityRequest, MoveChapterRequest,
@@ -147,8 +148,12 @@ pub async fn delete_chapter(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ChapterId>,
 ) -> ApiResult<StatusCode> {
-    state.curriculum.delete_chapter(&actor, id).await?;
-    Ok(StatusCode::NO_CONTENT)
+    // BUG-242: the renumber + projection after the commit outlive the socket.
+    detached(async move {
+        state.curriculum.delete_chapter(&actor, id).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Move a chapter to a new position (clamped; siblings renumber).

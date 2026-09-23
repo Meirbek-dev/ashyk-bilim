@@ -5,6 +5,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 
+use crate::detach::detached;
 use crate::dto::courses::{
     AddContributorRequest, Contributor, Course, CourseLifecycleRequest, CourseListQuery,
     CoursePage, CourseReadiness, CourseUpdate, CreateCourseRequest, CreateCourseUpdateRequest,
@@ -391,8 +392,11 @@ pub async fn delete_course(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<StatusCode> {
-    state.courses.delete(&actor, id).await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state.courses.delete(&actor, id).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Course announcements, newest first (read follows course visibility).

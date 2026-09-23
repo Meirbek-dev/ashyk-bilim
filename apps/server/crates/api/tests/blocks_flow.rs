@@ -16,6 +16,7 @@ async fn author(app: &TestApp, name: &str) -> MintedSession {
             "course:create:platform",
             "course:read:all",
             "course:update:own",
+            "course:delete:own",
             "file:create:own",
         ],
     )
@@ -296,4 +297,68 @@ async fn block_claim_rolls_back_when_the_activity_vanishes(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!((referenced, expiring), (0, true), "claim must roll back");
+}
+
+/// `(referenced_count, live blocks holding it)` for one upload.
+async fn refs_and_blocks(app: &TestApp, upload: &str) -> (i32, i64) {
+    sqlx::query_as(
+        "SELECT u.referenced_count,
+                (SELECT count(*) FROM blocks b WHERE b.content->>'file_key' = u.key)
+         FROM uploads u WHERE u.id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(upload).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap()
+}
+
+/// BUG-242: a block that commits while a chapter/course DELETE waits on its
+/// activity is released by that DELETE — the cascade used to drop it after
+/// the release had read its snapshot, pinning the upload forever.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "teacher").await;
+    for target in ["chapters", "courses"] {
+        let (course, activity) = scaffold_activity(&app, &teacher).await;
+        let activity_id = uuid::Uuid::parse_str(&activity).unwrap();
+        let chapter: uuid::Uuid =
+            sqlx::query_scalar("SELECT chapter_id FROM activities WHERE id = $1")
+                .bind(activity_id)
+                .fetch_one(&app.pool)
+                .await
+                .unwrap();
+        let upload = finalized_upload(&app, &teacher, "block-image", "image/png").await;
+
+        // A block create in flight: row inserted + claim taken, not committed.
+        let mut tx = app.pool.begin().await.unwrap();
+        sqlx::query(
+            "INSERT INTO blocks (activity_id, block_type, content)
+             SELECT $1, 'image', jsonb_build_object('upload_id', id::text, 'file_key', key)
+             FROM uploads WHERE id = $2",
+        )
+        .bind(activity_id)
+        .bind(uuid::Uuid::parse_str(&upload).unwrap())
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+        sqlx::query("UPDATE uploads SET referenced_count = 1, expires_at = NULL WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&upload).unwrap())
+            .execute(&mut *tx)
+            .await
+            .unwrap();
+        let path = if target == "chapters" {
+            format!("/api/v2/chapters/{chapter}")
+        } else {
+            format!("/api/v2/courses/{course}")
+        };
+        let delete = app.delete_as(&teacher, &path);
+        let commit = async {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            tx.commit().await.unwrap();
+        };
+        let (deleted, ()) = tokio::join!(delete, commit);
+        assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{target}");
+        assert_eq!(refs_and_blocks(&app, &upload).await, (0, 0), "{target}");
+    }
 }

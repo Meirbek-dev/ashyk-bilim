@@ -351,45 +351,96 @@ pub async fn set_course_public(pool: &PgPool, id: CourseId, public: bool) -> Res
 /// Delete a course and release every upload it owns.
 ///
 /// Its thumbnail and the media blocks under it re-enter the reaper's queue
-/// after `grace_secs`. BUG-209: the FK cascade drops the rows but not the
-/// `referenced_count`s, which pinned the objects forever. One statement:
-/// the CTEs read the pre-delete snapshot, so the cascaded blocks are still
-/// visible to the release.
+/// after `grace_secs` (BUG-209: the FK cascade drops rows, not
+/// `referenced_count`s).
 ///
-/// BUG-234: the parent row is locked in its own statement first, so a
-/// concurrent block/thumbnail create that already holds the row (its FK
-/// check) commits before the release CTEs take their snapshot — otherwise
-/// the cascade dropped a block the CTE never saw and its upload leaked.
+/// BUG-242: lock order course → chapters → activities → uploads (the order
+/// every block/upload write uses). With every activity locked no block can
+/// be added or removed under the delete, and the release counts exactly the
+/// block rows the DELETE returned.
 pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Result<bool> {
     let mut tx = pool.begin().await?;
-    sqlx::query_scalar!("SELECT id FROM courses WHERE id = $1 FOR UPDATE", id.0)
-        .fetch_optional(&mut *tx)
+    let Some(thumbnail) = sqlx::query_scalar!(
+        "SELECT thumbnail_image_key FROM courses WHERE id = $1 FOR UPDATE",
+        id.0
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    else {
+        return Ok(false);
+    };
+    sqlx::query_scalar!(
+        "SELECT id FROM chapters WHERE course_id = $1 ORDER BY id FOR UPDATE",
+        id.0
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    let activities = sqlx::query_scalar!(
+        "SELECT id FROM activities WHERE course_id = $1 ORDER BY id FOR UPDATE",
+        id.0
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
+    if let Some(key) = thumbnail {
+        crate::uploads::release_reference_by_key(&mut *tx, &key, grace_secs).await?;
+    }
+    let deleted = sqlx::query!("DELETE FROM courses WHERE id = $1", id.0)
+        .execute(&mut *tx)
         .await?;
-    let deleted = sqlx::query!(
-        r#"WITH owned AS (
-               SELECT thumbnail_image_key AS key FROM courses WHERE id = $1
-               UNION ALL
-               SELECT b.content->>'file_key' FROM blocks b
-               JOIN activities a ON a.id = b.activity_id
-               WHERE a.course_id = $1
+    tx.commit().await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
+/// Delete the blocks of locked activities (all, or only `block_id`).
+///
+/// One upload reference is released per block row the DELETE actually
+/// returned (BUG-242/244: never from a snapshot read before it). Callers
+/// lock the activity rows first (activity → upload, BUG-243). Returns the
+/// number of blocks deleted.
+// ponytail: a multi-upload release takes the upload row locks in UPDATE
+// order; two cascades sharing ≥2 uploads could still deadlock (retryable).
+pub async fn delete_blocks_releasing(
+    conn: &mut sqlx::PgConnection,
+    activity_ids: &[uuid::Uuid],
+    block_id: Option<BlockId>,
+    grace_secs: f64,
+) -> Result<u64> {
+    let deleted = sqlx::query_scalar!(
+        r#"WITH gone AS (
+               DELETE FROM blocks
+               WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2)
+               RETURNING content->>'file_key' AS key
            ), refs AS (
-               SELECT key, count(*)::int AS n FROM owned WHERE key IS NOT NULL GROUP BY key
+               SELECT key, count(*)::int AS n FROM gone WHERE key IS NOT NULL GROUP BY key
            ), released AS (
                UPDATE uploads u
                SET referenced_count = greatest(u.referenced_count - refs.n, 0),
                    expires_at = CASE WHEN u.referenced_count <= refs.n
-                                     THEN now() + make_interval(secs => $2)
+                                     THEN now() + make_interval(secs => $3)
                                      ELSE u.expires_at END
                FROM refs WHERE u.key = refs.key AND u.referenced_count > 0
            )
-           DELETE FROM courses WHERE id = $1"#,
-        id.0,
+           SELECT count(*) AS "n!" FROM gone"#,
+        activity_ids,
+        block_id.map(|b| b.0),
         grace_secs
     )
-    .execute(&mut *tx)
+    .fetch_one(conn)
     .await?;
-    tx.commit().await?;
-    Ok(deleted.rows_affected() == 1)
+    Ok(u64::try_from(deleted).unwrap_or(0))
+}
+
+/// Lock an activity row against deletion for a block write (BUG-243: the
+/// activity is always locked before any upload row). `false` if it is gone.
+pub async fn lock_activity_for_blocks(
+    conn: &mut sqlx::PgConnection,
+    id: ActivityId,
+) -> Result<bool> {
+    let row = sqlx::query_scalar!("SELECT id FROM activities WHERE id = $1 FOR SHARE", id.0)
+        .fetch_optional(conn)
+        .await?;
+    Ok(row.is_some())
 }
 
 // ── Chapters ────────────────────────────────────────────────────────────────
@@ -472,32 +523,23 @@ pub async fn update_chapter(
 }
 
 /// Delete a chapter, releasing the uploads of the media blocks under it
-/// (BUG-209 — see [`delete_course`]).
+/// (BUG-209/242 — see [`delete_course`]; lock order chapter → activities →
+/// uploads).
 pub async fn delete_chapter(pool: &PgPool, id: ChapterId, grace_secs: f64) -> Result<bool> {
     let mut tx = pool.begin().await?;
     sqlx::query_scalar!("SELECT id FROM chapters WHERE id = $1 FOR UPDATE", id.0)
         .fetch_optional(&mut *tx)
         .await?;
-    let deleted = sqlx::query!(
-        r#"WITH refs AS (
-               SELECT b.content->>'file_key' AS key, count(*)::int AS n
-               FROM blocks b JOIN activities a ON a.id = b.activity_id
-               WHERE a.chapter_id = $1 AND b.content->>'file_key' IS NOT NULL
-               GROUP BY 1
-           ), released AS (
-               UPDATE uploads u
-               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
-                   expires_at = CASE WHEN u.referenced_count <= refs.n
-                                     THEN now() + make_interval(secs => $2)
-                                     ELSE u.expires_at END
-               FROM refs WHERE u.key = refs.key AND u.referenced_count > 0
-           )
-           DELETE FROM chapters WHERE id = $1"#,
-        id.0,
-        grace_secs
+    let activities = sqlx::query_scalar!(
+        "SELECT id FROM activities WHERE chapter_id = $1 ORDER BY id FOR UPDATE",
+        id.0
     )
-    .execute(&mut *tx)
+    .fetch_all(&mut *tx)
     .await?;
+    delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
+    let deleted = sqlx::query!("DELETE FROM chapters WHERE id = $1", id.0)
+        .execute(&mut *tx)
+        .await?;
     tx.commit().await?;
     Ok(deleted.rows_affected() == 1)
 }

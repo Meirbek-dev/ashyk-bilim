@@ -1,16 +1,16 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id FROM courses WHERE id = $1 FOR UPDATE",
+  "query": "SELECT thumbnail_image_key FROM courses WHERE id = $1 FOR UPDATE",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
-        "type_info": "Uuid",
+        "name": "thumbnail_image_key",
+        "type_info": "Text",
         "origin": {
           "Table": {
             "table": "courses",
-            "name": "id"
+            "name": "thumbnail_image_key"
           }
         }
       }
@@ -21,8 +21,8 @@
       ]
     },
     "nullable": [
-      false
+      true
     ]
   },
-  "hash": "93835efe982da35c3239b47b69d94ae0083dd0026d19cc8a9b8d3bdc61f7c726"
+  "hash": "9a3d67ad2879d844400977644d2338e26d148ad7c7bdd9a1303383581644441d"
 }
