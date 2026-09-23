@@ -226,7 +226,7 @@ function CourseClient(props: CourseClientProps) {
                 {isMobile && (
                   <CourseActionsMobile
                     courseuuid={courseuuid}
-                    course={course as never}
+                    course={course}
                     trailData={trailData}
                     learnerState={learnerState}
                   />
