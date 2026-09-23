@@ -13,12 +13,12 @@ use ab_core::assessments::{BulkActionStatus, BulkActionType};
 use ab_core::id::{AssessmentId, BulkActionId, UserId};
 use ab_core::permission::Action;
 use ab_core::{Error, FieldError, Result};
-use ab_db::assessments::OverrideValues;
 use ab_db::queue::NewJob;
 use ab_db::submissions::NewGradingEntry;
 use sqlx::PgPool;
 
 use crate::assessments::service::AssessmentsService;
+use crate::catalog::courses::CoursesService;
 use crate::events::GradingEvents;
 use crate::grading::penalties::attempt_cap;
 use crate::grading::teacher::GradingService;
@@ -84,7 +84,7 @@ impl GradingService {
         assessment_id: AssessmentId,
         input: DeadlineExtension<'_>,
     ) -> Result<BulkAction> {
-        self.grader_context(actor, assessment_id).await?;
+        let (_, course) = self.grader_context(actor, assessment_id).await?;
         let mut errors = Vec::new();
         if input.user_ids.is_empty() || input.user_ids.len() > MAX_EXTENSION_TARGETS {
             errors.push(FieldError {
@@ -119,6 +119,25 @@ impl GradingService {
                 "unknown learners in user_ids",
                 serde_json::json!({ "unknown_user_ids": missing }),
             ));
+        }
+        // BUG-247: the same rule as `POST overrides/{user}` (UX-147) — an
+        // extension is for a student of the course, named per id.
+        let mut outsiders = Vec::new();
+        for &user_id in &targets {
+            if !self
+                .assessments
+                .user_has_course_access(&course, user_id)
+                .await?
+            {
+                outsiders.push(FieldError {
+                    field: format!("user_ids.{user_id}"),
+                    code: "not-in-course".into(),
+                    message: format!("user {user_id} has no access to this course"),
+                });
+            }
+        }
+        if !outsiders.is_empty() {
+            return Err(Error::validation(outsiders));
         }
         let params = serde_json::json!({
             "new_due_at": input.new_due_at, "reason": input.reason,
@@ -181,8 +200,10 @@ impl GradingService {
             .await?;
         let outcome = match performer_may_grade(pool, &row).await {
             Err(err) => Err(err),
-            Ok(()) => match row.action_type {
-                BulkActionType::ExtendDeadline => run_deadline_extension(pool, events, &row).await,
+            Ok(course) => match row.action_type {
+                BulkActionType::ExtendDeadline => {
+                    run_deadline_extension(pool, events, &row, &course).await
+                }
                 other => Err(Error::app(
                     ab_core::ErrorCode::Internal,
                     format!("bulk action type {other} is not implemented"),
@@ -190,13 +211,13 @@ impl GradingService {
             },
         };
         match outcome {
-            Ok(affected) => {
+            Ok((affected, log)) => {
                 ab_db::submissions::set_bulk_action_status(
                     pool,
                     id,
                     BulkActionStatus::Completed,
                     affected,
-                    "",
+                    &log,
                 )
                 .await
             }
@@ -216,7 +237,10 @@ impl GradingService {
 }
 
 /// The performer's grading access on the action's course as of now.
-async fn performer_may_grade(pool: &PgPool, row: &ab_db::submissions::BulkActionRow) -> Result<()> {
+async fn performer_may_grade(
+    pool: &PgPool,
+    row: &ab_db::submissions::BulkActionRow,
+) -> Result<ab_db::catalog::CourseRow> {
     let performer = row
         .performed_by
         .ok_or_else(|| Error::app(ab_core::ErrorCode::Internal, "action has no performer"))?;
@@ -227,8 +251,10 @@ async fn performer_may_grade(pool: &PgPool, row: &ab_db::submissions::BulkAction
         .await?
         .ok_or_else(|| Error::not_found("course"))?;
     let actor = Actor::current(pool, performer).await?;
-    AssessmentsService::require_scoped(&actor, &course, Action::Grade, "grading")
-        .map_err(|_| Error::forbidden("the performer no longer has grading access to this course"))
+    AssessmentsService::require_scoped(&actor, &course, Action::Grade, "grading").map_err(
+        |_| Error::forbidden("the performer no longer has grading access to this course"),
+    )?;
+    Ok(course)
 }
 
 /// One submission's lateness after a deadline change. BUG-216: the scoring
@@ -295,7 +321,8 @@ async fn run_deadline_extension(
     pool: &PgPool,
     events: Option<&GradingEvents>,
     row: &ab_db::submissions::BulkActionRow,
-) -> Result<i32> {
+    course: &ab_db::catalog::CourseRow,
+) -> Result<(i32, String)> {
     let new_due_at = row.params["new_due_at"]
         .as_i64()
         .ok_or_else(|| Error::app(ab_core::ErrorCode::Internal, "malformed params"))?;
@@ -306,22 +333,25 @@ async fn run_deadline_extension(
     let assessment = ab_db::assessments::get_assessment(pool, row.assessment_id)
         .await?
         .ok_or_else(|| Error::not_found("assessment"))?;
+    // BUG-247: course access is re-checked per learner (revoked between
+    // the request and the run → skipped and named in the log).
+    let access = AssessmentsService::new(pool.clone(), CoursesService::new(pool.clone()));
     let mut affected = 0;
+    let mut skipped = Vec::new();
     for &user_id in &row.target_user_ids {
-        let existing = ab_db::assessments::get_override(pool, row.assessment_id, user_id).await?;
-        let values = OverrideValues {
-            max_attempts_override: existing.as_ref().and_then(|o| o.max_attempts_override),
-            due_at_override: Some(new_due_at),
-            waive_late_penalty: existing.as_ref().is_some_and(|o| o.waive_late_penalty),
-            note: reason,
-            expires_at: existing.as_ref().and_then(|o| o.expires_at),
-            granted_by,
-        };
-        if existing.is_some() {
-            ab_db::assessments::update_override(pool, row.assessment_id, user_id, values).await?;
-        } else {
-            ab_db::assessments::insert_override(pool, row.assessment_id, user_id, values).await?;
+        if !access.user_has_course_access(course, user_id).await? {
+            skipped.push(user_id.to_string());
+            continue;
         }
+        ab_db::assessments::upsert_override_due(
+            pool,
+            row.assessment_id,
+            user_id,
+            new_due_at,
+            reason,
+            granted_by,
+        )
+        .await?;
         let submitted =
             ab_db::submissions::list_submitted_for_user(pool, row.assessment_id, user_id).await?;
         for submission in &submitted {
@@ -352,5 +382,10 @@ async fn run_deadline_extension(
         }),
     )
     .await?;
-    Ok(affected)
+    let log = if skipped.is_empty() {
+        String::new()
+    } else {
+        format!("skipped, no course access: {}", skipped.join(", "))
+    };
+    Ok((affected, log))
 }

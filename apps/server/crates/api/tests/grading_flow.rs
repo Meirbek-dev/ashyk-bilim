@@ -2155,6 +2155,128 @@ async fn queued_extension_fails_for_a_demoted_maintainer(pool: PgPool) {
     assert_eq!(review.json()["is_late"], true, "the extension did not run");
 }
 
+/// BUG-247: an extension is for a student of the course, like an override
+/// (UX-147) — 422 `not-in-course` per id before queueing; a learner who
+/// loses access before the run is skipped and named in the log. The run's
+/// override write is one upsert, so a racing `PUT overrides/{user}` never
+/// loses its other fields.
+#[sqlx::test(migrations = "../../migrations")]
+async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, _, _) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600 }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let extend = |user: &str| serde_json::json!({ "user_ids": [user], "new_due_at_unix": now_unix() + 86_400 });
+    let path = format!("/api/v2/assessments/{id}/deadline-extensions");
+    let queued = app
+        .post_as(&teacher, &path, &extend(&alice.user_id.to_string()))
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let action = ab_core::id::BulkActionId(
+        uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
+    );
+    // The course goes private: alice (no enrollment) is out.
+    sqlx::query("UPDATE courses SET public = false WHERE id = $1::uuid")
+        .bind(&course_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let outside = app
+        .post_as(&teacher, &path, &extend(&alice.user_id.to_string()))
+        .await;
+    assert_eq!(
+        outside.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        outside.text()
+    );
+    assert_eq!(
+        outside.json()["field_errors"][0]["field"],
+        format!("user_ids.{}", alice.user_id)
+    );
+    assert_eq!(outside.json()["field_errors"][0]["code"], "not-in-course");
+    ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action)
+        .await
+        .unwrap();
+    let done = app
+        .get_as(&teacher, &format!("/api/v2/bulk-actions/{}", action.0))
+        .await;
+    assert_eq!(done.json()["status"], "completed", "{}", done.text());
+    assert_eq!(done.json()["affected_count"], 0);
+    assert!(
+        done.json()["error_log"]
+            .as_str()
+            .unwrap()
+            .contains(&alice.user_id.to_string()),
+        "{}",
+        done.text()
+    );
+    let overrides: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM assessment_overrides WHERE user_id = $1")
+            .bind(alice.user_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(overrides, 0);
+
+    // Back to public: the run ∥ PUT race keeps the PUT's max attempts.
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id),
+            &serde_json::json!({ "max_attempts_override": 3 }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    for round in 0..10 {
+        sqlx::query("UPDATE assessment_overrides SET max_attempts_override = 3")
+            .execute(&app.pool)
+            .await
+            .unwrap();
+        let queued = app
+            .post_as(&teacher, &path, &extend(&alice.user_id.to_string()))
+            .await;
+        assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+        let action = ab_core::id::BulkActionId(
+            uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
+        );
+        let put = Request::builder()
+            .method("PUT")
+            .uri(format!(
+                "/api/v2/assessments/{id}/overrides/{}",
+                alice.user_id
+            ))
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &teacher.cookie)
+            .body(Body::from(
+                serde_json::json!({ "max_attempts_override": 5 }).to_string(),
+            ))
+            .unwrap();
+        let (ran, saved) = tokio::join!(
+            ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action),
+            app.send(put)
+        );
+        ran.unwrap();
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+        let max: Option<i32> = sqlx::query_scalar(
+            "SELECT max_attempts_override FROM assessment_overrides WHERE user_id = $1",
+        )
+        .bind(alice.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        assert_eq!(max, Some(5), "round {round}: the PUT was overwritten");
+    }
+}
+
 /// BUG-215: an integrity-annulled attempt's 0 is an explicit override —
 /// right or wrong choice, a feedback-only save keeps it `graded 0`, the
 /// review reports `score_override 0`, and the bulk release takes it.

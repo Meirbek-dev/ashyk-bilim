@@ -1020,6 +1020,37 @@ pub async fn update_override(
     Ok(updated.rows_affected() == 1)
 }
 
+/// A deadline extension's write: due date and note, other fields kept.
+///
+/// One statement, so a concurrent `PUT overrides/{user}`
+/// either lands before (its other fields survive) or after (it wins) —
+/// never a read-modify-write that resurrects stale values (BUG-247).
+pub async fn upsert_override_due(
+    pool: &PgPool,
+    id: AssessmentId,
+    user_id: UserId,
+    due_at: i64,
+    note: &str,
+    granted_by: UserId,
+) -> Result<()> {
+    sqlx::query!(
+        r#"INSERT INTO assessment_overrides
+               (assessment_id, user_id, due_at_override, note, granted_by)
+           VALUES ($1, $2, to_timestamp($3), $4, $5)
+           ON CONFLICT (assessment_id, user_id) DO UPDATE SET
+               due_at_override = EXCLUDED.due_at_override,
+               note = EXCLUDED.note, granted_by = EXCLUDED.granted_by"#,
+        id.0,
+        user_id.0,
+        epoch(Some(due_at)),
+        note,
+        granted_by.0
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 pub async fn delete_override(pool: &PgPool, id: AssessmentId, user_id: UserId) -> Result<bool> {
     let deleted = sqlx::query!(
         "DELETE FROM assessment_overrides WHERE assessment_id = $1 AND user_id = $2",
