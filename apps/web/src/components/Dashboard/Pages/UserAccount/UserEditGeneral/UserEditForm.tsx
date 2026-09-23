@@ -7,7 +7,7 @@ import { Controller } from 'react-hook-form'
 import type { UseFormReturn } from 'react-hook-form'
 import type { FormValues } from './schema'
 import { SUPPORTED_FILES } from './avatar-utils'
-import { Check, FileWarning, Info, Loader2, UploadCloud } from 'lucide-react'
+import { Check, FileWarning, Info, Loader2, Trash2, UploadCloud } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
 import { Card, CardContent } from '@components/ui/card'
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
@@ -27,7 +27,9 @@ interface UserEditFormProps {
     isLoading: boolean
     localAvatar: File | null
     previewUrl: string | null
+    hasAvatar: boolean
     handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
+    handleRemove: () => Promise<void>
   }
 }
 
@@ -141,7 +143,7 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
               {profilePicture.success && (
                 <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-200">
                   <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <AlertDescription>{t('avatarSuccess')}</AlertDescription>
+                  <AlertDescription>{profilePicture.success}</AlertDescription>
                 </Alert>
               )}
 
@@ -150,6 +152,7 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                   size="3xl"
                   variant="outline"
                   {...(profilePicture.previewUrl ? { avatar_url: profilePicture.previewUrl } : {})}
+                  {...(profilePicture.hasAvatar ? {} : { predefined_avatar: 'empty' as const })}
                   className="ring-background shadow-xl ring-4"
                   imageProps={{ loading: 'eager' }}
                 />
@@ -181,6 +184,18 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                   <UploadCloud className="mr-2 h-4 w-4" />
                   {t('changeAvatar')}
                 </Button>
+                {profilePicture.hasAvatar && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => void profilePicture.handleRemove()}
+                    className="w-full"
+                    disabled={profilePicture.isLoading}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('removeAvatar')}
+                  </Button>
+                )}
 
                 <div className="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg p-3 text-xs">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />

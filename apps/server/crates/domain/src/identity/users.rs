@@ -15,8 +15,9 @@ pub struct ProfileChanges {
     pub display_name: Option<String>,
     pub bio: Option<String>,
     pub locale: Option<String>,
-    /// Finalized `avatar` upload to claim as the new avatar.
-    pub avatar_upload_id: Option<Uuid>,
+    /// Finalized `avatar` upload to claim as the new avatar; `Some(None)`
+    /// removes the current one (UX-163).
+    pub avatar_upload_id: Option<Option<Uuid>>,
 }
 
 #[derive(Clone)]
@@ -49,11 +50,12 @@ impl UsersService {
         let display_name = changes
             .display_name
             .as_deref()
-            .map(ab_core::strip_controls)
-            .map(|name| ab_core::required_str("display_name", &name).map(str::to_owned))
+            .map(|name| ab_core::required_text("display_name", name))
             .transpose()?;
-        if let Some(upload_id) = changes.avatar_upload_id {
-            self.claim_avatar(actor, upload_id).await?;
+        match changes.avatar_upload_id {
+            Some(Some(upload_id)) => self.claim_avatar(actor, upload_id).await?,
+            Some(None) => self.replace_avatar(actor, None).await?,
+            None => {}
         }
         ab_db::identity::update_profile(
             &self.pool,
@@ -85,12 +87,16 @@ impl UsersService {
         if !ab_db::uploads::add_reference(&self.pool, upload_id).await? {
             return Err(Error::conflict("upload is not finalized"));
         }
-        let previous = self.my_profile(actor).await?;
-        ab_db::identity::set_avatar_key(&self.pool, actor.user_id, &upload.key).await?;
-        if let Some(old) = previous.avatar_key.as_deref() {
+        self.replace_avatar(actor, Some(&upload.key)).await
+    }
+
+    /// Swap the avatar key and release exactly the key the UPDATE replaced
+    /// (equal to `key` only after a re-claim, which counted it once more).
+    async fn replace_avatar(&self, actor: &Actor, key: Option<&str>) -> Result<()> {
+        if let Some(old) = ab_db::identity::set_avatar_key(&self.pool, actor.user_id, key).await? {
             ab_db::uploads::release_reference_by_key(
                 &self.pool,
-                old,
+                &old,
                 UNREFERENCED_GRACE.as_secs_f64(),
             )
             .await?;

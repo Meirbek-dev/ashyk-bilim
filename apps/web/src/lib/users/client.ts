@@ -108,6 +108,11 @@ export async function updateUserAvatar(avatarFile: File): Promise<UserProfileTyp
   return updateProfile({ avatar_upload_id: upload.id })
 }
 
+/** Remove the avatar (UX-163); the server releases the upload. */
+export async function removeUserAvatar(): Promise<UserProfileType> {
+  return updateProfile({ avatar_upload_id: null })
+}
+
 export async function updateUserLocale(locale: string): Promise<UserProfileType> {
   return updateProfile({ locale })
 }

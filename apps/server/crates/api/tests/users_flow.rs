@@ -243,6 +243,33 @@ async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
         )
         .await;
     assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // UX-163: `null` removes the avatar and releases its upload; omitting
+    // the field leaves the avatar alone.
+    let kept = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "bio": "hi" }),
+        )
+        .await;
+    assert_eq!(kept.json()["avatar_key"], second_key.as_str());
+    let cleared = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "avatar_upload_id": null }),
+        )
+        .await;
+    assert_eq!(cleared.status, StatusCode::OK, "{}", cleared.text());
+    assert!(cleared.json()["avatar_key"].is_null(), "{}", cleared.text());
+    let released: bool =
+        sqlx::query_scalar("SELECT expires_at IS NOT NULL FROM uploads WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&second_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert!(released, "a removed avatar must re-enter the reaper queue");
 }
 
 #[sqlx::test(migrations = "../../migrations")]

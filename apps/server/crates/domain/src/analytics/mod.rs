@@ -490,7 +490,11 @@ impl AnalyticsService {
                 intervention_type: &input.intervention_type,
                 status: &input.status,
                 outcome: input.outcome.as_deref(),
-                notes: input.notes.as_deref(),
+                notes: input
+                    .notes
+                    .as_deref()
+                    .map(ab_core::strip_controls_multiline)
+                    .as_deref(),
                 risk_score_before: current_risk,
                 risk_score_after: if resolved { current_risk } else { None },
                 payload: &input.payload,
@@ -527,7 +531,8 @@ impl AnalyticsService {
         query: &serde_json::Value,
     ) -> Result<SavedView> {
         self.read_scope(actor, filters).await?;
-        let (name, view_type) = (name.trim(), view_type.trim());
+        let name = ab_core::strip_controls(name);
+        let (name, view_type) = (ab_core::trim_blank(&name), view_type.trim());
         let mut errors: Vec<FieldError> = [("name", name), ("view_type", view_type)]
             .into_iter()
             .filter(|(_, value)| value.is_empty())

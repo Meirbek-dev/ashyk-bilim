@@ -625,12 +625,14 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": bob.user_id, "course_id": course_id,
-                "intervention_type": "message_sent", "notes": "pinged"
+                "intervention_type": "message_sent", "notes": "pin\u{202E}ged\u{7}\nline 2"
             }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
     assert_eq!(created.json()["status"], "completed");
+    // UX-163: controls stripped, line breaks kept.
+    assert_eq!(created.json()["notes"], "pinged\nline 2");
     assert_eq!(
         created.json()["teacher_user_id"],
         teacher.user_id.to_string()
@@ -698,10 +700,11 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .post_as(
             &teacher,
             "/api/v2/analytics/teacher/saved-views",
-            &serde_json::json!({ "name": "Mine", "query": { "window": "7d" } }),
+            &serde_json::json!({ "name": "Mi\u{202E}ne\u{7}", "query": { "window": "7d" } }),
         )
         .await;
     assert_eq!(saved.status, StatusCode::CREATED, "{}", saved.text());
+    assert_eq!(saved.json()["name"], "Mine", "UX-163");
     assert_eq!(saved.json()["view_type"], "overview");
     let view_id = saved.json()["id"].as_str().unwrap().to_owned();
     let upserted = app

@@ -206,7 +206,8 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
         .post_as(
             &owner,
             "/api/v2/usergroups",
-            &serde_json::json!({ "name": "  Cohort  " }),
+            // UX-163: bidi overrides and BEL never reach other people's screens.
+            &serde_json::json!({ "name": "  Co\u{202E}ho\u{7}rt  " }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
@@ -230,7 +231,7 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
         .patch_as(
             &manager,
             &format!("/api/v2/usergroups/{id}"),
-            &serde_json::json!({ "name": " Managed " }),
+            &serde_json::json!({ "name": " Mana\u{202E}ged " }),
         )
         .await;
     assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());

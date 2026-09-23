@@ -68,9 +68,12 @@ pub struct UpdateProfileRequest {
     /// One of the platform locales.
     #[garde(custom(valid_locale))]
     pub locale: Option<String>,
-    /// Finalized `avatar` upload to claim as the new avatar.
+    /// Finalized `avatar` upload to claim as the new avatar; `null`
+    /// removes the current one.
     #[garde(skip)]
-    pub avatar_upload_id: Option<uuid::Uuid>,
+    #[serde(default, deserialize_with = "super::double_option")]
+    #[schema(value_type = Option<uuid::Uuid>)]
+    pub avatar_upload_id: Option<Option<uuid::Uuid>>,
 }
 
 /// Admin listing row (includes email + status — platform:read gated).

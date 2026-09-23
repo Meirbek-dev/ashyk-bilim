@@ -9,7 +9,14 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 vi.mock('sonner', () => ({ toast: { loading: () => 'toast-1', success: vi.fn(), error: vi.fn(), dismiss: vi.fn() } }))
 vi.mock('@/i18n/locale', () => ({ getUserLocale: async () => 'ru-RU' }))
 // Stable mocks: a fresh `t`/`user`/`handleApiError` per render re-runs the profile effect (`form.reset`) mid-submit.
-const me = { id: 'u1', username: 'learner', email: 'learner@ashyq.local', display_name: 'Aigerim', bio: '' }
+const me = {
+  id: 'u1',
+  username: 'learner',
+  email: 'learner@ashyq.local',
+  display_name: 'Aigerim',
+  bio: '',
+  avatar_key: 'avatars/u1.webp',
+}
 vi.mock('@/hooks/useSession', () => ({ useSession: () => ({ user: me }) }))
 vi.mock('@/lib/theme-system', () => ({ ThemeSelector: () => null }))
 vi.mock('@/components/theme-mode-toggle', () => ({ ThemeModeToggle: () => null }))
@@ -18,9 +25,11 @@ const toastApiError = vi.fn()
 const handleApiError = vi.fn()
 vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError, handleApiError }) }))
 const updateProfile = vi.fn()
+const removeUserAvatar = vi.fn()
 vi.mock('@/lib/users/client', () => ({
   updateProfile: (...args: unknown[]) => updateProfile(...args),
   updateUserAvatar: vi.fn(),
+  removeUserAvatar: () => removeUserAvatar(),
 }))
 
 beforeEach(() => vi.clearAllMocks())
@@ -50,5 +59,16 @@ describe('UX-070 blank display name', () => {
     fireEvent.submit(name.closest('form')!)
     await waitFor(() => expect(screen.getByText('Form.requiredField')).toBeTruthy())
     expect(updateProfile).not.toHaveBeenCalled()
+  })
+})
+
+describe('UX-163 remove avatar', () => {
+  it('clears the avatar through the API and hides the control', async () => {
+    removeUserAvatar.mockResolvedValueOnce({})
+    render(<UserEditGeneral />)
+    fireEvent.click(await screen.findByRole('button', { name: 'removeAvatar' }))
+    await waitFor(() => expect(screen.getByText('avatarRemoved')).toBeTruthy())
+    expect(removeUserAvatar).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: 'removeAvatar' })).toBeNull()
   })
 })

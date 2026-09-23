@@ -151,7 +151,7 @@ impl RbacAdminService {
         actor.require(MANAGE_ROLES)?;
         let display_name = trimmed_display_name(display_name)?;
         let created =
-            ab_db::identity::insert_role(&self.pool, slug, display_name, description, priority)
+            ab_db::identity::insert_role(&self.pool, slug, &display_name, description, priority)
                 .await?;
         if created.is_none() {
             return Err(Error::app(ErrorCode::RoleSlugTaken, "role slug is taken"));
@@ -178,8 +178,14 @@ impl RbacAdminService {
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
         let display_name = display_name.map(trimmed_display_name).transpose()?;
-        if !ab_db::identity::update_role(&self.pool, slug, display_name, description, priority)
-            .await?
+        if !ab_db::identity::update_role(
+            &self.pool,
+            slug,
+            display_name.as_deref(),
+            description,
+            priority,
+        )
+        .await?
         {
             return Err(Error::not_found("custom role"));
         }
@@ -357,7 +363,8 @@ impl RbacAdminService {
     }
 }
 
-/// Trimmed display name, or 422 `display_name`/`required` when blank.
-fn trimmed_display_name(name: &str) -> Result<&str> {
-    ab_core::required_str("display_name", name)
+/// Trimmed display name without control characters, or 422
+/// `display_name`/`required` when blank (UX-163).
+fn trimmed_display_name(name: &str) -> Result<String> {
+    ab_core::required_text("display_name", name)
 }

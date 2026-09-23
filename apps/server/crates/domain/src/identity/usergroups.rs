@@ -49,9 +49,10 @@ pub(crate) fn reject_unknown<T: PartialEq + std::fmt::Display>(
     }
 }
 
-/// Trimmed name, or 422 `name`/`required` when blank (BUG-142).
-fn trimmed_name(name: &str) -> Result<&str> {
-    ab_core::required_str("name", name)
+/// Trimmed name without control characters, or 422 `name`/`required` when
+/// blank (BUG-142, UX-163).
+fn trimmed_name(name: &str) -> Result<String> {
+    ab_core::required_text("name", name)
 }
 
 #[derive(Clone)]
@@ -88,7 +89,7 @@ impl UsergroupsService {
     pub async fn create(&self, actor: &Actor, name: &str, description: &str) -> Result<Usergroup> {
         actor.require(perm(Action::Create))?;
         let name = trimmed_name(name)?;
-        let id = ab_db::usergroups::insert_usergroup(&self.pool, name, description, actor.user_id)
+        let id = ab_db::usergroups::insert_usergroup(&self.pool, &name, description, actor.user_id)
             .await?;
         ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?
@@ -129,7 +130,7 @@ impl UsergroupsService {
     ) -> Result<Usergroup> {
         self.writable(actor, id).await?;
         let name = name.map(trimmed_name).transpose()?;
-        ab_db::usergroups::update_usergroup(&self.pool, id, name, description).await?;
+        ab_db::usergroups::update_usergroup(&self.pool, id, name.as_deref(), description).await?;
         ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("usergroup"))

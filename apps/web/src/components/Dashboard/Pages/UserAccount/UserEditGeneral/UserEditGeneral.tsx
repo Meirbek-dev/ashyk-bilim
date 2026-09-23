@@ -11,7 +11,7 @@ import type * as v from 'valibot'
 import { Loader2 } from 'lucide-react'
 
 import { Card } from '@components/ui/card'
-import { updateProfile, updateUserAvatar } from '@/lib/users/client'
+import { removeUserAvatar, updateProfile, updateUserAvatar } from '@/lib/users/client'
 import { useSession } from '@/hooks/useSession'
 import { useApiError } from '@/hooks/useApiError'
 import { getUserLocale } from '@/i18n/locale'
@@ -32,6 +32,8 @@ function UserEditGeneral() {
   const { user: me } = useSession()
   const [localAvatar, setLocalAvatar] = useState<File | null>(null)
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
+  // `null` until this page changes it: the session's avatar decides.
+  const [avatarSet, setAvatarSet] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [success, setSuccess] = useState('')
@@ -132,10 +134,32 @@ function UserEditGeneral() {
         return previewUrl
       })
       await updateUserAvatar(uploadFile)
+      setAvatarSet(true)
       setSuccess(t('avatarSuccess'))
       router.refresh()
     } catch (uploadError) {
       setError(handleApiError(uploadError, { fallback: t('avatarError') }).message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    setIsLoading(true)
+    setError(undefined)
+    setSuccess('')
+    try {
+      await removeUserAvatar()
+      setAvatarSet(false)
+      setLocalAvatar(null)
+      setAvatarPreviewUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+      setSuccess(t('avatarRemoved'))
+      router.refresh()
+    } catch (removeError) {
+      setError(handleApiError(removeError, { fallback: t('avatarError') }).message)
     } finally {
       setIsLoading(false)
     }
@@ -187,7 +211,9 @@ function UserEditGeneral() {
             isLoading,
             localAvatar,
             previewUrl: avatarPreviewUrl,
+            hasAvatar: avatarSet ?? Boolean(me?.avatar_key),
             handleFileChange,
+            handleRemove: handleRemoveAvatar,
           }}
         />
       </form>

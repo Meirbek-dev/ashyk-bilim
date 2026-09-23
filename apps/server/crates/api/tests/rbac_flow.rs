@@ -483,10 +483,16 @@ async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) 
         .post_as(
             &admin,
             "/api/v2/rbac/roles",
-            &serde_json::json!({ "slug": "helper", "display_name": "Helper", "priority": 10 }),
+            &serde_json::json!({ "slug": "helper", "display_name": "Help\u{202E}er\u{7}", "priority": 10 }),
         )
         .await;
     assert_eq!(created.status, StatusCode::NO_CONTENT, "{}", created.text());
+    // UX-163: the stored display name carries no control characters.
+    let stored: String = sqlx::query_scalar("SELECT display_name FROM roles WHERE slug = 'helper'")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(stored, "Helper");
 
     let blank_create = app
         .post_as(

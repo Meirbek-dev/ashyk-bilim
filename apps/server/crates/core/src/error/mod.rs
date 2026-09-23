@@ -48,16 +48,32 @@ pub fn trim_blank(value: &str) -> &str {
 /// zero-width joiner stays: it glues emoji sequences together.
 #[must_use]
 pub fn strip_controls(value: &str) -> String {
+    strip_controls_except(value, &['\u{200D}'])
+}
+
+/// [`strip_controls`] for multi-line text (notes): line breaks and tabs stay.
+#[must_use]
+pub fn strip_controls_multiline(value: &str) -> String {
+    strip_controls_except(value, &['\u{200D}', '\n', '\r', '\t'])
+}
+
+fn strip_controls_except(value: &str, keep: &[char]) -> String {
     value
         .chars()
-        .filter(|&c| {
-            c == '\u{200D}'
+        .filter(|c| {
+            keep.contains(c)
                 || !matches!(
                     c.general_category(),
                     GeneralCategory::Control | GeneralCategory::Format
                 )
         })
         .collect()
+}
+
+/// A name shown to other people: [`strip_controls`], then [`required_str`]
+/// (UX-163: every door a display name enters through, not only profiles).
+pub fn required_text(field: &str, value: &str) -> Result<String> {
+    required_str(field, &strip_controls(value)).map(str::to_owned)
 }
 
 /// The shared "blank string" rule (UX-106).
@@ -226,6 +242,19 @@ mod tests {
         assert_eq!(
             super::required_str("title", "\u{200B} a b \u{200B}").unwrap(),
             "a b"
+        );
+    }
+
+    #[test]
+    fn required_text_strips_bidi_and_bell_and_keeps_emoji_joiners() {
+        assert_eq!(
+            super::required_text("name", " g\u{202E}x\u{7} 👨\u{200D}👩 ").unwrap(),
+            "gx 👨\u{200D}👩"
+        );
+        assert!(super::required_text("name", "\u{202E}\u{7}").is_err());
+        assert_eq!(
+            super::strip_controls_multiline("a\u{202E}\nb\tc\u{7}"),
+            "a\nb\tc"
         );
     }
 }
