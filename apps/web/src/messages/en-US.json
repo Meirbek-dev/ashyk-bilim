@@ -9824,6 +9824,7 @@
       "fullscreenRecommended": "Fullscreen is recommended for this attempt.",
       "fullscreenExited": "Fullscreen was exited.",
       "answersUpdatedElsewhere": "Your answers were updated elsewhere. Review the latest draft before submitting.",
+      "assessmentChanged": "The assessment changed. Review your answers and submit again.",
       "submitFailed": "Failed to submit",
       "timeLimitMinutes": "{minutes} min",
       "timeLimitHours": "{hours} h",

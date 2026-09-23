@@ -10008,6 +10008,7 @@
       "fullscreenRecommended": "Бұл әрекет үшін толық экран режимі ұсынылады.",
       "fullscreenExited": "Толық экран режимінен шығу тіркелді.",
       "answersUpdatedElsewhere": "Жауаптарыңыз басқа жерде жаңартылды. Тапсырмас бұрын соңғы нобайды қарап шығыңыз.",
+      "assessmentChanged": "Тест өзгерді — жауаптарыңызды тексеріп, қайта жіберіңіз.",
       "submitFailed": "Тапсыру сәтсіз аяқталды",
       "timeLimitMinutes": "{minutes} мин",
       "timeLimitHours": "{hours} сағ",

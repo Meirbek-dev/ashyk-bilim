@@ -294,7 +294,13 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         submitRetryRef.current = { fingerprint, key: createIdempotencyKey() }
       }
       try {
-        return await submitAssessmentDraft(active.id, active.version, answers, submitRetryRef.current.key, violationCount)
+        return await submitAssessmentDraft(
+          active.id,
+          active.version,
+          answers,
+          submitRetryRef.current.key,
+          violationCount,
+        )
       } catch (error) {
         if (!isApiError(error)) throw error
         if (isOfflineRecoverable(error)) {
@@ -330,6 +336,21 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       await refreshLearnerCourseState(queryClient, router)
     },
     onError: async (error: unknown) => {
+      if (isApiError(error) && error.status === 409 && error.details?.field === 'content_version' && assessmentUuid) {
+        // BUG-238: the teacher changed the questions under this draft. `start`
+        // re-syncs it to the current content; reload the items and keep the
+        // learner's answers — no draft-conflict dialog, nothing to merge.
+        submitRetryRef.current = null
+        const reopened = await startAssessmentSubmission(assessmentUuid).catch(() => null)
+        if (reopened) {
+          draftVersionRef.current = reopened.draft_version
+          syncLatestSubmission(reopened)
+        }
+        setSaveState(areAnswersEqual(localAnswersRef.current, answersFromSubmission(reopened)) ? 'saved' : 'dirty')
+        toast.warning(t('assessmentChanged'))
+        await invalidateAssessmentState()
+        return
+      }
       if (isApiError(error) && error.status === 409) {
         const latest = submissionIdRef.current ? await getMySubmission(submissionIdRef.current).catch(() => null) : null
         if (latest) {

@@ -9837,6 +9837,7 @@
       "fullscreenRecommended": "Для этой попытки рекомендуется полноэкранный режим.",
       "fullscreenExited": "Выход из полноэкранного режима зафиксирован.",
       "answersUpdatedElsewhere": "Ваши ответы были обновлены в другом месте. Просмотрите последнюю версию черновика перед отправкой.",
+      "assessmentChanged": "Тест изменился — проверьте ответы и отправьте снова.",
       "submitFailed": "Не удалось отправить",
       "timeLimitMinutes": "{minutes} мин",
       "timeLimitHours": "{hours} ч",

@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { toast } from 'sonner'
 import { apiJson } from '@/lib/api-client'
 import { APIError } from '@/lib/api/assertSuccess'
 import type { StudentSubmission, AssessmentDetail, AttemptState } from '@/lib/api/generated/zod'
@@ -16,7 +17,7 @@ import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessm
 vi.mock('@/lib/api-client', () => ({ apiJson: vi.fn() }))
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
 vi.mock('@/services/telemetry/client', () => ({ reportClientError: vi.fn(async () => {}) }))
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn() } }))
 
 const assessmentId = '00000000-0000-4000-8000-000000000001'
 const submissionId = '00000000-0000-4000-8000-000000000002'
@@ -303,5 +304,31 @@ describe('v2 learner submissions', () => {
     expect(result.current.conflict?.latestVersion).toBe(4)
     act(() => result.current.conflict?.onUseServerVersion())
     expect(result.current.answers[itemId]).toEqual({ kind: 'OPEN_TEXT', text: 'other tab' })
+  })
+
+  // BUG-238: a draft behind the assessment's content is re-opened (the server
+  // re-syncs it) and the items reload — never the draft-conflict dialog.
+  it('reopens a draft the teacher changed under it instead of a conflict', async () => {
+    const starts: string[] = []
+    vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+      if (String(path).endsWith('/submit'))
+        throw new APIError({
+          code: 'conflict',
+          status: 409,
+          message: 'Stale content',
+          details: { field: 'content_version', expected: 1, actual: 2 },
+        })
+      if (init?.method === 'POST') starts.push(String(path))
+      return parse!(String(path).endsWith('/me') ? [fixture] : fixture)
+    })
+    const { result } = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'local work' }))
+    act(() => void result.current.submit().catch(() => undefined))
+    await waitFor(() => expect(toast.warning).toHaveBeenCalledWith('assessmentChanged'))
+    expect(starts).toEqual([`assessments/${assessmentId}/submissions`])
+    expect(result.current.conflict).toBeNull()
+    expect(result.current.saveState).toBe('dirty')
+    expect(result.current.answers[itemId]).toEqual({ kind: 'OPEN_TEXT', text: 'local work' })
   })
 })
