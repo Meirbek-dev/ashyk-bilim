@@ -172,17 +172,19 @@ pub struct NewAccount {
 
 pub use ab_db::identity::ProfileRow as Profile;
 
-/// A profile name trimmed, or 422 `required` when nothing is left.
-fn required_name<'a>(field: &str, value: &'a str) -> Result<&'a str> {
-    let value = value.trim();
-    if value.is_empty() {
-        return Err(Error::validation(vec![FieldError {
-            field: field.into(),
-            code: "required".into(),
-            message: format!("{field} must not be blank"),
-        }]));
-    }
-    Ok(value)
+/// A profile name as every account-creating door stores it (register, admin
+/// create, Google — UX-157): control/format characters stripped (a bidi
+/// override renders the neighbours reversed), trimmed; `None` when nothing
+/// visible is left — the rule `PATCH /users/me` applies to `display_name`.
+pub(crate) fn profile_name(value: &str) -> Option<String> {
+    let value = ab_core::strip_controls(value);
+    let value = ab_core::trim_blank(&value);
+    (!value.is_empty()).then(|| value.to_owned())
+}
+
+/// [`profile_name`], or 422 `{field}`/`required`.
+fn required_name(field: &str, value: &str) -> Result<String> {
+    profile_name(value).ok_or_else(|| Error::required(field))
 }
 
 #[derive(Debug)]
@@ -624,8 +626,8 @@ impl IdentityService {
             .zitadel
             .create_human_user_with_email_code(&NewHumanUser {
                 username: account.username.clone(),
-                given_name: first_name.to_owned(),
-                family_name: last_name.to_owned(),
+                given_name: first_name.clone(),
+                family_name: last_name.clone(),
                 email: account.email.clone(),
                 email_verified,
                 password: match &account.password {

@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 
+use crate::identity::auth::profile_name;
 use crate::identity::sessions::{NewSession, SessionStore};
 
 const STATE_TTL: Duration = Duration::from_mins(10);
@@ -234,7 +235,9 @@ impl GoogleAuthService {
         }
 
         // Brand-new account: passwordless Zitadel user + our rows.
-        let display_name = match (&identity.given_name, &identity.family_name) {
+        let given_name = identity.given_name.as_deref().and_then(profile_name);
+        let family_name = identity.family_name.as_deref().and_then(profile_name);
+        let display_name = match (&given_name, &family_name) {
             (Some(g), Some(f)) => format!("{g} {f}"),
             (Some(g), None) => g.clone(),
             _ => identity.email.clone(),
@@ -243,8 +246,8 @@ impl GoogleAuthService {
             .zitadel
             .create_human_user(&NewHumanUser {
                 username: identity.email.clone(),
-                given_name: identity.given_name.clone().unwrap_or_else(|| "—".into()),
-                family_name: identity.family_name.clone().unwrap_or_else(|| "—".into()),
+                given_name: given_name.unwrap_or_else(|| "—".into()),
+                family_name: family_name.unwrap_or_else(|| "—".into()),
                 email: identity.email.clone(),
                 email_verified: true,
                 password: PasswordSpec::None,

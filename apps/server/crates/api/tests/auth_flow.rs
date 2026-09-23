@@ -1392,6 +1392,96 @@ async fn blank_names_are_required_field_errors_on_register_and_admin_create(pool
     assert_eq!(res.json()["field_errors"][0]["code"], "required");
 }
 
+/// UX-157: names lose control/format characters (a bidi override, a
+/// zero-width space) before Zitadel and our row see them; a name with
+/// nothing visible left is 422 `required` — on register and admin create.
+#[sqlx::test(migrations = "../../migrations")]
+async fn names_are_stripped_of_controls_on_register_and_admin_create(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "profile": { "givenName": "evil", "familyName": "x" }
+        })))
+        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+            "userId": "z-new-1", "details": {}, "emailCode": "ABC123"
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/human"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "profile": { "givenName": "evil", "familyName": "x" },
+            "email": { "isVerified": true }
+        })))
+        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+            "userId": "z-new-2", "details": {}
+        })))
+        .expect(1)
+        .with_priority(1)
+        .mount(&app.zitadel)
+        .await;
+
+    let mut body = register_body("bidi", "bidi@example.com");
+    body["first_name"] = serde_json::json!("\u{202E}evil");
+    body["last_name"] = serde_json::json!("\u{200B}\u{2066}x");
+    let res = app.post_json("/api/v2/auth/register", &body).await;
+    assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
+    assert_eq!(res.json()["display_name"], "evil x");
+    let mut body = register_body("ghostname", "ghostname@example.com");
+    body["first_name"] = serde_json::json!("\u{200B}");
+    body["last_name"] = serde_json::json!("\u{200E}");
+    let res = app.post_json("/api/v2/auth/register", &body).await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "first_name");
+    assert_eq!(res.json()["field_errors"][0]["code"], "required");
+
+    let admin_user = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(admin_user, &["platform:manage:platform"])
+        .await;
+    let admin_body = |username: &str, last: &str| {
+        serde_json::json!({
+            "username": username,
+            "email": format!("{username}@example.com"),
+            "first_name": "evil\u{202E}",
+            "last_name": last,
+        })
+    };
+    let res = app
+        .post_as(
+            &admin,
+            "/api/v2/users",
+            &admin_body("bidiadmin", "\u{2066}x"),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
+    assert_eq!(res.json()["display_name"], "evil x");
+    let res = app
+        .post_as(
+            &admin,
+            "/api/v2/users",
+            &admin_body("ghostadmin", "\u{200B}\u{200D}"),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "last_name");
+    assert_eq!(res.json()["field_errors"][0]["code"], "required");
+}
+
 /// BUG-148: a Zitadel code 3 that is not about the password is a 422 on the
 /// named field — never `password-policy`, never a 503 (admin path).
 #[sqlx::test(migrations = "../../migrations")]
