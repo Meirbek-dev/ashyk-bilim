@@ -845,13 +845,6 @@ pub async fn list_blocks(pool: &PgPool, activity_id: ActivityId) -> Result<Vec<B
     Ok(rows)
 }
 
-pub async fn delete_block(pool: &PgPool, id: BlockId) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM blocks WHERE id = $1", id.0)
-        .execute(pool)
-        .await?;
-    Ok(deleted.rows_affected() == 1)
-}
-
 // ── Course updates (changelog) ──────────────────────────────────────────────
 
 pub struct CourseUpdateRow {

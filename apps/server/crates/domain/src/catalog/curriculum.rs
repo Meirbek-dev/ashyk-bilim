@@ -620,25 +620,26 @@ impl CurriculumService {
 
     /// Delete a block and release its upload reference (the reaper collects
     /// the object once nothing references it).
+    ///
+    /// BUG-244: one tx, activity locked first (BUG-243 order), and the
+    /// release counts only a block row this DELETE removed — a concurrent
+    /// second DELETE or activity DELETE releases nothing twice.
     pub async fn delete_block(&self, actor: &Actor, block_id: BlockId) -> Result<()> {
         let block = ab_db::catalog::get_block(&self.pool, block_id)
             .await?
             .ok_or_else(|| Error::not_found("block"))?;
         self.writable_activity(actor, block.activity_id).await?;
-        ab_db::catalog::delete_block(&self.pool, block_id).await?;
-        if let Some(upload_id) = block
-            .content
-            .get("upload_id")
-            .and_then(|v| v.as_str())
-            .and_then(|s| s.parse::<Uuid>().ok())
-        {
-            ab_db::uploads::release_reference(
-                &self.pool,
-                upload_id,
+        let mut tx = self.pool.begin().await?;
+        if ab_db::catalog::lock_activity_for_blocks(&mut tx, block.activity_id).await? {
+            ab_db::catalog::delete_blocks_releasing(
+                &mut tx,
+                &[block.activity_id.0],
+                Some(block_id),
                 UNREFERENCED_GRACE.as_secs_f64(),
             )
             .await?;
         }
+        tx.commit().await?;
         Ok(())
     }
 }

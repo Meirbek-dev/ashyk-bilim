@@ -312,6 +312,30 @@ async fn refs_and_blocks(app: &TestApp, upload: &str) -> (i32, i64) {
     .unwrap()
 }
 
+async fn activity_in(app: &TestApp, session: &MintedSession, chapter: uuid::Uuid) -> String {
+    let created = app
+        .post_as(
+            session,
+            &format!("/api/v2/chapters/{chapter}/activities"),
+            &serde_json::json!({ "name": "Page", "activity_type": "dynamic",
+                                  "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    created.json()["id"].as_str().unwrap().to_owned()
+}
+
+async fn block(app: &TestApp, session: &MintedSession, activity: &str, upload: &str) -> String {
+    let created = app
+        .post_as(
+            session,
+            &format!("/api/v2/activities/{activity}/blocks"),
+            &serde_json::json!({ "block_type": "image", "upload_id": upload }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    created.json()["id"].as_str().unwrap().to_owned()
+}
+
 /// BUG-242: a block that commits while a chapter/course DELETE waits on its
 /// activity is released by that DELETE — the cascade used to drop it after
 /// the release had read its snapshot, pinning the upload forever.
@@ -360,5 +384,63 @@ async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
         let (deleted, ()) = tokio::join!(delete, commit);
         assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{target}");
         assert_eq!(refs_and_blocks(&app, &upload).await, (0, 0), "{target}");
+    }
+}
+
+/// BUG-243/244: an upload shared by two blocks. A block POST reusing it ∥
+/// the activity DELETE never deadlocks (one lock order: activity, then
+/// upload); a block DELETE ×2 or ∥ the activity DELETE releases only the
+/// block rows actually deleted — the count always equals the live blocks.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_block_writes_keep_the_reference_count(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "teacher").await;
+    let (_, first) = scaffold_activity(&app, &teacher).await;
+    let chapter: uuid::Uuid = sqlx::query_scalar("SELECT chapter_id FROM activities WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&first).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    for round in 0..6 {
+        let a1 = activity_in(&app, &teacher, chapter).await;
+        let a2 = activity_in(&app, &teacher, chapter).await;
+        let upload = finalized_upload(&app, &teacher, "block-image", "image/png").await;
+        let b1 = block(&app, &teacher, &a1, &upload).await;
+        block(&app, &teacher, &a2, &upload).await;
+
+        let blocks_path = format!("/api/v2/activities/{a1}/blocks");
+        let activity_path = format!("/api/v2/activities/{a1}");
+        let block_path = format!("/api/v2/blocks/{b1}");
+        let body = serde_json::json!({ "block_type": "image", "upload_id": upload });
+        let (x, y) = match round % 3 {
+            0 => {
+                let (x, y) = tokio::join!(
+                    app.post_as(&teacher, &blocks_path, &body),
+                    app.delete_as(&teacher, &activity_path)
+                );
+                (x.status, y.status)
+            }
+            1 => {
+                let (x, y) = tokio::join!(
+                    app.delete_as(&teacher, &block_path),
+                    app.delete_as(&teacher, &block_path)
+                );
+                (x.status, y.status)
+            }
+            _ => {
+                let (x, y) = tokio::join!(
+                    app.delete_as(&teacher, &block_path),
+                    app.delete_as(&teacher, &activity_path)
+                );
+                (x.status, y.status)
+            }
+        };
+        assert!(
+            !x.is_server_error() && !y.is_server_error(),
+            "round {round}: {x} {y}"
+        );
+        let (referenced, live) = refs_and_blocks(&app, &upload).await;
+        assert_eq!(i64::from(referenced), live, "round {round}");
+        assert_eq!(live, 1, "round {round}: B2 survives");
     }
 }

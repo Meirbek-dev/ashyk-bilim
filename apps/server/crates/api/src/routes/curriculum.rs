@@ -464,6 +464,9 @@ pub async fn delete_block(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<BlockId>,
 ) -> ApiResult<StatusCode> {
-    state.curriculum.delete_block(&actor, id).await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state.curriculum.delete_block(&actor, id).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
