@@ -44,6 +44,14 @@ async fn lifecycle_membership_and_course_links(pool: PgPool) {
         .await;
     assert_eq!(seen.status, StatusCode::OK);
     assert_eq!(seen.json()["can_write"], false);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app.get_as(&reader, "/api/v2/usergroups?limit=101").await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
 
     // Members: batch add (dupes ignored), list, remove.
     let alice = app.create_user("alice", "a@example.com", &["user"]).await;

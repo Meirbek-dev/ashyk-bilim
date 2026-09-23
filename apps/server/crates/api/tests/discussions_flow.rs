@@ -189,6 +189,19 @@ async fn posts_replies_reactions_and_moderation(pool: PgPool) {
         .get_as(&alice, &format!("/api/v2/discussions/{post_id}/replies"))
         .await;
     assert_eq!(replies.json()["items"].as_array().unwrap().len(), 1);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/discussions/{post_id}/replies?limit=0"),
+        )
+        .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
 
     // Reactions: like, like again (off), dislike then like (exclusive).
     let liked = app
@@ -397,6 +410,19 @@ async fn listing_pages_by_cursor(pool: PgPool) {
     let items = first.json()["items"].as_array().unwrap().clone();
     assert_eq!(items.len(), 2);
     assert_eq!(items[0]["id"], ids[2].as_str(), "newest first");
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/discussions?limit=101"),
+        )
+        .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
     assert_eq!(items[1]["id"], ids[1].as_str());
     let cursor = first.json()["next_cursor"].as_str().unwrap().to_owned();
     let rest = app

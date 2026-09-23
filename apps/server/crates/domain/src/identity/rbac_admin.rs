@@ -272,7 +272,7 @@ impl RbacAdminService {
         limit: i64,
     ) -> Result<(Vec<AdminUser>, Option<UserId>)> {
         actor.require(READ_PLATFORM)?;
-        let limit = limit.clamp(1, 100);
+        let limit = ab_core::page_limit(limit, 100)?;
         let mut rows = ab_db::identity::list_users(&self.pool, q, cursor, limit + 1).await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));

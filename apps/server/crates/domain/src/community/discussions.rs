@@ -172,7 +172,7 @@ impl DiscussionsService {
     ) -> Result<DiscussionPage> {
         let course = self.readable_course(actor, course_id).await?;
         let abilities = Abilities::of(actor, &course);
-        let limit = limit.clamp(1, MAX_PAGE);
+        let limit = ab_core::page_limit(limit, MAX_PAGE)?;
         let mut rows =
             ab_db::discussions::list_posts(&self.pool, course_id, actor.user_id, cursor, limit + 1)
                 .await?;
@@ -215,7 +215,7 @@ impl DiscussionsService {
             return Err(Error::not_found("discussion"));
         }
         let abilities = Abilities::of(actor, &course);
-        let limit = limit.clamp(1, MAX_PAGE);
+        let limit = ab_core::page_limit(limit, MAX_PAGE)?;
         let mut rows =
             ab_db::discussions::list_replies(&self.pool, id, actor.user_id, cursor, limit + 1)
                 .await?;

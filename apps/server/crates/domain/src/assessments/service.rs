@@ -1200,7 +1200,8 @@ impl AssessmentsService {
         limit: i64,
     ) -> Result<Vec<AuditEvent>> {
         self.load_for_author(actor, id).await?;
-        ab_db::assessments::list_audit_events(&self.pool, id, limit.clamp(1, 200)).await
+        ab_db::assessments::list_audit_events(&self.pool, id, ab_core::page_limit(limit, 200)?)
+            .await
     }
 
     // ── Items ───────────────────────────────────────────────────────────

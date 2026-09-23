@@ -33,7 +33,7 @@ impl SearchService {
     }
 
     pub async fn search(&self, actor: &Actor, query: &str, limit: i64) -> Result<SearchResults> {
-        let limit = limit.clamp(1, 50);
+        let limit = ab_core::page_limit(limit, 50)?;
         let query = query.trim();
         if query.is_empty() {
             return Ok(SearchResults {

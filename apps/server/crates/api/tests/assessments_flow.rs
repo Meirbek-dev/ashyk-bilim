@@ -246,6 +246,19 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
         .await;
     let events = audit.json();
     assert_eq!(events.as_array().unwrap().len(), 2);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/audit?limit=201"),
+        )
+        .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
     assert_eq!(events[0]["payload"]["to"], "published");
     assert_eq!(events[1]["payload"]["note"], "opens next hour");
 

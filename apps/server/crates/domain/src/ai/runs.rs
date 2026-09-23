@@ -636,7 +636,7 @@ impl AiService {
         query: &RunListQuery,
     ) -> Result<(Vec<RunRow>, Option<AiRunId>)> {
         require_admin(actor)?;
-        let limit = query.limit.clamp(1, 200);
+        let limit = ab_core::page_limit(query.limit, 200)?;
         let mut rows = ab_db::ai::list_runs(
             &self.pool,
             &RunFilter {

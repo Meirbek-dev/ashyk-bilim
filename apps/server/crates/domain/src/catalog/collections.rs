@@ -161,7 +161,7 @@ impl CollectionsService {
         cursor: Option<CollectionId>,
         limit: i64,
     ) -> Result<(Vec<CollectionWithCourses>, Option<CollectionId>)> {
-        let limit = limit.clamp(1, 100);
+        let limit = ab_core::page_limit(limit, 100)?;
         let see_all = sees_private(actor, ResourceType::Collection);
         let mut rows = ab_db::collections::list_collections(
             &self.pool,

@@ -148,6 +148,14 @@ async fn crud_membership_and_visibility(pool: PgPool) {
     // membership rows but keeps courses.
     let listed = app.get_as(&learner, "/api/v2/collections").await;
     assert_eq!(listed.json()["items"].as_array().unwrap().len(), 1);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app.get_as(&learner, "/api/v2/collections?limit=101").await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
 
     let deleted = app
         .delete_as(&owner, &format!("/api/v2/collections/{id}"))

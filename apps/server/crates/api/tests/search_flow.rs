@@ -96,6 +96,14 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
     // Anonymous: public hits only, and never a people section.
     let anon = app.get("/api/v2/search?q=rust").await;
     assert_eq!(anon.status, StatusCode::OK);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app.get("/api/v2/search?q=rust&limit=51").await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
     let body = anon.json();
     let course_names: Vec<_> = body["courses"]
         .as_array()

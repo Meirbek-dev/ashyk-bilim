@@ -109,7 +109,7 @@ impl UsergroupsService {
         limit: i64,
     ) -> Result<(Vec<Usergroup>, Option<UsergroupId>)> {
         actor.require(perm(Action::Read))?;
-        let limit = limit.clamp(1, 100);
+        let limit = ab_core::page_limit(limit, 100)?;
         let mut rows = ab_db::usergroups::list_usergroups(&self.pool, cursor, limit + 1).await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));

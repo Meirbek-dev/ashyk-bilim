@@ -593,10 +593,10 @@ async fn claiming_a_foreign_upload_as_avatar_is_forbidden(pool: PgPool) {
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
 }
 
-/// `GET /users` clamps `limit` to 1..=100 and walks by cursor; an unknown
-/// id on the status route is a 404.
+/// `GET /users` refuses a `limit` outside 1..=100 (422, UX-156) and walks
+/// by cursor; an unknown id on the status route is a 404.
 #[sqlx::test(migrations = "../../migrations")]
-async fn user_listing_clamps_limit_and_walks_the_cursor(pool: PgPool) {
+async fn user_listing_bounds_limit_and_walks_the_cursor(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin_user = app
         .create_user("boss", "boss@example.com", &["admin"])
@@ -612,13 +612,21 @@ async fn user_listing_clamps_limit_and_walks_the_cursor(pool: PgPool) {
             .await;
     }
 
-    let zero = app.get_as(&admin, "/api/v2/users?limit=0").await;
-    assert_eq!(zero.status, StatusCode::OK, "{}", zero.text());
-    assert_eq!(zero.json()["items"].as_array().unwrap().len(), 1);
-    let huge = app.get_as(&admin, "/api/v2/users?limit=1000").await;
-    assert_eq!(huge.status, StatusCode::OK);
-    assert_eq!(huge.json()["items"].as_array().unwrap().len(), 4);
-    assert!(huge.json()["next_cursor"].is_null());
+    for bad in ["0", "101"] {
+        let refused = app
+            .get_as(&admin, &format!("/api/v2/users?limit={bad}"))
+            .await;
+        assert_eq!(
+            refused.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{bad}: {}",
+            refused.text()
+        );
+    }
+    let max = app.get_as(&admin, "/api/v2/users?limit=100").await;
+    assert_eq!(max.status, StatusCode::OK);
+    assert_eq!(max.json()["items"].as_array().unwrap().len(), 4);
+    assert!(max.json()["next_cursor"].is_null());
 
     let mut seen = Vec::new();
     let mut cursor: Option<String> = None;

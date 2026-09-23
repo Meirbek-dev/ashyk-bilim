@@ -1502,7 +1502,7 @@ impl GradingService {
         let course = self.assessments.courses.get(actor, course_id).await?;
         AssessmentsService::require_scoped(actor, &course, Action::Grade, "gradebook")?;
         let after = cursor.map(parse_gradebook_cursor).transpose()?;
-        let limit = limit.clamp(1, MAX_GRADEBOOK_PAGE);
+        let limit = ab_core::page_limit(limit, MAX_GRADEBOOK_PAGE)?;
         let mut rows =
             ab_db::submissions::gradebook_cells(&self.pool, course_id, after, limit + 1).await?;
         let page = usize::try_from(limit).unwrap_or(usize::MAX);

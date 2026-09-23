@@ -614,6 +614,19 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
         .await;
     assert_eq!(gradebook.status, StatusCode::OK, "{}", gradebook.text());
     assert_eq!(gradebook.json()["cells"].as_array().unwrap().len(), 2);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/gradebook?limit=501"),
+        )
+        .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
     assert_eq!(gradebook.json()["assessments"][0]["id"], id.as_str());
     let cursor = gradebook.json()["next_cursor"].as_str().unwrap().to_owned();
     let page2 = app

@@ -790,8 +790,13 @@ impl AiService {
         limit: i64,
     ) -> Result<Vec<ThreadSummaryRow>> {
         self.visible_course(actor, course_id).await?;
-        ab_db::ai::list_course_threads(&self.pool, course_id, actor.user_id, limit.clamp(1, 50))
-            .await
+        ab_db::ai::list_course_threads(
+            &self.pool,
+            course_id,
+            actor.user_id,
+            ab_core::page_limit(limit, 50)?,
+        )
+        .await
     }
 
     async fn owned_qa_thread(

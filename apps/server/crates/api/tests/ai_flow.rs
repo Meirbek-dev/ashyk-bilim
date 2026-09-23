@@ -330,6 +330,19 @@ async fn course_qa_streams_persists_and_replays(pool: PgPool) {
     assert_eq!(threads.status, StatusCode::OK, "{}", threads.text());
     let threads = threads.json();
     assert_eq!(threads.as_array().unwrap().len(), 1);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/ai/qa/{course_id}/threads?limit=51"),
+        )
+        .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
     assert_eq!(threads[0]["id"], thread_id);
     assert_eq!(threads[0]["message_count"], 2);
     assert_eq!(threads[0]["title"], "What is a monad?");
@@ -644,6 +657,14 @@ async fn submission_analysis_inline_queued_cancelled_and_reported(pool: PgPool) 
     assert_eq!(runs.status, StatusCode::OK, "{}", runs.text());
     let page = runs.json();
     assert_eq!(page["items"].as_array().unwrap().len(), 2);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app.get_as(&admin, "/api/v2/ai/admin/runs?limit=201").await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
     assert!(page["next_cursor"].is_string());
     let next = page["next_cursor"].as_str().unwrap();
     let rest = app
