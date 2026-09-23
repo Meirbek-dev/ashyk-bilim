@@ -4493,7 +4493,8 @@
         "download": "Download",
         "expand": "Expand",
         "pdfDocument": "PDF Document",
-        "pdfViewer": "PDF Viewer"
+        "pdfViewer": "PDF Viewer",
+        "remove": "Remove PDF"
       },
       "Scenarios": {
         "add": "Add",

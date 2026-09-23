@@ -4503,9 +4503,10 @@
       "PDFBlock": {
         "supportedFormats": "PDF (до 50 МБ)",
         "download": "Скачать",
-        "expand": "Расширять",
+        "expand": "Развернуть",
         "pdfDocument": "PDF документ",
-        "pdfViewer": "Просмотрщик PDF"
+        "pdfViewer": "Просмотрщик PDF",
+        "remove": "Удалить PDF"
       },
       "Scenarios": {
         "add": "Добавить",
@@ -5149,7 +5150,7 @@
         "download": "Скачать",
         "errorFormat": "Пожалуйста, загрузите видео в поддерживаемом формате (MP4, MKV или WebM)",
         "errorUpload": "Не удалось загрузить видео. Пожалуйста, попробуйте еще раз.",
-        "expand": "Расширить",
+        "expand": "Развернуть",
         "remove": "Удалить",
         "selectVideoFile": "Выбрать видеофайл",
         "sizeFull": "Полная ширина",

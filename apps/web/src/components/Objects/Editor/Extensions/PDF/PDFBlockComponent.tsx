@@ -1,10 +1,10 @@
 import { FileUploadBlock, FileUploadBlockButton, FileUploadBlockInput } from '../../FileUploadBlock'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { AlertTriangle, Download, Expand, FileText } from 'lucide-react'
+import { AlertTriangle, Download, Expand, FileText, Trash2 } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { uploadNewPDFFile } from '@services/blocks/Pdf/pdf'
-import { getBlockFileUrl } from '@services/blocks/upload'
+import { deleteBlock, getBlockFileUrl } from '@services/blocks/upload'
 import type { BlockFileContent } from '@services/blocks/upload'
 import { constructAcceptValue } from '@/lib/constants'
 import { NodeViewWrapper } from '@tiptap/react'
@@ -138,6 +138,18 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     setIsModalOpen(true)
   }
 
+  // UX-160: like the image block — release the upload, then drop the node.
+  const handleRemove = async () => {
+    if (blockObject) {
+      try {
+        await deleteBlock(blockObject.block_uuid)
+      } catch (removeError) {
+        console.error('Block delete failed; removing the node anyway', removeError)
+      }
+    }
+    props.deleteNode()
+  }
+
   const handleWidthResize = useCallback(
     (panelSize: PanelSize) => {
       if (isSyncingPanelsRef.current) return
@@ -201,7 +213,12 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     <>
       <NodeViewWrapper className="block-pdf w-full py-2">
         <FileUploadBlock isEditable={isEditable} isLoading={isLoading} isEmpty={!blockObject} Icon={FileText}>
-          <FileUploadBlockInput onFileSelect={setPDF} file={pdf} accept={SUPPORTED_FILES} hint={t('supportedFormats')} />
+          <FileUploadBlockInput
+            onFileSelect={setPDF}
+            file={pdf}
+            accept={SUPPORTED_FILES}
+            hint={t('supportedFormats')}
+          />
           <FileUploadBlockButton onClick={handleSubmit} disabled={!pdf} />
         </FileUploadBlock>
         {blockObject ? (
@@ -264,6 +281,16 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
                 >
                   <Expand className="h-4 w-4 text-white" />
                 </button>
+                {isEditable ? (
+                  <button
+                    type="button"
+                    onClick={handleRemove}
+                    className="rounded-full bg-black/50 p-2 transition-colors hover:bg-red-600/80"
+                    title={t('remove')}
+                  >
+                    <Trash2 className="h-4 w-4 text-white" />
+                  </button>
+                ) : null}
                 {!isEditable && (
                   <button
                     type="button"

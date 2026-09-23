@@ -4508,7 +4508,8 @@
         "download": "Жүктеп алу",
         "expand": "Кеңейту",
         "pdfDocument": "PDF құжаты",
-        "pdfViewer": "PDF қарау құралы"
+        "pdfViewer": "PDF қарау құралы",
+        "remove": "PDF файлын өшіру"
       },
       "Scenarios": {
         "add": "Қосу",
