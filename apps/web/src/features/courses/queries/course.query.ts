@@ -177,14 +177,6 @@ export function certificateDetailQueryOptions(verifyCode: string) {
   })
 }
 
-/** Blocked: no v2 route for `courses/{id}/contributors`. */
-export function courseContributorsQueryOptions(courseUuid: string) {
-  return queryOptions({
-    queryKey: queryKeys.courses.contributors(courseUuid),
-    queryFn: () => apiResult<AppCourseAuthor[]>(courseEndpoints.contributors(courseUuid)),
-  })
-}
-
 export function activityAssessmentUuidQueryOptions(activityUuid: string) {
   return queryOptions({
     queryKey: queryKeys.assessments.activityAssessmentId(activityUuid),

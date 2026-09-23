@@ -97,7 +97,7 @@ export function getCourseReadinessChecklist(
   editorData?: CourseEditorBundle | null,
 ): CourseChecklistItem[] {
   const stats = getCourseContentStats(course)
-  const contributors = editorData?.contributors?.data ?? course?.authors ?? []
+  const contributors = editorData?.contributors?.data ?? []
   const certifications = editorData?.certifications?.data ?? []
   const linkedUserGroups = editorData?.linkedUserGroups?.data ?? []
 

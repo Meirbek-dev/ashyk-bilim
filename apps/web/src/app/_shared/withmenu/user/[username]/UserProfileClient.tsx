@@ -261,6 +261,8 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                         update_date: course.update_date ?? null,
                         description: course.description ?? '',
                         thumbnail_image: course.thumbnail_image ?? '',
+                        creator_id: course.creator_id,
+                        contributor_ids: course.contributor_ids,
                       }
 
                       return (

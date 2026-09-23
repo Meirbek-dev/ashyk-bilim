@@ -198,16 +198,8 @@ function EditCourseCertification() {
   })
 
   const getInitialValues = useCallback((): FormValues => {
-    const getInstructorName = () => {
-      if ((courseStructure?.authors?.length ?? 0) > 0) {
-        const [author] = courseStructure.authors ?? []
-        if (!author) return ''
-        const firstName = author.user?.first_name || ''
-        const lastName = author.user?.last_name || ''
-        if (firstName || lastName) return `${firstName} ${lastName}`.trim()
-      }
-      return ''
-    }
+    // The roster lists the creator first (`creator/active`).
+    const getInstructorName = () => editorData.contributors.data?.find(c => c.role === 'creator')?.display_name ?? ''
 
     const config = (existingCertification?.config ?? {}) as Partial<AppCertification['certification']['config']>
     return {
@@ -218,7 +210,7 @@ function EditCourseCertification() {
       certificate_pattern: (config.certificate_pattern as FormValues['certificate_pattern']) || 'professional',
       certificate_instructor: config.certificate_instructor || getInstructorName(),
     }
-  }, [courseStructure, existingCertification, hasExistingCertification])
+  }, [courseStructure, editorData.contributors.data, existingCertification, hasExistingCertification])
 
   const serverValues = useMemo(() => {
     if (editorData.certifications.data === null || isLoading) {

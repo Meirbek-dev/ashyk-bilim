@@ -11,7 +11,12 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { buildCourseCreationPath, getCourseContentStats, getCourseManagementContext } from '@/lib/course-management'
+import {
+  buildCourseCreationPath,
+  getCourseContentStats,
+  getCourseManagementContext,
+  isCourseAuthor,
+} from '@/lib/course-management'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertTriangle,
@@ -90,7 +95,7 @@ function CoursesHome({
   const searchParams = useSearchParams()
   const [searchInput, setSearchInput] = useState(searchQuery)
   const viewMode = searchParams.get('view') === 'table' ? 'table' : 'cards'
-  const { can, isAuthenticated } = useSession()
+  const { can, isAuthenticated, user } = useSession()
   const canCreateCourse = can(Resources.COURSE, Actions.CREATE, Scopes.APP)
   const [selectedCourseUuids, setSelectedCourseUuids] = useState<string[]>([])
   const [isBulkPending, startBulkTransition] = useTransition()
@@ -157,15 +162,15 @@ function CoursesHome({
   const canManageCourse = useCallback(
     (course: ManageableCourse) =>
       can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
-      Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN)),
-    [can],
+      (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN)),
+    [can, user?.id],
   )
 
   const canDeleteCourse = useCallback(
     (course: ManageableCourse) =>
       can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
-      Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN)),
-    [can],
+      (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN)),
+    [can, user?.id],
   )
 
   const visibleCourseUuids = useMemo(() => optimisticCourses.map(course => course.course_uuid), [optimisticCourses])
@@ -782,15 +787,15 @@ function CourseRowActions({
 }) {
   const t = useTranslations('DashPage.CourseManagement.Dashboard')
   const router = useRouter()
-  const { can } = useSession()
+  const { can, user } = useSession()
   const [isPending, startTransition] = useTransition()
 
   const canManageCourse =
     can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
-    Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN))
+    (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN))
   const canDeleteCourse =
     can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
-    Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
+    (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
   const context = getCourseManagementContext(course as AppCourse, 'row')
 
   const handleDelete = () => {

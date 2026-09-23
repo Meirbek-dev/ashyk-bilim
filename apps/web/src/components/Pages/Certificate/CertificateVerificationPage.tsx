@@ -254,35 +254,6 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                         </p>
                       ) : null}
                     </div>
-
-                    {(() => {
-                      const authors = certificateData.course.authors ?? []
-                      const activeAuthors = authors.filter(
-                        (author: AppCourseAuthor) => author.authorship_status === 'ACTIVE' && author.user,
-                      )
-                      if (activeAuthors.length === 0) return null
-                      return (
-                        <div className="text-muted-foreground flex items-center gap-1 text-sm font-normal">
-                          <span>{t('byLabel')}</span>
-                          <div className="flex items-center gap-1">
-                            {activeAuthors.slice(0, 2).map((author: AppCourseAuthor, index: number) => {
-                              const user = author.user!
-                              return (
-                                <span key={user.user_uuid} className="text-foreground">
-                                  {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
-                                  {index < Math.min(2, activeAuthors.length - 1) && ', '}
-                                </span>
-                              )
-                            })}
-                            {activeAuthors.length > 2 && (
-                              <span className="text-muted-foreground">
-                                +{activeAuthors.length - 2} {t('moreAuthors')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })()}
                   </div>
                 </div>
 

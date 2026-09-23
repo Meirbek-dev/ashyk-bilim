@@ -106,15 +106,6 @@ declare global {
     [key: string]: unknown
   }
 
-  interface AppCourseAuthor {
-    id?: number | string | null
-    user_id?: string
-    authorship?: string
-    authorship_status?: string
-    user?: AppUserSummary
-    [key: string]: unknown
-  }
-
   interface AppActivity {
     id?: number | string | null
     activity_uuid: string
@@ -161,7 +152,6 @@ declare global {
     thumbnail_type?: string | null
     thumbnail_video?: string | null
     chapters?: AppChapter[]
-    authors?: AppCourseAuthor[]
     creator_id?: string | null | undefined
     /** Active co-authors (v2 `Course.contributor_ids`). */
     contributor_ids?: string[] | undefined

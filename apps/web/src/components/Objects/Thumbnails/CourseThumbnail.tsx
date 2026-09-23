@@ -12,7 +12,7 @@ import {
   Play,
   Settings2,
 } from 'lucide-react'
-import { buildCourseWorkspacePath } from '@/lib/course-management'
+import { buildCourseWorkspacePath, isCourseAuthor } from '@/lib/course-management'
 import { useMemo, useState, useTransition, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { formatDate } from '@/lib/date'
@@ -40,13 +40,12 @@ import { useSession } from '@/hooks/useSession'
 import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
 import { Card, CardContent, CardFooter } from '@components/ui/card'
 import { Actions, Resources, Scopes } from '@/types/permissions'
-import UserAvatar from '@components/Objects/UserAvatar'
 import NextImage from '@components/ui/NextImage'
 import { Button } from '@components/ui/button'
 import { Badge } from '@components/ui/badge'
 import Link from '@components/ui/AppLink'
 
-import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { deleteCourseFromBackend } from '@services/courses/courses'
 import { getAbsoluteUrl } from '@services/config/config'
 
@@ -60,14 +59,8 @@ export interface Course {
   description?: string
   thumbnail_image?: string | null
   update_date?: string | null
-  authors?: AppCourseAuthor[]
-  chapters?: {
-    activities?: unknown[]
-  }[]
-  can_update?: boolean
-  can_delete?: boolean
-  can_manage_contributors?: boolean
-  is_owner?: boolean
+  creator_id?: string | null | undefined
+  contributor_ids?: string[] | undefined
 }
 
 export interface CourseThumbnailProps {
@@ -87,9 +80,6 @@ export interface CourseThumbnailProps {
 // ============================================================================
 
 const removeCoursePrefix = (courseUuid?: string): string => (courseUuid || '').replace('course_', '')
-
-const getAuthorFullName = (author?: AppUserSummary): string =>
-  author ? [author.first_name, author.middle_name, author.last_name].filter(Boolean).join(' ') : ''
 
 // ============================================================================
 // Sub-components
@@ -160,109 +150,6 @@ const CourseImage: FC<CourseImageProps> = ({
     </div>
   </Link>
 )
-
-interface AuthorsDisplayProps {
-  authors: AppCourseAuthor[]
-  t: AppTranslator
-}
-
-const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
-  // LMS Best Practice: Sort authors so CREATORs/Main instructors appear first.
-  const sortedAuthors = useMemo(() => {
-    return [...authors].toSorted((a, b) => {
-      if (a.authorship === 'CREATOR' && b.authorship !== 'CREATOR') return -1
-      if (b.authorship === 'CREATOR' && a.authorship !== 'CREATOR') return 1
-      return 0
-    })
-  }, [authors])
-
-  const displayedAuthors = sortedAuthors.slice(0, 3)
-  const hasMoreAuthors = sortedAuthors.length > 3
-  const remainingCount = sortedAuthors.length - 3
-
-  const authorsText = useMemo(() => {
-    const names = displayedAuthors.map(a => {
-      const u = a.user
-      const fullName = getAuthorFullName(u)
-      return fullName.trim() !== '' ? fullName : u?.username || ''
-    })
-
-    const joinedNames = names.join(', ')
-    return hasMoreAuthors ? `${joinedNames} +${remainingCount}` : joinedNames
-  }, [displayedAuthors, hasMoreAuthors, remainingCount])
-
-  if (authors.length === 0) return null
-
-  return (
-    <div className="flex items-center gap-3 pt-2">
-      {/* Overlapping Avatars */}
-      <div
-        className="flex items-center -space-x-2"
-        role="group"
-        aria-label={t('courseAuthorsAria', { defaultValue: 'Course authors' })}
-      >
-        {displayedAuthors.map((author, idx) => {
-          const u = author.user
-          const authorName = getAuthorFullName(u).trim() || (u?.username ?? '')
-          // Format role for tooltip (e.g., "CREATOR" -> "Creator")
-          const roleLabel = author.authorship
-            ? author.authorship.charAt(0) + author.authorship.slice(1).toLowerCase()
-            : ''
-          const isCreator = author.authorship === 'CREATOR'
-
-          return (
-            <div
-              key={u?.user_uuid ?? idx}
-              className={`ring-background relative rounded-full ring-2 transition-all duration-200 hover:z-20 hover:-translate-y-0.5 hover:shadow-sm ${
-                isCreator ? 'ring-primary/10' : ''
-              }`}
-              style={{ zIndex: displayedAuthors.length - idx }}
-              title={roleLabel ? `${authorName} (${roleLabel})` : authorName}
-            >
-              <UserAvatar
-                size="sm"
-                variant="outline"
-                avatar_url={
-                  u?.avatar_image && u?.user_uuid ? getUserAvatarMediaDirectory(u.user_uuid, u.avatar_image) : ''
-                }
-                {...(!u?.avatar_image ? { predefined_avatar: 'empty' } : {})}
-                showProfilePopup
-                userId={u?.id}
-              />
-            </div>
-          )
-        })}
-
-        {hasMoreAuthors && (
-          <div
-            className="bg-muted text-muted-foreground ring-background flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold ring-2 transition-transform hover:z-20 hover:scale-105"
-            title={t('moreAuthors', {
-              count: remainingCount,
-              defaultValue: `${remainingCount} more contributors`,
-            })}
-          >
-            +{remainingCount}
-          </div>
-        )}
-      </div>
-
-      {/* Author Names & LMS Role Context */}
-      <div className="flex min-w-0 flex-col justify-center">
-        <span className="text-muted-foreground/70 mb-0.5 text-[10px] font-semibold tracking-wider uppercase">
-          {/* You can replace this with t('instructor') depending on your translation keys */}
-          {t('instructorLabel', { defaultValue: 'Instructor' })}
-        </span>
-        <span
-          className="text-foreground/90 hover:text-foreground truncate text-xs leading-none font-medium transition-colors"
-          aria-label={authorsText}
-          title={authorsText}
-        >
-          {authorsText}
-        </span>
-      </div>
-    </div>
-  )
-}
 
 interface ProgressBarProps {
   percentage: number
@@ -380,15 +267,8 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
   const [isPending, startTransition] = useTransition()
   const currentUserId = _thumbnailUser?.id
 
-  const isOwner = useMemo(() => {
-    if (!currentUserId || !course.authors?.length) return course.is_owner ?? false
-    return course.authors.some(
-      a =>
-        a.authorship_status === 'ACTIVE' &&
-        (a.authorship === 'CREATOR' || a.authorship === 'MAINTAINER') &&
-        a.user?.id === currentUserId,
-    )
-  }, [currentUserId, course.authors, course.is_owner])
+  // `:own` grants apply to every author (creator or active contributor), as on the server.
+  const isOwner = isCourseAuthor(course, currentUserId)
 
   const canUpdate =
     can(Resources.COURSE, Actions.UPDATE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN))
@@ -505,11 +385,6 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   // the parent accidentally passes trailLoading=true without trail data.
   const effectiveTrailLoading = isAuthenticated && trailLoading && hasMounted
 
-  const activeAuthors = useMemo(
-    () => course.authors?.filter(a => a.authorship_status === 'ACTIVE') || [],
-    [course.authors],
-  )
-
   const cleanCourseUuid = useMemo(() => removeCoursePrefix(course.course_uuid), [course.course_uuid])
 
   const courseRun = useMemo(() => {
@@ -540,11 +415,8 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const isEnrolled = Boolean(courseRun)
   const titleId = `course-title-${cleanCourseUuid}`
 
-  const currentUserId = currentUser?.id
-  const isOwner = useMemo(() => {
-    if (!currentUserId || !activeAuthors.length) return false
-    return activeAuthors.some(author => author.authorship === 'CREATOR' && author.user?.id === currentUserId)
-  }, [currentUserId, activeAuthors])
+  // The owner badge marks the creator only; co-authors get the menu, not the crown.
+  const isOwner = Boolean(currentUser?.id) && course.creator_id === currentUser?.id
 
   const handleDelete = async () => {
     const toastId = toast.loading(t('deleting'))
@@ -597,8 +469,6 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
             {extractMarkdownSummary(course.description || '', 140)}
           </p>
         </div>
-
-        <AuthorsDisplay authors={activeAuthors} t={t} />
       </CardContent>
 
       <CardFooter className="bg-muted/20 mt-auto border-t px-4 py-3">
