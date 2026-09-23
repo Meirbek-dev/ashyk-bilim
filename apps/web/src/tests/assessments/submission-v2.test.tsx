@@ -310,25 +310,63 @@ describe('v2 learner submissions', () => {
   // re-syncs it) and the items reload — never the draft-conflict dialog.
   it('reopens a draft the teacher changed under it instead of a conflict', async () => {
     const starts: string[] = []
+    let itemGets = 0
+    let changed = false
+    const added = { ...detail.items[0]!, id: '00000000-0000-4000-8000-000000000005', position: 2 }
     vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
-      if (String(path).endsWith('/submit'))
+      const p = String(path)
+      if (p.endsWith('/submit')) {
+        changed = true
         throw new APIError({
           code: 'conflict',
           status: 409,
           message: 'Stale content',
           details: { field: 'content_version', expected: 1, actual: 2 },
         })
-      if (init?.method === 'POST') starts.push(String(path))
-      return parse!(String(path).endsWith('/me') ? [fixture] : fixture)
+      }
+      if (init?.method === 'POST') starts.push(p)
+      if (p.endsWith('/assessment')) {
+        itemGets += 1
+        return parse!(changed ? { ...detail, content_version: 3, items: [...detail.items, added] } : detail)
+      }
+      if (p.endsWith('/attempt-state')) return parse!(attemptState)
+      return parse!(p.endsWith('/me') ? [fixture] : fixture)
     })
-    const { result } = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
-    act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'local work' }))
-    act(() => void result.current.submit().catch(() => undefined))
-    await waitFor(() => expect(toast.warning).toHaveBeenCalledWith('assessmentChanged'))
+    // The exam page: items from `useAssessmentAttempt` (keyed by activity),
+    // submit from the hook (keyed by assessment) — the re-sync must reach them.
+    const { result } = renderHook(
+      () => ({
+        attempt: useAssessmentAttempt(activityId),
+        submission: useAssessmentSubmission(assessmentId),
+      }),
+      { wrapper },
+    )
+    await waitFor(() => expect(result.current.submission.isLoading).toBe(false))
+    const items = () => {
+      const projection = result.current.attempt.vm
+      return projection?.surface === 'ATTEMPT' ? projection.vm.items : undefined
+    }
+    await waitFor(() => expect(items()).toHaveLength(1))
+    act(() => result.current.submission.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'local work' }))
+    let itemGetsAtSettle = 0
+    act(
+      () =>
+        void result.current.submission
+          .submit()
+          .catch(() => undefined)
+          .then(() => {
+            itemGetsAtSettle = itemGets
+          }),
+    )
+    await waitFor(() => expect(itemGetsAtSettle).toBeGreaterThan(0))
+    expect(toast.warning).toHaveBeenCalledWith('assessmentChanged')
+    // The items were refetched before the submit settled (the learner cannot
+    // submit again on the old list); the page now shows the added question.
+    expect(itemGetsAtSettle).toBe(2)
+    await waitFor(() => expect(items()).toHaveLength(2))
     expect(starts).toEqual([`assessments/${assessmentId}/submissions`])
-    expect(result.current.conflict).toBeNull()
-    expect(result.current.saveState).toBe('dirty')
-    expect(result.current.answers[itemId]).toEqual({ kind: 'OPEN_TEXT', text: 'local work' })
+    expect(result.current.submission.conflict).toBeNull()
+    expect(result.current.submission.saveState).toBe('dirty')
+    expect(result.current.submission.answers[itemId]).toEqual({ kind: 'OPEN_TEXT', text: 'local work' })
   })
 })

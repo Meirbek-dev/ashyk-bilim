@@ -55,7 +55,7 @@ function isOfflineRecoverable(error: unknown): boolean {
   return error.status === 0 || error.code === 'CLIENT_TIMEOUT' || error.code === 'NETWORK_UNAVAILABLE'
 }
 
-export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
+export function useAssessmentSubmission(assessmentUuid: string | null | undefined) {
   const t = useTranslations('Features.ActivityWorkspace')
   const tReasons = useTranslations('AttemptActions.blockedReasons')
   const { toastApiError } = useApiError()
@@ -90,7 +90,6 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     }
   }, [assessmentUuid])
   const submissionsQueryKey = useMemo(() => queryKeys.assessments.mySubmissions(assessmentUuid), [assessmentUuid])
-  const normalizedActivityUuid = activityUuid ?? null
 
   const draftQueryOptions = useMemo(
     () =>
@@ -120,13 +119,15 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       queryClient.invalidateQueries({
         queryKey: queryKeys.assessments.detail(assessmentUuid),
       }),
-      normalizedActivityUuid
-        ? queryClient.invalidateQueries({
-            queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-          })
-        : Promise.resolve(),
+      // BUG-238: the items live under the *activity's* key; match every
+      // cached copy by the assessment it carries, so no caller has to pass
+      // (or normalize) the activity id for a re-sync to reload them.
+      queryClient.invalidateQueries({
+        queryKey: ['assessments', 'activity'],
+        predicate: query => (query.state.data as { id?: unknown } | undefined)?.id === assessmentUuid,
+      }),
     ])
-  }, [assessmentUuid, draftQueryOptions.queryKey, normalizedActivityUuid, queryClient, submissionsQueryKey])
+  }, [assessmentUuid, draftQueryOptions.queryKey, queryClient, submissionsQueryKey])
 
   const submissionsQuery = useQuery({
     ...queryOptions({

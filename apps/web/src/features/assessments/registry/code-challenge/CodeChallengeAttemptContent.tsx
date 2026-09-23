@@ -32,7 +32,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
     () => (codeItem ? codeItemToSettings(codeItem, vm?.title, vm?.description ?? undefined) : null),
     [codeItem, vm?.description, vm?.title],
   )
-  const submissionState = useAssessmentSubmission(assessmentUuid, normalizedActivityUuid)
+  const submissionState = useAssessmentSubmission(assessmentUuid)
   const saveDraft = submissionState.save
   const { saveState } = submissionState
   const submissionStatus = submissionState.status
