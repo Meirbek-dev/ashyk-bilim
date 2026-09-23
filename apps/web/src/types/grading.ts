@@ -100,4 +100,6 @@ export interface BulkPublishGradesResponse {
   already_published_count: number
   /** Rows held back: an item still awaits its manual score (BUG-197). */
   needs_grading_count?: number
+  /** Rows a save or return changed while the release ran (BUG-226 guard, UX-161). */
+  skipped_count?: number
 }

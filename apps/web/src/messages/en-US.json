@@ -8388,7 +8388,8 @@
             "deadlineDetail": "Learners targeted: {count}. {reason}",
             "releaseFinished": "Grade release finished",
             "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}.",
-            "releaseNeedsGrading": "{count, plural, one {# submission still awaits grading and was not published} other {# submissions still await grading and were not published}}"
+            "releaseNeedsGrading": "{count, plural, one {# submission still awaits grading and was not published} other {# submissions still await grading and were not published}}",
+            "releaseSkipped": "{count, plural, one {# submission changed during the release and stayed hidden — release again} other {# submissions changed during the release and stayed hidden — release again}}"
           },
           "failedSubmissionsTitle": "{count, plural, one {# submission} other {# submissions}} failed to update:",
           "preview": {

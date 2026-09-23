@@ -2578,6 +2578,25 @@ async fn zero_max_item_accepts_only_zero(pool: PgPool) {
     );
     assert_eq!(inflated.json()["field_errors"][0]["field"], "item_grades");
     assert_eq!(inflated.json()["field_errors"][0]["code"], "range");
+    // UX-161: one grade per item — 501 entries used to write 501 feedback rows.
+    let repeated: Vec<_> = (0..501)
+        .map(|_| serde_json::json!({ "item_id": &essay_id, "score": 0 }))
+        .collect();
+    let flood = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "save", "item_grades": repeated }),
+        ))
+        .await;
+    assert_eq!(
+        flood.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        flood.text()
+    );
+    assert_eq!(flood.json()["field_errors"][0]["code"], "duplicate");
     let zero = app
         .send(grade(
             &teacher,
@@ -2651,6 +2670,15 @@ async fn publish_all_racing_a_save_or_return_never_releases_the_stale_row(pool: 
                             "{tag}"
                         );
                         assert_eq!(review["final_score"], 80.0, "{tag}");
+                        // UX-161: still `graded` = the release listed the row
+                        // at its old version and skipped it — and says so.
+                        if review["status"] == "graded" {
+                            assert!(
+                                released.json()["skipped_count"].as_i64().unwrap() >= 1,
+                                "{tag} {}",
+                                released.text()
+                            );
+                        }
                     } else {
                         assert_eq!(review["status"], "returned", "{tag}");
                     }

@@ -9,7 +9,7 @@
 //! every method resolves the assessment's course first so an invisible
 //! course stays a 404.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use ab_core::assessments::{
     AssessmentKind, AutoSubmitReason, FileAttemptStatus, ItemKind, SubmissionStatus,
@@ -246,6 +246,9 @@ pub struct PublishSummary {
     /// item is still unscored (BUG-197 / BUG-202) — the same count as
     /// `stats.needs_grading`.
     pub needs_grading_count: i64,
+    /// Rows a grade save or return changed while the release ran (BUG-226
+    /// version guard) — left as they are; run the release again for them.
+    pub skipped_count: i64,
 }
 
 /// One graded activity of a learner: an assessment submission
@@ -1126,7 +1129,18 @@ impl GradingService {
         }
 
         let items = self.items(assessment.id).await?;
+        // UX-161: one grade per item — a repeated id (501 entries were
+        // accepted, last one winning, one feedback row each) is refused,
+        // which also caps the list at the assessment's item count.
+        let mut seen = HashSet::new();
         for grade in &input.item_grades {
+            if !seen.insert(grade.item_id) {
+                return Err(Error::validation(vec![FieldError {
+                    field: "item_grades".into(),
+                    code: "duplicate".into(),
+                    message: format!("item {} is graded more than once", grade.item_id),
+                }]));
+            }
             // An id outside the assessment used to be appended to the
             // breakdown (max 0, inflating every later score) and then
             // failed the feedback FK after the row was written.
@@ -1381,6 +1395,7 @@ impl GradingService {
         let rows = ab_db::submissions::list_releasable(&self.pool, assessment_id).await?;
         let mut published = 0;
         let mut already = 0;
+        let mut skipped = 0;
         // BUG-202: a feedback-only save keeps the attempt `pending` (not
         // releasable) — the UI still has to warn that grading is owed.
         let mut needs_grading = ab_db::submissions::stats(&self.pool, assessment_id)
@@ -1439,6 +1454,7 @@ impl GradingService {
             if !ab_db::submissions::mark_published(&mut *tx, row.id, row.version, final_score)
                 .await?
             {
+                skipped += 1;
                 continue;
             }
             tx.commit().await?;
@@ -1484,6 +1500,7 @@ impl GradingService {
             published_count: published,
             already_published_count: already,
             needs_grading_count: needs_grading,
+            skipped_count: skipped,
         })
     }
 

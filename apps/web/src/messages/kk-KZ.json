@@ -8385,7 +8385,8 @@
             "deadlineDetail": "Қамтылған білім алушылар: {count}. {reason}",
             "releaseFinished": "Бағаларды жариялау аяқталды",
             "releaseDetail": "Жаңадан көрінгені: {published}. Бұрыннан көрінгені: {alreadyVisible}.",
-            "releaseNeedsGrading": "{count} жұмыс әлі тексеруді күтуде және жарияланған жоқ"
+            "releaseNeedsGrading": "{count} жұмыс әлі тексеруді күтуде және жарияланған жоқ",
+            "releaseSkipped": "{count, plural, other {# жұмыс жариялау кезінде өзгеріп, жасырын қалды — қайта жариялаңыз}}"
           },
           "failedSubmissionsTitle": "{count} жұмыс(ы) жаңарту мүмкін болмады:",
           "preview": {

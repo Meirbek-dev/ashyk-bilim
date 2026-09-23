@@ -911,6 +911,32 @@ describe('teacher review controls', () => {
       await waitFor(() => expect(mocks.toastWarningMock).toHaveBeenCalledWith('summaries.releaseNeedsGrading'))
       expect(mocks.toastSuccessMock).not.toHaveBeenCalled()
     })
+
+    it('the bulk release reports the rows skipped by a concurrent save (UX-161)', async () => {
+      mocks.publishAssessmentGradesMock.mockResolvedValue({
+        published_count: 0,
+        already_published_count: 0,
+        needs_grading_count: 0,
+        skipped_count: 1,
+      })
+      render(
+        <ReviewBulkActionBar
+          activityId={55}
+          assessmentUuid="assessment_review"
+          disabled={false}
+          onRefresh={vi.fn().mockResolvedValue(undefined)}
+          submissions={[createSubmission({ status: 'GRADED' })]}
+        />,
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'releaseHidden' }))
+      const dialog = await screen.findByRole('dialog')
+      fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
+        target: { value: 'Release hidden grades' },
+      })
+      fireEvent.click(within(dialog).getByRole('button', { name: 'releaseGrades' }))
+      await waitFor(() => expect(mocks.toastWarningMock).toHaveBeenCalledWith('summaries.releaseSkipped'))
+      expect(mocks.toastSuccessMock).not.toHaveBeenCalled()
+    })
   })
 
   it('explains already visible grades and offers a re-publish (PUBLISHED → PUBLISHED is the only allowed move)', () => {

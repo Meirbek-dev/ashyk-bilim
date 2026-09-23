@@ -195,7 +195,15 @@ export default function ReviewBulkActionBar({
         // BUG-197: rows with an item still awaiting its manual score are held
         // back by the server — say how many instead of claiming a clean run.
         const held = result.needs_grading_count ?? 0
-        const heldNote = held > 0 ? t('summaries.releaseNeedsGrading', { count: held }) : null
+        // UX-161: rows a save or return changed mid-release are skipped (BUG-226) — say so too.
+        const skipped = result.skipped_count ?? 0
+        const heldNote =
+          [
+            held > 0 ? t('summaries.releaseNeedsGrading', { count: held }) : null,
+            skipped > 0 ? t('summaries.releaseSkipped', { count: skipped }) : null,
+          ]
+            .filter(Boolean)
+            .join(' ') || null
         if (heldNote) toast.warning(heldNote)
         else toast.success(t('toasts.hiddenReleased'))
         const detail = t('summaries.releaseDetail', {
