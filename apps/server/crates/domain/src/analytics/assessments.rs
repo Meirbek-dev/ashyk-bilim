@@ -305,17 +305,20 @@ pub fn outlier_reason_codes(
     codes
 }
 
-/// Submissions of one assessment visible under the cohort / bucket filters.
+/// Submissions of one assessment by `members` — the course's
+/// [`eligible_by_course`] set, cohort filter included — inside the bucket
+/// window. BUG-250: the rates' numerator comes from the denominator's member
+/// set, so a learner who left (UX-150) drops from both, never 200 %.
 fn visible_submissions<'a>(
     ctx: &'a AnalyticsContext,
     assessment_id: AssessmentId,
-    allowed: Option<&HashSet<UserId>>,
+    members: &HashSet<UserId>,
     bucket_window: Option<(i64, i64)>,
 ) -> Vec<&'a SubmissionInfoRow> {
     ctx.submissions
         .iter()
         .filter(|s| s.assessment_id == assessment_id)
-        .filter(|s| user_allowed(s.user_id, allowed))
+        .filter(|s| members.contains(&s.user_id))
         .filter(|s| in_bucket_window(submitted_at(s), bucket_window))
         .collect()
 }
@@ -340,17 +343,15 @@ pub fn assessment_stats(
 ) -> AssessmentStats {
     let allowed = ctx.cohort_user_ids(&filters.cohort_ids);
     let eligible = eligible_by_course(ctx, allowed.as_ref());
+    let empty = HashSet::new();
+    let members = eligible.get(&assessment.course_id).unwrap_or(&empty);
     let submissions = visible_submissions(
         ctx,
         assessment.id,
-        allowed.as_ref(),
+        members,
         filters.selected_bucket_window(),
     );
-    AssessmentStats::compute(
-        assessment,
-        &submissions,
-        eligible.get(&assessment.course_id).map_or(0, HashSet::len),
-    )
+    AssessmentStats::compute(assessment, &submissions, members.len())
 }
 
 /// Legacy `build_assessment_rows`.
@@ -362,17 +363,15 @@ pub fn build_assessment_rows(
     let allowed = ctx.cohort_user_ids(&filters.cohort_ids);
     let eligible = eligible_by_course(ctx, allowed.as_ref());
     let bucket_window = filters.selected_bucket_window();
+    let empty = HashSet::new();
     let mut rows: Vec<AssessmentOutlierRow> = ctx
         .assessments
         .iter()
         .filter(|a| is_reportable(a))
         .map(|a| {
-            let submissions = visible_submissions(ctx, a.id, allowed.as_ref(), bucket_window);
-            let stats = AssessmentStats::compute(
-                a,
-                &submissions,
-                eligible.get(&a.course_id).map_or(0, HashSet::len),
-            );
+            let members = eligible.get(&a.course_id).unwrap_or(&empty);
+            let submissions = visible_submissions(ctx, a.id, members, bucket_window);
+            let stats = AssessmentStats::compute(a, &submissions, members.len());
             let variance = score_variance(&stats.scores);
             let discrimination = discrimination_index(&stats.scores_by_user);
             AssessmentOutlierRow {
@@ -1007,7 +1006,7 @@ pub fn build_detail(
     let eligible_map = eligible_by_course(ctx, allowed.as_ref());
     let empty = HashSet::new();
     let eligible_users = eligible_map.get(&a.course_id).unwrap_or(&empty);
-    let records = visible_submissions(ctx, a.id, allowed.as_ref(), None);
+    let records = visible_submissions(ctx, a.id, eligible_users, None);
     let stats = AssessmentStats::compute(a, &records, eligible_users.len());
 
     let mut by_user: BTreeMap<UserId, Vec<&SubmissionInfoRow>> = BTreeMap::new();

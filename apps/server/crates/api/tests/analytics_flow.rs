@@ -1275,7 +1275,7 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
 async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
-    let (course_id, _) = public_course(&app, &teacher, "Analytics 101").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Analytics 101").await;
     let alice = learner(&app, "alice").await;
     let outsider = learner(&app, "outsider").await;
     enrol(&pool, &course_id, alice.user_id, 0.0).await;
@@ -1317,10 +1317,36 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
         .await
         .unwrap();
     }
+    // BUG-250: both submitted the quiz; after bob leaves, submissions are
+    // counted from the same member set as `eligible_learners` (never 200 %).
+    let (quiz_id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    for who in [&alice, &bob] {
+        submit_attempt(&app, who, &quiz_id, &choice_id, &essay_id).await;
+    }
     let left = app
         .delete_as(&bob, &format!("/api/v2/trail/courses/{course_id}"))
         .await;
     assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    let quiz = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/assessments/quiz/{quiz_id}"),
+        )
+        .await;
+    let summary = &quiz.json()["summary"];
+    assert_eq!(summary["eligible_learners"], 1, "{}", quiz.text());
+    assert_eq!(summary["submitted_learners"], 1, "{}", quiz.text());
+    assert_eq!(summary["submission_rate"], 100.0, "{}", quiz.text());
+    let listing = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/assessments")
+        .await;
+    assert_eq!(
+        listing.json()["items"][0]["completion_rate"],
+        100.0,
+        "{}",
+        listing.text()
+    );
     let at_risk = app
         .get_as(&teacher, "/api/v2/analytics/teacher/learners/at-risk")
         .await;
