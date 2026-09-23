@@ -906,7 +906,7 @@ async fn mark_stampede_never_exhausts_the_pool(pool: PgPool) {
 /// every event and award lands.
 #[sqlx::test(migrations = "../../migrations")]
 async fn first_marks_past_pool_size_all_land_with_their_hooks(pool: PgPool) {
-    let learners = pool.options().get_max_connections() as usize + 2;
+    let learners = pool.options().get_max_connections() + 2;
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
     let (_course_id, chapter_id) = public_course(&app, &teacher, "Crowd 101").await;
@@ -930,7 +930,7 @@ async fn first_marks_past_pool_size_all_land_with_their_hooks(pool: PgPool) {
     .fetch_one(&app.pool)
     .await
     .unwrap();
-    assert_eq!((events, awards), (learners as i64, learners as i64));
+    assert_eq!((events, awards), (i64::from(learners), i64::from(learners)));
 }
 
 /// The (user, course) trail lock is held by some transaction of this test
