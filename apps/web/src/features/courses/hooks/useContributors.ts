@@ -29,10 +29,15 @@ export function contributorsQueryOptions(courseUuid: string) {
   })
 }
 
-export function useContributors(courseUuid: string | null | undefined, options?: { enabled?: boolean }) {
+export function useContributors(
+  courseUuid: string | null | undefined,
+  options?: { enabled?: boolean; refetchInterval?: number },
+) {
   return useQuery({
     ...contributorsQueryOptions(courseUuid ?? '__disabled__'),
     enabled: (options?.enabled ?? true) && Boolean(courseUuid),
+    // Visible tab only (`refetchIntervalInBackground` stays false).
+    refetchInterval: options?.refetchInterval ?? false,
   })
 }
 

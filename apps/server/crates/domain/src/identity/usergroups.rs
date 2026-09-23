@@ -89,8 +89,11 @@ impl UsergroupsService {
     pub async fn create(&self, actor: &Actor, name: &str, description: &str) -> Result<Usergroup> {
         actor.require(perm(Action::Create))?;
         let name = trimmed_name(name)?;
-        let id = ab_db::usergroups::insert_usergroup(&self.pool, &name, description, actor.user_id)
-            .await?;
+        // UX-165: the description is shown to members like the name.
+        let description = ab_core::strip_controls_multiline(description);
+        let id =
+            ab_db::usergroups::insert_usergroup(&self.pool, &name, &description, actor.user_id)
+                .await?;
         ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("usergroup"))
@@ -130,7 +133,14 @@ impl UsergroupsService {
     ) -> Result<Usergroup> {
         self.writable(actor, id).await?;
         let name = name.map(trimmed_name).transpose()?;
-        ab_db::usergroups::update_usergroup(&self.pool, id, name.as_deref(), description).await?;
+        let description = description.map(ab_core::strip_controls_multiline);
+        ab_db::usergroups::update_usergroup(
+            &self.pool,
+            id,
+            name.as_deref(),
+            description.as_deref(),
+        )
+        .await?;
         ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("usergroup"))

@@ -51,8 +51,7 @@ const ASSIGNABLE_ROLES: Exclude<ContributorRole, 'creator'>[] = ['contributor', 
 const formatDate = (unix: number, locale: Locale) =>
   new Date(unix * 1000).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
 
-const statusTone = (status: string) =>
-  status === 'active' ? 'success' : status === 'pending' ? 'warning' : 'info'
+const statusTone = (status: string) => (status === 'active' ? 'success' : status === 'pending' ? 'warning' : 'info')
 
 function EditCourseContributors() {
   const t = useTranslations('DashPage.EditCourseContributors')
@@ -63,7 +62,9 @@ function EditCourseContributors() {
   const { session, can } = useSession()
   const { toastApiError } = useApiError()
   const { updateAccess } = useCoursesMutations(courseUuid)
-  const roster = useContributors(courseUuid)
+  // UX-165: a new application shows up without a reload — focus (the query
+  // default) plus every 30 s while visible, like the work queue.
+  const roster = useContributors(courseUuid, { refetchInterval: 30_000 })
   const contributors = roster.data ?? []
   const { add, update, remove, isAdding, busyUserId } = useContributorMutations(courseUuid)
 
@@ -71,7 +72,9 @@ function EditCourseContributors() {
   // or a platform course manager; everyone else gets a read-only roster.
   const me = contributors.find(row => row.user_id === session?.userId)
   const canManageRoster =
-    can('course', 'manage', 'platform') || me?.role === 'creator' || (me?.role === 'maintainer' && me.status === 'active')
+    can('course', 'manage', 'platform') ||
+    me?.role === 'creator' ||
+    (me?.role === 'maintainer' && me.status === 'active')
 
   const initialOpenToContributors =
     typeof courseStructure?.open_to_contributors === 'boolean' ? courseStructure.open_to_contributors : undefined
@@ -133,7 +136,10 @@ function EditCourseContributors() {
     if (isOpenToContributors === undefined || !isDirty) return
     await save(
       async () =>
-        updateAccess({ open_to_contributors: isOpenToContributors }, { lastKnownUpdateDate: courseStructure.update_date }),
+        updateAccess(
+          { open_to_contributors: isOpenToContributors },
+          { lastKnownUpdateDate: courseStructure.update_date },
+        ),
       { onSuccess: () => markClean(isOpenToContributors) },
     )
   }
@@ -252,13 +258,17 @@ function EditCourseContributors() {
                             >
                               <UserAvatar
                                 size="sm"
-                                avatar_url={user.avatar_key ? getUserAvatarMediaDirectory(user.id, user.avatar_key) : ''}
+                                avatar_url={
+                                  user.avatar_key ? getUserAvatarMediaDirectory(user.id, user.avatar_key) : ''
+                                }
                                 {...(user.avatar_key ? {} : { predefined_avatar: 'empty' })}
                                 userId={user.id}
                                 username={user.username}
                               />
                               <div className="min-w-0 flex-1">
-                                <div className="text-foreground truncate font-medium">{user.display_name || user.username}</div>
+                                <div className="text-foreground truncate font-medium">
+                                  {user.display_name || user.username}
+                                </div>
                                 <div className="text-muted-foreground text-xs">@{user.username}</div>
                               </div>
                               {isExisting ? (
@@ -287,7 +297,9 @@ function EditCourseContributors() {
                 <AlertDialogMedia className="bg-muted text-foreground">
                   <Users className="size-8" />
                 </AlertDialogMedia>
-                <AlertDialogTitle>{t('removeConfirmTitle', { username: removeTarget?.username ?? '' })}</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {t('removeConfirmTitle', { username: removeTarget?.username ?? '' })}
+                </AlertDialogTitle>
                 <AlertDialogDescription>{t('removeConfirmMessage')}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -311,7 +323,9 @@ function EditCourseContributors() {
                     <TableHead>{t('roleColumn')}</TableHead>
                     <TableHead>{t('statusColumn')}</TableHead>
                     <TableHead>{t('addedOnColumn')}</TableHead>
-                    {canManageRoster ? <TableHead className="w-[220px] text-right">{t('actionsColumn')}</TableHead> : null}
+                    {canManageRoster ? (
+                      <TableHead className="w-[220px] text-right">{t('actionsColumn')}</TableHead>
+                    ) : null}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -338,7 +352,9 @@ function EditCourseContributors() {
                           {canManageRoster && !isCreator ? (
                             <DropdownMenu>
                               <DropdownMenuTrigger
-                                render={<Button variant="outline" size="sm" className="justify-between" disabled={busy} />}
+                                render={
+                                  <Button variant="outline" size="sm" className="justify-between" disabled={busy} />
+                                }
                               >
                                 {t(row.role)}
                                 <ChevronDown className="text-muted-foreground ml-2 h-4 w-4" />
@@ -365,11 +381,16 @@ function EditCourseContributors() {
                             {t(row.status)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{formatDate(row.created_at_unix, locale)}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {formatDate(row.created_at_unix, locale)}
+                        </TableCell>
                         {canManageRoster ? (
                           <TableCell className="text-right">
                             {isCreator ? null : busy ? (
-                              <Loader2 className="text-muted-foreground ml-auto size-4 animate-spin" aria-label={t('updating')} />
+                              <Loader2
+                                className="text-muted-foreground ml-auto size-4 animate-spin"
+                                aria-label={t('updating')}
+                              />
                             ) : (
                               <div className="flex justify-end gap-2">
                                 {row.status === 'pending' ? (
@@ -381,7 +402,9 @@ function EditCourseContributors() {
                                     size="sm"
                                     variant="outline"
                                     onClick={() =>
-                                      void handleUpdate(row, { status: row.status === 'active' ? 'inactive' : 'active' })
+                                      void handleUpdate(row, {
+                                        status: row.status === 'active' ? 'inactive' : 'active',
+                                      })
                                     }
                                   >
                                     {row.status === 'active' ? t('deactivateButton') : t('activateButton')}

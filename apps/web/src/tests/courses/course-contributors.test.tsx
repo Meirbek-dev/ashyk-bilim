@@ -20,7 +20,13 @@ const api = vi.hoisted(() => ({
   applyContributor: vi.fn(),
 }))
 const harness = vi.hoisted(() => ({ userId: 'creator-1', permissions: new Set<string>() }))
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn(), loading: vi.fn(), dismiss: vi.fn() }))
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  loading: vi.fn(),
+  dismiss: vi.fn(),
+}))
 
 vi.mock('@/lib/api/generated/courses/courses', () => api)
 vi.mock('next-intl', () => ({
@@ -41,7 +47,13 @@ vi.mock('@components/Contexts/CourseContext', () => ({
 }))
 vi.mock('@/hooks/mutations/useCoursesMutations', () => ({ useCoursesMutations: () => ({ updateAccess: vi.fn() }) }))
 vi.mock('@/features/courses/editor/hooks/useCourseSectionDraft', () => ({
-  useCourseSectionDraft: () => ({ draft: true, setDraft: vi.fn(), isDirty: false, discard: vi.fn(), markClean: vi.fn() }),
+  useCourseSectionDraft: () => ({
+    draft: true,
+    setDraft: vi.fn(),
+    isDirty: false,
+    discard: vi.fn(),
+    markClean: vi.fn(),
+  }),
 }))
 vi.mock('@/hooks/useSaveSection', () => ({ useSaveSection: () => ({ isSaving: false, save: vi.fn() }) }))
 vi.mock('@/features/search/hooks/useSearch', () => ({
@@ -67,7 +79,14 @@ const creator = {
   status: 'active',
   created_at_unix: 1_700_000_000,
 }
-const applicant = { ...creator, user_id: 'helper-1', username: 'helper', display_name: 'Helper', role: 'contributor', status: 'pending' }
+const applicant = {
+  ...creator,
+  user_id: 'helper-1',
+  username: 'helper',
+  display_name: 'Helper',
+  role: 'contributor',
+  status: 'pending',
+}
 
 const renderWithClient = (ui: React.ReactElement) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -98,13 +117,17 @@ describe('course collaboration (v2 roster)', () => {
     expect(screen.getByTestId('contributor-teacher').querySelector('button')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'approveButton' }))
-    await waitFor(() => expect(api.updateContributor).toHaveBeenCalledWith('course-1', 'helper-1', { status: 'active' }))
+    await waitFor(() =>
+      expect(api.updateContributor).toHaveBeenCalledWith('course-1', 'helper-1', { status: 'active' }),
+    )
     expect(toast.success).toHaveBeenCalledWith('successfullyUpdatedContributor')
   })
 
   // UX-092: approving a row withdrawn elsewhere → 404 → a calm info toast, not the generic not-found.
   it('tells the manager when the application is already gone', async () => {
-    api.updateContributor.mockRejectedValue(new APIError({ code: 'not-found', message: 'contributor not found', status: 404 }))
+    api.updateContributor.mockRejectedValue(
+      new APIError({ code: 'not-found', message: 'contributor not found', status: 404 }),
+    )
     renderWithClient(<EditCourseContributors />)
     await screen.findByTestId('contributor-helper')
     fireEvent.click(screen.getByRole('button', { name: 'approveButton' }))
@@ -121,6 +144,22 @@ describe('course collaboration (v2 roster)', () => {
     expect(screen.getByText('rosterReadOnlyTitle')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'removeButton' })).toBeNull()
     expect(screen.queryByLabelText('searchUsersPlaceholder')).toBeNull()
+  })
+
+  // UX-165: an application made while the page is open appears without a reload.
+  it('the roster refreshes itself while the page is open', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      api.listContributors.mockResolvedValue([creator])
+      renderWithClient(<EditCourseContributors />)
+      await screen.findByTestId('contributor-teacher')
+      expect(screen.queryByTestId('contributor-helper')).toBeNull()
+      api.listContributors.mockResolvedValue([creator, applicant])
+      await vi.advanceTimersByTimeAsync(30_000)
+      await screen.findByTestId('contributor-helper')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('useContributorStatus resolves the caller’s own row', async () => {

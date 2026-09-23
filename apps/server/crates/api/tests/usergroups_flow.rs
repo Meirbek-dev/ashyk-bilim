@@ -207,11 +207,14 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
             &owner,
             "/api/v2/usergroups",
             // UX-163: bidi overrides and BEL never reach other people's screens.
-            &serde_json::json!({ "name": "  Co\u{202E}ho\u{7}rt  " }),
+            &serde_json::json!({ "name": "  Co\u{202E}ho\u{7}rt  ",
+                                  "description": "Line\u{202E} one\u{FEFF}\nline\u{AD} two\u{85}" }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
     assert_eq!(created.json()["name"], "Cohort");
+    // UX-165: the description too — line breaks stay.
+    assert_eq!(created.json()["description"], "Line one\nline two");
     let id = created.json()["id"].as_str().unwrap().to_owned();
 
     let blank_rename = app
@@ -231,11 +234,12 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
         .patch_as(
             &manager,
             &format!("/api/v2/usergroups/{id}"),
-            &serde_json::json!({ "name": " Mana\u{202E}ged " }),
+            &serde_json::json!({ "name": " Mana\u{202E}ged ", "description": "Te\u{7}xt" }),
         )
         .await;
     assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
     assert_eq!(renamed.json()["name"], "Managed");
+    assert_eq!(renamed.json()["description"], "Text");
     assert_eq!(renamed.json()["can_write"], true);
     let deleted = app
         .delete_as(&manager, &format!("/api/v2/usergroups/{id}"))
