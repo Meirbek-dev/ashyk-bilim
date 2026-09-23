@@ -12,7 +12,7 @@ import {
   Play,
   Settings2,
 } from 'lucide-react'
-import { buildCourseWorkspacePath, isCourseAuthor } from '@/lib/course-management'
+import { buildCourseWorkspacePath, isCourseAuthor, isCourseCreator } from '@/lib/course-management'
 import { useMemo, useState, useTransition, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { formatDate } from '@/lib/date'
@@ -46,7 +46,8 @@ import { Badge } from '@components/ui/badge'
 import Link from '@components/ui/AppLink'
 
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { deleteCourseFromBackend } from '@services/courses/courses'
+import { deleteCourseFromBackend } from '@services/courses/course-delete'
+import { useApiError } from '@/hooks/useApiError'
 import { getAbsoluteUrl } from '@services/config/config'
 
 // ============================================================================
@@ -267,14 +268,15 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
   const [isPending, startTransition] = useTransition()
   const currentUserId = _thumbnailUser?.id
 
-  // `:own` grants apply to every author (creator or active contributor), as on the server.
-  const isOwner = isCourseAuthor(course, currentUserId)
-
+  // `:own` update applies to every author (creator or active contributor), as on
+  // the server; `:own` delete to the creator only (UX-166).
   const canUpdate =
-    can(Resources.COURSE, Actions.UPDATE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN))
+    can(Resources.COURSE, Actions.UPDATE, Scopes.APP) ||
+    (isCourseAuthor(course, currentUserId) && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN))
 
   const canDelete =
-    can(Resources.COURSE, Actions.DELETE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
+    can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
+    (isCourseCreator(course, currentUserId) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
 
   const availableActions = [...(canUpdate ? ['update'] : []), ...(canDelete ? ['delete'] : [])]
 
@@ -374,6 +376,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const t = useTranslations('Components.CourseThumbnail')
   const locale = useLocale()
   const router = useRouter()
+  const { toastApiError } = useApiError()
   const { user: currentUser, isAuthenticated } = useSession()
   const hasMounted = useSyncExternalStore(
     emptySubscribe,
@@ -416,7 +419,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const titleId = `course-title-${cleanCourseUuid}`
 
   // The owner badge marks the creator only; co-authors get the menu, not the crown.
-  const isOwner = Boolean(currentUser?.id) && course.creator_id === currentUser?.id
+  const isOwner = isCourseCreator(course, currentUser?.id)
 
   const handleDelete = async () => {
     const toastId = toast.loading(t('deleting'))
@@ -424,8 +427,9 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
       await deleteCourseFromBackend(course.course_uuid || '')
       toast.success(t('toastDeleteSuccess'))
       router.refresh()
-    } catch {
-      toast.error(t('toastDeleteError'))
+    } catch (error) {
+      // A 403 reads «нет прав», not «попробуйте снова» (UX-166).
+      toastApiError(error, { fallback: t('toastDeleteError') })
     } finally {
       toast.dismiss(toastId)
     }

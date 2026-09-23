@@ -16,6 +16,7 @@ import {
   getCourseContentStats,
   getCourseManagementContext,
   isCourseAuthor,
+  isCourseCreator,
 } from '@/lib/course-management'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
@@ -35,7 +36,9 @@ import {
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
-import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/courses'
+import { updateCourseAccess } from '@services/courses/courses'
+import { deleteCourseFromBackend } from '@services/courses/course-delete'
+import { useApiError } from '@/hooks/useApiError'
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
 import { Actions, Resources, Scopes } from '@/components/Security'
 import { useSession } from '@/hooks/useSession'
@@ -169,7 +172,7 @@ function CoursesHome({
   const canDeleteCourse = useCallback(
     (course: ManageableCourse) =>
       can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
-      (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN)),
+      (isCourseCreator(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN)),
     [can, user?.id],
   )
 
@@ -788,6 +791,7 @@ function CourseRowActions({
   const t = useTranslations('DashPage.CourseManagement.Dashboard')
   const router = useRouter()
   const { can, user } = useSession()
+  const { toastApiError } = useApiError()
   const [isPending, startTransition] = useTransition()
 
   const canManageCourse =
@@ -795,7 +799,7 @@ function CourseRowActions({
     (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN))
   const canDeleteCourse =
     can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
-    (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
+    (isCourseCreator(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
   const context = getCourseManagementContext(course as AppCourse, 'row')
 
   const handleDelete = () => {
@@ -807,8 +811,8 @@ function CourseRowActions({
         await deleteCourseFromBackend(course.course_uuid)
         toast.success(t('rowActions.deleteSuccess'))
         router.refresh()
-      } catch {
-        toast.error(t('rowActions.deleteError'))
+      } catch (error) {
+        toastApiError(error, { fallback: t('rowActions.deleteError') })
       }
     })
   }

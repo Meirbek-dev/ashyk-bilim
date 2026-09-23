@@ -33,7 +33,7 @@ vi.mock('@services/config/config', () => ({
   getAbsoluteUrl: (p: string) => p,
   getSiteUrl: () => 'http://localhost:3000',
 }))
-vi.mock('@services/courses/courses', () => ({ deleteCourseFromBackend: vi.fn() }))
+vi.mock('@services/courses/course-delete', () => ({ deleteCourseFromBackend: vi.fn() }))
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }))
 vi.mock('@/stores/gamification', () => ({
   useGamificationStore: (selector: (s: unknown) => unknown) =>

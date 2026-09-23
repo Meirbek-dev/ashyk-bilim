@@ -38,7 +38,7 @@ const toTagArray = (raw: unknown): string[] => {
     .filter(Boolean)
 }
 
-async function revalidateCourse(course_uuid?: string) {
+export async function revalidateCourse(course_uuid?: string) {
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
   revalidateTag(tags.editableCourses, 'max')
@@ -229,16 +229,6 @@ export async function createNewCourse(
   await revalidateCourse()
 
   return { ...result, data: course }
-}
-
-export async function deleteCourseFromBackend(
-  course_uuid: string,
-  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
-) {
-  const id = stripEntityPrefix(course_uuid)
-  const data = await apiJson(`courses/${id}`, { method: 'DELETE' })
-  await revalidateCourse(id)
-  return data
 }
 
 /* Contributors — `courses/{id}/contributors` (roles creator|maintainer|contributor|reporter, statuses pending|active|inactive). */

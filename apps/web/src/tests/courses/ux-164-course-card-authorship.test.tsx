@@ -2,9 +2,10 @@
 // UX-164: course cards read authorship from the v2 `creator_id` /
 // `contributor_ids` (the legacy `authors` list was never populated): the
 // creator gets the owner badge and the `:own` menu, an active contributor
-// gets the menu only, anyone else gets neither.
+// gets the menu only, anyone else gets neither. UX-166: only the creator may
+// delete (`CourseService::delete`), so a contributor's menu has no delete.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, it, vi } from 'vite-plus/test'
 
@@ -23,7 +24,7 @@ vi.mock('@/hooks/useSession', () => ({
 }))
 vi.mock('@services/media/media', () => ({ getCourseThumbnailMediaDirectory: () => '' }))
 vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p, getSiteUrl: () => '' }))
-vi.mock('@services/courses/courses', () => ({ deleteCourseFromBackend: vi.fn() }))
+vi.mock('@services/courses/course-delete', () => ({ deleteCourseFromBackend: vi.fn() }))
 
 function card(course: { creator_id?: string | null; contributor_ids?: string[] }) {
   render(
@@ -46,6 +47,19 @@ describe('UX-164 course card authorship', () => {
     card({ creator_id: 'other', contributor_ids: ['me'] })
     expect(screen.queryByText('Создатель')).toBeNull()
     expect(screen.getByRole('button', { name: 'Опции курса' })).toBeInTheDocument()
+  })
+
+  it('UX-166: creator menu offers delete, contributor menu does not', async () => {
+    card({ creator_id: 'me', contributor_ids: [] })
+    fireEvent.click(screen.getByRole('button', { name: 'Опции курса' }))
+    expect(await screen.findByText('Удалить курс')).toBeInTheDocument()
+  })
+
+  it('UX-166: contributor menu edits but does not delete', async () => {
+    card({ creator_id: 'other', contributor_ids: ['me'] })
+    fireEvent.click(screen.getByRole('button', { name: 'Опции курса' }))
+    expect(await screen.findByText('Редактировать содержание')).toBeInTheDocument()
+    expect(screen.queryByText('Удалить курс')).toBeNull()
   })
 
   it('not an author: neither', () => {

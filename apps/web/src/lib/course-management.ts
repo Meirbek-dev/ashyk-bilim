@@ -34,6 +34,14 @@ export function isCourseAuthor(
   return course.creator_id === userId || (course.contributor_ids ?? []).includes(userId)
 }
 
+/** Only the creator may delete the course (`CourseService::delete`); contributors may not (UX-166). */
+export function isCourseCreator(
+  course: { creator_id?: string | null | undefined },
+  userId: string | null | undefined,
+): boolean {
+  return Boolean(userId) && course.creator_id === userId
+}
+
 export function cleanCourseUuid(courseUuid: string): string {
   return courseUuid.replace(/^course_/, '')
 }
