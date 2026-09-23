@@ -385,16 +385,17 @@ impl IdentityService {
         };
         // A fenced attempt (a mutation landed mid-flight) is retried once as
         // a fresh login — every check including the password runs again on
-        // the new epoch, so a role or MFA rewrite costs the user nothing and
-        // a password change is caught by Zitadel itself (BUG-222 nit).
+        // the new epoch (bar the already-verified TOTP code, UX-158), so a
+        // role or MFA rewrite costs the user nothing and a password change is
+        // caught by Zitadel itself (BUG-222 nit).
         let hits: Vec<&str> = ip_key
             .iter()
             .map(String::as_str)
             .chain([login_key.as_str()])
             .collect();
-        let mut ok = self.login_attempt(&input, &user, &hits).await?;
+        let mut ok = self.login_attempt(&input, &user, Some(&hits)).await?;
         if ok.is_none() {
-            ok = self.login_attempt(&input, &user, &[]).await?;
+            ok = self.login_attempt(&input, &user, None).await?;
         }
         let Some(ok) = ok else {
             return Err(self.fenced_login(&user, &input).await?);
@@ -411,16 +412,25 @@ impl IdentityService {
     /// between the checks and `sessions.create` (the Zitadel session is
     /// discarded and the fence audited); the caller retries or refuses.
     ///
-    /// `hits` are the limiter hits this login counted: handed back as soon as
-    /// Zitadel accepts the password — every answer after that (`mfa-required`,
-    /// `account-disabled`, a session) is not a guess (BUG-236). Empty on the
-    /// retry, which only runs once the first attempt was accepted.
+    /// `first` carries the limiter hits this login counted: handed back as
+    /// soon as Zitadel accepts the password — every answer after that
+    /// (`mfa-required`, `account-disabled`, a session) is not a guess
+    /// (BUG-236). `None` on the retry, which only runs once the first attempt
+    /// was accepted — its TOTP code included (UX-158).
     async fn login_attempt(
         &self,
         input: &LoginInput,
         user: &ab_db::identity::AuthUserRow,
-        hits: &[&str],
+        first: Option<&[&str]>,
     ) -> Result<Option<LoginOk>> {
+        // UX-158: the retry does not resend the code — Zitadel refuses a
+        // replayed one. The first attempt verified it moments ago, so it
+        // still stands as the second factor.
+        let code = if first.is_some() {
+            input.totp_code.as_deref()
+        } else {
+            None
+        };
         // BUG-203: the epoch is read before every check this login rests on
         // (password, status, MFA methods, grants); `sessions.create` refuses
         // if a mutation bumped it in between, so a disable / password change /
@@ -432,11 +442,11 @@ impl IdentityService {
             .create_password_session(
                 &SessionUser::Id(&user.zitadel_user_id),
                 &input.password,
-                input.totp_code.as_deref(),
+                code,
             )
             .await?;
         let zsession = self.resolve_session_outcome(outcome, input).await?;
-        for key in hits {
+        for key in first.unwrap_or_default() {
             self.limiter.release(key).await?;
         }
         // Status is re-read after the epoch, not taken from the row looked up
@@ -462,10 +472,11 @@ impl IdentityService {
         // BFF-enforced MFA: Zitadel's session API does not force TOTP by
         // itself — if the account has TOTP enrolled and no code came with
         // this attempt, demand the second factor before opening our session.
-        // A supplied (and Zitadel-accepted) code proves enrollment by itself;
-        // without one, an enrolled account never gets past this block.
-        let mfa_enabled = input.totp_code.is_some();
-        if !mfa_enabled && self.totp_enrolled(&user.zitadel_user_id).await? {
+        // A code Zitadel accepted on this attempt proves enrollment by itself;
+        // on the retry enrollment is read live (the mutation may have removed
+        // it). Without a code, an enrolled account never gets past this block.
+        let mfa_enabled = code.is_some() || self.totp_enrolled(&user.zitadel_user_id).await?;
+        if mfa_enabled && input.totp_code.is_none() {
             self.discard_zitadel_session(&zsession, "pre-mfa").await;
             self.audit(
                 Some(user.id),

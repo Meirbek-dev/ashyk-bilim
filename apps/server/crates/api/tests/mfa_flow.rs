@@ -404,3 +404,82 @@ async fn enrolling_twice_is_a_conflict(pool: PgPool) {
     assert_eq!(res.status, StatusCode::CONFLICT, "{}", res.text());
     assert_eq!(res.json()["code"], "conflict");
 }
+
+/// UX-158: a TOTP login fenced by a role rewrite mid-flight retries without
+/// resending the (now replayed) code — the first attempt verified it — and
+/// opens the session instead of answering `invalid-totp-code`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn fenced_totp_login_retries_without_replaying_the_code(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("mfaroler", "mfaroler@example.com", &["user"])
+        .await;
+    // First use of the code: accepted, slowly (the role rewrite lands).
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(body_partial_json(serde_json::json!({
+            "checks": { "totp": { "code": "123456" } }
+        })))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(400))
+                .set_body_json(serde_json::json!({
+                    "sessionId": "zit-session-1",
+                    "sessionToken": "zit-token-1",
+                    "details": {}
+                })),
+        )
+        .up_to_n_times(1)
+        .with_priority(1)
+        .mount(&app.zitadel)
+        .await;
+    // A replay of the same code is refused, as live Zitadel does.
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(body_partial_json(serde_json::json!({
+            "checks": { "totp": { "code": "123456" } }
+        })))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Invalid code (EVENT-8isk2)",
+            "details": [{ "id": "EVENT-8isk2", "message": "Invalid code" }]
+        })))
+        .expect(0)
+        .with_priority(2)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "sessionId": "zit-session-2",
+            "sessionToken": "zit-token-2",
+            "details": {}
+        })))
+        .expect(1)
+        .with_priority(3)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-mfaroler/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(true)))
+        .mount(&app.zitadel)
+        .await;
+
+    let body = serde_json::json!({ "login": "mfaroler", "password": "pw", "totp_code": "123456" });
+    let (login, ()) = tokio::join!(app.post_json("/api/v2/auth/login", &body), async {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        app.sessions
+            .rewrite_user_sessions(user, &["user".into()], &[], 2)
+            .await
+            .unwrap();
+    });
+    assert_eq!(login.status, StatusCode::OK, "{}", login.text());
+    assert_eq!(login.json()["mfa_enabled"], true);
+    assert!(login.session_cookie().is_some());
+    let fenced: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM auth_audit_log WHERE event = 'login-fenced'")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(fenced, 1, "the retry ran");
+}
