@@ -1303,7 +1303,7 @@ impl GradingService {
             .await;
         let fresh = self.load_submission(id).await?;
         ProgressProjector::new(self.pool.clone())
-            .after_submission(fresh.assessment_id, fresh.user_id)
+            .reproject_submission(fresh.assessment_id, fresh.user_id)
             .await;
         crate::analytics::events::hooks::submission_status(
             &self.pool,
@@ -1459,7 +1459,7 @@ impl GradingService {
             }
             tx.commit().await?;
             ProgressProjector::new(self.pool.clone())
-                .after_submission(assessment_id, row.user_id)
+                .reproject_submission(assessment_id, row.user_id)
                 .await;
             crate::analytics::events::hooks::submission_status(
                 &self.pool,

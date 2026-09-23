@@ -89,28 +89,70 @@ impl ProgressProjector {
 
     // ── Entry points for write paths ────────────────────────────────────
 
-    /// After any submission change. Never fails the caller: projection
+    /// After the learner's own submission work (start, save, submit) —
+    /// working on a course enrols them. Never fails the caller: projection
     /// errors are logged and the next write (or a backfill) repairs them.
     pub async fn after_submission(&self, assessment_id: AssessmentId, user_id: UserId) {
-        if let Err(err) = self.project_submission(assessment_id, user_id).await {
+        self.submission_changed(assessment_id, user_id, true).await;
+    }
+
+    /// After a change the learner did not make (grade, publish, deadline
+    /// extension, timer auto-submit): re-projects without enrolling —
+    /// BUG-251, a grader's action never creates a trail run.
+    pub async fn reproject_submission(&self, assessment_id: AssessmentId, user_id: UserId) {
+        self.submission_changed(assessment_id, user_id, false).await;
+    }
+
+    async fn submission_changed(&self, assessment_id: AssessmentId, user_id: UserId, enrol: bool) {
+        if let Err(err) = self.project_submission(assessment_id, user_id, enrol).await {
             tracing::warn!(%assessment_id, %user_id, error = %err, "progress projection failed");
         }
     }
 
-    /// After any file-submission attempt change (best-effort, see above).
+    /// After the learner's own file-attempt change (best-effort, enrols).
     pub async fn after_file_attempt(&self, file_submission_id: FileSubmissionId, user_id: UserId) {
-        if let Err(err) = self.project_file_attempt(file_submission_id, user_id).await {
+        self.file_attempt_changed(file_submission_id, user_id, true)
+            .await;
+    }
+
+    /// After a grader's file-attempt change (best-effort, never enrols).
+    pub async fn reproject_file_attempt(
+        &self,
+        file_submission_id: FileSubmissionId,
+        user_id: UserId,
+    ) {
+        self.file_attempt_changed(file_submission_id, user_id, false)
+            .await;
+    }
+
+    async fn file_attempt_changed(
+        &self,
+        file_submission_id: FileSubmissionId,
+        user_id: UserId,
+        enrol: bool,
+    ) {
+        if let Err(err) = self
+            .project_file_attempt(file_submission_id, user_id, enrol)
+            .await
+        {
             tracing::warn!(%file_submission_id, %user_id, error = %err, "progress projection failed");
         }
     }
 
-    async fn project_submission(&self, assessment_id: AssessmentId, user_id: UserId) -> Result<()> {
+    async fn project_submission(
+        &self,
+        assessment_id: AssessmentId,
+        user_id: UserId,
+        enrol: bool,
+    ) -> Result<()> {
         let Some(assessment) =
             ab_db::assessments::get_assessment(&self.pool, assessment_id).await?
         else {
             return Ok(());
         };
-        self.ensure_enrolled(assessment.course_id, user_id).await?;
+        if enrol {
+            self.ensure_enrolled(assessment.course_id, user_id).await?;
+        }
         self.recalculate_activity(assessment.activity_id, user_id)
             .await?;
         // A passing, published submission pays XP once (legacy award task).
@@ -139,13 +181,16 @@ impl ProgressProjector {
         &self,
         file_submission_id: FileSubmissionId,
         user_id: UserId,
+        enrol: bool,
     ) -> Result<()> {
         let Some(fs) =
             ab_db::file_submissions::get_file_submission(&self.pool, file_submission_id).await?
         else {
             return Ok(());
         };
-        self.ensure_enrolled(fs.course_id, user_id).await?;
+        if enrol {
+            self.ensure_enrolled(fs.course_id, user_id).await?;
+        }
         self.recalculate_activity(fs.activity_id, user_id).await?;
         Ok(())
     }
@@ -258,7 +303,7 @@ impl ProgressProjector {
 
     /// Working on a course enrols the learner: the trail run is what
     /// `learner-state.enrolled` reads, and the legacy created it on the
-    /// first submission too.
+    /// first submission too. Learner-initiated paths only (BUG-251).
     async fn ensure_enrolled(&self, course_id: CourseId, user_id: UserId) -> Result<()> {
         let mut conn = self.pool.acquire().await?;
         let trail = ab_db::progress::ensure_trail(&mut conn, user_id).await?;

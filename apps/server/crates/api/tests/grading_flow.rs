@@ -2277,6 +2277,59 @@ async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
     }
 }
 
+/// BUG-251: a grader's action never enrols — a learner who left keeps no
+/// trail run after a grade publish or a deadline extension run.
+#[sqlx::test(migrations = "../../migrations")]
+async fn grader_actions_never_enrol_a_leaver(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600 }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let queued = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [alice.user_id], "new_due_at_unix": now_unix() + 86_400 }),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let action = ab_core::id::BulkActionId(
+        uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
+    );
+    // Alice leaves (her run is what `learner-state.enrolled` reads).
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1")
+        .bind(alice.user_id.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let published = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action)
+        .await
+        .unwrap();
+    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM trail_runs WHERE user_id = $1")
+        .bind(alice.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(runs, 0, "a grader's action re-enrolled the leaver");
+}
+
 /// BUG-215: an integrity-annulled attempt's 0 is an explicit override —
 /// right or wrong choice, a feedback-only save keeps it `graded 0`, the
 /// review reports `score_override 0`, and the bulk release takes it.

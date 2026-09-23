@@ -1128,7 +1128,7 @@ impl SubmissionsService {
         )
         .await?;
         ProgressProjector::new(pool.clone())
-            .after_submission(assessment_id, user_id)
+            .reproject_submission(assessment_id, user_id)
             .await;
         Ok(())
     }

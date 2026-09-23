@@ -1170,7 +1170,7 @@ impl FileSubmissionsService {
             return Err(stale(expected_version, latest.version));
         }
         self.projector
-            .after_file_attempt(attempt.file_submission_id, attempt.user_id)
+            .reproject_file_attempt(attempt.file_submission_id, attempt.user_id)
             .await;
         let fresh = ab_db::file_submissions::get_attempt(&self.pool, id)
             .await?

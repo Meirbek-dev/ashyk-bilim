@@ -358,9 +358,13 @@ async fn run_deadline_extension(
             let late = submission.submitted_at.is_some_and(|s| s > new_due_at);
             settle_lateness(pool, &assessment, submission, late, granted_by).await?;
         }
-        ProgressProjector::new(pool.clone())
-            .after_submission(row.assessment_id, user_id)
-            .await;
+        // BUG-251: only a target with work has lateness to re-project, and
+        // an extension never enrols (no trail run from a grader's action).
+        if !submitted.is_empty() {
+            ProgressProjector::new(pool.clone())
+                .reproject_submission(row.assessment_id, user_id)
+                .await;
+        }
         if let (Some(events), Some(latest)) = (events, submitted.first()) {
             events
                 .publish_best_effort(
