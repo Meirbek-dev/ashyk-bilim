@@ -398,14 +398,25 @@ pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Resu
 /// returned (BUG-242/244: never from a snapshot read before it). Callers
 /// lock the activity rows first (activity → upload, BUG-243). Returns the
 /// number of blocks deleted.
-// ponytail: a multi-upload release takes the upload row locks in UPDATE
-// order; two cascades sharing ≥2 uploads could still deadlock (retryable).
 pub async fn delete_blocks_releasing(
     conn: &mut sqlx::PgConnection,
     activity_ids: &[uuid::Uuid],
     block_id: Option<BlockId>,
     grace_secs: f64,
 ) -> Result<u64> {
+    // Upload rows are locked in key order first, so two cascades sharing
+    // uploads never take them in opposite orders (the activity locks the
+    // caller holds keep new blocks out of this set).
+    sqlx::query!(
+        r#"SELECT u.key FROM uploads u
+           WHERE u.key IN (SELECT content->>'file_key' FROM blocks
+                           WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2))
+           ORDER BY u.key FOR UPDATE"#,
+        activity_ids,
+        block_id.map(|b| b.0),
+    )
+    .fetch_all(&mut *conn)
+    .await?;
     let deleted = sqlx::query_scalar!(
         r#"WITH gone AS (
                DELETE FROM blocks
