@@ -83,6 +83,7 @@ pub struct TeacherWorkRow {
 }
 
 /// Rows flagged `teacher_action_required` in the courses the teacher may grade.
+///
 /// Never the teacher's own attempts, never a staff preview as the review
 /// target (BUG-301 — a grader never grades their own, BUG-286).
 ///
@@ -127,8 +128,9 @@ pub async fn list_teacher_grading_work(
     Ok(rows)
 }
 
-/// Rows in state `graded` (saved, unreleased) in the teacher's courses. The
-/// review target is the latest submission when it is `graded`, else the
+/// Rows in state `graded` (saved, unreleased) in the teacher's courses.
+///
+/// The review target is the latest submission when it is `graded`, else the
 /// newest `graded` file attempt. Same exclusions as the grading work (BUG-301).
 pub async fn list_teacher_release_work(
     pool: &PgPool,
