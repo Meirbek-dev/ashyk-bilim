@@ -239,14 +239,18 @@ impl TrailService {
         Ok(course)
     }
 
-    /// Start (or keep) a run for the course.
+    /// Start (or keep) a run for the course, re-projecting the member's
+    /// rows: a rejoin picks up grades and outline changes made while the
+    /// learner was away (BUG-275).
     pub async fn add_course(&self, actor: &Actor, course_id: CourseId) -> Result<Trail> {
         Self::require_write(actor)?;
         let course = self.accessible_course(actor, course_id).await?;
-        let mut conn = self.pool.acquire().await?;
-        let trail = ab_db::progress::ensure_trail(&mut conn, actor.user_id).await?;
-        ab_db::progress::ensure_trail_run(&mut conn, trail.id, course.id, actor.user_id).await?;
-        drop(conn);
+        self.projector
+            .reproject_member(course.id, actor.user_id, true)
+            .await?;
+        let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
+            .await?
+            .ok_or_else(|| Error::not_found("trail"))?;
         self.hydrate(actor, trail).await
     }
 
@@ -312,16 +316,26 @@ impl TrailService {
         // together.
         let mut tx = self.lock(actor.user_id, course.id).await?;
         let trail = ab_db::progress::ensure_trail(&mut tx, actor.user_id).await?;
+        let joined = !ab_db::progress::has_trail_run(&mut *tx, course.id, actor.user_id).await?;
         let run =
             ab_db::progress::ensure_trail_run(&mut tx, trail.id, course.id, actor.user_id).await?;
-        let created = ab_db::progress::insert_trail_step(&mut *tx, &run, activity.id).await?;
-        let hooks = if created {
+        // BUG-275: a (re)joining mark re-projects what changed while away.
+        let mut hooks = if joined {
             self.projector
-                .mark_complete(&mut tx, &activity, actor.user_id)
+                .reproject_member_on(&mut tx, course.id, actor.user_id)
                 .await?
+                .1
         } else {
             AfterCommit::default()
         };
+        let created = ab_db::progress::insert_trail_step(&mut *tx, &run, activity.id).await?;
+        if created {
+            hooks = hooks.and(
+                self.projector
+                    .mark_complete(&mut tx, &activity, actor.user_id)
+                    .await?,
+            );
+        }
         tx.commit().await?;
         hooks.fire(&self.pool).await;
         if created {

@@ -1282,3 +1282,232 @@ async fn course_recalculation_outwaits_a_busy_member(pool: PgPool) {
         assert!(complete, "member {i} was never recalculated");
     }
 }
+
+/// A published one-essay quiz (hand-graded); returns (assessment_id, activity_id, item_id).
+async fn essay_quiz(
+    app: &TestApp,
+    teacher: &MintedSession,
+    chapter_id: &str,
+) -> (String, String, String) {
+    let created = app
+        .post_as(
+            teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Essay" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let assessment_id = created.json()["id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{assessment_id}/items"),
+            &serde_json::json!({ "title": "Essay", "max_score": 10,
+                                  "body": { "kind": "open_text", "prompt": "Why?" } }),
+        )
+        .await;
+    let published = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{assessment_id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    (
+        assessment_id,
+        created.json()["activity_id"].as_str().unwrap().to_owned(),
+        item.json()["id"].as_str().unwrap().to_owned(),
+    )
+}
+
+/// Submit an essay attempt (pending), leave, and have the teacher publish
+/// 100 while the learner is away.
+async fn graded_while_away(
+    app: &TestApp,
+    teacher: &MintedSession,
+    who: &MintedSession,
+    course_id: &str,
+    assessment_id: &str,
+    item: &str,
+) {
+    let draft = app
+        .post_as(
+            who,
+            &format!("/api/v2/assessments/{assessment_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            who,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { item: { "kind": "open_text", "text": "Because." } } }),
+        )
+        .await;
+    assert_eq!(
+        submitted.json()["status"],
+        "pending",
+        "{}",
+        submitted.text()
+    );
+    let left = app
+        .delete_as(who, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    let graded = app
+        .send(
+            axum::http::Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{sub_id}/grade"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .header(axum::http::header::IF_MATCH, "1")
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "action": "publish", "final_score": 100 }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+}
+
+/// BUG-275: a grade and a lesson published while the learner was away both
+/// reach them on rejoin — through `POST trail/courses` and through a mark
+/// that re-creates the run.
+#[sqlx::test(migrations = "../../migrations")]
+async fn rejoin_reprojects_what_changed_while_away(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Rejoin 101").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let (essay, essay_activity, item) = essay_quiz(&app, &teacher, &chapter_id).await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    graded_while_away(&app, &teacher, &alice, &course_id, &essay, &item).await;
+    graded_while_away(&app, &teacher, &bob, &course_id, &essay, &item).await;
+    let away_lesson = lesson(&app, &teacher, &chapter_id, "Published while away").await;
+
+    // Alice rejoins the course: 1 of 2 (the new lesson counts), quiz passed.
+    let rejoined = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(rejoined.status, StatusCode::OK, "{}", rejoined.text());
+    let path = format!("/api/v2/courses/{course_id}/learner-state");
+    let state = app.get_as(&alice, &path).await.json();
+    assert_eq!(
+        activity(&state, &essay_activity)["complete"],
+        true,
+        "{state}"
+    );
+    assert_eq!(state["progress"]["completed_required_count"], 1, "{state}");
+    assert_eq!(state["progress"]["total_required_count"], 2, "{state}");
+    // Bob rejoins by marking the new lesson: 2 of 2 and the certificate.
+    let marked = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/trail/activities/{away_lesson}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+    let state = app.get_as(&bob, &path).await.json();
+    assert_eq!(
+        activity(&state, &essay_activity)["complete"],
+        true,
+        "{state}"
+    );
+    assert_eq!(state["progress"]["completed_required_count"], 2, "{state}");
+    assert_eq!(state["progress"]["total_required_count"], 2, "{state}");
+    let certs: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM certificate_users WHERE user_id = $1")
+            .bind(bob.user_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(certs, 1, "the rejoined member was not certified");
+}
+
+/// BUG-276 / UX-187: a learner who passed and left reads as not enrolled,
+/// and asking for their certificates once one is configured issues none;
+/// on rejoin it is issued.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Late cert 101").await;
+    let (q1, _, item) = quiz(&app, &teacher, &chapter_id).await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{q1}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { item: { "kind": "choice", "selected": ["a"] } } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let left = app
+        .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await
+        .json();
+    assert_eq!(state["enrollment_state"], "not_enrolled", "{state}");
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let mine = format!("/api/v2/courses/{course_id}/certificates/me");
+    let away = app.get_as(&alice, &mine).await;
+    assert_eq!(away.status, StatusCode::OK, "{}", away.text());
+    assert_eq!(
+        away.json().as_array().map(Vec::len),
+        Some(0),
+        "{}",
+        away.text()
+    );
+    let rejoined = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(rejoined.status, StatusCode::OK, "{}", rejoined.text());
+    let back = app.get_as(&alice, &mine).await;
+    assert_eq!(
+        back.json().as_array().map(Vec::len),
+        Some(1),
+        "{}",
+        back.text()
+    );
+}

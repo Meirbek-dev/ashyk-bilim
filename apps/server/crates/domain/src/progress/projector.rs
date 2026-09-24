@@ -421,7 +421,9 @@ impl ProgressProjector {
     }
 
     /// Repair projections for every member of one course (or all; BUG-268),
-    /// each under the member's trail lock (BUG-270).
+    /// each under the member's trail lock (BUG-270). A member whose lock
+    /// stays busy past the wait is logged and skipped — never every member
+    /// and course after it (BUG-272); the last error is returned.
     pub async fn backfill(&self, course_id: Option<CourseId>) -> Result<BackfillReport> {
         let courses = match course_id {
             Some(id) => vec![id],
@@ -432,33 +434,73 @@ impl ProgressProjector {
             learners: 0,
             activity_rows: 0,
         };
+        let mut outcome = Ok(());
         for course in courses {
-            let activities = ab_db::catalog::list_activities(&self.pool, course).await?;
-            let users = ab_db::progress::course_members(&self.pool, course).await?;
-            for user_id in users {
-                let Some(mut tx) =
-                    super::trail::lock_member(&self.pool, user_id, course, false).await?
-                else {
-                    continue;
-                };
-                report.learners += 1;
-                for activity in activities.iter().filter(|a| a.published) {
-                    if let Some(write) = projection_for(&mut tx, activity, user_id).await? {
-                        ab_db::progress::upsert_activity_progress(&mut *tx, &write).await?;
-                        report.activity_rows += 1;
+            for user_id in ab_db::progress::course_members(&self.pool, course).await? {
+                match self.reproject_member(course, user_id, false).await {
+                    Ok(Some(rows)) => {
+                        report.learners += 1;
+                        report.activity_rows += rows;
+                    }
+                    Ok(None) => {}
+                    Err(err) => {
+                        tracing::warn!(%course, %user_id, error = %err, "progress backfill failed");
+                        outcome = Err(err);
                     }
                 }
-                let aggregate = self.recalculate_course_on(&mut tx, course, user_id).await?;
-                tx.commit().await?;
-                AfterCommit {
-                    activity_completed: None,
-                    course_completed: course_completed(&aggregate),
-                }
-                .fire(&self.pool)
-                .await;
             }
         }
-        Ok(report)
+        outcome.map(|()| report)
+    }
+
+    /// One member's backfill: every published activity row and the course
+    /// aggregate under the member's trail lock. `enrol` (a learner joining)
+    /// creates the run first, so a rejoin picks up what changed while they
+    /// were away (BUG-275). `None` for a non-member; else the rows written.
+    pub async fn reproject_member(
+        &self,
+        course_id: CourseId,
+        user_id: UserId,
+        enrol: bool,
+    ) -> Result<Option<usize>> {
+        let Some(mut tx) = super::trail::lock_member(&self.pool, user_id, course_id, enrol).await?
+        else {
+            return Ok(None);
+        };
+        let (rows, hooks) = self
+            .reproject_member_on(&mut tx, course_id, user_id)
+            .await?;
+        tx.commit().await?;
+        hooks.fire(&self.pool).await;
+        Ok(Some(rows))
+    }
+
+    /// [`Self::reproject_member`] on the caller's lock transaction (a trail
+    /// mark that re-creates the run, BUG-275). Fire the hooks after commit.
+    pub async fn reproject_member_on(
+        &self,
+        conn: &mut PgConnection,
+        course_id: CourseId,
+        user_id: UserId,
+    ) -> Result<(usize, AfterCommit)> {
+        let mut rows = 0;
+        for activity in ab_db::catalog::list_activities(&mut *conn, course_id).await? {
+            if !activity.published {
+                continue;
+            }
+            if let Some(write) = projection_for(&mut *conn, &activity, user_id).await? {
+                ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
+                rows += 1;
+            }
+        }
+        let aggregate = self.recalculate_course_on(conn, course_id, user_id).await?;
+        Ok((
+            rows,
+            AfterCommit {
+                activity_completed: None,
+                course_completed: course_completed(&aggregate),
+            },
+        ))
     }
 }
 
