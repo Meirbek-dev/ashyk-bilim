@@ -2210,3 +2210,74 @@ async fn dropped_title_patch_and_duplicate_are_atomic(pool: PgPool) {
         assert_eq!(orphans, 0, "round {round}: orphan activity");
     }
 }
+
+/// BUG-262: the curriculum rename reads the assessment lifecycle under the
+/// assessment row lock — a schedule queued ahead of it commits first and the
+/// rename answers 409 instead of retitling a scheduled quiz.
+#[sqlx::test(migrations = "../../migrations")]
+async fn curriculum_rename_queued_behind_a_schedule_is_refused(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Timed" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{id}/items"),
+        &choice_item("Q1"),
+    )
+    .await;
+
+    let waiting = |n: i64| {
+        let pool = app.pool.clone();
+        async move || {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM pg_stat_activity
+                 WHERE datname = current_database() AND wait_event_type = 'Lock'",
+            )
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+                >= n
+        }
+    };
+    let mut holder = app.pool.begin().await.unwrap();
+    sqlx::query("SELECT id FROM assessments WHERE id = $1::uuid FOR UPDATE")
+        .bind(&id)
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let (lifecycle_path, to_scheduled) = (
+        format!("/api/v2/assessments/{id}/lifecycle"),
+        serde_json::json!({ "to": "scheduled", "scheduled_at_unix": far_future() }),
+    );
+    let schedule = app.post_as(&teacher, &lifecycle_path, &to_scheduled);
+    let rename = async {
+        wait_until("schedule queued on the row lock", waiting(1)).await;
+        app.patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "name": "Renamed while scheduling" }),
+        )
+        .await
+    };
+    let release = async {
+        wait_until("rename queued on the row lock", waiting(2)).await;
+        holder.rollback().await.unwrap();
+    };
+    let (scheduled, renamed, ()) = tokio::join!(schedule, rename, release);
+    assert_eq!(scheduled.status, StatusCode::OK, "{}", scheduled.text());
+    assert_eq!(renamed.status, StatusCode::CONFLICT, "{}", renamed.text());
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(detail.json()["title"], "Timed", "{}", detail.text());
+}

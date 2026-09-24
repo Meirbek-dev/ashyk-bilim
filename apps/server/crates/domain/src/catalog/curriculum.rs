@@ -430,9 +430,12 @@ impl CurriculumService {
         // name under the assessment lock (scheduled / archived /
         // published-with-submissions → 409). BUG-186: every refusal above runs
         // before the first write, and the writes share one transaction.
+        // BUG-262: the lifecycle is read under the assessment row lock
+        // (assessment → activity, the order the assessments title PATCH
+        // takes), so a schedule cannot commit between the gate and the write.
         let assessment = match name {
             Some(_) => {
-                ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id).await?
+                ab_db::assessments::lock_assessment_by_activity(&mut tx, activity_id).await?
             }
             None => None,
         };
