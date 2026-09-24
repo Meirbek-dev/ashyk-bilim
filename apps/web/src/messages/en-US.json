@@ -2609,7 +2609,10 @@
       "draftBadge": "Draft",
       "liveBadge": "Live",
       "save": "Save draft",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "unpublishConfirmTitle": "Unpublish \"{name}\"?",
+      "unpublishConfirmMessage": "Learners will lose access to this activity and their submitted work in it until you publish it again.",
+      "unpublishedToast": "Activity unpublished — learners no longer see it."
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Chapter name",
@@ -3835,7 +3838,9 @@
         "toasts": {
           "movedPrivate": "Course moved back to private.",
           "published": "Course is now public."
-        }
+        },
+        "movePrivateConfirmTitle": "Make the course private again?",
+        "movePrivateConfirmMessage": "The course leaves the catalogue, and learners outside the groups linked to it lose access."
       },
       "Create": {
         "actions": {
@@ -9550,7 +9555,9 @@
             "ARCHIVED": "Archived"
           },
           "archiveTitle": "Archive",
-          "archiveDesc": "This assessment will no longer be accessible to students."
+          "archiveDesc": "This assessment will no longer be accessible to students.",
+          "revertConfirmTitle": "Revert to draft?",
+          "revertConfirmMessage": "Learners will lose access to this assessment and their attempts in it until you publish it again."
         },
         "AccessManagement": {
           "title": "Learner access",
