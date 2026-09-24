@@ -402,24 +402,29 @@ impl ProgressProjector {
     }
 
     /// Rebuild the course aggregate (seeding `not_started` rows first so
-    /// `total_required_count` covers every published activity).
-    pub async fn recalculate_course(
-        &self,
-        course_id: CourseId,
-        user_id: UserId,
-    ) -> Result<CourseProgressRow> {
-        let mut conn = self.pool.acquire().await?;
+    /// `total_required_count` covers every published activity) for a member.
+    ///
+    /// Runs under the member's trail lock and re-checks the run inside it:
+    /// unlocked, a leave racing an unpublish / grade / certificate read got
+    /// its aggregate (and certificate) rebuilt after the run was gone
+    /// (BUG-269). A non-member is left alone (BUG-260/268). One lock
+    /// connection at a time; the hook fires after commit (BUG-235).
+    pub async fn recalculate_course(&self, course_id: CourseId, user_id: UserId) -> Result<()> {
+        let mut tx = super::trail::lock_trail_run(&self.pool, user_id, course_id).await?;
+        if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
+            return Ok(());
+        }
         let course = self
-            .recalculate_course_on(&mut conn, course_id, user_id)
+            .recalculate_course_on(&mut tx, course_id, user_id)
             .await?;
-        drop(conn);
+        tx.commit().await?;
         AfterCommit {
             activity_completed: None,
             course_completed: course_completed(&course),
         }
         .fire(&self.pool)
         .await;
-        Ok(course)
+        Ok(())
     }
 
     /// [`Self::recalculate_course`] on the caller's connection, so a trail

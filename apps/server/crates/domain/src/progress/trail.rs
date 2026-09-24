@@ -63,6 +63,30 @@ const fn trail_perm(action: Action, scope: Scope) -> Permission {
 const LOCK_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
 const LOCK_RETRY: std::time::Duration = std::time::Duration::from_millis(15);
 
+/// The (user, course) lock transaction (BUG-210): every trail write and
+/// its projection go through it — marks, leaves and the course-wide
+/// re-aggregation (BUG-269). Waiters poll `try_lock` instead of blocking on
+/// the server, so a stampede never parks a pool connection per waiter
+/// (BUG-220); past `LOCK_WAIT` → 409.
+pub(crate) async fn lock_trail_run(
+    pool: &PgPool,
+    user_id: UserId,
+    course_id: CourseId,
+) -> Result<Transaction<'static, Postgres>> {
+    let deadline = tokio::time::Instant::now() + LOCK_WAIT;
+    loop {
+        if let Some(tx) = ab_db::progress::try_lock_trail_run(pool, user_id, course_id).await? {
+            return Ok(tx);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(Error::conflict(
+                "another change to this course on your trail is in progress; retry",
+            ));
+        }
+        tokio::time::sleep(LOCK_RETRY).await;
+    }
+}
+
 /// A 404 from the course behind an activity reads as the activity's own
 /// 404: the detail must not tell an unknown id from an invisible course.
 fn activity_not_found(err: Error) -> Error {
@@ -167,29 +191,12 @@ impl TrailService {
         })
     }
 
-    /// The (user, course) lock transaction (BUG-210): every trail write
-    /// and its projection go through it. Waiters poll `try_lock` instead
-    /// of blocking on the server, so a stampede of marks never parks a
-    /// pool connection per waiter (BUG-220); past `LOCK_WAIT` → 409.
     async fn lock(
         &self,
         user_id: UserId,
         course_id: CourseId,
     ) -> Result<Transaction<'static, Postgres>> {
-        let deadline = tokio::time::Instant::now() + LOCK_WAIT;
-        loop {
-            if let Some(tx) =
-                ab_db::progress::try_lock_trail_run(&self.pool, user_id, course_id).await?
-            {
-                return Ok(tx);
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(Error::conflict(
-                    "another change to this course on your trail is in progress; retry",
-                ));
-            }
-            tokio::time::sleep(LOCK_RETRY).await;
-        }
+        lock_trail_run(&self.pool, user_id, course_id).await
     }
 
     /// Visible course (404) the learner may access (403).

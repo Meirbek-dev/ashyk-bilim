@@ -1117,3 +1117,96 @@ async fn course_recalculation_skips_leavers(pool: PgPool) {
     assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
     assert_eq!(rewarded().await, (0, 0, 0), "after delete");
 }
+
+/// BUG-269: the concurrent BUG-268. Twelve members who passed 1 of 2
+/// required quizzes are mid-leave (trail lock held, run deleted, not yet
+/// committed) while the teacher unpublishes the other quiz. The course-wide
+/// recalculation read them as members; it waits for each member's trail lock
+/// and re-checks the run inside it, so no leaver completes once the leave
+/// commits, while the members who stay do.
+#[sqlx::test(migrations = "../../migrations")]
+async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Race 101").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let (q1, _, item) = quiz(&app, &teacher, &chapter_id).await;
+    let (q2, _, _) = quiz(&app, &teacher, &chapter_id).await;
+    let mut members = Vec::new();
+    for i in 0..14 {
+        let member = learner(&app, &format!("member{i}")).await;
+        let draft = app
+            .post_as(
+                &member,
+                &format!("/api/v2/assessments/{q1}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+        let submitted = app
+            .post_as(
+                &member,
+                &format!("/api/v2/submissions/{sub_id}/submit"),
+                &serde_json::json!({ "answers": { &item: { "kind": "choice", "selected": ["a"] } } }),
+            )
+            .await;
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        members.push(member);
+    }
+    let (leavers, stayers) = members.split_at(12);
+    // The DB half of `DELETE /trail/courses/{id}` (no lessons to un-mark),
+    // under the same `try_lock_trail_run` key.
+    let mut leave = app.pool.begin().await.unwrap();
+    for leaver in leavers {
+        sqlx::query(
+            "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+        )
+        .bind(leaver.user_id.0)
+        .bind(&course_id)
+        .execute(&mut *leave)
+        .await
+        .unwrap();
+        sqlx::query("DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+            .bind(leaver.user_id.0)
+            .bind(&course_id)
+            .execute(&mut *leave)
+            .await
+            .unwrap();
+    }
+    let q2_path = format!("/api/v2/assessments/{q2}/lifecycle");
+    let to_draft = serde_json::json!({ "to": "draft" });
+    let unpublish = app.post_as(&teacher, &q2_path, &to_draft);
+    let commit_leaves = async {
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        leave.commit().await.unwrap();
+    };
+    let (unpublished, ()) = tokio::join!(unpublish, commit_leaves);
+    assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
+
+    let rewarded = async |member: &MintedSession| {
+        sqlx::query_as::<_, (i64, i64, i64)>(
+            "SELECT (SELECT count(*) FROM course_progress
+                     WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
+                    (SELECT count(*) FROM certificate_users WHERE user_id = $1),
+                    (SELECT count(*) FROM xp_transactions
+                     WHERE user_id = $1 AND source = 'course_completion')",
+        )
+        .bind(member.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+    for (i, leaver) in leavers.iter().enumerate() {
+        assert_eq!(rewarded(leaver).await, (0, 0, 0), "leaver {i}");
+    }
+    for (i, stayer) in stayers.iter().enumerate() {
+        assert_eq!(rewarded(stayer).await, (1, 1, 1), "stayer {i}");
+    }
+}
