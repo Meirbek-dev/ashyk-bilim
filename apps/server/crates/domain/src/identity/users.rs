@@ -52,6 +52,11 @@ impl UsersService {
             .as_deref()
             .map(|name| ab_core::required_text("display_name", name))
             .transpose()?;
+        // UX-183: the bio keeps its line breaks, not control / bidi characters.
+        let bio = changes
+            .bio
+            .as_deref()
+            .map(ab_core::strip_controls_multiline);
         match changes.avatar_upload_id {
             Some(Some(upload_id)) => self.claim_avatar(actor, upload_id).await?,
             Some(None) => self.replace_avatar(actor, None).await?,
@@ -61,7 +66,7 @@ impl UsersService {
             &self.pool,
             actor.user_id,
             display_name.as_deref(),
-            changes.bio.as_deref().map(str::trim),
+            bio.as_deref().map(str::trim),
             changes.locale.as_deref(),
         )
         .await?

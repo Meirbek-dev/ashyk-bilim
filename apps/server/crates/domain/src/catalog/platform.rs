@@ -91,10 +91,11 @@ impl PlatformService {
         thumbnail_upload_id: Option<Uuid>,
     ) -> Result<Platform> {
         actor.require(UPDATE)?;
-        // BUG-164: the name feeds the landing page and every title — never blank.
+        // BUG-164: the name feeds the landing page and every title — never
+        // blank; UX-183: nor carrying control / bidi characters.
         let name = changes
             .name
-            .map(|n| ab_core::required_str("name", n))
+            .map(|n| ab_core::required_text("name", n))
             .transpose()?;
         // UX-135: free-text fields are stored trimmed; a blank label is no label.
         let description = changes.description.map(str::trim);
@@ -116,7 +117,7 @@ impl PlatformService {
         ab_db::platform::update_platform(
             &self.pool,
             ab_db::platform::PlatformChanges {
-                name,
+                name: name.as_deref(),
                 description,
                 about,
                 email: changes.email,

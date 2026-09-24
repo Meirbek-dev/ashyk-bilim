@@ -107,10 +107,11 @@ async fn read_is_public_and_update_is_gated(pool: PgPool) {
         .patch_as(
             &admin,
             "/api/v2/platform",
-            &serde_json::json!({ "name": "  Ashyq  ", "email": "hello@ashyq.local" }),
+            &serde_json::json!({ "name": "  Ash\u{202E}yq\u{7}  ", "email": "hello@ashyq.local" }),
         )
         .await;
     assert_eq!(trimmed.status, StatusCode::OK, "{}", trimmed.text());
+    // UX-183: control / bidi characters are stripped like display names.
     assert_eq!(trimmed.json()["name"], "Ashyq");
     assert_eq!(app.get("/api/v2/platform").await.json()["name"], "Ashyq");
 

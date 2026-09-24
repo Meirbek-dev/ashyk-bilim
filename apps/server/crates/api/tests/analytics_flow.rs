@@ -2045,3 +2045,53 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
         overview.text()
     );
 }
+
+/// UX-183: the admin workload comparison groups courses by the teacher
+/// scope rule (`scope::resolve`: creator + active non-reporter co-authors),
+/// so a co-author's row matches inspecting that teacher.
+#[sqlx::test(migrations = "../../migrations")]
+async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let alpha = instructor(&app, "alpha").await;
+    let beta = instructor(&app, "beta").await;
+    let carol = instructor(&app, "carol").await;
+    public_course(&app, &alpha, "Alpha's own").await;
+    let (shared, _) = public_course(&app, &beta, "Beta's").await;
+    for (who, authorship) in [(&alpha, "maintainer"), (&carol, "reporter")] {
+        sqlx::query(
+            "INSERT INTO resource_authors (course_id, user_id, authorship) VALUES ($1, $2, $3)",
+        )
+        .bind(uuid::Uuid::parse_str(&shared).unwrap())
+        .bind(who.user_id.0)
+        .bind(authorship)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(boss, &["analytics:read:platform"])
+        .await;
+    let overview = app.get_as(&admin, "/api/v2/analytics/admin/overview").await;
+    assert_eq!(overview.status, StatusCode::OK, "{}", overview.text());
+    let rows = &overview.json()["teacher_workload_comparison"];
+    let count_of = |who: &MintedSession| {
+        find_row(rows, "teacher_user_id", &who.user_id.to_string())
+            .map(|r| r["managed_course_count"].clone())
+    };
+    assert_eq!(count_of(&alpha), Some(serde_json::json!(2)), "{rows}");
+    assert_eq!(count_of(&beta), Some(serde_json::json!(1)), "{rows}");
+    assert_eq!(count_of(&carol), None, "a reporter is out: {rows}");
+    let inspected = app
+        .get_as(
+            &admin,
+            &format!(
+                "/api/v2/analytics/teacher/courses?teacher_user_id={}",
+                alpha.user_id
+            ),
+        )
+        .await;
+    assert_eq!(inspected.json()["total"], 2, "{}", inspected.text());
+}

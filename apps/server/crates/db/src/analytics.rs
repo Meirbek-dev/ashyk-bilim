@@ -56,7 +56,8 @@ pub async fn all_course_ids(pool: &PgPool) -> Result<Vec<CourseId>> {
     Ok(rows)
 }
 
-/// Course id → every author id (creator + active co-authors).
+/// Course id → every author id: creator + active non-reporter co-authors,
+/// the [`teacher_course_ids`] rule (UX-183).
 #[derive(Debug, Clone)]
 pub struct CourseAuthorRow {
     pub course_id: CourseId,
@@ -75,7 +76,8 @@ pub async fn list_course_authors(
            UNION
            SELECT ra.course_id AS "course_id!: CourseId", ra.user_id AS "user_id!: UserId"
            FROM resource_authors ra
-           WHERE ra.course_id = ANY($1) AND ra.status = 'active'"#,
+           WHERE ra.course_id = ANY($1) AND ra.status = 'active'
+             AND ra.authorship <> 'reporter'"#,
         &ids
     )
     .fetch_all(pool)

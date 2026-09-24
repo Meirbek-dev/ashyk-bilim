@@ -39,6 +39,16 @@ async fn profile_read_and_partial_update(pool: PgPool) {
     assert_eq!(updated.json()["bio"], "");
     // Untouched fields survive the partial update.
     assert_eq!(updated.json()["email"], "m@example.com");
+    // UX-183: the bio keeps line breaks, not control / bidi characters.
+    let bio = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "bio": " one\n\u{202E}two\u{7} " }),
+        )
+        .await;
+    assert_eq!(bio.status, StatusCode::OK, "{}", bio.text());
+    assert_eq!(bio.json()["bio"], "one\ntwo");
 }
 
 #[sqlx::test(migrations = "../../migrations")]

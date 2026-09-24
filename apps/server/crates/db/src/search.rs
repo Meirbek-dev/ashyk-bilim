@@ -132,8 +132,14 @@ pub async fn find_user_hit_by_username(
 /// Prefix matches rank above substring matches; active users only.
 /// (Privacy upgrade over legacy: email is NOT searchable — FINDINGS #16.)
 pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<UserHitRow>> {
-    let substring = format!("%{}%", query.replace('%', "\\%").replace('_', "\\_"));
-    let prefix = format!("{}%", query.replace('%', "\\%").replace('_', "\\_"));
+    // `\` is ILIKE's escape character: escape it first (UX-183), then the
+    // wildcards, so every query character matches literally.
+    let literal = query
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_");
+    let substring = format!("%{literal}%");
+    let prefix = format!("{literal}%");
     let rows = sqlx::query_as!(
         UserHitRow,
         r#"SELECT id AS "id: UserId", username, display_name, avatar_key

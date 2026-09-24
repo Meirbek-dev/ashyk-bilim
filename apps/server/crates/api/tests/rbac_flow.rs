@@ -110,7 +110,7 @@ async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
             &serde_json::json!({
                 "slug": "teaching-assistant",
                 "display_name": "Teaching assistant",
-                "description": "Helps with grading",
+                "description": "Helps with\u{202E} grading\u{7}",
                 "priority": 30,
             }),
         )
@@ -126,6 +126,7 @@ async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
         .find(|r| r["slug"] == "teaching-assistant")
         .unwrap();
     assert_eq!(custom["display_name"], "Teaching assistant");
+    // UX-183: the description loses its control / bidi characters.
     assert_eq!(custom["description"], "Helps with grading");
     assert_eq!(custom["display_name_key"], "roles.teaching-assistant.name");
     let seeded = roles.iter().find(|r| r["slug"] == "admin").unwrap();
@@ -137,7 +138,7 @@ async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
         .patch_as(
             &admin,
             "/api/v2/rbac/roles/teaching-assistant",
-            &serde_json::json!({ "display_name": "TA", "description": "Grades" }),
+            &serde_json::json!({ "display_name": "TA", "description": "Gra\u{7}des" }),
         )
         .await;
     assert_eq!(renamed.status, StatusCode::NO_CONTENT);

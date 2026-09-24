@@ -150,9 +150,16 @@ impl RbacAdminService {
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
         let display_name = trimmed_display_name(display_name)?;
-        let created =
-            ab_db::identity::insert_role(&self.pool, slug, &display_name, description, priority)
-                .await?;
+        // UX-183: the description is shown next to the name — same strip.
+        let description = description.map(ab_core::strip_controls_multiline);
+        let created = ab_db::identity::insert_role(
+            &self.pool,
+            slug,
+            &display_name,
+            description.as_deref(),
+            priority,
+        )
+        .await?;
         if created.is_none() {
             return Err(Error::app(ErrorCode::RoleSlugTaken, "role slug is taken"));
         }
@@ -178,11 +185,12 @@ impl RbacAdminService {
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
         let display_name = display_name.map(trimmed_display_name).transpose()?;
+        let description = description.map(ab_core::strip_controls_multiline);
         if !ab_db::identity::update_role(
             &self.pool,
             slug,
             display_name.as_deref(),
-            description,
+            description.as_deref(),
             priority,
         )
         .await?

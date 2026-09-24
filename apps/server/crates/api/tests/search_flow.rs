@@ -138,6 +138,14 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
         by_email.json()["users"].as_array().unwrap().is_empty(),
         "email fragments must not match people (FINDINGS #16)"
     );
+    // UX-183: `\` is literal too — `\ustacean` is not `ustacean`.
+    let backslash = app.get_as(&teacher, "/api/v2/search?q=%5Custacean").await;
+    assert_eq!(backslash.status, StatusCode::OK, "{}", backslash.text());
+    assert!(
+        backslash.json()["users"].as_array().unwrap().is_empty(),
+        "{}",
+        backslash.text()
+    );
 
     // Blank queries return empty sections, not errors.
     let blank = app.get_as(&teacher, "/api/v2/search?q=%20").await;

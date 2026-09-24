@@ -539,11 +539,14 @@ pub fn build_admin_overview(
     let now = ctx.generated_at;
     let (current_start, _) = filters.window_bounds(now);
 
+    // The teacher scope rule (`scope::resolve`, UX-183): creator + active
+    // non-reporter co-authors, so a row matches inspecting that teacher.
     let mut teacher_courses: BTreeMap<UserId, HashSet<CourseId>> = BTreeMap::new();
-    for c in ctx.courses.values() {
-        if let Some(creator) = c.creator_id {
-            teacher_courses.entry(creator).or_default().insert(c.id);
-        }
+    for (course_id, author) in &ctx.course_authors {
+        teacher_courses
+            .entry(*author)
+            .or_default()
+            .insert(*course_id);
     }
     let mut workload_rows: Vec<AdminTeacherRow> = teacher_courses
         .iter()
