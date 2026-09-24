@@ -314,3 +314,90 @@ async fn callback_in_flight_during_a_disable_gets_no_session(pool: PgPool) {
     assert!(res.session_cookie().is_none());
     assert!(app.sessions.list(user).await.unwrap().is_empty());
 }
+
+/// One full callback round-trip with whatever Google mock is mounted.
+async fn google_callback(app: &TestApp) -> ab_testkit::TestResponse {
+    let state = start_and_get_state(app, "/").await;
+    app.get(&format!(
+        "/api/v2/auth/google/callback?code=c&state={state}"
+    ))
+    .await
+}
+
+async fn session_user_id(app: &TestApp, cookie: &str) -> String {
+    let session = app
+        .send(
+            axum::http::Request::builder()
+                .uri("/api/v2/auth/session")
+                .header(axum::http::header::COOKIE, cookie)
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(session.status, StatusCode::OK, "{}", session.text());
+    session.json()["user_id"].as_str().unwrap().to_owned()
+}
+
+async fn link_sub(app: &TestApp, user: ab_core::id::UserId, sub: &str, email: &str) {
+    sqlx::query("INSERT INTO google_accounts (google_sub, user_id, email) VALUES ($1, $2, $3)")
+        .bind(sub)
+        .bind(user.0)
+        .bind(email)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+}
+
+/// BUG-253: the Google email of a sub-linked account moved to an address
+/// nobody here holds — the session opens for the linked account (was 500
+/// «google user vanished», locking a passwordless account out).
+#[sqlx::test(migrations = "../../migrations")]
+async fn sub_linked_login_survives_a_changed_google_email(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let linked = app.create_user("moved", "old@gmail.com", &["user"]).await;
+    link_sub(&app, linked, "g-sub-moved", "old@gmail.com").await;
+    mock_zitadel_user_create(&app, 0).await;
+    mock_google_token(&app, "g-sub-moved", "new@gmail.com").await;
+
+    let res = google_callback(&app).await;
+    assert_eq!(res.status, StatusCode::SEE_OTHER);
+    let cookie = res.session_cookie().expect("session cookie set");
+    assert_eq!(session_user_id(&app, &cookie).await, linked.to_string());
+}
+
+/// BUG-253: the new Google email is another account's — status and the
+/// session come from the sub-linked account, never from that other row.
+#[sqlx::test(migrations = "../../migrations")]
+async fn sub_linked_login_ignores_the_account_owning_the_new_email(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let linked = app
+        .create_user("linked", "linked@gmail.com", &["user"])
+        .await;
+    let other = app.create_user("other", "other@gmail.com", &["user"]).await;
+    link_sub(&app, linked, "g-sub-linked", "linked@gmail.com").await;
+    mock_zitadel_user_create(&app, 0).await;
+    mock_google_token(&app, "g-sub-linked", "other@gmail.com").await;
+
+    // Active linked account, disabled other: the login goes through as `linked`.
+    sqlx::query("UPDATE users SET status = 'disabled' WHERE id = $1")
+        .bind(other.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let res = google_callback(&app).await;
+    let cookie = res.session_cookie().expect("session cookie set");
+    assert_eq!(session_user_id(&app, &cookie).await, linked.to_string());
+
+    // Disabled linked account, active other: refused.
+    sqlx::query("UPDATE users SET status = CASE WHEN id = $1 THEN 'disabled' ELSE 'active' END")
+        .bind(linked.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let res = google_callback(&app).await;
+    assert_eq!(
+        res.headers.get("location").unwrap().to_str().unwrap(),
+        "/auth/login?error=account-disabled"
+    );
+    assert!(res.session_cookie().is_none());
+}

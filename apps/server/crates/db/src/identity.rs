@@ -31,6 +31,22 @@ pub async fn find_user_for_login(pool: &PgPool, login: &str) -> Result<Option<Au
     Ok(row)
 }
 
+/// The same row by id — for flows that already resolved the account
+/// (Google by `sub`: the email Google reports may have moved, BUG-253).
+pub async fn find_auth_user(pool: &PgPool, user_id: UserId) -> Result<Option<AuthUserRow>> {
+    let row = sqlx::query_as!(
+        AuthUserRow,
+        r#"SELECT id AS "id: UserId", zitadel_user_id, username, email,
+                  display_name, locale, status, rbac_version
+           FROM users
+           WHERE id = $1"#,
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
 /// Roles (by priority, highest first) and the distinct union of grants.
 pub async fn load_user_grants(
     pool: &PgPool,

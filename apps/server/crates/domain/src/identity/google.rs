@@ -124,21 +124,11 @@ impl GoogleAuthService {
         // one re-read (nothing here is a credential that can go stale) is
         // what a fresh sign-in would do.
         let mut session_id = self
-            .open_session(
-                user_id,
-                &identity.email,
-                ip.as_deref(),
-                user_agent.as_deref(),
-            )
+            .open_session(user_id, ip.as_deref(), user_agent.as_deref())
             .await?;
         if session_id.is_none() {
             session_id = self
-                .open_session(
-                    user_id,
-                    &identity.email,
-                    ip.as_deref(),
-                    user_agent.as_deref(),
-                )
+                .open_session(user_id, ip.as_deref(), user_agent.as_deref())
                 .await?;
         }
         let session_id =
@@ -166,12 +156,13 @@ impl GoogleAuthService {
     async fn open_session(
         &self,
         user_id: UserId,
-        email: &str,
         ip: Option<&str>,
         user_agent: Option<&str>,
     ) -> Result<Option<String>> {
         let epoch = self.sessions.epoch(user_id).await?;
-        let user = ab_db::identity::find_user_for_login(&self.pool, email)
+        // BUG-253: the account resolved by `sub`, never re-looked-up by the
+        // email Google reports now (it may be nobody's, or someone else's).
+        let user = ab_db::identity::find_auth_user(&self.pool, user_id)
             .await?
             .ok_or_else(|| Error::internal("google user vanished", anyhow_msg()))?;
         if user.status != "active" {
