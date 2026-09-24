@@ -1234,13 +1234,6 @@ impl AssessmentsService {
         self.ensure_content_unlocked(&assessment).await?;
         Self::check_kind_allowed(assessment.kind, body.kind())?;
         body.validate()?;
-        if ab_db::assessments::count_items(&self.pool, id).await? >= MAX_ITEMS {
-            return Err(Error::validation(vec![FieldError {
-                field: "items".into(),
-                code: "limit-exceeded".into(),
-                message: format!("an assessment holds at most {MAX_ITEMS} items"),
-            }]));
-        }
         if max_score < 0.0 {
             return Err(Error::validation(vec![FieldError {
                 field: "max_score".into(),
@@ -1262,6 +1255,15 @@ impl AssessmentsService {
         // makes the row read-only — the same gates, on the locked row.
         self.ensure_editable(&assessment).await?;
         self.ensure_content_unlocked(&assessment).await?;
+        // BUG-264: the cap counts the items read under the row lock, so
+        // parallel adds at 199 cannot each see room for one more.
+        if i64::try_from(items.len()).unwrap_or(i64::MAX) >= MAX_ITEMS {
+            return Err(Error::validation(vec![FieldError {
+                field: "items".into(),
+                code: "limit-exceeded".into(),
+                message: format!("an assessment holds at most {MAX_ITEMS} items"),
+            }]));
+        }
         if assessment.lifecycle == Lifecycle::Published {
             items.push(Item {
                 id: AssessmentItemId::default(),

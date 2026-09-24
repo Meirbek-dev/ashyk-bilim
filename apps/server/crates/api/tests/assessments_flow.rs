@@ -1057,8 +1057,9 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
         .await;
     assert_eq!(rescored.status, StatusCode::OK, "{}", rescored.text());
 
-    // Item cap: the 201st item is refused.
-    for n in 1..200 {
+    // Item cap: the 201st item is refused — also when 8 adds race at 199
+    // (BUG-264: the count is taken under the assessment row lock).
+    for n in 1..199 {
         let res = app
             .post_as(
                 &teacher,
@@ -1068,13 +1069,20 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
             .await;
         assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
     }
-    let capped = app
-        .post_as(
-            &teacher,
-            &format!("/api/v2/assessments/{id}/items"),
-            &choice_item("one too many"),
-        )
-        .await;
+    let items_path = format!("/api/v2/assessments/{id}/items");
+    let racing = choice_item("one too many");
+    let adds =
+        futures::future::join_all((0..8).map(|_| app.post_as(&teacher, &items_path, &racing)))
+            .await;
+    let created = adds
+        .iter()
+        .filter(|r| r.status == StatusCode::CREATED)
+        .count();
+    assert_eq!(created, 1, "exactly one add fits under the cap");
+    let capped = adds
+        .iter()
+        .find(|r| r.status != StatusCode::CREATED)
+        .unwrap();
     assert_eq!(
         capped.status,
         StatusCode::UNPROCESSABLE_ENTITY,
@@ -1082,6 +1090,13 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
         capped.text()
     );
     assert_eq!(capped.json()["field_errors"][0]["code"], "limit-exceeded");
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM assessment_items WHERE assessment_id = $1::uuid")
+            .bind(&id)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(count, 200);
 }
 
 /// A live assessment keeps at least one item (409 on the last delete);
