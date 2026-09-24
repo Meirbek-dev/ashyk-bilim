@@ -257,7 +257,8 @@ impl TrailService {
     /// Drop the run and every step in it, and reset the explicit lesson
     /// completions those steps stood for (legacy `remove_course_from_trail`
     /// deleted the `TrailStep`s). Assessment and file-submission rows are
-    /// pipeline-owned and stay — the submissions still exist.
+    /// pipeline-owned and stay — the submissions still exist. Allowlist and
+    /// override rows go (BUG-281): they name members only.
     ///
     /// The run is the caller's own, so no course visibility check: a learner
     /// can always leave a course that was unpublished under them (BUG-183).
@@ -274,6 +275,7 @@ impl TrailService {
         if !ab_db::progress::delete_trail_run(&mut *tx, trail.id, course_id).await? {
             return Err(Error::not_found("trail run"));
         }
+        ab_db::assessments::drop_member_access(&mut tx, course_id, actor.user_id).await?;
         // BUG-235: inside the lock only `tx`, never a second pool connection.
         let mut hooks = AfterCommit::default();
         for activity in ab_db::catalog::list_activities(&mut *tx, course_id).await? {

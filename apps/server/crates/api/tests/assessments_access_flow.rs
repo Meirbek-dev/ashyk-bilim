@@ -861,3 +861,94 @@ async fn overrides_racing_a_leave_are_not_in_course(pool: PgPool) {
         "no override written for a leaver"
     );
 }
+
+/// BUG-281: a leave takes the leaver off the allowlist and drops their
+/// overrides; the restricted reach counts course members only (a group
+/// member who never joined is not reached), like the course-wide mode.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_leave_drops_allowlist_and_overrides(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let alice = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice_session = app
+        .mint_session_for(alice, &["trail:read:all", "trail:submit:assigned"])
+        .await;
+    let (bob, _) = learner(&app, "bob").await;
+    let (carol, _) = learner(&app, "carol").await;
+    enrol(&pool, &course_id, alice).await;
+    enrol(&pool, &course_id, bob).await;
+    let group = app
+        .post_as(
+            &teacher,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "Cohort" }),
+        )
+        .await;
+    let group_id = group.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/usergroups/{group_id}/members"),
+        &serde_json::json!({ "user_ids": [bob, carol] }),
+    )
+    .await;
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/usergroups/{group_id}/courses"),
+        &serde_json::json!({ "course_ids": [course_id] }),
+    )
+    .await;
+    let restricted = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/access"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "mode": "restricted", "user_ids": [alice],
+                                        "usergroup_ids": [group_id] })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(restricted.status, StatusCode::OK, "{}", restricted.text());
+    assert_eq!(restricted.json()["effective_user_count"], 2, "alice + bob");
+    let granted = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{alice}"),
+            &serde_json::json!({ "max_attempts_override": 2 }),
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+
+    let left = app
+        .delete_as(
+            &alice_session,
+            &format!("/api/v2/trail/courses/{course_id}"),
+        )
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    let view = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/access"))
+        .await;
+    assert!(
+        view.json()["users"].as_array().unwrap().is_empty(),
+        "{}",
+        view.text()
+    );
+    assert_eq!(view.json()["effective_user_count"], 1, "bob only");
+    let overrides = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/overrides"))
+        .await;
+    assert_eq!(
+        overrides.json().as_array().unwrap().len(),
+        0,
+        "{}",
+        overrides.text()
+    );
+}

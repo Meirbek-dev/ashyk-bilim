@@ -108,7 +108,7 @@ describe('access management feedback (UX-057)', () => {
     renderTab()
     await screen.findAllByText('Mira')
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить доступ' }))
-    await screen.findByText('Нет доступа к этому курсу.')
+    await screen.findByText('Не записан на этот курс.')
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
 

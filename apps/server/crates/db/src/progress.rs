@@ -458,6 +458,24 @@ pub async fn has_trail_run<'e>(
     Ok(exists)
 }
 
+/// [`has_trail_run`] holding the run `FOR SHARE` until the caller's
+/// transaction ends: a concurrent leave (which deletes it) lands wholly
+/// before (→ `false`) or after the caller's commit (BUG-281).
+pub async fn has_trail_run_locked<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
+    let row = sqlx::query_scalar!(
+        "SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2 FOR SHARE",
+        course_id.0,
+        user_id.0
+    )
+    .fetch_optional(db)
+    .await?;
+    Ok(row.is_some())
+}
+
 /// Create-or-get the run for a course; `true` when it was just created.
 pub async fn ensure_trail_run(
     conn: &mut PgConnection,

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM assessment_access_users a USING assessments s\n         WHERE a.assessment_id = s.id AND s.course_id = $1 AND a.user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "de0a115dfa5d5228fd6157e894d8e130090995a8918b2ac025f5de0a9ae978ba"
+}

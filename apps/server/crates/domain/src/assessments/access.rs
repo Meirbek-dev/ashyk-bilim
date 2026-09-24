@@ -218,6 +218,8 @@ impl AssessmentsService {
     /// BUG-247: a per-learner teacher action (override, deadline extension)
     /// targets a course **member** — the trail run `learner-state.enrolled`
     /// reads (UX-150), not anyone with access (an author or maintainer).
+    /// The run is held `FOR SHARE` so a leave cannot slip between this
+    /// check and the caller's write (BUG-281, `set_access`).
     pub(crate) async fn not_member<'e>(
         db: impl sqlx::PgExecutor<'e>,
         course_id: ab_core::id::CourseId,
@@ -225,7 +227,7 @@ impl AssessmentsService {
         field: String,
     ) -> Result<Option<FieldError>> {
         Ok(
-            (!ab_db::progress::has_trail_run(db, course_id, user_id).await?)
+            (!ab_db::progress::has_trail_run_locked(db, course_id, user_id).await?)
                 .then(|| Self::not_in_course(user_id, field)),
         )
     }

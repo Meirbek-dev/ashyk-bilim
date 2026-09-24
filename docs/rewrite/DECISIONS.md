@@ -1285,3 +1285,19 @@ Implements three more items of the owner answers above. Routes:
   Replaces "authors pass as previewers, and their work counts like a
   learner's" (legacy BUG-145 enrolled them). Staff trail runs created
   before this stay until the user leaves the course.
+
+## A leave drops the leaver's allowlist and override rows (2026-09-24, gauntlet pass 24)
+
+- **Leaving a course (`DELETE /trail/courses/{id}`) deletes the leaver's
+  `assessment_access_users` and `assessment_overrides` rows for every
+  assessment of the course, in the leave's transaction** (BUG-281). The
+  allowlist check in `set_access` holds the member's trail run `FOR
+  SHARE`, so a save racing a leave lands wholly before (the leave then
+  drops the row) or after it (422 `not-in-course`). A restricted
+  assessment's `effective_user_count` counts course members only — the
+  same trail-run member set as the course-wide mode (a cohort member who
+  has not joined is not reached yet). Why: the rows outlived the member,
+  the count included a non-member and re-saving the unchanged list was a
+  422. Rejoining starts clean: the teacher re-adds the learner. Replaces
+  "allowlist and override rows survive a leave" (UX-180 / BUG-247 only
+  checked membership on write).

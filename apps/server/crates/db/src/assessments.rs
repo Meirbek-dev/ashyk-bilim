@@ -891,8 +891,9 @@ pub async fn replace_access_lists(
     Ok(())
 }
 
-/// Distinct people the access policy reaches: the allowlists (direct + via
-/// groups) when restricted, the enrolled learners when course-wide.
+/// Distinct course members the access policy reaches: the allowlists
+/// (direct + via groups) when restricted, every member when course-wide —
+/// one member set (trail runs) for both (BUG-281).
 pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i64> {
     // UX-159: the course-wide mode reaches the course's enrolled learners
     // (a trail run — the UX-150 enrolment predicate), not the empty lists.
@@ -907,7 +908,8 @@ pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i
                     SELECT m.user_id FROM assessment_access_usergroups g
                     JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id
                     WHERE g.assessment_id = $1
-                ) reach)
+                ) reach
+                JOIN trail_runs r ON r.user_id = reach.user_id AND r.course_id = a.course_id)
            END AS "count!"
            FROM assessments a WHERE a.id = $1"#,
         id.0
@@ -915,6 +917,33 @@ pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i
     .fetch_one(pool)
     .await?;
     Ok(count)
+}
+
+/// BUG-281: a leave takes the leaver off every allowlist and override of
+/// the course, in the leave's transaction — neither ever names a
+/// non-member.
+pub async fn drop_member_access(
+    conn: &mut sqlx::PgConnection,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<()> {
+    sqlx::query!(
+        "DELETE FROM assessment_access_users a USING assessments s
+         WHERE a.assessment_id = s.id AND s.course_id = $1 AND a.user_id = $2",
+        course_id.0,
+        user_id.0
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM assessment_overrides o USING assessments s
+         WHERE o.assessment_id = s.id AND s.course_id = $1 AND o.user_id = $2",
+        course_id.0,
+        user_id.0
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
 }
 
 /// Direct entry or membership of an allowlisted group.

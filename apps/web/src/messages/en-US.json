@@ -6918,7 +6918,7 @@
       "too-long": "The value is too long.",
       "too-short": "The value is too short.",
       "out-of-range": "The value is out of range.",
-      "not-in-course": "No access to this course.",
+      "not-in-course": "Not enrolled in this course.",
       "unknown": "Not found.",
       "unknown-field": "Unknown field.",
       "unsafe": "This address cannot be used.",
