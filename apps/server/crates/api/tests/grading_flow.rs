@@ -3152,6 +3152,37 @@ async fn staff_attempts_are_previews(pool: PgPool) {
     assert_eq!(work.json()["total"], 1, "{}", work.text());
 }
 
+/// BUG-280: the author's own submitted preview never locks authoring; the
+/// first learner submission still does.
+#[sqlx::test(migrations = "../../migrations")]
+async fn staff_preview_does_not_lock_editing(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    submit_attempt(&app, &teacher, &id, &choice_id, &essay_id).await;
+    let path = format!("/api/v2/assessments/{id}");
+    let renamed = app
+        .patch_as(&teacher, &path, &serde_json::json!({ "title": "Quiz 1b" }))
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    let rescored = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{choice_id}"),
+            &serde_json::json!({ "max_score": 7 }),
+        )
+        .await;
+    assert_eq!(rescored.status, StatusCode::OK, "{}", rescored.text());
+    let alice = learner(&app, "alice").await;
+    submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let locked = app
+        .patch_as(&teacher, &path, &serde_json::json!({ "title": "Quiz 1c" }))
+        .await;
+    assert_eq!(locked.status, StatusCode::CONFLICT, "{}", locked.text());
+}
+
 /// UX-169: the gradebook lists the course members (trail runs, the UX-150
 /// predicate) — a member without attempts has a row, a leaver's attempts
 /// drop out — and the CSV follows.

@@ -777,8 +777,9 @@ pub async fn list_audit_events(
 
 // ── Submission activity (lock rules) ────────────────────────────────────────
 
-/// Whether any submission exists for the assessment, and whether any of
-/// them has left the draft state. Both legacy lock rules hang off these.
+/// Whether any learner submission exists for the assessment, and whether any
+/// of them has left the draft state. Both legacy lock rules hang off these.
+/// BUG-280: staff previews (UX-182) never lock authoring.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SubmissionActivity {
     pub any: bool,
@@ -787,9 +788,11 @@ pub struct SubmissionActivity {
 
 pub async fn submission_activity(pool: &PgPool, id: AssessmentId) -> Result<SubmissionActivity> {
     let row = sqlx::query!(
-        r#"SELECT EXISTS (SELECT 1 FROM submissions WHERE assessment_id = $1) AS "any!",
+        r#"SELECT EXISTS (SELECT 1 FROM submissions
+                          WHERE assessment_id = $1 AND NOT preview) AS "any!",
                   EXISTS (SELECT 1 FROM submissions
-                          WHERE assessment_id = $1 AND status <> 'draft') AS "non_draft!""#,
+                          WHERE assessment_id = $1 AND status <> 'draft' AND NOT preview)
+                      AS "non_draft!""#,
         id.0
     )
     .fetch_one(pool)
