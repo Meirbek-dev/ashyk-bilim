@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, answers, grading,\n                  auto_score, final_score, is_late, late_penalty_pct,\n                  violation_count, violations,\n                  auto_submit_reason AS \"auto_submit_reason: AutoSubmitReason\",\n                  (extract(epoch FROM auto_submitted_at))::bigint AS \"auto_submitted_at?\",\n                  auto_submit_attempts,\n                  (extract(epoch FROM auto_submit_retry_at))::bigint AS \"auto_submit_retry_at?\",\n                  duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  version, draft_version, grading_version, content_version, policy_version,\n                  items_snapshot, policy_snapshot,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM submissions WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'",
+  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, answers, grading,\n                  auto_score, final_score, is_late, late_penalty_pct,\n                  violation_count, violations,\n                  auto_submit_reason AS \"auto_submit_reason: AutoSubmitReason\",\n                  (extract(epoch FROM auto_submitted_at))::bigint AS \"auto_submitted_at?\",\n                  auto_submit_attempts,\n                  (extract(epoch FROM auto_submit_retry_at))::bigint AS \"auto_submit_retry_at?\",\n                  duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  version, draft_version, grading_version, content_version, policy_version,\n                  items_snapshot, policy_snapshot, preview,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'published')\n             AND NOT preview ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -299,12 +299,23 @@
       },
       {
         "ordinal": 29,
+        "name": "preview",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "preview"
+          }
+        }
+      },
+      {
+        "ordinal": 30,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 30,
+        "ordinal": 31,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -312,7 +323,6 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Uuid"
       ]
     },
@@ -346,9 +356,10 @@
       false,
       true,
       true,
+      false,
       null,
       null
     ]
   },
-  "hash": "5798349927e34564e222df5c104204f1e79e9971d469b7b5b0d915989dcf1c4a"
+  "hash": "af00bd8c59270a190d5527a0352fe6716654192af13dda6b895757713ec34272"
 }

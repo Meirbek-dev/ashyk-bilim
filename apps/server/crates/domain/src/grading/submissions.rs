@@ -1093,9 +1093,16 @@ impl SubmissionsService {
             .into_iter()
             .map(Item::try_from)
             .collect::<Result<Vec<_>>>()?;
-        let effective =
-            AssessmentsService::effective_policy_for(pool, &assessment, submission.user_id, false)
-                .await?;
+        // BUG-279: the attempt's own preview flag — the same policy rule as
+        // a manual submit (a preview carries no late penalty).
+        let preview = submission.preview;
+        let effective = AssessmentsService::effective_policy_for(
+            pool,
+            &assessment,
+            submission.user_id,
+            preview,
+        )
+        .await?;
         let shapes: Vec<ItemShape> = items
             .iter()
             .map(|i| ItemShape {
@@ -1118,8 +1125,7 @@ impl SubmissionsService {
                 assessment,
                 items,
                 effective,
-                // Unread: the sweep re-projects without enrolling anyway.
-                preview: false,
+                preview,
             },
             answers,
             FinalizeOptions {

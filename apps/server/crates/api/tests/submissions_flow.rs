@@ -1699,3 +1699,57 @@ async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
     assert_eq!(final_score, None);
     assert_eq!(reason.as_deref(), Some("time_expired"));
 }
+
+/// BUG-279: the timer sweep builds a preview's policy by the preview rule
+/// (BUG-278) — an author's expired, past-due preview closes with no late
+/// penalty.
+#[sqlx::test(migrations = "../../migrations")]
+async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, _items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "time_limit_seconds": 60, "allow_late": true,
+                            "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 3 } }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let draft = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let sub = uuid::Uuid::parse_str(draft.json()["id"].as_str().unwrap()).unwrap();
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 hour' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE submissions SET started_at = now() - interval '3 minutes' WHERE id = $1")
+        .bind(sub)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+
+    let swept =
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
+            .await
+            .unwrap();
+    assert_eq!(swept, 1);
+    let (preview, status, penalty): (bool, String, f64) =
+        sqlx::query_as("SELECT preview, status, late_penalty_pct FROM submissions WHERE id = $1")
+            .bind(sub)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert!(preview);
+    assert_ne!(status, "draft");
+    assert_eq!(penalty, 0.0, "a preview carries no late penalty");
+}

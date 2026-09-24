@@ -45,6 +45,8 @@ pub struct SubmissionRow {
     pub policy_version: i32,
     pub items_snapshot: Option<serde_json::Value>,
     pub policy_snapshot: Option<serde_json::Value>,
+    /// A course staff member's attempt (UX-182).
+    pub preview: bool,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -164,7 +166,7 @@ pub async fn get_submission<'e>(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, grading_version, content_version, policy_version,
-                  items_snapshot, policy_snapshot,
+                  items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM submissions WHERE id = $1"#,
@@ -196,7 +198,7 @@ pub async fn open_draft(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, grading_version, content_version, policy_version,
-                  items_snapshot, policy_snapshot,
+                  items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM submissions WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'"#,
@@ -233,7 +235,7 @@ pub async fn list_user_submissions<'e>(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, grading_version, content_version, policy_version,
-                  items_snapshot, policy_snapshot,
+                  items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM submissions WHERE assessment_id = $1 AND user_id = $2 AND (NOT preview OR $3)
@@ -493,7 +495,7 @@ pub async fn list_non_draft(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, grading_version, content_version, policy_version,
-                  items_snapshot, policy_snapshot,
+                  items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM submissions WHERE assessment_id = $1 AND status <> 'draft' AND NOT preview
@@ -849,7 +851,7 @@ pub async fn list_releasable(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, grading_version, content_version, policy_version,
-                  items_snapshot, policy_snapshot,
+                  items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'published')
@@ -883,7 +885,7 @@ pub async fn list_submitted_for_user(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, grading_version, content_version, policy_version,
-                  items_snapshot, policy_snapshot,
+                  items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM submissions WHERE assessment_id = $1 AND user_id = $2 AND status <> 'draft' ORDER BY id"#,
