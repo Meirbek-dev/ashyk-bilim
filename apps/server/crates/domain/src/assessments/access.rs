@@ -131,6 +131,15 @@ pub struct EffectivePolicy {
     pub review_visibility: ReviewVisibility,
 }
 
+impl EffectivePolicy {
+    /// The one lateness rule (BUG-284): handed in past the due date and not
+    /// waived — the submit pipeline and every override writer judge by it.
+    #[must_use]
+    pub fn is_late(&self, submitted_at: i64) -> bool {
+        !self.waive_late_penalty && self.due_at.is_some_and(|due| submitted_at > due)
+    }
+}
+
 /// Why a learner cannot act right now (legacy `disabled_action_reasons`;
 /// the attempt/timer-based ones arrive with submissions in P4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
@@ -422,6 +431,8 @@ impl AssessmentsService {
         if created.is_none() {
             return Err(Error::conflict("this student already has an override"));
         }
+        crate::grading::bulk::settle_override(&self.pool, &assessment, user_id, actor.user_id)
+            .await?;
         self.audit_override(actor, id, user_id, "override-created")
             .await?;
         self.override_row(id, user_id).await
@@ -455,6 +466,8 @@ impl AssessmentsService {
         if !updated {
             return Err(Error::not_found("override"));
         }
+        crate::grading::bulk::settle_override(&self.pool, &assessment, user_id, actor.user_id)
+            .await?;
         self.audit_override(actor, id, user_id, "override-updated")
             .await?;
         self.override_row(id, user_id).await

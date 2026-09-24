@@ -936,7 +936,8 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
     assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
     let done = app.send(submit(&teacher, &preview, None, &answer)).await;
     assert_eq!(done.status, StatusCode::OK, "{}", done.text());
-    assert_eq!(done.json()["is_late"], true);
+    // BUG-284: a waived penalty is not late (one rule with the overrides).
+    assert_eq!(done.json()["is_late"], false);
     assert_eq!(done.json()["late_penalty_pct"], 0.0);
 }
 

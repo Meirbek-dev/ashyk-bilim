@@ -1342,6 +1342,50 @@ async fn deadline_extension_clears_the_late_penalty_of_graded_work(pool: PgPool)
     assert_eq!(again.json()["final_score"], 100.0);
 }
 
+/// BUG-284: a per-learner override that waives the penalty settles the
+/// learner's late work like the bulk extension does — not late, no
+/// penalty, and a grade saved after it publishes unpenalised.
+#[sqlx::test(migrations = "../../migrations")]
+async fn override_waiver_settles_late_work(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 5, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let granted = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id),
+            &serde_json::json!({ "waive_late_penalty": true }),
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    let review = app
+        .get_as(&teacher, &format!("/api/v2/submissions/{alice_sub}/review"))
+        .await;
+    assert_eq!(review.json()["is_late"], false, "{}", review.text());
+    assert_eq!(review.json()["late_penalty_pct"], 0.0);
+    let version = review.json()["version"].as_i64().unwrap().to_string();
+    let published = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["final_score"], 100.0);
+}
+
 /// BUG-283: an extension over an expired override applies — the expiry is
 /// cleared, and the expired grant's extra attempts are not resurrected.
 #[sqlx::test(migrations = "../../migrations")]

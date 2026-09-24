@@ -869,7 +869,7 @@ impl SubmissionsService {
                 grading: &breakdown,
                 auto_score: Some(verdict.auto_score),
                 final_score: verdict.final_score,
-                is_late: effective.due_at.is_some_and(|due| now > due),
+                is_late: effective.is_late(now),
                 late_penalty_pct: penalty.late_penalty_pct,
                 violation_count: opts.violation_count,
                 auto_submit_reason: verdict.auto_submit_reason,

@@ -315,6 +315,40 @@ async fn settle_lateness(
     Ok(())
 }
 
+/// BUG-284: the lateness step behind every override writer (create/update
+/// and the bulk extension, each right after its override commits): the
+/// learner's hand-ins are re-judged by [`EffectivePolicy::is_late`] against
+/// the policy the write left behind — a new due date or a waiver alike.
+/// Returns the learner's submitted attempts (previews skipped: their policy
+/// never had a penalty).
+///
+/// [`EffectivePolicy::is_late`]: crate::assessments::access::EffectivePolicy::is_late
+pub(crate) async fn settle_override(
+    pool: &PgPool,
+    assessment: &ab_db::assessments::AssessmentRow,
+    user_id: UserId,
+    granted_by: UserId,
+) -> Result<Vec<ab_db::submissions::SubmissionRow>> {
+    let effective =
+        AssessmentsService::effective_policy_for(pool, assessment, user_id, false).await?;
+    let submitted =
+        ab_db::submissions::list_submitted_for_user(pool, assessment.id, user_id).await?;
+    for submission in submitted.iter().filter(|s| !s.preview) {
+        let late = submission
+            .submitted_at
+            .is_some_and(|at| effective.is_late(at));
+        settle_lateness(pool, assessment, submission, late, granted_by).await?;
+    }
+    // BUG-251: only a target with work has lateness to re-project, and an
+    // override never enrols (no trail run from a grader's action).
+    if !submitted.is_empty() {
+        ProgressProjector::new(pool.clone())
+            .reproject_submission(assessment.id, user_id)
+            .await;
+    }
+    Ok(submitted)
+}
+
 async fn run_deadline_extension(
     pool: &PgPool,
     events: Option<&GradingEvents>,
@@ -354,19 +388,7 @@ async fn run_deadline_extension(
         )
         .await?;
         tx.commit().await?;
-        let submitted =
-            ab_db::submissions::list_submitted_for_user(pool, row.assessment_id, user_id).await?;
-        for submission in &submitted {
-            let late = submission.submitted_at.is_some_and(|s| s > new_due_at);
-            settle_lateness(pool, &assessment, submission, late, granted_by).await?;
-        }
-        // BUG-251: only a target with work has lateness to re-project, and
-        // an extension never enrols (no trail run from a grader's action).
-        if !submitted.is_empty() {
-            ProgressProjector::new(pool.clone())
-                .reproject_submission(row.assessment_id, user_id)
-                .await;
-        }
+        let submitted = settle_override(pool, &assessment, user_id, granted_by).await?;
         if let (Some(events), Some(latest)) = (events, submitted.first()) {
             events
                 .publish_best_effort(
