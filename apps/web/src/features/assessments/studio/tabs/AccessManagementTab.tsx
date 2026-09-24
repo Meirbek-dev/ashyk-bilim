@@ -278,8 +278,9 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   return (
     <div className="mx-auto w-full max-w-[92rem] space-y-5 px-4 py-5 md:px-6">
       <section className="bg-card rounded-lg border p-4 shadow-sm">
-        <div className="grid gap-4 xl:grid-cols-[minmax(18rem,0.8fr)_minmax(28rem,1.2fr)_minmax(18rem,0.7fr)] xl:items-start">
-          <div className="flex items-start gap-3">
+        {/* UX-190: wraps by the section's own width (a studio beside a sidebar), not the viewport. */}
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="flex min-w-0 flex-[0.8_1_18rem] items-start gap-3">
             <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-md">
               <ShieldCheck className="size-5" />
             </div>
@@ -292,7 +293,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
           <RadioGroup
             value={mode}
             onValueChange={value => setMode(value as AccessMode)}
-            className="grid gap-3 md:grid-cols-2"
+            className="grid min-w-0 flex-[1.2_1_28rem] gap-3 md:grid-cols-2"
             disabled={disabled}
           >
             <ModeOption
@@ -311,7 +312,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
             />
           </RadioGroup>
 
-          <div className="space-y-3">
+          <div className="min-w-0 flex-[0.7_1_18rem] space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <Metric label={t('eligibleLoaded')} value={allUsers.length} />
               <Metric label={t('effectivePreview')} value={effectivePreviewCount} />
@@ -341,7 +342,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       </AlertDialog>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
-        <main className={cn('grid gap-5 lg:grid-cols-2', mode !== 'restricted' && 'opacity-60')}>
+        <main className={cn('grid grid-cols-1 gap-5 lg:grid-cols-2', mode !== 'restricted' && 'opacity-60')}>
           <AccessList
             title={t('students')}
             count={selectedUsers.size}

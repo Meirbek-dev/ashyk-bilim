@@ -196,8 +196,9 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
               <Badge variant="outline">{t('queueSelected', { count: selectedUuids.size })}</Badge>
             </div>
           </div>
-          <div className="mt-4 grid gap-2 lg:grid-cols-[minmax(16rem,1fr)_12rem_12rem_10rem_auto]">
-            <div className="relative">
+          {/* UX-190: a wrapping row — the fixed 5-column grid overflowed a studio at 1380 px. */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <div className="relative min-w-[16rem] flex-1">
               <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 value={search}
@@ -216,6 +217,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                 setPage(1)
               }}
               aria-label={t('statusFilter')}
+              className="w-full sm:w-48"
             >
               <NativeSelectOption value="ALL">{t('filterAll')}</NativeSelectOption>
               <NativeSelectOption value="NEEDS_GRADING">{t('filterNeedsGrading')}</NativeSelectOption>
@@ -231,6 +233,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                 setPage(1)
               }}
               aria-label={t('sortBy')}
+              className="w-full sm:w-48"
             >
               <NativeSelectOption value="submitted_at">{t('sortSubmitted')}</NativeSelectOption>
               <NativeSelectOption value="final_score">{t('sortScore')}</NativeSelectOption>
@@ -416,7 +419,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         <Button
           type="button"
           variant="ghost"
-          className="flex h-auto w-full items-center justify-between p-5 text-left hover:bg-transparent"
+          className="flex h-auto w-full items-center justify-between gap-3 p-5 text-left whitespace-normal hover:bg-transparent"
           onClick={() => setAnalyticsExpanded(value => !value)}
         >
           <h3 className="text-sm font-semibold">{t('itemAnalyticsTitle')}</h3>
