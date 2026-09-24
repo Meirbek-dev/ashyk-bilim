@@ -7,7 +7,7 @@
 //! check and connect), redirects are followed by hand with the same check,
 //! the whole thing has a 5 s deadline and the body is cut at 1 MiB.
 
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::LazyLock;
 use std::time::Duration;
 
@@ -216,14 +216,29 @@ fn is_public(ip: IpAddr) -> bool {
             if let Some(v4) = v6.to_ipv4_mapped() {
                 return is_public(IpAddr::V4(v4));
             }
-            let first = v6.segments()[0];
+            let seg = v6.segments();
+            let first = seg[0];
+            let embedded = |hi: u16, lo: u16| {
+                let [a, b] = hi.to_be_bytes();
+                let [c, d] = lo.to_be_bytes();
+                Ipv4Addr::new(a, b, c, d)
+            };
+            // UX-191: NAT64 64:ff9b::/96 and 6to4 2002::/16 route to the
+            // IPv4 address they embed; NAT64 local-use 64:ff9b:1::/48 is
+            // never global.
+            if first == 0x64 && seg[1] == 0xff9b {
+                return seg[2..6] == [0; 4] && is_public(IpAddr::V4(embedded(seg[6], seg[7])));
+            }
+            if first == 0x2002 {
+                return is_public(IpAddr::V4(embedded(seg[1], seg[2])));
+            }
             !(v6.is_loopback()
                 || v6.is_unspecified()
                 || v6.is_multicast()
                 // unique local fc00::/7, link-local fe80::/10, documentation 2001:db8::/32
                 || (first & 0xfe00) == 0xfc00
                 || (first & 0xffc0) == 0xfe80
-                || (first == 0x2001 && v6.segments()[1] == 0x0db8))
+                || (first == 0x2001 && seg[1] == 0x0db8))
         }
     }
 }
@@ -386,11 +401,21 @@ mod tests {
             "fd00::1",
             "fe80::1",
             "::ffff:10.0.0.1",
+            "64:ff9b::a00:1",
+            "64:ff9b::7f00:1",
+            "64:ff9b:1::5db8:d822",
+            "2002:a00:1::",
+            "2002:c0a8:101::1",
         ] {
             let ip: IpAddr = ip.parse().unwrap_or_else(|_| unreachable!());
             assert!(!is_public(ip), "{ip}");
         }
-        for ip in ["93.184.216.34", "2606:2800:220:1:248:1893:25c8:1946"] {
+        for ip in [
+            "93.184.216.34",
+            "2606:2800:220:1:248:1893:25c8:1946",
+            "64:ff9b::5db8:d822",
+            "2002:5db8:d822::1",
+        ] {
             let ip: IpAddr = ip.parse().unwrap_or_else(|_| unreachable!());
             assert!(is_public(ip), "{ip}");
         }

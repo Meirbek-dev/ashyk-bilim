@@ -86,7 +86,7 @@ export function DashBreadcrumbs({ type, last_breadcrumb }: DashBreadcrumbsProps)
             <>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="first-letter:uppercase">{last_breadcrumb}</BreadcrumbPage>
+                <BreadcrumbPage>{last_breadcrumb}</BreadcrumbPage>
               </BreadcrumbItem>
             </>
           ) : null}
@@ -129,7 +129,7 @@ export function CourseBreadcrumbs({ course, activity }: CourseBreadcrumbsProps) 
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="first-letter:uppercase">{activity.name}</BreadcrumbPage>
+            <BreadcrumbPage>{activity.name}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
