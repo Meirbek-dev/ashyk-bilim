@@ -373,6 +373,58 @@ impl AnalyticsContext {
         )
     }
 
+    /// The one learner set every learner figure counts (UX-150, BUG-250,
+    /// BUG-266/267): a current member of the course — a trail run, what
+    /// `learner-state.enrolled` reads — inside the cohort filter. Progress
+    /// rows, submissions and certificates survive a leave; read them through
+    /// the `member_*` views so numerators and denominators share this set.
+    pub fn counted<'a>(
+        &self,
+        cohort: Option<&'a HashSet<UserId>>,
+    ) -> impl Fn(CourseId, UserId) -> bool + 'a {
+        let members: HashSet<SnapshotKey> = self
+            .trail_runs
+            .iter()
+            .map(|r| (r.course_id, r.user_id))
+            .collect();
+        move |course_id, user_id| {
+            members.contains(&(course_id, user_id)) && allowed(user_id, cohort)
+        }
+    }
+
+    /// Progress rows of current members ([`Self::counted`]).
+    pub fn member_progress<'a>(
+        &'a self,
+        cohort: Option<&'a HashSet<UserId>>,
+    ) -> impl Iterator<Item = &'a ProgressInfoRow> + 'a {
+        let counted = self.counted(cohort);
+        self.activity_progress
+            .iter()
+            .filter(move |p| counted(p.course_id, p.user_id))
+    }
+
+    /// Submissions of current members ([`Self::counted`]).
+    pub fn member_submissions<'a>(
+        &'a self,
+        cohort: Option<&'a HashSet<UserId>>,
+    ) -> impl Iterator<Item = &'a SubmissionInfoRow> + 'a {
+        let counted = self.counted(cohort);
+        self.submissions
+            .iter()
+            .filter(move |s| counted(s.course_id, s.user_id))
+    }
+
+    /// Certificates of current members ([`Self::counted`]).
+    pub fn member_certificates<'a>(
+        &'a self,
+        cohort: Option<&'a HashSet<UserId>>,
+    ) -> impl Iterator<Item = &'a CertificateInfoRow> + 'a {
+        let counted = self.counted(cohort);
+        self.certificates
+            .iter()
+            .filter(move |c| counted(c.course_id, c.user_id))
+    }
+
     /// Cohort names of a user, optionally restricted to the filter set.
     #[must_use]
     pub fn cohort_names_for_user(
@@ -501,19 +553,9 @@ pub fn build_activity_events(
     ctx: &AnalyticsContext,
     allowed_users: Option<&HashSet<UserId>>,
 ) -> Vec<ActivityEvent> {
-    let members: HashSet<SnapshotKey> = ctx
-        .trail_runs
-        .iter()
-        .map(|r| (r.course_id, r.user_id))
-        .collect();
-    let counted = |course_id: CourseId, user_id: UserId| {
-        members.contains(&(course_id, user_id)) && allowed(user_id, allowed_users)
-    };
+    let counted = ctx.counted(allowed_users);
     let mut events = Vec::new();
-    for p in &ctx.activity_progress {
-        if !counted(p.course_id, p.user_id) {
-            continue;
-        }
+    for p in ctx.member_progress(allowed_users) {
         let Some(ts) = p
             .last_activity_at
             .or(p.submitted_at)
@@ -532,10 +574,7 @@ pub fn build_activity_events(
             activity_id: Some(p.activity_id),
         });
     }
-    for s in &ctx.submissions {
-        if !counted(s.course_id, s.user_id) {
-            continue;
-        }
+    for s in ctx.member_submissions(allowed_users) {
         let Some(assessment) = ctx.assessment(s.assessment_id) else {
             continue;
         };

@@ -344,8 +344,7 @@ pub fn build_course_detail(
         .collect::<HashSet<_>>()
         .len();
     let certificates = ctx
-        .certificates
-        .iter()
+        .member_certificates(allowed.as_ref())
         .filter(|c| c.course_id == course_id)
         .count();
     let ungraded = ctx
@@ -355,16 +354,11 @@ pub fn build_course_detail(
         .filter(|s| allowed.as_ref().is_none_or(|set| set.contains(&s.user_id)))
         .count();
 
-    // Completions per activity / chapter under the cohort filter.
+    // Completions per activity / chapter of the members counted above.
     let mut completion_by_activity: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();
     let mut chapter_counts: HashMap<ChapterId, HashSet<UserId>> = HashMap::new();
-    for p in &ctx.activity_progress {
-        if p.course_id != course_id
-            || allowed
-                .as_ref()
-                .is_some_and(|set| !set.contains(&p.user_id))
-            || !progress_completed(p)
-        {
+    for p in ctx.member_progress(allowed.as_ref()) {
+        if p.course_id != course_id || !progress_completed(p) {
             continue;
         }
         completion_by_activity

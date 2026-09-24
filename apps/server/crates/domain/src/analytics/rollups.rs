@@ -131,8 +131,7 @@ pub fn teacher_metrics(
         // The legacy column was named `_28d` but counted every certificate;
         // v2 honours the name.
         certificates_issued_28d: i32_of(
-            ctx.certificates
-                .iter()
+            ctx.member_certificates(None)
                 .filter(|c| course_ids.contains(&c.course_id) && c.created_at >= current_start)
                 .count(),
         ),
@@ -154,9 +153,10 @@ pub fn engagement_rows(
         }
     }
     let mut completed: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();
+    // Members only, as `events` (BUG-266): a leaver's completions would
+    // otherwise outnumber the starts.
     for p in ctx
-        .activity_progress
-        .iter()
+        .member_progress(None)
         .filter(|p| p.course_id == course_id)
     {
         if progress_completed(p) {
@@ -288,8 +288,7 @@ pub async fn run_rollup(pool: &PgPool, date: &str) -> Result<RollupCounts> {
                 at_risk_learners: i32::try_from(row.at_risk_learners).unwrap_or(i32::MAX),
                 ungraded_submissions: i32::try_from(row.ungraded_submissions).unwrap_or(i32::MAX),
                 certificates_issued: i32_of(
-                    ctx.certificates
-                        .iter()
+                    ctx.member_certificates(None)
                         .filter(|c| c.course_id == row.course_id)
                         .count(),
                 ),
@@ -389,9 +388,10 @@ mod tests {
     use std::collections::{BTreeMap, HashSet};
 
     use ab_core::assessments::ActivityProgressState;
-    use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
+    use ab_core::id::{ActivityId, ChapterId, CourseId, TrailRunId, UserId};
     use ab_db::analytics::{
         ActivityInfoRow, CertificateInfoRow, ChapterInfoRow, CourseInfoRow, ProgressInfoRow,
+        TrailRunInfoRow,
     };
 
     use super::super::context::{ActivityEvent, AnalyticsContext, EventSource, ProgressSnapshot};
@@ -505,6 +505,14 @@ mod tests {
             progress(course, a1, u3, true),
             progress(course, a2, u3, true),
         ];
+        ctx.trail_runs = [u1, u2, u3]
+            .into_iter()
+            .map(|user_id| TrailRunInfoRow {
+                id: TrailRunId::new(),
+                course_id: course,
+                user_id,
+            })
+            .collect();
         ctx.certificates.push(CertificateInfoRow {
             course_id: course,
             user_id: u1,
