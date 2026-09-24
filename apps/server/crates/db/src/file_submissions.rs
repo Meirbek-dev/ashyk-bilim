@@ -296,6 +296,8 @@ pub struct AttemptRow {
     pub rubric_scores: serde_json::Value,
     pub graded_by: Option<UserId>,
     pub version: i64,
+    /// A staff preview (UX-182).
+    pub preview: bool,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -352,7 +354,7 @@ pub async fn get_attempt(pool: &PgPool, id: FileAttemptId) -> Result<Option<Atte
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
-                  graded_by AS "graded_by: UserId", version,
+                  graded_by AS "graded_by: UserId", version, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM file_submission_attempts WHERE id = $1"#,
@@ -379,7 +381,7 @@ pub async fn open_attempt(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
-                  graded_by AS "graded_by: UserId", version,
+                  graded_by AS "graded_by: UserId", version, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM file_submission_attempts
@@ -412,7 +414,7 @@ pub async fn list_user_attempts<'e>(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
-                  graded_by AS "graded_by: UserId", version,
+                  graded_by AS "graded_by: UserId", version, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM file_submission_attempts
@@ -443,7 +445,7 @@ pub async fn list_attempts(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
-                  graded_by AS "graded_by: UserId", version,
+                  graded_by AS "graded_by: UserId", version, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM file_submission_attempts
@@ -456,17 +458,21 @@ pub async fn list_attempts(
     Ok(rows)
 }
 
-/// Attempts that count against the cap (everything past draft).
+/// Attempts past draft. `include_preview: false` is the learner's cap —
+/// staff previews never count toward it (BUG-285).
 pub async fn count_completed_attempts(
     pool: &PgPool,
     file_submission_id: FileSubmissionId,
     user_id: UserId,
+    include_preview: bool,
 ) -> Result<i64> {
     let count = sqlx::query_scalar!(
         r#"SELECT count(*) AS "count!" FROM file_submission_attempts
-           WHERE file_submission_id = $1 AND user_id = $2 AND status <> 'draft'"#,
+           WHERE file_submission_id = $1 AND user_id = $2 AND status <> 'draft'
+             AND (NOT preview OR $3)"#,
         file_submission_id.0,
-        user_id.0
+        user_id.0,
+        include_preview
     )
     .fetch_one(pool)
     .await?;

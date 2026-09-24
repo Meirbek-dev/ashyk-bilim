@@ -577,14 +577,25 @@ impl AssessmentsService {
             Self::effective_policy_for(&self.pool, &assessment, actor.user_id, teacher_preview)
                 .await?;
         let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id).await?;
-        let attempts_used =
-            ab_db::submissions::count_completed_attempts(&self.pool, id, actor.user_id).await?;
+        // BUG-285: a learner's cap never counts previews made while staff.
+        let prior = ab_db::submissions::list_user_submissions(
+            &self.pool,
+            id,
+            actor.user_id,
+            teacher_preview,
+        )
+        .await?;
+        let attempts_used = i64::try_from(
+            prior
+                .iter()
+                .filter(|s| s.status != ab_core::assessments::SubmissionStatus::Draft)
+                .count(),
+        )
+        .unwrap_or(i64::MAX);
         // A returned attempt asks for a revision: the cap does not apply.
-        let revision_requested =
-            ab_db::submissions::list_user_submissions(&self.pool, id, actor.user_id, true)
-                .await?
-                .first()
-                .is_some_and(|s| s.status == ab_core::assessments::SubmissionStatus::Returned);
+        let revision_requested = prior
+            .first()
+            .is_some_and(|s| s.status == ab_core::assessments::SubmissionStatus::Returned);
 
         // Lifecycle reasons need no branch here: a non-preview caller only
         // reaches this point for a published assessment (404 above).

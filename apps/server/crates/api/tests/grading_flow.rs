@@ -1386,6 +1386,80 @@ async fn override_waiver_settles_late_work(pool: PgPool) {
     assert_eq!(published.json()["final_score"], 100.0);
 }
 
+/// BUG-285: previews a maintainer made never count once they are a learner
+/// — not toward the cap, not in the attempt number, not in their own list.
+#[sqlx::test(migrations = "../../migrations")]
+async fn previews_never_count_after_a_role_change(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2 }),
+    )
+    .await;
+    let maint_id = app
+        .create_user("maint", "maint@example.com", &["instructor"])
+        .await;
+    let maint = app
+        .mint_session_for(
+            maint_id,
+            &[
+                "course:read:all",
+                "assessment:*:own",
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+            ],
+        )
+        .await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": maint.user_id, "role": "maintainer" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    // Three previews past a cap of two (the submit limit is 3 / 10 s).
+    for _ in 0..3 {
+        submit_attempt(&app, &maint, &id, &choice_id, &essay_id).await;
+    }
+    let demoted = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors/{}", maint.user_id),
+            &serde_json::json!({ "status": "inactive" }),
+        )
+        .await;
+    assert_eq!(demoted.status, StatusCode::OK, "{}", demoted.text());
+    let state = app
+        .get_as(&maint, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(
+        state.json()["is_teacher_preview"],
+        false,
+        "{}",
+        state.text()
+    );
+    assert_eq!(state.json()["can_start"], true, "{}", state.text());
+    assert_eq!(state.json()["attempts_remaining"], 2);
+    let mine = app
+        .get_as(&maint, &format!("/api/v2/assessments/{id}/submissions/me"))
+        .await;
+    assert_eq!(mine.json().as_array().unwrap().len(), 0, "{}", mine.text());
+    let draft = app
+        .post_as(
+            &maint,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    assert_eq!(draft.json()["attempt_number"], 1);
+}
+
 /// BUG-283: an extension over an expired override applies — the expiry is
 /// cleared, and the expired grant's extra attempts are not resurrected.
 #[sqlx::test(migrations = "../../migrations")]

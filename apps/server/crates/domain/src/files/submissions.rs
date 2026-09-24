@@ -364,20 +364,22 @@ impl FileSubmissionsService {
 
     async fn view(
         &self,
-        actor: Option<&Actor>,
+        viewer: Option<(&Actor, bool)>,
         row: FileSubmissionRow,
         disabled_reasons: Vec<DisabledReason>,
     ) -> Result<FileSubmission> {
         let activity = ab_db::catalog::get_activity(&self.pool, row.activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
-        let attempts = match actor {
-            Some(actor) => {
+        // `viewer`: the caller and whether they are staff — a learner's
+        // list hides previews made while staff (BUG-285).
+        let attempts = match viewer {
+            Some((actor, is_author)) => {
                 let rows = ab_db::file_submissions::list_user_attempts(
                     &self.pool,
                     row.id,
                     actor.user_id,
-                    true,
+                    is_author,
                 )
                 .await?;
                 self.attempts_with_files(rows, false, true).await?
@@ -525,7 +527,8 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         let course = self.require_read(actor, &row).await?;
         let reasons = self.disabled_reasons(actor, &course, &row).await?;
-        self.view(Some(actor), row, reasons).await
+        let viewer = (actor, Self::is_author(actor, &course));
+        self.view(Some(viewer), row, reasons).await
     }
 
     pub async fn get_by_activity(
@@ -538,7 +541,8 @@ impl FileSubmissionsService {
             .ok_or_else(|| Error::not_found("file submission"))?;
         let course = self.require_read(actor, &row).await?;
         let reasons = self.disabled_reasons(actor, &course, &row).await?;
-        self.view(Some(actor), row, reasons).await
+        let viewer = (actor, Self::is_author(actor, &course));
+        self.view(Some(viewer), row, reasons).await
     }
 
     /// Partial update (authors); archived activities are read-only.
@@ -756,8 +760,10 @@ impl FileSubmissionsService {
         preview: bool,
     ) -> Result<AttemptRow> {
         let user_id = actor.user_id;
+        // BUG-285: a learner's cap and numbering never count previews.
         let completed =
-            ab_db::file_submissions::count_completed_attempts(&self.pool, row.id, user_id).await?;
+            ab_db::file_submissions::count_completed_attempts(&self.pool, row.id, user_id, preview)
+                .await?;
         if !preview
             && let Some(max) = row.max_attempts
             && completed >= i64::from(max)
@@ -1004,9 +1010,10 @@ impl FileSubmissionsService {
             return Err(files_required());
         }
         let now = now_unix();
-        let is_late = row.due_at.is_some_and(|due| now > due);
-        // A preview's verdict is its files — no late penalty (BUG-278 rule).
-        let penalty = if is_author {
+        // A preview's verdict is its files — never late (BUG-278/284 rule);
+        // the attempt's own flag decides (BUG-285).
+        let is_late = !attempt.preview && row.due_at.is_some_and(|due| now > due);
+        let penalty = if attempt.preview {
             0.0
         } else {
             late_penalty_pct(late_policy_of(&row), row.due_at, now, row.allow_late)
@@ -1036,8 +1043,10 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_visible(&row, is_author).await?;
-        let rows = ab_db::file_submissions::list_user_attempts(&self.pool, id, actor.user_id, true)
-            .await?;
+        // BUG-285: a learner's list hides previews made while staff.
+        let rows =
+            ab_db::file_submissions::list_user_attempts(&self.pool, id, actor.user_id, is_author)
+                .await?;
         self.attempts_with_files(rows, false, true).await
     }
 

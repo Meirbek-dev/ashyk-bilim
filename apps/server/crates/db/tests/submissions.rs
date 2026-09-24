@@ -136,12 +136,11 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     assert!(row.submitted_at.is_some() && row.graded_at.is_some());
 
     // The draft slot is free again; the next attempt counts from the first.
-    assert_eq!(
-        submissions::count_completed_attempts(&pool, assessment, user)
-            .await
-            .unwrap(),
-        1
-    );
+    let prior = submissions::list_user_submissions(&pool, assessment, user, false)
+        .await
+        .unwrap();
+    assert_eq!(prior.len(), 1);
+    assert_ne!(prior[0].status, SubmissionStatus::Draft);
     assert!(
         submissions::insert_draft(&pool, assessment, course, user, 2, 1, 1, false)
             .await

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND user_id = $2 AND status IN ('draft', 'returned')\n           ORDER BY attempt_number DESC LIMIT 1",
+  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version, preview,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND user_id = $2 AND (NOT preview OR $3)\n           ORDER BY attempt_number DESC",
   "describe": {
     "columns": [
       {
@@ -177,12 +177,23 @@
       },
       {
         "ordinal": 17,
+        "name": "preview",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "preview"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -191,7 +202,8 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid"
+        "Uuid",
+        "Bool"
       ]
     },
     "nullable": [
@@ -212,9 +224,10 @@
       false,
       true,
       false,
+      false,
       null,
       null
     ]
   },
-  "hash": "62a88bd6b3c875fd2e76c34a1d8b2f46286f2f35c5e6552fd2b529018fb893ae"
+  "hash": "b89ecc0aa34240cb11cce5b914a5cdd15e82102be14d1dbc5ee756d2b929af1c"
 }

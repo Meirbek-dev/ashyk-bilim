@@ -249,23 +249,6 @@ pub async fn list_user_submissions<'e>(
     Ok(rows)
 }
 
-/// Attempts that left the draft state (the attempt-limit counter).
-pub async fn count_completed_attempts(
-    pool: &PgPool,
-    assessment_id: AssessmentId,
-    user_id: UserId,
-) -> Result<i64> {
-    let count = sqlx::query_scalar!(
-        r#"SELECT count(*) AS "count!" FROM submissions
-           WHERE assessment_id = $1 AND user_id = $2 AND status <> 'draft'"#,
-        assessment_id.0,
-        user_id.0
-    )
-    .fetch_one(pool)
-    .await?;
-    Ok(count)
-}
-
 /// Learner draft save under optimistic lock (`draft_version`). `false` =
 /// version mismatch or not a draft any more.
 pub async fn save_draft_answers(

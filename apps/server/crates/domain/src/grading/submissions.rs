@@ -303,7 +303,7 @@ struct Context {
     assessment: Assessment,
     items: Vec<Item>,
     effective: EffectivePolicy,
-    /// The caller is course staff: their work is a preview (UX-182).
+    /// The attempt is a staff preview (UX-182) — its row flag (BUG-285).
     preview: bool,
 }
 
@@ -370,12 +370,27 @@ impl SubmissionsService {
             .assessments
             .get_for_grading(actor, submission.assessment_id)
             .await?;
+        // BUG-285: the attempt's own preview flag decides, as in the timer
+        // sweep (BUG-279) — a role change mid-attempt changes neither its
+        // policy nor whether it counts.
+        let preview = submission.preview;
+        let effective = if preview == state.is_teacher_preview {
+            state.effective
+        } else {
+            AssessmentsService::effective_policy_for(
+                &self.pool,
+                &detail.assessment,
+                submission.user_id,
+                preview,
+            )
+            .await?
+        };
         Ok(Context {
             submission,
             assessment: detail.assessment,
             items: detail.items,
-            effective: state.effective,
-            preview: state.is_teacher_preview,
+            effective,
+            preview,
         })
     }
 
@@ -447,7 +462,8 @@ impl SubmissionsService {
         ))
     }
 
-    /// Every attempt, newest first.
+    /// Every attempt, newest first. A learner's list hides the previews
+    /// made while they were staff (BUG-285).
     pub async fn my_submissions(
         &self,
         actor: &Actor,
@@ -461,7 +477,7 @@ impl SubmissionsService {
             &self.pool,
             assessment_id,
             actor.user_id,
-            true,
+            state.is_teacher_preview,
         )
         .await?;
         let mut out = Vec::with_capacity(rows.len());
@@ -533,11 +549,12 @@ impl SubmissionsService {
         let (id, created) = if let Some(id) = resynced {
             (id, false)
         } else {
+            // BUG-285: a learner's cap and numbering never count previews.
             let prior = ab_db::submissions::list_user_submissions(
                 &mut *tx,
                 assessment_id,
                 actor.user_id,
-                true,
+                state.is_teacher_preview,
             )
             .await?;
             if cap_reached(&prior, state.effective.max_attempts) {

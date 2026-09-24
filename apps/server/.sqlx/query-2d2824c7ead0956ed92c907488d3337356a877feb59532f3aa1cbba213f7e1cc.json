@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT count(*) AS \"count!\" FROM submissions\n           WHERE assessment_id = $1 AND user_id = $2 AND status <> 'draft'",
+  "query": "SELECT count(*) AS \"count!\" FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND user_id = $2 AND status <> 'draft'\n             AND (NOT preview OR $3)",
   "describe": {
     "columns": [
       {
@@ -13,12 +13,13 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid"
+        "Uuid",
+        "Bool"
       ]
     },
     "nullable": [
       null
     ]
   },
-  "hash": "4452c7832ecbe8c99ee4bdcfc768c60afc0e283ff3fd5bfb5a54d9ddd36cd968"
+  "hash": "2d2824c7ead0956ed92c907488d3337356a877feb59532f3aa1cbba213f7e1cc"
 }
