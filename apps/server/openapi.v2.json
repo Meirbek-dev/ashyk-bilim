@@ -21175,7 +21175,8 @@
           "status",
           "attempt_number",
           "is_late",
-          "version"
+          "version",
+          "enrolled"
         ],
         "properties": {
           "attempt_number": {
@@ -21188,6 +21189,10 @@
               "null"
             ],
             "format": "double"
+          },
+          "enrolled": {
+            "type": "boolean",
+            "description": "The learner is a course member (trail run); a leaver's row is not a\ntarget for per-learner actions such as a deadline extension (UX-167)."
           },
           "final_score": {
             "type": [

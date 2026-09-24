@@ -12,6 +12,11 @@ export const ReviewPage = zod.object({
     zod.object({
       attempt_number: zod.int(),
       auto_score: zod.number().nullish(),
+      enrolled: zod
+        .boolean()
+        .describe(
+          "The learner is a course member (trail run); a leaver's row is not a\ntarget for per-learner actions such as a deadline extension (UX-167).",
+        ),
       final_score: zod.number().nullish(),
       graded_at_unix: zod.int().nullish(),
       id: zod.uuid(),

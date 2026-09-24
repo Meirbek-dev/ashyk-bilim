@@ -8797,6 +8797,10 @@ expression: json
               "null"
             ]
           },
+          "enrolled": {
+            "description": "The learner is a course member (trail run); a leaver's row is not a\ntarget for per-learner actions such as a deadline extension (UX-167).",
+            "type": "boolean"
+          },
           "final_score": {
             "format": "double",
             "type": [
@@ -8842,7 +8846,8 @@ expression: json
           "status",
           "attempt_number",
           "is_late",
-          "version"
+          "version",
+          "enrolled"
         ],
         "type": "object"
       },
