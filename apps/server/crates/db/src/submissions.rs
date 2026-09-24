@@ -593,8 +593,9 @@ impl GradebookCellRow {
     }
 }
 
-/// One gradebook page of the member × graded-activity matrix, keyset on
-/// (learner, activity). Members are the course's trail runs (the UX-150
+/// One gradebook page of the member × graded-activity matrix.
+///
+/// Keyset on (learner, activity). Members are the course's trail runs (the UX-150
 /// enrolment predicate): a member without attempts has a row, a leaver has
 /// none (UX-169).
 pub async fn gradebook_keys(
