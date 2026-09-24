@@ -84,8 +84,11 @@ pub fn normalize_verify_code(raw: &str) -> String {
 }
 
 /// Issue every configured certificate of the course to the learner when
-/// their course progress says so. Returns how many were newly issued.
-pub async fn issue_for_completion(
+/// their course progress says so and they are a member. Returns how many
+/// were newly issued. Call it only under the member's trail lock (the
+/// projection's `recalculate_course_on`), so a leave lands wholly before or
+/// after it (BUG-276).
+pub(crate) async fn issue_for_completion(
     conn: &mut PgConnection,
     course_id: CourseId,
     user_id: UserId,
@@ -93,7 +96,7 @@ pub async fn issue_for_completion(
     let eligible = ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
         .await?
         .is_some_and(|p| p.certificate_eligible);
-    if !eligible {
+    if !eligible || !ab_db::progress::has_trail_run(&mut *conn, course_id, user_id).await? {
         return Ok(0);
     }
     let mut issued = 0;
@@ -279,10 +282,11 @@ impl CertificationsService {
         {
             return Err(Error::forbidden("no access to this course"));
         }
+        // Issues under the member's trail lock; a non-member gets nothing
+        // (BUG-276).
         self.projector
             .recalculate_course(course_id, actor.user_id)
             .await?;
-        issue_for_completion(&mut *self.pool.acquire().await?, course_id, actor.user_id).await?;
         let rows = ab_db::certifications::list_user_certificates_for_course(
             &self.pool,
             course_id,
