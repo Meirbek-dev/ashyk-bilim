@@ -340,7 +340,8 @@ impl ProgressProjector {
         user_id: UserId,
         enrol: bool,
     ) -> Result<bool> {
-        let Some(mut tx) = super::trail::lock_member(&self.pool, user_id, course_id, enrol).await?
+        let Some((mut tx, joined)) =
+            super::trail::lock_member_joined(&self.pool, user_id, course_id, enrol).await?
         else {
             return Ok(false);
         };
@@ -358,10 +359,19 @@ impl ProgressProjector {
                 hooks.activity_completed = Some((course_id, activity_id, user_id));
             }
         }
-        let course = self
-            .recalculate_course_on(&mut tx, course_id, user_id)
-            .await?;
-        hooks.course_completed = course_completed(&course);
+        if joined {
+            // BUG-289: a submission that (re)creates the run re-projects the
+            // whole member — grades published while they were away too.
+            let (_, rejoin) = self
+                .reproject_member_on(&mut tx, course_id, user_id)
+                .await?;
+            hooks = hooks.and(rejoin);
+        } else {
+            let course = self
+                .recalculate_course_on(&mut tx, course_id, user_id)
+                .await?;
+            hooks.course_completed = course_completed(&course);
+        }
         tx.commit().await?;
         hooks.fire(&self.pool).await;
         Ok(true)

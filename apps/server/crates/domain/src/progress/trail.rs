@@ -104,14 +104,31 @@ pub(crate) async fn lock_member(
     course_id: CourseId,
     enrol: bool,
 ) -> Result<Option<Transaction<'static, Postgres>>> {
+    Ok(lock_member_joined(pool, user_id, course_id, enrol)
+        .await?
+        .map(|(tx, _)| tx))
+}
+
+/// [`lock_member`], plus whether this call created the run (a (re)join):
+/// the caller then re-projects the whole member on the returned
+/// transaction (BUG-289) — `ProgressProjector::project` does.
+pub(crate) async fn lock_member_joined(
+    pool: &PgPool,
+    user_id: UserId,
+    course_id: CourseId,
+    enrol: bool,
+) -> Result<Option<(Transaction<'static, Postgres>, bool)>> {
     let mut tx = lock_trail_run(pool, user_id, course_id, MEMBER_WAIT).await?;
     if enrol && !ab_db::progress::is_course_staff(&mut *tx, course_id, user_id).await? {
         let trail = ab_db::progress::ensure_trail(&mut tx, user_id).await?;
-        ab_db::progress::ensure_trail_run(&mut tx, trail.id, course_id, user_id).await?;
-    } else if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
+        let (_, joined) =
+            ab_db::progress::ensure_trail_run(&mut tx, trail.id, course_id, user_id).await?;
+        return Ok(Some((tx, joined)));
+    }
+    if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
         return Ok(None);
     }
-    Ok(Some(tx))
+    Ok(Some((tx, false)))
 }
 
 /// A 404 from the course behind an activity reads as the activity's own

@@ -1526,3 +1526,66 @@ async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
         back.text()
     );
 }
+
+/// BUG-289: a learner who rejoins by submitting another quiz (no
+/// `POST trail/courses`) picks up the grade published while they were away.
+#[sqlx::test(migrations = "../../migrations")]
+async fn rejoin_by_submission_reprojects_the_member(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Rejoin by quiz").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let (essay, essay_activity, essay_item) = essay_quiz(&app, &teacher, &chapter_id).await;
+    let (q2, _, q2_item) = quiz(&app, &teacher, &chapter_id).await;
+    let alice = learner(&app, "alice").await;
+    graded_while_away(&app, &teacher, &alice, &course_id, &essay, &essay_item).await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{q2}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { q2_item: { "kind": "choice", "selected": ["a"] } } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await
+        .json();
+    assert_eq!(
+        activity(&state, &essay_activity)["complete"],
+        true,
+        "{state}"
+    );
+    assert_eq!(state["progress"]["completed_required_count"], 2, "{state}");
+    assert_eq!(state["progress"]["total_required_count"], 2, "{state}");
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/certificates/me"),
+        )
+        .await;
+    assert_eq!(
+        mine.json().as_array().map(Vec::len),
+        Some(1),
+        "{}",
+        mine.text()
+    );
+}
