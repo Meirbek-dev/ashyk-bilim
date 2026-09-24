@@ -92,9 +92,10 @@ pub async fn add_reference<'e>(db: impl sqlx::PgExecutor<'e>, id: Uuid) -> Resul
     Ok(updated.rows_affected() == 1)
 }
 
-/// Row-lock uploads in key order — the one order every multi-upload
-/// reference move takes (BUG-242/258), so two writers sharing uploads never
-/// lock them in opposite orders. `NO KEY UPDATE`: what the count UPDATEs
+/// Row-lock uploads in key order.
+///
+/// The one order every multi-upload reference move takes (BUG-242/258), so
+/// two writers sharing uploads never lock them in opposite orders. `NO KEY UPDATE`: what the count UPDATEs
 /// take anyway; FK checks from file rows are not blocked.
 pub async fn lock_in_key_order(conn: &mut sqlx::PgConnection, ids: &[Uuid]) -> Result<()> {
     sqlx::query!(

@@ -1336,7 +1336,9 @@ impl AssessmentsService {
                 .body
                 .as_ref()
                 .is_some_and(|b| b.to_stored() != item.body.to_stored())
-                || changes.max_score.is_some_and(|s| s != item.max_score)
+                || changes
+                    .max_score
+                    .is_some_and(|s| s.to_bits() != item.max_score.to_bits())
         });
         if content_changed {
             self.ensure_content_unlocked(&assessment).await?;

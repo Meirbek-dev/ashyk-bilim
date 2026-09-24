@@ -713,10 +713,11 @@ pub async fn replace_files(
     Ok(())
 }
 
-/// Delete the submitted-file rows under locked activities, releasing one
-/// upload reference per row the DELETE returned (BUG-259: the activity →
-/// file-submission → attempt cascade drops the rows, not the counts).
-/// Lock order activity (caller) → file submissions → attempts → uploads by
+/// Delete the submitted-file rows under locked activities.
+///
+/// One upload reference is released per row the DELETE returned (BUG-259:
+/// the activity → file-submission → attempt cascade drops the rows, not the
+/// counts). Lock order activity (caller) → file submissions → attempts → uploads by
 /// key: the file-submission row lock keeps new attempts out and the
 /// attempt locks keep a racing draft swap (`touch_attempt`) out of the set.
 pub async fn delete_files_releasing(
