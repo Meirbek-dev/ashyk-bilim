@@ -48,6 +48,13 @@ describe('trail leaderboard viewer rank (UX-185)', () => {
     expect(screen.getByText('#9', { selector: '.font-semibold' })).toBeInTheDocument()
   })
 
+  it('names the next rank by display name, as the rows do (UX-197)', () => {
+    renderBoard({ entries: rows(6), currentUserId: 'u5', userRank: 6 })
+    const line = (name: string) => t.xpToNextRank.replace('{xp}', '1').replace('{username}', name)
+    expect(screen.getByText(line('U4'))).toBeInTheDocument()
+    expect(screen.queryByText(line('u4'))).not.toBeInTheDocument()
+  })
+
   it('offers «Показать все» on /trail when the board has more rows than shown', () => {
     render(
       <NextIntlClientProvider locale="ru" messages={ruMessages}>

@@ -32,12 +32,12 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
   const userEntry = entries[userIndex]
 
   let displayEntries: LeaderboardEntry[],
-    rankContext: null | { rank: number; xpToNext: number; nextRankUsername: string | null }
+    rankContext: null | { rank: number; xpToNext: number; nextRankName: string | null }
 
   if (!userEntry || !userRank || showFull) {
     displayEntries = entries.slice(0, showFull ? undefined : 10)
     // UX-185: the viewer's row lies beyond the loaded page — still say where they stand.
-    rankContext = !userEntry && userRank ? { rank: userRank, xpToNext: 0, nextRankUsername: null } : null
+    rankContext = !userEntry && userRank ? { rank: userRank, xpToNext: 0, nextRankName: null } : null
   } else {
     const top3 = entries.slice(0, 3)
     const contextStart = Math.max(3, userIndex - 2)
@@ -50,7 +50,8 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
     rankContext = {
       rank: userRank,
       xpToNext,
-      nextRankUsername: nextRankEntry?.username || null,
+      // UX-197: named as the rows name them.
+      nextRankName: nextRankEntry?.display_name || nextRankEntry?.username || null,
     }
   }
 
@@ -81,7 +82,7 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
             <p className="text-muted-foreground mt-0.5 text-xs">
               {t('leaderboard.xpToNextRank', {
                 xp: rankContext.xpToNext.toLocaleString(),
-                username: rankContext.nextRankUsername || '',
+                username: rankContext.nextRankName || '',
               })}
             </p>
           )}
