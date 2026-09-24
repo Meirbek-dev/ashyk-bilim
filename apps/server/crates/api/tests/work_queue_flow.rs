@@ -42,6 +42,7 @@ async fn learner(app: &TestApp, name: &str) -> MintedSession {
             "assessment:submit:assigned",
             "assessment:read:assigned",
             "file:create:own",
+            "trail:submit:assigned",
         ],
     )
     .await
@@ -624,4 +625,45 @@ async fn pending_manual_items_reach_graders_only(pool: PgPool) {
         StatusCode::NOT_FOUND
     );
     assert_eq!(queue(&app, &contrib, "?role=teacher").await["total"], 1);
+}
+
+/// BUG-299: the learner queue lists member courses only — a leaver, or a
+/// learner now on the course's staff, sees no work there; leaving the
+/// staff brings it back.
+#[sqlx::test(migrations = "../../migrations")]
+async fn learner_queue_follows_membership(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (quiz_id, _, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, "Quiz", serde_json::json!({})).await;
+    let roster = format!("/api/v2/courses/{course_id}/contributors");
+    for name in ["alice", "bob"] {
+        let session = learner(&app, name).await;
+        let sub = start_draft(&app, &session, &quiz_id).await;
+        submit(&app, &session, &sub, &choice_id, &essay_id).await;
+        assert_eq!(queue(&app, &session, "").await["total"], 1);
+        if name == "alice" {
+            let left = app
+                .delete_as(&session, &format!("/api/v2/trail/courses/{course_id}"))
+                .await;
+            assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+            assert_eq!(queue(&app, &session, "").await["total"], 0);
+            continue;
+        }
+        let added = app
+            .post_as(
+                &teacher,
+                &roster,
+                &serde_json::json!({ "user_id": session.user_id, "role": "contributor" }),
+            )
+            .await;
+        assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+        assert_eq!(queue(&app, &session, "").await["total"], 0);
+        let removed = app
+            .delete_as(&teacher, &format!("{roster}/{}", session.user_id))
+            .await;
+        assert_eq!(removed.status, StatusCode::NO_CONTENT, "{}", removed.text());
+        assert_eq!(queue(&app, &session, "").await["total"], 1);
+    }
 }

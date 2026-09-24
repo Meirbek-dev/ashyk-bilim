@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT p.id AS \"progress_id: ActivityProgressId\",\n                  p.state AS \"state: ActivityProgressState\",\n                  c.id AS \"course_id: CourseId\", c.name AS course_title,\n                  a.id AS \"activity_id: ActivityId\", a.name AS activity_title,\n                  (extract(epoch FROM p.started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM p.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM p.graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM p.due_at))::bigint AS \"due_at?\",\n                  (extract(epoch FROM p.updated_at))::bigint AS \"updated_at!\"\n           FROM activity_progress p\n           JOIN activities a ON a.id = p.activity_id\n           JOIN courses c ON c.id = p.course_id\n           WHERE p.user_id = $1\n             AND a.published\n             AND p.state IN ('in_progress', 'submitted', 'needs_grading', 'returned',\n                             'passed', 'failed')",
+  "query": "SELECT p.id AS \"progress_id: ActivityProgressId\",\n                  p.state AS \"state: ActivityProgressState\",\n                  c.id AS \"course_id: CourseId\", c.name AS course_title,\n                  a.id AS \"activity_id: ActivityId\", a.name AS activity_title,\n                  (extract(epoch FROM p.started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM p.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM p.graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM p.due_at))::bigint AS \"due_at?\",\n                  (extract(epoch FROM p.updated_at))::bigint AS \"updated_at!\"\n           FROM activity_progress p\n           JOIN activities a ON a.id = p.activity_id\n           JOIN courses c ON c.id = p.course_id\n           WHERE p.user_id = $1\n             AND a.published\n             AND p.state IN ('in_progress', 'submitted', 'needs_grading', 'returned',\n                             'passed', 'failed')\n             AND EXISTS (SELECT 1 FROM trail_runs r\n                         WHERE r.course_id = p.course_id AND r.user_id = p.user_id\n                           AND NOT is_course_staff(r.course_id, r.user_id))",
   "describe": {
     "columns": [
       {
@@ -119,5 +119,5 @@
       null
     ]
   },
-  "hash": "c1b22723406cbee4d9d7f4c9c3898b85a0b0c5471a3b4d112861d5a1cbd18a5a"
+  "hash": "56e9eb21f551c7d19489de8c38ba9b5e2ab161cb18d8ed1a95185ecd7ee3460b"
 }

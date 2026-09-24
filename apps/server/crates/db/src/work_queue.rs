@@ -28,7 +28,9 @@ pub struct LearnerWorkRow {
 }
 
 /// Legacy `_LEARNER_OPEN_STATES`: everything but `not_started`, `graded`
-/// (teacher-only until release) and `completed`.
+/// (teacher-only until release) and `completed`. Member courses only (run ∧
+/// ¬staff, as `has_trail_run`): a leaver's or a staffer's kept rows are not
+/// their work (BUG-299).
 pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<LearnerWorkRow>> {
     let rows = sqlx::query_as!(
         LearnerWorkRow,
@@ -47,7 +49,10 @@ pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<Lea
            WHERE p.user_id = $1
              AND a.published
              AND p.state IN ('in_progress', 'submitted', 'needs_grading', 'returned',
-                             'passed', 'failed')"#,
+                             'passed', 'failed')
+             AND EXISTS (SELECT 1 FROM trail_runs r
+                         WHERE r.course_id = p.course_id AND r.user_id = p.user_id
+                           AND NOT is_course_staff(r.course_id, r.user_id))"#,
         user_id.0
     )
     .fetch_all(pool)
