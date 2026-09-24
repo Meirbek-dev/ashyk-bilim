@@ -43,6 +43,14 @@ impl Subject {
         }
     }
 
+    /// A staff preview (UX-182) — never a grade of record.
+    pub(crate) const fn preview(&self) -> bool {
+        match self {
+            Self::Submission(s) => s.preview,
+            Self::FileAttempt(a) => a.preview,
+        }
+    }
+
     pub(crate) const fn course_id(&self) -> CourseId {
         match self {
             Self::Submission(s) => s.course_id,

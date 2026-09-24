@@ -190,6 +190,11 @@ impl AiService {
         }
         let course = self.courses.get(actor, subject.course_id()).await?;
         policy::require_course_update(actor, &course)?;
+        // BUG-302: a gate is a grader's action — never on the caller's own
+        // counted attempt (BUG-286); their previews stay theirs.
+        if subject.user_id() == actor.user_id && !subject.preview() {
+            return Err(crate::grading::teacher::own_attempt());
+        }
         // BUG-179: one blocking gate per learner and activity — a second one
         // would stack behind the first and outlive it in `latest`.
         let activity_id = self.subject_activity(subject).await?;

@@ -2070,6 +2070,48 @@ async fn ai_refuses_an_open_draft(pool: PgPool) {
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
 }
 
+/// BUG-302: a learner promoted to maintainer may not set a blocking gate on
+/// their own released attempt — a gate is a grader's action (BUG-286).
+#[sqlx::test(migrations = "../../migrations")]
+async fn gate_is_refused_on_the_callers_own_attempt(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let lena_id = app
+        .create_user("lena", "lena@example.com", &["instructor"])
+        .await;
+    let lena = app
+        .mint_session_for(
+            lena_id,
+            &[
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+            ],
+        )
+        .await;
+    let course_id = published_course(&app, &teacher, "Own gate").await;
+    let sub_id = submitted_essay(&app, &teacher, &lena, &course_id).await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": lena.user_id, "role": "maintainer" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let gate = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/ai/remediation/{sub_id}/generate/queue"),
+            &serde_json::json!({ "gate_mode": true }),
+        )
+        .await;
+    assert_eq!(gate.status, StatusCode::FORBIDDEN, "{}", gate.text());
+    assert_eq!(gate.json()["code"], "grade-own-attempt");
+}
+
 /// UX-136: a maintainer queues an analysis, the creator sets them
 /// inactive before the worker runs — the run fails (`AI_ACCESS_REVOKED`),
 /// no analysis is recorded, and the demoted user's run reads answer 404.
