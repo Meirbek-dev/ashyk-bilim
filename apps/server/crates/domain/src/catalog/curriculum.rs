@@ -372,6 +372,7 @@ impl CurriculumService {
         })
     }
 
+    #[allow(clippy::too_many_lines)] // one locked transaction: lifecycle gate, rename, content sync, flags
     pub async fn update_activity(
         &self,
         actor: &Actor,
