@@ -8595,7 +8595,7 @@ expression: json
       },
       "RegisterRequest": {
         "additionalProperties": false,
-        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email, password of\nat least 8 characters.",
+        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].",
         "properties": {
           "email": {
             "type": "string"
@@ -8826,6 +8826,10 @@ expression: json
           "is_late": {
             "type": "boolean"
           },
+          "staff": {
+            "description": "The learner is on the course staff — never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).",
+            "type": "boolean"
+          },
           "status": {
             "$ref": "#/components/schemas/SubmissionStatus"
           },
@@ -8852,7 +8856,8 @@ expression: json
           "attempt_number",
           "is_late",
           "version",
-          "enrolled"
+          "enrolled",
+          "staff"
         ],
         "type": "object"
       },
@@ -11810,7 +11815,7 @@ expression: json
             "type": "boolean"
           },
           "has_password": {
-            "description": "The account has a password to change (`false`: Google-only — no\npassword can be set through the API — or no session involved). UX-188.",
+            "description": "The account has a password to change (`false`: Google-only — no\npassword can be set through the API). UX-188.",
             "type": "boolean"
           },
           "id": {
@@ -22936,7 +22941,17 @@ expression: json
                 }
               }
             },
-            "description": "Time limit expired"
+            "description": "Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, not yours, or a staff preview (never resumed by a learner)"
           },
           "409": {
             "content": {
@@ -23304,7 +23319,17 @@ expression: json
                 }
               }
             },
-            "description": "Attempt cap, time limit, or past due"
+            "description": "Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, not yours, or a staff preview (never resumed by a learner)"
           },
           "409": {
             "content": {

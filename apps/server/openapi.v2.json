@@ -10599,7 +10599,17 @@
             }
           },
           "403": {
-            "description": "Time limit expired",
+            "description": "Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown, not yours, or a staff preview (never resumed by a learner)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10967,7 +10977,17 @@
             }
           },
           "403": {
-            "description": "Attempt cap, time limit, or past due",
+            "description": "Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown, not yours, or a staff preview (never resumed by a learner)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -20978,7 +20998,7 @@
       },
       "RegisterRequest": {
         "type": "object",
-        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email, password of\nat least 8 characters.",
+        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].",
         "required": [
           "username",
           "email",
@@ -21181,7 +21201,8 @@
           "attempt_number",
           "is_late",
           "version",
-          "enrolled"
+          "enrolled",
+          "staff"
         ],
         "properties": {
           "attempt_number": {
@@ -21218,6 +21239,10 @@
           },
           "is_late": {
             "type": "boolean"
+          },
+          "staff": {
+            "type": "boolean",
+            "description": "The learner is on the course staff — never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199)."
           },
           "status": {
             "$ref": "#/components/schemas/SubmissionStatus"
@@ -24206,7 +24231,7 @@
           },
           "has_password": {
             "type": "boolean",
-            "description": "The account has a password to change (`false`: Google-only — no\npassword can be set through the API — or no session involved). UX-188."
+            "description": "The account has a password to change (`false`: Google-only — no\npassword can be set through the API). UX-188."
           },
           "id": {
             "$ref": "#/components/schemas/UserId"
