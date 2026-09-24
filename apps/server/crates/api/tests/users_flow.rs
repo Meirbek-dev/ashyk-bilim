@@ -685,3 +685,59 @@ async fn user_listing_bounds_limit_and_walks_the_cursor(pool: PgPool) {
         .await;
     assert_eq!(ghost.status, StatusCode::NOT_FOUND, "{}", ghost.text());
 }
+
+/// A finalized upload row owned by `user` (the claim reads only the ledger).
+async fn finalized_row(app: &TestApp, user: ab_core::id::UserId, purpose: &str) -> String {
+    let id: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status)
+         VALUES ($1, $2, 'public', $2 || '/' || gen_random_uuid(), 'image/png', 4, 'finalized')
+         RETURNING id",
+    )
+    .bind(user.0)
+    .bind(purpose)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    id.to_string()
+}
+
+/// BUG-255: two concurrent avatar PATCHes each release the key their own
+/// swap replaced — only the avatar that won stays referenced.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_avatar_patches_pin_no_upload(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("racer", "racer@example.com", &["user"])
+        .await;
+    let session = app
+        .mint_session_for(user, &["user:update:own", "file:create:own"])
+        .await;
+    for _ in 0..8 {
+        let a = finalized_row(&app, user, "avatar").await;
+        let b = finalized_row(&app, user, "avatar").await;
+        let patch = |id: String| {
+            let (app, session) = (&app, &session);
+            async move {
+                let res = app
+                    .patch_as(
+                        session,
+                        "/api/v2/users/me",
+                        &serde_json::json!({ "avatar_upload_id": id }),
+                    )
+                    .await;
+                assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+            }
+        };
+        tokio::join!(patch(a), patch(b));
+    }
+    let pinned: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM uploads
+         WHERE referenced_count > 0
+           AND key IS DISTINCT FROM (SELECT avatar_key FROM users WHERE id = $1)",
+    )
+    .bind(user.0)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(pinned, 0, "a replaced avatar stayed referenced");
+}

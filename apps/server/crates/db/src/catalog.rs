@@ -315,16 +315,18 @@ pub async fn update_course<'e>(
 /// Set or clear (`None`) the thumbnail; returns the key it replaced.
 ///
 /// The caller releases exactly that upload (UX-143: two concurrent PATCHes
-/// each released the key they had read, leaking the loser's).
+/// each released the key they had read, leaking the loser's). BUG-255: the
+/// old key is read under the row lock, not from the statement snapshot.
 pub async fn set_course_thumbnail<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: CourseId,
     key: Option<&str>,
 ) -> Result<Option<String>> {
     let row = sqlx::query!(
-        r#"UPDATE courses SET thumbnail_image_key = $2
-           WHERE id = $1
-           RETURNING (SELECT c.thumbnail_image_key FROM courses c WHERE c.id = $1) AS "previous?""#,
+        r#"UPDATE courses c SET thumbnail_image_key = $2
+           FROM (SELECT id, thumbnail_image_key FROM courses WHERE id = $1 FOR UPDATE) old
+           WHERE c.id = old.id
+           RETURNING old.thumbnail_image_key AS "previous?""#,
         id.0,
         key
     )

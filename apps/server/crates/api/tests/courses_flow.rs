@@ -706,3 +706,55 @@ async fn invisible_course_writes_are_404s_and_delete_needs_the_grant(pool: PgPoo
         .await;
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
 }
+
+/// BUG-255: two concurrent thumbnail PATCHes — only the thumbnail that won
+/// stays referenced.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_thumbnail_patches_pin_no_upload(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let id = create_course(&app, &teacher, "Race").await;
+    let path = format!("/api/v2/courses/{id}");
+    for _ in 0..8 {
+        let mut ids = Vec::new();
+        for _ in 0..2 {
+            let upload: uuid::Uuid = sqlx::query_scalar(
+                "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status)
+                 VALUES ($1, 'course-thumbnail', 'public', 'thumb/' || gen_random_uuid(),
+                         'image/png', 4, 'finalized')
+                 RETURNING id",
+            )
+            .bind(teacher.user_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+            ids.push(upload.to_string());
+        }
+        let patch = |upload: String| {
+            let (app, teacher, path) = (&app, &teacher, &path);
+            async move {
+                let res = app
+                    .patch_as(
+                        teacher,
+                        path,
+                        &serde_json::json!({ "thumbnail_upload_id": upload }),
+                    )
+                    .await;
+                assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+            }
+        };
+        let b = ids.pop().unwrap();
+        let a = ids.pop().unwrap();
+        tokio::join!(patch(a), patch(b));
+    }
+    let pinned: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM uploads
+         WHERE referenced_count > 0
+           AND key IS DISTINCT FROM (SELECT thumbnail_image_key FROM courses WHERE id = $1::uuid)",
+    )
+    .bind(&id)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(pinned, 0, "a replaced thumbnail stayed referenced");
+}

@@ -330,22 +330,25 @@ pub async fn insert_auth_audit(
     Ok(())
 }
 
-/// Point the profile at a new avatar object.
 /// Set or clear (`None`) the avatar; returns the key it replaced, which the
-/// caller releases (the `set_course_thumbnail` mechanics, UX-143).
-pub async fn set_avatar_key(
-    pool: &PgPool,
+/// caller releases in the same transaction (the `set_course_thumbnail`
+/// mechanics). BUG-255: the old key is read under the row lock — a
+/// `RETURNING (SELECT …)` reads the statement snapshot, so the second of two
+/// concurrent swaps got the key the first had already released.
+pub async fn set_avatar_key<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     user_id: UserId,
     key: Option<&str>,
 ) -> Result<Option<String>> {
     let row = sqlx::query!(
-        r#"UPDATE users SET avatar_key = $2
-           WHERE id = $1
-           RETURNING (SELECT u.avatar_key FROM users u WHERE u.id = $1) AS "previous?""#,
+        r#"UPDATE users u SET avatar_key = $2
+           FROM (SELECT id, avatar_key FROM users WHERE id = $1 FOR UPDATE) old
+           WHERE u.id = old.id
+           RETURNING old.avatar_key AS "previous?""#,
         user_id.0,
         key
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row.and_then(|r| r.previous))
 }

@@ -91,16 +91,19 @@ impl UsersService {
     }
 
     /// Swap the avatar key and release exactly the key the UPDATE replaced
-    /// (equal to `key` only after a re-claim, which counted it once more).
+    /// (equal to `key` only after a re-claim, which counted it once more),
+    /// in one transaction (BUG-255).
     async fn replace_avatar(&self, actor: &Actor, key: Option<&str>) -> Result<()> {
-        if let Some(old) = ab_db::identity::set_avatar_key(&self.pool, actor.user_id, key).await? {
+        let mut tx = self.pool.begin().await?;
+        if let Some(old) = ab_db::identity::set_avatar_key(&mut *tx, actor.user_id, key).await? {
             ab_db::uploads::release_reference_by_key(
-                &self.pool,
+                &mut *tx,
                 &old,
                 UNREFERENCED_GRACE.as_secs_f64(),
             )
             .await?;
         }
+        tx.commit().await?;
         Ok(())
     }
 }

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE courses c SET thumbnail_image_key = $2\n           FROM (SELECT id, thumbnail_image_key FROM courses WHERE id = $1 FOR UPDATE) old\n           WHERE c.id = old.id\n           RETURNING old.thumbnail_image_key AS \"previous?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "previous?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "thumbnail_image_key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "12b8874868851a1812852823bd329fcf03c9d215c8f0781361d30a4dc335bd53"
+}
