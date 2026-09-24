@@ -95,6 +95,16 @@ pub struct CourseInfoRow {
     pub updated_at: i64,
 }
 
+/// The database clock in epoch seconds, converted exactly like every row
+/// timestamp here (`::bigint` rounds), so a window ending "now" never
+/// excludes a row written this second.
+pub async fn db_now(pool: &PgPool) -> Result<i64> {
+    let now = sqlx::query_scalar!(r#"SELECT (extract(epoch FROM now()))::bigint AS "now!""#)
+        .fetch_one(pool)
+        .await?;
+    Ok(now)
+}
+
 pub async fn list_courses(pool: &PgPool, course_ids: &[CourseId]) -> Result<Vec<CourseInfoRow>> {
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(

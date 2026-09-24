@@ -244,13 +244,16 @@ impl AnalyticsContext {
     /// Load everything for the courses; `since` bounds submissions and log
     /// events (epoch seconds), progress stays unbounded.
     pub async fn load(pool: &PgPool, course_ids: &[CourseId], since: Option<i64>) -> Result<Self> {
-        let generated_at = now_unix();
         if course_ids.is_empty() {
             return Ok(Self {
-                generated_at,
+                generated_at: now_unix(),
                 ..Self::default()
             });
         }
+        // Row timestamps come from the database clock, rounded by `::bigint`;
+        // the window end must use the same clock and conversion or a row
+        // written this second lands "after" it.
+        let generated_at = ab_db::analytics::db_now(pool).await?;
         let courses = ab_db::analytics::list_courses(pool, course_ids).await?;
         let chapters = ab_db::analytics::list_chapters(pool, course_ids).await?;
         let activities = ab_db::analytics::list_activities(pool, course_ids).await?;
