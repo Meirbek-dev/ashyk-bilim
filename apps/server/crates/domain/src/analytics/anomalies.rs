@@ -105,7 +105,7 @@ pub fn build_anomalies(
 
     // Suspiciously fast quiz attempts.
     let mut durations: HashMap<AssessmentId, Vec<f64>> = HashMap::new();
-    for s in &ctx.submissions {
+    for s in ctx.member_submissions(None) {
         let Some(a) = ctx.assessment(s.assessment_id) else {
             continue;
         };
@@ -162,8 +162,7 @@ pub fn build_anomalies(
         }
         let (mut before, mut after) = (Vec::new(), Vec::new());
         for s in ctx
-            .submissions
-            .iter()
+            .member_submissions(None)
             .filter(|s| s.assessment_id == row.assessment_id)
         {
             let Some(score) = score_of(s) else {

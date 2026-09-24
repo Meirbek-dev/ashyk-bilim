@@ -1911,3 +1911,137 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
         released.text()
     );
 }
+
+/// BUG-266/267: every course-detail figure counts the members
+/// `enrolled_learners` counts — after two passing learners leave, the
+/// chapter/activity drop-off and `certificates_issued` follow (cohort filter
+/// included), and the remaining member's failed quiz does not turn into a
+/// «repeated failures» bottleneck built from the leavers' progress rows.
+#[sqlx::test(migrations = "../../migrations")]
+async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Leavers").await;
+    let (quiz_id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "passing_score": 50 }),
+    )
+    .await;
+    lesson(&app, &teacher, &chapter_id, "After the quiz").await;
+    let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
+    let certification: uuid::Uuid =
+        sqlx::query_scalar("INSERT INTO certifications (course_id) VALUES ($1) RETURNING id")
+            .bind(course_uuid)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    let cohort: uuid::Uuid =
+        sqlx::query_scalar("INSERT INTO usergroups (name) VALUES ('Stayers') RETURNING id")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    let carol = learner(&app, "carol").await;
+    for (who, answer, score) in [(&alice, "a", 90), (&bob, "a", 90), (&carol, "b", 20)] {
+        enrol(&pool, &course_id, who.user_id, 0.0).await;
+        let sub =
+            submit_attempt_answering(&app, who, &quiz_id, &choice_id, &essay_id, answer).await;
+        let graded = app
+            .send(grade(
+                &teacher,
+                &sub,
+                &serde_json::json!({ "action": "publish", "final_score": score }),
+            ))
+            .await;
+        assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    }
+    for who in [&alice, &bob] {
+        sqlx::query(
+            "INSERT INTO certificate_users (certification_id, user_id, verify_code) VALUES ($1, $2, $3)",
+        )
+        .bind(certification)
+        .bind(who.user_id.0)
+        .bind(who.user_id.to_string())
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    sqlx::query("INSERT INTO usergroup_members (usergroup_id, user_id) VALUES ($1, $2)")
+        .bind(cohort)
+        .bind(carol.user_id.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let reader = app
+        .mint_session_for(
+            teacher.user_id,
+            &["analytics:read:assigned", "usergroup:read:platform"],
+        )
+        .await;
+    let detail = |query: String| {
+        let (app, reader) = (&app, &reader);
+        let url = format!("/api/v2/analytics/teacher/courses/{course_id}{query}");
+        async move {
+            let res = app.get_as(reader, &url).await;
+            assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+            res.json()
+        }
+    };
+
+    let before = detail(String::new()).await;
+    assert_eq!(before["summary"]["enrolled_learners"], 3, "{before}");
+    assert_eq!(before["summary"]["certificates_issued"], 2, "{before}");
+    assert_eq!(
+        before["funnels"]["chapter_dropoff"][0]["count"], 2,
+        "{before}"
+    );
+    assert_eq!(
+        before["activity_dropoff"][0]["previous_step_completions"], 2,
+        "{before}"
+    );
+    assert_eq!(
+        before["content_bottlenecks"],
+        serde_json::json!([]),
+        "{before}"
+    );
+    let cohort_before = detail(format!("?cohort_ids={cohort}")).await;
+    assert_eq!(
+        cohort_before["summary"]["certificates_issued"], 0,
+        "the cohort filter applies to certificates: {cohort_before}"
+    );
+
+    for who in [&alice, &bob] {
+        let left = app
+            .delete_as(who, &format!("/api/v2/trail/courses/{course_id}"))
+            .await;
+        assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    }
+    let after = detail(String::new()).await;
+    assert_eq!(after["summary"]["enrolled_learners"], 1, "{after}");
+    assert_eq!(after["summary"]["certificates_issued"], 0, "{after}");
+    assert_eq!(
+        after["funnels"]["chapter_dropoff"][0]["count"], 0,
+        "{after}"
+    );
+    assert_eq!(
+        after["activity_dropoff"][0]["previous_step_completions"], 0,
+        "{after}"
+    );
+    assert_eq!(
+        after["content_bottlenecks"],
+        serde_json::json!([]),
+        "{after}"
+    );
+    let overview = app
+        .get_as(&reader, "/api/v2/analytics/teacher/overview")
+        .await;
+    assert_eq!(
+        overview.json()["content_bottlenecks"],
+        serde_json::json!([]),
+        "{}",
+        overview.text()
+    );
+}

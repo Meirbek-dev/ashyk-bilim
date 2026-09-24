@@ -39,12 +39,10 @@ pub fn build_content_bottlenecks(
     let mut started: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();
     let mut completed: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();
     let mut times: HashMap<ActivityId, Vec<f64>> = HashMap::new();
-    for p in &ctx.activity_progress {
-        if !target.contains(&p.course_id)
-            || allowed
-                .as_ref()
-                .is_some_and(|set| !set.contains(&p.user_id))
-        {
+    // Members only (BUG-267): the assessment rows' pass rates below count
+    // members, so `started_n` must too.
+    for p in ctx.member_progress(allowed.as_ref()) {
+        if !target.contains(&p.course_id) {
             continue;
         }
         if p.state != ActivityProgressState::NotStarted {
@@ -152,7 +150,9 @@ pub fn build_content_bottlenecks(
                     .collect()
             })
             .unwrap_or_default();
-        if !weak.is_empty() {
+        // The same three-learner sample as the other signals: one member's
+        // failed attempt is not a repeated failure (BUG-267).
+        if started_n >= 3 && !weak.is_empty() {
             let failed: i64 = weak
                 .iter()
                 .map(|r| {
