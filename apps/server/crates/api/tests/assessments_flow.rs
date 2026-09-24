@@ -157,7 +157,8 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
     let detail = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
         .await;
-    assert_eq!(detail.json()["content_version"], 4);
+    // BUG-257: a reorder changes nothing that is answered or scored.
+    assert_eq!(detail.json()["content_version"], 3);
 
     // Policy is replaced wholesale and range-checked.
     let mut policy = detail.json()["policy"].clone();
