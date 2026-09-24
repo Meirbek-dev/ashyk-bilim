@@ -1342,6 +1342,56 @@ async fn deadline_extension_clears_the_late_penalty_of_graded_work(pool: PgPool)
     assert_eq!(again.json()["final_score"], 100.0);
 }
 
+/// BUG-283: an extension over an expired override applies — the expiry is
+/// cleared, and the expired grant's extra attempts are not resurrected.
+#[sqlx::test(migrations = "../../migrations")]
+async fn deadline_extension_over_an_expired_override_applies(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true, "max_attempts": 2 }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let granted = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id),
+            &serde_json::json!({ "max_attempts_override": 5, "expires_at_unix": now_unix() - 60 }),
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    let new_due = now_unix() + 86_400;
+    let queued = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [alice.user_id], "new_due_at_unix": new_due }),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let action_id = queued.json()["id"].as_str().unwrap().to_owned();
+    ab_domain::grading::GradingService::execute_bulk_action(
+        &app.pool,
+        None,
+        ab_core::id::BulkActionId(uuid::Uuid::parse_str(&action_id).unwrap()),
+    )
+    .await
+    .unwrap();
+    let state = app
+        .get_as(&alice, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    let effective = &state.json()["effective"];
+    assert_eq!(effective["override_applied"], true, "{effective}");
+    assert_eq!(effective["due_at_unix"], new_due);
+    assert_eq!(effective["max_attempts"], 2, "the expired grant came back");
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn deadline_extension_is_a_queued_bulk_action(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

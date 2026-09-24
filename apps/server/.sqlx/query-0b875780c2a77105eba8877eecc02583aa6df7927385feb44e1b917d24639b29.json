@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO assessment_overrides\n               (assessment_id, user_id, due_at_override, note, granted_by)\n           VALUES ($1, $2, to_timestamp($3), $4, $5)\n           ON CONFLICT (assessment_id, user_id) DO UPDATE SET\n               due_at_override = EXCLUDED.due_at_override,\n               note = EXCLUDED.note, granted_by = EXCLUDED.granted_by,\n               max_attempts_override = CASE WHEN assessment_overrides.expires_at <= now()\n                   THEN NULL ELSE assessment_overrides.max_attempts_override END,\n               waive_late_penalty = CASE WHEN assessment_overrides.expires_at <= now()\n                   THEN false ELSE assessment_overrides.waive_late_penalty END,\n               expires_at = NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Float8",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0b875780c2a77105eba8877eecc02583aa6df7927385feb44e1b917d24639b29"
+}

@@ -1066,6 +1066,11 @@ pub async fn update_override<'e>(
 /// One statement, so a concurrent `PUT overrides/{user}`
 /// either lands before (its other fields survive) or after (it wins) —
 /// never a read-modify-write that resurrects stale values (BUG-247).
+///
+/// BUG-283: an extension never lapses — `expires_at` is cleared (a late
+/// hand-in past the new date is still judged against it). An override that
+/// had already expired contributes nothing else: its attempts and waiver
+/// were not granted again.
 pub async fn upsert_override_due<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
@@ -1080,7 +1085,12 @@ pub async fn upsert_override_due<'e>(
            VALUES ($1, $2, to_timestamp($3), $4, $5)
            ON CONFLICT (assessment_id, user_id) DO UPDATE SET
                due_at_override = EXCLUDED.due_at_override,
-               note = EXCLUDED.note, granted_by = EXCLUDED.granted_by"#,
+               note = EXCLUDED.note, granted_by = EXCLUDED.granted_by,
+               max_attempts_override = CASE WHEN assessment_overrides.expires_at <= now()
+                   THEN NULL ELSE assessment_overrides.max_attempts_override END,
+               waive_late_penalty = CASE WHEN assessment_overrides.expires_at <= now()
+                   THEN false ELSE assessment_overrides.waive_late_penalty END,
+               expires_at = NULL"#,
         id.0,
         user_id.0,
         epoch(Some(due_at)),
