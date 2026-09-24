@@ -779,6 +779,7 @@ pub async fn list_audit_events(
 
 /// Whether any learner submission exists for the assessment, and whether any
 /// of them has left the draft state. Both legacy lock rules hang off these.
+///
 /// BUG-280: staff previews (UX-182) never lock authoring.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SubmissionActivity {
