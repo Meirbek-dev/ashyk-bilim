@@ -1386,7 +1386,6 @@ async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
     let empty = serde_json::json!({});
     let answer =
         serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
-    let mut last = String::new();
     for round in 0..10 {
         // One learner per round: the submit limiter is per learner.
         let who = learner(&app, &format!("learner{round}")).await;
@@ -1417,32 +1416,82 @@ async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
         .await
         .unwrap();
         assert_eq!(rows, vec![(1, "published".to_owned())], "round {round}");
-        last = sub_id;
+    }
+}
+
+/// BUG-256: the cap bars opening an attempt, never finishing one — a draft
+/// opened under an override stays submittable (manual and timer sweep)
+/// after the override is deleted.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_draft_opened_under_an_override_survives_its_deletion(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "max_attempts": 1, "time_limit_seconds": 60 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let start_path = format!("/api/v2/assessments/{id}/submissions");
+    let empty = serde_json::json!({});
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    let mut second_drafts = Vec::new();
+    for name in ["manual", "swept"] {
+        let who = learner(&app, name).await;
+        let first = app.post_as(&who, &start_path, &empty).await;
+        let first_id = first.json()["id"].as_str().unwrap().to_owned();
+        let done = app.send(submit(&who, &first_id, None, &answer)).await;
+        assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+        let override_path = format!("/api/v2/assessments/{id}/overrides/{}", who.user_id);
+        let granted = app
+            .post_as(
+                &teacher,
+                &override_path,
+                &serde_json::json!({ "max_attempts_override": 2 }),
+            )
+            .await;
+        assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+        let second = app.post_as(&who, &start_path, &empty).await;
+        assert_eq!(second.status, StatusCode::CREATED, "{}", second.text());
+        let removed = app.delete_as(&teacher, &override_path).await;
+        assert_eq!(removed.status, StatusCode::NO_CONTENT);
+        let state = app
+            .get_as(&who, &format!("/api/v2/assessments/{id}/attempt-state"))
+            .await;
+        assert_eq!(state.json()["can_continue"], true, "{}", state.text());
+        second_drafts.push((who, second.json()["id"].as_str().unwrap().to_owned()));
     }
 
-    // A draft past the cap (left by an older race) is never graded.
-    let orphan: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number,
-                                  content_version, policy_version, started_at)
-         SELECT assessment_id, course_id, user_id, 2, content_version, policy_version,
-                now() - interval '3 minutes'
-         FROM submissions WHERE id = $1 RETURNING id",
-    )
-    .bind(uuid::Uuid::parse_str(&last).unwrap())
-    .fetch_one(&app.pool)
-    .await
-    .unwrap();
+    let (manual, manual_id) = &second_drafts[0];
+    let submitted = app.send(submit(manual, manual_id, None, &answer)).await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    // The cap still bars a third attempt.
+    let third = app.post_as(manual, &start_path, &empty).await;
+    assert_eq!(third.status, StatusCode::FORBIDDEN, "{}", third.text());
+
+    let (_, swept_id) = &second_drafts[1];
+    let swept_id = uuid::Uuid::parse_str(swept_id).unwrap();
+    sqlx::query("UPDATE submissions SET started_at = now() - interval '3 minutes' WHERE id = $1")
+        .bind(swept_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
     let swept =
         ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
             .await
             .unwrap();
-    assert_eq!(swept, 0);
+    assert_eq!(swept, 1);
     let status: String = sqlx::query_scalar("SELECT status FROM submissions WHERE id = $1")
-        .bind(orphan)
+        .bind(swept_id)
         .fetch_one(&app.pool)
         .await
         .unwrap();
-    assert_eq!(status, "draft");
+    assert_eq!(status, "published");
 }
 
 /// BUG-237: a timed draft left behind by unpublish → add item → republish

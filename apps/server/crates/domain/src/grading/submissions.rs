@@ -22,7 +22,7 @@ use sqlx::PgPool;
 
 pub use ab_db::submissions::SubmissionRow as Submission;
 
-use crate::assessments::access::EffectivePolicy;
+use crate::assessments::access::{EffectivePolicy, cap_bars_new_attempt};
 use crate::assessments::items::ItemBody;
 use crate::assessments::service::{Assessment, AssessmentsService, Item};
 use crate::code::{CodeRunner, FinalRun, FinalTarget};
@@ -152,8 +152,8 @@ fn failed_cases(body: &crate::assessments::items::CodeBody) -> Vec<CaseOutcome> 
         .collect()
 }
 
-/// The attempt cap over a learner's attempts (newest first). A returned
-/// attempt lifts it for its revision — the rule `attempt-state` applies.
+/// The attempt cap over a learner's attempts (newest first) — the
+/// `attempt-state` rule: a returned attempt lifts it for its revision.
 fn cap_reached(prior: &[Submission], max_attempts: Option<i32>) -> bool {
     let mut completed = prior
         .iter()
@@ -162,9 +162,11 @@ fn cap_reached(prior: &[Submission], max_attempts: Option<i32>) -> bool {
     let revision = completed
         .peek()
         .is_some_and(|s| s.status == SubmissionStatus::Returned);
-    max_attempts.is_some_and(|max| {
-        !revision && completed.count() >= usize::try_from(max).unwrap_or(usize::MAX)
-    })
+    cap_bars_new_attempt(
+        i64::try_from(completed.count()).unwrap_or(i64::MAX),
+        revision,
+        max_attempts,
+    )
 }
 
 /// Anti-cheat blocks only when a detector is enabled and the threshold is hit.
@@ -781,14 +783,9 @@ impl SubmissionsService {
             effective,
         } = ctx;
 
-        // BUG-239: the cap holds on every door, the timer sweep included —
-        // a draft past it is never graded.
-        let prior =
-            ab_db::submissions::list_user_submissions(pool, assessment.id, submission.user_id)
-                .await?;
-        if cap_reached(&prior, effective.max_attempts) {
-            return Err(Error::forbidden("MAX_ATTEMPTS_REACHED"));
-        }
+        // BUG-256: no cap check here — the cap bars opening an attempt
+        // (`start`, under `lock_attempts`, BUG-239), and an open draft may
+        // always be finished, as `attempt-state` promises.
         if !opts.skip_constraints {
             Self::enforce_constraints(pool, &submission, &assessment, &effective, now).await?;
         }

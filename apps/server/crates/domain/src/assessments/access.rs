@@ -22,6 +22,19 @@ use crate::assessments::service::{Assessment, AssessmentsService, LatePolicy, pe
 use crate::catalog::courses::Course;
 use crate::identity::Actor;
 
+/// The attempt cap — one rule for `attempt-state`, `start` and the submit
+/// pipeline (BUG-256): it bars *opening* a new attempt once `completed`
+/// attempts reach `max`, unless the newest one was returned for revision.
+/// An already-open draft may always be finished, so lowering the cap (an
+/// override deleted or expired) never strands a draft the learner opened.
+pub(crate) fn cap_bars_new_attempt(
+    completed: i64,
+    revision_requested: bool,
+    max: Option<i32>,
+) -> bool {
+    max.is_some_and(|max| !revision_requested && completed >= i64::from(max))
+}
+
 fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -507,11 +520,8 @@ impl AssessmentsService {
             if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
                 reasons.push(DisabledReason::PastDue);
             }
-            // An open draft may still be finished even at the cap.
-            if let Some(max) = effective.max_attempts
-                && attempts_used >= i64::from(max)
-                && draft.is_none()
-                && !revision_requested
+            if draft.is_none()
+                && cap_bars_new_attempt(attempts_used, revision_requested, effective.max_attempts)
             {
                 reasons.push(DisabledReason::MaxAttemptsReached);
             }
