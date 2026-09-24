@@ -480,7 +480,7 @@ pub async fn list_users(
     cursor: Option<UserId>,
     limit: i64,
 ) -> Result<Vec<AdminUserRow>> {
-    let pattern = q.map(|q| format!("%{}%", q.replace('%', "\\%").replace('_', "\\_")));
+    let pattern = q.map(|q| format!("%{}%", crate::like_escape(q)));
     let rows = sqlx::query_as!(
         AdminUserRow,
         r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.status,
@@ -490,8 +490,8 @@ pub async fn list_users(
            FROM users u
            LEFT JOIN user_roles ur ON ur.user_id = u.id
            LEFT JOIN roles r ON r.id = ur.role_id
-           WHERE ($1::text IS NULL OR u.username ILIKE $1
-                  OR u.display_name ILIKE $1 OR u.email ILIKE $1)
+           WHERE ($1::text IS NULL OR u.username ILIKE $1 ESCAPE '\'
+                  OR u.display_name ILIKE $1 ESCAPE '\' OR u.email ILIKE $1 ESCAPE '\')
              AND ($2::uuid IS NULL OR u.id < $2)
            GROUP BY u.id
            ORDER BY u.id DESC

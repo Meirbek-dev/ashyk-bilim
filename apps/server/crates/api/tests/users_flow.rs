@@ -308,6 +308,14 @@ async fn admin_lists_users_and_disables_accounts(pool: PgPool) {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["username"], "troublemaker");
     assert_eq!(items[0]["roles"], serde_json::json!(["user"]));
+    // UX-184: `\` is literal, not LIKE's escape — `\t` is not `t`.
+    let escaped = app.get_as(&admin, "/api/v2/users?q=%5Ct").await;
+    assert_eq!(
+        escaped.json()["items"],
+        serde_json::json!([]),
+        "{}",
+        escaped.text()
+    );
 
     // A non-admin (even with the broad user:read:platform) cannot list.
     let pleb = app.mint_session(&["user:read:platform"]).await;

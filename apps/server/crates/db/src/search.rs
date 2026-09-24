@@ -132,12 +132,7 @@ pub async fn find_user_hit_by_username(
 /// Prefix matches rank above substring matches; active users only.
 /// (Privacy upgrade over legacy: email is NOT searchable — FINDINGS #16.)
 pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<UserHitRow>> {
-    // `\` is ILIKE's escape character: escape it first (UX-183), then the
-    // wildcards, so every query character matches literally.
-    let literal = query
-        .replace('\\', "\\\\")
-        .replace('%', "\\%")
-        .replace('_', "\\_");
+    let literal = crate::like_escape(query);
     let substring = format!("%{literal}%");
     let prefix = format!("{literal}%");
     let rows = sqlx::query_as!(
@@ -145,8 +140,8 @@ pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<
         r#"SELECT id AS "id: UserId", username, display_name, avatar_key
            FROM users
            WHERE status = 'active'
-             AND (username ILIKE $1 OR display_name ILIKE $1)
-           ORDER BY (username ILIKE $2 OR display_name ILIKE $2) DESC, username
+             AND (username ILIKE $1 ESCAPE '\' OR display_name ILIKE $1 ESCAPE '\')
+           ORDER BY (username ILIKE $2 ESCAPE '\' OR display_name ILIKE $2 ESCAPE '\') DESC, username
            LIMIT $3"#,
         substring,
         prefix,

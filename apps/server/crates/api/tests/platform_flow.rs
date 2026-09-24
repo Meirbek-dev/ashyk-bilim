@@ -160,6 +160,24 @@ async fn read_is_public_and_update_is_gated(pool: PgPool) {
         )
         .await;
     assert!(blank.json()["label"].is_null(), "{}", blank.text());
+
+    // UX-184: control / bidi characters are stripped from the free text too;
+    // line breaks in the multi-line fields survive.
+    let stripped = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({
+                "label": " be\u{202E}ta\u{7} ",
+                "description": "a\u{1B}\nb\u{202E}",
+                "about": "\u{7}x\ty",
+            }),
+        )
+        .await;
+    assert_eq!(stripped.status, StatusCode::OK, "{}", stripped.text());
+    assert_eq!(stripped.json()["label"], "beta");
+    assert_eq!(stripped.json()["description"], "a\nb");
+    assert_eq!(stripped.json()["about"], "x\ty");
 }
 
 #[sqlx::test(migrations = "../../migrations")]

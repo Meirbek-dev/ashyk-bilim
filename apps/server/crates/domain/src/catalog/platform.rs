@@ -98,11 +98,17 @@ impl PlatformService {
             .map(|n| ab_core::required_text("name", n))
             .transpose()?;
         // UX-135: free-text fields are stored trimmed; a blank label is no label.
-        let description = changes.description.map(str::trim);
-        let about = changes.about.map(str::trim);
-        let label = changes
-            .label
-            .map(|l| l.map(str::trim).filter(|l| !l.is_empty()));
+        // UX-184: and without control / bidi characters, like the name.
+        let description = changes
+            .description
+            .map(|d| ab_core::strip_controls_multiline(d).trim().to_owned());
+        let about = changes
+            .about
+            .map(|a| ab_core::strip_controls_multiline(a).trim().to_owned());
+        let label = changes.label.map(|l| {
+            l.map(|l| ab_core::strip_controls(l).trim().to_owned())
+                .filter(|l| !l.is_empty())
+        });
         let previous = self.get().await?;
 
         let logo_key = match logo_upload_id {
@@ -118,10 +124,10 @@ impl PlatformService {
             &self.pool,
             ab_db::platform::PlatformChanges {
                 name: name.as_deref(),
-                description,
-                about,
+                description: description.as_deref(),
+                about: about.as_deref(),
                 email: changes.email,
-                label,
+                label: label.as_ref().map(Option::as_deref),
                 logo_key: logo_key.as_deref(),
                 thumbnail_key: thumbnail_key.as_deref(),
             },

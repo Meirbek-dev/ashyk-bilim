@@ -393,7 +393,7 @@ pub async fn list_runs(pool: &PgPool, filter: &RunFilter<'_>) -> Result<Vec<RunR
            WHERE started_at >= now() - make_interval(days => $1)
              AND ($2::text IS NULL OR status = $2)
              AND ($3::text IS NULL OR kind = $3)
-             AND ($4::text IS NULL OR model_name ILIKE '%' || $4 || '%')
+             AND ($4::text IS NULL OR model_name ILIKE $4 ESCAPE '\')
              AND ($5::text IS NULL OR metadata->>'course_id' = $5)
              AND ($6::uuid IS NULL OR id < $6)
            ORDER BY id DESC
@@ -401,7 +401,9 @@ pub async fn list_runs(pool: &PgPool, filter: &RunFilter<'_>) -> Result<Vec<RunR
         filter.since_days,
         filter.status.map(AiRunStatus::as_str),
         filter.kind.map(AiRunKind::as_str),
-        filter.provider,
+        filter
+            .provider
+            .map(|p| format!("%{}%", crate::like_escape(p))),
         filter.course_id.map(|c| c.0.to_string()),
         filter.cursor.map(|c| c.0),
         filter.limit

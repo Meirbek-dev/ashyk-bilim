@@ -746,7 +746,7 @@ pub async fn list_for_review(
     cursor: Option<SubmissionId>,
     limit: i64,
 ) -> Result<Vec<ReviewRow>> {
-    let pattern = search.map(|s| format!("%{}%", s.replace('%', "\\%").replace('_', "\\_")));
+    let pattern = search.map(|s| format!("%{}%", crate::like_escape(s)));
     let rows = sqlx::query_as!(
         ReviewRow,
         r#"SELECT s.id AS "id: SubmissionId", s.user_id AS "user_id: UserId",
@@ -761,7 +761,7 @@ pub async fn list_for_review(
            WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview
              AND ($2::text IS NULL OR s.status = $2)
              AND (NOT $3 OR s.is_late)
-             AND ($4::text IS NULL OR u.username ILIKE $4 OR u.display_name ILIKE $4)
+             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\')
              AND ($5::uuid IS NULL OR s.id < $5)
            ORDER BY s.id DESC
            LIMIT $6"#,

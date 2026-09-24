@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AiRunId\", thread_id AS \"thread_id: AiThreadId\",\n                  kind AS \"kind: AiRunKind\", status AS \"status: AiRunStatus\",\n                  triggered_by AS \"triggered_by: UserId\", model_name, duration_ms,\n                  input_tokens, output_tokens,\n                  cost_estimate::double precision AS \"cost_estimate?\",\n                  safety_state, error_code, metadata,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at!\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM ai_runs\n           WHERE started_at >= now() - make_interval(days => $1)\n             AND ($2::text IS NULL OR status = $2)\n             AND ($3::text IS NULL OR kind = $3)\n             AND ($4::text IS NULL OR model_name ILIKE '%' || $4 || '%')\n             AND ($5::text IS NULL OR metadata->>'course_id' = $5)\n             AND ($6::uuid IS NULL OR id < $6)\n           ORDER BY id DESC\n           LIMIT $7",
+  "query": "SELECT id AS \"id: AiRunId\", thread_id AS \"thread_id: AiThreadId\",\n                  kind AS \"kind: AiRunKind\", status AS \"status: AiRunStatus\",\n                  triggered_by AS \"triggered_by: UserId\", model_name, duration_ms,\n                  input_tokens, output_tokens,\n                  cost_estimate::double precision AS \"cost_estimate?\",\n                  safety_state, error_code, metadata,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at!\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM ai_runs\n           WHERE started_at >= now() - make_interval(days => $1)\n             AND ($2::text IS NULL OR status = $2)\n             AND ($3::text IS NULL OR kind = $3)\n             AND ($4::text IS NULL OR model_name ILIKE $4 ESCAPE '\\')\n             AND ($5::text IS NULL OR metadata->>'course_id' = $5)\n             AND ($6::uuid IS NULL OR id < $6)\n           ORDER BY id DESC\n           LIMIT $7",
   "describe": {
     "columns": [
       {
@@ -190,5 +190,5 @@
       null
     ]
   },
-  "hash": "2c7fab9c965b3cab2a3a97e6e6067696ffa550bf620b1ba2f10c7a4ae2cf6579"
+  "hash": "18a9ed5767ce0374ec2224a046f4f3a55ae4822dd7ba055b19d2be016a0e9c38"
 }

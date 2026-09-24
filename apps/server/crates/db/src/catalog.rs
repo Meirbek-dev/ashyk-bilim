@@ -132,14 +132,7 @@ pub async fn list_courses(
 ) -> Result<Vec<CourseRow>> {
     let by_name = filter.sort == "name";
     // UX-143: `q` is a literal substring — escape the LIKE metacharacters.
-    let pattern = filter.q.map(|q| {
-        format!(
-            "%{}%",
-            q.replace('\\', "\\\\")
-                .replace('%', "\\%")
-                .replace('_', "\\_")
-        )
-    });
+    let pattern = filter.q.map(|q| format!("%{}%", crate::like_escape(q)));
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
@@ -157,7 +150,7 @@ pub async fn list_courses(
                   OR EXISTS (SELECT 1 FROM resource_authors ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $2
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))
-             AND ($6::text IS NULL OR name ILIKE $6 OR description ILIKE $6)
+             AND ($6::text IS NULL OR name ILIKE $6 ESCAPE '\' OR description ILIKE $6 ESCAPE '\')
              AND CASE $7::text
                    WHEN 'drafts' THEN NOT public
                    WHEN 'published' THEN public

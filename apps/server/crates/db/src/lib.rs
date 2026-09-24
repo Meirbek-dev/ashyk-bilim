@@ -53,3 +53,24 @@ pub async fn ping(pool: &PgPool) -> Result<()> {
     sqlx::query("SELECT 1").execute(pool).await?;
     Ok(())
 }
+
+/// Escape user text for a `LIKE`/`ILIKE … ESCAPE '\'` pattern.
+///
+/// Every character then matches literally: `\` first (it is the escape
+/// character), then `%` and `_` (UX-143, UX-183, UX-184). Every user-text
+/// LIKE search routes through here.
+#[must_use]
+pub fn like_escape(s: &str) -> String {
+    s.replace('\\', r"\\")
+        .replace('%', r"\%")
+        .replace('_', r"\_")
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn like_escape_makes_metacharacters_literal() {
+        assert_eq!(super::like_escape(r"a\x%_b"), r"a\\x\%\_b");
+        assert_eq!(super::like_escape("plain"), "plain");
+    }
+}
