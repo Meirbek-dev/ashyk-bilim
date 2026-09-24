@@ -15,6 +15,7 @@ import ruMessages from '@/messages/ru-RU.json'
 const mocks = vi.hoisted(() => ({
   setAccess: vi.fn(),
   createOverride: vi.fn(),
+  overrides: [] as { user_id: string }[],
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
 }))
@@ -39,7 +40,7 @@ vi.mock('@/lib/api-client', () => ({
   },
 }))
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({
-  listOverrides: async () => [],
+  listOverrides: async () => mocks.overrides,
   createOverride: mocks.createOverride,
   updateOverride: vi.fn(),
   deleteOverride: vi.fn(),
@@ -70,6 +71,7 @@ beforeEach(() => {
   mocks.setAccess.mockReset()
   mocks.createOverride.mockReset()
   mocks.toastError.mockReset()
+  mocks.overrides = []
 })
 
 describe('access management feedback (UX-057)', () => {
@@ -123,5 +125,15 @@ describe('access management feedback (UX-057)', () => {
     await screen.findByText('Значение вне допустимого диапазона.')
     expect(attempts).toHaveAttribute('aria-invalid', 'true')
     expect(mocks.toastError).not.toHaveBeenCalled()
+  })
+
+  it('puts the override badge under the learner name, not beside it (UX-195)', async () => {
+    mocks.overrides = [{ user_id: 'u1' }]
+    renderTab()
+    await waitFor(() => expect(screen.getAllByText('Исключение').length).toBeGreaterThan(0))
+    const row = screen.getAllByRole('button').find(button => within(button).queryByText('Исключение'))
+    const name = within(row as HTMLElement).getByText('Mira')
+    expect(name.parentElement).toContainElement(within(row as HTMLElement).getByText('Исключение'))
+    expect(name).not.toHaveClass('truncate')
   })
 })

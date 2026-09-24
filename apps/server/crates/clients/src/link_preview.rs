@@ -203,7 +203,8 @@ fn is_public(ip: IpAddr) -> bool {
             !(v4.is_loopback()
                 || v4.is_private()
                 || v4.is_link_local()
-                || v4.is_unspecified()
+                // "this network" 0.0.0.0/8 (also the IPv4-compatible `::`, `::1`)
+                || a == 0
                 || v4.is_broadcast()
                 || v4.is_documentation()
                 || v4.is_multicast()
@@ -231,6 +232,16 @@ fn is_public(ip: IpAddr) -> bool {
             }
             if first == 0x2002 {
                 return is_public(IpAddr::V4(embedded(seg[1], seg[2])));
+            }
+            // UX-195: deprecated IPv4-compatible ::/96 routes to its low 32
+            // bits; Teredo 2001::/32 to the server v4 (bits 32-63) and the
+            // client v4 (low 32 bits, inverted) — both must be public.
+            if seg[..6] == [0; 6] {
+                return is_public(IpAddr::V4(embedded(seg[6], seg[7])));
+            }
+            if first == 0x2001 && seg[1] == 0 {
+                return is_public(IpAddr::V4(embedded(seg[2], seg[3])))
+                    && is_public(IpAddr::V4(embedded(!seg[6], !seg[7])));
             }
             !(v6.is_loopback()
                 || v6.is_unspecified()
@@ -406,6 +417,11 @@ mod tests {
             "64:ff9b:1::5db8:d822",
             "2002:a00:1::",
             "2002:c0a8:101::1",
+            "::",
+            "::a00:1",
+            "::7f00:1",
+            "2001:0:a00:1::",
+            "2001:0:5db8:d822::f5ff:fffe",
         ] {
             let ip: IpAddr = ip.parse().unwrap_or_else(|_| unreachable!());
             assert!(!is_public(ip), "{ip}");
@@ -415,6 +431,8 @@ mod tests {
             "2606:2800:220:1:248:1893:25c8:1946",
             "64:ff9b::5db8:d822",
             "2002:5db8:d822::1",
+            "::5db8:d822",
+            "2001:0:5db8:d822::a247:27dd",
         ] {
             let ip: IpAddr = ip.parse().unwrap_or_else(|_| unreachable!());
             assert!(is_public(ip), "{ip}");

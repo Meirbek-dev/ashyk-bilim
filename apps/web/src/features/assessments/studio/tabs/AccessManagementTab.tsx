@@ -565,11 +565,16 @@ function SelectableUserRow({
       className="hover:bg-muted/60 bg-background flex h-auto w-full items-center gap-3 rounded-md border p-3 text-left transition disabled:cursor-not-allowed"
     >
       <Checkbox checked={selected} />
+      {/* UX-195: the badge sits under the name so a narrow column never squeezes the name to «A…». */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{displayUser(user)}</p>
+        <p className="text-sm font-medium break-words whitespace-normal">{displayUser(user)}</p>
         <p className="text-muted-foreground truncate text-xs">{user.email ?? user.username}</p>
+        {hasOverride ? (
+          <Badge variant="secondary" className="mt-1">
+            {t('overrideBadge')}
+          </Badge>
+        ) : null}
       </div>
-      {hasOverride ? <Badge variant="secondary">{t('overrideBadge')}</Badge> : null}
     </Button>
   )
 }

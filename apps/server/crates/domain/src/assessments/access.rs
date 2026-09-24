@@ -487,10 +487,13 @@ impl AssessmentsService {
             .await
     }
 
+    /// Read-back after a committed write under the member lock: a missing row
+    /// means the learner left in between (the leave drops overrides), so the
+    /// answer is the membership 422, not 404 (UX-195).
     async fn override_row(&self, id: AssessmentId, user_id: UserId) -> Result<Override> {
         ab_db::assessments::get_override(&self.pool, id, user_id)
             .await?
-            .ok_or_else(|| Error::not_found("override"))
+            .ok_or_else(|| Error::validation(vec![Self::not_in_course(user_id, "user_id".into())]))
     }
 
     async fn audit_override(
