@@ -903,6 +903,41 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(still_draft, "draft");
+
+    // BUG-278: the author's preview obeys only what attempt-state promises —
+    // past due and past its time limit, it still opens, saves and finishes.
+    let state = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(state.json()["is_teacher_preview"], true);
+    assert_eq!(state.json()["can_start"], true, "{}", state.text());
+    let draft = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let preview = draft.json()["id"].as_str().unwrap().to_owned();
+    sqlx::query("UPDATE assessments SET time_limit_seconds = 60 WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE submissions SET started_at = now() - interval '10 minutes' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&preview).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let saved = app
+        .send(patch_draft(&teacher, &preview, Some("\"1\""), &answer))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    let done = app.send(submit(&teacher, &preview, None, &answer)).await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    assert_eq!(done.json()["is_late"], true);
+    assert_eq!(done.json()["late_penalty_pct"], 0.0);
 }
 
 /// UX-111: only submits that pass validation spend the 3/10 s budget —

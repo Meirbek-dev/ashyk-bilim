@@ -22,7 +22,7 @@ use sqlx::PgPool;
 
 pub use ab_db::submissions::SubmissionRow as Submission;
 
-use crate::assessments::access::{EffectivePolicy, cap_bars_new_attempt};
+use crate::assessments::access::{EffectivePolicy, attempt_gates, cap_bars_new_attempt};
 use crate::assessments::items::ItemBody;
 use crate::assessments::service::{Assessment, AssessmentsService, Item};
 use crate::code::{CodeRunner, FinalRun, FinalTarget};
@@ -689,9 +689,12 @@ impl SubmissionsService {
         answers::canonicalize(&current, patch, &shapes)
     }
 
+    /// A save past the time limit is refused — never a preview's (BUG-278,
+    /// the `attempt_gates` rule).
     fn check_time_limit(ctx: &Context, grace: i64) -> Result<()> {
-        if let (Some(limit), Some(started)) =
-            (ctx.effective.time_limit_seconds, ctx.submission.started_at)
+        if !ctx.preview
+            && let (Some(limit), Some(started)) =
+                (ctx.effective.time_limit_seconds, ctx.submission.started_at)
             && now_unix() > started + i64::from(limit) + grace
         {
             return Err(Error::forbidden("TIME_LIMIT_EXPIRED"));
@@ -794,14 +797,26 @@ impl SubmissionsService {
             assessment,
             items,
             effective,
-            ..
+            preview,
         } = ctx;
 
         // BUG-256: no cap check here — the cap bars opening an attempt
         // (`start`, under `lock_attempts`, BUG-239), and an open draft may
         // always be finished, as `attempt-state` promises.
         if !opts.skip_constraints {
-            Self::enforce_constraints(pool, &submission, &assessment, &effective, now).await?;
+            let gates = attempt_gates(
+                pool,
+                preview,
+                &effective,
+                assessment.activity_id,
+                submission.user_id,
+                submission.started_at,
+                SUBMIT_GRACE_SECONDS,
+            )
+            .await?;
+            if let Some(gate) = gates.first() {
+                return Err(Error::forbidden(gate.as_str()));
+            }
         }
         let violation_exceeded = violation_exceeded(&assessment, opts.violation_count);
 
@@ -925,32 +940,6 @@ impl SubmissionsService {
                 .await;
         }
         Ok((fresh, effective, items.len()))
-    }
-
-    /// The submit-time gates (legacy `_validate_submission_constraints`).
-    async fn enforce_constraints(
-        pool: &PgPool,
-        submission: &Submission,
-        assessment: &Assessment,
-        effective: &EffectivePolicy,
-        now: i64,
-    ) -> Result<()> {
-        if let (Some(limit), Some(started)) = (effective.time_limit_seconds, submission.started_at)
-            && now > started + i64::from(limit) + SUBMIT_GRACE_SECONDS
-        {
-            return Err(Error::forbidden("TIME_LIMIT_EXPIRED"));
-        }
-        if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
-            return Err(Error::forbidden("PAST_DUE"));
-        }
-        // UX-105: the remediation gate holds at submit too, not only at start.
-        if ab_db::ai::active_remediation_gate(pool, submission.user_id, assessment.activity_id)
-            .await?
-            .is_some()
-        {
-            return Err(Error::forbidden("REMEDIATION_REQUIRED"));
-        }
-        Ok(())
     }
 
     /// Kind-dispatched auto grade. Code challenges grade from the newest

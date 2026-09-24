@@ -9,7 +9,7 @@
 //! time limit).
 
 use ab_core::assessments::{AccessMode, Lifecycle, ReviewVisibility};
-use ab_core::id::{AssessmentId, UserId, UsergroupId};
+use ab_core::id::{ActivityId, AssessmentId, UserId, UsergroupId};
 use ab_core::permission::{Action, Scope};
 use ab_core::{Error, FieldError, Result};
 use ab_db::assessments::OverrideValues;
@@ -33,6 +33,45 @@ pub(crate) fn cap_bars_new_attempt(
     max: Option<i32>,
 ) -> bool {
     max.is_some_and(|max| !revision_requested && completed >= i64::from(max))
+}
+
+/// The gates on an attempt, in the `attempt-state` vocabulary — one rule
+/// for `attempt-state` and the submit pipeline (BUG-278). A staff preview
+/// (UX-182) has none: whatever attempt-state offers a preview, submit
+/// finishes. `started_at` is the open draft's; `grace` the submit
+/// allowance past the time limit.
+pub(crate) async fn attempt_gates(
+    pool: &sqlx::PgPool,
+    preview: bool,
+    effective: &EffectivePolicy,
+    activity_id: ActivityId,
+    user_id: UserId,
+    started_at: Option<i64>,
+    grace: i64,
+) -> Result<Vec<DisabledReason>> {
+    let mut reasons = Vec::new();
+    if preview {
+        return Ok(reasons);
+    }
+    let now = now_unix();
+    if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
+        reasons.push(DisabledReason::PastDue);
+    }
+    if let (Some(limit), Some(started)) = (effective.time_limit_seconds, started_at)
+        && now > started + i64::from(limit) + grace
+    {
+        reasons.push(DisabledReason::TimeLimitExpired);
+    }
+    // Legacy `remediation_required`: a gate-mode remediation the learner
+    // has not passed blocks a new attempt and (UX-105) the submit of an
+    // open draft.
+    if ab_db::ai::active_remediation_gate(pool, user_id, activity_id)
+        .await?
+        .is_some()
+    {
+        reasons.push(DisabledReason::RemediationRequired);
+    }
+    Ok(reasons)
 }
 
 fn now_unix() -> i64 {
@@ -459,7 +498,8 @@ impl AssessmentsService {
     // ── Student-facing ──────────────────────────────────────────────────
 
     /// The policy for one learner: the active (unexpired) override wins for
-    /// attempts and due date; teacher preview lifts the attempt cap.
+    /// attempts and due date; teacher preview lifts the attempt cap and
+    /// the late penalty.
     /// Pool-level so system actors (the timer sweep) can use it too.
     pub async fn effective_policy_for(
         pool: &sqlx::PgPool,
@@ -497,7 +537,9 @@ impl AssessmentsService {
                 assessment.late_penalty_max_days,
                 assessment.late_cutoff_at,
             ),
-            waive_late_penalty: active.as_ref().is_some_and(|o| o.waive_late_penalty),
+            // BUG-278: a preview's verdict is its answers — no late penalty.
+            waive_late_penalty: teacher_preview
+                || active.as_ref().is_some_and(|o| o.waive_late_penalty),
             override_applied: active.is_some(),
             review_visibility: assessment.review_visibility,
         })
@@ -529,33 +571,23 @@ impl AssessmentsService {
                 .first()
                 .is_some_and(|s| s.status == ab_core::assessments::SubmissionStatus::Returned);
 
-        let now = now_unix();
-        let mut reasons = Vec::new();
         // Lifecycle reasons need no branch here: a non-preview caller only
         // reaches this point for a published assessment (404 above).
-        if !teacher_preview {
-            if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
-                reasons.push(DisabledReason::PastDue);
-            }
-            if draft.is_none()
-                && cap_bars_new_attempt(attempts_used, revision_requested, effective.max_attempts)
-            {
-                reasons.push(DisabledReason::MaxAttemptsReached);
-            }
-            if let (Some(open), Some(limit)) = (&draft, effective.time_limit_seconds)
-                && open.started_at.is_some_and(|s| now > s + i64::from(limit))
-            {
-                reasons.push(DisabledReason::TimeLimitExpired);
-            }
-            // Legacy `remediation_required`: a gate-mode remediation the
-            // learner has not passed blocks a new attempt and (UX-105) the
-            // submit of an open draft.
-            if ab_db::ai::active_remediation_gate(&self.pool, actor.user_id, assessment.activity_id)
-                .await?
-                .is_some()
-            {
-                reasons.push(DisabledReason::RemediationRequired);
-            }
+        let mut reasons = attempt_gates(
+            &self.pool,
+            teacher_preview,
+            &effective,
+            assessment.activity_id,
+            actor.user_id,
+            draft.as_ref().and_then(|d| d.started_at),
+            0,
+        )
+        .await?;
+        // A preview's policy has no cap (`effective_policy_for`).
+        if draft.is_none()
+            && cap_bars_new_attempt(attempts_used, revision_requested, effective.max_attempts)
+        {
+            reasons.push(DisabledReason::MaxAttemptsReached);
         }
         let attempts_remaining = effective
             .max_attempts
