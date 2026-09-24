@@ -451,3 +451,24 @@ async fn google_login_refuses_to_link_an_unverified_email(pool: PgPool) {
         .unwrap();
     assert_eq!(linked, 0);
 }
+
+/// F03: a new account from a Google address Google did not verify must not
+/// reach Zitadel pre-verified (`isVerified: true`) — the BUG-254 link check
+/// would later trust it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn unverified_google_email_creates_an_unverified_zitadel_user(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    mock_zitadel_user_create(&app, 1).await;
+    mock_google_token_verified(&app, "g-sub-unv", "unverified@gmail.com", false).await;
+
+    let res = google_callback(&app).await;
+    assert_eq!(res.status, StatusCode::SEE_OTHER);
+    let requests = app.zitadel.received_requests().await.unwrap();
+    let create = requests
+        .iter()
+        .find(|r| r.url.path() == "/v2/users/human")
+        .expect("user create request");
+    let body: serde_json::Value = create.body_json().unwrap();
+    assert_eq!(body["email"]["email"], "unverified@gmail.com");
+    assert_ne!(body["email"]["isVerified"], serde_json::json!(true));
+}
