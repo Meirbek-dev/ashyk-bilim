@@ -91,10 +91,8 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   const accessQuery = useQuery(assessmentAccessQueryOptions(assessmentUuid))
   const overridesQuery = useQuery({ queryKey: overridesKey, queryFn: () => listOverrides(assessmentUuid) })
   // v2 has no `access/eligible-*` search routes: the pickers are the course's
-  // linked groups and the gradebook's learners, filtered client-side.
-  // ponytail: the gradebook only lists learners with a submission — v2 has no
-  // enrollment listing, so a never-submitted learner is only pickable once
-  // persisted (it then comes back in `AccessView.users`).
+  // linked groups and the gradebook's learners (the course members), filtered
+  // client-side.
   const groupsQuery = useQuery({
     queryKey: queryKeys.courses.usergroups(courseUuid ?? ''),
     queryFn: () => usergroupsForCourse(courseUuid ?? ''),

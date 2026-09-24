@@ -932,8 +932,8 @@ pub async fn access_allows(pool: &PgPool, id: AssessmentId, user_id: UserId) -> 
     Ok(allowed)
 }
 
-pub async fn usergroup_linked_to_course(
-    pool: &PgPool,
+pub async fn usergroup_linked_to_course<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
     usergroup_id: UsergroupId,
 ) -> Result<bool> {
@@ -944,7 +944,7 @@ pub async fn usergroup_linked_to_course(
         course_id.0,
         usergroup_id.0
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(linked)
 }

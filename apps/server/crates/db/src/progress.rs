@@ -441,14 +441,18 @@ pub async fn get_trail_run<'e>(
 }
 
 /// Whether the learner has a run for the course (enrollment signal).
-pub async fn has_trail_run(pool: &PgPool, course_id: CourseId, user_id: UserId) -> Result<bool> {
+pub async fn has_trail_run<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
     let exists = sqlx::query_scalar!(
         r#"SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2)
            AS "exists!""#,
         course_id.0,
         user_id.0
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(exists)
 }

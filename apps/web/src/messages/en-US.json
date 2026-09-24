@@ -9547,7 +9547,7 @@
         },
         "AccessManagement": {
           "title": "Learner access",
-          "description": "Restrict access to selected learners or groups that already have access to the course.",
+          "description": "Restrict access to selected course members (enrolled learners) or groups linked to the course.",
           "lockoutTitle": "Access list is empty",
           "lockoutDesc": "Nobody will be able to take it until you add learners or groups. Save anyway?",
           "lockoutConfirm": "Save anyway",
@@ -9578,7 +9578,7 @@
           "previewSelectedGroups": "Selected groups",
           "previewEffective": "Estimated access",
           "previewExcludedLoaded": "Excluded from loaded list",
-          "previewNote": "The list holds the learners from the course gradebook (at least one attempt) and the groups linked to the course; search filters that list.",
+          "previewNote": "The list holds the course members (enrolled learners) and the groups linked to the course; search filters that list.",
           "overrideBadge": "Accommodation",
           "expandGroup": "Show group expansion",
           "groupExpansion": "This group expands to {count, plural, =1 {# learner} other {# learners}} before individual exclusions.",

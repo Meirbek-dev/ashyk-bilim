@@ -493,7 +493,7 @@ impl From<ab_domain::assessments::access::AccessView> for AccessView {
 pub struct SetAccessRequest {
     #[garde(skip)]
     pub mode: AccessMode,
-    /// Direct allowlist (restricted mode); each must already have course access.
+    /// Direct allowlist (restricted mode); each must be a course member (enrolled learner).
     #[garde(length(max = 500))]
     #[serde(default)]
     pub user_ids: Vec<UserId>,

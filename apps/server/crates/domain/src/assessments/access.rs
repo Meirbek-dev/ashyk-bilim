@@ -161,8 +161,12 @@ impl AssessmentsService {
     /// The user row must exist before an access-list / override insert —
     /// the FK would otherwise surface as a 500 (public courses skip the
     /// course-access check that used to catch this by accident).
-    async fn unknown_user(&self, user_id: UserId, field: &str) -> Result<Option<FieldError>> {
-        Ok(ab_db::identity::user_status(&self.pool, user_id)
+    async fn unknown_user<'e>(
+        db: impl sqlx::PgExecutor<'e>,
+        user_id: UserId,
+        field: &str,
+    ) -> Result<Option<FieldError>> {
+        Ok(ab_db::identity::user_status(db, user_id)
             .await?
             .is_none()
             .then(|| FieldError {
@@ -175,19 +179,17 @@ impl AssessmentsService {
     /// BUG-247: a per-learner teacher action (override, deadline extension)
     /// targets a course **member** — the trail run `learner-state.enrolled`
     /// reads (UX-150), not anyone with access (an author or maintainer).
-    pub(crate) async fn not_member(
-        pool: &sqlx::PgPool,
+    pub(crate) async fn not_member<'e>(
+        db: impl sqlx::PgExecutor<'e>,
         course_id: ab_core::id::CourseId,
         user_id: UserId,
         field: String,
     ) -> Result<Option<FieldError>> {
         Ok(
-            (!ab_db::progress::has_trail_run(pool, course_id, user_id).await?).then(|| {
-                FieldError {
-                    field,
-                    code: "not-in-course".into(),
-                    message: format!("user {user_id} is not enrolled in this course"),
-                }
+            (!ab_db::progress::has_trail_run(db, course_id, user_id).await?).then(|| FieldError {
+                field,
+                code: "not-in-course".into(),
+                message: format!("user {user_id} is not enrolled in this course"),
             }),
         )
     }
@@ -256,6 +258,21 @@ impl AssessmentsService {
     ) -> Result<AccessView> {
         let assessment = self.load_for_author(actor, id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
+        let mut tx = self.pool.begin().await?;
+        let current = ab_db::assessments::lock_assessment(&mut tx, id)
+            .await?
+            .ok_or_else(|| Error::not_found("assessment"))?;
+        if let Some(expected) = expected_version
+            && expected != current.policy_version
+        {
+            return Err(Error::app_with_details(
+                ab_core::ErrorCode::PreconditionFailed,
+                "access changed since you loaded it",
+                serde_json::json!({ "expected": expected, "actual": current.policy_version }),
+            ));
+        }
+        // UX-186: membership is checked under the assessment row lock, in
+        // the transaction that replaces the lists.
         let (users, groups): (Vec<UserId>, Vec<UsergroupId>) = match mode {
             AccessMode::AllCourseLearners => (Vec::new(), Vec::new()),
             AccessMode::Restricted => {
@@ -266,17 +283,17 @@ impl AssessmentsService {
                     // UX-180: an allowlist names learners who may take it —
                     // course members (the BUG-247 override rule), never
                     // authors or staff who merely have course access.
-                    if let Some(e) = self.unknown_user(*user_id, &field).await? {
+                    if let Some(e) = Self::unknown_user(&mut *tx, *user_id, &field).await? {
                         errors.push(e);
                     } else if let Some(e) =
-                        Self::not_member(&self.pool, course.id, *user_id, field).await?
+                        Self::not_member(&mut *tx, course.id, *user_id, field).await?
                     {
                         errors.push(e);
                     }
                 }
                 for group_id in usergroup_ids {
                     if !ab_db::assessments::usergroup_linked_to_course(
-                        &self.pool, course.id, *group_id,
+                        &mut *tx, course.id, *group_id,
                     )
                     .await?
                     {
@@ -293,19 +310,6 @@ impl AssessmentsService {
                 (user_ids.to_vec(), usergroup_ids.to_vec())
             }
         };
-        let mut tx = self.pool.begin().await?;
-        let current = ab_db::assessments::lock_assessment(&mut tx, id)
-            .await?
-            .ok_or_else(|| Error::not_found("assessment"))?;
-        if let Some(expected) = expected_version
-            && expected != current.policy_version
-        {
-            return Err(Error::app_with_details(
-                ab_core::ErrorCode::PreconditionFailed,
-                "access changed since you loaded it",
-                serde_json::json!({ "expected": expected, "actual": current.policy_version }),
-            ));
-        }
         ab_db::assessments::set_access_mode(&mut *tx, id, mode).await?;
         ab_db::assessments::replace_access_lists(&mut tx, id, &users, &groups).await?;
         ab_db::assessments::insert_audit_event(
@@ -336,7 +340,7 @@ impl AssessmentsService {
     ) -> Result<Override> {
         let assessment = self.load_for_author(actor, id).await?;
         input.validate()?;
-        if let Some(e) = self.unknown_user(user_id, "user_id").await? {
+        if let Some(e) = Self::unknown_user(&self.pool, user_id, "user_id").await? {
             return Err(Error::validation(vec![e]));
         }
         // UX-147 / BUG-247: an override is for a student of the course.

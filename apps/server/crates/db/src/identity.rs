@@ -542,9 +542,12 @@ pub async fn set_user_status(
     Ok(updated.rows_affected() == 1)
 }
 
-pub async fn user_status(pool: &PgPool, user_id: UserId) -> Result<Option<String>> {
+pub async fn user_status<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    user_id: UserId,
+) -> Result<Option<String>> {
     let status = sqlx::query_scalar!("SELECT status FROM users WHERE id = $1", user_id.0)
-        .fetch_optional(pool)
+        .fetch_optional(db)
         .await?;
     Ok(status)
 }
