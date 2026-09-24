@@ -157,8 +157,9 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
       <div className="mx-auto max-w-6xl px-4">
         {/* Header */}
         <div className="soft-shadow border-border bg-card text-card-foreground mb-8 rounded-2xl border p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+          {/* UX-179: on a phone the status badge wraps under the title instead of overflowing the card. */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-4">
               <div className="bg-primary/10 rounded-full p-3">
                 <Shield className="text-primary h-8 w-8" />
               </div>
@@ -169,10 +170,11 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
             </div>
 
             <div
-              className={`flex items-center space-x-3 rounded-full border px-4 py-2 ${getVerificationStatusColor()}`}
+              data-testid="verification-status"
+              className={`flex max-w-full items-center gap-3 rounded-full border px-4 py-2 ${getVerificationStatusColor()}`}
             >
               {getVerificationStatusIcon()}
-              <span className="font-semibold">{getVerificationStatusText()}</span>
+              <span className="min-w-0 font-semibold">{getVerificationStatusText()}</span>
             </div>
           </div>
         </div>
