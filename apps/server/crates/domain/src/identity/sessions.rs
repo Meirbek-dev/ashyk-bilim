@@ -425,6 +425,12 @@ impl SessionStore {
             .await
     }
 
+    /// Google linked to the account: every live session shows it (UX-198).
+    pub async fn set_google_linked(&self, user_id: UserId) -> Result<u32> {
+        self.update_user_sessions(user_id, |record| record.google_linked = true)
+            .await
+    }
+
     /// Apply `edit` to every live session of the user, keeping each idle TTL.
     /// Compare-and-set per session: a concurrent rewrite is retried on top of
     /// its result, a concurrent revoke wins (`XX`). Logins in flight are

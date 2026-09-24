@@ -477,6 +477,7 @@ async fn registration_creates_the_account_and_emails_the_code(pool: PgPool) {
     assert_eq!(body["username"], "aigerim");
     assert_eq!(body["display_name"], "Aigerim Test");
     assert_eq!(body["mfa_enabled"], false);
+    assert_eq!(body["has_password"], true, "UX-198");
     assert!(res.session_cookie().is_none(), "no session is opened");
 
     let roles: Vec<String> = sqlx::query_scalar(

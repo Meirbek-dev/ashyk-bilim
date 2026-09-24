@@ -15,7 +15,7 @@ pub struct UserProfile {
     /// e.g. the registration answer).
     pub mfa_enabled: bool,
     /// The account has a password to change (`false`: Google-only — no
-    /// password can be set through the API — or no session involved). UX-188.
+    /// password can be set through the API). UX-188.
     pub has_password: bool,
     /// A Google identity is linked; Google sign-in never asks for the TOTP
     /// code.

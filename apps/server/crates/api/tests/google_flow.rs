@@ -170,6 +170,10 @@ async fn google_login_links_to_existing_email_account(pool: PgPool) {
     let existing = app
         .create_user("veteran", "vet@example.com", &["instructor"])
         .await;
+    // UX-198: a password session open during the link shows it at once.
+    let open = app.mint_session_for(existing, &[]).await;
+    let me = app.get_as(&open, "/api/v2/users/me").await;
+    assert_eq!(me.json()["google_linked"], false);
     mock_zitadel_user_create(&app, 0).await; // linking must NOT create anyone
     mock_zitadel_email_verified(&app, "veteran", true).await;
     mock_google_token(&app, "g-sub-3", "vet@example.com").await;
@@ -189,6 +193,9 @@ async fn google_login_links_to_existing_email_account(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!(linked_user, existing.to_string());
+    let me = app.get_as(&open, "/api/v2/users/me").await;
+    assert_eq!(me.json()["google_linked"], true);
+    assert_eq!(me.json()["has_password"], true);
 }
 
 #[sqlx::test(migrations = "../../migrations")]

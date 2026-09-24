@@ -150,7 +150,14 @@ pub async fn register(
                         language,
                     })
                     .await?;
-                Ok((StatusCode::CREATED, UserProfile::from(profile)))
+                Ok((
+                    StatusCode::CREATED,
+                    // A registration always sets a password (UX-198).
+                    UserProfile {
+                        has_password: true,
+                        ..UserProfile::from(profile)
+                    },
+                ))
             },
             |profile: &UserProfile| profile.id,
         )

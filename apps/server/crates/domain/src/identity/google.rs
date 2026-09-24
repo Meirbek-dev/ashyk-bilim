@@ -243,6 +243,8 @@ impl GoogleAuthService {
                 &identity.email,
             )
             .await?;
+            // The password sessions already open see the link too (UX-198).
+            self.sessions.set_google_linked(user_id).await?;
             return Ok(user_id);
         }
 

@@ -26,6 +26,10 @@ describe('kk auth/security terms (UX-178)', () => {
     expect(all.filter(([, kk]) => /құпия сөз/iu.test(kk)).map(([k]) => k)).toEqual([])
   })
 
+  it('account is always «аккаунт» (UX-198)', () => {
+    expect(all.filter(([, kk]) => /тіркелгі|есептік жазба/iu.test(kk)).map(([k]) => k)).toEqual([])
+  })
+
   it('too many attempts reads the same on login and elsewhere', () => {
     expect(all.filter(([, kk]) => kk.startsWith('Әрекеттер тым көп')).map(([k]) => k)).toEqual([])
     expect(kkMessages.Errors.codes['rate-limited']).toBe(kkMessages.Auth.Login.rateLimited)
