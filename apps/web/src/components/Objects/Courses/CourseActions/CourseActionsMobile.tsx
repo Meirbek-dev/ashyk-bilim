@@ -1,24 +1,14 @@
 'use client'
 
-import { BookOpen, Loader2, LogIn } from 'lucide-react'
+import { BookOpen, CheckCircle2, Loader2, LogIn } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
-import { useState, useTransition } from 'react'
-import { revalidateTags } from '@/lib/cache/revalidate'
-import { startCourse } from '@services/courses/activity'
-import { getAbsoluteUrl } from '@services/config/config'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useQueryClient } from '@tanstack/react-query'
-import {
-  learnerCourseProgress,
-  learnerCourseStateQueryOptions,
-  type LearnerCourseState,
-} from '@/features/learner-course/api'
-import { queryKeys } from '@/lib/react-query/queryKeys'
-import { buildLoginRedirect } from '@/lib/auth/redirect'
+import type { LearnerCourseState } from '@/features/learner-course/api'
 import { useContributors } from '@/features/courses/hooks/useContributors'
 import type { Contributor } from '@/lib/api/generated/zod'
+import CourseProgress from '../CourseProgress/CourseProgress'
+import { CTA_LABEL, ContributorControl, useCourseCta } from './useCourseActions'
 
 import { Button } from '@/components/ui/button'
 import UserAvatar from '../../UserAvatar'
@@ -87,88 +77,10 @@ function MultipleAuthors({ authors }: { authors: Contributor[] }) {
 function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: CourseActionsMobileProps) {
   const t = useTranslations('Courses.CourseActionsMobile')
   const tActions = useTranslations('Courses.CoursesActions')
-  const router = useRouter()
-  const queryClient = useQueryClient()
   const { user: currentUser } = useSession()
-  const [isActionLoading, setIsActionLoading] = useState(false)
-  const [isPending, startTransition] = useTransition()
-
-  // Clean up course UUID by removing 'course_' prefix if it exists
-  const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-
-  const hasTrailRun = Boolean(
-    trailData?.runs?.find((run: AppTrailRun) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
-      return cleanRunCourseUuid === cleanCourseUuid
-    }),
-  )
-  // Same rule as CoursesActions: the wire's `enrolled` wins over the trail run.
-  const isStarted = learnerState?.enrolled ?? hasTrailRun
-  // UX-119: nothing published for learners (0/0) — no CTA to dead-click.
-  const hasNoLiveActivities =
-    learnerState !== null && learnerState !== undefined && learnerCourseProgress(learnerState).total === 0
-
-  // UX-119: same as CoursesActions — Back within the learner-state
-  // staleTime must show the enrolled landing.
-  const refreshEnrolment = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
-      queryClient.invalidateQueries({ queryKey: learnerCourseStateQueryOptions(courseuuid).queryKey }),
-    ])
-
-  const handleCourseAction = async () => {
-    if (!currentUser) {
-      router.push(buildLoginRedirect(`/course/${courseuuid}`))
-      return
-    }
-
-    // If already started, navigate to first unfinished activity
-    if (isStarted) {
-      if (!hasTrailRun) {
-        await startCourse(`course_${courseuuid}`).catch(() => undefined)
-        await Promise.all([revalidateTags(['courses']), refreshEnrolment()])
-      }
-      const { completedIds } = learnerCourseProgress(learnerState)
-      const firstUnfinishedActivity = course.chapters
-        ?.flatMap(chapter => chapter.activities ?? [])
-        .find(activity => !completedIds.has(activity.activity_uuid.replace('activity_', '')))
-
-      // If all activities are completed, go to first activity
-      const targetActivity = firstUnfinishedActivity || course.chapters?.[0]?.activities?.[0]
-
-      if (targetActivity?.activity_uuid) {
-        router.push(
-          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${targetActivity.activity_uuid.replace('activity_', '')}`,
-        )
-      }
-      return
-    }
-
-    startTransition(() => setIsActionLoading(true))
-    try {
-      await startCourse(`course_${courseuuid}`)
-      await Promise.all([revalidateTags(['courses']), refreshEnrolment()])
-
-      // Get the first activity from the first chapter
-      const firstChapter = course.chapters?.[0]
-      const firstActivity = firstChapter?.activities?.[0]
-
-      if (firstActivity) {
-        // Redirect to the first activity
-        await revalidateTags(['activities'])
-        router.push(
-          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`,
-        )
-      } else {
-        router.refresh()
-      }
-    } catch (error) {
-      console.error('Failed to perform course action:', error)
-    } finally {
-      startTransition(() => setIsActionLoading(false))
-      await revalidateTags(['courses'])
-    }
-  }
+  // Same CTA branches and toasts as the desktop sidebar (UX-174/175).
+  const { action, hasNoLiveActivities, isActionLoading, handleCourseAction, isProgressOpen, setIsProgressOpen } =
+    useCourseCta({ courseuuid, course, trailData, learnerState })
 
   // The roster is a signed-in read (anonymous → 401), like CourseAuthors.
   const { data: roster } = useContributors(courseuuid, { enabled: Boolean(currentUser) })
@@ -187,7 +99,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
           <Button
             type="button"
             onClick={handleCourseAction}
-            disabled={isActionLoading || isPending}
+            disabled={isActionLoading}
             className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
           >
             {isActionLoading ? (
@@ -197,20 +109,30 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
                 <LogIn className="h-4 w-4" />
                 {t('signIn')}
               </>
-            ) : isStarted ? (
-              <>
-                <BookOpen className="h-4 w-4" />
-                {tActions('continueLearning')}
-              </>
             ) : (
               <>
-                <LogIn className="h-4 w-4" />
-                {t('startCourse')}
+                {action === 'start' ? (
+                  <LogIn className="h-4 w-4" />
+                ) : action === 'continue' ? (
+                  <BookOpen className="h-4 w-4" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                {tActions(CTA_LABEL[action])}
               </>
             )}
           </Button>
         )}
+
+        {/* UX-176: the phone landing is the only one below md — apply/withdraw lives here too. */}
+        <ContributorControl courseuuid={courseuuid} course={course} />
       </div>
+      <CourseProgress
+        course={course}
+        isOpen={isProgressOpen}
+        onClose={() => setIsProgressOpen(false)}
+        learnerState={learnerState}
+      />
     </div>
   )
 }

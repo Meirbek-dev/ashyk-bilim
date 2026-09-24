@@ -1,29 +1,16 @@
-import { ArrowRight, BookOpen, CheckCircle2, Clock, Loader2, PlayCircle, Trophy, UserPen } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@/lib/react-query/queryKeys'
+import { ArrowRight, BookOpen, CheckCircle2, PlayCircle, Trophy, Loader2 } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
-import { useContributorStatus } from '@/hooks/useContributorStatus'
-import { useContributorMutations } from '@/features/courses/hooks/useContributors'
-import { useApiError } from '@/hooks/useApiError'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
 import CourseProgress from '../CourseProgress/CourseProgress'
-import { revalidateTags } from '@/lib/cache/revalidate'
-import { startCourse } from '@services/courses/activity'
-import { getAbsoluteUrl } from '@services/config/config'
 import { Card, CardContent } from '@/components/ui/card'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
-import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
+import { learnerCourseProgress } from '@/features/learner-course/api'
 import type { LearnerCourseState } from '@/features/learner-course/api'
-import { buildLoginRedirect } from '@/lib/auth/redirect'
-import { buildCourseWorkspacePath } from '@/lib/course-management'
-import Link from '@components/ui/AppLink'
+import { CTA_LABEL, ContributorControl, useCourseCta } from './useCourseActions'
+import type { CourseCta } from './useCourseActions'
 
 interface CourseActionsProps {
   courseuuid: string
@@ -34,184 +21,19 @@ interface CourseActionsProps {
 }
 
 function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseActionsProps) {
-  const queryClient = useQueryClient()
-  const router = useRouter()
   const { user: currentUser } = useSession()
-  const [isActionLoading, setIsActionLoading] = useState(false)
-  const [isContributeLoading, setIsContributeLoading] = useState(false)
-  const { contributorStatus, contributorRole, refetch } = useContributorStatus(courseuuid)
-  const { apply, remove, busyUserId } = useContributorMutations(courseuuid)
-  const { toastApiError } = useApiError()
-  const [isProgressOpen, setIsProgressOpen] = useState(false)
   const t = useTranslations('Courses.CoursesActions')
+  const {
+    action,
+    isStarted,
+    hasNoLiveActivities,
+    isActionLoading,
+    handleCourseAction,
+    isProgressOpen,
+    setIsProgressOpen,
+  } = useCourseCta({ courseuuid, course, trailData, learnerState })
 
-  // Clean up course UUID by removing 'course_' prefix if it exists
-  const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-
-  const hasTrailRun = Boolean(
-    trailData?.runs?.find((activeRun: AppTrailRun) => {
-      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-      return cleanRunCourseUuid === cleanCourseUuid
-    }),
-  )
-  // The wire decides: `learner-state.enrolled` also counts a learner who left
-  // but keeps submissions (leaving only resets lesson completions), so the
-  // landing must not offer «Начать курс» to someone the server calls enrolled.
-  const isStarted = learnerState?.enrolled ?? hasTrailRun
-  const nextUnfinished = (() => {
-    const { completedIds } = learnerCourseProgress(learnerState)
-    return course.chapters
-      ?.flatMap(chapter => chapter.activities ?? [])
-      .find(activity => !completedIds.has(activity.activity_uuid.replace('activity_', '')))
-  })()
-  const certificateHref =
-    learnerState?.certificate?.issued && learnerState.certificate.href
-      ? getAbsoluteUrl(learnerState.certificate.href)
-      : null
-  // 100 % without a certificate: the wire's next action is a review, not «Продолжить» (UX-053).
-  const isReviewCompletion = isStarted && !nextUnfinished && learnerState?.next_action?.id === 'review_completion'
-  // UX-119: nothing published for learners (0/0) — no CTA to dead-click.
-  const hasNoLiveActivities =
-    learnerState !== null && learnerState !== undefined && learnerCourseProgress(learnerState).total === 0
-
-  // Anonymous: sign in and come straight back to this course.
-  const loginHref = buildLoginRedirect(`/course/${courseuuid}`)
-  // UX-119: the landing reads `learner-state.enrolled` — Back within its
-  // staleTime must not offer «Начать курс» again.
-  const refreshEnrolment = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
-      queryClient.invalidateQueries({ queryKey: learnerCourseStateQueryOptions(courseuuid).queryKey }),
-    ])
-
-  const handleCourseAction = async () => {
-    if (!currentUser) {
-      router.push(loginHref)
-      return
-    }
-
-    // A completed course with a certificate leads to the certificate, not back into the course.
-    if (isStarted && !nextUnfinished && certificateHref) {
-      router.push(certificateHref)
-      return
-    }
-    if (isReviewCompletion) {
-      setIsProgressOpen(true)
-      return
-    }
-
-    // If already started, navigate to first unfinished activity
-    if (isStarted) {
-      // Enrolled on the wire but no trail run (left with submissions): bring
-      // the run back so `/trail` lists the course again.
-      if (!hasTrailRun) {
-        await startCourse(`course_${courseuuid}`).catch(() => undefined)
-        await refreshEnrolment()
-      }
-      const { completedIds } = learnerCourseProgress(learnerState)
-
-      // Find first unfinished activity
-      let firstUnfinishedActivity: AppActivity | null = null
-
-      if (course.chapters) {
-        for (const chapter of course.chapters) {
-          if (chapter.activities) {
-            for (const activity of chapter.activities) {
-              const isCompleted = completedIds.has(activity.activity_uuid.replace('activity_', ''))
-              if (!isCompleted) {
-                firstUnfinishedActivity = activity
-                break
-              }
-            }
-          }
-          if (firstUnfinishedActivity) break
-        }
-      }
-
-      // If all activities are completed, go to first activity
-      const targetActivity = firstUnfinishedActivity || course.chapters?.[0]?.activities?.[0]
-
-      if (targetActivity?.activity_uuid) {
-        router.push(
-          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${targetActivity.activity_uuid.replace('activity_', '')}`,
-        )
-      }
-      return
-    }
-
-    setIsActionLoading(true)
-    const loadingToast = toast.loading(t('startingCourse'))
-
-    try {
-      await startCourse(`course_${courseuuid}`)
-      await refreshEnrolment()
-      toast.success(t('startedCourseSuccess'), { id: loadingToast })
-
-      // Get the first activity from the first chapter
-      const firstChapter = course.chapters?.[0]
-      const firstActivity = firstChapter?.activities?.[0]
-
-      if (firstActivity) {
-        // Redirect to the first activity
-        router.push(
-          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`,
-        )
-      } else {
-        router.refresh()
-      }
-    } catch (error) {
-      console.error('Failed to perform course action:', error)
-      toast.error(t('startCourseError'), {
-        id: loadingToast,
-      })
-    } finally {
-      setIsActionLoading(false)
-    }
-  }
-
-  const handleApplyToContribute = async () => {
-    if (!currentUser) {
-      router.push(loginHref)
-      return
-    }
-
-    setIsContributeLoading(true)
-    const loadingToast = toast.loading(t('submittingContributorApplication'))
-
-    try {
-      await apply()
-      await revalidateTags(['courses'])
-      await refetch()
-      toast.success(t('contributorApplicationSuccess'), { id: loadingToast })
-    } catch (error) {
-      // 409 `conflict`: the course closed meanwhile, or a role already exists.
-      if (hasErrorCode(error, 'conflict')) toast.error(t('contributorApplicationConflict'), { id: loadingToast })
-      else toastApiError(error, { toastId: loadingToast }, t('contributorApplicationError'))
-    } finally {
-      setIsContributeLoading(false)
-    }
-  }
-
-  // A pending applicant may withdraw (`DELETE contributors/{self}` → 204).
-  const handleWithdrawApplication = async () => {
-    if (!currentUser) return
-    const loadingToast = toast.loading(t('withdrawingApplication'))
-    try {
-      await remove(currentUser.id)
-      await refetch()
-      toast.success(t('applicationWithdrawn'), { id: loadingToast })
-    } catch (error) {
-      // Stale page: the application was decided (403) or withdrawn elsewhere (404) — refetch and say so (UX-050).
-      if (hasErrorCode(error, 'forbidden') || hasErrorCode(error, 'not-found')) {
-        await refetch()
-        toast.info(t('applicationAlreadyReviewed'), { id: loadingToast })
-        return
-      }
-      toastApiError(error, { toastId: loadingToast }, t('withdrawApplicationError'))
-    }
-  }
-
-  const renderActionButton = (action: 'start' | 'continue' | 'certificate' | 'review') => {
+  const renderActionButton = (action: CourseCta) => {
     const isAuthenticated = Boolean(currentUser)
     const icon =
       action === 'start' ? (
@@ -221,14 +43,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
       ) : (
         <ArrowRight className="size-5" />
       )
-    const label =
-      action === 'start'
-        ? t('startCourse')
-        : action === 'certificate'
-          ? t('viewCertificate')
-          : action === 'review'
-            ? t('reviewCompletion')
-            : t('continueLearning')
+    const label = t(CTA_LABEL[action])
 
     return (
       <div className="flex items-center gap-3">
@@ -240,79 +55,6 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
         <span className="flex-1">{label}</span>
         {icon}
       </div>
-    )
-  }
-
-  const renderContributorButton = () => {
-    if (contributorStatus === 'INACTIVE' || contributorRole === 'creator' || course.open_to_contributors !== true) {
-      return null
-    }
-
-    if (!currentUser) {
-      return (
-        <Button
-          variant="outline"
-          onClick={() => router.push(loginHref)}
-          aria-label={t('aria.signupToApply')}
-          className="h-12 w-full gap-2 text-base"
-        >
-          <UserPen className="size-5" />
-          {t('authenticateToContribute')}
-        </Button>
-      )
-    }
-
-    if (contributorStatus === 'ACTIVE') {
-      return (
-        <Link
-          href={buildCourseWorkspacePath(courseuuid, 'overview')}
-          className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 px-4 text-sm font-medium text-emerald-800 shadow-xs hover:underline dark:border-emerald-500/25 dark:from-emerald-500/10 dark:to-teal-500/5 dark:text-emerald-400 dark:shadow-sm dark:shadow-emerald-950/20"
-        >
-          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-          {t('youAreAContributor')}
-          <ArrowRight className="size-4" />
-        </Link>
-      )
-    }
-
-    if (contributorStatus === 'PENDING') {
-      const isWithdrawing = busyUserId === currentUser.id
-      return (
-        <div className="space-y-2">
-          <div className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-amber-200/60 bg-gradient-to-r from-amber-500/5 to-yellow-500/5 px-4 text-sm font-medium text-amber-800 shadow-xs dark:border-amber-500/25 dark:from-amber-500/10 dark:to-yellow-500/5 dark:text-amber-400 dark:shadow-sm dark:shadow-amber-950/20">
-            <Clock className="size-4 text-amber-600 dark:text-amber-400" />
-            {t('contributorApplicationPending')}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleWithdrawApplication}
-            disabled={isWithdrawing}
-            className="text-muted-foreground w-full"
-          >
-            {isWithdrawing ? <Loader2 className="size-4 animate-spin" /> : t('withdrawApplication')}
-          </Button>
-        </div>
-      )
-    }
-
-    return (
-      <Button
-        variant="outline"
-        onClick={handleApplyToContribute}
-        disabled={isContributeLoading}
-        aria-label={t('aria.applyToBecome')}
-        className="h-12 w-full gap-2 text-base"
-      >
-        {isContributeLoading ? (
-          <Loader2 className="size-5 animate-spin" />
-        ) : (
-          <>
-            <UserPen className="size-5" />
-            {t('applyToContribute')}
-          </>
-        )}
-      </Button>
     )
   }
 
@@ -433,24 +175,12 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
         {/* Start/Continue Course Button */}
         {hasNoLiveActivities ? null : (
           <Button onClick={handleCourseAction} disabled={isActionLoading} className="h-12 w-full gap-2 text-base">
-            {isActionLoading ? (
-              <Loader2 className="size-5 animate-spin" />
-            ) : (
-              renderActionButton(
-                !isStarted
-                  ? 'start'
-                  : !nextUnfinished && certificateHref
-                    ? 'certificate'
-                    : isReviewCompletion
-                      ? 'review'
-                      : 'continue',
-              )
-            )}
+            {isActionLoading ? <Loader2 className="size-5 animate-spin" /> : renderActionButton(action)}
           </Button>
         )}
 
         {/* Contributor Button */}
-        {renderContributorButton()}
+        <ContributorControl courseuuid={courseuuid} course={course} />
 
         {/* Course Progress Modal */}
         <CourseProgress

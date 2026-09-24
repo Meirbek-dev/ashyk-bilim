@@ -77,7 +77,11 @@ function StudyCompanionPanelInner({
           <FieldDescription>{t('description')}</FieldDescription>
         </Field>
       </FieldGroup>
-      <ToggleGroup value={[mode]} onValueChange={value => value[0] && setMode(value[0] as StudyCompanionMode)}>
+      <ToggleGroup
+        className="max-w-full flex-wrap"
+        value={[mode]}
+        onValueChange={value => value[0] && setMode(value[0] as StudyCompanionMode)}
+      >
         <ToggleGroupItem value="explain">{t('explain')}</ToggleGroupItem>
         <ToggleGroupItem value="practice">{t('practice')}</ToggleGroupItem>
         <ToggleGroupItem value="flashcards">{t('flashcards')}</ToggleGroupItem>

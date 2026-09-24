@@ -18,10 +18,6 @@ async function mutateTrail(path: string, method: 'POST' | 'DELETE'): Promise<App
   return toAppTrail(trail)
 }
 
-export async function startCourse(course_uuid: string) {
-  return mutateTrail(`trail/courses/${stripEntityPrefix(course_uuid)}`, 'POST')
-}
-
 export async function markActivityAsComplete(activity_uuid: string) {
   return mutateTrail(`trail/activities/${stripEntityPrefix(activity_uuid)}`, 'POST')
 }
