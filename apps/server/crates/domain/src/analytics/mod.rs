@@ -214,6 +214,7 @@ impl AnalyticsService {
             &self.pool,
             &scope.course_ids,
             Some(filters.previous_window_bounds(now).0),
+            &filters.cohort_ids,
         )
         .await?;
 

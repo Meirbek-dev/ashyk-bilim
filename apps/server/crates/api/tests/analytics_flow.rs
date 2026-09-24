@@ -2293,3 +2293,96 @@ async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: Pg
         "a preview grade in the audit: {audit}"
     );
 }
+
+/// BUG-304: admin cohort retention counts the member set on both sides — of
+/// a cohort of three, a leaver and a learner-turned-co-author are out, so
+/// the one active stayer is 1 of 1 — and the data-quality excluded counters
+/// follow the cohort filter like every other figure.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Cohorts").await;
+    let (quiz_id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let mut cohorts = Vec::new();
+    for name in ["Trio", "Other"] {
+        let id: uuid::Uuid =
+            sqlx::query_scalar("INSERT INTO usergroups (name) VALUES ($1) RETURNING id")
+                .bind(name)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        cohorts.push(id);
+    }
+    let (trio, other) = (cohorts[0], cohorts[1]);
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    let carol = learner(&app, "carol").await;
+    for who in [&alice, &bob, &carol] {
+        enrol(&pool, &course_id, who.user_id, 0.0).await;
+        sqlx::query("INSERT INTO usergroup_members (usergroup_id, user_id) VALUES ($1, $2)")
+            .bind(trio)
+            .bind(who.user_id.0)
+            .execute(&pool)
+            .await
+            .unwrap();
+    }
+    submit_attempt(&app, &alice, &quiz_id, &choice_id, &essay_id).await;
+    submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
+    submit_attempt(&app, &teacher, &quiz_id, &choice_id, &essay_id).await;
+    let left = app
+        .delete_as(&carol, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    sqlx::query(
+        "INSERT INTO resource_authors (course_id, user_id, authorship) VALUES ($1::uuid, $2, 'maintainer')",
+    )
+    .bind(&course_id)
+    .bind(bob.user_id.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(boss, &["analytics:read:platform"])
+        .await;
+    let overview = app.get_as(&admin, "/api/v2/analytics/admin/overview").await;
+    assert_eq!(overview.status, StatusCode::OK, "{}", overview.text());
+    let rows = &overview.json()["cohort_retention"];
+    let row = find_row(rows, "cohort_id", &trio.to_string()).expect("Trio row");
+    assert_eq!(row["learners"], 1, "{rows}");
+    assert_eq!(row["retained_learners"], 1, "{rows}");
+    assert_eq!(row["retention_rate"], 100.0, "{rows}");
+
+    let reader = app
+        .mint_session_for(
+            teacher.user_id,
+            &["analytics:read:assigned", "usergroup:read:platform"],
+        )
+        .await;
+    let quality = |query: String| {
+        let (app, reader) = (&app, &reader);
+        async move {
+            let res = app
+                .get_as(
+                    reader,
+                    &format!("/api/v2/analytics/teacher/overview{query}"),
+                )
+                .await;
+            assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+            res.json()["data_quality"].clone()
+        }
+    };
+    let all = quality(String::new()).await;
+    assert_eq!(all["excluded_preview_attempts"], 1, "{all}");
+    assert_eq!(all["excluded_teacher_attempts"], 1, "{all}");
+    let in_trio = quality(format!("?cohort_ids={trio}")).await;
+    assert_eq!(in_trio["excluded_preview_attempts"], 0, "{in_trio}");
+    assert_eq!(in_trio["excluded_teacher_attempts"], 1, "{in_trio}");
+    let in_other = quality(format!("?cohort_ids={other}")).await;
+    assert_eq!(in_other["excluded_teacher_attempts"], 0, "{in_other}");
+}

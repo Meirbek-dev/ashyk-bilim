@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) FILTER (WHERE preview) AS \"preview!\",\n                  count(*) FILTER (WHERE NOT preview AND is_course_staff(course_id, user_id))\n                      AS \"teacher!\"\n           FROM submissions\n           WHERE course_id = ANY($1) AND status <> 'draft'\n             AND ($2::double precision IS NULL\n                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))\n             AND (cardinality($3::uuid[]) = 0\n                  OR EXISTS (SELECT 1 FROM usergroup_members m\n                             WHERE m.user_id = submissions.user_id\n                               AND m.usergroup_id = ANY($3)))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "preview!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "teacher!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Float8",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "59c2a82659788a2f022198639346f78d7d952ae73d6b849e1b60bf8d1cf6561f"
+}

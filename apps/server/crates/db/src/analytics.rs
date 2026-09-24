@@ -340,7 +340,8 @@ pub struct TrailRunInfoRow {
 /// Attempts the dashboards leave out (UX-192).
 ///
 /// Staff previews, and the non-preview attempts of the course's staff (made before they joined it —
-/// staff are in no member set, BUG-287). Same window as [`list_submissions`].
+/// staff are in no member set, BUG-287). Same window as [`list_submissions`], and the same
+/// cohort filter as every other figure (empty `cohort_ids` = everyone, BUG-304).
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ExcludedAttempts {
     pub preview: i64,
@@ -351,8 +352,10 @@ pub async fn count_excluded_attempts(
     pool: &PgPool,
     course_ids: &[CourseId],
     since: Option<i64>,
+    cohort_ids: &[UsergroupId],
 ) -> Result<ExcludedAttempts> {
     let ids = uuids(course_ids);
+    let cohorts = uuids(cohort_ids);
     let row = sqlx::query_as!(
         ExcludedAttempts,
         r#"SELECT count(*) FILTER (WHERE preview) AS "preview!",
@@ -361,9 +364,14 @@ pub async fn count_excluded_attempts(
            FROM submissions
            WHERE course_id = ANY($1) AND status <> 'draft'
              AND ($2::double precision IS NULL
-                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))"#,
+                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))
+             AND (cardinality($3::uuid[]) = 0
+                  OR EXISTS (SELECT 1 FROM usergroup_members m
+                             WHERE m.user_id = submissions.user_id
+                               AND m.usergroup_id = ANY($3)))"#,
         &ids,
-        epoch(since)
+        epoch(since),
+        &cohorts
     )
     .fetch_one(pool)
     .await?;
