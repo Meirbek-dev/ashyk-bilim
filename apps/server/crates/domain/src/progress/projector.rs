@@ -446,20 +446,20 @@ impl ProgressProjector {
             .ok_or_else(|| Error::not_found("course progress"))
     }
 
-    /// Re-aggregate every known learner of a course — after an activity is
+    /// Re-aggregate every member of a course (trail run; BUG-268) — after an activity is
     /// (un)published or deleted, so `total_required_count` follows the
     /// published set. Every writer of `activities.published` (the curriculum
     /// toggle, assessment lifecycle transitions — studio + scheduler — and
     /// file-submission publish) flips the flag in its own transaction and
     /// calls this once it committed (BUG-232).
     pub async fn recalculate_course_for_all(&self, course_id: CourseId) -> Result<()> {
-        for user_id in ab_db::progress::known_course_users(&self.pool, course_id).await? {
+        for user_id in ab_db::progress::course_members(&self.pool, course_id).await? {
             self.recalculate_course(course_id, user_id).await?;
         }
         Ok(())
     }
 
-    /// Repair projections for every known learner of one course (or all).
+    /// Repair projections for every member of one course (or all; BUG-268).
     pub async fn backfill(&self, course_id: Option<CourseId>) -> Result<BackfillReport> {
         let courses = match course_id {
             Some(id) => vec![id],
@@ -472,7 +472,7 @@ impl ProgressProjector {
         };
         for course in courses {
             let activities = ab_db::catalog::list_activities(&self.pool, course).await?;
-            let users = ab_db::progress::known_course_users(&self.pool, course).await?;
+            let users = ab_db::progress::course_members(&self.pool, course).await?;
             for user_id in users {
                 report.learners += 1;
                 for activity in activities.iter().filter(|a| a.published) {

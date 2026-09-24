@@ -19,6 +19,7 @@ async fn instructor(app: &TestApp, name: &str) -> MintedSession {
             "course:read:all",
             "course:update:own",
             "assessment:*:own",
+            "certificate:create:platform",
         ],
     )
     .await
@@ -1001,4 +1002,118 @@ async fn mark_and_leave_dropped_mid_flight_still_land_whole(pool: PgPool) {
         assert_ne!(activity(&state, id)["state"], "complete", "{state}");
     }
     assert_eq!(state["progress"]["completed_required_count"], 0, "{state}");
+}
+
+/// A published one-item quiz; returns (assessment_id, activity_id, item_id).
+async fn quiz(
+    app: &TestApp,
+    teacher: &MintedSession,
+    chapter_id: &str,
+) -> (String, String, String) {
+    let created = app
+        .post_as(
+            teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let assessment_id = created.json()["id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{assessment_id}/items"),
+            &serde_json::json!({
+                "title": "Q1", "max_score": 10,
+                "body": { "kind": "choice", "prompt": "Q1",
+                          "options": [{ "id": "a", "text": "yes", "is_correct": true },
+                                      { "id": "b", "text": "no", "is_correct": false }] }
+            }),
+        )
+        .await;
+    let published = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{assessment_id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    (
+        assessment_id,
+        created.json()["activity_id"].as_str().unwrap().to_owned(),
+        item.json()["id"].as_str().unwrap().to_owned(),
+    )
+}
+
+/// BUG-268: a leaver who passed 1 of 2 required quizzes is no member, so the
+/// course-wide recalculation after unpublishing or deleting the other quiz
+/// leaves them alone — no completion, certificate or course XP.
+#[sqlx::test(migrations = "../../migrations")]
+async fn course_recalculation_skips_leavers(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Leavers 101").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let (q1, _, item) = quiz(&app, &teacher, &chapter_id).await;
+    let (q2, q2_activity, _) = quiz(&app, &teacher, &chapter_id).await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{q1}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { item: { "kind": "choice", "selected": ["a"] } } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let left = app
+        .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+
+    let rewarded = || async {
+        let row: (i64, i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM course_progress
+                     WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
+                    (SELECT count(*) FROM certificate_users WHERE user_id = $1),
+                    (SELECT count(*) FROM xp_transactions
+                     WHERE user_id = $1 AND source = 'course_completion')",
+        )
+        .bind(alice.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        row
+    };
+    for to in ["draft", "published"] {
+        let moved = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{q2}/lifecycle"),
+                &serde_json::json!({ "to": to }),
+            )
+            .await;
+        assert_eq!(moved.status, StatusCode::OK, "{}", moved.text());
+        assert_eq!(rewarded().await, (0, 0, 0), "after {to}");
+    }
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/activities/{q2_activity}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    assert_eq!(rewarded().await, (0, 0, 0), "after delete");
 }
