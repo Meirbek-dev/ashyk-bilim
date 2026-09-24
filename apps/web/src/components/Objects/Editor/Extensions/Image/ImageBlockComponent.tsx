@@ -19,7 +19,7 @@ import { useTranslations } from 'next-intl'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { uploadNewImageFile } from '@services/blocks/Image/images'
-import { deleteBlock, getBlockFileUrl } from '@services/blocks/upload'
+import { getBlockFileUrl } from '@services/blocks/upload'
 import type { BlockFileContent } from '@services/blocks/upload'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { constructAcceptValue } from '@/lib/constants'
@@ -445,19 +445,12 @@ export default function ImageBlockComponent({ node, updateAttributes, deleteNode
     [updateAttributes],
   )
 
-  // UX-147: removing the block releases its upload on the server, then the
-  // node goes. ponytail: a backspaced node still keeps its reference until
-  // the activity is deleted; hook the node's destroy if that ever matters.
-  const handleRemove = useCallback(async () => {
-    if (blockObject) {
-      try {
-        await deleteBlock(blockObject.block_uuid)
-      } catch (removeError) {
-        console.error('Block delete failed; removing the node anyway', removeError)
-      }
-    }
+  // BUG-263: removing only drops the node — undo can bring it back. The
+  // upload is released by the next save that no longer shows the block
+  // (and re-claimed if an undo is saved later), server-side.
+  const handleRemove = useCallback(() => {
     deleteNode()
-  }, [blockObject, deleteNode])
+  }, [deleteNode])
 
   // Download handler
   const handleDownload = useCallback(() => {

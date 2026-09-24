@@ -5,7 +5,7 @@ import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import ArtPlayer from '@components/Objects/Activities/Video/Artplayer'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { uploadNewVideoFile } from '@services/blocks/Video/video'
-import { deleteBlock, getBlockFileUrl } from '@services/blocks/upload'
+import { getBlockFileUrl } from '@services/blocks/upload'
 import type { BlockFileContent } from '@services/blocks/upload'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { constructAcceptValue } from '@/lib/constants'
@@ -161,15 +161,9 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
     }
   }
 
-  // UX-160: the old block releases its upload before the slot clears.
-  const handleRemove = async () => {
-    if (blockObject) {
-      try {
-        await deleteBlock(blockObject.block_uuid)
-      } catch (removeError) {
-        console.error('Block delete failed; clearing the slot anyway', removeError)
-      }
-    }
+  // BUG-263: clearing the slot is undoable; the save without the block
+  // releases its upload server-side.
+  const handleRemove = () => {
     setBlockObject(null)
     updateAttributes({ blockObject: null })
     setVideo(null)

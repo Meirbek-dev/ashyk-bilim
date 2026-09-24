@@ -424,9 +424,10 @@ pub async fn delete_blocks_releasing(
         r#"WITH gone AS (
                DELETE FROM blocks
                WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2)
-               RETURNING content->>'file_key' AS key
+               RETURNING content->>'file_key' AS key, claimed
            ), refs AS (
-               SELECT key, count(*)::int AS n FROM gone WHERE key IS NOT NULL GROUP BY key
+               SELECT key, count(*)::int AS n FROM gone
+               WHERE key IS NOT NULL AND claimed GROUP BY key
            ), released AS (
                UPDATE uploads u
                SET referenced_count = greatest(u.referenced_count - refs.n, 0),
@@ -443,6 +444,60 @@ pub async fn delete_blocks_releasing(
     .fetch_one(conn)
     .await?;
     Ok(u64::try_from(deleted).unwrap_or(0))
+}
+
+/// BUG-263: re-derive which blocks of a `dynamic` activity hold their upload.
+///
+/// The content just saved decides (`block_uuid` anywhere in the tiptap
+/// JSON, v2 id or migrated legacy uuid). A block that left the
+/// content releases its upload (grace clock starts), one that came back —
+/// an undo saved after the removal — re-claims it if it still exists.
+/// The caller holds the activity row (the content UPDATE), so the upload
+/// locks follow the activity → uploads order (BUG-243), in key order.
+pub async fn sync_block_claims(
+    conn: &mut sqlx::PgConnection,
+    activity_id: ActivityId,
+    grace_secs: f64,
+) -> Result<()> {
+    sqlx::query!(
+        r#"SELECT u.id FROM uploads u
+           WHERE u.key IN (SELECT content->>'file_key' FROM blocks WHERE activity_id = $1)
+           ORDER BY u.key FOR NO KEY UPDATE"#,
+        activity_id.0,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    sqlx::query!(
+        r#"WITH present AS (
+               SELECT DISTINCT v #>> '{}' AS id
+               FROM activities a, jsonb_path_query(a.content, 'lax $.**.block_uuid') v
+               WHERE a.id = $1
+           ), flipped AS (
+               UPDATE blocks b SET claimed = NOT b.claimed
+               WHERE b.activity_id = $1
+                 AND b.claimed <> EXISTS (SELECT 1 FROM present p
+                                          WHERE p.id = b.id::text OR p.id = b.legacy_uuid)
+               RETURNING b.claimed, b.content->>'file_key' AS key
+           ), deltas AS (
+               SELECT key, sum(CASE WHEN claimed THEN 1 ELSE -1 END)::int AS d
+               FROM flipped WHERE key IS NOT NULL GROUP BY key
+           )
+           UPDATE uploads u
+           SET referenced_count = greatest(u.referenced_count + d.d, 0),
+               expires_at = CASE WHEN d.d > 0 THEN NULL
+                                 WHEN u.referenced_count + d.d <= 0
+                                 THEN now() + make_interval(secs => $2)
+                                 ELSE u.expires_at END
+           FROM deltas d
+           WHERE u.key = d.key
+             AND ((d.d < 0 AND u.referenced_count > 0)
+                  OR (d.d > 0 AND u.status = 'finalized'))"#,
+        activity_id.0,
+        grace_secs
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
 }
 
 /// Lock an activity row against deletion for a block write (BUG-243: the

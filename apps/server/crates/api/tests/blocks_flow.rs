@@ -444,3 +444,86 @@ async fn concurrent_block_writes_keep_the_reference_count(pool: PgPool) {
         assert_eq!(live, 1, "round {round}: B2 survives");
     }
 }
+
+/// BUG-263: an editor block's upload follows the saved content, not the
+/// Remove click — a save without the node releases it, a later save that
+/// brings it back (undo) re-claims it, and a delete cascade releases only
+/// blocks that still hold a reference.
+#[sqlx::test(migrations = "../../migrations")]
+async fn block_uploads_follow_the_saved_content(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "teacher").await;
+    let (_, activity) = scaffold_activity(&app, &teacher).await;
+    let chapter: uuid::Uuid = sqlx::query_scalar("SELECT chapter_id FROM activities WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&activity).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    let other = activity_in(&app, &teacher, chapter).await;
+    let upload = finalized_upload(&app, &teacher, "block-image", "image/png").await;
+    let kept = block(&app, &teacher, &activity, &upload).await;
+    let removed = block(&app, &teacher, &activity, &upload).await;
+    let elsewhere = block(&app, &teacher, &other, &upload).await;
+    let state = || async {
+        sqlx::query_as::<_, (i32, bool)>(
+            "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1::uuid",
+        )
+        .bind(&upload)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+    let save = |activity: String, blocks: Vec<String>| {
+        let (app, teacher) = (&app, &teacher);
+        async move {
+            let nodes: Vec<_> = blocks
+                .iter()
+                .map(|id| {
+                    serde_json::json!({ "type": "blockImage",
+                        "attrs": { "blockObject": { "block_uuid": id } } })
+                })
+                .collect();
+            let path = format!("/api/v2/activities/{activity}");
+            let version = app.get_as(teacher, &path).await.json()["version"].clone();
+            let body = serde_json::json!({ "content": { "type": "doc", "content": nodes } });
+            let res = app
+                .send(
+                    axum::http::Request::builder()
+                        .method("PATCH")
+                        .uri(&path)
+                        .header(axum::http::header::CONTENT_TYPE, "application/json")
+                        .header(axum::http::header::COOKIE, &teacher.cookie)
+                        .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+                        .body(axum::body::Body::from(body.to_string()))
+                        .unwrap(),
+                )
+                .await;
+            assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+        }
+    };
+    save(activity.clone(), vec![kept.clone(), removed.clone()]).await;
+    save(other.clone(), vec![elsewhere]).await;
+    assert_eq!(state().await, (3, false));
+
+    // Remove saved → released; undo saved → re-claimed; re-saving is idempotent.
+    save(activity.clone(), vec![kept.clone()]).await;
+    assert_eq!(state().await, (2, false));
+    save(activity.clone(), vec![removed.clone(), kept.clone()]).await;
+    save(activity.clone(), vec![removed.clone(), kept.clone()]).await;
+    assert_eq!(state().await, (3, false));
+
+    // Only the saved-away blocks count down; the grace clock starts at 0.
+    save(activity.clone(), vec![]).await;
+    assert_eq!(state().await, (1, false));
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/activities/{activity}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    assert_eq!(
+        state().await,
+        (1, false),
+        "unclaimed blocks release nothing"
+    );
+    save(other, vec![]).await;
+    assert_eq!(state().await, (0, true));
+}

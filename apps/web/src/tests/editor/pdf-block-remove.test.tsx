@@ -1,17 +1,18 @@
 /** @vitest-environment jsdom */
 /**
- * UX-160: every upload-backed block releases its upload on removal — the
- * PDF block's remove calls `DELETE blocks/{id}` before dropping the node.
+ * BUG-263: removing an upload-backed block only drops the node — an undo can
+ * still restore it, so nothing is released on the click (the next save that
+ * no longer shows the block releases its upload server-side).
  */
 import { describe, expect, it, vi } from 'vite-plus/test'
 import type { ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-const deleteBlock = vi.fn(async (_id: string) => {})
+const apiJson = vi.fn()
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
+vi.mock('@/lib/api-client', () => ({ apiJson: (...args: unknown[]) => apiJson(...args) }))
 vi.mock('@services/blocks/upload', () => ({
-  deleteBlock: (id: string) => deleteBlock(id),
   getBlockFileUrl: () => 'https://media.test/block-pdf/x',
 }))
 vi.mock('@services/blocks/Pdf/pdf', () => ({ uploadNewPDFFile: vi.fn() }))
@@ -29,7 +30,7 @@ vi.mock('@tiptap/react', () => ({
 import PDFBlockComponent from '@components/Objects/Editor/Extensions/PDF/PDFBlockComponent'
 
 describe('PDF block removal', () => {
-  it('deletes the block (releasing its upload) and then the node', async () => {
+  it('drops the node without deleting the block', async () => {
     globalThis.ResizeObserver ??= class {
       observe() {}
       disconnect() {}
@@ -45,6 +46,6 @@ describe('PDF block removal', () => {
     render(<PDFBlockComponent {...props} />)
     await userEvent.click(screen.getByTitle('remove'))
     await waitFor(() => expect(deleteNode).toHaveBeenCalled())
-    expect(deleteBlock).toHaveBeenCalledWith('b1')
+    expect(apiJson).not.toHaveBeenCalled()
   })
 })

@@ -4,7 +4,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { AlertTriangle, Download, Expand, FileText, Trash2 } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { uploadNewPDFFile } from '@services/blocks/Pdf/pdf'
-import { deleteBlock, getBlockFileUrl } from '@services/blocks/upload'
+import { getBlockFileUrl } from '@services/blocks/upload'
 import type { BlockFileContent } from '@services/blocks/upload'
 import { constructAcceptValue } from '@/lib/constants'
 import { NodeViewWrapper } from '@tiptap/react'
@@ -138,15 +138,9 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     setIsModalOpen(true)
   }
 
-  // UX-160: like the image block — release the upload, then drop the node.
-  const handleRemove = async () => {
-    if (blockObject) {
-      try {
-        await deleteBlock(blockObject.block_uuid)
-      } catch (removeError) {
-        console.error('Block delete failed; removing the node anyway', removeError)
-      }
-    }
+  // BUG-263: like the image block — the save that drops the node releases
+  // the upload server-side; undo before or after it keeps the file.
+  const handleRemove = () => {
     props.deleteNode()
   }
 

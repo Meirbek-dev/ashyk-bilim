@@ -479,6 +479,18 @@ impl CurriculumService {
                     serde_json::json!({ "expected": changes.expected_version }),
                 ));
             }
+            // BUG-263: an editor block's upload is released when a save no
+            // longer shows it (not on the Remove click — undo restores the
+            // node) and re-claimed when a later save shows it again.
+            // Document/video activities keep their block outside `content`.
+            if changes.content.is_some() && merged_type == "dynamic" {
+                ab_db::catalog::sync_block_claims(
+                    &mut tx,
+                    activity_id,
+                    UNREFERENCED_GRACE.as_secs_f64(),
+                )
+                .await?;
+            }
         }
         tx.commit().await?;
         if published.is_some() {

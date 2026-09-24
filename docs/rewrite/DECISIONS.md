@@ -1253,3 +1253,18 @@ Implements three more items of the owner answers above. Routes:
   without it, and counting them inflated `effective_user_count`. The
   studio picker already offers only the gradebook's learners. Replaces
   "any user with course access" (anyone at all on a public course).
+
+## Editor block uploads follow the saved content (2026-09-24, gauntlet pass 23)
+
+- **A media block in a `dynamic` activity holds its upload reference only
+  while the saved content shows it** (BUG-263). The editor's Remove drops
+  the node and sends nothing; the content PATCH re-derives
+  `blocks.claimed` from the `block_uuid`s in the saved tiptap JSON: a block
+  that left releases its upload (24 h grace), one that came back — an undo
+  saved after the removal — re-claims it while the upload still exists.
+  Cascades (activity/chapter/course delete, `DELETE /blocks/{id}`) release
+  only claimed blocks. Document/video activities keep their block outside
+  `content` and are not synced. Why: removal released the upload at once,
+  so Ctrl+Z restored a node whose file the reaper deleted a day later.
+  Replaces UX-147/UX-160 "Remove calls `DELETE /blocks/{id}`" (the route
+  stays for API clients). A backspaced node now releases too.

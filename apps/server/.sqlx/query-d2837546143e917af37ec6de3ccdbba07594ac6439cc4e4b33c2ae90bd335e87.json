@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH gone AS (\n               DELETE FROM blocks\n               WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2)\n               RETURNING content->>'file_key' AS key, claimed\n           ), refs AS (\n               SELECT key, count(*)::int AS n FROM gone\n               WHERE key IS NOT NULL AND claimed GROUP BY key\n           ), released AS (\n               UPDATE uploads u\n               SET referenced_count = greatest(u.referenced_count - refs.n, 0),\n                   expires_at = CASE WHEN u.referenced_count <= refs.n\n                                     THEN now() + make_interval(secs => $3)\n                                     ELSE u.expires_at END\n               FROM refs WHERE u.key = refs.key AND u.referenced_count > 0\n           )\n           SELECT count(*) AS \"n!\" FROM gone",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d2837546143e917af37ec6de3ccdbba07594ac6439cc4e4b33c2ae90bd335e87"
+}
