@@ -666,8 +666,12 @@ impl ZitadelClient {
         }
         // Zitadel reports "new password equals the current one" as an
         // internal error (code 13, COMMAND-CahN2; captured live 2026-09-13)
-        // — a user mistake, not an outage.
-        if err.code == 13 && err.detail_ids().any(|id| id == "COMMAND-CahN2") {
+        // — but any hashing failure answers the byte-identical body (a bcrypt
+        // overflow did, BUG-293), so only an equal pair is the user's mistake.
+        if err.code == 13
+            && err.detail_ids().any(|id| id == "COMMAND-CahN2")
+            && current.expose_secret() == new.expose_secret()
+        {
             return Err(Error::validation(vec![ab_core::FieldError {
                 field: "new_password".into(),
                 code: "password-unchanged".into(),

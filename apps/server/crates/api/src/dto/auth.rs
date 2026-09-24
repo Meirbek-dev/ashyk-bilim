@@ -17,8 +17,8 @@ pub struct LoginRequest {
 }
 
 /// Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.
-/// Rules mirror the legacy `UserCreate`: unique username/email, password of
-/// at least 8 characters.
+/// Rules mirror the legacy `UserCreate`: unique username/email; the password
+/// follows [`super::new_password`].
 #[derive(Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RegisterRequest {
@@ -27,7 +27,7 @@ pub struct RegisterRequest {
     pub username: String,
     #[garde(email, length(max = 320))]
     pub email: String,
-    #[garde(length(min = 8, max = 200))]
+    #[garde(custom(super::new_password))]
     pub password: String,
     #[garde(length(chars, min = 1, max = 100))]
     pub first_name: String,
@@ -51,7 +51,7 @@ pub struct VerifyEmailRequest {
 pub struct ChangePasswordRequest {
     #[garde(length(min = 1, max = 200))]
     pub current_password: String,
-    #[garde(length(min = 8, max = 200))]
+    #[garde(custom(super::new_password))]
     pub new_password: String,
 }
 

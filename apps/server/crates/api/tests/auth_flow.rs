@@ -942,6 +942,98 @@ async fn unchanged_password_is_a_field_error(pool: PgPool) {
     assert_eq!(res.json()["field_errors"][0]["code"], "password-unchanged");
 }
 
+/// BUG-293: bcrypt reads at most 72 bytes — a 42-letter Cyrillic passphrase
+/// (82 B) is a 422 `password-too-long` on the field at every door, before
+/// Zitadel (which answered 503 / a false «unchanged»).
+#[sqlx::test(migrations = "../../migrations")]
+async fn password_over_72_bytes_is_a_field_error_at_every_door(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let long = "Ж".repeat(40) + "1!";
+    assert!(long.chars().count() < 72 && long.len() > 72);
+    let too_long = |res: &ab_testkit::TestResponse, field: &str| {
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+        assert_eq!(res.json()["field_errors"][0]["field"], field);
+        assert_eq!(res.json()["field_errors"][0]["code"], "password-too-long");
+    };
+
+    let mut body = register_body("longpw", "longpw@example.com");
+    body["password"] = long.clone().into();
+    too_long(
+        &app.post_json("/api/v2/auth/register", &body).await,
+        "password",
+    );
+
+    let admin_user = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(admin_user, &["platform:manage:platform"])
+        .await;
+    let body = serde_json::json!({
+        "username": "longpw2", "email": "longpw2@example.com",
+        "password": long, "first_name": "A", "last_name": "B",
+    });
+    too_long(
+        &app.post_as(&admin, "/api/v2/users", &body).await,
+        "password",
+    );
+
+    let body = serde_json::json!({ "current_password": "Old!Pass1", "new_password": long });
+    too_long(
+        &app.post_as(&admin, "/api/v2/auth/password", &body).await,
+        "new_password",
+    );
+    // 72 bytes exactly is still a password.
+    let body = serde_json::json!({ "current_password": "a", "new_password": "x".repeat(72) });
+    let res = app.post_as(&admin, "/api/v2/auth/password", &body).await;
+    assert_ne!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+}
+
+/// BUG-293: COMMAND-CahN2 is Zitadel's answer to any hashing failure — only
+/// an equal current/new pair is «unchanged»; anything else is not the user's.
+#[sqlx::test(migrations = "../../migrations")]
+async fn opaque_zitadel_hash_failure_is_not_password_unchanged(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("cahn2", "cahn2@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &[]).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{user}/password")))
+        .respond_with(ResponseTemplate::new(500).set_body_json(serde_json::json!({
+            "code": 13,
+            "message": "An internal error occurred (COMMAND-CahN2)",
+            "details": [{ "id": "COMMAND-CahN2", "message": "An internal error occurred" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_as(
+            &session,
+            "/api/v2/auth/password",
+            &serde_json::json!({ "current_password": "Old!Pass1", "new_password": "New!Pass1" }),
+        )
+        .await;
+    assert_eq!(
+        res.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["code"], "service-unavailable");
+}
+
 // ── Brute-force limits + session store caps (critic12 identity) ────────────
 
 /// Unique per run: the limiter windows in shared test Redis outlive a test.

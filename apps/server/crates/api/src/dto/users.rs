@@ -63,7 +63,7 @@ pub struct CreateUserRequest {
     pub username: String,
     #[garde(email, length(max = 320))]
     pub email: String,
-    #[garde(inner(length(min = 8, max = 200)))]
+    #[garde(inner(custom(super::new_password)))]
     pub password: Option<String>,
     #[garde(length(chars, min = 1, max = 100))]
     pub first_name: String,

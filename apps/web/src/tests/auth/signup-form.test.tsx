@@ -3,12 +3,16 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SignupClient from '@/app/[locale]/auth/signup/signup'
+import enMessages from '@/messages/en-US.json'
+import kkMessages from '@/messages/kk-KZ.json'
+import ruMessages from '@/messages/ru-RU.json'
 
 const catalog: Record<string, string> = {
   'codes.username-taken': 'Username taken',
   'codes.email-taken': 'Email taken',
   'codes.rate-limited': 'Slow down',
   'fields.invalid': 'Invalid value',
+  'fields.password-too-long': ruMessages.Errors.fields['password-too-long'],
 }
 vi.mock('next-intl', () => ({
   useLocale: () => 'ru-RU',
@@ -25,7 +29,9 @@ vi.mock('@components/ui/AppLink', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }))
 vi.mock('@components/auth/logo', () => ({ default: () => null }))
-vi.mock('@components/auth/card', () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }))
+vi.mock('@components/auth/card', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
 
 const registerAction = vi.fn()
 vi.mock('@/app/actions/auth', () => ({ registerAction: (...args: unknown[]) => registerAction(...args) }))
@@ -103,5 +109,22 @@ describe('/auth/signup', () => {
     await fillValid(user)
     await user.click(screen.getByRole('button', { name: 'submit' }))
     expect(await screen.findByText('Slow down')).toBeInTheDocument()
+  })
+
+  it('BUG-293: a server password-too-long lands on the password field, worded in every locale', async () => {
+    for (const messages of [ruMessages, kkMessages, enMessages]) {
+      expect(messages.Errors.fields['password-too-long']).toMatch(/72/)
+      expect(messages.Auth.Signup.passwordRule).toMatch(/72/)
+    }
+    registerAction.mockResolvedValueOnce({
+      ok: false,
+      code: 'validation-failed',
+      fieldErrors: { password: 'password-too-long' },
+    })
+    const user = userEvent.setup()
+    render(<SignupClient />)
+    await fillValid(user)
+    await user.click(screen.getByRole('button', { name: 'submit' }))
+    expect(await screen.findByText(ruMessages.Errors.fields['password-too-long'])).toBeInTheDocument()
   })
 })

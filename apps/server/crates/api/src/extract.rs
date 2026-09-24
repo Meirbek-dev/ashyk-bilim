@@ -199,6 +199,18 @@ where
     }
 }
 
+/// A custom garde rule names its own field code as the message prefix
+/// (`password-too-long: …`, BUG-293); every other rule is `invalid`.
+fn field_code(message: &str) -> &str {
+    message
+        .split_once(": ")
+        .map(|(code, _)| code)
+        .filter(|code| {
+            !code.is_empty() && code.bytes().all(|b| b.is_ascii_lowercase() || b == b'-')
+        })
+        .unwrap_or("invalid")
+}
+
 fn invalid_json(err: &impl Display) -> ApiError {
     ApiError(Error::validation(vec![FieldError {
         field: "body".into(),
@@ -230,7 +242,7 @@ where
                     .iter()
                     .map(|(path, error)| FieldError {
                         field: path.to_string(),
-                        code: "invalid".into(),
+                        code: field_code(error.message()).into(),
                         message: error.to_string(),
                     })
                     .collect(),

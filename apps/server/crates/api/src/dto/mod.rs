@@ -42,3 +42,18 @@ where
 {
     <Option<T> as serde::Deserialize<'de>>::deserialize(deserializer).map(Some)
 }
+
+/// The one rule for a password the user sets (register, admin create,
+/// change — BUG-293): at least 8 characters and at most 72 UTF-8 **bytes**,
+/// bcrypt's input limit in Zitadel (past it Zitadel answers an opaque error).
+pub(crate) fn new_password(value: &str, _ctx: &()) -> garde::Result {
+    if value.chars().count() < 8 {
+        return Err(garde::Error::new("length is lower than 8"));
+    }
+    if value.len() > 72 {
+        return Err(garde::Error::new(
+            "password-too-long: at most 72 bytes in UTF-8",
+        ));
+    }
+    Ok(())
+}
