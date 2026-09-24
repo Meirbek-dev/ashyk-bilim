@@ -1638,6 +1638,10 @@ async fn grader_actions_never_reach_the_callers_own_attempt(pool: PgPool) {
         )
         .await;
     assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    // BUG-301: lena's teacher inbox holds alice's release, never her own.
+    let work = app.get_as(&lena, "/api/v2/work?role=teacher").await;
+    assert_eq!(work.json()["total"], 1, "{}", work.text());
+    assert!(!work.text().contains("lena"), "{}", work.text());
     let me = lena.user_id.to_string();
     let waive = serde_json::json!({ "waive_late_penalty": true });
     let own = app

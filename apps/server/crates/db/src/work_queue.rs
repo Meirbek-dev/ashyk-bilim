@@ -83,6 +83,8 @@ pub struct TeacherWorkRow {
 }
 
 /// Rows flagged `teacher_action_required` in the courses the teacher may grade.
+/// Never the teacher's own attempts, never a staff preview as the review
+/// target (BUG-301 — a grader never grades their own, BUG-286).
 ///
 /// Grading courses: creator, or an active non-reporter `resource_authors`
 /// entry (the authorship rule of `Course::is_author`). The review target is
@@ -106,14 +108,14 @@ pub async fn list_teacher_grading_work(
                       (SELECT fa.id FROM file_submission_attempts fa
                        JOIN file_submissions f ON f.id = fa.file_submission_id
                        WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
-                         AND fa.status = 'submitted'
+                         AND fa.status = 'submitted' AND NOT fa.preview
                        ORDER BY fa.updated_at DESC LIMIT 1)
                   ) AS "review_ref?"
            FROM activity_progress p
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
            JOIN users u ON u.id = p.user_id
-           WHERE p.teacher_action_required
+           WHERE p.teacher_action_required AND p.user_id <> $1
              AND (c.creator_id = $1 OR EXISTS (
                      SELECT 1 FROM resource_authors ra
                      WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
@@ -127,7 +129,7 @@ pub async fn list_teacher_grading_work(
 
 /// Rows in state `graded` (saved, unreleased) in the teacher's courses. The
 /// review target is the latest submission when it is `graded`, else the
-/// newest `graded` file attempt.
+/// newest `graded` file attempt. Same exclusions as the grading work (BUG-301).
 pub async fn list_teacher_release_work(
     pool: &PgPool,
     teacher_id: UserId,
@@ -148,14 +150,14 @@ pub async fn list_teacher_release_work(
                       (SELECT fa.id FROM file_submission_attempts fa
                        JOIN file_submissions f ON f.id = fa.file_submission_id
                        WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
-                         AND fa.status = 'graded'
+                         AND fa.status = 'graded' AND NOT fa.preview
                        ORDER BY fa.updated_at DESC LIMIT 1)
                   ) AS "review_ref?"
            FROM activity_progress p
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
            JOIN users u ON u.id = p.user_id
-           WHERE p.state = 'graded'
+           WHERE p.state = 'graded' AND p.user_id <> $1
              AND (c.creator_id = $1 OR EXISTS (
                      SELECT 1 FROM resource_authors ra
                      WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
