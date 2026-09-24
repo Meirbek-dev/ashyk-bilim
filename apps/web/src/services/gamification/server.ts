@@ -13,10 +13,14 @@ import { isApiError } from '@/lib/api/assertSuccess'
 
 export async function getServerGamificationDashboard(): Promise<DashboardData | null> {
   try {
-    const data = await apiJson('gamification', {
-      baseUrl: getServerAPIUrl(),
-      timeoutMs: 8000,
-    }, value => Dashboard.parse(value));
+    const data = await apiJson(
+      'gamification',
+      {
+        baseUrl: getServerAPIUrl(),
+        timeoutMs: 8000,
+      },
+      value => Dashboard.parse(value),
+    )
     const profile = normalizeProfile(data.profile)
     return {
       profile,
@@ -26,7 +30,7 @@ export async function getServerGamificationDashboard(): Promise<DashboardData | 
         created_at: fromUnix(transaction.created_at_unix).toISOString(),
       })),
       leaderboard: normalizeLeaderboard(data.leaderboard),
-      user_rank: data.user_rank,
+      user_rank: data.user_rank ?? null,
       streak_info: extractStreakInfo(profile),
     }
   } catch (error) {
@@ -54,17 +58,15 @@ function revalidateGamificationTags() {
 }
 
 export async function updateStreakOnServer(type: 'login' | 'learning'): Promise<StreakUpdate> {
-  const result = await apiJson(
-    `gamification/streaks/${type}`,
-    { method: 'POST' },
-    value => StreakUpdate.parse(value),
-  )
+  const result = await apiJson(`gamification/streaks/${type}`, { method: 'POST' }, value => StreakUpdate.parse(value))
   revalidateGamificationTags()
   return result
 }
 
 /** `PATCH gamification/preferences` merges top-level keys and answers the full profile. */
-export async function updatePreferencesOnServer(preferences: Record<string, unknown>): Promise<UserGamificationProfile> {
+export async function updatePreferencesOnServer(
+  preferences: Record<string, unknown>,
+): Promise<UserGamificationProfile> {
   const result = await apiJson(
     'gamification/preferences',
     { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(preferences) },

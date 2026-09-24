@@ -52,6 +52,8 @@ const mockSession: Session = {
     locale: 'en-US',
     avatar_key: null,
     mfa_enabled: false,
+    has_password: true,
+    google_linked: false,
   },
   userId: '0198c0ae-0000-7000-8000-000000000001',
   roles: [],

@@ -16844,7 +16844,6 @@
         "required": [
           "profile",
           "recent_transactions",
-          "user_rank",
           "leaderboard"
         ],
         "properties": {
@@ -16861,8 +16860,12 @@
             }
           },
           "user_rank": {
-            "type": "integer",
-            "format": "int64"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "`null` when the viewer opted out of the leaderboard."
           }
         }
       },
@@ -24176,7 +24179,9 @@
           "display_name",
           "bio",
           "locale",
-          "mfa_enabled"
+          "mfa_enabled",
+          "has_password",
+          "google_linked"
         ],
         "properties": {
           "avatar_key": {
@@ -24193,6 +24198,14 @@
           },
           "email": {
             "type": "string"
+          },
+          "google_linked": {
+            "type": "boolean",
+            "description": "A Google identity is linked; Google sign-in never asks for the TOTP\ncode."
+          },
+          "has_password": {
+            "type": "boolean",
+            "description": "The account has a password to change (`false`: Google-only — no\npassword can be set through the API — or no session involved). UX-188."
           },
           "id": {
             "$ref": "#/components/schemas/UserId"

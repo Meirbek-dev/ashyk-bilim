@@ -12,6 +12,12 @@ export const UserProfile = zod.object({
   bio: zod.string(),
   display_name: zod.string(),
   email: zod.string(),
+  google_linked: zod.boolean().describe('A Google identity is linked; Google sign-in never asks for the TOTP\ncode.'),
+  has_password: zod
+    .boolean()
+    .describe(
+      'The account has a password to change (`false`: Google-only — no\npassword can be set through the API — or no session involved). UX-188.',
+    ),
   id: zod.uuid(),
   locale: zod.string(),
   mfa_enabled: zod

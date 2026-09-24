@@ -4471,14 +4471,17 @@ expression: json
             "type": "array"
           },
           "user_rank": {
+            "description": "`null` when the viewer opted out of the leaderboard.",
             "format": "int64",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
         "required": [
           "profile",
           "recent_transactions",
-          "user_rank",
           "leaderboard"
         ],
         "type": "object"
@@ -11801,6 +11804,14 @@ expression: json
           "email": {
             "type": "string"
           },
+          "google_linked": {
+            "description": "A Google identity is linked; Google sign-in never asks for the TOTP\ncode.",
+            "type": "boolean"
+          },
+          "has_password": {
+            "description": "The account has a password to change (`false`: Google-only — no\npassword can be set through the API — or no session involved). UX-188.",
+            "type": "boolean"
+          },
           "id": {
             "$ref": "#/components/schemas/UserId"
           },
@@ -11822,7 +11833,9 @@ expression: json
           "display_name",
           "bio",
           "locale",
-          "mfa_enabled"
+          "mfa_enabled",
+          "has_password",
+          "google_linked"
         ],
         "type": "object"
       },

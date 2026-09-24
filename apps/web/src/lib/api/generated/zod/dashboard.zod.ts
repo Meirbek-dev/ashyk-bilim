@@ -69,7 +69,7 @@ export const Dashboard = zod.object({
       user_id: zod.uuid(),
     }),
   ),
-  user_rank: zod.int(),
+  user_rank: zod.int().nullish().describe('`null` when the viewer opted out of the leaderboard.'),
 })
 
 export type Dashboard = zod.input<typeof Dashboard>

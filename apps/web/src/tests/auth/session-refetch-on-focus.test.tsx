@@ -24,6 +24,8 @@ const session: Session = {
     locale: 'ru-RU',
     avatar_key: null,
     mfa_enabled: false,
+    has_password: true,
+    google_linked: false,
   },
   userId,
   roles: ['instructor'],
