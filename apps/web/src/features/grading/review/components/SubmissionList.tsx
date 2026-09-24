@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useSession } from '@/hooks/useSession'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import type { StatusFilter, SubmissionListProps } from '../types'
 
@@ -38,6 +39,7 @@ export default function SubmissionList({
   // UX-099: the same «79,96 %» the learner sees, not a rounded «80%».
   const percent = usePercentFormat()
   const locale = useLocale()
+  const { user } = useSession()
 
   return (
     <aside className="bg-muted/20 border-b p-4 lg:border-r lg:border-b-0">
@@ -91,6 +93,8 @@ export default function SubmissionList({
             const selected = submission.submission_uuid === selectedUuid
             const displayName = getSubmissionDisplayName(submission)
             const releaseState = getReleaseState(submission.status)
+            // UX-193: the viewer's own attempt is theirs to see, never to grade.
+            const own = Boolean(user) && submission.user_id === user?.id
             return (
               <div
                 key={submission.submission_uuid}
@@ -101,7 +105,8 @@ export default function SubmissionList({
               >
                 <div className="flex items-start gap-2">
                   <Checkbox
-                    checked={selectedUuids.has(submission.submission_uuid)}
+                    checked={!own && selectedUuids.has(submission.submission_uuid)}
+                    disabled={own}
                     onCheckedChange={checked => onToggleSelected(submission.submission_uuid, checked)}
                     aria-label={t('selectSubmission', { name: displayName })}
                   />
@@ -136,6 +141,7 @@ export default function SubmissionList({
                               ? tReview('releaseStateVisible')
                               : tReview('releaseStateReturned')}
                       </Badge>
+                      {own ? <Badge variant="secondary">{t('ownAttempt')}</Badge> : null}
                       {submission.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
                       {needsTeacherAction(submission.status) ? <Badge variant="warning">{t('action')}</Badge> : null}
                     </div>

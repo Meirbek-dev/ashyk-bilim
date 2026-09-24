@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   gradingPanelState: {
     submission: null as Submission | null,
     isLoading: false,
+    error: null as unknown,
   },
 }))
 
@@ -119,8 +120,13 @@ vi.mock('@/hooks/useGradingPanel', () => ({
   useGradingPanel: () => ({
     submission: mocks.gradingPanelState.submission,
     isLoading: mocks.gradingPanelState.isLoading,
+    error: mocks.gradingPanelState.error,
     mutate: mocks.mutateMock,
   }),
+}))
+
+vi.mock('@/hooks/useSession', () => ({
+  useSession: () => ({ user: { id: 'user_teacher' } }),
 }))
 
 function createSubmission(overrides: Partial<Submission> = {}): Submission {
@@ -162,6 +168,7 @@ describe('teacher review controls', () => {
     globalThis.localStorage.clear()
     mocks.gradingPanelState.submission = null
     mocks.gradingPanelState.isLoading = false
+    mocks.gradingPanelState.error = null
     mocks.publishAssessmentGradesMock.mockResolvedValue({
       published_count: 2,
       already_published_count: 1,
@@ -937,6 +944,64 @@ describe('teacher review controls', () => {
       )
       expect(screen.getAllByText(/%$/)).toHaveLength(1)
       expect(screen.getByText('80%')).toBeInTheDocument()
+    })
+
+    // UX-193: the viewer's own attempt is marked, never bulk-selectable, and
+    // opening it says why the form is not there.
+    it("marks the viewer's own attempt and says why it cannot be graded", () => {
+      const toggle = vi.fn()
+      render(
+        <SubmissionList
+          submissions={[
+            createSubmission({ submission_uuid: 'own', user_id: 'user_teacher' }),
+            createSubmission({ submission_uuid: 'theirs' }),
+          ]}
+          total={2}
+          pages={1}
+          page={1}
+          activeFilter="ALL"
+          search=""
+          sortBy="submitted_at"
+          isLoading={false}
+          selectedUuid={null}
+          selectedUuids={new Set(['own'])}
+          onFilterChange={vi.fn()}
+          onSearchChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onPageChange={vi.fn()}
+          onSelectSubmission={vi.fn()}
+          onToggleSelected={toggle}
+        />,
+      )
+      expect(screen.getAllByText('ownAttempt')).toHaveLength(1)
+      const boxes = screen.getAllByRole('checkbox')
+      expect(boxes[0]).toHaveAttribute('aria-disabled', 'true')
+      expect(boxes[0]).not.toBeChecked()
+      expect(boxes[1]).not.toHaveAttribute('aria-disabled')
+
+      mocks.gradingPanelState.error = new APIError({
+        status: 403,
+        code: 'grade-own-attempt',
+        message: 'Нельзя оценивать свою попытку.',
+      })
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="own"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+      expect(screen.getByRole('status')).toHaveTextContent('Нельзя оценивать свою попытку.')
     })
 
     it('the bulk release reports the rows held back for grading', async () => {

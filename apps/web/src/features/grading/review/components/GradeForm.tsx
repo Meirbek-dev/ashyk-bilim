@@ -70,7 +70,7 @@ export default function GradeForm({
   onSaved: () => Promise<void>
   navigation: ReviewNavigationState
 }) {
-  const { submission, isLoading, mutate } = useGradingPanel(submissionUuid, assessmentUuid)
+  const { submission, isLoading, error, mutate } = useGradingPanel(submissionUuid, assessmentUuid)
   const queryClient = useQueryClient()
   const { annotationsByItem, clearAll: clearAnnotations } = useAnnotations()
   const t = useTranslations('Grading.Panel')
@@ -415,8 +415,13 @@ export default function GradeForm({
     )
   }
 
+  // UX-193: say why (e.g. `grade-own-attempt` — a grader's own attempt).
   if (!submission) {
-    return <aside className="text-muted-foreground p-4 text-sm">{t('formUnavailable')}</aside>
+    return (
+      <aside className="text-muted-foreground p-4 text-sm" role="status">
+        {error ? handleApiError(error).message : t('formUnavailable')}
+      </aside>
+    )
   }
 
   // UX-047: publish follows the form, not the stored status — every item (or

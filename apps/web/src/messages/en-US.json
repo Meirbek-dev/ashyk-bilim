@@ -6911,7 +6911,8 @@
       "activity-not-ready": "Publish the assessment or file-submission settings first, then the activity.",
       "course-not-ready": "Resolve every readiness blocker before publishing the course.",
       "unsupported-media-type": "This file type is not allowed here.",
-      "link-preview-failed": "Could not fetch a preview for the link. Check the address and try again later."
+      "link-preview-failed": "Could not fetch a preview for the link. Check the address and try again later.",
+      "grade-own-attempt": "You cannot grade your own attempt."
     },
     "fields": {
       "required": "This field is required.",
@@ -6927,7 +6928,8 @@
       "password-unchanged": "The new password is the same as the current one.",
       "choice": {
         "option_id_duplicate": "Choice option ids must be unique."
-      }
+      },
+      "own-attempt": "You cannot grade your own attempt."
     },
     "requestFailed": "Request failed"
   },
@@ -8304,7 +8306,8 @@
           "releaseStateHidden": "Hidden",
           "releaseStateAwaitingRelease": "Awaiting release",
           "releaseStateVisible": "Visible",
-          "releaseStateReturned": "Returned"
+          "releaseStateReturned": "Returned",
+          "ownAttempt": "Your attempt"
         },
         "submissionInspector": {
           "selectSubmission": "Select a submission to begin reviewing.",
@@ -8393,7 +8396,7 @@
             "releaseFinished": "Grade release finished",
             "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}.",
             "releaseNeedsGrading": "{count, plural, one {# submission still awaits grading and was not published} other {# submissions still await grading and were not published}}",
-            "releaseSkipped": "{count, plural, one {# submission changed during the release and stayed hidden — release again} other {# submissions changed during the release and stayed hidden — release again}}"
+            "releaseSkipped": "{count, plural, one {# submission stayed hidden: it changed during the release (release again) or it is your own attempt} other {# submissions stayed hidden: they changed during the release (release again) or they are your own attempts}}"
           },
           "failedSubmissionsTitle": "{count, plural, one {# submission} other {# submissions}} failed to update:",
           "preview": {
