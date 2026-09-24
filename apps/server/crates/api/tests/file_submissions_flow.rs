@@ -1462,3 +1462,59 @@ async fn deletes_release_submitted_file_uploads(pool: PgPool) {
         assert_eq!((count, expiring), (0, true), "{target}");
     }
 }
+
+/// BUG-260: a grade published for a learner who left the course is
+/// recorded — and nothing more: no completion, no certificate.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF v1").await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let version = submitted.json()["version"].to_string();
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1")
+        .bind(alice.user_id.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let published = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 91 }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["final_score"], 91.0);
+    let (completed, certificates): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM course_progress
+                 WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
+                (SELECT count(*) FROM certificate_users WHERE user_id = $1)",
+    )
+    .bind(alice.user_id.0)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((completed, certificates), (0, 0));
+}

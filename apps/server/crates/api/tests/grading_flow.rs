@@ -2360,6 +2360,16 @@ async fn grader_actions_never_enrol_a_leaver(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(runs, 0, "a grader's action re-enrolled the leaver");
+    // BUG-260: the grade is recorded, nothing else — no completion.
+    let completed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM course_progress
+         WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)",
+    )
+    .bind(alice.user_id.0)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(completed, 0, "a leaver's grade completed the course");
 }
 
 /// BUG-215: an integrity-annulled attempt's 0 is an explicit override —

@@ -152,6 +152,11 @@ impl ProgressProjector {
         };
         if enrol {
             self.ensure_enrolled(assessment.course_id, user_id).await?;
+        } else if !ab_db::progress::has_trail_run(&self.pool, assessment.course_id, user_id).await?
+        {
+            // BUG-260: a non-member's grade is recorded (the row) and
+            // nothing more — no progress, completion, certificate or XP.
+            return Ok(());
         }
         self.recalculate_activity(assessment.activity_id, user_id)
             .await?;
@@ -190,6 +195,10 @@ impl ProgressProjector {
         };
         if enrol {
             self.ensure_enrolled(fs.course_id, user_id).await?;
+        } else if !ab_db::progress::has_trail_run(&self.pool, fs.course_id, user_id).await? {
+            // BUG-260: a non-member's grade is recorded (the row) and
+            // nothing more — no progress, completion, certificate or XP.
+            return Ok(());
         }
         self.recalculate_activity(fs.activity_id, user_id).await?;
         Ok(())
