@@ -19,6 +19,7 @@ const harness = vi.hoisted(() => ({
   updateActivity: vi.fn<() => Promise<unknown>>(),
   toastApiError: vi.fn(),
   toastError: vi.fn(),
+  toastSuccess: vi.fn(),
 }))
 
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
@@ -49,7 +50,7 @@ vi.mock('@/i18n/navigation', () => ({
 }))
 vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: harness.toastApiError }) }))
 vi.mock('sonner', () => ({
-  toast: { error: harness.toastError, success: vi.fn(), loading: vi.fn(), dismiss: vi.fn() },
+  toast: { error: harness.toastError, success: harness.toastSuccess, loading: vi.fn(), dismiss: vi.fn() },
 }))
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({
   useListCourseAssessments: () => ({
@@ -113,6 +114,24 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     expect(screen.getByRole('button', { name: 'publish' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'deleteButton' })).toBeInTheDocument()
     harness.contributorIds = []
+  })
+
+  // UX-200: unpublishing cuts learners off — a confirm first, then a result toast.
+  it('asks before unpublishing and toasts the result', async () => {
+    harness.permissions = new Set(['activity:update:own'])
+    harness.creatorId = 'teacher-1'
+    harness.updateActivity.mockReset().mockResolvedValue({})
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } })}>
+        <ActivityElement activity={{ ...activity, published: true }} activityIndex={0} course_uuid="course-1" />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'unpublish' }))
+    expect(await screen.findByText('unpublishConfirmMessage')).toBeInTheDocument()
+    expect(harness.updateActivity).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'unpublish' }))
+    await waitFor(() => expect(harness.updateActivity).toHaveBeenCalledWith('act-1', { published: false }))
+    await waitFor(() => expect(harness.toastSuccess).toHaveBeenCalledWith('unpublishedToast'))
   })
 
   it('platform-scoped grants apply to any course', () => {

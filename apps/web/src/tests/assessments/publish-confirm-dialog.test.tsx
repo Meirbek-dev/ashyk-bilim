@@ -126,6 +126,37 @@ describe('publish confirmation dialog (UX-011)', () => {
     expect(onLifecycleChange).toHaveBeenCalledWith('DRAFT')
   })
 
+  // UX-200: reverting a published assessment cuts learners off — confirm first.
+  it('asks before reverting a published assessment to draft', async () => {
+    const onLifecycleChange = vi.fn()
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <NextIntlClientProvider locale="ru" messages={ruMessages}>
+          <PublishDashboardTab
+            assessmentUuid="asm-1"
+            lifecycle="PUBLISHED"
+            items={items}
+            totalPoints={8}
+            assessmentState={assessmentState}
+            validationIssues={[]}
+            canPublish
+            canSchedule
+            canArchive
+            onSwitchToBuilder={() => undefined}
+            onLifecycleChange={onLifecycleChange}
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    )
+
+    fireEvent.click(screen.getByText('Вернуть в черновики'))
+    const dialog = await screen.findByRole('alertdialog')
+    expect(dialog).toHaveTextContent(ruMessages.Features.Assessments.Studio.PublishDashboard.revertConfirmMessage)
+    expect(onLifecycleChange).not.toHaveBeenCalled()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Вернуть в черновики' }))
+    await waitFor(() => expect(onLifecycleChange).toHaveBeenCalledWith('DRAFT'))
+  })
+
   // UX-128: a publish date past the policy due date is refused on the date
   // field — client-side first, and again when the server says `schedule.after_due_at`.
   it('surfaces schedule.after_due_at on the date field and keeps the date', async () => {

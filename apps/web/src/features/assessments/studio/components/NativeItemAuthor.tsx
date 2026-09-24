@@ -293,6 +293,8 @@ export function NativeItemAuthor({
             note: auditNote?.trim() || null,
           }),
         })
+        // UX-200: the result shows as soon as the transition lands, not after the refetches.
+        toast.success(tStudio('lifecycleChanged', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
         await refresh()
         // The transition (un)publishes the activity: the learner-facing
         // outline, the curriculum and the course readiness verdict move (UX-085).
@@ -303,7 +305,6 @@ export function NativeItemAuthor({
             queryClient.invalidateQueries({ queryKey: queryKeys.courses.readiness(courseUuid) }),
           ])
         }
-        toast.success(tStudio('lifecycleChanged', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
       } catch (error) {
         // BUG-171: a 409 names the refused stage in the page language and re-syncs the view.
         if (hasErrorCode(error, 'conflict')) {

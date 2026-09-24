@@ -151,6 +151,7 @@ function ActivityElement({
   const [editedName, setEditedName] = useState(activity?.name ?? '')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isUpdatingPublish, setIsUpdatingPublish] = useState(false)
+  const [isUnpublishConfirmOpen, setIsUnpublishConfirmOpen] = useState(false)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingActivity, setIsDeletingActivity] = useState(false)
 
@@ -197,13 +198,16 @@ function ActivityElement({
   }
 
   const handleTogglePublish = async () => {
+    // The optimistic update rewrites `activity` in place — read it first.
+    const unpublishing = activity.published
+    setIsUnpublishConfirmOpen(false)
     setIsUpdatingPublish(true)
     const toastId = toast.loading(t('updating'))
     try {
       await updateActivity(activity.activity_uuid, {
-        published: !activity.published,
+        published: !unpublishing,
       })
-      toast.success(t('activityUpdateSuccess'))
+      toast.success(unpublishing ? t('unpublishedToast') : t('activityUpdateSuccess'))
     } catch (error: unknown) {
       // `activity-not-ready` (file-submission config still a draft) and the
       // rest are localized through the error-code catalog.
@@ -369,7 +373,8 @@ function ActivityElement({
                 size="icon"
                 variant="outline"
                 className={ACTION_ICON_BUTTON_CLASS}
-                onClick={handleTogglePublish}
+                // UX-200: unpublishing cuts learners off (their hand-ins too) — confirm first.
+                onClick={activity.published ? () => setIsUnpublishConfirmOpen(true) : handleTogglePublish}
                 disabled={isUpdatingPublish}
                 aria-label={activity.published ? t('unpublish') : t('publish')}
               >
@@ -400,6 +405,21 @@ function ActivityElement({
           )}
         </div>
       )}
+
+      <AlertDialog open={isUnpublishConfirmOpen} onOpenChange={setIsUnpublishConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('unpublishConfirmTitle', { name: activity.name })}</AlertDialogTitle>
+            <AlertDialogDescription>{t('unpublishConfirmMessage')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdatingPublish} />
+            <AlertDialogAction variant="destructive" onClick={handleTogglePublish} disabled={isUpdatingPublish}>
+              {t('unpublish')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

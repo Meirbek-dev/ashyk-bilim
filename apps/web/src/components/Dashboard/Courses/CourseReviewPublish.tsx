@@ -21,6 +21,16 @@ import type { CourseReadiness } from '@services/courses/courses'
 import { useCourseEditorStore } from '@/stores/courses'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import AppLink from '@/components/ui/AppLink'
 
 export default function CourseReviewPublish({
@@ -36,6 +46,7 @@ export default function CourseReviewPublish({
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const [isPending, startTransition] = useTransition()
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [privateConfirmOpen, setPrivateConfirmOpen] = useState(false)
   const readinessQuery = useQuery(courseReadinessQueryOptions(course.courseStructure.course_uuid))
   const readiness = readinessQuery.data
   const blockers = readiness?.issues.filter(issue => issue.severity === 'blocker') ?? []
@@ -45,6 +56,7 @@ export default function CourseReviewPublish({
   const toggleVisibility = () => {
     if (!capabilities.canManageAccess) return
     const nextPublic = !isPublic
+    setPrivateConfirmOpen(false)
 
     startTransition(() => {
       void (async () => {
@@ -103,11 +115,33 @@ export default function CourseReviewPublish({
               {t('openLearnerPreview')}
             </Button>
             {capabilities.canManageAccess ? (
-              <Button onClick={toggleVisibility} disabled={isPending || isRefreshing || publishDisabled}>
+              // UX-200: going private cuts off learners outside the linked groups — confirm first.
+              <Button
+                onClick={isPublic ? () => setPrivateConfirmOpen(true) : toggleVisibility}
+                disabled={isPending || isRefreshing || publishDisabled}
+              >
                 {isPending || isRefreshing ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}
                 {isPublic ? t('movePrivate') : t('publishCourse')}
               </Button>
             ) : null}
+            <AlertDialog open={privateConfirmOpen} onOpenChange={setPrivateConfirmOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('movePrivateConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('movePrivateConfirmMessage')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isPending || isRefreshing} />
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={toggleVisibility}
+                    disabled={isPending || isRefreshing}
+                  >
+                    {t('movePrivate')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </section>

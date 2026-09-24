@@ -28,6 +28,16 @@ import type { ClassifiedValidationIssue } from '@/features/assessments/domain/re
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
 import { assessmentAccessQueryOptions } from '@/features/assessments/queries'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -101,6 +111,7 @@ export default function PublishDashboardTab({
   // (422 `schedule.after_due_at`); the picker says so before and after.
   const [scheduleRefused, setScheduleRefused] = useState(false)
   const [pendingAction, setPendingAction] = useState<'publish' | 'schedule' | null>(null)
+  const [revertConfirmOpen, setRevertConfirmOpen] = useState(false)
   const [auditNote, setAuditNote] = useState('')
   const [isPending, startTransition] = useTransition()
   const accessQuery = useQuery(assessmentAccessQueryOptions(assessmentUuid))
@@ -159,6 +170,7 @@ export default function PublishDashboardTab({
   }
 
   const handleUnpublish = () => {
+    setRevertConfirmOpen(false)
     startTransition(() => {
       onLifecycleChange('DRAFT')
     })
@@ -224,9 +236,31 @@ export default function PublishDashboardTab({
         <div className="flex items-center gap-2">
           {isPublished || isScheduled || isArchived ? (
             // BUG-171: archived → draft is the only way out of the archive (the API allows it).
-            <Button variant="outline" size="sm" disabled={isPending} onClick={handleUnpublish}>
-              {tPublish(isArchived ? 'restoreToDraft' : 'revertToDraft')}
-            </Button>
+            // UX-200: a published one goes dark for learners — confirm first.
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={isPublished ? () => setRevertConfirmOpen(true) : handleUnpublish}
+              >
+                {tPublish(isArchived ? 'restoreToDraft' : 'revertToDraft')}
+              </Button>
+              <AlertDialog open={revertConfirmOpen} onOpenChange={setRevertConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{tPublish('revertConfirmTitle')}</AlertDialogTitle>
+                    <AlertDialogDescription>{tPublish('revertConfirmMessage')}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isPending} />
+                    <AlertDialogAction variant="destructive" disabled={isPending} onClick={handleUnpublish}>
+                      {tPublish('revertToDraft')}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           ) : (
             <>
               <Button
