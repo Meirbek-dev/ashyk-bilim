@@ -469,6 +469,31 @@ impl ProgressProjector {
         outcome.map(|()| report)
     }
 
+    /// Re-project a user whose course-staff standing may have changed
+    /// (roster or RBAC writers, after commit; BUG-291): a user leaving the
+    /// staff is a member again and picks up what was graded meanwhile.
+    /// `course_id` narrows it to one course; else every course they hold a
+    /// run in. Non-members are skipped; a failing course never drops the
+    /// ones after it (the last error is returned).
+    pub async fn reproject_staff_change(
+        &self,
+        user_id: UserId,
+        course_id: Option<CourseId>,
+    ) -> Result<()> {
+        let courses = match course_id {
+            Some(id) => vec![id],
+            None => ab_db::progress::user_run_course_ids(&self.pool, user_id).await?,
+        };
+        let mut outcome = Ok(());
+        for course in courses {
+            if let Err(err) = self.reproject_member(course, user_id, false).await {
+                tracing::warn!(%course, %user_id, error = %err, "staff-change reprojection failed");
+                outcome = Err(err);
+            }
+        }
+        outcome
+    }
+
     /// One member's backfill: every published activity row and the course
     /// aggregate under the member's trail lock. `enrol` (a learner joining)
     /// creates the run first, so a rejoin picks up what changed while they

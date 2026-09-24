@@ -1321,16 +1321,13 @@ async fn essay_quiz(
     )
 }
 
-/// Submit an essay attempt (pending), leave, and have the teacher publish
-/// 100 while the learner is away.
-async fn graded_while_away(
+/// Submit an essay attempt (pending); returns the submission id.
+async fn submit_essay(
     app: &TestApp,
-    teacher: &MintedSession,
     who: &MintedSession,
-    course_id: &str,
     assessment_id: &str,
     item: &str,
-) {
+) -> String {
     let draft = app
         .post_as(
             who,
@@ -1352,10 +1349,11 @@ async fn graded_while_away(
         "{}",
         submitted.text()
     );
-    let left = app
-        .delete_as(who, &format!("/api/v2/trail/courses/{course_id}"))
-        .await;
-    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    sub_id
+}
+
+/// The teacher publishes 100 on a pending submission.
+async fn publish_full_marks(app: &TestApp, teacher: &MintedSession, sub_id: &str) {
     let graded = app
         .send(
             axum::http::Request::builder()
@@ -1371,6 +1369,24 @@ async fn graded_while_away(
         )
         .await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+}
+
+/// Submit an essay attempt (pending), leave, and have the teacher publish
+/// 100 while the learner is away.
+async fn graded_while_away(
+    app: &TestApp,
+    teacher: &MintedSession,
+    who: &MintedSession,
+    course_id: &str,
+    assessment_id: &str,
+    item: &str,
+) {
+    let sub_id = submit_essay(app, who, assessment_id, item).await;
+    let left = app
+        .delete_as(who, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    publish_full_marks(app, teacher, &sub_id).await;
 }
 
 /// BUG-275: a grade and a lesson published while the learner was away both
@@ -1598,3 +1614,106 @@ async fn rejoin_by_submission_reprojects_the_member(pool: PgPool) {
         mine.text()
     );
 }
+
+/// BUG-291: a learner who joins the staff and leaves it again — removed,
+/// deactivated, demoted to reporter, or a platform grant revoked — is a
+/// member again and picks up the grade published while they were staff.
+#[sqlx::test(migrations = "../../migrations")]
+async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let admin = app.mint_session(&["*:*:*"]).await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Staff and back").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let (essay, _, essay_item) = essay_quiz(&app, &teacher, &chapter_id).await;
+    let (q2, _, q2_item) = quiz(&app, &teacher, &chapter_id).await;
+    let roster = format!("/api/v2/courses/{course_id}/contributors");
+    for exit in ["remove", "deactivate", "reporter", "rbac"] {
+        let who = learner(&app, &format!("l-{exit}")).await;
+        let draft = app
+            .post_as(
+                &who,
+                &format!("/api/v2/assessments/{q2}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        let sub = draft.json()["id"].as_str().unwrap().to_owned();
+        let passed = app
+            .post_as(
+                &who,
+                &format!("/api/v2/submissions/{sub}/submit"),
+                &serde_json::json!({ "answers": { &q2_item: { "kind": "choice", "selected": ["a"] } } }),
+            )
+            .await;
+        assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
+        let pending = submit_essay(&app, &who, &essay, &essay_item).await;
+        let member = format!("{roster}/{}", who.user_id);
+        let roles = format!("/api/v2/users/{}/roles", who.user_id);
+        let joined = if exit == "rbac" {
+            app.post_as(&admin, &roles, &serde_json::json!({ "role": "maintainer" }))
+                .await
+        } else {
+            app.post_as(
+                &teacher,
+                &roster,
+                &serde_json::json!({ "user_id": who.user_id, "role": "contributor" }),
+            )
+            .await
+        };
+        assert!(joined.status.is_success(), "{exit}: {}", joined.text());
+        publish_full_marks(&app, &teacher, &pending).await;
+        let left = match exit {
+            "remove" => app.delete_as(&teacher, &member).await,
+            "deactivate" => {
+                app.patch_as(
+                    &teacher,
+                    &member,
+                    &serde_json::json!({ "status": "inactive" }),
+                )
+                .await
+            }
+            "reporter" => {
+                app.patch_as(
+                    &teacher,
+                    &member,
+                    &serde_json::json!({ "role": "reporter" }),
+                )
+                .await
+            }
+            _ => app.delete_as(&admin, &format!("{roles}/maintainer")).await,
+        };
+        assert!(left.status.is_success(), "{exit}: {}", left.text());
+        let state = app
+            .get_as(&who, &format!("/api/v2/courses/{course_id}/learner-state"))
+            .await
+            .json();
+        assert_eq!(
+            state["progress"]["completed_required_count"], 2,
+            "{exit}: {state}"
+        );
+        assert_eq!(
+            state["progress"]["total_required_count"], 2,
+            "{exit}: {state}"
+        );
+        let mine = app
+            .get_as(
+                &who,
+                &format!("/api/v2/courses/{course_id}/certificates/me"),
+            )
+            .await;
+        assert_eq!(
+            mine.json().as_array().map(Vec::len),
+            Some(1),
+            "{exit}: {}",
+            mine.text()
+        );
+    }
+}
+

@@ -347,6 +347,17 @@ pub async fn course_members(pool: &PgPool, course_id: CourseId) -> Result<Vec<Us
     Ok(ids)
 }
 
+/// Every course the user holds a run in, staffed or not (BUG-291).
+pub async fn user_run_course_ids(pool: &PgPool, user_id: UserId) -> Result<Vec<CourseId>> {
+    let ids = sqlx::query_scalar!(
+        r#"SELECT course_id AS "course_id!: CourseId" FROM trail_runs WHERE user_id = $1"#,
+        user_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(ids)
+}
+
 pub async fn list_course_ids(pool: &PgPool) -> Result<Vec<CourseId>> {
     let ids = sqlx::query_scalar!(r#"SELECT id AS "id: CourseId" FROM courses ORDER BY id"#)
         .fetch_all(pool)

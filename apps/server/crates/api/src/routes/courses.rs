@@ -213,17 +213,21 @@ pub async fn update_contributor(
     Path((id, user_id)): Path<(CourseId, UserId)>,
     ValidJson(request): ValidJson<UpdateContributorRequest>,
 ) -> ApiResult<Json<Contributor>> {
-    let row = state
-        .courses
-        .update_contributor(
-            &actor,
-            id,
-            user_id,
-            request.role.as_deref(),
-            request.status.as_deref(),
-        )
-        .await?;
-    Ok(Json(row.into()))
+    // Roster write → member re-projection outlive the connection (BUG-291).
+    detached(async move {
+        let row = state
+            .courses
+            .update_contributor(
+                &actor,
+                id,
+                user_id,
+                request.role.as_deref(),
+                request.status.as_deref(),
+            )
+            .await?;
+        Ok(Json(row.into()))
+    })
+    .await
 }
 
 /// Remove a contributor (reject an application, or drop an active one), or
@@ -249,11 +253,14 @@ pub async fn remove_contributor(
     CurrentActor(actor): CurrentActor,
     Path((id, user_id)): Path<(CourseId, UserId)>,
 ) -> ApiResult<StatusCode> {
-    state
-        .courses
-        .remove_contributor(&actor, id, user_id)
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    detached(async move {
+        state
+            .courses
+            .remove_contributor(&actor, id, user_id)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Apply to contribute (any signed-in user on an `open_to_contributors`

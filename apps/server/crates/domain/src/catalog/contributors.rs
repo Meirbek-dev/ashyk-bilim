@@ -16,6 +16,7 @@ pub use ab_db::catalog::ContributorRow as Contributor;
 
 use super::courses::{Course, CoursesService, perm};
 use crate::identity::Actor;
+use crate::progress::ProgressProjector;
 
 pub const ROLES: &[&str] = &["maintainer", "contributor", "reporter"];
 pub const STATUSES: &[&str] = &["pending", "active", "inactive"];
@@ -115,6 +116,10 @@ impl CoursesService {
         {
             return Err(Error::not_found("contributor"));
         }
+        // BUG-291: a deactivated / demoted author with a run is a member again.
+        ProgressProjector::new(self.pool.clone())
+            .reproject_staff_change(user_id, Some(course_id))
+            .await?;
         ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
             .await?
             .ok_or_else(|| Error::not_found("contributor"))
@@ -150,7 +155,10 @@ impl CoursesService {
         if !ab_db::catalog::delete_contributor(&self.pool, course_id, user_id).await? {
             return Err(Error::not_found("contributor"));
         }
-        Ok(())
+        // BUG-291: a removed author with a run is a member again.
+        ProgressProjector::new(self.pool.clone())
+            .reproject_staff_change(user_id, Some(course_id))
+            .await
     }
 
     /// Legacy `apply-contributor`: any signed-in user on an

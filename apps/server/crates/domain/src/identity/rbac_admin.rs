@@ -11,6 +11,7 @@ use sqlx::PgPool;
 
 use crate::identity::Actor;
 use crate::identity::sessions::SessionStore;
+use crate::progress::ProgressProjector;
 
 const MANAGE_ROLES: Permission = Permission {
     resource: ResourceType::Role,
@@ -359,7 +360,9 @@ impl RbacAdminService {
         Ok(())
     }
 
-    /// Push the user's fresh grants into every live session.
+    /// Push the user's fresh grants into every live session, and re-project
+    /// the courses they hold a run in: a grant change can move them off
+    /// (or onto) every course's staff (`is_course_staff`, BUG-291).
     async fn propagate(&self, user_id: UserId, rbac_version: i64) -> Result<()> {
         let (roles, permissions) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
         let updated = self
@@ -367,7 +370,9 @@ impl RbacAdminService {
             .rewrite_user_sessions(user_id, &roles, &permissions, rbac_version)
             .await?;
         tracing::info!(%user_id, rbac_version, sessions = updated, "rbac change propagated");
-        Ok(())
+        ProgressProjector::new(self.pool.clone())
+            .reproject_staff_change(user_id, None)
+            .await
     }
 }
 
