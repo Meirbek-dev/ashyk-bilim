@@ -85,6 +85,7 @@ error_codes! {
     LanguageNotAllowed => ("language-not-allowed", 422, "Programming language not allowed"),
     // Grading
     GradeNotReleased => ("grade-not-released", 403, "Grade is not released yet"),
+    GradeOwnAttempt => ("grade-own-attempt", 403, "A grader may not act on their own attempt"),
     // AI
     AiDisabled => ("ai-disabled", 503, "AI features are disabled"),
     AiBudgetExhausted => ("ai-budget-exhausted", 503, "AI token budget exhausted"),

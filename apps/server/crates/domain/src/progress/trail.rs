@@ -96,7 +96,8 @@ async fn lock_trail_run(
 /// the member's trail lock with the run re-checked inside it, so a leave
 /// lands wholly before (→ `None`, nothing is written) or after the write.
 /// `enrol` (the learner's own work) creates the run instead — never for the
-/// course's staff (BUG-287). Do every write through the returned
+/// course's staff (BUG-287), who are no member even with a leftover run
+/// (`has_trail_run`, BUG-288). Do every write through the returned
 /// transaction and fire pool hooks after commit (BUG-235).
 pub(crate) async fn lock_member(
     pool: &PgPool,

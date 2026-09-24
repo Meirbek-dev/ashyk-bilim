@@ -407,6 +407,7 @@ impl AssessmentsService {
         input: OverrideInput,
     ) -> Result<Override> {
         let assessment = self.load_for_author(actor, id).await?;
+        Self::not_own(actor, user_id)?;
         input.validate()?;
         if let Some(e) = Self::unknown_user(&self.pool, user_id, "user_id").await? {
             return Err(Error::validation(vec![e]));
@@ -446,6 +447,7 @@ impl AssessmentsService {
         input: OverrideInput,
     ) -> Result<Override> {
         let assessment = self.load_for_author(actor, id).await?;
+        Self::not_own(actor, user_id)?;
         input.validate()?;
         let mut tx = self.lock_member(assessment.course_id, user_id).await?;
         let updated = ab_db::assessments::update_override(
@@ -480,11 +482,20 @@ impl AssessmentsService {
         user_id: UserId,
     ) -> Result<()> {
         self.load_for_author(actor, id).await?;
+        Self::not_own(actor, user_id)?;
         if !ab_db::assessments::delete_override(&self.pool, id, user_id).await? {
             return Err(Error::not_found("override"));
         }
         self.audit_override(actor, id, user_id, "override-deleted")
             .await
+    }
+
+    /// BUG-288: an override never targets the caller's own attempts.
+    fn not_own(actor: &Actor, user_id: UserId) -> Result<()> {
+        if actor.user_id == user_id {
+            return Err(crate::grading::teacher::own_attempt());
+        }
+        Ok(())
     }
 
     /// Read-back after a committed write under the member lock: a missing row

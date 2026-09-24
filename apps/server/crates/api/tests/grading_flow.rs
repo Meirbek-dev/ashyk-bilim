@@ -1512,6 +1512,116 @@ async fn a_grader_may_not_grade_their_own_attempt(pool: PgPool) {
     assert_eq!(by_teacher.status, StatusCode::OK, "{}", by_teacher.text());
 }
 
+/// BUG-288: a learner who joins the staff is no member (overrides by
+/// others refuse them) and their own grader actions never reach their own
+/// counted attempt: override 403, extension 422 naming them, publish-all
+/// skips their row.
+#[sqlx::test(migrations = "../../migrations")]
+async fn grader_actions_never_reach_the_callers_own_attempt(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600 }),
+    )
+    .await;
+    let lena_id = app
+        .create_user("lena", "lena@example.com", &["instructor"])
+        .await;
+    let lena = app
+        .mint_session_for(
+            lena_id,
+            &[
+                "course:read:all",
+                "assessment:*:own",
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+            ],
+        )
+        .await;
+    let alice = learner(&app, "alice").await;
+    for who in [&lena, &alice] {
+        let sub = submit_attempt(&app, who, &id, &choice_id, &essay_id).await;
+        let saved = app
+            .send(grade(
+                &teacher,
+                &sub,
+                Some("1"),
+                &serde_json::json!({ "action": "save",
+                    "item_grades": [{ "item_id": &essay_id, "score": 10 }] }),
+            ))
+            .await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    }
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": lena.user_id, "role": "maintainer" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let me = lena.user_id.to_string();
+    let waive = serde_json::json!({ "waive_late_penalty": true });
+    let own = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/assessments/{id}/overrides/{me}"),
+            &waive,
+        )
+        .await;
+    assert_eq!(own.status, StatusCode::FORBIDDEN, "{}", own.text());
+    assert_eq!(own.json()["code"], "grade-own-attempt");
+    let by_teacher = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{me}"),
+            &waive,
+        )
+        .await;
+    assert_eq!(
+        by_teacher.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        by_teacher.text()
+    );
+    assert_eq!(
+        by_teacher.json()["field_errors"][0]["code"],
+        "not-in-course"
+    );
+    let extended = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [&me, alice.user_id.to_string()],
+                "new_due_at_unix": now_unix() + 86_400 }),
+        )
+        .await;
+    assert_eq!(
+        extended.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        extended.text()
+    );
+    let errors = extended.json()["field_errors"].clone();
+    assert_eq!(errors.as_array().map(Vec::len), Some(1), "{errors}");
+    assert_eq!(errors[0]["field"], format!("user_ids.{me}"));
+    assert_eq!(errors[0]["code"], "own-attempt");
+    let released = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/assessments/{id}/publish-grades"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(released.status, StatusCode::OK, "{}", released.text());
+    assert_eq!(released.json()["published_count"], 1, "{}", released.text());
+    assert_eq!(released.json()["skipped_count"], 1, "{}", released.text());
+}
+
 /// BUG-283: an extension over an expired override applies — the expiry is
 /// cleared, and the expired grant's extra attempts are not resurrected.
 #[sqlx::test(migrations = "../../migrations")]
@@ -2398,22 +2508,39 @@ async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
         assert_eq!(res.json()["field_errors"][0]["field"], field);
         assert_eq!(res.json()["field_errors"][0]["code"], "not-in-course");
     };
-    // Access is not membership: the author (public course, never enrolled
-    // alice) is refused by both the extension and the override routes.
+    // Access is not membership: a never-enrolled alice is refused by both
+    // the extension and the override routes; the author targeting
+    // themselves is their own attempt (BUG-288).
     let me = teacher.user_id.to_string();
-    not_member(
-        &app.post_as(&teacher, &path, &extend(&me)).await,
-        &format!("user_ids.{me}"),
+    let own = app.post_as(&teacher, &path, &extend(&me)).await;
+    assert_eq!(
+        own.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        own.text()
     );
+    assert_eq!(
+        own.json()["field_errors"][0]["field"],
+        format!("user_ids.{me}")
+    );
+    assert_eq!(own.json()["field_errors"][0]["code"], "own-attempt");
     not_member(
         &app.post_as(&teacher, &path, &extend(&alice.user_id.to_string()))
             .await,
         &format!("user_ids.{}", alice.user_id),
     );
+    let own = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{me}"),
+            &serde_json::json!({ "max_attempts_override": 3 }),
+        )
+        .await;
+    assert_eq!(own.status, StatusCode::FORBIDDEN, "{}", own.text());
     not_member(
         &app.post_as(
             &teacher,
-            &format!("/api/v2/assessments/{id}/overrides/{me}"),
+            &format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id),
             &serde_json::json!({ "max_attempts_override": 3 }),
         )
         .await,

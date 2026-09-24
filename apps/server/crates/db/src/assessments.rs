@@ -901,7 +901,7 @@ pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i
     let count = sqlx::query_scalar!(
         r#"SELECT CASE WHEN a.access_mode = 'all_course_learners' THEN
                (SELECT count(DISTINCT r.user_id) FROM trail_runs r
-                WHERE r.course_id = a.course_id)
+                WHERE r.course_id = a.course_id AND NOT is_course_staff(r.course_id, r.user_id))
            ELSE
                (SELECT count(DISTINCT reach.user_id) FROM (
                     SELECT user_id FROM assessment_access_users WHERE assessment_id = $1
@@ -910,7 +910,8 @@ pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i
                     JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id
                     WHERE g.assessment_id = $1
                 ) reach
-                JOIN trail_runs r ON r.user_id = reach.user_id AND r.course_id = a.course_id)
+                JOIN trail_runs r ON r.user_id = reach.user_id AND r.course_id = a.course_id
+                WHERE NOT is_course_staff(r.course_id, r.user_id))
            END AS "count!"
            FROM assessments a WHERE a.id = $1"#,
         id.0

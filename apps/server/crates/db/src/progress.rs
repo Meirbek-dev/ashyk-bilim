@@ -334,10 +334,12 @@ pub async fn get_course_progress<'e>(
 /// The same predicate [`has_trail_run`] applies per learner (BUG-260). Course-wide
 /// recalculations and backfills cover members only: a leaver's (or a staff
 /// preview's) leftover rows never re-aggregate into a completion,
-/// certificate or XP (BUG-268).
+/// certificate or XP (BUG-268). The course's staff are never members, even
+/// with a run left from before they joined it (BUG-287/288).
 pub async fn course_members(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT user_id AS "user_id!: UserId" FROM trail_runs WHERE course_id = $1"#,
+        r#"SELECT user_id AS "user_id!: UserId" FROM trail_runs
+           WHERE course_id = $1 AND NOT is_course_staff(course_id, user_id)"#,
         course_id.0
     )
     .fetch_all(pool)
@@ -441,14 +443,17 @@ pub async fn get_trail_run<'e>(
     Ok(row)
 }
 
-/// Whether the learner has a run for the course (enrollment signal).
+/// Whether the learner is a member: a run for the course, and not one of
+/// its staff — a learner who joined the staff keeps a run but is no member
+/// (BUG-288).
 pub async fn has_trail_run<'e>(
     db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<bool> {
     let exists = sqlx::query_scalar!(
-        r#"SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2)
+        r#"SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2
+                         AND NOT is_course_staff(course_id, user_id))
            AS "exists!""#,
         course_id.0,
         user_id.0
@@ -483,7 +488,9 @@ pub async fn has_trail_run_locked<'e>(
     user_id: UserId,
 ) -> Result<bool> {
     let row = sqlx::query_scalar!(
-        "SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2 FOR SHARE",
+        "SELECT 1 FROM trail_runs
+         WHERE course_id = $1 AND user_id = $2 AND NOT is_course_staff(course_id, user_id)
+         FOR SHARE",
         course_id.0,
         user_id.0
     )

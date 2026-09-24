@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2)\n           AS \"exists!\"",
+  "query": "SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2\n                         AND NOT is_course_staff(course_id, user_id))\n           AS \"exists!\"",
   "describe": {
     "columns": [
       {
@@ -20,5 +20,5 @@
       null
     ]
   },
-  "hash": "50c28e2ca6f91873caa86e3e4eecfe2383fdb11eff416c869b5df72284710fa9"
+  "hash": "16e0fca433cf13b3970d248a6223445215ca5b78a4af025d19375e5e4b45fa2d"
 }

@@ -747,7 +747,8 @@ pub async fn list_for_review(
                   (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
                   s.version,
                   EXISTS (SELECT 1 FROM trail_runs r
-                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id) AS "enrolled!"
+                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id
+                            AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!"
            FROM submissions s JOIN users u ON u.id = s.user_id
            WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview
              AND ($2::text IS NULL OR s.status = $2)

@@ -44,9 +44,15 @@ const MIN_DISCRIMINATION_SAMPLE: usize = 6;
 /// 409 for grading or analysing work the learner has not handed in yet
 /// (`ai::subject` uses the same words — one rule, BUG-198).
 pub(crate) const OPEN_DRAFT: &str = "an open draft cannot be graded";
-/// 403 for a grader opening their own counted attempt (BUG-286; the quiz
-/// and file-attempt grading paths share it). Their previews stay theirs.
+/// 403 `grade-own-attempt` for a grader acting on their own counted attempt
+/// (BUG-286: grading; BUG-288: overrides, extensions, publish-all skip it).
+/// Their previews stay theirs.
 pub(crate) const GRADE_OWN_ATTEMPT: &str = "a grader may not grade their own attempt";
+
+/// [`GRADE_OWN_ATTEMPT`] as the error every grader door answers.
+pub(crate) fn own_attempt() -> Error {
+    Error::app(ab_core::ErrorCode::GradeOwnAttempt, GRADE_OWN_ATTEMPT)
+}
 /// 409 for a publish while an item still awaits its manual score (BUG-197).
 const UNSCORED_MANUAL_ITEMS: &str =
     "every item awaiting manual review must be scored before the grade is published";
@@ -251,7 +257,8 @@ pub struct PublishSummary {
     /// `stats.needs_grading`.
     pub needs_grading_count: i64,
     /// Rows a grade save or return changed while the release ran (BUG-226
-    /// version guard) — left as they are; run the release again for them.
+    /// version guard) — left as they are; run the release again for them —
+    /// and the caller's own attempts, never theirs to release (BUG-288).
     pub skipped_count: i64,
 }
 
@@ -698,7 +705,7 @@ impl GradingService {
                 other => other,
             })?;
         if row.user_id == actor.user_id && !row.preview {
-            return Err(Error::forbidden(GRADE_OWN_ATTEMPT));
+            return Err(own_attempt());
         }
         if row.status == SubmissionStatus::Draft {
             return Err(Error::conflict(OPEN_DRAFT));
@@ -1413,6 +1420,11 @@ impl GradingService {
         for row in rows {
             if ab_db::submissions::has_published_entry(&self.pool, row.id).await? {
                 already += 1;
+                continue;
+            }
+            // BUG-288: never the caller's own counted attempt.
+            if row.user_id == actor.user_id {
+                skipped += 1;
                 continue;
             }
             let latest = ab_db::submissions::latest_grading_entry(&self.pool, row.id).await?;

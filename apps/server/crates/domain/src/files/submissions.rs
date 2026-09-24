@@ -1142,7 +1142,7 @@ impl FileSubmissionsService {
                 other => other,
             })?;
         if attempt.user_id == actor.user_id && !attempt.preview {
-            return Err(Error::forbidden(crate::grading::teacher::GRADE_OWN_ATTEMPT));
+            return Err(crate::grading::teacher::own_attempt());
         }
         // UX-108: the grading gate answers before the header is validated.
         let expected_version = input.expected_version.ok_or_else(|| {

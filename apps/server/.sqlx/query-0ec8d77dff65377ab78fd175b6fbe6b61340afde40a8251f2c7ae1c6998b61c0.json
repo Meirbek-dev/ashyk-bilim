@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT user_id AS \"user_id!: UserId\" FROM trail_runs WHERE course_id = $1",
+  "query": "SELECT user_id AS \"user_id!: UserId\" FROM trail_runs\n           WHERE course_id = $1 AND NOT is_course_staff(course_id, user_id)",
   "describe": {
     "columns": [
       {
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "b2c309ba54dd89498f734c400ae921f86a54028466ec3ae350fb4d201bb6c6e6"
+  "hash": "0ec8d77dff65377ab78fd175b6fbe6b61340afde40a8251f2c7ae1c6998b61c0"
 }

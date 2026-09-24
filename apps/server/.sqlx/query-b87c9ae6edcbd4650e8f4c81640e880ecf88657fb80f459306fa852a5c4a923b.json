@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT CASE WHEN a.access_mode = 'all_course_learners' THEN\n               (SELECT count(DISTINCT r.user_id) FROM trail_runs r\n                WHERE r.course_id = a.course_id AND NOT is_course_staff(r.course_id, r.user_id))\n           ELSE\n               (SELECT count(DISTINCT reach.user_id) FROM (\n                    SELECT user_id FROM assessment_access_users WHERE assessment_id = $1\n                    UNION\n                    SELECT m.user_id FROM assessment_access_usergroups g\n                    JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id\n                    WHERE g.assessment_id = $1\n                ) reach\n                JOIN trail_runs r ON r.user_id = reach.user_id AND r.course_id = a.course_id\n                WHERE NOT is_course_staff(r.course_id, r.user_id))\n           END AS \"count!\"\n           FROM assessments a WHERE a.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b87c9ae6edcbd4650e8f4c81640e880ecf88657fb80f459306fa852a5c4a923b"
+}

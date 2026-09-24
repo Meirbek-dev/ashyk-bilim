@@ -120,9 +120,18 @@ impl GradingService {
             ));
         }
         // BUG-247: the same rule as `POST overrides/{user}` — an extension
-        // is for a member of the course, named per id.
+        // is for a member of the course, named per id; never the caller's
+        // own attempts (BUG-288).
         let mut outsiders = Vec::new();
         for &user_id in &targets {
+            if user_id == actor.user_id {
+                outsiders.push(FieldError {
+                    field: format!("user_ids.{user_id}"),
+                    code: "own-attempt".into(),
+                    message: crate::grading::teacher::GRADE_OWN_ATTEMPT.into(),
+                });
+                continue;
+            }
             if let Some(e) = AssessmentsService::not_member(
                 &self.pool,
                 course.id,
@@ -372,6 +381,11 @@ async fn run_deadline_extension(
     let mut affected = 0;
     let mut skipped = Vec::new();
     for &user_id in &row.target_user_ids {
+        // BUG-288: never the performer's own attempts.
+        if user_id == granted_by {
+            skipped.push(user_id.to_string());
+            continue;
+        }
         let Some(mut tx) =
             crate::progress::trail::lock_member(pool, user_id, course.id, false).await?
         else {

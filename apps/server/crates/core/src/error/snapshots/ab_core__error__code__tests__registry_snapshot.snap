@@ -71,6 +71,10 @@ expression: registry
     403,
     "Grade is not released yet"
   ],
+  "grade-own-attempt": [
+    403,
+    "A grader may not act on their own attempt"
+  ],
   "idempotency-in-progress": [
     409,
     "The same request is still being processed"
