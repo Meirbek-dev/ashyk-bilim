@@ -1188,6 +1188,33 @@ async fn eleventh_session_evicts_the_oldest(pool: PgPool) {
     assert_eq!(list.json().as_array().unwrap().len(), 10);
 }
 
+/// BUG-277: the cap counts live sessions only — nine already-expired logins
+/// still in the registry must not make a new login evict the live one.
+#[sqlx::test(migrations = "../../migrations")]
+async fn expired_sessions_do_not_count_toward_the_cap(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("idle", "idle@example.com", &["user"]).await;
+    let live = app.mint_session_for(user, &[]).await;
+    tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    let mut redis = app.sessions.redis();
+    for _ in 0..9 {
+        let gone = app.mint_session_for(user, &[]).await;
+        let id = gone.cookie.split_once('=').unwrap().1.to_owned();
+        let () = redis::AsyncCommands::del(&mut redis, format!("session:{id}"))
+            .await
+            .unwrap();
+    }
+    app.mint_session_for(user, &[]).await;
+    assert_eq!(
+        app.get_as(&live, "/api/v2/auth/session").await.status,
+        StatusCode::OK
+    );
+    let size: usize = redis::AsyncCommands::zcard(&mut redis, format!("user_sessions:{user}"))
+        .await
+        .unwrap();
+    assert_eq!(size, 2);
+}
+
 /// Branch #75: a session older than the 90-day absolute cap is gone even
 /// when its idle TTL is fresh.
 #[sqlx::test(migrations = "../../migrations")]

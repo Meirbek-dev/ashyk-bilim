@@ -16,7 +16,8 @@
 //!   check — a login that straddles the mutation gets `None`, never a session
 //!   the mutation could not see.
 //! - Per-user registry `user_sessions:{uid}` (zset scored by creation time)
-//!   caps concurrent sessions at [`MAX_SESSIONS_PER_USER`], evicting oldest.
+//!   caps concurrent LIVE sessions at [`MAX_SESSIONS_PER_USER`], evicting
+//!   oldest; expired ids are pruned first, in the create step (BUG-277).
 //! - Permission changes propagate at mutation time:
 //!   [`SessionStore::rewrite_user_sessions`] updates every live session of a
 //!   user (called by RBAC admin flows), so request-path reads never hit
@@ -62,10 +63,29 @@ redis.call('SET', KEYS[1], ARGV[2], 'XX', 'KEEPTTL')
 return 1";
 /// Fenced create: record + registry entry only if the user's epoch is still
 /// the one the caller read (`KEYS[3]`; a never-bumped epoch reads as 0).
+/// Same step (BUG-277): drop registry ids that are already dead — record key
+/// expired, or created before the absolute cap (`ARGV[6]`, ms) — then evict
+/// the oldest LIVE sessions beyond the cap (`ARGV[7]`). Key names are built
+/// here from the `session:` / `session_seen:` prefixes (standalone Redis).
 const CREATE_IF_EPOCH: &str = r"
 if (redis.call('GET', KEYS[3]) or '0') ~= ARGV[5] then return 0 end
 redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
 redis.call('ZADD', KEYS[2], ARGV[3], ARGV[4])
+local ids = redis.call('ZRANGE', KEYS[2], 0, -1, 'WITHSCORES')
+local live = {}
+for i = 1, #ids, 2 do
+  local sid = ids[i]
+  if tonumber(ids[i + 1]) < tonumber(ARGV[6]) or redis.call('EXISTS', 'session:' .. sid) == 0 then
+    redis.call('DEL', 'session:' .. sid, 'session_seen:' .. sid)
+    redis.call('ZREM', KEYS[2], sid)
+  else
+    live[#live + 1] = sid
+  end
+end
+for i = 1, #live - tonumber(ARGV[7]) do
+  redis.call('DEL', 'session:' .. live[i], 'session_seen:' .. live[i])
+  redis.call('ZREM', KEYS[2], live[i])
+end
 return 1";
 /// Touch: slide the record's TTL and stamp `last_seen` only while the record
 /// exists — a touch racing a revoke must not leave an orphan stamp.
@@ -181,8 +201,8 @@ impl SessionStore {
     /// Create a session; returns the opaque id for the cookie, or `None` when
     /// the user's epoch moved since `new.epoch` was read (a mutation landed
     /// mid-login — the caller re-reads the account and refuses as a fresh
-    /// login would). Evicts the oldest sessions beyond
-    /// [`MAX_SESSIONS_PER_USER`].
+    /// login would). Prunes dead registry ids, then evicts the oldest live
+    /// sessions beyond [`MAX_SESSIONS_PER_USER`].
     pub async fn create(&self, new: NewSession) -> Result<Option<String>> {
         // 256 bits of randomness; the id never appears in logs.
         let id = format!(
@@ -219,27 +239,16 @@ impl SessionStore {
             .arg(now_unix_millis())
             .arg(&id)
             .arg(new.epoch)
+            .arg(
+                now_unix_millis()
+                    .saturating_sub(i64::try_from(ABSOLUTE_CAP.as_millis()).unwrap_or(i64::MAX)),
+            )
+            .arg(MAX_SESSIONS_PER_USER)
             .invoke_async(&mut conn)
             .await
             .map_err(|e| Error::internal("storing session", e))?;
         if written != 1 {
             return Ok(None);
-        }
-
-        // Cap concurrent sessions: evict oldest beyond the limit.
-        let count: usize = conn
-            .zcard(user_key(record.user_id))
-            .await
-            .map_err(|e| Error::internal("counting sessions", e))?;
-        if count > MAX_SESSIONS_PER_USER {
-            let excess = isize::try_from(count - MAX_SESSIONS_PER_USER).unwrap_or(0);
-            let evict: Vec<String> = conn
-                .zrange(user_key(record.user_id), 0, excess - 1)
-                .await
-                .map_err(|e| Error::internal("listing oldest sessions", e))?;
-            for old in &evict {
-                self.revoke(record.user_id, old).await?;
-            }
         }
         Ok(Some(id))
     }
