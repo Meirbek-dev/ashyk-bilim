@@ -14,12 +14,12 @@ describe('courseEditorStore.openEditor', () => {
   it('keeps the activity save status when the same course is opened with and without the legacy prefix', () => {
     const store = useCourseEditorStore.getState()
     store.openEditor('course_abc', '2026-09-12T00:00:00Z')
-    store.setActivitySaveStatus('saved')
+    store.setActivitySaveStatus('act', 'saved')
 
     useCourseEditorStore.getState().openEditor('abc', '2026-09-12T00:00:01Z')
 
     const state = useCourseEditorStore.getState()
-    expect(state.activitySaveStatus).toBe('saved')
+    expect(state.activitySave.status).toBe('saved')
     expect(state.activeCourseUuid).toBe('abc')
     expect(state.lastKnownUpdateDate).toBe('2026-09-12T00:00:01Z')
   })
@@ -27,10 +27,10 @@ describe('courseEditorStore.openEditor', () => {
   it('still resets when a different course is opened', () => {
     const store = useCourseEditorStore.getState()
     store.openEditor('abc', null)
-    store.setActivitySaveStatus('saved')
+    store.setActivitySaveStatus('act', 'saved')
 
     useCourseEditorStore.getState().openEditor('course_def', null)
 
-    expect(useCourseEditorStore.getState().activitySaveStatus).toBe('idle')
+    expect(useCourseEditorStore.getState().activitySave.status).toBe('idle')
   })
 })
