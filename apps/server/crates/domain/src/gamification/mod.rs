@@ -342,9 +342,8 @@ impl GamificationService {
         Ok(Leaderboard {
             entries: rows
                 .into_iter()
-                .enumerate()
-                .map(|(i, row)| LeaderboardEntry {
-                    rank: offset + i64::try_from(i).unwrap_or(i64::MAX) + 1,
+                .map(|row| LeaderboardEntry {
+                    rank: row.rank,
                     row,
                 })
                 .collect(),

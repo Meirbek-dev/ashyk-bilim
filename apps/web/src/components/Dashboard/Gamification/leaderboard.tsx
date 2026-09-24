@@ -26,7 +26,10 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
   const [showFull, setShowFull] = useState(false)
 
-  const userEntry = entries.find(e => e.user_id === currentUserId)
+  // Ranks are competition ranks (UX-172): tied users share one, so place the
+  // viewer by their row, not by `userRank - 1`.
+  const userIndex = entries.findIndex(e => e.user_id === currentUserId)
+  const userEntry = entries[userIndex]
 
   let displayEntries: LeaderboardEntry[],
     rankContext: null | { rank: number; xpToNext: number; nextRankUsername: string | null }
@@ -36,14 +39,13 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
     rankContext = null
   } else {
     const top3 = entries.slice(0, 3)
-    const userRankIndex = userRank - 1
-    const contextStart = Math.max(3, userRankIndex - 2)
-    const contextEnd = Math.min(entries.length, userRankIndex + 3)
+    const contextStart = Math.max(3, userIndex - 2)
+    const contextEnd = Math.min(entries.length, userIndex + 3)
     const contextEntries = entries.slice(contextStart, contextEnd)
-    const nextRankEntry = entries[userRankIndex - 1]
+    const nextRankEntry = entries.findLast(e => e.total_xp > userEntry.total_xp)
     const xpToNext = nextRankEntry ? nextRankEntry.total_xp - userEntry.total_xp : 0
 
-    displayEntries = userRank <= 3 ? top3 : [...top3, ...contextEntries]
+    displayEntries = userIndex < 3 ? top3 : [...top3, ...contextEntries]
     rankContext = {
       rank: userRank,
       xpToNext,
@@ -91,7 +93,7 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
           {displayEntries.map((entry, index) => {
             const isCurrentUser = entry.user_id === currentUserId
             const isTop3 = entry.rank <= 3
-            const showSeparator = !showFull && index === 3 && userRank && userRank > 3
+            const showSeparator = !showFull && index === 3 && userIndex >= 3
 
             return (
               <div key={entry.user_id}>

@@ -307,6 +307,9 @@ pub async fn recent_transactions(
 
 #[derive(Debug, Clone)]
 pub struct LeaderboardRow {
+    /// Competition rank over the whole public board (ties share, the next
+    /// skips) — the same rule as `count_with_more_xp + 1` (UX-172).
+    pub rank: i64,
     pub user_id: UserId,
     pub total_xp: i32,
     pub level: i32,
@@ -318,8 +321,8 @@ pub struct LeaderboardRow {
 pub async fn leaderboard(pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<LeaderboardRow>> {
     let rows = sqlx::query_as!(
         LeaderboardRow,
-        r#"SELECT p.user_id AS "user_id: UserId", p.total_xp, p.level, u.username, u.display_name,
-                  u.avatar_key
+        r#"SELECT rank() OVER (ORDER BY p.total_xp DESC) AS "rank!", p.user_id AS "user_id: UserId",
+                  p.total_xp, p.level, u.username, u.display_name, u.avatar_key
            FROM gamification_profiles p JOIN users u ON u.id = p.user_id
            WHERE p.preferences #> '{privacy,showOnLeaderboard}' IS DISTINCT FROM 'false'::jsonb
            ORDER BY p.total_xp DESC, p.id

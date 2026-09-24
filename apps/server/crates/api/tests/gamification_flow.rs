@@ -430,3 +430,74 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
     .unwrap();
     assert_eq!((total, daily, ledger), (400, 400, 400));
 }
+
+/// UX-172: one rank rule — competition rank (ties share, the next skips) on
+/// the board, the dashboard and `/rank`, with a stable order inside a tie.
+#[sqlx::test(migrations = "../../migrations")]
+async fn tied_learners_share_a_rank_everywhere(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, lessons) = course_with_lessons(&app, &teacher).await;
+    let mut tied = Vec::new();
+    for name in ["alice", "bob", "carol"] {
+        let s = learner(&app, name).await;
+        app.post_as(
+            &s,
+            &format!("/api/v2/trail/activities/{}", lessons[0]),
+            &serde_json::json!({}),
+        )
+        .await;
+        tied.push(s);
+    }
+    let dave = learner(&app, "dave").await;
+    app.get_as(&dave, "/api/v2/gamification").await;
+
+    let board = app
+        .get_as(&dave, "/api/v2/gamification/leaderboard?limit=10")
+        .await;
+    assert_eq!(board.status, StatusCode::OK, "{}", board.text());
+    let ranks: Vec<i64> = board.json()["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["rank"].as_i64().unwrap())
+        .collect();
+    assert_eq!(ranks, [1, 1, 1, 4], "{}", board.text());
+    let order = |b: &serde_json::Value| -> Vec<String> {
+        b["entries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|e| e["username"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let again = app
+        .get_as(&dave, "/api/v2/gamification/leaderboard?limit=10")
+        .await;
+    assert_eq!(order(&board.json()), order(&again.json()));
+
+    for s in &tied {
+        let dash = app.get_as(s, "/api/v2/gamification").await;
+        assert_eq!(dash.json()["user_rank"], 1, "{}", dash.text());
+        assert_eq!(dash.json()["leaderboard"]["entries"][2]["rank"], 1);
+        assert_eq!(
+            app.get_as(s, "/api/v2/gamification/rank").await.json()["rank"],
+            1
+        );
+    }
+    assert_eq!(
+        app.get_as(&dave, "/api/v2/gamification").await.json()["user_rank"],
+        4
+    );
+    // A later page keeps the board-wide rank, not its position on the page.
+    let page = app
+        .get_as(&dave, "/api/v2/gamification/leaderboard?limit=2&offset=2")
+        .await;
+    let ranks: Vec<i64> = page.json()["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["rank"].as_i64().unwrap())
+        .collect();
+    assert_eq!(ranks, [1, 4], "{}", page.text());
+}
