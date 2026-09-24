@@ -712,3 +712,57 @@ pub async fn replace_files(
     }
     Ok(())
 }
+
+/// Delete the submitted-file rows under locked activities, releasing one
+/// upload reference per row the DELETE returned (BUG-259: the activity →
+/// file-submission → attempt cascade drops the rows, not the counts).
+/// Lock order activity (caller) → file submissions → attempts → uploads by
+/// key: the file-submission row lock keeps new attempts out and the
+/// attempt locks keep a racing draft swap (`touch_attempt`) out of the set.
+pub async fn delete_files_releasing(
+    conn: &mut sqlx::PgConnection,
+    activity_ids: &[uuid::Uuid],
+    grace_secs: f64,
+) -> Result<u64> {
+    let submissions = sqlx::query_scalar!(
+        "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+        activity_ids
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let attempts = sqlx::query_scalar!(
+        "SELECT id FROM file_submission_attempts WHERE file_submission_id = ANY($1)
+         ORDER BY id FOR UPDATE",
+        &submissions
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let uploads = sqlx::query_scalar!(
+        "SELECT DISTINCT upload_id FROM file_submission_files WHERE attempt_id = ANY($1)",
+        &attempts
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    crate::uploads::lock_in_key_order(&mut *conn, &uploads).await?;
+    let deleted = sqlx::query_scalar!(
+        r#"WITH gone AS (
+               DELETE FROM file_submission_files WHERE attempt_id = ANY($1)
+               RETURNING upload_id
+           ), refs AS (
+               SELECT upload_id, count(*)::int AS n FROM gone GROUP BY upload_id
+           ), released AS (
+               UPDATE uploads u
+               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
+                   expires_at = CASE WHEN u.referenced_count <= refs.n
+                                     THEN now() + make_interval(secs => $2)
+                                     ELSE u.expires_at END
+               FROM refs WHERE u.id = refs.upload_id AND u.referenced_count > 0
+           )
+           SELECT count(*) AS "n!" FROM gone"#,
+        &attempts,
+        grace_secs
+    )
+    .fetch_one(conn)
+    .await?;
+    Ok(u64::try_from(deleted).unwrap_or(0))
+}

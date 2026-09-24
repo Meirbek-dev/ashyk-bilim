@@ -383,6 +383,7 @@ pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Resu
     )
     .fetch_all(&mut *tx)
     .await?;
+    crate::file_submissions::delete_files_releasing(&mut tx, &activities, grace_secs).await?;
     delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
     if let Some(key) = thumbnail {
         crate::uploads::release_reference_by_key(&mut *tx, &key, grace_secs).await?;
@@ -549,6 +550,7 @@ pub async fn delete_chapter(pool: &PgPool, id: ChapterId, grace_secs: f64) -> Re
     )
     .fetch_all(&mut *tx)
     .await?;
+    crate::file_submissions::delete_files_releasing(&mut tx, &activities, grace_secs).await?;
     delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
     let deleted = sqlx::query!("DELETE FROM chapters WHERE id = $1", id.0)
         .execute(&mut *tx)
@@ -694,6 +696,7 @@ pub async fn delete_activity(pool: &PgPool, id: ActivityId, grace_secs: f64) -> 
     else {
         return Ok(false);
     };
+    crate::file_submissions::delete_files_releasing(&mut tx, &[locked], grace_secs).await?;
     delete_blocks_releasing(&mut tx, &[locked], None, grace_secs).await?;
     let deleted = sqlx::query!("DELETE FROM activities WHERE id = $1", id.0)
         .execute(&mut *tx)

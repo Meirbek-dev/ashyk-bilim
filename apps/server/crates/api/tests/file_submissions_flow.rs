@@ -1398,3 +1398,67 @@ async fn concurrent_draft_swaps_of_shared_uploads_never_deadlock(pool: PgPool) {
         assert_eq!(referenced_count(&app, &u2).await, 1, "round {round}");
     }
 }
+
+/// BUG-259: deleting the activity, chapter or course under a submitted file
+/// releases the learner's upload (count 0, reaper clock set) — the cascade
+/// drops the file rows, never the reference.
+#[sqlx::test(migrations = "../../migrations")]
+async fn deletes_release_submitted_file_uploads(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let deleter = app
+        .mint_session_for(
+            teacher.user_id,
+            &["course:read:all", "course:update:own", "course:delete:own"],
+        )
+        .await;
+    let alice = learner(&app, "alice").await;
+    for target in ["activity", "chapter", "course"] {
+        let (course_id, chapter_id) = public_course(&app, &teacher).await;
+        let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+        let upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF essay").await;
+        let saved = app
+            .patch_as(
+                &alice,
+                &format!("/api/v2/file-submissions/{id}/draft"),
+                &serde_json::json!({ "files": [{ "upload_id": upload }] }),
+            )
+            .await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+        let submitted = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/file-submissions/{id}/submit"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        assert_eq!(referenced_count(&app, &upload).await, 1);
+        let activity_id: uuid::Uuid =
+            sqlx::query_scalar("SELECT activity_id FROM file_submissions WHERE id = $1")
+                .bind(uuid::Uuid::parse_str(&id).unwrap())
+                .fetch_one(&app.pool)
+                .await
+                .unwrap();
+        let path = match target {
+            "activity" => format!("/api/v2/activities/{activity_id}"),
+            "chapter" => format!("/api/v2/chapters/{chapter_id}"),
+            _ => format!("/api/v2/courses/{course_id}"),
+        };
+        let deleted = app.delete_as(&deleter, &path).await;
+        assert_eq!(
+            deleted.status,
+            StatusCode::NO_CONTENT,
+            "{target}: {}",
+            deleted.text()
+        );
+        let (count, expiring): (i32, bool) = sqlx::query_as(
+            "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(&upload).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        assert_eq!((count, expiring), (0, true), "{target}");
+    }
+}

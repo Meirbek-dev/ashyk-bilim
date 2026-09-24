@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH gone AS (\n               DELETE FROM file_submission_files WHERE attempt_id = ANY($1)\n               RETURNING upload_id\n           ), refs AS (\n               SELECT upload_id, count(*)::int AS n FROM gone GROUP BY upload_id\n           ), released AS (\n               UPDATE uploads u\n               SET referenced_count = greatest(u.referenced_count - refs.n, 0),\n                   expires_at = CASE WHEN u.referenced_count <= refs.n\n                                     THEN now() + make_interval(secs => $2)\n                                     ELSE u.expires_at END\n               FROM refs WHERE u.id = refs.upload_id AND u.referenced_count > 0\n           )\n           SELECT count(*) AS \"n!\" FROM gone",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c915c66ded4f9550143fcfc8fd2483eca0d9219980638ddbc95a6aa02e60cfde"
+}
