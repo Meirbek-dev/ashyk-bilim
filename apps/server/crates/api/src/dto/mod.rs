@@ -46,6 +46,8 @@ where
 /// The one rule for a password the user sets (register, admin create,
 /// change — BUG-293): at least 8 characters and at most 72 UTF-8 **bytes**,
 /// bcrypt's input limit in Zitadel (past it Zitadel answers an opaque error).
+// garde's custom-validator contract fixes this signature (&field, &context).
+#[allow(clippy::trivially_copy_pass_by_ref)]
 pub(crate) fn new_password(value: &str, _ctx: &()) -> garde::Result {
     if value.chars().count() < 8 {
         return Err(garde::Error::new("length is lower than 8"));

@@ -308,8 +308,7 @@ async fn settle_lateness(
     // attempt cap, the new late deduction). BUG-206: a pending row
     // (feedback-only saved, no final) keeps its `NULL` — the ledger entry is
     // not a grade; the teacher's save applies the stored penalty.
-    let mut final_score = None;
-    if penalty_changed
+    let final_score = if penalty_changed
         && locked.final_score.is_some()
         && let Some(entry) =
             ab_db::submissions::latest_grading_entry(&mut *tx, submission.id).await?
@@ -337,8 +336,10 @@ async fn settle_lateness(
             },
         )
         .await?;
-        final_score = Some(rescored);
-    }
+        Some(rescored)
+    } else {
+        None
+    };
     ab_db::submissions::set_lateness(&mut *tx, submission.id, late, penalty_pct, final_score)
         .await?;
     tx.commit().await?;
