@@ -846,7 +846,7 @@ export function CourseRowActions({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size="icon" disabled={isPending}>
+            <Button variant="outline" size="icon" disabled={isPending} aria-label={t('rowActions.menuLabel')}>
               <MoreHorizontal className="size-4" />
             </Button>
           }

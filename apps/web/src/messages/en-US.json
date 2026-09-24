@@ -3602,6 +3602,7 @@
         "resultsSummary": "{visible} visible on this page, {total} total in the workspace.",
         "resultsSummaryWithQuery": "{total} found for the query, {visible} on this page.",
         "rowActions": {
+          "menuLabel": "Course actions",
           "delete": "Delete",
           "deleteError": "Unable to delete course.",
           "deleteSuccess": "Course deleted.",

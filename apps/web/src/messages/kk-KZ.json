@@ -1544,7 +1544,7 @@
       "courseThumbnailAlt": "Курс нобайы {courseName}",
       "delete": "Курсты жою",
       "deleteButtonText": "Курсты жою",
-      "deleteConfirmationMessage": "Бұл курсты жойғыңыз келетініне сенімдісіз бе?",
+      "deleteConfirmationMessage": "Бұл курсты жойғыңыз келетініне сенімдісіз бе? Бұл әрекетті кері қайтару мүмкін емес.",
       "deleteConfirmationTitle": "{courseName} жою керек пе?",
       "deleting": "Жойылуда...",
       "editContent": "Мазмұнды өңдеу",
@@ -3617,6 +3617,7 @@
         "resultsSummary": "Бұл бетте {visible} көрінеді, жұмыс кеңістігінде барлығы {total} курс бар.",
         "resultsSummaryWithQuery": "Сұраныс бойынша табылды: {total}, осы бетте {visible}.",
         "rowActions": {
+          "menuLabel": "Курс әрекеттері",
           "delete": "Жою",
           "deleteError": "Курсты жою мүмкін болмады.",
           "deleteSuccess": "Курс жойылды.",

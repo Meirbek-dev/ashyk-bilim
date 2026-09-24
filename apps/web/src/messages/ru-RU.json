@@ -3614,6 +3614,7 @@
         "resultsSummary": "На этой странице видно {visible}, всего в рабочем пространстве {total}.",
         "resultsSummaryWithQuery": "Найдено по запросу: {total}, на этой странице {visible}.",
         "rowActions": {
+          "menuLabel": "Действия с курсом",
           "delete": "Удалить",
           "deleteError": "Не удалось удалить курс.",
           "deleteSuccess": "Курс удалён.",

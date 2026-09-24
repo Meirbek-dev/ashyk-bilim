@@ -34,7 +34,7 @@ describe('UX-168 dash row delete', () => {
         />
       </NextIntlClientProvider>,
     )
-    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('button', { name: ruMessages.DashPage.CourseManagement.Dashboard.rowActions.menuLabel }))
     fireEvent.click(await screen.findByText(ruMessages.DashPage.CourseManagement.Dashboard.rowActions.delete))
     expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
     expect(deleteCourseFromBackend).not.toHaveBeenCalled()
