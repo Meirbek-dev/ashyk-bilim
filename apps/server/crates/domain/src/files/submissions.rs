@@ -526,9 +526,7 @@ impl FileSubmissionsService {
     pub async fn get(&self, actor: &Actor, id: FileSubmissionId) -> Result<FileSubmission> {
         let row = self.load(id).await?;
         let course = self.require_read(actor, &row).await?;
-        let reasons = self.disabled_reasons(actor, &course, &row).await?;
-        let viewer = (actor, Self::is_author(actor, &course));
-        self.view(Some(viewer), row, reasons).await
+        self.learner_view(actor, &course, row).await
     }
 
     pub async fn get_by_activity(
@@ -540,9 +538,22 @@ impl FileSubmissionsService {
             .await?
             .ok_or_else(|| Error::not_found("file submission"))?;
         let course = self.require_read(actor, &row).await?;
-        let reasons = self.disabled_reasons(actor, &course, &row).await?;
-        let viewer = (actor, Self::is_author(actor, &course));
-        self.view(Some(viewer), row, reasons).await
+        self.learner_view(actor, &course, row).await
+    }
+
+    /// The config with the caller's gates on the attempt at hand (BUG-296).
+    async fn learner_view(
+        &self,
+        actor: &Actor,
+        course: &Course,
+        row: FileSubmissionRow,
+    ) -> Result<FileSubmission> {
+        let staff = Self::is_author(actor, course);
+        let open = ab_db::file_submissions::open_attempt(&self.pool, row.id, actor.user_id).await?;
+        let reasons = self
+            .disabled_reasons(actor.user_id, &row, Self::preview_of(open.as_ref(), staff))
+            .await?;
+        self.view(Some((actor, staff)), row, reasons).await
     }
 
     /// Partial update (authors); archived activities are read-only.
@@ -667,23 +678,30 @@ impl FileSubmissionsService {
         Ok(())
     }
 
-    /// Why a learner cannot open or submit right now — the quiz rules
+    /// BUG-294/296 (the quiz rule): the attempt at hand is a preview by
+    /// its own flag; only a new attempt takes the caller's staff status.
+    fn preview_of(open: Option<&AttemptRow>, staff: bool) -> bool {
+        open.map_or(staff, |a| a.preview)
+    }
+
+    /// Why the caller cannot open or submit right now — the quiz rules
     /// (`attempt_state`): a closed deadline (BUG-166) and an unpassed
-    /// gate-mode remediation (BUG-140 / UX-105). Authors are never blocked.
+    /// gate-mode remediation (BUG-140 / UX-105). A preview attempt
+    /// (`preview_of`) is never blocked.
     async fn disabled_reasons(
         &self,
-        actor: &Actor,
-        course: &Course,
+        user_id: UserId,
         row: &FileSubmissionRow,
+        preview: bool,
     ) -> Result<Vec<DisabledReason>> {
-        if Self::is_author(actor, course) {
+        if preview {
             return Ok(Vec::new());
         }
         let mut reasons = Vec::new();
         if !row.allow_late && row.due_at.is_some_and(|due| now_unix() > due) {
             reasons.push(DisabledReason::PastDue);
         }
-        if ab_db::ai::active_remediation_gate(&self.pool, actor.user_id, row.activity_id)
+        if ab_db::ai::active_remediation_gate(&self.pool, user_id, row.activity_id)
             .await?
             .is_some()
         {
@@ -696,11 +714,11 @@ impl FileSubmissionsService {
     /// start/submit, so the web renders the localized blocked card.
     async fn require_can_act(
         &self,
-        actor: &Actor,
-        course: &Course,
+        user_id: UserId,
         row: &FileSubmissionRow,
+        preview: bool,
     ) -> Result<()> {
-        let reasons = self.disabled_reasons(actor, course, row).await?;
+        let reasons = self.disabled_reasons(user_id, row, preview).await?;
         if reasons.is_empty() {
             return Ok(());
         }
@@ -734,14 +752,18 @@ impl FileSubmissionsService {
     /// Open a draft (idempotent). Returns (attempt, created).
     pub async fn start(&self, actor: &Actor, id: FileSubmissionId) -> Result<(Attempt, bool)> {
         let row = self.load(id).await?;
-        let (course, is_author) = self.require_submit_access(actor, &row).await?;
+        let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
+        let open = ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?;
         // Blocked learners neither open nor resume a draft (the web shows
         // the blocked card / remediation gate on this 403).
-        self.require_can_act(actor, &course, &row).await?;
-        if let Some(open) =
-            ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?
-        {
+        self.require_can_act(
+            actor.user_id,
+            &row,
+            Self::preview_of(open.as_ref(), is_author),
+        )
+        .await?;
+        if let Some(open) = open {
             return Ok((self.attempt_view(open, false, true).await?, false));
         }
         let attempt = self.open_new_attempt(&row, actor, is_author).await?;
@@ -805,17 +827,22 @@ impl FileSubmissionsService {
         expected_version: Option<i64>,
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
-        let (course, is_author) = self.require_submit_access(actor, &row).await?;
+        let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
+        let open = ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?;
         // UX-115: an open draft is frozen too once the deadline closed or a
         // gate is active — 403, the stored files untouched.
-        self.require_can_act(actor, &course, &row).await?;
+        self.require_can_act(
+            actor.user_id,
+            &row,
+            Self::preview_of(open.as_ref(), is_author),
+        )
+        .await?;
         let uploads = self.validate_files(&row, actor, files).await?;
-        let attempt =
-            match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
-                Some(a) => a,
-                None => self.open_new_attempt(&row, actor, is_author).await?,
-            };
+        let attempt = match open {
+            Some(a) => a,
+            None => self.open_new_attempt(&row, actor, is_author).await?,
+        };
         if let Some(expected) = expected_version
             && expected != attempt.version
         {
@@ -823,7 +850,7 @@ impl FileSubmissionsService {
         }
         self.replace_files(&attempt, files, &uploads).await?;
         self.projector
-            .after_file_attempt(row.id, actor.user_id, is_author)
+            .after_file_attempt(row.id, actor.user_id, attempt.preview)
             .await;
         let fresh = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?
@@ -976,24 +1003,30 @@ impl FileSubmissionsService {
         expected_version: Option<i64>,
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
-        let (course, is_author) = self.require_submit_access(actor, &row).await?;
+        let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
+        let open = ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?;
         // BUG-166: a closed deadline (or a gate) refuses the submit with the
-        // quiz's 403 vocabulary; the draft stays intact.
-        self.require_can_act(actor, &course, &row).await?;
+        // quiz's 403 vocabulary; the draft stays intact. BUG-296: judged by
+        // the attempt's own preview flag, not the caller's current role.
+        self.require_can_act(
+            actor.user_id,
+            &row,
+            Self::preview_of(open.as_ref(), is_author),
+        )
+        .await?;
         let files_required =
             || Error::validation(vec![field("files", "required", "attach at least one file")]);
         let uploads = match files {
             Some(files) => Some(self.validate_files(&row, actor, files).await?),
             None => None,
         };
-        let mut attempt =
-            match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
-                Some(a) => a,
-                // A bare submit must not spend an attempt on an empty draft (BUG-137).
-                None if files.is_none_or(<[FileRef]>::is_empty) => return Err(files_required()),
-                None => self.open_new_attempt(&row, actor, is_author).await?,
-            };
+        let mut attempt = match open {
+            Some(a) => a,
+            // A bare submit must not spend an attempt on an empty draft (BUG-137).
+            None if files.is_none_or(<[FileRef]>::is_empty) => return Err(files_required()),
+            None => self.open_new_attempt(&row, actor, is_author).await?,
+        };
         if let Some(expected) = expected_version
             && expected != attempt.version
         {
@@ -1029,7 +1062,7 @@ impl FileSubmissionsService {
             return Err(stale(version, latest.version));
         }
         self.projector
-            .after_file_attempt(row.id, actor.user_id, is_author)
+            .after_file_attempt(row.id, actor.user_id, attempt.preview)
             .await;
         attempt = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?

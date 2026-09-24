@@ -1538,3 +1538,99 @@ async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     .unwrap();
     assert_eq!((completed, certificates), (0, 0));
 }
+
+/// Author permissions but no contributor row — a learner until added.
+async fn future_maintainer(app: &TestApp, name: &str) -> MintedSession {
+    let user = app
+        .create_user(name, &format!("{name}@example.com"), &["instructor"])
+        .await;
+    app.mint_session_for(
+        user,
+        &[
+            "course:read:all",
+            "assessment:*:own",
+            "assessment:submit:assigned",
+            "assessment:read:assigned",
+            "file:create:own",
+        ],
+    )
+    .await
+}
+
+async fn set_maintainer(
+    app: &TestApp,
+    teacher: &MintedSession,
+    course_id: &str,
+    who: &MintedSession,
+    on: bool,
+) {
+    let res = if on {
+        app.post_as(
+            teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": who.user_id, "role": "maintainer" }),
+        )
+        .await
+    } else {
+        app.patch_as(
+            teacher,
+            &format!("/api/v2/courses/{course_id}/contributors/{}", who.user_id),
+            &serde_json::json!({ "status": "inactive" }),
+        )
+        .await
+    };
+    assert!(res.status.is_success(), "{}", res.text());
+}
+
+/// BUG-296: an open file attempt is judged by its own preview flag — a
+/// counted draft stays gated (PAST_DUE) after its owner joins the staff.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_counted_file_draft_keeps_its_gates_after_promotion(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let lena = future_maintainer(&app, "lena").await;
+    let counted = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600, "allow_late": false }),
+    )
+    .await;
+    let pdf = finalized_upload(&app, &lena, "application/pdf", b"%PDF counted").await;
+    let draft = app
+        .patch_as(
+            &lena,
+            &format!("/api/v2/file-submissions/{counted}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf }] }),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::OK, "{}", draft.text());
+    set_maintainer(&app, &teacher, &course_id, &lena, true).await;
+    let moved = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{counted}"),
+            &serde_json::json!({ "due_at_unix": now_unix() - 60 }),
+        )
+        .await;
+    assert_eq!(moved.status, StatusCode::OK, "{}", moved.text());
+    let view = app
+        .get_as(&lena, &format!("/api/v2/file-submissions/{counted}"))
+        .await;
+    assert_eq!(
+        view.json()["disabled_reasons"],
+        serde_json::json!(["PAST_DUE"]),
+        "{}",
+        view.text()
+    );
+    let late = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/file-submissions/{counted}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
+    assert_eq!(late.json()["detail"], "cannot start: PAST_DUE");
+}
