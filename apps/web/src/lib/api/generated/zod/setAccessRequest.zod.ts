@@ -12,7 +12,7 @@ export const SetAccessRequest = zod.object({
   user_ids: zod
     .array(zod.uuid())
     .optional()
-    .describe('Direct allowlist (restricted mode); each must already have course access.'),
+    .describe('Direct allowlist (restricted mode); each must be a course member (enrolled learner).'),
   usergroup_ids: zod
     .array(zod.uuid())
     .optional()

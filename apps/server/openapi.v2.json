@@ -21991,7 +21991,7 @@
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
-            "description": "Direct allowlist (restricted mode); each must already have course access."
+            "description": "Direct allowlist (restricted mode); each must be a course member (enrolled learner)."
           },
           "usergroup_ids": {
             "type": "array",

@@ -9601,7 +9601,7 @@ expression: json
             "$ref": "#/components/schemas/AccessMode"
           },
           "user_ids": {
-            "description": "Direct allowlist (restricted mode); each must already have course access.",
+            "description": "Direct allowlist (restricted mode); each must be a course member (enrolled learner).",
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
