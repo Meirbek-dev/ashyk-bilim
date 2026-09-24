@@ -370,9 +370,9 @@ impl SubmissionsService {
             .assessments
             .get_for_grading(actor, submission.assessment_id)
             .await?;
-        // BUG-285: the attempt's own preview flag decides, as in the timer
-        // sweep (BUG-279) — a role change mid-attempt changes neither its
-        // policy nor whether it counts.
+        // BUG-285/294: the attempt's own preview flag decides, as in the
+        // timer sweep (BUG-279) — a role change mid-attempt changes neither
+        // its policy, its gates nor whether it counts.
         let preview = submission.preview;
         let effective = if preview == state.is_teacher_preview {
             state.effective
@@ -477,7 +477,7 @@ impl SubmissionsService {
             &self.pool,
             assessment_id,
             actor.user_id,
-            state.is_teacher_preview,
+            state.staff,
         )
         .await?;
         let mut out = Vec::with_capacity(rows.len());
@@ -554,7 +554,7 @@ impl SubmissionsService {
                 &mut *tx,
                 assessment_id,
                 actor.user_id,
-                state.is_teacher_preview,
+                state.staff,
             )
             .await?;
             if cap_reached(&prior, state.effective.max_attempts) {
@@ -575,7 +575,7 @@ impl SubmissionsService {
                 attempt_number,
                 assessment.content_version,
                 assessment.policy_version,
-                state.is_teacher_preview,
+                state.staff,
             )
             .await?
             // Unreachable under `lock_attempts`; never a second draft.
@@ -591,9 +591,10 @@ impl SubmissionsService {
         let total =
             usize::try_from(ab_db::assessments::count_items(&self.pool, assessment_id).await?)
                 .unwrap_or(0);
+        let preview = draft.preview;
         let submission = self.student_view(draft, &state.effective, total).await?;
         self.projector
-            .after_submission(assessment_id, actor.user_id, state.is_teacher_preview)
+            .after_submission(assessment_id, actor.user_id, preview)
             .await;
         Ok(Started {
             submission,

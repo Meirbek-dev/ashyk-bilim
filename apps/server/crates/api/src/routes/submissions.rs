@@ -165,7 +165,7 @@ pub async fn get_submission(
     responses(
         (status = 200, description = "Saved", body = StudentSubmission,
          headers(("ETag" = String, description = "New quoted draft_version"))),
-        (status = 403, description = "Time limit expired", body = Problem,
+        (status = 403, description = "Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`", body = Problem,
          content_type = "application/problem+json"),
         (status = 409, description = "Stale draft_version or not a draft", body = Problem,
          content_type = "application/problem+json"),
@@ -234,7 +234,7 @@ pub async fn report_violation(
     request_body = SubmitRequest,
     responses(
         (status = 200, description = "Graded or queued for review", body = StudentSubmission),
-        (status = 403, description = "Attempt cap, time limit, or past due", body = Problem,
+        (status = 403, description = "Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`", body = Problem,
          content_type = "application/problem+json"),
         (status = 409, description = "Already submitted or stale draft_version", body = Problem,
          content_type = "application/problem+json"),

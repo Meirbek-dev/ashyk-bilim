@@ -177,7 +177,12 @@ impl DisabledReason {
 pub struct AttemptState {
     pub lifecycle: Lifecycle,
     pub opens_at: Option<i64>,
+    /// The attempt at hand is a staff preview: the open draft's own flag,
+    /// else (a new attempt) whether the caller is course staff (BUG-294).
     pub is_teacher_preview: bool,
+    /// The caller is course staff right now — what a *new* attempt takes
+    /// and whether the caller's lists include their previews.
+    pub staff: bool,
     pub effective: EffectivePolicy,
     pub disabled_reasons: Vec<DisabledReason>,
     /// No open draft and nothing blocks.
@@ -587,21 +592,19 @@ impl AssessmentsService {
         {
             return Err(Error::not_found("assessment"));
         }
-        let teacher_preview = self
+        let staff = self
             .require_submit_access(actor, &assessment, &course)
             .await?;
+        let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id).await?;
+        // BUG-294: an existing attempt is judged by its own preview flag;
+        // only a new one takes the caller's current role.
+        let teacher_preview = draft.as_ref().map_or(staff, |d| d.preview);
         let effective =
             Self::effective_policy_for(&self.pool, &assessment, actor.user_id, teacher_preview)
                 .await?;
-        let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id).await?;
         // BUG-285: a learner's cap never counts previews made while staff.
-        let prior = ab_db::submissions::list_user_submissions(
-            &self.pool,
-            id,
-            actor.user_id,
-            teacher_preview,
-        )
-        .await?;
+        let prior =
+            ab_db::submissions::list_user_submissions(&self.pool, id, actor.user_id, staff).await?;
         let attempts_used = i64::try_from(
             prior
                 .iter()
@@ -639,6 +642,7 @@ impl AssessmentsService {
             lifecycle: assessment.lifecycle,
             opens_at: assessment.scheduled_at,
             is_teacher_preview: teacher_preview,
+            staff,
             can_start: draft.is_none() && reasons.is_empty(),
             can_continue: draft.is_some() && reasons.is_empty(),
             revision_requested,

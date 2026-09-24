@@ -1293,6 +1293,20 @@ Implements three more items of the owner answers above. Routes:
   (analytics `trail_runs`, the gradebook) excludes it, so a learner who
   later joins the staff drops out too. Migration 20260924000006 deleted
   the existing staff runs, their progress rows and access/override rows.
+- **One preview rule across role changes** (2026-09-25, pass 25, BUG-294..296):
+  an *existing* attempt is judged by its own `preview` column everywhere —
+  quiz attempt-state (`is_teacher_preview`, effective policy,
+  `attempt_gates`), save, submit, the timer sweep; file `disabled_reasons`,
+  draft save and submit. Only a *new* attempt takes the caller's current
+  staff status. A learner who joined the staff finishes a counted draft
+  under the learner rules (past a hard due date it is PAST_DUE on every
+  door). **A learner never resumes a preview**: attempt-state, the quiz
+  `current` draft and the file `GET draft` ignore a preview draft of a
+  non-staff caller, save/submit on it are 404, and the next `start` (quiz)
+  or draft/submit write (file) deletes it — file uploads released, like an
+  activity delete — and opens a counted attempt. Replaces: attempt-state
+  and file gates read the caller's role while save/submit read the row
+  (BUG-285), so the doors disagreed after a role change.
 
 ## A leave drops the leaver's allowlist and override rows (2026-09-24, gauntlet pass 24)
 

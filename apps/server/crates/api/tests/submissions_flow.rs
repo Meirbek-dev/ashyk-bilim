@@ -1769,3 +1769,100 @@ async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
         "a preview carries no late penalty: {penalty}"
     );
 }
+
+/// A user with author permissions who is no course contributor — a learner
+/// until the teacher adds them to the staff.
+async fn future_maintainer(app: &TestApp, name: &str) -> MintedSession {
+    let user = app
+        .create_user(name, &format!("{name}@example.com"), &["instructor"])
+        .await;
+    app.mint_session_for(
+        user,
+        &[
+            "course:read:all",
+            "assessment:*:own",
+            "assessment:submit:assigned",
+            "assessment:read:assigned",
+        ],
+    )
+    .await
+}
+
+async fn set_maintainer(
+    app: &TestApp,
+    teacher: &MintedSession,
+    course_id: &str,
+    who: &MintedSession,
+    on: bool,
+) {
+    let res = if on {
+        app.post_as(
+            teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": who.user_id, "role": "maintainer" }),
+        )
+        .await
+    } else {
+        app.patch_as(
+            teacher,
+            &format!("/api/v2/courses/{course_id}/contributors/{}", who.user_id),
+            &serde_json::json!({ "status": "inactive" }),
+        )
+        .await
+    };
+    assert!(res.status.is_success(), "{}", res.text());
+}
+
+/// BUG-294: a counted draft opened as a learner stays counted after its
+/// owner joins the staff — past a hard due date attempt-state, save and
+/// submit agree (PAST_DUE), none judges by the caller's new role.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_counted_draft_keeps_its_gates_after_promotion(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "allow_late": false }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let answer = serde_json::json!({
+        "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } }
+    });
+    let lena = future_maintainer(&app, "lena").await;
+    let draft = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    set_maintainer(&app, &teacher, &course_id, &lena, true).await;
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let state = app
+        .get_as(&lena, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    let state = state.json();
+    assert_eq!(state["is_teacher_preview"], false, "{state}");
+    assert_eq!(state["can_continue"], false, "{state}");
+    assert_eq!(state["draft_id"], sub_id.as_str(), "{state}");
+    assert_eq!(state["disabled_reasons"], serde_json::json!(["PAST_DUE"]));
+    let save = app
+        .send(patch_draft(&lena, &sub_id, Some("\"1\""), &answer))
+        .await;
+    assert_eq!(save.status, StatusCode::FORBIDDEN, "{}", save.text());
+    assert_eq!(save.json()["detail"], "PAST_DUE");
+    let late = app.send(submit(&lena, &sub_id, None, &answer)).await;
+    assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
+    assert_eq!(late.json()["detail"], "PAST_DUE");
+}
