@@ -456,7 +456,10 @@ describe('teacher review controls', () => {
     await waitFor(() => expect(mocks.toastErrorMock).toHaveBeenCalledWith('toasts.notEnrolled'))
     expect(mocks.extendDeadlineMock.mock.calls[0]?.[1]).toMatchObject({ user_ids: ['user_a', 'user_c'] })
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
+    // The button stays disabled until the rejected mutation settles.
+    const retry = within(dialog).getByRole('button', { name: 'queueExtension' })
+    await waitFor(() => expect(retry).toBeEnabled())
+    fireEvent.click(retry)
     await waitFor(() => expect(mocks.extendDeadlineMock).toHaveBeenCalledTimes(2))
     expect(mocks.extendDeadlineMock.mock.calls[1]?.[1]).toMatchObject({ user_ids: ['user_a'] })
   })
