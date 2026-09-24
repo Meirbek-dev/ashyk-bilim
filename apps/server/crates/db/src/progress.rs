@@ -417,6 +417,8 @@ pub struct TrailRunRow {
     pub updated_at: i64,
 }
 
+/// The trail's member runs: a run of a course the owner now staffs is kept
+/// (it counts again once they leave the staff) but not listed (BUG-292).
 pub async fn list_trail_runs(pool: &PgPool, trail_id: TrailId) -> Result<Vec<TrailRunRow>> {
     let rows = sqlx::query_as!(
         TrailRunRow,
@@ -425,7 +427,8 @@ pub async fn list_trail_runs(pool: &PgPool, trail_id: TrailId) -> Result<Vec<Tra
                   status AS "status: TrailRunStatus", data,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM trail_runs WHERE trail_id = $1 ORDER BY created_at, id"#,
+           FROM trail_runs WHERE trail_id = $1 AND NOT is_course_staff(course_id, user_id)
+           ORDER BY created_at, id"#,
         trail_id.0
     )
     .fetch_all(pool)

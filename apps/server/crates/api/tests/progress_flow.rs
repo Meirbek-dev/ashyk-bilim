@@ -1717,3 +1717,55 @@ async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
     }
 }
 
+/// BUG-292: a member who joins the course's staff keeps the run but is no
+/// member — `/trail` stops listing the course and learner-state shows no
+/// progress of theirs; leaving the staff brings both back.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_staffed_run_is_not_listed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Staffed run").await;
+    let (q1, _, item) = quiz(&app, &teacher, &chapter_id).await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{q1}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub = draft.json()["id"].as_str().unwrap().to_owned();
+    let passed = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub}/submit"),
+            &serde_json::json!({ "answers": { &item: { "kind": "choice", "selected": ["a"] } } }),
+        )
+        .await;
+    assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
+    let roster = format!("/api/v2/courses/{course_id}/contributors");
+    let added = app
+        .post_as(
+            &teacher,
+            &roster,
+            &serde_json::json!({ "user_id": alice.user_id, "role": "contributor" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let runs = |trail: serde_json::Value| trail["runs"].as_array().unwrap().len();
+    let learner_state = format!("/api/v2/courses/{course_id}/learner-state");
+    assert_eq!(runs(app.get_as(&alice, "/api/v2/trail").await.json()), 0);
+    let state = app.get_as(&alice, &learner_state).await.json();
+    assert_eq!(state["progress"]["completed_required_count"], 0, "{state}");
+    assert_eq!(
+        state["outline"][0]["activities"][0]["complete"], false,
+        "{state}"
+    );
+    let removed = app
+        .delete_as(&teacher, &format!("{roster}/{}", alice.user_id))
+        .await;
+    assert_eq!(removed.status, StatusCode::NO_CONTENT, "{}", removed.text());
+    assert_eq!(runs(app.get_as(&alice, "/api/v2/trail").await.json()), 1);
+    let state = app.get_as(&alice, &learner_state).await.json();
+    assert_eq!(state["progress"]["completed_required_count"], 1, "{state}");
+}

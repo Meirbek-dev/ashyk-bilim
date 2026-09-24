@@ -214,15 +214,6 @@ impl LearnerStateService {
         let user_id: UserId = actor.user_id;
         let chapters = ab_db::catalog::list_chapters(&self.pool, course.id).await?;
         let activities = ab_db::catalog::list_activities(&self.pool, course.id).await?;
-        let rows =
-            ab_db::progress::list_course_progress_rows(&self.pool, course.id, user_id).await?;
-        let course_progress =
-            ab_db::progress::get_course_progress(&self.pool, course.id, user_id).await?;
-        let has_run = ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
-        // Enrolment is the trail run, as in the legacy `TrailRun`: projection
-        // rows survive a leave (submissions stay), so they cannot mean
-        // "enrolled" — otherwise a learner who left could never re-enrol.
-        let enrolled = has_run;
         // BUG-287: the course's staff preview it — the enrol door refuses them.
         let staff = AssessmentsService::require_scoped(
             actor,
@@ -231,6 +222,21 @@ impl LearnerStateService {
             "preview",
         )
         .is_ok();
+        // BUG-292: a run kept from before joining the staff is no member's —
+        // its ticks and counts are not shown (the outline and sidebar read these).
+        let (rows, course_progress) = if staff {
+            (Vec::new(), None)
+        } else {
+            (
+                ab_db::progress::list_course_progress_rows(&self.pool, course.id, user_id).await?,
+                ab_db::progress::get_course_progress(&self.pool, course.id, user_id).await?,
+            )
+        };
+        let has_run = ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
+        // Enrolment is the trail run, as in the legacy `TrailRun`: projection
+        // rows survive a leave (submissions stay), so they cannot mean
+        // "enrolled" — otherwise a learner who left could never re-enrol.
+        let enrolled = has_run;
 
         let states: Vec<(ChapterId, ActivityState)> = activities
             .iter()
