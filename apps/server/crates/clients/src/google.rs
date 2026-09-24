@@ -41,6 +41,9 @@ pub struct GoogleConfig {
 pub struct GoogleIdentity {
     pub sub: String,
     pub email: String,
+    /// Google's `email_verified` claim — only a verified address may be
+    /// matched to an existing account (BUG-254).
+    pub email_verified: bool,
     pub given_name: Option<String>,
     pub family_name: Option<String>,
 }
@@ -168,6 +171,8 @@ impl GoogleClient {
             aud: String,
             sub: String,
             email: Option<String>,
+            #[serde(default)]
+            email_verified: Option<serde_json::Value>,
             given_name: Option<String>,
             family_name: Option<String>,
         }
@@ -191,6 +196,7 @@ impl GoogleClient {
         Some(GoogleIdentity {
             sub: claims.sub,
             email,
+            email_verified: is_true(claims.email_verified.as_ref()),
             given_name: claims.given_name,
             family_name: claims.family_name,
         })
@@ -201,6 +207,8 @@ impl GoogleClient {
         struct UserInfo {
             sub: String,
             email: Option<String>,
+            #[serde(default)]
+            email_verified: Option<serde_json::Value>,
             given_name: Option<String>,
             family_name: Option<String>,
         }
@@ -235,8 +243,16 @@ impl GoogleClient {
         Ok(GoogleIdentity {
             sub: info.sub,
             email,
+            email_verified: is_true(info.email_verified.as_ref()),
             given_name: info.given_name,
             family_name: info.family_name,
         })
     }
+}
+
+/// `email_verified` is a boolean in the id_token and userinfo, but Google
+/// has also served it as the string `"true"`; anything else is unverified.
+fn is_true(value: Option<&serde_json::Value>) -> bool {
+    matches!(value, Some(serde_json::Value::Bool(true)))
+        || value.and_then(serde_json::Value::as_str) == Some("true")
 }

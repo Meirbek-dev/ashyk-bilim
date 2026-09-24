@@ -211,10 +211,24 @@ impl GoogleAuthService {
         {
             return Ok(user_id);
         }
-        // Same email → link (the legacy find_or_create semantics).
+        // Same email → link, but only when both sides proved the mailbox
+        // (BUG-254, DECISIONS 2026-09-24): an unverified local address may
+        // be a squatter's pre-registration of the victim's email, an
+        // unverified Google one is anyone's claim.
         if let Some(user_id) =
             ab_db::identity::find_user_id_by_email(&self.pool, &identity.email).await?
         {
+            let user = ab_db::identity::find_auth_user(&self.pool, user_id)
+                .await?
+                .ok_or_else(|| Error::not_found("user"))?;
+            if !identity.email_verified
+                || !self.zitadel.email_verified(&user.zitadel_user_id).await?
+            {
+                return Err(Error::app(
+                    ErrorCode::AccountExists,
+                    "an account with this email exists; sign in with its password",
+                ));
+            }
             ab_db::identity::link_google_account(
                 &self.pool,
                 user_id,
@@ -240,7 +254,9 @@ impl GoogleAuthService {
                 given_name: given_name.unwrap_or_else(|| "—".into()),
                 family_name: family_name.unwrap_or_else(|| "—".into()),
                 email: identity.email.clone(),
-                email_verified: true,
+                // Only what Google vouches for counts as verified here —
+                // otherwise the later link check would trust it (BUG-254).
+                email_verified: identity.email_verified,
                 password: PasswordSpec::None,
             })
             .await?;

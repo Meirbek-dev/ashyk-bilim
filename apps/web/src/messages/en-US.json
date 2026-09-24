@@ -6889,6 +6889,7 @@
       "csrf-rejected": "The request was rejected for security reasons. Reload the page and try again.",
       "account-disabled": "This account is disabled. Contact an administrator.",
       "google-oauth-expired": "Google sign-in failed or expired. Please try again.",
+      "account-exists": "An account with this email already exists. Sign in with your password: Google sign-in links only to a confirmed email.",
       "invalid-totp-code": "Invalid one-time code.",
       "code-runner-degraded": "The code runner is temporarily unavailable. Please try again later.",
       "compile-error": "The code does not compile. Fix the errors and try again.",

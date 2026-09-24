@@ -340,6 +340,51 @@ impl ZitadelClient {
         Ok(methods.auth_method_types)
     }
 
+    /// `GET /v2/users/{id}` → `user.human.email.isVerified` (captured live
+    /// 2026-09-24; proto3 omits `false`).
+    pub async fn email_verified(&self, user_id: &str) -> Result<bool> {
+        #[derive(Deserialize)]
+        struct Envelope {
+            user: User,
+        }
+        #[derive(Deserialize)]
+        struct User {
+            #[serde(default)]
+            human: Option<Human>,
+        }
+        #[derive(Deserialize)]
+        struct Human {
+            #[serde(default)]
+            email: Option<Email>,
+        }
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Email {
+            #[serde(default)]
+            is_verified: bool,
+        }
+        let response = self
+            .auth(self.http.get(self.url(&format!("/v2/users/{user_id}"))))
+            .send()
+            .await
+            .map_err(unavailable("get user"))?;
+        if !response.status().is_success() {
+            return Err(Error::app(
+                ErrorCode::ServiceUnavailable,
+                format!("zitadel user lookup failed: {}", response.status()),
+            ));
+        }
+        let envelope: Envelope = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel user shape", e))?;
+        Ok(envelope
+            .user
+            .human
+            .and_then(|h| h.email)
+            .is_some_and(|e| e.is_verified))
+    }
+
     /// `POST /v2/users/{id}/totp` — start TOTP enrollment (idempotency:
     /// re-registering before verification returns a fresh secret; an already
     /// verified TOTP yields `AlreadyExists`/`AlreadyReady` → Conflict).

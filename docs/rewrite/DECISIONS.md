@@ -1221,3 +1221,18 @@ Implements three more items of the owner answers above. Routes:
   rather than testing field presence because the editor re-sends the whole
   item on every save; the same comparison decides the graded-submissions
   content lock. Replaces "every item write bumps the version" (BUG-224).
+
+## Google account linking requires verified emails on both sides (2026-09-24, gauntlet pass 23)
+
+- **A Google sign-in whose `sub` is unknown links to an existing account
+  with the same email only when Google's `email_verified` claim is true
+  and the local account's email is verified in Zitadel** (BUG-254).
+  Otherwise the callback redirects to `/auth/login?error=account-exists`
+  (new registry code, 409): sign in with the password instead. Why: a
+  self-registered account never has to verify its address and can sign in
+  with its password, so anyone could pre-register a victim's email and
+  keep password access to the account the victim's later Google sign-in
+  would land in. A Google account created from an unverified Google email
+  is created unverified in Zitadel for the same reason. Once linked, the
+  account is found by `sub` and the email Google reports is not used again
+  (BUG-253). Replaces the legacy "same email → link" find-or-create.

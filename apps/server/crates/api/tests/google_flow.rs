@@ -10,7 +10,7 @@ use wiremock::{Mock, ResponseTemplate};
 
 /// Unsigned id_token with the given claims (signature is not verified by
 /// design — the token arrives from the token endpoint over TLS).
-fn fake_id_token(sub: &str, email: &str) -> String {
+fn fake_id_token(sub: &str, email: &str, email_verified: bool) -> String {
     let b64 = |v: &serde_json::Value| {
         base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(v.to_string())
     };
@@ -20,6 +20,7 @@ fn fake_id_token(sub: &str, email: &str) -> String {
         "aud": TEST_GOOGLE_CLIENT_ID,
         "sub": sub,
         "email": email,
+        "email_verified": email_verified,
         "given_name": "Google",
         "family_name": "User",
     }));
@@ -27,13 +28,17 @@ fn fake_id_token(sub: &str, email: &str) -> String {
 }
 
 async fn mock_google_token(app: &TestApp, sub: &str, email: &str) {
+    mock_google_token_verified(app, sub, email, true).await;
+}
+
+async fn mock_google_token_verified(app: &TestApp, sub: &str, email: &str, verified: bool) {
     Mock::given(method("POST"))
         .and(path("/token"))
         .and(body_string_contains("grant_type=authorization_code"))
         .and(body_string_contains("code_verifier="))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
             "access_token": "ya29.test",
-            "id_token": fake_id_token(sub, email),
+            "id_token": fake_id_token(sub, email, verified),
             "token_type": "Bearer",
         })))
         .mount(&app.google)
@@ -48,6 +53,17 @@ async fn mock_zitadel_user_create(app: &TestApp, expect: u64) {
             "details": {}
         })))
         .expect(expect)
+        .mount(&app.zitadel)
+        .await;
+}
+
+/// Zitadel's view of a testkit user's (`z-<username>`) email verification.
+async fn mock_zitadel_email_verified(app: &TestApp, username: &str, verified: bool) {
+    Mock::given(method("GET"))
+        .and(path(format!("/v2/users/z-{username}")))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "user": { "human": { "email": { "email": "x@example.com", "isVerified": verified } } }
+        })))
         .mount(&app.zitadel)
         .await;
 }
@@ -155,6 +171,7 @@ async fn google_login_links_to_existing_email_account(pool: PgPool) {
         .create_user("veteran", "vet@example.com", &["instructor"])
         .await;
     mock_zitadel_user_create(&app, 0).await; // linking must NOT create anyone
+    mock_zitadel_email_verified(&app, "veteran", true).await;
     mock_google_token(&app, "g-sub-3", "vet@example.com").await;
 
     let state = start_and_get_state(&app, "/").await;
@@ -252,6 +269,7 @@ async fn disabled_account_is_sent_back_with_account_disabled(pool: PgPool) {
         .await
         .unwrap();
     mock_zitadel_user_create(&app, 0).await;
+    mock_zitadel_email_verified(&app, "banned", true).await;
     mock_google_token(&app, "g-sub-banned", "banned@example.com").await;
 
     let state = start_and_get_state(&app, "/").await;
@@ -282,6 +300,7 @@ async fn callback_in_flight_during_a_disable_gets_no_session(pool: PgPool) {
         .create_user("graced", "graced@example.com", &["user"])
         .await;
     mock_zitadel_user_create(&app, 0).await;
+    mock_zitadel_email_verified(&app, "graced", true).await;
     mock_google_token(&app, "g-sub-graced", "graced@example.com").await;
     Mock::given(method("GET"))
         .and(path("/v2/users/z-graced/authentication_methods"))
@@ -400,4 +419,35 @@ async fn sub_linked_login_ignores_the_account_owning_the_new_email(pool: PgPool)
         "/auth/login?error=account-disabled"
     );
     assert!(res.session_cookie().is_none());
+}
+
+/// BUG-254: a sub miss matching an existing email links only when Google
+/// and the local account both verified the address; otherwise the browser
+/// goes back to login with `account-exists` — no link, no session.
+#[sqlx::test(migrations = "../../migrations")]
+async fn google_login_refuses_to_link_an_unverified_email(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("squatted", "victim@gmail.com", &["user"])
+        .await;
+    for (google_verified, local_verified) in [(false, true), (true, false), (false, false)] {
+        app.zitadel.reset().await;
+        app.google.reset().await;
+        mock_zitadel_user_create(&app, 0).await;
+        mock_zitadel_email_verified(&app, "squatted", local_verified).await;
+        mock_google_token_verified(&app, "g-sub-victim", "victim@gmail.com", google_verified).await;
+
+        let res = google_callback(&app).await;
+        assert_eq!(res.status, StatusCode::SEE_OTHER);
+        assert_eq!(
+            res.headers.get("location").unwrap().to_str().unwrap(),
+            "/auth/login?error=account-exists",
+            "google_verified={google_verified} local_verified={local_verified}"
+        );
+        assert!(res.session_cookie().is_none());
+    }
+    let linked: i64 = sqlx::query_scalar("SELECT count(*) FROM google_accounts")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(linked, 0);
 }

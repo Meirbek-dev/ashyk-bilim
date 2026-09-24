@@ -7,6 +7,10 @@ expression: registry
     403,
     "Account is disabled"
   ],
+  "account-exists": [
+    409,
+    "An account with this email already exists"
+  ],
   "activity-not-ready": [
     409,
     "Activity is not ready to publish"
