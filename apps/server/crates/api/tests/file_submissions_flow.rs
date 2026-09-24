@@ -1358,3 +1358,43 @@ async fn dropped_draft_swap_keeps_references_and_the_reaper_runs(pool: PgPool) {
         .unwrap();
     assert_eq!(left, vec![uuid::Uuid::parse_str(&a).unwrap()]);
 }
+
+/// BUG-258: two drafts of one learner swapping shared uploads at once lock
+/// them in key order — never a 40P01 deadlock, and the counts stay exact.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_draft_swaps_of_shared_uploads_never_deadlock(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let first = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let second = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let paths = [
+        format!("/api/v2/file-submissions/{first}/draft"),
+        format!("/api/v2/file-submissions/{second}/draft"),
+    ];
+    let files = |upload: &str| serde_json::json!({ "files": [{ "upload_id": upload }] });
+    for round in 0..12 {
+        let u1 = finalized_upload(&app, &alice, "application/pdf", b"%PDF 1").await;
+        let u2 = finalized_upload(&app, &alice, "application/pdf", b"%PDF 2").await;
+        for (path, upload) in paths.iter().zip([&u1, &u2]) {
+            let seeded = app.patch_as(&alice, path, &files(upload)).await;
+            assert_eq!(seeded.status, StatusCode::OK, "{}", seeded.text());
+        }
+        let (to_first, to_second) = (files(&u2), files(&u1));
+        let (a, b) = tokio::join!(
+            app.patch_as(&alice, &paths[0], &to_first),
+            app.patch_as(&alice, &paths[1], &to_second),
+        );
+        for swapped in [&a, &b] {
+            assert_eq!(
+                swapped.status,
+                StatusCode::OK,
+                "round {round}: {}",
+                swapped.text()
+            );
+        }
+        assert_eq!(referenced_count(&app, &u1).await, 1, "round {round}");
+        assert_eq!(referenced_count(&app, &u2).await, 1, "round {round}");
+    }
+}

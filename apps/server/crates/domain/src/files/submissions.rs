@@ -902,6 +902,15 @@ impl FileSubmissionsService {
             return Err(stale(attempt.version, latest.version));
         }
         let previous = ab_db::file_submissions::list_files(&mut *tx, attempt.id).await?;
+        // BUG-258: every upload this swap touches is locked in key order
+        // before the file rows (FK) and the counts move — two drafts
+        // swapping shared uploads otherwise lock them in list order.
+        let touched: Vec<uuid::Uuid> = previous
+            .iter()
+            .map(|f| f.upload_id)
+            .chain(uploads.iter().map(|u| u.id))
+            .collect();
+        ab_db::uploads::lock_in_key_order(&mut tx, &touched).await?;
         let new_files: Vec<NewFile<'_>> = files
             .iter()
             .zip(uploads)
