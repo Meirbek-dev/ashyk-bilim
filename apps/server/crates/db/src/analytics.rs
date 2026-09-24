@@ -337,6 +337,38 @@ pub struct TrailRunInfoRow {
     pub user_id: UserId,
 }
 
+/// Attempts the dashboards leave out (UX-192): staff previews, and the
+/// non-preview attempts of the course's staff (made before they joined it —
+/// staff are in no member set, BUG-287). Same window as [`list_submissions`].
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ExcludedAttempts {
+    pub preview: i64,
+    pub teacher: i64,
+}
+
+pub async fn count_excluded_attempts(
+    pool: &PgPool,
+    course_ids: &[CourseId],
+    since: Option<i64>,
+) -> Result<ExcludedAttempts> {
+    let ids = uuids(course_ids);
+    let row = sqlx::query_as!(
+        ExcludedAttempts,
+        r#"SELECT count(*) FILTER (WHERE preview) AS "preview!",
+                  count(*) FILTER (WHERE NOT preview AND is_course_staff(course_id, user_id))
+                      AS "teacher!"
+           FROM submissions
+           WHERE course_id = ANY($1) AND status <> 'draft'
+             AND ($2::double precision IS NULL
+                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))"#,
+        &ids,
+        epoch(since)
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(row)
+}
+
 /// The analytics member set: trail runs, never the course's staff (BUG-287).
 pub async fn list_trail_runs(
     pool: &PgPool,
@@ -518,7 +550,7 @@ pub async fn list_grading_entries_for_assessment(
                   (extract(epoch FROM e.published_at))::bigint AS "published_at?",
                   (extract(epoch FROM e.created_at))::bigint AS "created_at!"
            FROM grading_entries e JOIN submissions s ON s.id = e.submission_id
-           WHERE s.assessment_id = $1
+           WHERE s.assessment_id = $1 AND NOT s.preview
            ORDER BY e.created_at DESC, e.id DESC"#,
         assessment_id.0
     )

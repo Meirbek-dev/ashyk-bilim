@@ -2236,3 +2236,60 @@ async fn staff_never_enrol_nor_count_as_members(pool: PgPool) {
     let listed = at_risk.json()["items"].to_string();
     assert!(!listed.contains(&boss.to_string()), "{listed}");
 }
+
+/// UX-192: the data-quality panel counts the attempts it leaves out — staff
+/// previews, and a learner-turned-co-author's earlier attempt — and the
+/// assessment audit history never lists a preview's grade.
+#[sqlx::test(migrations = "../../migrations")]
+async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Excluded").await;
+    let (quiz_id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    for who in [&alice, &bob] {
+        enrol(&pool, &course_id, who.user_id, 0.0).await;
+    }
+    let learner_sub = submit_attempt(&app, &alice, &quiz_id, &choice_id, &essay_id).await;
+    submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
+    let preview = submit_attempt(&app, &teacher, &quiz_id, &choice_id, &essay_id).await;
+    grade_and_publish(&app, &teacher, &quiz_id, &learner_sub, &essay_id).await;
+    sqlx::query(
+        "INSERT INTO grading_entries (submission_id, raw_score, final_score, published_at)
+         VALUES ($1::uuid, 0, 0, now())",
+    )
+    .bind(&preview)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO resource_authors (course_id, user_id, authorship) VALUES ($1::uuid, $2, 'maintainer')",
+    )
+    .bind(&course_id)
+    .bind(bob.user_id.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let overview = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/overview")
+        .await;
+    assert_eq!(overview.status, StatusCode::OK, "{}", overview.text());
+    let quality = &overview.json()["data_quality"];
+    assert_eq!(quality["excluded_preview_attempts"], 1, "{quality}");
+    assert_eq!(quality["excluded_teacher_attempts"], 1, "{quality}");
+    let detail = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/assessments/quiz/{quiz_id}"),
+        )
+        .await;
+    let audit = detail.json()["audit_history"].to_string();
+    assert!(audit.contains(&learner_sub), "{audit}");
+    assert!(
+        !audit.contains(&preview),
+        "a preview grade in the audit: {audit}"
+    );
+}

@@ -1,7 +1,7 @@
 //! Data-quality block of the overview (legacy `services/analytics/quality.py`).
 
 use ab_core::assessments::AssessmentKind;
-use ab_db::analytics::TeacherMetricsRow;
+use ab_db::analytics::{ExcludedAttempts, TeacherMetricsRow};
 
 use super::context::{AnalyticsContext, count_i64, progress_snapshots};
 use super::filters::AnalyticsFilters;
@@ -11,13 +11,15 @@ use super::types::{
 };
 
 /// Legacy `build_data_quality`. `teacher_rollup` is the newest teacher
-/// rollup when the filters allow rollup reads.
+/// rollup when the filters allow rollup reads; `excluded` counts the
+/// attempts left out of every figure (UX-192).
 #[must_use]
 pub fn build_data_quality(
     ctx: &AnalyticsContext,
     scope: &TeacherScope,
     filters: &AnalyticsFilters,
     teacher_rollup: Option<&TeacherMetricsRow>,
+    excluded: ExcludedAttempts,
 ) -> AnalyticsDataQuality {
     let rollup = teacher_rollup.filter(|_| filters.supports_teacher_rollup_reads());
     let freshness_seconds = rollup.map_or(0, |r| (ctx.generated_at - r.generated_at).max(0));
@@ -109,8 +111,8 @@ pub fn build_data_quality(
         confidence_level: confidence,
         missing_event_sources: missing_sources,
         courses_without_enough_data: gaps,
-        excluded_preview_attempts: 0,
-        excluded_teacher_attempts: 0,
+        excluded_preview_attempts: excluded.preview,
+        excluded_teacher_attempts: excluded.teacher,
         issues,
     }
 }

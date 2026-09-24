@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) FILTER (WHERE preview) AS \"preview!\",\n                  count(*) FILTER (WHERE NOT preview AND is_course_staff(course_id, user_id))\n                      AS \"teacher!\"\n           FROM submissions\n           WHERE course_id = ANY($1) AND status <> 'draft'\n             AND ($2::double precision IS NULL\n                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "preview!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "teacher!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "214f0df7418fc02cb618bfbf7f89464df28d54b85e7249e51092f15d8271aafe"
+}

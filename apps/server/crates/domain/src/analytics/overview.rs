@@ -211,6 +211,7 @@ pub struct OverviewInputs {
     pub previous_course_metrics: Vec<CourseMetricsRow>,
     pub previous_at_risk: Option<i64>,
     pub course_inputs: CourseRowInputs,
+    pub excluded_attempts: ab_db::analytics::ExcludedAttempts,
 }
 
 /// Legacy `get_teacher_overview`.
@@ -267,7 +268,13 @@ pub fn build_teacher_overview(
     let assessment_rows = build_assessment_rows(ctx, filters);
     let workload = build_teacher_workload(ctx, filters);
     let bottlenecks = build_content_bottlenecks(ctx, filters, None, 12);
-    let data_quality = build_data_quality(ctx, scope, filters, inputs.teacher_rollup.as_ref());
+    let data_quality = build_data_quality(
+        ctx,
+        scope,
+        filters,
+        inputs.teacher_rollup.as_ref(),
+        inputs.excluded_attempts,
+    );
     let forecasts = build_forecasts(
         ctx,
         filters,

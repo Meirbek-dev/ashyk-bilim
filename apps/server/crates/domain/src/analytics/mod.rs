@@ -210,6 +210,12 @@ impl AnalyticsService {
             ab_db::analytics::previous_at_risk_count(&self.pool, &scope.course_ids, &previous_date)
                 .await?;
         let course_inputs = self.course_inputs(&scope, current_start).await?;
+        let excluded_attempts = ab_db::analytics::count_excluded_attempts(
+            &self.pool,
+            &scope.course_ids,
+            Some(filters.previous_window_bounds(now).0),
+        )
+        .await?;
 
         Ok(overview::build_teacher_overview(
             &ctx,
@@ -223,6 +229,7 @@ impl AnalyticsService {
                 previous_course_metrics,
                 previous_at_risk,
                 course_inputs,
+                excluded_attempts,
             },
         ))
     }
