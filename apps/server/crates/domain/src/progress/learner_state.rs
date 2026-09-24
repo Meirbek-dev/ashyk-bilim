@@ -223,6 +223,14 @@ impl LearnerStateService {
         // rows survive a leave (submissions stay), so they cannot mean
         // "enrolled" — otherwise a learner who left could never re-enrol.
         let enrolled = has_run;
+        // BUG-287: the course's staff preview it — the enrol door refuses them.
+        let staff = AssessmentsService::require_scoped(
+            actor,
+            &course,
+            ab_core::permission::Action::Author,
+            "preview",
+        )
+        .is_ok();
 
         let states: Vec<(ChapterId, ActivityState)> = activities
             .iter()
@@ -276,8 +284,8 @@ impl LearnerStateService {
             permissions: CoursePermissions {
                 can_discover: course.public,
                 can_access: true,
-                can_enroll: !enrolled,
-                denial_reason: None,
+                can_enroll: !enrolled && !staff,
+                denial_reason: staff.then(|| "staff_preview".to_owned()),
             },
             progress,
             certificate,

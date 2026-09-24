@@ -121,6 +121,19 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     expect(screen.getByRole('button', { name: /Начать курс/ })).toBeInTheDocument()
   })
 
+  // BUG-287: the course's staff preview it — «Открыть курс», never an enrol call.
+  it('offers staff «Открыть курс» without enrolling', async () => {
+    renderActions({
+      ...enrolledWithoutRun,
+      enrolled: false,
+      permissions: { can_enroll: false, denial_reason: 'staff_preview' },
+    } as unknown as LearnerCourseState)
+    expect(screen.queryByRole('button', { name: /Начать курс/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Открыть курс/ }))
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(expect.stringContaining('/course/c1/activity/a1')))
+    expect(mocks.apiJson).not.toHaveBeenCalled()
+  })
+
   // UX-119: the landing reads learner-state (5 s staleTime) — enrolling must
   // invalidate it, or Back from the first activity offers «Начать курс» again.
   it('invalidates learner-state after «Начать курс»', async () => {

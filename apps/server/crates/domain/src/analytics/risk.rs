@@ -268,9 +268,6 @@ pub fn build_risk_rows(
         let Some(course) = ctx.courses.get(&course_id) else {
             continue;
         };
-        if ctx.course_authors.contains(key) {
-            continue;
-        }
         let days_since = last_activity
             .get(key)
             .map(|ts| days_between(*ts, now).max(0));

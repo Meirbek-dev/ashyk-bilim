@@ -337,6 +337,7 @@ pub struct TrailRunInfoRow {
     pub user_id: UserId,
 }
 
+/// The analytics member set: trail runs, never the course's staff (BUG-287).
 pub async fn list_trail_runs(
     pool: &PgPool,
     course_ids: &[CourseId],
@@ -346,7 +347,9 @@ pub async fn list_trail_runs(
         TrailRunInfoRow,
         r#"SELECT id AS "id: TrailRunId", course_id AS "course_id: CourseId",
                   user_id AS "user_id: UserId"
-           FROM trail_runs WHERE course_id = ANY($1) ORDER BY id"#,
+           FROM trail_runs
+           WHERE course_id = ANY($1) AND NOT is_course_staff(course_id, user_id)
+           ORDER BY id"#,
         &ids
     )
     .fetch_all(pool)

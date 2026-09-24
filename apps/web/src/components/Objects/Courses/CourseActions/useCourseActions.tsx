@@ -27,7 +27,7 @@ import { buildLoginRedirect } from '@/lib/auth/redirect'
 import { buildCourseWorkspacePath } from '@/lib/course-management'
 import Link from '@components/ui/AppLink'
 
-export type CourseCta = 'start' | 'continue' | 'certificate' | 'review'
+export type CourseCta = 'start' | 'continue' | 'certificate' | 'review' | 'preview'
 
 /** `Courses.CoursesActions` label per CTA — one wording on desktop and phone (UX-174). */
 export const CTA_LABEL = {
@@ -35,6 +35,7 @@ export const CTA_LABEL = {
   continue: 'continueLearning',
   certificate: 'viewCertificate',
   review: 'reviewCompletion',
+  preview: 'openCourse',
 } as const satisfies Record<CourseCta, string>
 
 interface CourseCtaInput {
@@ -72,13 +73,17 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
   const isReviewCompletion = isStarted && !nextUnfinished && learnerState?.next_action?.id === 'review_completion'
   // UX-119: nothing published for learners (0/0) — no CTA to dead-click.
   const hasNoLiveActivities = learnerState !== null && learnerState !== undefined && total === 0
-  const action: CourseCta = !isStarted
-    ? 'start'
-    : !nextUnfinished && certificateHref
-      ? 'certificate'
-      : isReviewCompletion
-        ? 'review'
-        : 'continue'
+  // BUG-287: the course's staff preview it — the server refuses to enrol them.
+  const isStaffPreview = learnerState?.permissions.denial_reason === 'staff_preview'
+  const action: CourseCta = isStaffPreview
+    ? 'preview'
+    : !isStarted
+      ? 'start'
+      : !nextUnfinished && certificateHref
+        ? 'certificate'
+        : isReviewCompletion
+          ? 'review'
+          : 'continue'
 
   // UX-119: Back within the learner-state staleTime must show the enrolled landing.
   const refreshEnrolment = () =>
@@ -111,6 +116,10 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
     }
     if (action === 'review') {
       setIsProgressOpen(true)
+      return
+    }
+    if (action === 'preview') {
+      openActivity(activities[0])
       return
     }
 

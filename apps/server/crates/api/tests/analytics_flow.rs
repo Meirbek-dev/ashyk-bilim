@@ -2144,3 +2144,95 @@ async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
         .unwrap();
     assert_eq!(rows, 0);
 }
+
+/// BUG-287: the course's staff (creator, platform author) never enrol — the
+/// enrol door is a 409 and learner-state says why — and a staff run made
+/// before the fix (or a learner who joined the staff) is in no member set:
+/// the gradebook, analytics rates and at-risk count the learners only.
+#[sqlx::test(migrations = "../../migrations")]
+async fn staff_never_enrol_nor_count_as_members(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Staff").await;
+    let lesson_id = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let (quiz_id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+    let alice = learner(&app, "alice").await;
+    let joined = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(joined.status, StatusCode::OK, "{}", joined.text());
+    submit_attempt(&app, &alice, &quiz_id, &choice_id, &essay_id).await;
+
+    let creator = app
+        .mint_session_for(
+            teacher.user_id,
+            &[
+                "course:read:all",
+                "assessment:*:own",
+                "trail:read:all",
+                "trail:submit:assigned",
+            ],
+        )
+        .await;
+    for staff in [&creator, &admin] {
+        for path in [
+            format!("/api/v2/trail/courses/{course_id}"),
+            format!("/api/v2/trail/activities/{lesson_id}"),
+        ] {
+            let res = app.post_as(staff, &path, &serde_json::json!({})).await;
+            assert_eq!(res.status, StatusCode::CONFLICT, "{path}: {}", res.text());
+        }
+        submit_attempt(&app, staff, &quiz_id, &choice_id, &essay_id).await;
+        let state = app
+            .get_as(staff, &format!("/api/v2/courses/{course_id}/learner-state"))
+            .await;
+        assert_eq!(
+            state.json()["permissions"]["can_enroll"],
+            false,
+            "{}",
+            state.text()
+        );
+        assert_eq!(
+            state.json()["permissions"]["denial_reason"],
+            "staff_preview"
+        );
+    }
+    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM trail_runs WHERE user_id <> $1")
+        .bind(alice.user_id.0)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(runs, 0, "a staff member got a trail run");
+
+    // A staff run from before the fix is in no member set.
+    enrol(&pool, &course_id, boss, 0.0).await;
+    let gradebook = app
+        .get_as(&admin, &format!("/api/v2/courses/{course_id}/gradebook"))
+        .await;
+    let users = gradebook.json()["users"].clone();
+    assert_eq!(users.as_array().map(Vec::len), Some(1), "{users}");
+    assert_eq!(users[0]["id"], alice.user_id.to_string(), "{users}");
+    let quiz = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/assessments/quiz/{quiz_id}"),
+        )
+        .await;
+    let summary = &quiz.json()["summary"];
+    assert_eq!(summary["eligible_learners"], 1, "{}", quiz.text());
+    assert_eq!(summary["submission_rate"], 100.0, "{}", quiz.text());
+    let at_risk = app
+        .get_as(&teacher, "/api/v2/analytics/teacher/learners/at-risk")
+        .await;
+    let listed = at_risk.json()["items"].to_string();
+    assert!(!listed.contains(&boss.to_string()), "{listed}");
+}

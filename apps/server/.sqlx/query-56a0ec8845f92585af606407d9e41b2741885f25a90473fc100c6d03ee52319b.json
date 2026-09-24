@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: TrailRunId\", course_id AS \"course_id: CourseId\",\n                  user_id AS \"user_id: UserId\"\n           FROM trail_runs WHERE course_id = ANY($1) ORDER BY id",
+  "query": "SELECT id AS \"id: TrailRunId\", course_id AS \"course_id: CourseId\",\n                  user_id AS \"user_id: UserId\"\n           FROM trail_runs\n           WHERE course_id = ANY($1) AND NOT is_course_staff(course_id, user_id)\n           ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -48,5 +48,5 @@
       false
     ]
   },
-  "hash": "3fb57249a49581272830e208b818d690f1026614e8b3a5532406c4d30ee892b9"
+  "hash": "56a0ec8845f92585af606407d9e41b2741885f25a90473fc100c6d03ee52319b"
 }

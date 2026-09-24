@@ -1283,8 +1283,16 @@ Implements three more items of the owner answers above. Routes:
   author (a trail run) and listed them as a learner in the gradebook,
   review queue and counts, and made BUG-247's self-extension refusal moot.
   Replaces "authors pass as previewers, and their work counts like a
-  learner's" (legacy BUG-145 enrolled them). Staff trail runs created
-  before this stay until the user leaves the course.
+  learner's" (legacy BUG-145 enrolled them).
+- **Staff never enrol** (BUG-287): `POST /trail/courses/{id}` and a mark
+  (`POST /trail/activities/{id}`) are 409 for the `is_teacher_preview` set;
+  the learner-side enrol entry (`lock_member(enrol)`) skips them; learner-
+  state answers `can_enroll: false, denial_reason: "staff_preview"` and the
+  landing offers «Открыть курс» (no enrol) instead of «Начать курс». The SQL
+  `is_course_staff(course, user)` is the same rule; every member set
+  (analytics `trail_runs`, the gradebook) excludes it, so a learner who
+  later joins the staff drops out too. Migration 20260924000006 deleted
+  the existing staff runs, their progress rows and access/override rows.
 
 ## A leave drops the leaver's allowlist and override rows (2026-09-24, gauntlet pass 24)
 

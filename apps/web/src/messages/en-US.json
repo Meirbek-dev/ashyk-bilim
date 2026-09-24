@@ -3021,6 +3021,7 @@
       },
       "readyToBegin": "Ready to Begin?",
       "startCourse": "Start Course",
+      "openCourse": "Open course",
       "startCourseError": "Failed to start the course. Please try again later.",
       "startError": "Failed to start the course. Please try again later.",
       "startLearningJourney": "Start your learning journey with {totalActivities} exciting {totalActivities, plural, one {activity} other {activities}}",

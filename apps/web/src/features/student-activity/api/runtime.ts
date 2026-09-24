@@ -121,7 +121,11 @@ const VIEW_STATES = new Set<StudentActivityState>([
   'failed',
 ])
 
-function primaryAction(current: OutlineActivity, next: RuntimeNavItem | null): StudentActivityRuntime['primary_action'] {
+function primaryAction(
+  current: OutlineActivity,
+  next: RuntimeNavItem | null,
+  staffPreview: boolean,
+): StudentActivityRuntime['primary_action'] {
   if (!current.available || current.state === 'locked') {
     return {
       id: 'none',
@@ -131,13 +135,15 @@ function primaryAction(current: OutlineActivity, next: RuntimeNavItem | null): S
   }
   // A hand-in, a pending grade or a released result is this page's content:
   // «Посмотреть квитанцию» / «Смотреть результат» had nothing to open (UX-033),
-  // so the bar moves the learner on instead.
-  if (current.complete || VIEW_STATES.has(current.state)) {
+  // so the bar moves the learner on instead. BUG-287: so does a lesson for the
+  // course's staff — a mark would enrol them (409); an assessment still starts a preview.
+  const isLesson = ['dynamic', 'video', 'document', 'custom'].includes(current.activity_type)
+  if (current.complete || VIEW_STATES.has(current.state) || (isLesson && staffPreview)) {
     return next
       ? { id: 'next_activity', enabled: next.published && next.state !== 'locked', target_activity_uuid: next.uuid }
       : { id: 'back_to_course', enabled: true }
   }
-  if (['dynamic', 'video', 'document', 'custom'].includes(current.activity_type)) {
+  if (isLesson) {
     return { id: 'mark_complete', enabled: true }
   }
   const actionByState: Partial<Record<StudentActivityState, StudentActivityRuntime['primary_action']['id']>> = {
@@ -214,7 +220,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     policy: { due_at: dueAt },
     previous,
     next,
-    primary_action: primaryAction(activity, next),
+    primary_action: primaryAction(activity, next, state.permissions.denial_reason === 'staff_preview'),
     progress: {
       state: activity.available ? activity.state : 'unavailable',
       complete: activity.complete,
@@ -230,11 +236,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
 }
 
 export async function getStudentActivityRuntime(courseUuid: string, activityUuid: string) {
-  const state = await apiJson(
-    `courses/${courseUuid}/learner-state`,
-    {},
-    value => LearnerCourseState.parse(value),
-  )
+  const state = await apiJson(`courses/${courseUuid}/learner-state`, {}, value => LearnerCourseState.parse(value))
   return toRuntime(state, activityUuid)
 }
 

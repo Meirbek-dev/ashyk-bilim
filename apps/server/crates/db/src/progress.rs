@@ -458,6 +458,22 @@ pub async fn has_trail_run<'e>(
     Ok(exists)
 }
 
+/// The course's staff (`is_course_staff`, BUG-287): never enrolled.
+pub async fn is_course_staff<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
+    let staff = sqlx::query_scalar!(
+        r#"SELECT is_course_staff($1, $2) AS "staff!""#,
+        course_id.0,
+        user_id.0
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(staff)
+}
+
 /// [`has_trail_run`] holding the run `FOR SHARE` until the caller's
 /// transaction ends: a concurrent leave (which deletes it) lands wholly
 /// before (→ `false`) or after the caller's commit (BUG-281).

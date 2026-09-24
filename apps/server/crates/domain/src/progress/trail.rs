@@ -95,9 +95,9 @@ async fn lock_trail_run(
 /// Every per-member write that depends on membership (BUG-269/270/271):
 /// the member's trail lock with the run re-checked inside it, so a leave
 /// lands wholly before (→ `None`, nothing is written) or after the write.
-/// `enrol` (the learner's own work) creates the run instead. Do every write
-/// through the returned transaction and fire pool hooks after commit
-/// (BUG-235).
+/// `enrol` (the learner's own work) creates the run instead — never for the
+/// course's staff (BUG-287). Do every write through the returned
+/// transaction and fire pool hooks after commit (BUG-235).
 pub(crate) async fn lock_member(
     pool: &PgPool,
     user_id: UserId,
@@ -105,7 +105,7 @@ pub(crate) async fn lock_member(
     enrol: bool,
 ) -> Result<Option<Transaction<'static, Postgres>>> {
     let mut tx = lock_trail_run(pool, user_id, course_id, MEMBER_WAIT).await?;
-    if enrol {
+    if enrol && !ab_db::progress::is_course_staff(&mut *tx, course_id, user_id).await? {
         let trail = ab_db::progress::ensure_trail(&mut tx, user_id).await?;
         ab_db::progress::ensure_trail_run(&mut tx, trail.id, course_id, user_id).await?;
     } else if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
@@ -226,7 +226,9 @@ impl TrailService {
         lock_trail_run(&self.pool, user_id, course_id, LOCK_WAIT).await
     }
 
-    /// Visible course (404) the learner may access (403).
+    /// Visible course (404) the learner may access (403) and join: the
+    /// course's staff — the `is_teacher_preview` set — never get a run, their
+    /// attempts are previews (BUG-287) → 409.
     async fn accessible_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.courses.get(actor, course_id).await?;
         if !self
@@ -235,6 +237,11 @@ impl TrailService {
             .await?
         {
             return Err(Error::forbidden("no access to this course"));
+        }
+        if AssessmentsService::require_scoped(actor, &course, Action::Author, "preview").is_ok() {
+            return Err(Error::conflict(
+                "course staff preview the course and never enrol in it",
+            ));
         }
         Ok(course)
     }

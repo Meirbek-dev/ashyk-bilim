@@ -612,7 +612,7 @@ impl GradebookCellRow {
 /// member without attempts is listed, a leaver is not (UX-169). A page is
 /// whole learner rows (BUG-265): the page count follows the learners, not
 /// learners × activities, and a course without graded activities still
-/// lists its members (UX-182).
+/// lists its members (UX-182). Staff are never members (BUG-287).
 pub async fn gradebook_members(
     pool: &PgPool,
     course_id: CourseId,
@@ -622,6 +622,7 @@ pub async fn gradebook_members(
     let rows = sqlx::query_scalar!(
         r#"SELECT DISTINCT user_id AS "user_id!: UserId" FROM trail_runs
            WHERE course_id = $1 AND ($2::uuid IS NULL OR user_id > $2)
+             AND NOT is_course_staff(course_id, user_id)
            ORDER BY 1
            LIMIT $3"#,
         course_id.0,

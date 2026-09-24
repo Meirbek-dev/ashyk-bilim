@@ -113,7 +113,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
               <>
                 {action === 'start' ? (
                   <LogIn className="h-4 w-4" />
-                ) : action === 'continue' ? (
+                ) : action === 'continue' || action === 'preview' ? (
                   <BookOpen className="h-4 w-4" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4" />

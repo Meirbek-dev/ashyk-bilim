@@ -235,8 +235,8 @@ pub struct AnalyticsContext {
     pub usergroup_names: BTreeMap<UsergroupId, String>,
     pub cohorts_by_user: HashMap<UserId, BTreeSet<UsergroupId>>,
     /// (course, editor) pairs — creator + active non-reporter co-authors
-    /// (the teacher scope rule). Editors who
-    /// enrol in their own course are never at-risk learners (BUG-145).
+    /// (the teacher scope rule). Staff are never members: `trail_runs`
+    /// excludes them (BUG-145, BUG-287).
     pub course_authors: HashSet<SnapshotKey>,
 }
 
