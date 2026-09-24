@@ -389,7 +389,13 @@ impl ProgressProjector {
         let rows =
             ab_db::progress::list_course_progress_rows(&mut *conn, course_id, user_id).await?;
         let weights = ab_db::progress::list_assessment_weights(&mut *conn, course_id).await?;
-        let write = aggregate_course(course_id, user_id, &rows, &weights);
+        let mut write = aggregate_course(course_id, user_id, &rows, &weights);
+        // BUG-276: completion is a member's — a leaver keeps the counts, not
+        // the completion or the certificate (the caller holds the trail lock).
+        if !ab_db::progress::has_trail_run(&mut *conn, course_id, user_id).await? {
+            write.certificate_eligible = false;
+            write.completed_at = None;
+        }
         ab_db::progress::upsert_course_progress(&mut *conn, &write).await?;
         if write.certificate_eligible {
             crate::certifications::issue_for_completion(&mut *conn, course_id, user_id).await?;

@@ -283,6 +283,11 @@ impl TrailService {
                     .await?,
             );
         }
+        // BUG-276: an all-quiz course un-marks nothing; the aggregate still
+        // drops the leaver's completion.
+        self.projector
+            .recalculate_course_on(&mut tx, course_id, actor.user_id)
+            .await?;
         tx.commit().await?;
         hooks.fire(&self.pool).await;
         self.hydrate(actor, trail).await
@@ -316,8 +321,7 @@ impl TrailService {
         // together.
         let mut tx = self.lock(actor.user_id, course.id).await?;
         let trail = ab_db::progress::ensure_trail(&mut tx, actor.user_id).await?;
-        let joined = !ab_db::progress::has_trail_run(&mut *tx, course.id, actor.user_id).await?;
-        let run =
+        let (run, joined) =
             ab_db::progress::ensure_trail_run(&mut tx, trail.id, course.id, actor.user_id).await?;
         // BUG-275: a (re)joining mark re-projects what changed while away.
         let mut hooks = if joined {

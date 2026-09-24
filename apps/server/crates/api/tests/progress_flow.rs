@@ -1478,6 +1478,21 @@ async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
         .await
         .json();
     assert_eq!(state["enrollment_state"], "not_enrolled", "{state}");
+    // The leave drops the completion even with no lesson to un-mark.
+    let completed: (bool, bool) = sqlx::query_as(
+        "SELECT certificate_eligible, completed_at IS NOT NULL FROM course_progress
+         WHERE user_id = $1 AND course_id = $2::uuid",
+    )
+    .bind(alice.user_id.0)
+    .bind(&course_id)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        completed,
+        (false, false),
+        "the leaver still reads completed"
+    );
     let created = app
         .post_as(
             &teacher,

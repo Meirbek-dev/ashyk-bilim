@@ -458,14 +458,14 @@ pub async fn has_trail_run<'e>(
     Ok(exists)
 }
 
-/// Create-or-get the run for a course.
+/// Create-or-get the run for a course; `true` when it was just created.
 pub async fn ensure_trail_run(
     conn: &mut PgConnection,
     trail_id: TrailId,
     course_id: CourseId,
     user_id: UserId,
-) -> Result<TrailRunRow> {
-    sqlx::query!(
+) -> Result<(TrailRunRow, bool)> {
+    let created = sqlx::query!(
         r#"INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2, $3)
            ON CONFLICT (trail_id, course_id) DO NOTHING"#,
         trail_id.0,
@@ -473,10 +473,13 @@ pub async fn ensure_trail_run(
         user_id.0
     )
     .execute(&mut *conn)
-    .await?;
-    get_trail_run(&mut *conn, trail_id, course_id)
+    .await?
+    .rows_affected()
+        == 1;
+    let run = get_trail_run(&mut *conn, trail_id, course_id)
         .await?
-        .ok_or_else(|| ab_core::Error::not_found("trail run"))
+        .ok_or_else(|| ab_core::Error::not_found("trail run"))?;
+    Ok((run, created))
 }
 
 /// Try to serialize trail writes for one (user, course) pair (BUG-210).
