@@ -149,10 +149,10 @@ describe('UserSecuritySettings', () => {
     expect(mockChangePassword).not.toHaveBeenCalled()
 
     await user.type(input('currentPassword'), 'old horse')
-    await user.type(input('newPassword'), 'new horse battery')
-    await user.type(input('confirmPassword'), 'new horse battery')
+    await user.type(input('newPassword'), 'New horse battery 1')
+    await user.type(input('confirmPassword'), 'New horse battery 1')
     await user.click(screen.getByRole('button', { name: 'changePassword' }))
-    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledWith('old horse', 'new horse battery'))
+    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledWith('old horse', 'New horse battery 1'))
     expect(await screen.findByText('currentPasswordWrong')).toBeDefined()
 
     await user.click(screen.getByRole('button', { name: 'changePassword' }))

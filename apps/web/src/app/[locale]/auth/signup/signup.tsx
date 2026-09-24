@@ -14,6 +14,7 @@ import AuthCard from '@components/auth/card'
 import Link from '@components/ui/AppLink'
 import { getAbsoluteUrl } from '@services/config/config'
 import { registerAction } from '@/app/actions/auth'
+import { meetsPasswordPolicy } from '@/lib/auth/schemas'
 
 const USERNAME_RE = /^[A-Za-z0-9._-]{3,48}$/u
 const FIELDS = ['username', 'email', 'password', 'confirmPassword', 'firstName', 'lastName'] as const
@@ -68,8 +69,18 @@ function SignupClient() {
         v.minLength(1, validationT('required')),
         v.regex(USERNAME_RE, t('usernameRule')),
       ),
-      email: v.pipe(v.string(), v.trim(), v.minLength(1, validationT('required')), v.email(validationT('invalidEmail'))),
-      password: v.pipe(v.string(), v.minLength(8, validationT('passwordTooShort')), v.maxLength(200)),
+      email: v.pipe(
+        v.string(),
+        v.trim(),
+        v.minLength(1, validationT('required')),
+        v.email(validationT('invalidEmail')),
+      ),
+      password: v.pipe(
+        v.string(),
+        v.minLength(8, validationT('passwordTooShort')),
+        v.maxLength(200),
+        v.check(meetsPasswordPolicy, errorsT('fields.password-policy')),
+      ),
       confirmPassword: v.string(),
     }),
     v.forward(
@@ -82,41 +93,46 @@ function SignupClient() {
     ),
   )
 
-  const [state, action, isPending] = useActionState(async (prev: SignupState, formData: FormData): Promise<SignupState> => {
-    const version = prev.version + 1
-    const values = Object.fromEntries(FIELDS.map(name => [name, String(formData.get(name) ?? '')])) as SignupState['values']
-    const parsed = v.safeParse(schema, values)
-    if (!parsed.success) {
-      const flat = v.flatten<typeof schema>(parsed.issues)
-      const fieldErrors: SignupState['fieldErrors'] = {}
-      for (const name of FIELDS) {
-        const message = flat.nested?.[name]?.[0]
-        if (message) fieldErrors[name] = message
+  const [state, action, isPending] = useActionState(
+    async (prev: SignupState, formData: FormData): Promise<SignupState> => {
+      const version = prev.version + 1
+      const values = Object.fromEntries(
+        FIELDS.map(name => [name, String(formData.get(name) ?? '')]),
+      ) as SignupState['values']
+      const parsed = v.safeParse(schema, values)
+      if (!parsed.success) {
+        const flat = v.flatten<typeof schema>(parsed.issues)
+        const fieldErrors: SignupState['fieldErrors'] = {}
+        for (const name of FIELDS) {
+          const message = flat.nested?.[name]?.[0]
+          if (message) fieldErrors[name] = message
+        }
+        return { values, error: null, fieldErrors, version }
       }
-      return { values, error: null, fieldErrors, version }
-    }
 
-    const result = await registerAction({ ...parsed.output, locale })
-    if (!result.ok) {
-      const fieldErrors: SignupState['fieldErrors'] = {}
-      for (const [wire, code] of Object.entries(result.fieldErrors ?? {})) {
-        const name = WIRE_TO_FIELD[wire]
-        if (!name) continue
-        const key = `fields.${code}`
-        fieldErrors[name] = errorsT.has(key) ? errorsT(key) : errorsT('fields.invalid')
+      const result = await registerAction({ ...parsed.output, locale })
+      if (!result.ok) {
+        const fieldErrors: SignupState['fieldErrors'] = {}
+        for (const [wire, code] of Object.entries(result.fieldErrors ?? {})) {
+          const name = WIRE_TO_FIELD[wire]
+          if (!name) continue
+          const key = `fields.${code}`
+          fieldErrors[name] = errorsT.has(key) ? errorsT(key) : errorsT('fields.invalid')
+        }
+        if (result.code === 'username-taken') fieldErrors.username = errorsT('codes.username-taken')
+        if (result.code === 'email-taken') fieldErrors.email = errorsT('codes.email-taken')
+        const codeKey = `codes.${result.code}`
+        const banner =
+          Object.keys(fieldErrors).length > 0 ? null : errorsT.has(codeKey) ? errorsT(codeKey) : t('failed')
+        return { values, error: banner, fieldErrors, version }
       }
-      if (result.code === 'username-taken') fieldErrors.username = errorsT('codes.username-taken')
-      if (result.code === 'email-taken') fieldErrors.email = errorsT('codes.email-taken')
-      const codeKey = `codes.${result.code}`
-      const banner =
-        Object.keys(fieldErrors).length > 0 ? null : errorsT.has(codeKey) ? errorsT(codeKey) : t('failed')
-      return { values, error: banner, fieldErrors, version }
-    }
 
-    toast.success(t('success'), { description: t('successDescription') })
-    router.push('/auth/login')
-    return INITIAL_STATE
-  }, INITIAL_STATE)
+      toast.success(t('success'), { description: t('successDescription') })
+      router.push('/auth/login')
+      return INITIAL_STATE
+    },
+    INITIAL_STATE,
+  )
 
   const field = (name: FieldName, label: string, input: React.ReactNode, hint?: string) => (
     <Field key={name}>
@@ -146,12 +162,22 @@ function SignupClient() {
           {field(
             'firstName',
             t('firstName'),
-            <Input name="firstName" defaultValue={state.values.firstName} autoComplete="given-name" className="w-full" />,
+            <Input
+              name="firstName"
+              defaultValue={state.values.firstName}
+              autoComplete="given-name"
+              className="w-full"
+            />,
           )}
           {field(
             'lastName',
             t('lastName'),
-            <Input name="lastName" defaultValue={state.values.lastName} autoComplete="family-name" className="w-full" />,
+            <Input
+              name="lastName"
+              defaultValue={state.values.lastName}
+              autoComplete="family-name"
+              className="w-full"
+            />,
           )}
         </div>
         {field(

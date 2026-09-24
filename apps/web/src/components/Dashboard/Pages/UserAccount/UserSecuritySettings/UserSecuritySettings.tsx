@@ -24,6 +24,7 @@ import { useApiError } from '@/hooks/useApiError'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { fromUnix } from '@/lib/api/contract'
 import { APIError, hasErrorCode } from '@/lib/api/assertSuccess'
+import { meetsPasswordPolicy } from '@/lib/auth/schemas'
 import {
   changePassword,
   getSessionInfo,
@@ -250,6 +251,7 @@ function PasswordSection({ t }: { t: Translator }) {
     const next: typeof errors = {}
     if (!values.current) next.current = t('required')
     if (values.next.length < 8) next.next = t('passwordTooShort')
+    else if (!meetsPasswordPolicy(values.next)) next.next = errorsT('fields.password-policy')
     if (values.confirm !== values.next) next.confirm = t('passwordsDoNotMatch')
     setErrors(next)
     if (Object.keys(next).length > 0) return

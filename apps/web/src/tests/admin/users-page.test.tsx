@@ -192,7 +192,7 @@ describe('/dash/admin/users (v2 AdminUserPage wire)', () => {
     await user.type(input('lastName'), 'Bie')
     await user.type(input('username'), 'newbie')
     await user.type(input('email'), 'newbie@ashyq.local')
-    await user.type(input('password'), 'Password1')
+    await user.type(input('password'), 'Password1!')
     await user.click(within(dialog).getByRole('button', { name: 'createUserSubmit' }))
 
     await waitFor(() => expect(input('password')).toHaveAttribute('aria-invalid', 'true'))

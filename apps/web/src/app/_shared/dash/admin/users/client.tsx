@@ -48,6 +48,7 @@ import { accountLabel, useRoleLabels } from '@/features/users/hooks/useRoleLabel
 import { useApiError } from '@/hooks/useApiError'
 import { useSession } from '@/hooks/useSession'
 import { APIError, hasErrorCode } from '@/lib/api/assertSuccess'
+import { meetsPasswordPolicy } from '@/lib/auth/schemas'
 import type { AdminUser, CreateUserBody, Role } from '@/lib/api/generated/zod'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { assignRoleToUser, createUser, removeRoleFromUser, setUserStatus } from '@/services/rbac'
@@ -468,6 +469,7 @@ function CreateUserForm({
     if (!USERNAME_RE.test(values.username.trim())) next.username = t('usernameInvalid')
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(values.email.trim())) next.email = t('emailInvalid')
     if (values.password && values.password.length < 8) next.password = t('passwordTooShort')
+    else if (values.password && !meetsPasswordPolicy(values.password)) next.password = errorsT('fields.password-policy')
     setErrors(next)
     if (Object.keys(next).length > 0) return
     onSubmit({

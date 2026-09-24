@@ -13,6 +13,7 @@ const catalog: Record<string, string> = {
   'codes.rate-limited': 'Slow down',
   'fields.invalid': 'Invalid value',
   'fields.password-too-long': ruMessages.Errors.fields['password-too-long'],
+  'fields.password-policy': ruMessages.Errors.fields['password-policy'],
 }
 vi.mock('next-intl', () => ({
   useLocale: () => 'ru-RU',
@@ -43,8 +44,8 @@ async function fillValid(user: ReturnType<typeof userEvent.setup>) {
   await user.type(input('lastName'), 'Test')
   await user.type(input('username'), 'aigerim.k')
   await user.type(input('email'), 'aigerim@example.com')
-  await user.type(input('password'), 'correct horse')
-  await user.type(input('confirmPassword'), 'correct horse')
+  await user.type(input('password'), 'Correct horse 1')
+  await user.type(input('confirmPassword'), 'Correct horse 1')
 }
 
 beforeEach(() => vi.clearAllMocks())
@@ -80,8 +81,8 @@ describe('/auth/signup', () => {
         lastName: 'Test',
         username: 'aigerim.k',
         email: 'aigerim@example.com',
-        password: 'correct horse',
-        confirmPassword: 'correct horse',
+        password: 'Correct horse 1',
+        confirmPassword: 'Correct horse 1',
         // UX-101: the signer's UI locale prefixes the verification link.
         locale: 'ru-RU',
       }),
@@ -109,6 +110,27 @@ describe('/auth/signup', () => {
     await fillValid(user)
     await user.click(screen.getByRole('button', { name: 'submit' }))
     expect(await screen.findByText('Slow down')).toBeInTheDocument()
+  })
+
+  it('UX-201: a Cyrillic-only case pair is flagged before submit with the Latin rule, in every locale', async () => {
+    for (const [messages, latin] of [
+      [ruMessages, /латинск/],
+      [kkMessages, /латын/],
+      [enMessages, /Latin/],
+    ] as const) {
+      expect(messages.Errors.fields['password-policy']).toMatch(latin)
+      expect(messages.Auth.Signup.passwordRule).toMatch(latin)
+    }
+    const user = userEvent.setup()
+    render(<SignupClient />)
+    await fillValid(user)
+    await user.clear(input('password'))
+    await user.type(input('password'), 'Пароль1!зима')
+    await user.clear(input('confirmPassword'))
+    await user.type(input('confirmPassword'), 'Пароль1!зима')
+    await user.click(screen.getByRole('button', { name: 'submit' }))
+    expect(await screen.findByText(ruMessages.Errors.fields['password-policy'])).toBeInTheDocument()
+    expect(registerAction).not.toHaveBeenCalled()
   })
 
   it('BUG-293: a server password-too-long lands on the password field, worded in every locale', async () => {
