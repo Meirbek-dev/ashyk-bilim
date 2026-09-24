@@ -435,3 +435,59 @@ async fn listing_pages_by_cursor(pool: PgPool) {
     assert_eq!(rest.json()["items"][0]["id"], ids[0].as_str());
     assert!(rest.json()["next_cursor"].is_null());
 }
+
+/// BUG-298: concurrent likes and replies all count — the triggers move the
+/// counters by atomic deltas instead of a racing recount.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_likes_and_replies_all_count(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = public_course(&app, &teacher, "Busy forum").await;
+    let users = [
+        learner(&app, "alice").await,
+        learner(&app, "bob").await,
+        learner(&app, "carol").await,
+    ];
+    let posts_path = format!("/api/v2/courses/{course_id}/discussions");
+    let mut post_ids = Vec::new();
+    for n in 0..20 {
+        let post = app
+            .post_as(
+                &users[0],
+                &posts_path,
+                &serde_json::json!({ "content": format!("post {n}") }),
+            )
+            .await;
+        assert_eq!(post.status, StatusCode::CREATED, "{}", post.text());
+        post_ids.push(post.json()["id"].as_str().unwrap().to_owned());
+    }
+    for id in &post_ids {
+        let likes = futures::future::join_all(
+            users
+                .iter()
+                .map(|u| app.send(put(u, format!("/api/v2/discussions/{id}/like")))),
+        )
+        .await;
+        assert!(likes.iter().all(|r| r.status == StatusCode::OK));
+    }
+    let reply = serde_json::json!({ "content": "same time", "parent_id": post_ids[0] });
+    let replies = futures::future::join_all(
+        users
+            .iter()
+            .cycle()
+            .take(15)
+            .map(|u| app.post_as(u, &posts_path, &reply)),
+    )
+    .await;
+    assert!(replies.iter().all(|r| r.status == StatusCode::CREATED));
+    let counts: Vec<(i32, i32)> = sqlx::query_as(
+        "SELECT likes_count, replies_count FROM course_discussions
+         WHERE parent_id IS NULL ORDER BY id",
+    )
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(counts.len(), 20);
+    assert!(counts.iter().all(|&(likes, _)| likes == 3), "{counts:?}");
+    assert_eq!(counts[0].1, 15, "{counts:?}");
+}
