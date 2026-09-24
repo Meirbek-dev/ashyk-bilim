@@ -763,3 +763,101 @@ async fn out_of_range_epochs_are_client_errors(pool: PgPool) {
         );
     }
 }
+
+/// The DB half of `DELETE /trail/courses/{id}`, held open: the leaver's
+/// trail lock (`try_lock_trail_run`'s key) and the run deleted, uncommitted.
+async fn held_leave(
+    pool: &PgPool,
+    course_id: &str,
+    user_id: UserId,
+) -> sqlx::Transaction<'static, sqlx::Postgres> {
+    let mut leave = pool.begin().await.unwrap();
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+    )
+    .bind(user_id.0)
+    .bind(course_id)
+    .execute(&mut *leave)
+    .await
+    .unwrap();
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+        .bind(user_id.0)
+        .bind(course_id)
+        .execute(&mut *leave)
+        .await
+        .unwrap();
+    leave
+}
+
+/// BUG-273: override create / update check membership under the learner's
+/// trail lock — a leave committing mid-request is a 422 `not-in-course`,
+/// never an override written for a non-member.
+#[sqlx::test(migrations = "../../migrations")]
+async fn overrides_racing_a_leave_are_not_in_course(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let (alice, _) = learner(&app, "alice").await;
+    let (bob, _) = learner(&app, "bob").await;
+    enrol(&pool, &course_id, alice).await;
+    enrol(&pool, &course_id, bob).await;
+    let granted = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{bob}"),
+            &serde_json::json!({ "max_attempts_override": 2 }),
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+
+    let commit_after = async |leave: sqlx::Transaction<'static, sqlx::Postgres>| {
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        leave.commit().await.unwrap();
+    };
+    let leave = held_leave(&pool, &course_id, alice).await;
+    let body = serde_json::json!({ "max_attempts_override": 3 });
+    let create_path = format!("/api/v2/assessments/{id}/overrides/{alice}");
+    let (created, ()) = tokio::join!(
+        app.post_as(&teacher, &create_path, &body),
+        commit_after(leave)
+    );
+    assert_eq!(
+        created.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        created.text()
+    );
+    assert_eq!(created.json()["field_errors"][0]["code"], "not-in-course");
+
+    let leave = held_leave(&pool, &course_id, bob).await;
+    let update = app.send(
+        axum::http::Request::builder()
+            .method("PUT")
+            .uri(format!("/api/v2/assessments/{id}/overrides/{bob}"))
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &teacher.cookie)
+            .body(axum::body::Body::from(body.to_string()))
+            .unwrap(),
+    );
+    let (updated, ()) = tokio::join!(update, commit_after(leave));
+    assert_eq!(
+        updated.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        updated.text()
+    );
+    assert_eq!(updated.json()["field_errors"][0]["code"], "not-in-course");
+
+    let written: Vec<(uuid::Uuid, Option<i32>)> = sqlx::query_as(
+        "SELECT user_id, max_attempts_override FROM assessment_overrides WHERE assessment_id = $1::uuid",
+    )
+    .bind(&id)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        written,
+        [(bob.0, Some(2))],
+        "no override written for a leaver"
+    );
+}

@@ -976,8 +976,8 @@ pub struct OverrideValues<'a> {
 }
 
 /// `None` when the (assessment, user) pair already has an override.
-pub async fn insert_override(
-    pool: &PgPool,
+pub async fn insert_override<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
     user_id: UserId,
     v: OverrideValues<'_>,
@@ -998,13 +998,13 @@ pub async fn insert_override(
         epoch(v.expires_at),
         v.granted_by.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }
 
-pub async fn update_override(
-    pool: &PgPool,
+pub async fn update_override<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
     user_id: UserId,
     v: OverrideValues<'_>,
@@ -1024,7 +1024,7 @@ pub async fn update_override(
         epoch(v.expires_at),
         v.granted_by.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }

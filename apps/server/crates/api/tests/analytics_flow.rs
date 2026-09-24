@@ -2095,3 +2095,52 @@ async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
         .await;
     assert_eq!(inspected.json()["total"], 2, "{}", inspected.text());
 }
+
+/// BUG-273: the intervention's membership check and insert run under the
+/// learner's trail lock — a leave committing mid-request is a 422
+/// `not-in-course`, never an intervention for a non-member.
+#[sqlx::test(migrations = "../../migrations")]
+async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, _) = public_course(&app, &teacher, "Race 101").await;
+    let alice = learner(&app, "alice").await;
+    enrol(&pool, &course_id, alice.user_id, 0.0).await;
+    let mut leave = pool.begin().await.unwrap();
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+    )
+    .bind(alice.user_id.0)
+    .bind(&course_id)
+    .execute(&mut *leave)
+    .await
+    .unwrap();
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+        .bind(alice.user_id.0)
+        .bind(&course_id)
+        .execute(&mut *leave)
+        .await
+        .unwrap();
+    let body = serde_json::json!({
+        "user_id": alice.user_id, "course_id": course_id,
+        "intervention_type": "message_sent"
+    });
+    let create = app.post_as(&teacher, "/api/v2/analytics/teacher/interventions", &body);
+    let commit_leave = async {
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        leave.commit().await.unwrap();
+    };
+    let (created, ()) = tokio::join!(create, commit_leave);
+    assert_eq!(
+        created.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        created.text()
+    );
+    assert_eq!(created.json()["field_errors"][0]["code"], "not-in-course");
+    let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM teacher_interventions")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(rows, 0);
+}

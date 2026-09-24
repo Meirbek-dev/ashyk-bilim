@@ -186,12 +186,30 @@ impl AssessmentsService {
         field: String,
     ) -> Result<Option<FieldError>> {
         Ok(
-            (!ab_db::progress::has_trail_run(db, course_id, user_id).await?).then(|| FieldError {
-                field,
-                code: "not-in-course".into(),
-                message: format!("user {user_id} is not enrolled in this course"),
-            }),
+            (!ab_db::progress::has_trail_run(db, course_id, user_id).await?)
+                .then(|| Self::not_in_course(user_id, field)),
         )
+    }
+
+    pub(crate) fn not_in_course(user_id: UserId, field: String) -> FieldError {
+        FieldError {
+            field,
+            code: "not-in-course".into(),
+            message: format!("user {user_id} is not enrolled in this course"),
+        }
+    }
+
+    /// BUG-273: the member's trail lock with the run re-checked on it — the
+    /// override write goes on the returned transaction, so a leave lands
+    /// wholly before (422) or after the write.
+    async fn lock_member(
+        &self,
+        course_id: ab_core::id::CourseId,
+        user_id: UserId,
+    ) -> Result<sqlx::Transaction<'static, sqlx::Postgres>> {
+        crate::progress::trail::lock_member(&self.pool, user_id, course_id, false)
+            .await?
+            .ok_or_else(|| Error::validation(vec![Self::not_in_course(user_id, "user_id".into())]))
     }
 
     /// Course creators and platform authors preview without limits.
@@ -344,13 +362,9 @@ impl AssessmentsService {
             return Err(Error::validation(vec![e]));
         }
         // UX-147 / BUG-247: an override is for a student of the course.
-        if let Some(e) =
-            Self::not_member(&self.pool, assessment.course_id, user_id, "user_id".into()).await?
-        {
-            return Err(Error::validation(vec![e]));
-        }
+        let mut tx = self.lock_member(assessment.course_id, user_id).await?;
         let created = ab_db::assessments::insert_override(
-            &self.pool,
+            &mut *tx,
             id,
             user_id,
             OverrideValues {
@@ -363,6 +377,7 @@ impl AssessmentsService {
             },
         )
         .await?;
+        tx.commit().await?;
         if created.is_none() {
             return Err(Error::conflict("this student already has an override"));
         }
@@ -380,13 +395,9 @@ impl AssessmentsService {
     ) -> Result<Override> {
         let assessment = self.load_for_author(actor, id).await?;
         input.validate()?;
-        if let Some(e) =
-            Self::not_member(&self.pool, assessment.course_id, user_id, "user_id".into()).await?
-        {
-            return Err(Error::validation(vec![e]));
-        }
+        let mut tx = self.lock_member(assessment.course_id, user_id).await?;
         let updated = ab_db::assessments::update_override(
-            &self.pool,
+            &mut *tx,
             id,
             user_id,
             OverrideValues {
@@ -399,6 +410,7 @@ impl AssessmentsService {
             },
         )
         .await?;
+        tx.commit().await?;
         if !updated {
             return Err(Error::not_found("override"));
         }

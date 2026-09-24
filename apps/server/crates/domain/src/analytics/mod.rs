@@ -462,25 +462,29 @@ impl AnalyticsService {
                 code: "unknown".into(),
                 message: format!("user {} does not exist", input.user_id),
             });
-        } else if !ab_db::progress::has_trail_run(&self.pool, input.course_id, input.user_id)
-            .await?
-        {
-            // BUG-157: an intervention targets a learner of the course —
-            // UX-150: enrolment is the trail run, as `learner-state` reads it.
-            errors.push(FieldError {
-                field: "user_id".into(),
-                code: "not-in-course".into(),
-                message: format!("user {} is not enrolled in this course", input.user_id),
-            });
         }
         if !errors.is_empty() {
             return Err(Error::validation(errors));
         }
+        // BUG-157: an intervention targets a learner of the course —
+        // UX-150: enrolment is the trail run, as `learner-state` reads it;
+        // BUG-273: checked and written under the learner's trail lock.
+        let mut tx =
+            crate::progress::trail::lock_member(&self.pool, input.user_id, input.course_id, false)
+                .await?
+                .ok_or_else(|| {
+                    Error::validation(vec![
+                        crate::assessments::service::AssessmentsService::not_in_course(
+                            input.user_id,
+                            "user_id".into(),
+                        ),
+                    ])
+                })?;
         let current_risk =
-            ab_db::analytics::latest_risk_score(&self.pool, input.user_id, input.course_id).await?;
+            ab_db::analytics::latest_risk_score(&mut *tx, input.user_id, input.course_id).await?;
         let resolved = input.status == "resolved";
         let row = ab_db::analytics::insert_intervention(
-            &self.pool,
+            &mut *tx,
             ab_db::analytics::NewIntervention {
                 // BUG-157: attributed to the acting user; `teacher_user_id`
                 // only scopes reads.
@@ -502,6 +506,7 @@ impl AnalyticsService {
             },
         )
         .await?;
+        tx.commit().await?;
         Ok(row.into())
     }
 

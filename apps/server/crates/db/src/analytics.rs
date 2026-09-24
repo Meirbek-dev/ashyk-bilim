@@ -1156,8 +1156,8 @@ pub async fn previous_at_risk_count(
 }
 
 /// Latest risk score for one learner in one course (any date).
-pub async fn latest_risk_score(
-    pool: &PgPool,
+pub async fn latest_risk_score<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     user_id: UserId,
     course_id: CourseId,
 ) -> Result<Option<f64>> {
@@ -1167,7 +1167,7 @@ pub async fn latest_risk_score(
         user_id.0,
         course_id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(score)
 }
@@ -1242,7 +1242,10 @@ pub struct NewIntervention<'a> {
     pub resolved: bool,
 }
 
-pub async fn insert_intervention(pool: &PgPool, i: NewIntervention<'_>) -> Result<InterventionRow> {
+pub async fn insert_intervention<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    i: NewIntervention<'_>,
+) -> Result<InterventionRow> {
     let row = sqlx::query_as!(
         InterventionRow,
         r#"INSERT INTO teacher_interventions
@@ -1269,7 +1272,7 @@ pub async fn insert_intervention(pool: &PgPool, i: NewIntervention<'_>) -> Resul
         i.payload,
         i.resolved
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(row)
 }
