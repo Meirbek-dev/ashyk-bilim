@@ -243,7 +243,7 @@ pub async fn list_submissions(
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
                   grading
            FROM submissions
-           WHERE course_id = ANY($1) AND status <> 'draft'
+           WHERE course_id = ANY($1) AND status <> 'draft' AND NOT preview
              AND ($2::double precision IS NULL
                   OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))
            ORDER BY id"#,

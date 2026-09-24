@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT s.id AS \"id: SubmissionId\", s.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number, s.auto_score, s.final_score, s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\",\n                  s.version,\n                  EXISTS (SELECT 1 FROM trail_runs r\n                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id) AS \"enrolled!\"\n           FROM submissions s JOIN users u ON u.id = s.user_id\n           WHERE s.assessment_id = $1 AND s.status <> 'draft'\n             AND ($2::text IS NULL OR s.status = $2)\n             AND (NOT $3 OR s.is_late)\n             AND ($4::text IS NULL OR u.username ILIKE $4 OR u.display_name ILIKE $4)\n             AND ($5::uuid IS NULL OR s.id < $5)\n           ORDER BY s.id DESC\n           LIMIT $6",
+  "query": "SELECT s.id AS \"id: SubmissionId\", s.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number, s.auto_score, s.final_score, s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\",\n                  s.version,\n                  EXISTS (SELECT 1 FROM trail_runs r\n                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id) AS \"enrolled!\"\n           FROM submissions s JOIN users u ON u.id = s.user_id\n           WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview\n             AND ($2::text IS NULL OR s.status = $2)\n             AND (NOT $3 OR s.is_late)\n             AND ($4::text IS NULL OR u.username ILIKE $4 OR u.display_name ILIKE $4)\n             AND ($5::uuid IS NULL OR s.id < $5)\n           ORDER BY s.id DESC\n           LIMIT $6",
   "describe": {
     "columns": [
       {
@@ -158,5 +158,5 @@
       null
     ]
   },
-  "hash": "898ced1af8dcde148173414cb39f0eeedd8d4f93db0aef5a724a9c10abc5e011"
+  "hash": "26c1bebd4a41850a1ccd29844f6982def9b8c0e2461e22bf6e1a67e597ddf8ca"
 }

@@ -1268,3 +1268,20 @@ Implements three more items of the owner answers above. Routes:
   so Ctrl+Z restored a node whose file the reaper deleted a day later.
   Replaces UX-147/UX-160 "Remove calls `DELETE /blocks/{id}`" (the route
   stays for API clients). A backspaced node now releases too.
+
+## Staff attempts are previews (2026-09-24, gauntlet pass 23)
+
+- **An attempt made by the course's staff — anyone `is_teacher_preview`
+  holds for (creator, co-author/maintainer, platform author/admin) — is a
+  preview** (UX-182). `submissions.preview` / `file_submission_attempts.
+  preview` are set when the attempt opens; the learner-side projector
+  entries (`after_submission`, `after_file_attempt`) neither enrol nor
+  project a preview; the review queues, `submissions/stats`
+  (`needs_grading`), publish-all / release, item analytics, both CSV
+  exports, the gradebook, course analytics and the progress backfill skip
+  preview rows. Why: pressing «Начать» on one's own quiz enrolled the
+  author (a trail run) and listed them as a learner in the gradebook,
+  review queue and counts, and made BUG-247's self-extension refusal moot.
+  Replaces "authors pass as previewers, and their work counts like a
+  learner's" (legacy BUG-145 enrolled them). Staff trail runs created
+  before this stay until the user leaves the course.

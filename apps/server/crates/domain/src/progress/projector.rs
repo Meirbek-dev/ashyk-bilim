@@ -90,10 +90,18 @@ impl ProgressProjector {
     // ── Entry points for write paths ────────────────────────────────────
 
     /// After the learner's own submission work (start, save, submit) —
-    /// working on a course enrols them. Never fails the caller: projection
-    /// errors are logged and the next write (or a backfill) repairs them.
-    pub async fn after_submission(&self, assessment_id: AssessmentId, user_id: UserId) {
-        self.submission_changed(assessment_id, user_id, true).await;
+    /// working on a course enrols them. A staff `preview` (UX-182) neither
+    /// enrols nor projects. Never fails the caller: projection errors are
+    /// logged and the next write (or a backfill) repairs them.
+    pub async fn after_submission(
+        &self,
+        assessment_id: AssessmentId,
+        user_id: UserId,
+        preview: bool,
+    ) {
+        if !preview {
+            self.submission_changed(assessment_id, user_id, true).await;
+        }
     }
 
     /// After a change the learner did not make (grade, publish, deadline
@@ -109,10 +117,18 @@ impl ProgressProjector {
         }
     }
 
-    /// After the learner's own file-attempt change (best-effort, enrols).
-    pub async fn after_file_attempt(&self, file_submission_id: FileSubmissionId, user_id: UserId) {
-        self.file_attempt_changed(file_submission_id, user_id, true)
-            .await;
+    /// After the learner's own file-attempt change (best-effort, enrols;
+    /// a staff `preview` neither enrols nor projects, UX-182).
+    pub async fn after_file_attempt(
+        &self,
+        file_submission_id: FileSubmissionId,
+        user_id: UserId,
+        preview: bool,
+    ) {
+        if !preview {
+            self.file_attempt_changed(file_submission_id, user_id, true)
+                .await;
+        }
     }
 
     /// After a grader's file-attempt change (best-effort, never enrols).

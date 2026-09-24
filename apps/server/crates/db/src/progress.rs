@@ -329,14 +329,16 @@ pub async fn get_course_progress<'e>(
     Ok(row)
 }
 
-/// Learners known to a course: trail runs, submissions, file attempts,
+/// Learners known to a course: trail runs, submissions, file attempts (not
+/// staff previews, UX-182),
 /// cohort members and existing projections (for backfills).
 pub async fn known_course_users(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
         r#"SELECT DISTINCT u.user_id AS "user_id!: UserId" FROM (
                SELECT user_id FROM trail_runs WHERE course_id = $1
-               UNION SELECT user_id FROM submissions WHERE course_id = $1
-               UNION SELECT user_id FROM file_submission_attempts WHERE course_id = $1
+               UNION SELECT user_id FROM submissions WHERE course_id = $1 AND NOT preview
+               UNION SELECT user_id FROM file_submission_attempts
+                     WHERE course_id = $1 AND NOT preview
                UNION SELECT m.user_id FROM usergroup_members m
                      JOIN usergroup_courses uc ON uc.usergroup_id = m.usergroup_id
                      WHERE uc.course_id = $1

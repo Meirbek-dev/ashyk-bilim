@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT final_score AS \"final_score!\" FROM submissions\n           WHERE assessment_id = $1 AND status IN ('graded', 'published')\n             AND final_score IS NOT NULL",
+  "query": "SELECT final_score AS \"final_score!\" FROM submissions\n           WHERE assessment_id = $1 AND status IN ('graded', 'published')\n             AND final_score IS NOT NULL AND NOT preview",
   "describe": {
     "columns": [
       {
@@ -24,5 +24,5 @@
       true
     ]
   },
-  "hash": "b511327b87046be729f330be49c634c3f31118066aaaa39b1760fd6a072f59a5"
+  "hash": "eb9abc53580c07c571dd1d63cfcfd61bbcc876cff58f2d669d4105612f0531df"
 }

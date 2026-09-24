@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT count(*) FILTER (WHERE status <> 'draft') AS \"total!\",\n                  count(*) FILTER (WHERE status = 'pending') AS \"pending!\",\n                  count(*) FILTER (WHERE status = 'graded') AS \"graded!\",\n                  count(*) FILTER (WHERE status = 'published') AS \"published!\",\n                  count(*) FILTER (WHERE status = 'returned') AS \"returned!\",\n                  count(*) FILTER (WHERE status <> 'draft' AND is_late) AS \"late!\"\n           FROM submissions WHERE assessment_id = $1",
+  "query": "SELECT count(*) FILTER (WHERE status <> 'draft') AS \"total!\",\n                  count(*) FILTER (WHERE status = 'pending') AS \"pending!\",\n                  count(*) FILTER (WHERE status = 'graded') AS \"graded!\",\n                  count(*) FILTER (WHERE status = 'published') AS \"published!\",\n                  count(*) FILTER (WHERE status = 'returned') AS \"returned!\",\n                  count(*) FILTER (WHERE status <> 'draft' AND is_late) AS \"late!\"\n           FROM submissions WHERE assessment_id = $1 AND NOT preview",
   "describe": {
     "columns": [
       {
@@ -54,5 +54,5 @@
       null
     ]
   },
-  "hash": "6db4c0d5a7ba4f3d3f1848253ac81018f1a81fbf52bd7fa4d43f9e3f694c2780"
+  "hash": "9d8dafacad792c94d9c9e664cc668c43829e4021e918e0fbf3986abad89a9e35"
 }

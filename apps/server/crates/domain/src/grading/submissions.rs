@@ -303,6 +303,8 @@ struct Context {
     assessment: Assessment,
     items: Vec<Item>,
     effective: EffectivePolicy,
+    /// The caller is course staff: their work is a preview (UX-182).
+    preview: bool,
 }
 
 struct FinalizeOptions {
@@ -373,6 +375,7 @@ impl SubmissionsService {
             assessment: detail.assessment,
             items: detail.items,
             effective: state.effective,
+            preview: state.is_teacher_preview,
         })
     }
 
@@ -547,6 +550,7 @@ impl SubmissionsService {
                 attempt_number,
                 assessment.content_version,
                 assessment.policy_version,
+                state.is_teacher_preview,
             )
             .await?
             // Unreachable under `lock_attempts`; never a second draft.
@@ -564,7 +568,7 @@ impl SubmissionsService {
                 .unwrap_or(0);
         let submission = self.student_view(draft, &state.effective, total).await?;
         self.projector
-            .after_submission(assessment_id, actor.user_id)
+            .after_submission(assessment_id, actor.user_id, state.is_teacher_preview)
             .await;
         Ok(Started {
             submission,
@@ -658,7 +662,7 @@ impl SubmissionsService {
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
         self.projector
-            .after_submission(fresh.assessment_id, fresh.user_id)
+            .after_submission(fresh.assessment_id, fresh.user_id, ctx.preview)
             .await;
         let total = ctx.items.len();
         self.student_view(fresh, &ctx.effective, total).await
@@ -743,6 +747,7 @@ impl SubmissionsService {
                 serde_json::json!({ "retry_after_seconds": retry_after }),
             ));
         }
+        let preview = ctx.preview;
         let fresh = Self::finalize(
             &self.runner,
             self.events.as_ref(),
@@ -756,7 +761,7 @@ impl SubmissionsService {
         )
         .await?;
         self.projector
-            .after_submission(fresh.0.assessment_id, fresh.0.user_id)
+            .after_submission(fresh.0.assessment_id, fresh.0.user_id, preview)
             .await;
         let (fresh, effective, total) = fresh;
         self.student_view(fresh, &effective, total).await
@@ -781,6 +786,7 @@ impl SubmissionsService {
             assessment,
             items,
             effective,
+            ..
         } = ctx;
 
         // BUG-256: no cap check here — the cap bars opening an attempt
@@ -1115,6 +1121,8 @@ impl SubmissionsService {
                 assessment,
                 items,
                 effective,
+                // Unread: the sweep re-projects without enrolling anyway.
+                preview: false,
             },
             answers,
             FinalizeOptions {

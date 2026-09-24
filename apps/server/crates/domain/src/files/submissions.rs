@@ -736,14 +736,20 @@ impl FileSubmissionsService {
         {
             return Ok((self.attempt_view(open, false, true).await?, false));
         }
-        let attempt = self.open_new_attempt(&row, actor).await?;
+        let attempt = self.open_new_attempt(&row, actor, is_author).await?;
         self.projector
-            .after_file_attempt(row.id, actor.user_id)
+            .after_file_attempt(row.id, actor.user_id, is_author)
             .await;
         Ok((self.attempt_view(attempt, false, true).await?, true))
     }
 
-    async fn open_new_attempt(&self, row: &FileSubmissionRow, actor: &Actor) -> Result<AttemptRow> {
+    /// `preview`: the actor is course staff (UX-182).
+    async fn open_new_attempt(
+        &self,
+        row: &FileSubmissionRow,
+        actor: &Actor,
+        preview: bool,
+    ) -> Result<AttemptRow> {
         let user_id = actor.user_id;
         let completed =
             ab_db::file_submissions::count_completed_attempts(&self.pool, row.id, user_id).await?;
@@ -765,6 +771,7 @@ impl FileSubmissionsService {
             row.course_id,
             user_id,
             number,
+            preview,
         )
         .await?;
         let Some(id) = id else {
@@ -795,7 +802,7 @@ impl FileSubmissionsService {
         let attempt =
             match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
                 Some(a) => a,
-                None => self.open_new_attempt(&row, actor).await?,
+                None => self.open_new_attempt(&row, actor, is_author).await?,
             };
         if let Some(expected) = expected_version
             && expected != attempt.version
@@ -804,7 +811,7 @@ impl FileSubmissionsService {
         }
         self.replace_files(&attempt, files, &uploads).await?;
         self.projector
-            .after_file_attempt(row.id, actor.user_id)
+            .after_file_attempt(row.id, actor.user_id, is_author)
             .await;
         let fresh = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?
@@ -973,7 +980,7 @@ impl FileSubmissionsService {
                 Some(a) => a,
                 // A bare submit must not spend an attempt on an empty draft (BUG-137).
                 None if files.is_none_or(<[FileRef]>::is_empty) => return Err(files_required()),
-                None => self.open_new_attempt(&row, actor).await?,
+                None => self.open_new_attempt(&row, actor, is_author).await?,
             };
         if let Some(expected) = expected_version
             && expected != attempt.version
@@ -1004,7 +1011,7 @@ impl FileSubmissionsService {
             return Err(stale(version, latest.version));
         }
         self.projector
-            .after_file_attempt(row.id, actor.user_id)
+            .after_file_attempt(row.id, actor.user_id, is_author)
             .await;
         attempt = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1\n           ORDER BY submitted_at DESC NULLS LAST, id DESC",
+  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND NOT preview\n           ORDER BY submitted_at DESC NULLS LAST, id DESC",
   "describe": {
     "columns": [
       {
@@ -215,5 +215,5 @@
       null
     ]
   },
-  "hash": "7c587144a32136a292db6d4faee378c648f7852234f1133c173ff07d41f207fb"
+  "hash": "70470a1093bcbda1d96bd76da6dcb30553d1d0e18590120299a2a4aae7dd9273"
 }

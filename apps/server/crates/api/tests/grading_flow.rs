@@ -2918,6 +2918,73 @@ async fn gradebook_pages_whole_learner_rows(pool: PgPool) {
     assert_eq!(users.len(), 3);
 }
 
+/// UX-182: the course author's own attempt is a preview — no trail run,
+/// not in the review queue, stats or gradebook — and a course with members
+/// but no graded activity still lists its members.
+#[sqlx::test(migrations = "../../migrations")]
+async fn staff_attempts_are_previews(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let carol_id = app
+        .create_user("carol", "carol@example.com", &["user"])
+        .await;
+    let carol = app
+        .mint_session_for(carol_id, &["trail:read:all", "trail:submit:assigned"])
+        .await;
+    let joined = app
+        .post_as(
+            &carol,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert!(joined.status.is_success(), "{}", joined.text());
+    let usernames = |page: &ab_testkit::TestResponse| -> Vec<String> {
+        let mut names: Vec<String> = page.json()["users"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|u| u["username"].as_str().unwrap().to_owned())
+            .collect();
+        names.sort();
+        names
+    };
+    let gradebook_path = format!("/api/v2/courses/{course_id}/gradebook");
+    let empty = app.get_as(&teacher, &gradebook_path).await;
+    assert_eq!(usernames(&empty), ["carol"], "{}", empty.text());
+
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    submit_attempt(&app, &teacher, &id, &choice_id, &essay_id).await;
+    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM trail_runs WHERE user_id = $1")
+        .bind(teacher.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(runs, 0, "a staff preview enrolled the author");
+
+    let queue = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/submissions"))
+        .await;
+    let items = queue.json()["items"].as_array().unwrap().clone();
+    assert_eq!(items.len(), 1, "{items:?}");
+    assert_eq!(items[0]["user"]["id"], alice.user_id.to_string());
+    let stats = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions/stats"),
+        )
+        .await;
+    assert_eq!(stats.json()["total"], 1, "{}", stats.text());
+    assert_eq!(stats.json()["needs_grading"], 1, "{}", stats.text());
+    let gradebook = app.get_as(&teacher, &gradebook_path).await;
+    assert_eq!(usernames(&gradebook), ["alice", "carol"]);
+    assert_eq!(gradebook.json()["cells"].as_array().unwrap().len(), 1);
+}
+
 /// UX-169: the gradebook lists the course members (trail runs, the UX-150
 /// predicate) — a member without attempts has a row, a leaver's attempts
 /// drop out — and the CSV follows.

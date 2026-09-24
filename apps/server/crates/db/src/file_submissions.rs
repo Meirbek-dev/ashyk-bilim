@@ -321,18 +321,20 @@ pub async fn insert_attempt(
     course_id: CourseId,
     user_id: UserId,
     attempt_number: i32,
+    preview: bool,
 ) -> Result<Option<FileAttemptId>> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO file_submission_attempts
-               (file_submission_id, course_id, user_id, attempt_number, started_at)
-           VALUES ($1, $2, $3, $4, now())
+               (file_submission_id, course_id, user_id, attempt_number, preview, started_at)
+           VALUES ($1, $2, $3, $4, $5, now())
            ON CONFLICT (file_submission_id, user_id) WHERE status IN ('draft', 'returned')
            DO NOTHING
            RETURNING id AS "id: FileAttemptId""#,
         file_submission_id.0,
         course_id.0,
         user_id.0,
-        attempt_number
+        attempt_number,
+        preview
     )
     .fetch_optional(pool)
     .await?;
@@ -421,7 +423,8 @@ pub async fn list_user_attempts(
     Ok(rows)
 }
 
-/// Every attempt of the activity, newest submission first (export).
+/// Every learner attempt of the activity (no staff preview, UX-182), newest
+/// submission first (export).
 pub async fn list_attempts(
     pool: &PgPool,
     file_submission_id: FileSubmissionId,
@@ -440,7 +443,7 @@ pub async fn list_attempts(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM file_submission_attempts
-           WHERE file_submission_id = $1
+           WHERE file_submission_id = $1 AND NOT preview
            ORDER BY submitted_at DESC NULLS LAST, id DESC"#,
         file_submission_id.0
     )
@@ -585,7 +588,7 @@ pub async fn list_for_review(
                   (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)
                       AS "file_count!"
            FROM file_submission_attempts a JOIN users u ON u.id = a.user_id
-           WHERE a.file_submission_id = $1 AND a.status <> 'draft'
+           WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview
              AND ($2::text IS NULL OR a.status = $2)
              AND ($3::text IS NULL OR u.username ILIKE $3 OR u.display_name ILIKE $3
                   OR u.email ILIKE $3)

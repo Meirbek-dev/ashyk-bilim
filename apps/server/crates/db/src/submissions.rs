@@ -67,6 +67,10 @@ pub async fn share_assessment(
 
 /// Open a draft (started now). `None` when the learner already has one —
 /// the partial unique index turns the race into a no-op.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one column per argument of a single insert"
+)]
 pub async fn insert_draft<'e>(
     db: impl sqlx::PgExecutor<'e>,
     assessment_id: AssessmentId,
@@ -75,12 +79,13 @@ pub async fn insert_draft<'e>(
     attempt_number: i32,
     content_version: i32,
     policy_version: i32,
+    preview: bool,
 ) -> Result<Option<SubmissionId>> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO submissions
                (assessment_id, course_id, user_id, attempt_number, content_version,
-                policy_version, started_at)
-           VALUES ($1, $2, $3, $4, $5, $6, now())
+                policy_version, preview, started_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, now())
            ON CONFLICT (assessment_id, user_id) WHERE status = 'draft' DO NOTHING
            RETURNING id AS "id: SubmissionId""#,
         assessment_id.0,
@@ -88,7 +93,8 @@ pub async fn insert_draft<'e>(
         user_id.0,
         attempt_number,
         content_version,
-        policy_version
+        policy_version,
+        preview
     )
     .fetch_optional(db)
     .await?;
@@ -485,7 +491,7 @@ pub async fn list_non_draft(
                   items_snapshot, policy_snapshot,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM submissions WHERE assessment_id = $1 AND status <> 'draft'
+           FROM submissions WHERE assessment_id = $1 AND status <> 'draft' AND NOT preview
            ORDER BY submitted_at, id"#,
         assessment_id.0
     )
@@ -642,7 +648,7 @@ pub async fn gradebook_cells(
                LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id
                     AND o.user_id = s.user_id
                     AND (o.expires_at IS NULL OR o.expires_at > now())
-               WHERE s.course_id = $1 AND s.status <> 'draft'
+               WHERE s.course_id = $1 AND s.status <> 'draft' AND NOT s.preview
                UNION ALL
                SELECT fa.user_id, f.activity_id, NULL::uuid, NULL::uuid, f.id, fa.id,
                       CASE WHEN fa.status = 'submitted' THEN 'pending' ELSE fa.status END,
@@ -650,7 +656,7 @@ pub async fn gradebook_cells(
                       fa.submitted_at, fa.graded_at
                FROM file_submission_attempts fa
                JOIN file_submissions f ON f.id = fa.file_submission_id
-               WHERE fa.course_id = $1 AND fa.status <> 'draft'
+               WHERE fa.course_id = $1 AND fa.status <> 'draft' AND NOT fa.preview
            )
            SELECT c.user_id AS "user_id!: UserId", c.activity_id AS "activity_id!: ActivityId",
                   c.assessment_id AS "assessment_id?: AssessmentId",
@@ -752,7 +758,7 @@ pub async fn list_for_review(
                   EXISTS (SELECT 1 FROM trail_runs r
                           WHERE r.course_id = s.course_id AND r.user_id = s.user_id) AS "enrolled!"
            FROM submissions s JOIN users u ON u.id = s.user_id
-           WHERE s.assessment_id = $1 AND s.status <> 'draft'
+           WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview
              AND ($2::text IS NULL OR s.status = $2)
              AND (NOT $3 OR s.is_late)
              AND ($4::text IS NULL OR u.username ILIKE $4 OR u.display_name ILIKE $4)
@@ -789,7 +795,7 @@ pub async fn stats(pool: &PgPool, assessment_id: AssessmentId) -> Result<Submiss
                   count(*) FILTER (WHERE status = 'published') AS "published!",
                   count(*) FILTER (WHERE status = 'returned') AS "returned!",
                   count(*) FILTER (WHERE status <> 'draft' AND is_late) AS "late!"
-           FROM submissions WHERE assessment_id = $1"#,
+           FROM submissions WHERE assessment_id = $1 AND NOT preview"#,
         assessment_id.0
     )
     .fetch_one(pool)
@@ -809,7 +815,7 @@ pub async fn graded_scores(pool: &PgPool, assessment_id: AssessmentId) -> Result
     let scores = sqlx::query_scalar!(
         r#"SELECT final_score AS "final_score!" FROM submissions
            WHERE assessment_id = $1 AND status IN ('graded', 'published')
-             AND final_score IS NOT NULL"#,
+             AND final_score IS NOT NULL AND NOT preview"#,
         assessment_id.0
     )
     .fetch_all(pool)
@@ -841,9 +847,9 @@ pub async fn list_releasable(
                   items_snapshot, policy_snapshot,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'published') ORDER BY id"#,
+           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'published')
+             AND NOT preview ORDER BY id"#,
         assessment_id.0
-
     )
     .fetch_all(pool)
     .await?;

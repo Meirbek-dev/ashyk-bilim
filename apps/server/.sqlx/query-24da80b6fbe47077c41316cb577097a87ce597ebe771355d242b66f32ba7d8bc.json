@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, final_score, is_late,\n                  violation_count, duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                  grading\n           FROM submissions\n           WHERE course_id = ANY($1) AND status <> 'draft'\n             AND ($2::double precision IS NULL\n                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))\n           ORDER BY id",
+  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, final_score, is_late,\n                  violation_count, duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                  grading\n           FROM submissions\n           WHERE course_id = ANY($1) AND status <> 'draft' AND NOT preview\n             AND ($2::double precision IS NULL\n                  OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))\n           ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -180,5 +180,5 @@
       false
     ]
   },
-  "hash": "74c41aed5e36ba714504228b624c2f2fb70cc85b14b95f213c1445ae006af2c0"
+  "hash": "24da80b6fbe47077c41316cb577097a87ce597ebe771355d242b66f32ba7d8bc"
 }
