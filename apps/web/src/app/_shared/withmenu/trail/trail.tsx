@@ -55,9 +55,7 @@ function Trail() {
   )
 
   const gamificationProfile = useGamificationStore(s => s.profile)
-  const recentTransactions = useGamificationStore(
-    s => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS,
-  )
+  const recentTransactions = useGamificationStore(s => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS)
   const userRank = useGamificationStore(s => s.dashboard?.user_rank)
   const isGamificationLoading = useGamificationStore(s => s.isLoading)
   const gamificationData = {
@@ -66,7 +64,9 @@ function Trail() {
     user_rank: userRank,
   }
 
-  const { data: leaderboardData } = useTrailLeaderboard(10)
+  // UX-185: one full page (the API maximum), so «Показать все» has rows to show and
+  // the viewer's row is usually among them; beyond it the board shows their rank.
+  const { data: leaderboardData } = useTrailLeaderboard(100)
 
   const userRankData = { rank: gamificationData.user_rank }
 

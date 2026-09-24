@@ -36,7 +36,8 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
 
   if (!userEntry || !userRank || showFull) {
     displayEntries = entries.slice(0, showFull ? undefined : 10)
-    rankContext = null
+    // UX-185: the viewer's row lies beyond the loaded page — still say where they stand.
+    rankContext = !userEntry && userRank ? { rank: userRank, xpToNext: 0, nextRankUsername: null } : null
   } else {
     const top3 = entries.slice(0, 3)
     const contextStart = Math.max(3, userIndex - 2)
