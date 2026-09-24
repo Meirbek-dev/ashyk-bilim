@@ -329,8 +329,9 @@ pub async fn get_course_progress<'e>(
     Ok(row)
 }
 
-/// The course's members — learners with a trail run, the same predicate
-/// [`has_trail_run`] applies per learner (BUG-260). Course-wide
+/// The course's members — learners with a trail run.
+///
+/// The same predicate [`has_trail_run`] applies per learner (BUG-260). Course-wide
 /// recalculations and backfills cover members only: a leaver's (or a staff
 /// preview's) leftover rows never re-aggregate into a completion,
 /// certificate or XP (BUG-268).
