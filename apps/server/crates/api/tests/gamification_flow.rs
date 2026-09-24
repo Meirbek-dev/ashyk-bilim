@@ -212,6 +212,13 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     let alice_rank = app.get_as(&alice, "/api/v2/gamification/rank").await;
     assert_eq!(alice_rank.status, StatusCode::OK, "{}", alice_rank.text());
     assert!(alice_rank.json()["rank"].is_null());
+    // UX-189: the dashboard agrees.
+    let alice_dash = app.get_as(&alice, "/api/v2/gamification").await;
+    assert!(
+        alice_dash.json()["user_rank"].is_null(),
+        "{}",
+        alice_dash.text()
+    );
     let nested_null = app
         .patch_as(
             &alice,

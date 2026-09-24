@@ -143,7 +143,8 @@ impl From<domain::Leaderboard> for Leaderboard {
 pub struct Dashboard {
     pub profile: Profile,
     pub recent_transactions: Vec<Transaction>,
-    pub user_rank: i64,
+    /// `null` when the viewer opted out of the leaderboard.
+    pub user_rank: Option<i64>,
     pub leaderboard: Leaderboard,
 }
 

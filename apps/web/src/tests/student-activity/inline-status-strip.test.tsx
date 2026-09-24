@@ -39,7 +39,24 @@ const runtime = {
   progress: { state: 'not_started', attempt_count: 0 },
 } as unknown as StudentActivityRuntime
 
+function renderStrip(attemptsUsed: number) {
+  const queryClient = new QueryClient()
+  queryClient.setQueryData(queryKeys.assessments.attemptState('asm-1'), { attempts_used: attemptsUsed })
+  render(
+    <QueryClientProvider client={queryClient}>
+      <NextIntlClientProvider locale="ru" messages={ruMessages}>
+        <InlineStatusStrip runtime={runtime} />
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
+  )
+}
+
 describe('InlineStatusStrip (UX-009)', () => {
+  it('never reads more attempts used than the cap (UX-189)', () => {
+    renderStrip(2)
+    expect(screen.getByText('Использовано 1 из 1 попыток')).toBeInTheDocument()
+  })
+
   it('shows the exam attempt limit and localized time limit from the effective policy', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(queryKeys.assessments.attemptState('asm-1'), { attempts_used: 1 })

@@ -157,7 +157,8 @@ pub struct Leaderboard {
 pub struct Dashboard {
     pub profile: ProfileRow,
     pub recent_transactions: Vec<TransactionRow>,
-    pub user_rank: i64,
+    /// `None` when the profile opted out of the leaderboard.
+    pub user_rank: Option<i64>,
     pub leaderboard: Leaderboard,
 }
 
@@ -317,6 +318,10 @@ impl GamificationService {
     /// (`privacy.showOnLeaderboard = false`) — it is not on the board (BUG-137).
     pub async fn rank(&self, actor: &Actor) -> Result<Option<i64>> {
         let profile = ab_db::gamification::ensure_profile(&self.pool, actor.user_id).await?;
+        self.rank_of(&profile).await
+    }
+
+    async fn rank_of(&self, profile: &ProfileRow) -> Result<Option<i64>> {
         if profile
             .preferences
             .pointer("/privacy/showOnLeaderboard")
@@ -359,8 +364,8 @@ impl GamificationService {
             RECENT_TRANSACTIONS,
         )
         .await?;
-        let user_rank =
-            ab_db::gamification::count_with_more_xp(&self.pool, profile.total_xp).await? + 1;
+        // UX-189: the same opt-out as `GET gamification/rank`.
+        let user_rank = self.rank_of(&profile).await?;
         let leaderboard = self.leaderboard(10, 0).await?;
         Ok(Dashboard {
             profile,

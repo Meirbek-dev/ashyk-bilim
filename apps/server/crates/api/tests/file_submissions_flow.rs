@@ -421,6 +421,26 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         .await;
     assert_eq!(capped.status, StatusCode::CONFLICT, "{}", capped.text());
     assert_eq!(capped.json()["details"]["max_attempts"], 1);
+    // UX-189: the author's previews are uncapped, like quiz previews.
+    for number in 1..=2 {
+        let preview = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}/draft"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(preview.status, StatusCode::CREATED, "{}", preview.text());
+        assert_eq!(preview.json()["attempt_number"], number);
+        sqlx::query(
+            "UPDATE file_submission_attempts SET status = 'submitted', submitted_at = now()
+             WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(preview.json()["id"].as_str().unwrap()).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    }
 
     // Teacher surface: queue, attempt view, grade under the lock.
     assert_eq!(

@@ -747,7 +747,8 @@ impl FileSubmissionsService {
         Ok((self.attempt_view(attempt, false, true).await?, true))
     }
 
-    /// `preview`: the actor is course staff (UX-182).
+    /// `preview`: the actor is course staff (UX-182) — uncapped, like a quiz
+    /// preview (UX-189).
     async fn open_new_attempt(
         &self,
         row: &FileSubmissionRow,
@@ -757,7 +758,8 @@ impl FileSubmissionsService {
         let user_id = actor.user_id;
         let completed =
             ab_db::file_submissions::count_completed_attempts(&self.pool, row.id, user_id).await?;
-        if let Some(max) = row.max_attempts
+        if !preview
+            && let Some(max) = row.max_attempts
             && completed >= i64::from(max)
         {
             return Err(Error::app_with_details(
@@ -1003,7 +1005,12 @@ impl FileSubmissionsService {
         }
         let now = now_unix();
         let is_late = row.due_at.is_some_and(|due| now > due);
-        let penalty = late_penalty_pct(late_policy_of(&row), row.due_at, now, row.allow_late);
+        // A preview's verdict is its files — no late penalty (BUG-278 rule).
+        let penalty = if is_author {
+            0.0
+        } else {
+            late_penalty_pct(late_policy_of(&row), row.due_at, now, row.allow_late)
+        };
         if !ab_db::file_submissions::submit_attempt(
             &self.pool, attempt.id, version, is_late, penalty,
         )

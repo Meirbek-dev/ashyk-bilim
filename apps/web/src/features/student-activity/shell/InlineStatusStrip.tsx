@@ -81,9 +81,10 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
     items.push(t('passingScore', { score: passingScore }))
   }
 
-  // Max attempts — student-readable
+  // Max attempts — student-readable. UX-189: an open draft may be finished after the cap
+  // was lowered (BUG-256), so the count can pass it — never «2 из 1».
   if (policy?.maxAttempts) {
-    items.push(t('attemptsUsed', { used: policy.attemptsUsed, max: policy.maxAttempts }))
+    items.push(t('attemptsUsed', { used: Math.min(policy.attemptsUsed, policy.maxAttempts), max: policy.maxAttempts }))
   } else if (policy && activityType !== 'TYPE_FILE_SUBMISSION') {
     items.push(t('attemptsUnlimited'))
   }
