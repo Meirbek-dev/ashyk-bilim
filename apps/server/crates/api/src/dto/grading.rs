@@ -77,6 +77,9 @@ pub struct ReviewItem {
     pub graded_at_unix: Option<i64>,
     /// Teacher optimistic lock (`If-Match` on grade saves).
     pub version: i64,
+    /// The learner is a course member (trail run); a leaver's row is not a
+    /// target for per-learner actions such as a deadline extension (UX-167).
+    pub enrolled: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -102,6 +105,7 @@ impl From<domain::ReviewPage> for ReviewPage {
                     submitted_at_unix: i.submitted_at,
                     graded_at_unix: i.graded_at,
                     version: i.version,
+                    enrolled: i.enrolled,
                 })
                 .collect(),
             next_cursor: p.next_cursor,

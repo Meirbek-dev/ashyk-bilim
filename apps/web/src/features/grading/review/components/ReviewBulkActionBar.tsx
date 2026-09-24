@@ -60,6 +60,8 @@ export default function ReviewBulkActionBar({
   const [lastSummary, setLastSummary] = useState<BulkActionSummary | null>(null)
   const [deadlineError, setDeadlineError] = useState<string | null>(null)
   const [failedSubmissions, setFailedSubmissions] = useState<{ name: string; error: string }[]>([])
+  // UX-167: learners the server answered `not-in-course` for (left after the list loaded).
+  const [refusedIds, setRefusedIds] = useState<string[]>([])
 
   const gradeable = submissions.filter(submission => submission.final_score !== null)
   // UX-067: rows without a saved score are left out of a bulk publish/return
@@ -73,9 +75,20 @@ export default function ReviewBulkActionBar({
       status === 'RETURNED' ? canReturnSubmission(submission.status) : canTeacherEditGrade(submission.status),
     )
   const returnable = eligible('RETURNED')
-  const userIds = submissions
-    .map(submission => submission.user?.id)
-    .filter((id): id is string => typeof id === 'string')
+  // UX-167: an extension is for course members only (BUG-247) — a leaver's
+  // row is left out and named, instead of 422-ing the whole batch.
+  const isMember = (submission: Submission) =>
+    submission.enrolled !== false && !refusedIds.includes(submission.user?.id ?? '')
+  const userIds = [
+    ...new Set(
+      submissions
+        .filter(isMember)
+        .map(submission => submission.user?.id)
+        .filter((id): id is string => typeof id === 'string'),
+    ),
+  ]
+  const namesOf = (rows: Submission[]) => [...new Set(rows.map(displayName))].join(', ')
+  const notEnrolledNames = namesOf(submissions.filter(submission => !isMember(submission)))
   const releaseSummary = useMemo(() => {
     let visible = 0
     let hidden = 0
@@ -177,6 +190,19 @@ export default function ReviewBulkActionBar({
         // UX-113: the server's 422 `new_due_at_unix`/`past` lands on the field, not in a generic toast.
         if (processed.fieldErrors.some(fieldError => fieldError.field === 'new_due_at_unix')) {
           setDeadlineError(t('preview.dueDatePast'))
+          return
+        }
+        // UX-167: `user_ids.{id}` / `not-in-course` — name them and leave them out of the next try.
+        const refused = processed.fieldErrors
+          .filter(fieldError => fieldError.code === 'not-in-course' && fieldError.field.startsWith('user_ids.'))
+          .map(fieldError => fieldError.field.slice('user_ids.'.length))
+        if (refused.length > 0) {
+          setRefusedIds(previous => [...previous, ...refused])
+          toast.error(
+            t('toasts.notEnrolled', {
+              names: namesOf(submissions.filter(submission => refused.includes(submission.user?.id ?? ''))),
+            }),
+          )
           return
         }
         toast.error(processed.message)
@@ -342,6 +368,11 @@ export default function ReviewBulkActionBar({
             {pendingAction === 'extend-deadline' ? (
               <>
                 <PreviewRow label={t('preview.learners')} value={String(userIds.length)} />
+                {notEnrolledNames ? (
+                  <p className="text-muted-foreground text-xs">
+                    {t('preview.notEnrolled', { names: notEnrolledNames })}
+                  </p>
+                ) : null}
                 <PreviewRow
                   label={t('preview.newDueDate')}
                   value={
@@ -425,7 +456,9 @@ export default function ReviewBulkActionBar({
               </Button>
             ) : null}
             {pendingAction === 'extend-deadline' ? (
-              <Button onClick={applyDeadline}>{t('queueExtension')}</Button>
+              <Button disabled={isPending || userIds.length === 0} onClick={applyDeadline}>
+                {t('queueExtension')}
+              </Button>
             ) : null}
             {pendingAction === 'release-hidden' ? (
               <Button disabled={!auditNoteValid} onClick={releaseHiddenGrades}>

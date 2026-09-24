@@ -97,6 +97,7 @@ pub struct ReviewItem {
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
     pub version: i64,
+    pub enrolled: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -743,6 +744,7 @@ impl GradingService {
                 submitted_at: r.submitted_at,
                 graded_at: r.graded_at,
                 version: r.version,
+                enrolled: r.enrolled,
             })
             .collect();
         Ok(ReviewPage { items, next_cursor })

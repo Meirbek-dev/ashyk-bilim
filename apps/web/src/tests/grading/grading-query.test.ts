@@ -163,6 +163,7 @@ describe('submissionsQueryOptions', () => {
           final_score: 100,
           submitted_at_unix: 1_789_000_000,
           graded_at_unix: 1_789_000_010,
+          enrolled: false,
         },
       ],
       next_cursor: null,
@@ -188,6 +189,8 @@ describe('submissionsQueryOptions', () => {
 
     expect(result?.items[0]?.user?.first_name).toBe('Aigerim Critic')
     expect(result?.items[0]?.status).toBe('GRADED')
+    // UX-167: membership rides along so the bulk extension can leave a leaver out.
+    expect(result?.items[0]?.enrolled).toBe(false)
     expect(result?.pages).toBe(1)
   })
 })

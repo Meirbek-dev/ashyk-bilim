@@ -1,4 +1,5 @@
 import { Course, Curriculum, GradebookPage, ReviewItem, Stats, TeacherSubmission } from '@/lib/api/generated/zod'
+import type { ReviewItemOutput } from '@/lib/api/generated/zod'
 import { unixToIso } from '@/lib/api/contract'
 import type { ActivityProgressCell, CourseGradebookResponse, Submission, SubmissionStatus } from './types'
 import { normalizeSubmission } from './types'
@@ -9,6 +10,10 @@ const statuses = { draft: 'DRAFT', pending: 'PENDING', graded: 'GRADED', publish
 
 export function reviewItemFromWire(value: unknown): Submission {
   const item = ReviewItem.parse(value)
+  return { ...reviewRowToSubmission(item), enrolled: item.enrolled }
+}
+
+function reviewRowToSubmission(item: Omit<ReviewItemOutput, 'enrolled'>): Submission {
   return normalizeSubmission({
     id: item.id, submission_uuid: item.id, user_id: item.user.id,
     user: { ...item.user, first_name: item.user.display_name },
@@ -29,7 +34,7 @@ export function teacherSubmissionFromWire(value: unknown): Submission {
     answered_count: answeredCount,
   })
   return {
-    ...reviewItemFromWire(item), assessment_id: item.assessment_id, score_override: item.score_override ?? null,
+    ...reviewRowToSubmission(item), assessment_id: item.assessment_id, score_override: item.score_override ?? null,
     auto_submit_reason: item.auto_submit_reason ?? null,
     answers_json: learner.answers_json, grading_json: item.grading,
     release_state: item.release_state.toUpperCase(),

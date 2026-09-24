@@ -35,6 +35,8 @@ export interface Submission {
   /** UX-117: `integrity_violation` = annulled, the raw stays 0 unless overridden. */
   auto_submit_reason?: 'time_expired' | 'integrity_violation' | null
   version?: number
+  /** UX-167: `false` = not a course member (left) — no per-learner actions. */
+  enrolled?: boolean
   started_at?: string | null
   submitted_at?: string | null
   graded_at?: string | null

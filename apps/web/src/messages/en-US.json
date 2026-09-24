@@ -8374,7 +8374,8 @@
             "publishedWithSkipped": "Published: {count}. Skipped without a grade: {skipped}.",
             "returnedWithSkipped": "Returned: {count}. Skipped without a grade: {skipped}.",
             "exported": "CSV saved",
-            "exportFailed": "Could not export the CSV"
+            "exportFailed": "Could not export the CSV",
+            "notEnrolled": "Not enrolled in the course: {names}. They were left out — queue the extension again."
           },
           "summaries": {
             "publishFinished": "Bulk publish finished",
@@ -8403,7 +8404,8 @@
             "dueDatePast": "The new due date must be in the future.",
             "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned — skipped.",
             "releaseHiddenDescription": "Every graded submission of this activity that is still hidden will be released — regardless of what is selected in the list.",
-            "notGraded": "{count, plural, one {# ungraded submission is skipped} other {# ungraded submissions are skipped}}: {names}"
+            "notGraded": "{count, plural, one {# ungraded submission is skipped} other {# ungraded submissions are skipped}}: {names}",
+            "notEnrolled": "Not enrolled in the course — the extension skips them: {names}"
           },
           "dialogs": {
             "publishTitle": "Publish selected grades",

@@ -412,6 +412,55 @@ describe('teacher review controls', () => {
     expect(mocks.toastErrorMock).not.toHaveBeenCalled()
   })
 
+  // UX-167: a leaver's row (enrolled: false) is left out of the extension and named; a
+  // learner the server refuses (`user_ids.{id}` not-in-course) is named and dropped too.
+  it('extends course members only and names the learners who are not enrolled', async () => {
+    mocks.extendDeadlineMock.mockRejectedValueOnce(
+      new APIError({
+        code: 'validation-failed',
+        message: 'validation failed',
+        status: 422,
+        fieldErrors: [{ field: 'user_ids.user_c', code: 'not-in-course', message: 'not enrolled' }],
+      }),
+    )
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 1)
+    const dueDateName = new RegExp(
+      `${dueDate.toLocaleString('en-US', { month: 'long' })} ${dueDate.getDate()}(?:st|nd|rd|th), ${dueDate.getFullYear()}`,
+      'i',
+    )
+    const learner = (id: string, enrolled: boolean) =>
+      createSubmission({
+        submission_uuid: `submission_${id}`,
+        enrolled,
+        user: { id, username: id, display_name: id, first_name: id, last_name: '', email: `${id}@example.test` },
+      })
+    render(
+      <ReviewBulkActionBar
+        activityId={77}
+        assessmentUuid="assessment_review"
+        disabled={false}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        submissions={[learner('user_a', true), learner('user_b', false), learner('user_c', true)]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'deadlinePlaceholder' }))
+    const dueAtDialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: dueDateName }))
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /set/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'extend' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('preview.notEnrolled')).toBeInTheDocument()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
+    await waitFor(() => expect(mocks.toastErrorMock).toHaveBeenCalledWith('toasts.notEnrolled'))
+    expect(mocks.extendDeadlineMock.mock.calls[0]?.[1]).toMatchObject({ user_ids: ['user_a', 'user_c'] })
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
+    await waitFor(() => expect(mocks.extendDeadlineMock).toHaveBeenCalledTimes(2))
+    expect(mocks.extendDeadlineMock.mock.calls[1]?.[1]).toMatchObject({ user_ids: ['user_a'] })
+  })
+
   it('shows hidden-grade release preview and summarizes the activity-wide publish result', async () => {
     const onRefresh = vi.fn().mockResolvedValue(undefined)
     render(

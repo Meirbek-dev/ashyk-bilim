@@ -2932,3 +2932,38 @@ async fn gradebook_lists_members_not_leavers(pool: PgPool) {
     assert!(text.lines().any(|l| l.starts_with("carol")), "{text}");
     assert!(!text.lines().any(|l| l.starts_with("bob")), "{text}");
 }
+
+/// UX-167: review rows say whether the learner is a course member, so the
+/// bulk extension can leave a leaver out instead of 422-ing the batch.
+#[sqlx::test(migrations = "../../migrations")]
+async fn review_rows_carry_membership(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1")
+        .bind(bob.user_id.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let queue = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/submissions"))
+        .await;
+    assert_eq!(queue.status, StatusCode::OK, "{}", queue.text());
+    let enrolled = |user: &MintedSession| {
+        queue.json()["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["user"]["id"] == user.user_id.to_string())
+            .unwrap()["enrolled"]
+            .clone()
+    };
+    assert_eq!(enrolled(&alice), true);
+    assert_eq!(enrolled(&bob), false);
+}

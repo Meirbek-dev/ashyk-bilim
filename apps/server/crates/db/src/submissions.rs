@@ -733,6 +733,8 @@ pub struct ReviewRow {
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
     pub version: i64,
+    /// A course member (trail run) — per-learner actions target members only.
+    pub enrolled: bool,
 }
 
 /// Non-draft submissions of an assessment, newest first (keyset on id),
@@ -754,7 +756,9 @@ pub async fn list_for_review(
                   s.attempt_number, s.auto_score, s.final_score, s.is_late,
                   (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
-                  s.version
+                  s.version,
+                  EXISTS (SELECT 1 FROM trail_runs r
+                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id) AS "enrolled!"
            FROM submissions s JOIN users u ON u.id = s.user_id
            WHERE s.assessment_id = $1 AND s.status <> 'draft'
              AND ($2::text IS NULL OR s.status = $2)
