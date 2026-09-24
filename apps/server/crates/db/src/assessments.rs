@@ -995,6 +995,9 @@ pub struct OverrideRow {
     pub waive_late_penalty: bool,
     pub note: String,
     pub expires_at: Option<i64>,
+    /// BUG-300: the due date is a deadline extension's and outlives
+    /// `expires_at` (which then bounds only the attempts and the waiver).
+    pub due_extended: bool,
     pub granted_by: Option<UserId>,
     pub created_at: i64,
     pub updated_at: i64,
@@ -1047,7 +1050,7 @@ pub async fn update_override<'e>(
         r#"UPDATE assessment_overrides SET
                max_attempts_override = $3, due_at_override = to_timestamp($4),
                waive_late_penalty = $5, note = $6, expires_at = to_timestamp($7),
-               granted_by = $8
+               granted_by = $8, due_extended = false
            WHERE assessment_id = $1 AND user_id = $2"#,
         id.0,
         user_id.0,
@@ -1069,10 +1072,10 @@ pub async fn update_override<'e>(
 /// either lands before (its other fields survive) or after (it wins) —
 /// never a read-modify-write that resurrects stale values (BUG-247).
 ///
-/// BUG-283: an extension never lapses — `expires_at` is cleared (a late
-/// hand-in past the new date is still judged against it). An override that
-/// had already expired contributes nothing else: its attempts and waiver
-/// were not granted again.
+/// The extension's due date never lapses (`due_extended`, BUG-300): on a
+/// live override the grants keep their `expires_at` and the new date
+/// outlives it. An override that had already expired contributes nothing
+/// else (BUG-283): its attempts and waiver are cleared with the expiry.
 pub async fn upsert_override_due<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
@@ -1083,16 +1086,18 @@ pub async fn upsert_override_due<'e>(
 ) -> Result<()> {
     sqlx::query!(
         r#"INSERT INTO assessment_overrides
-               (assessment_id, user_id, due_at_override, note, granted_by)
-           VALUES ($1, $2, to_timestamp($3), $4, $5)
+               (assessment_id, user_id, due_at_override, note, granted_by, due_extended)
+           VALUES ($1, $2, to_timestamp($3), $4, $5, true)
            ON CONFLICT (assessment_id, user_id) DO UPDATE SET
                due_at_override = EXCLUDED.due_at_override,
                note = EXCLUDED.note, granted_by = EXCLUDED.granted_by,
+               due_extended = true,
                max_attempts_override = CASE WHEN assessment_overrides.expires_at <= now()
                    THEN NULL ELSE assessment_overrides.max_attempts_override END,
                waive_late_penalty = CASE WHEN assessment_overrides.expires_at <= now()
                    THEN false ELSE assessment_overrides.waive_late_penalty END,
-               expires_at = NULL"#,
+               expires_at = CASE WHEN assessment_overrides.expires_at <= now()
+                   THEN NULL ELSE assessment_overrides.expires_at END"#,
         id.0,
         user_id.0,
         epoch(Some(due_at)),
@@ -1126,7 +1131,7 @@ pub async fn get_override(
                   user_id AS "user_id: UserId", max_attempts_override,
                   (extract(epoch FROM due_at_override))::bigint AS "due_at_override?",
                   waive_late_penalty, note,
-                  (extract(epoch FROM expires_at))::bigint AS "expires_at?",
+                  (extract(epoch FROM expires_at))::bigint AS "expires_at?", due_extended,
                   granted_by AS "granted_by: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -1146,7 +1151,7 @@ pub async fn list_overrides(pool: &PgPool, id: AssessmentId) -> Result<Vec<Overr
                   user_id AS "user_id: UserId", max_attempts_override,
                   (extract(epoch FROM due_at_override))::bigint AS "due_at_override?",
                   waive_late_penalty, note,
-                  (extract(epoch FROM expires_at))::bigint AS "expires_at?",
+                  (extract(epoch FROM expires_at))::bigint AS "expires_at?", due_extended,
                   granted_by AS "granted_by: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"

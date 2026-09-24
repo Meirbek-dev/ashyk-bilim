@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, assessment_id AS \"assessment_id: AssessmentId\",\n                  user_id AS \"user_id: UserId\", max_attempts_override,\n                  (extract(epoch FROM due_at_override))::bigint AS \"due_at_override?\",\n                  waive_late_penalty, note,\n                  (extract(epoch FROM expires_at))::bigint AS \"expires_at?\",\n                  granted_by AS \"granted_by: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM assessment_overrides WHERE assessment_id = $1 AND user_id = $2",
+  "query": "SELECT id, assessment_id AS \"assessment_id: AssessmentId\",\n                  user_id AS \"user_id: UserId\", max_attempts_override,\n                  (extract(epoch FROM due_at_override))::bigint AS \"due_at_override?\",\n                  waive_late_penalty, note,\n                  (extract(epoch FROM expires_at))::bigint AS \"expires_at?\", due_extended,\n                  granted_by AS \"granted_by: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM assessment_overrides WHERE assessment_id = $1 ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -83,6 +83,17 @@
       },
       {
         "ordinal": 8,
+        "name": "due_extended",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "due_extended"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
         "name": "granted_by: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -93,13 +104,13 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -107,7 +118,6 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Uuid"
       ]
     },
@@ -120,10 +130,11 @@
       false,
       false,
       null,
+      false,
       true,
       null,
       null
     ]
   },
-  "hash": "444e40051b9bda27a634ad9f30532e47074f9d9268a2398747c13e0179ce8307"
+  "hash": "5aa5669fab413b3e6b2829e5ac496e0308d9ea3fe75c0939cee79925ab4f2b01"
 }

@@ -1348,3 +1348,17 @@ Implements three more items of the owner answers above. Routes:
   never takes a late penalty. Why: a revoked waiver left 100 with
   `is_late true` and penalty 0, and a deleted one left 100 on time.
   Replaces "a deadline change only ever clears the penalty" (BUG-139).
+
+## A deadline extension outlives the override's expiry (2026-09-25, gauntlet pass 25)
+
+- **`expires_at` bounds the grants, an extension's due date stands on its
+  own** (BUG-300): the bulk extension writes the new due date and sets
+  `assessment_overrides.due_extended`; on a live override it keeps the
+  row's `expires_at`, so the extra attempts and the waiver lapse on time
+  while the new due date (and `override_applied`) outlive them. On an
+  already-expired override the grants and the expiry are cleared (BUG-283).
+  A teacher's own `POST`/`PUT overrides/{user}` writes the whole row and
+  clears the flag (its `expires_at` then bounds the due date too). Why:
+  clearing `expires_at` on every extension made a 20-second grant of 9
+  attempts and a waiver permanent. Replaces "an extension clears
+  `expires_at`" (BUG-283, 0716bc9).

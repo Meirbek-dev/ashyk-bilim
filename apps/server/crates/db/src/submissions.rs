@@ -656,7 +656,7 @@ pub async fn gradebook_cells(
                FROM submissions s JOIN assessments a ON a.id = s.assessment_id
                LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id
                     AND o.user_id = s.user_id
-                    AND (o.expires_at IS NULL OR o.expires_at > now())
+                    AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)
                WHERE s.course_id = $1 AND s.status <> 'draft' AND NOT s.preview
                UNION ALL
                SELECT fa.user_id, f.activity_id, NULL::uuid, NULL::uuid, f.id, fa.id,

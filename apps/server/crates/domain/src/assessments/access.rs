@@ -545,13 +545,17 @@ impl AssessmentsService {
         teacher_preview: bool,
     ) -> Result<EffectivePolicy> {
         let now = now_unix();
-        let active = if teacher_preview {
+        let row = if teacher_preview {
             None
         } else {
-            ab_db::assessments::get_override(pool, assessment.id, user_id)
-                .await?
-                .filter(|o| o.expires_at.is_none_or(|exp| exp > now))
+            ab_db::assessments::get_override(pool, assessment.id, user_id).await?
         };
+        // BUG-300: an extension's due date outlives the grants' expiry.
+        let extended_due = row
+            .as_ref()
+            .filter(|o| o.due_extended)
+            .and_then(|o| o.due_at_override);
+        let active = row.filter(|o| o.expires_at.is_none_or(|exp| exp > now));
         Ok(EffectivePolicy {
             max_attempts: if teacher_preview {
                 None
@@ -564,6 +568,7 @@ impl AssessmentsService {
             due_at: active
                 .as_ref()
                 .and_then(|o| o.due_at_override)
+                .or(extended_due)
                 .or(assessment.due_at),
             time_limit_seconds: assessment.time_limit_seconds,
             allow_late: assessment.allow_late,
@@ -577,7 +582,7 @@ impl AssessmentsService {
             // BUG-278: a preview's verdict is its answers — no late penalty.
             waive_late_penalty: teacher_preview
                 || active.as_ref().is_some_and(|o| o.waive_late_penalty),
-            override_applied: active.is_some(),
+            override_applied: active.is_some() || extended_due.is_some(),
             review_visibility: assessment.review_visibility,
         })
     }
