@@ -8479,7 +8479,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "1..=500 cells (default 200).",
+            "description": "1..=500 learners per page, each with all their cells (default 100).",
             "required": false,
             "schema": {
               "type": [
@@ -17327,6 +17327,7 @@
           "csrf-rejected",
           "account-disabled",
           "google-oauth-expired",
+          "account-exists",
           "invalid-totp-code",
           "username-taken",
           "email-taken",

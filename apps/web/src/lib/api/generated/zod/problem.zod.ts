@@ -34,6 +34,7 @@ export const Problem = zod
         'csrf-rejected',
         'account-disabled',
         'google-oauth-expired',
+        'account-exists',
         'invalid-totp-code',
         'username-taken',
         'email-taken',

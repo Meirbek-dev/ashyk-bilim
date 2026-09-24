@@ -4943,6 +4943,7 @@ expression: json
           "csrf-rejected",
           "account-disabled",
           "google-oauth-expired",
+          "account-exists",
           "invalid-totp-code",
           "username-taken",
           "email-taken",
@@ -20792,7 +20793,7 @@ expression: json
             }
           },
           {
-            "description": "1..=500 cells (default 200).",
+            "description": "1..=500 learners per page, each with all their cells (default 100).",
             "in": "query",
             "name": "limit",
             "required": false,
