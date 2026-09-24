@@ -132,6 +132,25 @@ pub(crate) async fn lock_member_joined(
     Ok(Some((tx, false)))
 }
 
+/// BUG-303: allowlist and override rows name course members only — a user
+/// who is no member (joined the staff, or holds no run) loses theirs on the
+/// course. Under the member lock (override writes take it), with the run
+/// row held `FOR UPDATE` so a `set_access` that validated them before the
+/// promotion commits first and is swept too. Nothing for a member.
+pub(crate) async fn drop_non_member_access(
+    pool: &PgPool,
+    user_id: UserId,
+    course_id: CourseId,
+) -> Result<()> {
+    let mut tx = lock_trail_run(pool, user_id, course_id, MEMBER_WAIT).await?;
+    ab_db::progress::lock_trail_run_row(&mut tx, course_id, user_id).await?;
+    if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
+        ab_db::assessments::drop_member_access(&mut tx, course_id, user_id).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
 /// A 404 from the course behind an activity reads as the activity's own
 /// 404: the detail must not tell an unknown id from an invisible course.
 fn activity_not_found(err: Error) -> Error {

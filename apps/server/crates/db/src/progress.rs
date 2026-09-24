@@ -513,6 +513,22 @@ pub async fn has_trail_run_locked<'e>(
     Ok(row.is_some())
 }
 
+/// Hold the (user, course) run row `FOR UPDATE` until the caller's
+/// transaction ends: waits out a `set_access` that checked it `FOR SHARE`
+/// (BUG-303). No run → nothing to hold.
+pub async fn lock_trail_run_row(
+    conn: &mut PgConnection,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<()> {
+    sqlx::query("SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2 FOR UPDATE")
+        .bind(course_id.0)
+        .bind(user_id.0)
+        .fetch_optional(conn)
+        .await?;
+    Ok(())
+}
+
 /// Create-or-get the run for a course; `true` when it was just created.
 pub async fn ensure_trail_run(
     conn: &mut PgConnection,

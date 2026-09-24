@@ -471,10 +471,11 @@ impl ProgressProjector {
 
     /// Re-project a user whose course-staff standing may have changed
     /// (roster or RBAC writers, after commit; BUG-291): a user leaving the
-    /// staff is a member again and picks up what was graded meanwhile.
-    /// `course_id` narrows it to one course; else every course they hold a
-    /// run in. Non-members are skipped; a failing course never drops the
-    /// ones after it (the last error is returned).
+    /// staff is a member again and picks up what was graded meanwhile; one
+    /// joining it (no member) loses their allowlist and override rows
+    /// (BUG-303). `course_id` narrows it to one course; else every course
+    /// they hold a run in (the only courses such rows can name). A failing
+    /// course never drops the ones after it (the last error is returned).
     pub async fn reproject_staff_change(
         &self,
         user_id: UserId,
@@ -486,7 +487,12 @@ impl ProgressProjector {
         };
         let mut outcome = Ok(());
         for course in courses {
-            if let Err(err) = self.reproject_member(course, user_id, false).await {
+            let step = match self.reproject_member(course, user_id, false).await {
+                Ok(Some(_)) => Ok(()),
+                Ok(None) => super::trail::drop_non_member_access(&self.pool, user_id, course).await,
+                Err(err) => Err(err),
+            };
+            if let Err(err) = step {
                 tracing::warn!(%course, %user_id, error = %err, "staff-change reprojection failed");
                 outcome = Err(err);
             }

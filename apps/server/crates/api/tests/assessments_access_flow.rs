@@ -1007,3 +1007,109 @@ async fn a_leave_drops_allowlist_and_overrides(pool: PgPool) {
         overrides.text()
     );
 }
+
+/// BUG-303: joining the staff (roster add, RBAC role) drops the member's
+/// allowlist and override rows like a leave (BUG-281) — the unchanged list
+/// saves again. A staffer never edits or deletes their own override (403).
+#[sqlx::test(migrations = "../../migrations")]
+async fn joining_the_staff_drops_allowlist_and_overrides(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let admin = app.mint_session(&["*:*:*"]).await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let (l1, _) = learner(&app, "l1").await;
+    let (l2, _) = learner(&app, "l2").await;
+    let (carol, _) = learner(&app, "carol").await;
+    for who in [l1, l2, carol] {
+        enrol(&pool, &course_id, who).await;
+    }
+    let put = |uri: String, body: serde_json::Value, cookie: String| {
+        axum::http::Request::builder()
+            .method("PUT")
+            .uri(uri)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, cookie)
+            .body(axum::body::Body::from(body.to_string()))
+            .unwrap()
+    };
+    let access = format!("/api/v2/assessments/{id}/access");
+    let saved = app
+        .send(put(
+            access.clone(),
+            serde_json::json!({ "mode": "restricted", "user_ids": [l1, l2, carol] }),
+            teacher.cookie.clone(),
+        ))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    for who in [l1, l2] {
+        let granted = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/overrides/{who}"),
+                &serde_json::json!({ "max_attempts_override": 2 }),
+            )
+            .await;
+        assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    }
+
+    let rostered = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": l1, "role": "contributor" }),
+        )
+        .await;
+    assert_eq!(rostered.status, StatusCode::CREATED, "{}", rostered.text());
+    let granted = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/users/{l2}/roles"),
+            &serde_json::json!({ "role": "maintainer" }),
+        )
+        .await;
+    assert!(granted.status.is_success(), "{}", granted.text());
+
+    let view = app.get_as(&teacher, &access).await;
+    let users: Vec<String> = view.json()["users"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|u| u["id"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(users, [carol.to_string()], "{}", view.text());
+    let overrides = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/overrides"))
+        .await;
+    assert_eq!(
+        overrides.json().as_array().unwrap().len(),
+        0,
+        "{}",
+        overrides.text()
+    );
+    let resaved = app
+        .send(put(
+            access,
+            serde_json::json!({ "mode": "restricted", "user_ids": users }),
+            teacher.cookie.clone(),
+        ))
+        .await;
+    assert_eq!(resaved.status, StatusCode::OK, "{}", resaved.text());
+
+    // The staffer's own override: PUT and DELETE refuse like POST (BUG-288).
+    let l1_session = app
+        .mint_session_for(l1, &["course:read:all", "assessment:*:own"])
+        .await;
+    let own = format!("/api/v2/assessments/{id}/overrides/{l1}");
+    let edited = app
+        .send(put(
+            own.clone(),
+            serde_json::json!({ "max_attempts_override": 5 }),
+            l1_session.cookie.clone(),
+        ))
+        .await;
+    assert_eq!(edited.status, StatusCode::FORBIDDEN, "{}", edited.text());
+    assert_eq!(edited.json()["code"], "grade-own-attempt");
+    let deleted = app.delete_as(&l1_session, &own).await;
+    assert_eq!(deleted.status, StatusCode::FORBIDDEN, "{}", deleted.text());
+    assert_eq!(deleted.json()["code"], "grade-own-attempt");
+}
