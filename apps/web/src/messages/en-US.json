@@ -3636,8 +3636,8 @@
             "label": "Private"
           },
           "ready": {
-            "detail": "Ready for review",
-            "label": "Publish-ready"
+            "detail": "Visible to learners",
+            "label": "Published"
           },
           "visible": {
             "detail": "Courses on this page",
