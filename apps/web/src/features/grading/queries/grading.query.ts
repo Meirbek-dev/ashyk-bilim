@@ -3,7 +3,12 @@
 import { apiBody, apiJson } from '@/lib/api-client'
 import type { SubmissionStats, SubmissionStatus, SubmissionsPage } from '@/features/grading/domain'
 import { ReviewPage } from '@/lib/api/generated/zod'
-import { gradebookFromWire, reviewItemFromWire, statsFromWire, teacherSubmissionFromWire } from '@/features/grading/domain/wire'
+import {
+  gradebookFromWire,
+  reviewItemFromWire,
+  statsFromWire,
+  teacherSubmissionFromWire,
+} from '@/features/grading/domain/wire'
 import { queryOptions } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { getCourse, getCurriculum } from '@/lib/api/generated/courses/courses'
@@ -79,16 +84,20 @@ export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid
   })
 }
 
-/** Walks `GET courses/{id}/gradebook` to the end (keyset — no offset paging in v2). */
-export async function collectGradebookPages(courseUuid: string, maxPages = 20): Promise<GradebookPage[]> {
+/**
+ * Walks `GET courses/{id}/gradebook` to the end (keyset — no offset paging in v2).
+ * A page is whole learner rows, so the walk is learners / page size long; it never
+ * stops short (BUG-265) — a cursor that will not end is an error, not a truncated gradebook.
+ */
+export async function collectGradebookPages(courseUuid: string, maxPages = 10_000): Promise<GradebookPage[]> {
   const pages: GradebookPage[] = []
   let cursor: string | null = null
-  for (let index = 0; index < maxPages; index += 1) {
-    const page = await fetchGradebookPage(courseUuid, cursor ? { cursor } : undefined)
+  do {
+    if (pages.length === maxPages) throw new Error(`Gradebook did not end after ${maxPages} pages`)
+    const page: GradebookPage = await fetchGradebookPage(courseUuid, cursor ? { cursor } : undefined)
     pages.push(page)
-    if (!page.next_cursor) break
-    cursor = page.next_cursor
-  }
+    cursor = page.next_cursor ?? null
+  } while (cursor)
   return pages
 }
 
@@ -134,7 +143,8 @@ export function downloadGradebookCsv(courseUuid: string, locale: string): Promis
 export function submissionStatsQueryOptions(assessmentUuid: string) {
   return queryOptions({
     queryKey: queryKeys.grading.stats(assessmentUuid),
-    queryFn: async (): Promise<SubmissionStats> => statsFromWire(await apiJson(`assessments/${assessmentUuid}/submissions/stats`)),
+    queryFn: async (): Promise<SubmissionStats> =>
+      statsFromWire(await apiJson(`assessments/${assessmentUuid}/submissions/stats`)),
     staleTime: 5000,
   })
 }

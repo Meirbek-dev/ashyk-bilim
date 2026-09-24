@@ -1510,9 +1510,9 @@ impl GradingService {
 
     /// Grade-of-record attempt per (learner, activity) of a course (the
     /// projector's attempt, BUG-173) — assessment submissions and
-    /// file-submission attempts alike — keyset on that pair over the
-    /// member × graded-activity matrix: every member is listed, a leaver
-    /// is not (UX-169).
+    /// file-submission attempts alike — keyset on the learner: a page is
+    /// `limit` whole member rows (BUG-265); every member is listed, a
+    /// leaver is not (UX-169).
     pub async fn gradebook(
         &self,
         actor: &Actor,
@@ -1524,19 +1524,16 @@ impl GradingService {
         AssessmentsService::require_scoped(actor, &course, Action::Grade, "gradebook")?;
         let after = cursor.map(parse_gradebook_cursor).transpose()?;
         let limit = ab_core::page_limit(limit, MAX_GRADEBOOK_PAGE)?;
-        let mut keys =
-            ab_db::submissions::gradebook_keys(&self.pool, course_id, after, limit + 1).await?;
+        let mut ids =
+            ab_db::submissions::gradebook_members(&self.pool, course_id, after, limit + 1).await?;
         let page = usize::try_from(limit).unwrap_or(usize::MAX);
-        let next_cursor = if keys.len() > page {
-            keys.truncate(page);
-            keys.last()
-                .map(|(user, activity)| format!("{user}:{activity}"))
+        let next_cursor = if ids.len() > page {
+            ids.truncate(page);
+            ids.last().map(ToString::to_string)
         } else {
             None
         };
-        let rows = ab_db::submissions::gradebook_cells(&self.pool, course_id, &keys).await?;
-        let mut ids: Vec<UserId> = keys.iter().map(|(user, _)| *user).collect();
-        ids.dedup();
+        let rows = ab_db::submissions::gradebook_cells(&self.pool, course_id, &ids).await?;
         let users = ab_db::identity::list_user_summaries(&self.pool, &ids)
             .await?
             .into_iter()
@@ -1688,20 +1685,15 @@ fn stale_version(expected: i64, actual: i64) -> Error {
     )
 }
 
-/// `"<user_id>:<activity_id>"`.
-fn parse_gradebook_cursor(cursor: &str) -> Result<(UserId, ActivityId)> {
-    let invalid = || {
+/// The last learner id of the previous page.
+fn parse_gradebook_cursor(cursor: &str) -> Result<UserId> {
+    uuid::Uuid::parse_str(cursor).map(UserId).map_err(|_| {
         Error::validation(vec![FieldError {
             field: "cursor".into(),
             code: "invalid".into(),
-            message: "cursor must be <user_id>:<activity_id>".into(),
+            message: "cursor must be a learner id".into(),
         }])
-    };
-    let (user, activity) = cursor.split_once(':').ok_or_else(invalid)?;
-    Ok((
-        UserId(uuid::Uuid::parse_str(user).map_err(|_| invalid())?),
-        ActivityId(uuid::Uuid::parse_str(activity).map_err(|_| invalid())?),
-    ))
+    })
 }
 
 /// Legacy merge: a score sets the item and clears manual review; feedback

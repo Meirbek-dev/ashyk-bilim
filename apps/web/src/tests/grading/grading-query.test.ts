@@ -24,6 +24,7 @@ vi.mock('@/lib/api/generated/grading/grading', () => ({
 
 import {
   GRADEBOOK_POLL_MS,
+  collectGradebookPages,
   courseGradebookQueryOptions,
   downloadGradebookCsv,
   gradingDetailQueryOptions,
@@ -125,6 +126,21 @@ describe('courseGradebookQueryOptions', () => {
     expect(result?.cells[0]?.score).toBe(90)
     expect(result?.activities[0]?.activity_uuid).toBe('activity_1')
     expect(result?.activities[0]?.name).toBe('Week 3 · Exam')
+  })
+  // BUG-265: the walk used to stop silently at page 20 — page 21 held a pending cell.
+  it('walks past page 20 to the last page and fails loudly on a cursor that never ends', async () => {
+    const empty = { cells: [], users: [], assessments: [], file_submissions: [] }
+    mocks.gradebook.mockReset()
+    mocks.gradebook.mockImplementation(async (_course: string, params?: { cursor: string }) => {
+      const index = params ? Number(params.cursor) : 1
+      return { ...empty, next_cursor: index < 21 ? String(index + 1) : null }
+    })
+    await expect(collectGradebookPages(COURSE_ID)).resolves.toHaveLength(21)
+    expect(mocks.gradebook).toHaveBeenLastCalledWith(COURSE_ID, { cursor: '21' })
+
+    mocks.gradebook.mockReset()
+    mocks.gradebook.mockResolvedValue({ ...empty, next_cursor: 'again' })
+    await expect(collectGradebookPages(COURSE_ID, 5)).rejects.toThrow('Gradebook did not end after 5 pages')
   })
   // Gauntlet F27: the course grading stream drives refreshes; polling is only
   // the fallback while the stream is not connected.

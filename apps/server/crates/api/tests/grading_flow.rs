@@ -1608,34 +1608,16 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
         gradebook.json()["file_submissions"][0]["title"],
         "Project Upload"
     );
-    // The keyset walks (user, activity) across both kinds.
+    // BUG-265: a page is whole learner rows — `limit=1` is alice with
+    // both kinds of cell, and nothing after her.
     let page1 = app
         .get_as(
             &teacher,
             &format!("/api/v2/courses/{course_id}/gradebook?limit=1"),
         )
         .await;
-    let cursor = page1.json()["next_cursor"].as_str().unwrap().to_owned();
-    assert_eq!(
-        cursor,
-        format!(
-            "{}:{}",
-            page1.json()["cells"][0]["user_id"].as_str().unwrap(),
-            page1.json()["cells"][0]["activity_id"].as_str().unwrap()
-        )
-    );
-    let page2 = app
-        .get_as(
-            &teacher,
-            &format!("/api/v2/courses/{course_id}/gradebook?limit=1&cursor={cursor}"),
-        )
-        .await;
-    assert_eq!(page2.json()["cells"].as_array().unwrap().len(), 1);
-    assert_ne!(
-        page2.json()["cells"][0]["activity_id"],
-        page1.json()["cells"][0]["activity_id"]
-    );
-    assert!(page2.json()["next_cursor"].is_null());
+    assert_eq!(page1.json()["cells"].as_array().unwrap().len(), 2);
+    assert!(page1.json()["next_cursor"].is_null());
 
     // CSV: BOM + Russian header by default, English on request; graders only.
     let csv = app
@@ -2880,6 +2862,60 @@ async fn publish_dropped_after_the_commit_still_projects(pool: PgPool) {
             .any(|e| !e["published_at_unix"].is_null()),
         "{history}"
     );
+}
+
+/// BUG-265: the gradebook pages by learner — each page is whole member rows
+/// (every graded activity), so the page count follows the members and the
+/// last member's pending cell is on the last page, not past a key cap.
+#[sqlx::test(migrations = "../../migrations")]
+async fn gradebook_pages_whole_learner_rows(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let quizzes = [
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await,
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await,
+    ];
+    for name in ["alice", "bob", "carol"] {
+        let who = learner(&app, name).await;
+        for (id, choice_id, essay_id) in &quizzes {
+            submit_attempt(&app, &who, id, choice_id, essay_id).await;
+        }
+    }
+    let mut cursor: Option<String> = None;
+    let mut users = Vec::new();
+    let mut pages = 0;
+    loop {
+        let query = cursor
+            .as_ref()
+            .map_or_else(String::new, |c| format!("&cursor={c}"));
+        let page = app
+            .get_as(
+                &teacher,
+                &format!("/api/v2/courses/{course_id}/gradebook?limit=1{query}"),
+            )
+            .await;
+        assert_eq!(page.status, StatusCode::OK, "{}", page.text());
+        pages += 1;
+        let page = page.json();
+        let user = page["users"][0]["id"].as_str().unwrap().to_owned();
+        assert_eq!(page["users"].as_array().unwrap().len(), 1);
+        let cells = page["cells"].as_array().unwrap();
+        assert_eq!(cells.len(), 2, "a page carries the whole row: {cells:?}");
+        assert!(
+            cells
+                .iter()
+                .all(|c| c["user_id"] == user.as_str() && c["status"] == "pending")
+        );
+        users.push(user);
+        match page["next_cursor"].as_str() {
+            Some(next) => cursor = Some(next.to_owned()),
+            None => break,
+        }
+    }
+    assert_eq!(pages, 3);
+    users.dedup();
+    assert_eq!(users.len(), 3);
 }
 
 /// UX-169: the gradebook lists the course members (trail runs, the UX-150

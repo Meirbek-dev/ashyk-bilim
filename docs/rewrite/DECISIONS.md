@@ -847,8 +847,12 @@ Implements the grading items of the owner answers above. Routes:
 - `GET /courses/{id}/gradebook` — cells are keyed by `activity_id` and carry
   either `assessment_id` + `submission_id` or `file_submission_id` +
   `attempt_id` (a file attempt `submitted` reads as `pending`); the page
-  lists `file_submissions` columns next to `assessments`; the keyset cursor
-  is `<user_id>:<activity_id>`. The web reads cells from the wire only.
+  lists `file_submissions` columns next to `assessments`. The page is
+  `limit` whole learner rows (1..=500, default 100), keyset on the learner
+  id, which is the cursor (BUG-265, 2026-09-24 — replaces the
+  `<user_id>:<activity_id>` key cursor, whose page count grew with
+  learners × activities and outran the web walker). The web reads cells
+  from the wire only and walks every page.
 - `GET /courses/{id}/gradebook/export` — CSV, UTF-8 with BOM, header and
   status words in the `Accept-Language` language (`ru` default, `kk`,
   `en`); graders only.

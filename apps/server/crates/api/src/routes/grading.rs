@@ -26,7 +26,7 @@ use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
 use crate::state::AppState;
 
 const DEFAULT_REVIEW_PAGE: i64 = 25;
-const DEFAULT_GRADEBOOK_PAGE: i64 = 200;
+const DEFAULT_GRADEBOOK_PAGE: i64 = 100;
 
 /// `If-Match` as the expected version; `None` when absent (the domain
 /// requires it after its authz gate — UX-108), 422 when not an integer.

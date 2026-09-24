@@ -346,7 +346,7 @@ impl From<ab_domain::grading::bulk::BulkAction> for BulkAction {
 pub struct GradebookQuery {
     /// `next_cursor` of the previous page.
     pub cursor: Option<String>,
-    /// 1..=500 cells (default 200).
+    /// 1..=500 learners per page, each with all their cells (default 100).
     pub limit: Option<i64>,
 }
 
