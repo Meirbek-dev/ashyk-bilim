@@ -1236,3 +1236,16 @@ Implements three more items of the owner answers above. Routes:
   is created unverified in Zitadel for the same reason. Once linked, the
   account is found by `sub` and the email Google reports is not used again
   (BUG-253). Replaces the legacy "same email → link" find-or-create.
+
+## Assessment allowlists name course members (2026-09-24, gauntlet pass 23)
+
+- **A restricted assessment's `user_ids` must be course members — users
+  with a trail run on the course, the BUG-247 rule overrides and deadline
+  extensions already use** (UX-180). Anyone else (the course's own
+  teacher, a co-author, a platform admin, a cohort member who has not
+  joined yet) is refused with 422 `validation`, one
+  `user_ids.<id>` / `not-in-course` field error per offender. Why: an
+  allowlist names learners who may take the assessment; staff preview
+  without it, and counting them inflated `effective_user_count`. The
+  studio picker already offers only the gradebook's learners. Replaces
+  "any user with course access" (anyone at all on a public course).

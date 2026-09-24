@@ -239,7 +239,7 @@ impl AssessmentsService {
     }
 
     /// Replace the access policy. Restricted lists are validated against
-    /// the course: users must already have course access, groups must be
+    /// the course: users must be course members (UX-180), groups must be
     /// linked to it (the legacy's "no linked groups → every group is
     /// eligible" fallback is gone). Switching to all-course-learners wipes
     /// both lists (legacy). UX-154: `expected_version` (`If-Match`) is
@@ -263,14 +263,15 @@ impl AssessmentsService {
                 for user_id in user_ids {
                     // Addressable per id so the client can flag the chip.
                     let field = format!("user_ids.{user_id}");
+                    // UX-180: an allowlist names learners who may take it —
+                    // course members (the BUG-247 override rule), never
+                    // authors or staff who merely have course access.
                     if let Some(e) = self.unknown_user(*user_id, &field).await? {
                         errors.push(e);
-                    } else if !self.user_has_course_access(&course, *user_id).await? {
-                        errors.push(FieldError {
-                            field,
-                            code: "not-in-course".into(),
-                            message: format!("user {user_id} has no access to this course"),
-                        });
+                    } else if let Some(e) =
+                        Self::not_member(&self.pool, course.id, *user_id, field).await?
+                    {
+                        errors.push(e);
                     }
                 }
                 for group_id in usergroup_ids {

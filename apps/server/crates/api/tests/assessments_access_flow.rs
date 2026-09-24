@@ -157,6 +157,14 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
         .await;
     assert_eq!(hidden.status, StatusCode::NOT_FOUND);
 
+    // UX-159: course-wide reach is the enrolled learners — Alice is in the
+    // cohort but not yet enrolled.
+    let view = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/access"))
+        .await;
+    assert_eq!(view.json()["mode"], "all_course_learners");
+    assert_eq!(view.json()["effective_user_count"], 0);
+
     // The teacher previews without an attempt cap.
     let preview = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}/attempt-state"))
@@ -245,6 +253,47 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
         .await;
     assert_eq!(blocked.status, StatusCode::FORBIDDEN);
 
+    // UX-180: an allowlist names course members (enrolled learners), never
+    // the course's own teacher, who merely has access.
+    let staff = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{id}/access"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "mode": "restricted",
+                                        "user_ids": [teacher.user_id, alice] })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(
+        staff.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        staff.text()
+    );
+    let offenders: Vec<_> = staff.json()["field_errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| (e["field"].as_str().unwrap().to_owned(), e["code"].clone()))
+        .collect();
+    assert_eq!(
+        offenders,
+        [
+            (
+                format!("user_ids.{}", teacher.user_id),
+                "not-in-course".into()
+            ),
+            (format!("user_ids.{alice}"), "not-in-course".into()),
+        ]
+    );
+    enrol(&app.pool, &course_id, alice).await;
+
     // Direct allowlisting of Alice restores it; the view reflects both lists.
     let direct = app
         .send(
@@ -292,20 +341,6 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/assessments/{id}/access"))
         .await;
     assert_eq!(view.json()["mode"], "all_course_learners");
-    // UX-159: course-wide reach is the enrolled learners, not the lists.
-    assert_eq!(view.json()["effective_user_count"], 0);
-    sqlx::query(
-        "WITH t AS (INSERT INTO trails (user_id) VALUES ($1) RETURNING id)
-         INSERT INTO trail_runs (trail_id, course_id, user_id) SELECT id, $2, $1 FROM t",
-    )
-    .bind(alice.0)
-    .bind(uuid::Uuid::parse_str(&course_id).unwrap())
-    .execute(&app.pool)
-    .await
-    .unwrap();
-    let view = app
-        .get_as(&teacher, &format!("/api/v2/assessments/{id}/access"))
-        .await;
     assert_eq!(view.json()["effective_user_count"], 1);
 
     // UX-154: the view carries an ETag; a save that echoes it lands and
