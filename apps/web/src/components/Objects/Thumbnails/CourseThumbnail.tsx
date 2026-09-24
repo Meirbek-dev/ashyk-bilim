@@ -255,6 +255,49 @@ const CourseActions: FC<CourseActionsProps> = ({
   )
 }
 
+/** The course-delete confirm — every delete entry point goes through it (UX-168). */
+export function CourseDeleteDialog({
+  open,
+  onOpenChange,
+  courseName,
+  isPending,
+  onConfirm,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  courseName: string
+  isPending: boolean
+  onConfirm: () => void
+}) {
+  const t = useTranslations('Components.CourseThumbnail')
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogMedia className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400">
+            <AlertTriangle className="size-8" />
+          </AlertDialogMedia>
+          <AlertDialogTitle>{t('deleteConfirmationTitle', { courseName })}</AlertDialogTitle>
+          <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel />
+          <AlertDialogAction variant="destructive" onClick={onConfirm} disabled={isPending}>
+            {isPending ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                {t('deleting')}
+              </div>
+            ) : (
+              t('deleteButtonText')
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
 interface AdminMenuProps {
   course: Course
   onDelete: () => Promise<void>
@@ -332,30 +375,13 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
         <ResourceActionsMenu availableActions={availableActions} actions={actions} trigger={trigger} />
       </div>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400">
-              <AlertTriangle className="size-8" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>{t('deleteConfirmationTitle', { courseName: course.name || '' })}</AlertDialogTitle>
-            <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel />
-            <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={isPending}>
-              {isPending ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin" />
-                  {t('deleting')}
-                </div>
-              ) : (
-                t('deleteButtonText')
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <CourseDeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        courseName={course.name || ''}
+        isPending={isPending}
+        onConfirm={handleDelete}
+      />
     </>
   )
 }

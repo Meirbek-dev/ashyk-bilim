@@ -35,7 +35,7 @@ import {
 } from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
+import CourseThumbnail, { CourseDeleteDialog } from '@components/Objects/Thumbnails/CourseThumbnail'
 import { updateCourseAccess } from '@services/courses/courses'
 import { deleteCourseFromBackend } from '@services/courses/course-delete'
 import { useApiError } from '@/hooks/useApiError'
@@ -781,7 +781,7 @@ function CoursesHome({
   )
 }
 
-function CourseRowActions({
+export function CourseRowActions({
   course,
   onOptimisticDelete,
 }: {
@@ -793,6 +793,7 @@ function CourseRowActions({
   const { can, user } = useSession()
   const { toastApiError } = useApiError()
   const [isPending, startTransition] = useTransition()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const canManageCourse =
     can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
@@ -805,6 +806,7 @@ function CourseRowActions({
   const handleDelete = () => {
     if (!canDeleteCourse) return
 
+    setIsDeleteDialogOpen(false)
     startTransition(async () => {
       onOptimisticDelete([course.course_uuid])
       try {
@@ -840,45 +842,54 @@ function CourseRowActions({
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="outline" size="icon" disabled={isPending}>
-            <MoreHorizontal className="size-4" />
-          </Button>
-        }
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="outline" size="icon" disabled={isPending}>
+              <MoreHorizontal className="size-4" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => router.push(context.workspaceHref)}>
+            <List className="size-4" />
+            {t('rowActions.openWorkspace')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(context.curriculumHref)}>
+            <Workflow className="size-4" />
+            {t('rowActions.openCurriculum')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(context.reviewHref)}>
+            <ShieldCheck className="size-4" />
+            {t('rowActions.reviewPublish')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(buildCourseCreationPath(course.course_uuid))}>
+            <LayoutGrid className="size-4" />
+            {t('rowActions.useAsTemplate')}
+          </DropdownMenuItem>
+          {canManageCourse ? (
+            <DropdownMenuItem onClick={handleToggleVisibility}>
+              {course.public ? <Lock className="size-4" /> : <Globe className="size-4" />}
+              {course.public ? t('rowActions.movePrivate') : t('rowActions.publish')}
+            </DropdownMenuItem>
+          ) : null}
+          {canDeleteCourse ? (
+            <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} variant="destructive">
+              <Trash2 className="size-4" />
+              {t('rowActions.delete')}
+            </DropdownMenuItem>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <CourseDeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        courseName={course.name}
+        isPending={isPending}
+        onConfirm={handleDelete}
       />
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => router.push(context.workspaceHref)}>
-          <List className="size-4" />
-          {t('rowActions.openWorkspace')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(context.curriculumHref)}>
-          <Workflow className="size-4" />
-          {t('rowActions.openCurriculum')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(context.reviewHref)}>
-          <ShieldCheck className="size-4" />
-          {t('rowActions.reviewPublish')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(buildCourseCreationPath(course.course_uuid))}>
-          <LayoutGrid className="size-4" />
-          {t('rowActions.useAsTemplate')}
-        </DropdownMenuItem>
-        {canManageCourse ? (
-          <DropdownMenuItem onClick={handleToggleVisibility}>
-            {course.public ? <Lock className="size-4" /> : <Globe className="size-4" />}
-            {course.public ? t('rowActions.movePrivate') : t('rowActions.publish')}
-          </DropdownMenuItem>
-        ) : null}
-        {canDeleteCourse ? (
-          <DropdownMenuItem onClick={handleDelete} variant="destructive">
-            <Trash2 className="size-4" />
-            {t('rowActions.delete')}
-          </DropdownMenuItem>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    </>
   )
 }
 
