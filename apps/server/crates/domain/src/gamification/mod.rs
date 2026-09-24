@@ -467,12 +467,14 @@ pub mod hooks {
         }
     }
 
-    /// Legacy `on_activity_completed`: XP once per activity, learning streak,
-    /// activities counter.
+    /// Legacy `on_activity_completed`: XP once per activity; the learning
+    /// streak and the activities counter move on the first completion even
+    /// past the daily XP cap (UX-170).
     pub async fn activity_completed(pool: &PgPool, user_id: UserId, activity_id: ActivityId) {
         let service = GamificationService::new(pool.clone());
         let id = activity_id.to_string();
-        let award = log_err(
+        first_completion(&service, pool, user_id, "activity", &id).await;
+        log_err(
             "activity_completed",
             service
                 .award(AwardRequest {
@@ -485,23 +487,14 @@ pub mod hooks {
                 })
                 .await,
         );
-        if award.is_some_and(|a| a.is_new) {
-            log_err(
-                "learning_streak",
-                service.record_streak(user_id, StreakKind::Learning).await,
-            );
-            log_err(
-                "activities_counter",
-                ab_db::gamification::bump_activities_completed(pool, user_id).await,
-            );
-        }
     }
 
     /// Legacy `on_course_completed`.
     pub async fn course_completed(pool: &PgPool, user_id: UserId, course_id: CourseId) {
         let service = GamificationService::new(pool.clone());
         let id = course_id.to_string();
-        let award = log_err(
+        first_completion(&service, pool, user_id, "course", &id).await;
+        log_err(
             "course_completed",
             service
                 .award(AwardRequest {
@@ -514,14 +507,32 @@ pub mod hooks {
                 })
                 .await,
         );
-        if award.is_some_and(|a| a.is_new) {
+    }
+
+    /// Counter + learning streak, once per (user, kind, id).
+    async fn first_completion(
+        service: &GamificationService,
+        pool: &PgPool,
+        user_id: UserId,
+        kind: &str,
+        id: &str,
+    ) {
+        if log_err(
+            "profile",
+            ab_db::gamification::ensure_profile(pool, user_id).await,
+        )
+        .is_none()
+        {
+            return;
+        }
+        let counted = log_err(
+            "completion_counter",
+            ab_db::gamification::record_completion(pool, user_id, kind, id).await,
+        );
+        if counted == Some(true) {
             log_err(
                 "learning_streak",
                 service.record_streak(user_id, StreakKind::Learning).await,
-            );
-            log_err(
-                "courses_counter",
-                ab_db::gamification::bump_courses_completed(pool, user_id).await,
             );
         }
     }

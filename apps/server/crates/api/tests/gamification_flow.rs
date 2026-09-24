@@ -373,6 +373,9 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(step.status, StatusCode::OK, "{}", step.text());
     let capped = app.get_as(&bob, "/api/v2/gamification").await;
     assert_eq!(capped.json()["profile"]["total_xp"], 120);
+    // UX-170: the completion counts (and extends the streak) past the cap.
+    assert_eq!(capped.json()["profile"]["total_activities_completed"], 1);
+    assert_eq!(capped.json()["profile"]["learning_streak"], 1);
     assert_eq!(
         app.get_as(
             &alice,

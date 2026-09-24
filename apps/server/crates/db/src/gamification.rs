@@ -241,24 +241,32 @@ pub async fn set_streak(
     Ok(())
 }
 
-pub async fn bump_activities_completed(pool: &PgPool, user_id: UserId) -> Result<()> {
-    sqlx::query!(
-        "UPDATE gamification_profiles SET total_activities_completed = total_activities_completed + 1 WHERE user_id = $1",
-        user_id.0
+/// Count a first completion (`kind` = `activity` | `course`) whatever the
+/// XP award did; `false` when this completion was already counted (UX-170).
+pub async fn record_completion(
+    pool: &PgPool,
+    user_id: UserId,
+    kind: &str,
+    source_id: &str,
+) -> Result<bool> {
+    let counted = sqlx::query_scalar!(
+        r#"WITH ins AS (
+               INSERT INTO gamification_completions (user_id, kind, source_id)
+               VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING kind)
+           UPDATE gamification_profiles SET
+               total_activities_completed = total_activities_completed
+                   + (SELECT count(*) FROM ins WHERE kind = 'activity')::int,
+               total_courses_completed = total_courses_completed
+                   + (SELECT count(*) FROM ins WHERE kind = 'course')::int
+           WHERE user_id = $1
+           RETURNING EXISTS (SELECT 1 FROM ins) AS "counted!""#,
+        user_id.0,
+        kind,
+        source_id
     )
-    .execute(pool)
+    .fetch_optional(pool)
     .await?;
-    Ok(())
-}
-
-pub async fn bump_courses_completed(pool: &PgPool, user_id: UserId) -> Result<()> {
-    sqlx::query!(
-        "UPDATE gamification_profiles SET total_courses_completed = total_courses_completed + 1 WHERE user_id = $1",
-        user_id.0
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
+    Ok(counted.unwrap_or(false))
 }
 
 pub async fn set_preferences(
