@@ -370,6 +370,11 @@ impl SubmissionsService {
             .assessments
             .get_for_grading(actor, submission.assessment_id)
             .await?;
+        // BUG-295: a learner never resumes a preview draft made while
+        // staff — it does not exist for them (`start` discards it).
+        if submission.preview && !state.staff {
+            return Err(Error::not_found("submission"));
+        }
         // BUG-285/294: the attempt's own preview flag decides, as in the
         // timer sweep (BUG-279) — a role change mid-attempt changes neither
         // its policy, its gates nor whether it counts.
@@ -450,9 +455,11 @@ impl SubmissionsService {
         assessment_id: AssessmentId,
     ) -> Result<Option<StudentSubmission>> {
         let state = self.assessments.attempt_state(actor, assessment_id).await?;
-        let Some(draft) =
-            ab_db::submissions::open_draft(&self.pool, assessment_id, actor.user_id).await?
-        else {
+        // The draft attempt-state judged (never a learner's preview, BUG-295).
+        let Some(draft) = (match state.draft_id {
+            Some(id) => ab_db::submissions::get_submission(&self.pool, id).await?,
+            None => None,
+        }) else {
             return Ok(None);
         };
         let total = ab_db::assessments::count_items(&self.pool, assessment_id).await?;
@@ -537,6 +544,13 @@ impl SubmissionsService {
             .await?
             .ok_or_else(|| Error::not_found("assessment"))?;
         ab_db::submissions::lock_attempts(&mut tx, assessment_id, actor.user_id).await?;
+        // BUG-295: a preview draft opened while staff is never resumed by a
+        // learner — it goes, and a counted attempt opens under their rules
+        // (attempt-state already judged without it).
+        if !state.staff {
+            ab_db::submissions::discard_preview_draft(&mut tx, assessment_id, actor.user_id)
+                .await?;
+        }
         // Idempotent: the open draft follows the content being loaded now.
         let resynced = ab_db::submissions::resync_draft(
             &mut tx,

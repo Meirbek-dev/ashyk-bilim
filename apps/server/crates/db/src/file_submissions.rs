@@ -751,9 +751,49 @@ pub async fn delete_files_releasing(
     )
     .fetch_all(&mut *conn)
     .await?;
+    delete_attempt_files_releasing(conn, &attempts, grace_secs).await
+}
+
+/// BUG-295: drop a learner's open preview attempts (made while staff).
+///
+/// Draft or returned — a learner never resumes one. Their file rows go with
+/// one upload reference released each, as in [`delete_files_releasing`].
+pub async fn discard_preview_attempts(
+    conn: &mut sqlx::PgConnection,
+    file_submission_id: FileSubmissionId,
+    user_id: UserId,
+    grace_secs: f64,
+) -> Result<()> {
+    let attempts = sqlx::query_scalar!(
+        "SELECT id FROM file_submission_attempts
+         WHERE file_submission_id = $1 AND user_id = $2 AND preview
+           AND status IN ('draft', 'returned')
+         ORDER BY id FOR UPDATE",
+        file_submission_id.0,
+        user_id.0
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    delete_attempt_files_releasing(&mut *conn, &attempts, grace_secs).await?;
+    sqlx::query!(
+        "DELETE FROM file_submission_attempts WHERE id = ANY($1)",
+        &attempts
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
+/// Delete the file rows of locked attempts, releasing one upload reference
+/// per row (uploads locked in key order first).
+async fn delete_attempt_files_releasing(
+    conn: &mut sqlx::PgConnection,
+    attempts: &[uuid::Uuid],
+    grace_secs: f64,
+) -> Result<u64> {
     let uploads = sqlx::query_scalar!(
         "SELECT DISTINCT upload_id FROM file_submission_files WHERE attempt_id = ANY($1)",
-        &attempts
+        attempts
     )
     .fetch_all(&mut *conn)
     .await?;
@@ -773,7 +813,7 @@ pub async fn delete_files_releasing(
                FROM refs WHERE u.id = refs.upload_id AND u.referenced_count > 0
            )
            SELECT count(*) AS "n!" FROM gone"#,
-        &attempts,
+        attempts,
         grace_secs
     )
     .fetch_one(conn)

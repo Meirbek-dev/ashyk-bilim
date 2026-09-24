@@ -1634,3 +1634,57 @@ async fn a_counted_file_draft_keeps_its_gates_after_promotion(pool: PgPool) {
     assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
     assert_eq!(late.json()["detail"], "cannot start: PAST_DUE");
 }
+
+/// BUG-295: a file preview draft is never resumed by a learner — hidden
+/// from `GET draft`, discarded by their next write (upload reference
+/// released), which opens a counted attempt.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_learner_never_resumes_a_file_preview(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let lena = future_maintainer(&app, "lena").await;
+    let fresh = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600, "allow_late": false }),
+    )
+    .await;
+    set_maintainer(&app, &teacher, &course_id, &lena, true).await;
+    let old = finalized_upload(&app, &lena, "application/pdf", b"%PDF preview").await;
+    let preview = app
+        .patch_as(
+            &lena,
+            &format!("/api/v2/file-submissions/{fresh}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": old }] }),
+        )
+        .await;
+    assert_eq!(preview.status, StatusCode::OK, "{}", preview.text());
+    assert_eq!(referenced_count(&app, &old).await, 1);
+    set_maintainer(&app, &teacher, &course_id, &lena, false).await;
+    let hidden = app
+        .get_as(&lena, &format!("/api/v2/file-submissions/{fresh}/draft"))
+        .await;
+    assert_eq!(hidden.status, StatusCode::NOT_FOUND, "{}", hidden.text());
+    let new = finalized_upload(&app, &lena, "application/pdf", b"%PDF counted").await;
+    let reopened = app
+        .patch_as(
+            &lena,
+            &format!("/api/v2/file-submissions/{fresh}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": new }] }),
+        )
+        .await;
+    assert_eq!(reopened.status, StatusCode::OK, "{}", reopened.text());
+    assert_ne!(reopened.json()["id"], preview.json()["id"]);
+    assert_eq!(reopened.json()["attempt_number"], 1);
+    assert_eq!(referenced_count(&app, &old).await, 0);
+    let rows: Vec<bool> = sqlx::query_scalar(
+        "SELECT preview FROM file_submission_attempts WHERE file_submission_id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&fresh).unwrap())
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(rows, [false]);
+}

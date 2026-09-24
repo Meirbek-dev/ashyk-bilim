@@ -595,7 +595,11 @@ impl AssessmentsService {
         let staff = self
             .require_submit_access(actor, &assessment, &course)
             .await?;
-        let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id).await?;
+        // BUG-295: a learner never resumes a preview draft opened while
+        // staff — `start` discards it and opens a counted attempt.
+        let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id)
+            .await?
+            .filter(|d| staff || !d.preview);
         // BUG-294: an existing attempt is judged by its own preview flag;
         // only a new one takes the caller's current role.
         let teacher_preview = draft.as_ref().map_or(staff, |d| d.preview);

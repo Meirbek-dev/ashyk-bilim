@@ -167,6 +167,8 @@ pub async fn get_submission(
          headers(("ETag" = String, description = "New quoted draft_version"))),
         (status = 403, description = "Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`", body = Problem,
          content_type = "application/problem+json"),
+        (status = 404, description = "Unknown, not yours, or a staff preview (never resumed by a learner)", body = Problem,
+         content_type = "application/problem+json"),
         (status = 409, description = "Stale draft_version or not a draft", body = Problem,
          content_type = "application/problem+json"),
         (status = 422, description = "Unknown item / wrong answer kind", body = Problem,
@@ -235,6 +237,8 @@ pub async fn report_violation(
     responses(
         (status = 200, description = "Graded or queued for review", body = StudentSubmission),
         (status = 403, description = "Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown, not yours, or a staff preview (never resumed by a learner)", body = Problem,
          content_type = "application/problem+json"),
         (status = 409, description = "Already submitted or stale draft_version", body = Problem,
          content_type = "application/problem+json"),

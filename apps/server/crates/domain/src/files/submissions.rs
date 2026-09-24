@@ -549,7 +549,9 @@ impl FileSubmissionsService {
         row: FileSubmissionRow,
     ) -> Result<FileSubmission> {
         let staff = Self::is_author(actor, course);
-        let open = ab_db::file_submissions::open_attempt(&self.pool, row.id, actor.user_id).await?;
+        let open = ab_db::file_submissions::open_attempt(&self.pool, row.id, actor.user_id)
+            .await?
+            .filter(|a| staff || !a.preview);
         let reasons = self
             .disabled_reasons(actor.user_id, &row, Self::preview_of(open.as_ref(), staff))
             .await?;
@@ -684,6 +686,31 @@ impl FileSubmissionsService {
         open.map_or(staff, |a| a.preview)
     }
 
+    /// The caller's open attempt (draft or returned) for a write. A preview
+    /// opened while staff is never resumed by a learner (BUG-295): it is
+    /// discarded, so the write opens a counted attempt under their rules.
+    async fn open_for_write(
+        &self,
+        row: &FileSubmissionRow,
+        user_id: UserId,
+        staff: bool,
+    ) -> Result<Option<AttemptRow>> {
+        let open = ab_db::file_submissions::open_attempt(&self.pool, row.id, user_id).await?;
+        if staff || !open.as_ref().is_some_and(|a| a.preview) {
+            return Ok(open);
+        }
+        let mut tx = self.pool.begin().await?;
+        ab_db::file_submissions::discard_preview_attempts(
+            &mut tx,
+            row.id,
+            user_id,
+            UNREFERENCED_GRACE.as_secs_f64(),
+        )
+        .await?;
+        tx.commit().await?;
+        ab_db::file_submissions::open_attempt(&self.pool, row.id, user_id).await
+    }
+
     /// Why the caller cannot open or submit right now — the quiz rules
     /// (`attempt_state`): a closed deadline (BUG-166) and an unpassed
     /// gate-mode remediation (BUG-140 / UX-105). A preview attempt
@@ -743,7 +770,11 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_visible(&row, is_author).await?;
-        match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await? {
+        // A learner's preview attempt (made while staff) is not theirs (BUG-295).
+        match ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id)
+            .await?
+            .filter(|a| is_author || !a.preview)
+        {
             Some(attempt) => Ok(Some(self.attempt_view(attempt, false, true).await?)),
             None => Ok(None),
         }
@@ -754,7 +785,7 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
-        let open = ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?;
+        let open = self.open_for_write(&row, actor.user_id, is_author).await?;
         // Blocked learners neither open nor resume a draft (the web shows
         // the blocked card / remediation gate on this 403).
         self.require_can_act(
@@ -829,7 +860,7 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
-        let open = ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?;
+        let open = self.open_for_write(&row, actor.user_id, is_author).await?;
         // UX-115: an open draft is frozen too once the deadline closed or a
         // gate is active — 403, the stored files untouched.
         self.require_can_act(
@@ -1005,7 +1036,7 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
-        let open = ab_db::file_submissions::open_attempt(&self.pool, id, actor.user_id).await?;
+        let open = self.open_for_write(&row, actor.user_id, is_author).await?;
         // BUG-166: a closed deadline (or a gate) refuses the submit with the
         // quiz's 403 vocabulary; the draft stays intact. BUG-296: judged by
         // the attempt's own preview flag, not the caller's current role.

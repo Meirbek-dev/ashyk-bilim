@@ -146,6 +146,24 @@ pub async fn resync_draft(
     Ok(id)
 }
 
+/// BUG-295: drop the caller's open **preview** draft (made while staff) —
+/// a learner never resumes one. Its code runs and events cascade.
+pub async fn discard_preview_draft(
+    conn: &mut sqlx::PgConnection,
+    assessment_id: AssessmentId,
+    user_id: UserId,
+) -> Result<bool> {
+    let done = sqlx::query!(
+        "DELETE FROM submissions
+         WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft' AND preview",
+        assessment_id.0,
+        user_id.0
+    )
+    .execute(conn)
+    .await?;
+    Ok(done.rows_affected() > 0)
+}
+
 pub async fn get_submission<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: SubmissionId,

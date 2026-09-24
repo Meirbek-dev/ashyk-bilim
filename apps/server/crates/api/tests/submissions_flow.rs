@@ -1866,3 +1866,83 @@ async fn a_counted_draft_keeps_its_gates_after_promotion(pool: PgPool) {
     assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
     assert_eq!(late.json()["detail"], "PAST_DUE");
 }
+
+/// BUG-295: a preview draft opened while staff is never resumed once its
+/// owner is a learner — attempt-state offers a new attempt, the preview
+/// refuses save/submit (404), and start discards it for a counted draft.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_learner_never_resumes_a_preview_draft(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "allow_late": false }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let answer = serde_json::json!({
+        "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } }
+    });
+    let lena = future_maintainer(&app, "lena").await;
+    set_maintainer(&app, &teacher, &course_id, &lena, true).await;
+    let preview = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(preview.status, StatusCode::CREATED, "{}", preview.text());
+    let preview_id = preview.json()["id"].as_str().unwrap().to_owned();
+    set_maintainer(&app, &teacher, &course_id, &lena, false).await;
+
+    let state = app
+        .get_as(&lena, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    let state = state.json();
+    assert_eq!(state["can_start"], true, "{state}");
+    assert_eq!(state["draft_id"], serde_json::Value::Null, "{state}");
+    assert_eq!(state["is_teacher_preview"], false, "{state}");
+    let save = app
+        .send(patch_draft(&lena, &preview_id, Some("\"1\""), &answer))
+        .await;
+    assert_eq!(save.status, StatusCode::NOT_FOUND, "{}", save.text());
+    let sent = app.send(submit(&lena, &preview_id, None, &answer)).await;
+    assert_eq!(sent.status, StatusCode::NOT_FOUND, "{}", sent.text());
+
+    let counted = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(counted.status, StatusCode::CREATED, "{}", counted.text());
+    let counted_id = counted.json()["id"].as_str().unwrap().to_owned();
+    assert_ne!(counted_id, preview_id);
+    assert_eq!(counted.json()["attempt_number"], 1);
+    let (previews, drafts): (i64, i64) = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE preview), count(*) FILTER (WHERE status = 'draft')
+         FROM submissions WHERE assessment_id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&id).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((previews, drafts), (0, 1));
+    let state = app
+        .get_as(&lena, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(state.json()["can_continue"], true, "{}", state.text());
+    assert_eq!(state.json()["draft_id"], counted_id.as_str());
+    let done = app.send(submit(&lena, &counted_id, None, &answer)).await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    let mine = app
+        .get_as(&lena, &format!("/api/v2/assessments/{id}/submissions/me"))
+        .await;
+    assert_eq!(mine.json().as_array().unwrap().len(), 1, "{}", mine.text());
+}
