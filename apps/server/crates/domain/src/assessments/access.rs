@@ -512,7 +512,7 @@ impl AssessmentsService {
             ab_db::submissions::count_completed_attempts(&self.pool, id, actor.user_id).await?;
         // A returned attempt asks for a revision: the cap does not apply.
         let revision_requested =
-            ab_db::submissions::list_user_submissions(&self.pool, id, actor.user_id)
+            ab_db::submissions::list_user_submissions(&self.pool, id, actor.user_id, true)
                 .await?
                 .first()
                 .is_some_and(|s| s.status == ab_core::assessments::SubmissionStatus::Returned);

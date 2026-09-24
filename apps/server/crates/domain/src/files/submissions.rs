@@ -373,9 +373,13 @@ impl FileSubmissionsService {
             .ok_or_else(|| Error::not_found("activity"))?;
         let attempts = match actor {
             Some(actor) => {
-                let rows =
-                    ab_db::file_submissions::list_user_attempts(&self.pool, row.id, actor.user_id)
-                        .await?;
+                let rows = ab_db::file_submissions::list_user_attempts(
+                    &self.pool,
+                    row.id,
+                    actor.user_id,
+                    true,
+                )
+                .await?;
                 self.attempts_with_files(rows, false, true).await?
             }
             None => Vec::new(),
@@ -1025,8 +1029,8 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         let (_, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_visible(&row, is_author).await?;
-        let rows =
-            ab_db::file_submissions::list_user_attempts(&self.pool, id, actor.user_id).await?;
+        let rows = ab_db::file_submissions::list_user_attempts(&self.pool, id, actor.user_id, true)
+            .await?;
         self.attempts_with_files(rows, false, true).await
     }
 

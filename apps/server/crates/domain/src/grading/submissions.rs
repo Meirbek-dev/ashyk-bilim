@@ -457,9 +457,13 @@ impl SubmissionsService {
         let total =
             usize::try_from(ab_db::assessments::count_items(&self.pool, assessment_id).await?)
                 .unwrap_or(0);
-        let rows =
-            ab_db::submissions::list_user_submissions(&self.pool, assessment_id, actor.user_id)
-                .await?;
+        let rows = ab_db::submissions::list_user_submissions(
+            &self.pool,
+            assessment_id,
+            actor.user_id,
+            true,
+        )
+        .await?;
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(self.student_view(row, &state.effective, total).await?);
@@ -529,9 +533,13 @@ impl SubmissionsService {
         let (id, created) = if let Some(id) = resynced {
             (id, false)
         } else {
-            let prior =
-                ab_db::submissions::list_user_submissions(&mut *tx, assessment_id, actor.user_id)
-                    .await?;
+            let prior = ab_db::submissions::list_user_submissions(
+                &mut *tx,
+                assessment_id,
+                actor.user_id,
+                true,
+            )
+            .await?;
             if cap_reached(&prior, state.effective.max_attempts) {
                 return Err(Error::forbidden("cannot start: MAX_ATTEMPTS_REACHED"));
             }

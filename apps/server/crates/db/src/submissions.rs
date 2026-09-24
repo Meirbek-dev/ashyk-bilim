@@ -209,10 +209,13 @@ pub async fn open_draft(
 }
 
 /// Every attempt by one learner, newest first.
+/// `include_preview: false` drops staff previews (UX-182) — the progress
+/// projection's view, which must never count them (UX-186).
 pub async fn list_user_submissions<'e>(
     db: impl sqlx::PgExecutor<'e>,
     assessment_id: AssessmentId,
     user_id: UserId,
+    include_preview: bool,
 ) -> Result<Vec<SubmissionRow>> {
     let rows = sqlx::query_as!(
         SubmissionRow,
@@ -233,9 +236,11 @@ pub async fn list_user_submissions<'e>(
                   items_snapshot, policy_snapshot,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM submissions WHERE assessment_id = $1 AND user_id = $2 ORDER BY id DESC"#,
+           FROM submissions WHERE assessment_id = $1 AND user_id = $2 AND (NOT preview OR $3)
+           ORDER BY id DESC"#,
         assessment_id.0,
-        user_id.0
+        user_id.0,
+        include_preview
     )
     .fetch_all(db)
     .await?;

@@ -177,15 +177,16 @@ impl ProgressProjector {
         self.recalculate_activity(assessment.activity_id, user_id)
             .await?;
         // A passing, published submission pays XP once (legacy award task).
-        let passed = ab_db::submissions::list_user_submissions(&self.pool, assessment_id, user_id)
-            .await?
-            .into_iter()
-            .find(|s| {
-                s.status == SubmissionStatus::Published
-                    && s.final_score
-                        .or(s.auto_score)
-                        .is_some_and(|score| score >= assessment.passing_score)
-            });
+        let passed =
+            ab_db::submissions::list_user_submissions(&self.pool, assessment_id, user_id, false)
+                .await?
+                .into_iter()
+                .find(|s| {
+                    s.status == SubmissionStatus::Published
+                        && s.final_score
+                            .or(s.auto_score)
+                            .is_some_and(|score| score >= assessment.passing_score)
+                });
         if let Some(submission) = passed {
             crate::gamification::hooks::submission_passed(
                 &self.pool,
@@ -381,7 +382,8 @@ impl ProgressProjector {
                 return Ok(None);
             };
             let attempts =
-                ab_db::file_submissions::list_user_attempts(&self.pool, fs.id, user_id).await?;
+                ab_db::file_submissions::list_user_attempts(&self.pool, fs.id, user_id, false)
+                    .await?;
             return Ok(Some(project_file_attempts(
                 activity, user_id, fs.due_at, &attempts,
             )));
@@ -392,7 +394,8 @@ impl ProgressProjector {
             return Ok(None);
         };
         let submissions =
-            ab_db::submissions::list_user_submissions(&self.pool, assessment.id, user_id).await?;
+            ab_db::submissions::list_user_submissions(&self.pool, assessment.id, user_id, false)
+                .await?;
         Ok(Some(project_submissions(
             activity,
             user_id,

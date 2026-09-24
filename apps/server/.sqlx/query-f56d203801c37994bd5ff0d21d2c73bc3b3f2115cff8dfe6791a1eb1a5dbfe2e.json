@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND user_id = $2\n           ORDER BY attempt_number DESC",
+  "query": "SELECT id AS \"id: FileAttemptId\",\n                  file_submission_id AS \"file_submission_id: FileSubmissionId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: FileAttemptStatus\", attempt_number,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,\n                  graded_by AS \"graded_by: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submission_attempts\n           WHERE file_submission_id = $1 AND user_id = $2 AND (NOT preview OR $3)\n           ORDER BY attempt_number DESC",
   "describe": {
     "columns": [
       {
@@ -191,7 +191,8 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid"
+        "Uuid",
+        "Bool"
       ]
     },
     "nullable": [
@@ -216,5 +217,5 @@
       null
     ]
   },
-  "hash": "25177640df4d764aa032a6eb1afd8986b1f68578ea690f57af2d31331355dd5f"
+  "hash": "f56d203801c37994bd5ff0d21d2c73bc3b3f2115cff8dfe6791a1eb1a5dbfe2e"
 }

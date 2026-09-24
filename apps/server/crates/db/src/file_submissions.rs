@@ -394,10 +394,13 @@ pub async fn open_attempt(
 }
 
 /// Every attempt of one learner, newest first.
+/// `include_preview: false` drops staff previews (UX-182) — the progress
+/// projection's view, which must never count them (UX-186).
 pub async fn list_user_attempts(
     pool: &PgPool,
     file_submission_id: FileSubmissionId,
     user_id: UserId,
+    include_preview: bool,
 ) -> Result<Vec<AttemptRow>> {
     let rows = sqlx::query_as!(
         AttemptRow,
@@ -413,10 +416,11 @@ pub async fn list_user_attempts(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM file_submission_attempts
-           WHERE file_submission_id = $1 AND user_id = $2
+           WHERE file_submission_id = $1 AND user_id = $2 AND (NOT preview OR $3)
            ORDER BY attempt_number DESC"#,
         file_submission_id.0,
-        user_id.0
+        user_id.0,
+        include_preview
     )
     .fetch_all(pool)
     .await?;

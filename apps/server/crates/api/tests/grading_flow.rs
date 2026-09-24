@@ -2958,7 +2958,7 @@ async fn staff_attempts_are_previews(pool: PgPool) {
         quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
     let alice = learner(&app, "alice").await;
     submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
-    submit_attempt(&app, &teacher, &id, &choice_id, &essay_id).await;
+    let preview = submit_attempt(&app, &teacher, &id, &choice_id, &essay_id).await;
     let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM trail_runs WHERE user_id = $1")
         .bind(teacher.user_id.0)
         .fetch_one(&app.pool)
@@ -2983,6 +2983,33 @@ async fn staff_attempts_are_previews(pool: PgPool) {
     let gradebook = app.get_as(&teacher, &gradebook_path).await;
     assert_eq!(usernames(&gradebook), ["alice", "carol"]);
     assert_eq!(gradebook.json()["cells"].as_array().unwrap().len(), 1);
+
+    // UX-186: an author enrolled before UX-182 (a legacy trail run) — a
+    // re-projection (here, grading the preview) never reads the preview into
+    // progress, so it stays out of the teacher work queue.
+    sqlx::query(
+        "WITH t AS (INSERT INTO trails (user_id) VALUES ($1) RETURNING id)
+         INSERT INTO trail_runs (trail_id, course_id, user_id) SELECT id, $2::uuid, $1 FROM t",
+    )
+    .bind(teacher.user_id.0)
+    .bind(&course_id)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let body = serde_json::json!({ "action": "save", "final_score": 50 });
+    let graded = app.send(grade(&teacher, &preview, Some("1"), &body)).await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    let projected: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM activity_progress WHERE user_id = $1 AND state <> 'not_started'",
+    )
+    .bind(teacher.user_id.0)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(projected, 0, "a staff preview was projected into progress");
+    // Alice's pending attempt only — no `graded` preview to release.
+    let work = app.get_as(&teacher, "/api/v2/work?role=teacher").await;
+    assert_eq!(work.json()["total"], 1, "{}", work.text());
 }
 
 /// UX-169: the gradebook lists the course members (trail runs, the UX-150
