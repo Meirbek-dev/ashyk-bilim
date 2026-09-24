@@ -259,12 +259,13 @@ impl LearnerStateService {
         )
         .await?;
         let next_action = next_action(enrolled, course.id, &flat, &certificate, &progress);
-        let enrollment_state = if progress.progress_pct >= 100.0 {
-            EnrollmentState::Completed
-        } else if enrolled {
-            EnrollmentState::InProgress
-        } else {
+        // UX-187: a leaver is not enrolled, whatever their old progress says.
+        let enrollment_state = if !enrolled {
             EnrollmentState::NotEnrolled
+        } else if progress.progress_pct >= 100.0 {
+            EnrollmentState::Completed
+        } else {
+            EnrollmentState::InProgress
         };
         Ok(LearnerCourseState {
             course_id: course.id,
