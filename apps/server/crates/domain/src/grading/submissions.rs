@@ -656,7 +656,23 @@ impl SubmissionsService {
             ));
         }
         let ctx = self.context(actor, submission).await?;
-        Self::check_time_limit(&ctx, 0)?;
+        // BUG-290: the submit gates freeze the draft too — past a hard due
+        // date (or the time limit, or under a gate remediation) nothing more
+        // is saved, so the timer sweep scores only what landed in time. A
+        // preview has none (BUG-278).
+        let gates = attempt_gates(
+            &self.pool,
+            ctx.preview,
+            &ctx.effective,
+            ctx.assessment.activity_id,
+            ctx.submission.user_id,
+            ctx.submission.started_at,
+            0,
+        )
+        .await?;
+        if let Some(gate) = gates.first() {
+            return Err(Error::forbidden(gate.as_str()));
+        }
         let merged = Self::merge(&ctx, patch)?;
         // Only a save that would otherwise succeed spends the throttle
         // budget; a rejected one must not lock the client out for 5s.
@@ -704,19 +720,6 @@ impl SubmissionsService {
             })
             .collect();
         answers::canonicalize(&current, patch, &shapes)
-    }
-
-    /// A save past the time limit is refused — never a preview's (BUG-278,
-    /// the `attempt_gates` rule).
-    fn check_time_limit(ctx: &Context, grace: i64) -> Result<()> {
-        if !ctx.preview
-            && let (Some(limit), Some(started)) =
-                (ctx.effective.time_limit_seconds, ctx.submission.started_at)
-            && now_unix() > started + i64::from(limit) + grace
-        {
-            return Err(Error::forbidden("TIME_LIMIT_EXPIRED"));
-        }
-        Ok(())
     }
 
     /// Submit the draft (optionally saving a last patch first).

@@ -894,6 +894,18 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         .execute(&app.pool)
         .await
         .unwrap();
+    // BUG-290: the draft is frozen too — the sweep scores only what was
+    // saved before the deadline.
+    let late_save = app
+        .send(patch_draft(&bob, &bob_sub, Some("\"1\""), &answer))
+        .await;
+    assert_eq!(
+        late_save.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        late_save.text()
+    );
+    assert_eq!(late_save.json()["detail"], "PAST_DUE");
     let late = app.send(submit(&bob, &bob_sub, None, &answer)).await;
     assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
     assert_eq!(late.json()["detail"], "PAST_DUE");
