@@ -263,7 +263,8 @@ impl LearnerStateService {
             &self.pool,
             course.id,
             user_id,
-            progress.progress_pct >= 100.0,
+            // UX-194: a leaver keeps the counts, not the eligibility (UX-187).
+            enrolled && progress.progress_pct >= 100.0,
         )
         .await?;
         let next_action = next_action(enrolled, course.id, &flat, &certificate, &progress);

@@ -50,7 +50,14 @@ export interface StudentActivityRuntime {
   course: { id: string; public: boolean; title: string; uuid: string }
   next?: RuntimeNavItem | null
   outline?: { activities?: RuntimeNavItem[]; id: string; index: number; title: string }[]
-  permissions: { can_contribute: boolean; can_update: boolean; can_view: boolean; is_authenticated: boolean }
+  permissions: {
+    can_contribute: boolean
+    can_update: boolean
+    can_view: boolean
+    is_authenticated: boolean
+    /** Course staff previewing: never a member, so no progress of their own (UX-194). */
+    staff_preview: boolean
+  }
   policy?: {
     completion_rule?: string | null
     due_at?: string | null
@@ -171,6 +178,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     can_view: state.permissions.can_access,
     can_contribute: false,
     can_update: false,
+    staff_preview: state.permissions.denial_reason === 'staff_preview',
   }
   if (activityId === 'end') {
     // The sidebar ticks come from learner-state, not a hard-coded «done» (UX-079).
@@ -220,7 +228,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     policy: { due_at: dueAt },
     previous,
     next,
-    primary_action: primaryAction(activity, next, state.permissions.denial_reason === 'staff_preview'),
+    primary_action: primaryAction(activity, next, permissions.staff_preview),
     progress: {
       state: activity.available ? activity.state : 'unavailable',
       complete: activity.complete,

@@ -35,23 +35,30 @@ vi.mock('@/features/assessments/hooks/useAssessment', () => ({
 
 const runtime = {
   activity: { type: 'TYPE_EXAM', uuid: 'act-1', id: 'act-1', title: 'x', complete: false, published: true },
+  permissions: { staff_preview: false },
   policy: { due_at: null },
   progress: { state: 'not_started', attempt_count: 0 },
 } as unknown as StudentActivityRuntime
 
-function renderStrip(attemptsUsed: number) {
+function renderStrip(attemptsUsed: number, strip = runtime) {
   const queryClient = new QueryClient()
   queryClient.setQueryData(queryKeys.assessments.attemptState('asm-1'), { attempts_used: attemptsUsed })
   render(
     <QueryClientProvider client={queryClient}>
       <NextIntlClientProvider locale="ru" messages={ruMessages}>
-        <InlineStatusStrip runtime={runtime} />
+        <InlineStatusStrip runtime={strip} />
       </NextIntlClientProvider>
     </QueryClientProvider>,
   )
 }
 
 describe('InlineStatusStrip (UX-009)', () => {
+  it('shows no progress chip to staff previewing — they are never members (UX-194)', () => {
+    renderStrip(1, { ...runtime, permissions: { ...runtime.permissions, staff_preview: true } })
+    expect(screen.queryByText('Не начато')).toBeNull()
+    expect(screen.getByText('Экзамен')).toBeInTheDocument()
+  })
+
   it('never reads more attempts used than the cap (UX-189)', () => {
     renderStrip(2)
     expect(screen.getByText('Использовано 1 из 1 попыток')).toBeInTheDocument()

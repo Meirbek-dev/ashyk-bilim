@@ -1510,6 +1510,15 @@ async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
         "{}",
         away.text()
     );
+    // UX-194: nor does learner-state call the leaver eligible.
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await
+        .json();
+    assert_eq!(state["certificate"]["eligible"], false, "{state}");
     let rejoined = app
         .post_as(
             &alice,

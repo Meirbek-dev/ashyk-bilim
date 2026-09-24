@@ -71,8 +71,8 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   // Human-readable activity kind label
   items.push(tKinds(activityType))
 
-  // State
-  const stateLabel = getStateChip(state, t)
+  // State — staff previewing track no progress of their own (UX-194)
+  const stateLabel = runtime.permissions.staff_preview ? null : getStateChip(state, t)
   if (stateLabel) items.push(stateLabel)
 
   // Passing score (not grade_release_mode)
