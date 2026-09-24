@@ -1326,7 +1326,19 @@ impl AssessmentsService {
             mut items,
         } = Self::lock_detail(&mut tx, row.assessment_id).await?;
         self.ensure_editable(&assessment).await?;
-        if changes.body.is_some() || changes.max_score.is_some() {
+        // BUG-257: content = what the learner answers and is scored on — the
+        // body (prompt, options, correct answers, tests) and the max score.
+        // The editor re-sends the whole item, so compare, don't test presence;
+        // a title/metadata edit neither locks nor stales open drafts.
+        let current = items.iter().find(|i| i.id == item_id);
+        let content_changed = current.is_none_or(|item| {
+            changes
+                .body
+                .as_ref()
+                .is_some_and(|b| b.to_stored() != item.body.to_stored())
+                || changes.max_score.is_some_and(|s| s != item.max_score)
+        });
+        if content_changed {
             self.ensure_content_unlocked(&assessment).await?;
         }
         if let Some(body) = &changes.body {
@@ -1371,7 +1383,9 @@ impl AssessmentsService {
             metadata.as_ref().map(ItemMetadataInput::as_db),
         )
         .await?;
-        ab_db::assessments::bump_content_version(&mut *tx, row.assessment_id).await?;
+        if content_changed {
+            ab_db::assessments::bump_content_version(&mut *tx, row.assessment_id).await?;
+        }
         tx.commit().await?;
         self.item(item_id).await
     }
@@ -1444,8 +1458,8 @@ impl AssessmentsService {
         // BUG-231: the lifecycle gate re-runs on the locked row.
         let AssessmentDetail { assessment, .. } = Self::lock_detail(&mut tx, id).await?;
         self.ensure_editable(&assessment).await?;
+        // BUG-257: order is presentation, not content — no content bump.
         ab_db::assessments::renumber_items(&mut tx, &final_order).await?;
-        ab_db::assessments::bump_content_version(&mut *tx, id).await?;
         tx.commit().await?;
         Ok(self.detail(id).await?.items)
     }

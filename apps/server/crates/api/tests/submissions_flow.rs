@@ -1494,6 +1494,98 @@ async fn a_draft_opened_under_an_override_survives_its_deletion(pool: PgPool) {
     assert_eq!(status, "published");
 }
 
+/// BUG-257: only what the learner answers or is scored on stales a draft —
+/// a title edit (the editor re-sends the unchanged body) or a reorder made
+/// while unpublished leaves it submittable and auto-scored; an option change still answers 409.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cosmetic_item_edits_keep_open_drafts_current(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let empty = serde_json::json!({});
+    for option_change in [false, true] {
+        let (id, items) = published_assessment(
+            &app,
+            &teacher,
+            &chapter_id,
+            "quiz",
+            serde_json::json!({}),
+            &[choice_item("Q1"), choice_item("Q2")],
+        )
+        .await;
+        let started = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &empty,
+            )
+            .await;
+        assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+        let sub_id = started.json()["id"].as_str().unwrap().to_owned();
+
+        let lifecycle = format!("/api/v2/assessments/{id}/lifecycle");
+        let unpublished = app
+            .post_as(&teacher, &lifecycle, &serde_json::json!({ "to": "draft" }))
+            .await;
+        assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
+        let mut edited = choice_item("Q1");
+        edited["title"] = serde_json::json!("Q1 (typo fixed)");
+        if option_change {
+            edited["body"]["options"][1]["text"] = serde_json::json!("never");
+        }
+        let patched = app
+            .patch_as(
+                &teacher,
+                &format!("/api/v2/assessment-items/{}", items[0]),
+                &edited,
+            )
+            .await;
+        assert_eq!(patched.status, StatusCode::OK, "{}", patched.text());
+        let reordered = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/items/reorder"),
+                &serde_json::json!({ "items": [&items[1], &items[0]] }),
+            )
+            .await;
+        assert_eq!(reordered.status, StatusCode::OK, "{}", reordered.text());
+
+        let republished = app
+            .post_as(
+                &teacher,
+                &lifecycle,
+                &serde_json::json!({ "to": "published" }),
+            )
+            .await;
+        assert_eq!(republished.status, StatusCode::OK, "{}", republished.text());
+
+        let answer = serde_json::json!({ "answers": {
+            &items[0]: { "kind": "choice", "selected": ["a"] },
+            &items[1]: { "kind": "choice", "selected": ["a"] },
+        } });
+        let submitted = app.send(submit(&alice, &sub_id, None, &answer)).await;
+        if option_change {
+            assert_eq!(
+                submitted.status,
+                StatusCode::CONFLICT,
+                "{}",
+                submitted.text()
+            );
+            assert_eq!(submitted.json()["details"]["field"], "content_version");
+        } else {
+            assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+            assert_eq!(
+                submitted.json()["status"],
+                "published",
+                "{}",
+                submitted.text()
+            );
+            assert_eq!(submitted.json()["final_score"], 100.0);
+        }
+    }
+}
+
 /// BUG-237: a timed draft left behind by unpublish → add item → republish
 /// is never auto-scored by the timer sweep — the item it never showed
 /// would score `no-answer`; the attempt waits for a teacher instead.

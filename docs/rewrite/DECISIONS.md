@@ -1207,3 +1207,17 @@ Implements three more items of the owner answers above. Routes:
   link open the work awaiting grading, not the older grade of record; the
   at-risk CSV `reason_codes` / `recommended_action` cells carry the
   watchlist labels per `CsvLanguage` (unknown codes pass through).
+
+## What `content_version` counts (2026-09-24, gauntlet pass 23)
+
+- **`content_version` moves only when what a learner answers or is scored
+  on changes** (BUG-257): adding or deleting an item, or an `update_item`
+  whose body differs from the stored one (prompt wording, options, correct
+  answers, tests, kind) or whose `max_score` differs. Prompt wording counts:
+  it changes the question the learner answered. An item title (an author
+  label), item metadata (section, difficulty, tags, outcomes, minutes) and
+  a reorder do not — a draft opened before them stays current (no 409 on
+  submit, auto-scored by the timer sweep). `update_item` compares values
+  rather than testing field presence because the editor re-sends the whole
+  item on every save; the same comparison decides the graded-submissions
+  content lock. Replaces "every item write bumps the version" (BUG-224).
