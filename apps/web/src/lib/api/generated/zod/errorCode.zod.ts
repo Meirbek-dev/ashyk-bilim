@@ -42,6 +42,7 @@ export const ErrorCode = zod
     'compile-error',
     'language-not-allowed',
     'grade-not-released',
+    'grade-own-attempt',
     'ai-disabled',
     'ai-budget-exhausted',
     'ai-rate-limited',

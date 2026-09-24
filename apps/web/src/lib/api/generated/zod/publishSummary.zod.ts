@@ -18,7 +18,7 @@ export const PublishSummary = zod.object({
   skipped_count: zod
     .int()
     .describe(
-      'Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them.',
+      "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them —\nand the caller's own attempts, never theirs to release (BUG-288).",
     ),
 })
 

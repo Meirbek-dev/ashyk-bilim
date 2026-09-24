@@ -46,6 +46,7 @@ export const Problem = zod
         'compile-error',
         'language-not-allowed',
         'grade-not-released',
+        'grade-own-attempt',
         'ai-disabled',
         'ai-budget-exhausted',
         'ai-rate-limited',

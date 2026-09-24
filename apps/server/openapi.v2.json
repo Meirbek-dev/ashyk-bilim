@@ -17342,6 +17342,7 @@
           "compile-error",
           "language-not-allowed",
           "grade-not-released",
+          "grade-own-attempt",
           "ai-disabled",
           "ai-budget-exhausted",
           "ai-rate-limited",
@@ -20490,7 +20491,7 @@
           "skipped_count": {
             "type": "integer",
             "format": "int64",
-            "description": "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them."
+            "description": "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them —\nand the caller's own attempts, never theirs to release (BUG-288)."
           }
         }
       },
