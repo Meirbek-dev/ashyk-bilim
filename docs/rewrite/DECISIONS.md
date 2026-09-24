@@ -1320,3 +1320,17 @@ Implements three more items of the owner answers above. Routes:
   record). Why: a learner approved as a contributor published 100 on their
   own attempt. The owner still reads their work through the learner
   routes. Replaces the legacy (no owner check on the grading routes).
+
+## A revoked waiver re-applies the late penalty (2026-09-25, gauntlet pass 25)
+
+- **Every override writer — create, update, delete, and the bulk
+  extension — settles the learner's lateness both ways** (BUG-297): each
+  submitted attempt's `is_late` and `late_penalty_pct` become what a
+  hand-in at its `submitted_at` pays under the policy the write left
+  behind, so a waiver or extension revoked (`PUT`) or deleted puts the
+  policy's penalty back; a row with a score of record is re-scored from
+  its latest ledger entry (a new entry, published only if that entry was)
+  under the row lock with a version bump (BUG-216). An annulled attempt
+  never takes a late penalty. Why: a revoked waiver left 100 with
+  `is_late true` and penalty 0, and a deleted one left 100 on time.
+  Replaces "a deadline change only ever clears the penalty" (BUG-139).

@@ -1386,6 +1386,80 @@ async fn override_waiver_settles_late_work(pool: PgPool) {
     assert_eq!(published.json()["final_score"], 100.0);
 }
 
+/// BUG-297: lateness settles both ways — a waiver revoked (PUT) or deleted
+/// puts the policy's penalty back on the published grade.
+#[sqlx::test(migrations = "../../migrations")]
+async fn revoked_or_deleted_waiver_reapplies_the_late_penalty(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 30, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let published = app
+        .send(grade(
+            &teacher,
+            &alice_sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(
+        published.json()["final_score"],
+        70.0,
+        "{}",
+        published.text()
+    );
+    let path = format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id);
+    let state = async || {
+        let mine = app
+            .get_as(&alice, &format!("/api/v2/submissions/{alice_sub}"))
+            .await;
+        let review = app
+            .get_as(&teacher, &format!("/api/v2/submissions/{alice_sub}/review"))
+            .await;
+        (
+            mine.json()["final_score"].as_f64(),
+            review.json()["is_late"].as_bool(),
+            review.json()["late_penalty_pct"].as_f64(),
+        )
+    };
+    let waive = serde_json::json!({ "waive_late_penalty": true });
+    let granted = app.post_as(&teacher, &path, &waive).await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    assert_eq!(state().await, (Some(100.0), Some(false), Some(0.0)));
+    let revoked = app
+        .send(
+            Request::builder()
+                .method("PUT")
+                .uri(&path)
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .body(Body::from(
+                    serde_json::json!({ "waive_late_penalty": false }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(revoked.status, StatusCode::OK, "{}", revoked.text());
+    assert_eq!(state().await, (Some(70.0), Some(true), Some(30.0)));
+    let deleted = app.delete_as(&teacher, &path).await;
+    assert!(deleted.status.is_success(), "{}", deleted.text());
+    let granted = app.post_as(&teacher, &path, &waive).await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    assert_eq!(state().await, (Some(100.0), Some(false), Some(0.0)));
+    let deleted = app.delete_as(&teacher, &path).await;
+    assert!(deleted.status.is_success(), "{}", deleted.text());
+    assert_eq!(state().await, (Some(70.0), Some(true), Some(30.0)));
+}
+
 /// BUG-285: previews a maintainer made never count once they are a learner
 /// — not toward the cap, not in the attempt number, not in their own list.
 #[sqlx::test(migrations = "../../migrations")]

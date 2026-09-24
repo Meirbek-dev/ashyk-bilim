@@ -481,11 +481,14 @@ impl AssessmentsService {
         id: AssessmentId,
         user_id: UserId,
     ) -> Result<()> {
-        self.load_for_author(actor, id).await?;
+        let assessment = self.load_for_author(actor, id).await?;
         Self::not_own(actor, user_id)?;
         if !ab_db::assessments::delete_override(&self.pool, id, user_id).await? {
             return Err(Error::not_found("override"));
         }
+        // BUG-297: the waiver/extension is gone — the penalty comes back.
+        crate::grading::bulk::settle_override(&self.pool, &assessment, user_id, actor.user_id)
+            .await?;
         self.audit_override(actor, id, user_id, "override-deleted")
             .await
     }

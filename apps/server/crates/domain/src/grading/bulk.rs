@@ -9,7 +9,7 @@
 //! with the penalty cleared and the final score recomputed (the legacy kept
 //! deducting — DECISIONS.md, BUG-139).
 
-use ab_core::assessments::{BulkActionStatus, BulkActionType};
+use ab_core::assessments::{AutoSubmitReason, BulkActionStatus, BulkActionType};
 use ab_core::id::{AssessmentId, BulkActionId, UserId};
 use ab_core::permission::Action;
 use ab_core::{Error, FieldError, Result};
@@ -17,9 +17,10 @@ use ab_db::queue::NewJob;
 use ab_db::submissions::NewGradingEntry;
 use sqlx::PgPool;
 
+use crate::assessments::access::EffectivePolicy;
 use crate::assessments::service::AssessmentsService;
 use crate::events::GradingEvents;
-use crate::grading::penalties::attempt_cap;
+use crate::grading::penalties::{apply_late, attempt_cap, late_penalty_pct};
 use crate::grading::teacher::GradingService;
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -264,59 +265,79 @@ async fn performer_may_grade(
     Ok(course)
 }
 
-/// One submission's lateness after a deadline change. BUG-216: the scoring
-/// fields are re-read under the row lock a concurrent grade save contends
-/// for, and the re-score lands in the same transaction — a save that priced
-/// the old penalty either waits and sees the bumped version (412) or landed
-/// first and is re-scored here.
+/// One submission's lateness under the policy an override write left
+/// behind, settled both ways (BUG-297): the penalty is what a hand-in at
+/// `submitted_at` would pay now — cleared by a waiver or an extension,
+/// re-applied when either goes away. BUG-216: the scoring fields are
+/// re-read under the row lock a concurrent grade save contends for, and the
+/// re-score lands in the same transaction — a save that priced the old
+/// penalty either waits and sees the bumped version (412) or landed first
+/// and is re-scored here.
 async fn settle_lateness(
     pool: &PgPool,
     assessment: &ab_db::assessments::AssessmentRow,
     submission: &ab_db::submissions::SubmissionRow,
-    late: bool,
+    effective: &EffectivePolicy,
     granted_by: UserId,
 ) -> Result<()> {
+    let Some(at) = submission.submitted_at else {
+        return Ok(());
+    };
+    let late = effective.is_late(at);
+    // An annulled attempt never carries a late penalty (`penalties::apply`).
+    let annulled = submission.auto_submit_reason == Some(AutoSubmitReason::IntegrityViolation);
+    let penalty_pct = if late && !annulled {
+        late_penalty_pct(
+            effective.late_policy,
+            effective.due_at,
+            at,
+            effective.allow_late,
+        )
+    } else {
+        0.0
+    };
     let mut tx = pool.begin().await?;
     let Some(locked) = ab_db::submissions::lock_for_lateness(&mut tx, submission.id).await? else {
         return Ok(());
     };
-    if late == locked.is_late {
+    let penalty_changed = (penalty_pct - locked.late_penalty_pct).abs() > f64::EPSILON;
+    if late == locked.is_late && !penalty_changed {
         return Ok(());
     }
-    // On time now: the penalty goes, and a row with a score of record is
-    // re-scored from its ledger (raw score, attempt cap, no late deduction).
-    // BUG-206: a pending row (feedback-only saved, no final) keeps its
-    // `NULL` — the ledger entry is not a grade.
-    let mut penalty_pct = locked.late_penalty_pct;
+    // A row with a score of record is re-scored from its ledger (raw score,
+    // attempt cap, the new late deduction). BUG-206: a pending row
+    // (feedback-only saved, no final) keeps its `NULL` — the ledger entry is
+    // not a grade; the teacher's save applies the stored penalty.
     let mut final_score = None;
-    if !late && penalty_pct > 0.0 {
-        penalty_pct = 0.0;
-        if locked.final_score.is_some()
-            && let Some(entry) =
-                ab_db::submissions::latest_grading_entry(&mut *tx, submission.id).await?
-        {
-            let rescored = attempt_cap(
+    if penalty_changed
+        && locked.final_score.is_some()
+        && let Some(entry) =
+            ab_db::submissions::latest_grading_entry(&mut *tx, submission.id).await?
+    {
+        let rescored = apply_late(
+            attempt_cap(
                 entry.raw_score,
                 assessment.attempt_penalty_percent,
                 submission.attempt_number,
-            );
-            ab_db::submissions::insert_grading_entry(
-                &mut *tx,
-                NewGradingEntry {
-                    submission_id: submission.id,
-                    graded_by: Some(granted_by),
-                    raw_score: entry.raw_score,
-                    penalty_pct: 0.0,
-                    final_score: Some(rescored),
-                    raw_breakdown: &entry.raw_breakdown,
-                    effective_breakdown: &entry.effective_breakdown,
-                    overall_feedback: &entry.overall_feedback,
-                    published: entry.published_at.is_some(),
-                },
-            )
-            .await?;
-            final_score = Some(rescored);
-        }
+            ),
+            penalty_pct,
+        );
+        ab_db::submissions::insert_grading_entry(
+            &mut *tx,
+            NewGradingEntry {
+                submission_id: submission.id,
+                graded_by: Some(granted_by),
+                raw_score: entry.raw_score,
+                penalty_pct,
+                final_score: Some(rescored),
+                raw_breakdown: &entry.raw_breakdown,
+                effective_breakdown: &entry.effective_breakdown,
+                overall_feedback: &entry.overall_feedback,
+                published: entry.published_at.is_some(),
+            },
+        )
+        .await?;
+        final_score = Some(rescored);
     }
     ab_db::submissions::set_lateness(&mut *tx, submission.id, late, penalty_pct, final_score)
         .await?;
@@ -324,8 +345,8 @@ async fn settle_lateness(
     Ok(())
 }
 
-/// BUG-284: the lateness step behind every override writer (create/update
-/// and the bulk extension, each right after its override commits): the
+/// BUG-284: the lateness step behind every override writer (create/update/
+/// delete and the bulk extension, each right after its override commits): the
 /// learner's hand-ins are re-judged by [`EffectivePolicy::is_late`] against
 /// the policy the write left behind — a new due date or a waiver alike.
 /// Returns the learner's submitted attempts (previews skipped: their policy
@@ -343,10 +364,7 @@ pub(crate) async fn settle_override(
     let submitted =
         ab_db::submissions::list_submitted_for_user(pool, assessment.id, user_id).await?;
     for submission in submitted.iter().filter(|s| !s.preview) {
-        let late = submission
-            .submitted_at
-            .is_some_and(|at| effective.is_late(at));
-        settle_lateness(pool, assessment, submission, late, granted_by).await?;
+        settle_lateness(pool, assessment, submission, &effective, granted_by).await?;
     }
     // BUG-251: only a target with work has lateness to re-project, and an
     // override never enrols (no trail run from a grader's action).
