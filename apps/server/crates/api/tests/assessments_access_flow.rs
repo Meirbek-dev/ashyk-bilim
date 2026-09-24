@@ -862,6 +862,61 @@ async fn overrides_racing_a_leave_are_not_in_course(pool: PgPool) {
     );
 }
 
+/// UX-196: the leave lands after the create's write commits but before its
+/// read-back (the audit insert in between is held) — still 422
+/// `not-in-course`, never 404 «override not found».
+#[sqlx::test(migrations = "../../migrations")]
+async fn override_read_back_after_a_leave_is_not_in_course(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let (alice, _) = learner(&app, "alice").await;
+    enrol(&pool, &course_id, alice).await;
+
+    let mut audit = pool.begin().await.unwrap();
+    sqlx::query("LOCK TABLE assessment_audit_events IN EXCLUSIVE MODE")
+        .execute(&mut *audit)
+        .await
+        .unwrap();
+    let leave_after_write = async {
+        for _ in 0..250 {
+            let written: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM assessment_overrides WHERE assessment_id = $1::uuid AND user_id = $2",
+            )
+            .bind(&id)
+            .bind(alice.0)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+            if written > 0 {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+        let mut leave = held_leave(&pool, &course_id, alice).await;
+        sqlx::query(
+            "DELETE FROM assessment_overrides WHERE assessment_id = $1::uuid AND user_id = $2",
+        )
+        .bind(&id)
+        .bind(alice.0)
+        .execute(&mut *leave)
+        .await
+        .unwrap();
+        leave.commit().await.unwrap();
+        audit.rollback().await.unwrap();
+    };
+    let path = format!("/api/v2/assessments/{id}/overrides/{alice}");
+    let body = serde_json::json!({ "max_attempts_override": 3 });
+    let (created, ()) = tokio::join!(app.post_as(&teacher, &path, &body), leave_after_write);
+    assert_eq!(
+        created.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        created.text()
+    );
+    assert_eq!(created.json()["field_errors"][0]["code"], "not-in-course");
+}
+
 /// BUG-281: a leave takes the leaver off the allowlist and drops their
 /// overrides; the restricted reach counts course members only (a group
 /// member who never joined is not reached), like the course-wide mode.

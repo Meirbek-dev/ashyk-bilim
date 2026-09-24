@@ -1428,6 +1428,24 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
         .await;
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
     assert!(refused.text().contains("REMEDIATION_REQUIRED"));
+    // UX-196: the gate freezes the quiz draft too (BUG-290), not just the submit.
+    let version = open_draft.json()["draft_version"].as_i64().unwrap();
+    let frozen = app
+        .send(
+            axum::http::Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{draft_id}/draft"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &alice.cookie)
+                .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "answers": {} }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(frozen.status, StatusCode::FORBIDDEN, "{}", frozen.text());
+    assert_eq!(frozen.json()["detail"], "REMEDIATION_REQUIRED");
 
     // BUG-179: a second gate cannot stack behind the unpassed one (409 names
     // it); a later non-gate session does not hide the blocking one in `latest`.
