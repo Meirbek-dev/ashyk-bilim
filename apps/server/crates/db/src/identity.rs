@@ -330,9 +330,10 @@ pub async fn insert_auth_audit(
     Ok(())
 }
 
-/// Set or clear (`None`) the avatar; returns the key it replaced, which the
-/// caller releases in the same transaction (the `set_course_thumbnail`
-/// mechanics). BUG-255: the old key is read under the row lock — a
+/// Set or clear (`None`) the avatar; returns the key it replaced.
+///
+/// The caller releases it in the same transaction (the
+/// `set_course_thumbnail` mechanics). BUG-255: the old key is read under the row lock — a
 /// `RETURNING (SELECT …)` reads the statement snapshot, so the second of two
 /// concurrent swaps got the key the first had already released.
 pub async fn set_avatar_key<'e>(
