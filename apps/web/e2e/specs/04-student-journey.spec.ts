@@ -45,6 +45,21 @@ test.describe.serial('Student – Learning Journey', () => {
     await expect(page.getByRole('link', { name: COURSE.title })).toBeVisible({ timeout: 15_000 })
   })
 
+  // BUG-248: the phone landing crashed on `course.authors` (absent from the
+  // v2 Course) and replaced the whole page with the course-load error.
+  test('course landing renders on a phone viewport', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(`/en/course/${courseUuid}`)
+    const cta = page
+      .getByRole('button', { name: /start course|continue learning/i })
+      .or(page.getByText(/no published lessons yet/i))
+    await expect(cta.first()).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(/course failed to load/i)).toHaveCount(0)
+    expect(errors).toEqual([])
+  })
+
   test('student can enroll in the course', async ({ page, coursePlayerPage }) => {
     await coursePlayerPage.gotoCourseLanding(courseUuid)
 
@@ -83,7 +98,12 @@ test.describe.serial('Student – Learning Journey', () => {
     // "Mark as complete" and the outline counts the chapter as 1/1 done
     await expect(page.getByText(/activity completed/i).first()).toBeVisible({ timeout: 10_000 })
     await expect(coursePlayerPage.markCompleteButton).toBeHidden({ timeout: 10_000 })
-    await expect(page.getByRole('navigation', { name: /course content/i }).getByText(/^1\/1$/).first()).toBeVisible({
+    await expect(
+      page
+        .getByRole('navigation', { name: /course content/i })
+        .getByText(/^1\/1$/)
+        .first(),
+    ).toBeVisible({
       timeout: 10_000,
     })
   })
@@ -151,7 +171,10 @@ test.describe.serial('Student – Learning Journey', () => {
     const exact = (text: string) => new RegExp(`^${text}$`)
     await assessmentPage.answerChoice(EXAM_ANSWERS.singleChoice.question, exact(EXAM_ANSWERS.singleChoice.answer))
     await assessmentPage.answerChoice(EXAM_ANSWERS.trueFalse.question, exact(EXAM_ANSWERS.trueFalse.answer))
-    await assessmentPage.answerMultiSelect(EXAM_ANSWERS.multiSelect.question, EXAM_ANSWERS.multiSelect.answers.map(exact))
+    await assessmentPage.answerMultiSelect(
+      EXAM_ANSWERS.multiSelect.question,
+      EXAM_ANSWERS.multiSelect.answers.map(exact),
+    )
 
     // Submit the exam
     await assessmentPage.submitAttempt()
@@ -180,7 +203,11 @@ test.describe.serial('Student – Learning Journey', () => {
   // Judge0 the teacher cannot publish it and the learner gets "not found".
   // Keeping it last lets the rest of the chain run when the service is down.
 
-  test('student can navigate to and submit the coding challenge', async ({ page, assessmentPage, coursePlayerPage }) => {
+  test('student can navigate to and submit the coding challenge', async ({
+    page,
+    assessmentPage,
+    coursePlayerPage,
+  }) => {
     test.skip(judge0Missing(), JUDGE0_SKIP_REASON)
     await coursePlayerPage.gotoCourseLanding(courseUuid)
     const activityId = await coursePlayerPage.openActivity(new RegExp(COURSE.activities.codeChallenge, 'i'))

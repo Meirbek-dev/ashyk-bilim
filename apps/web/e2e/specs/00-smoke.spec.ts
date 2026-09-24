@@ -8,7 +8,7 @@
 
 import { test, expect } from '../fixtures'
 import { STORAGE_STATE } from '../auth-states'
-import { getEnv, getEnvOr } from '../env'
+import { getEnvOr } from '../env'
 
 test.describe('Smoke – Public pages', () => {
   test('home page has the correct title', async ({ page }) => {
@@ -70,22 +70,5 @@ test.describe('Smoke – Authenticated dashboard (Teacher)', () => {
     await expect(page).not.toHaveURL(/\/login/)
     // Some content from the courses dashboard should be visible
     await expect(page.locator('body')).toBeVisible()
-  })
-
-  // BUG-248: the phone landing crashed on `course.authors` (absent from the
-  // v2 Course) and replaced the whole page with the course-load error.
-  test('course landing renders on a phone viewport', async ({ page }) => {
-    const courseUuid = getEnv('E2E_COURSE_UUID') ?? ''
-    test.skip(!courseUuid, 'Set E2E_COURSE_UUID (03-course-creation writes it).')
-    const errors: string[] = []
-    page.on('pageerror', error => errors.push(error.message))
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto(`/en/course/${courseUuid}`)
-    const cta = page
-      .getByRole('button', { name: /start course|continue learning/i })
-      .or(page.getByText(/no published lessons yet/i))
-    await expect(cta.first()).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText(/course failed to load/i)).toHaveCount(0)
-    expect(errors).toEqual([])
   })
 })
