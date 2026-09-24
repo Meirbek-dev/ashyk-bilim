@@ -2871,3 +2871,64 @@ async fn publish_dropped_after_the_commit_still_projects(pool: PgPool) {
         "{history}"
     );
 }
+
+/// UX-169: the gradebook lists the course members (trail runs, the UX-150
+/// predicate) — a member without attempts has a row, a leaver's attempts
+/// drop out — and the CSV follows.
+#[sqlx::test(migrations = "../../migrations")]
+async fn gradebook_lists_members_not_leavers(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1")
+        .bind(bob.user_id.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let carol_id = app
+        .create_user("carol", "carol@example.com", &["user"])
+        .await;
+    let carol = app
+        .mint_session_for(carol_id, &["trail:read:all", "trail:submit:assigned"])
+        .await;
+    let joined = app
+        .post_as(
+            &carol,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert!(joined.status.is_success(), "{}", joined.text());
+
+    let gradebook = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/gradebook"))
+        .await;
+    assert_eq!(gradebook.status, StatusCode::OK, "{}", gradebook.text());
+    let mut users: Vec<String> = gradebook.json()["users"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|u| u["username"].as_str().unwrap().to_owned())
+        .collect();
+    users.sort();
+    assert_eq!(users, ["alice", "carol"], "{}", gradebook.text());
+    let cells = gradebook.json()["cells"].as_array().unwrap().clone();
+    assert_eq!(cells.len(), 1, "{cells:?}");
+    assert_eq!(cells[0]["user_id"], alice.user_id.to_string());
+
+    let csv = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/gradebook/export"),
+        )
+        .await;
+    let text = csv.text();
+    assert!(text.lines().any(|l| l.starts_with("carol")), "{text}");
+    assert!(!text.lines().any(|l| l.starts_with("bob")), "{text}");
+}

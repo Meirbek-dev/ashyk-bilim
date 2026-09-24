@@ -593,17 +593,49 @@ impl GradebookCellRow {
     }
 }
 
-/// Grade-of-record attempt per (learner, activity) in a course.
-///
-/// Over both assessment submissions and file-submission attempts, keyset on
-/// that pair: the page's attempts come out in attempt order and each pair
-/// folds to its [`GradeKey`] maximum.
-pub async fn gradebook_cells(
+/// One gradebook page of the member × graded-activity matrix, keyset on
+/// (learner, activity). Members are the course's trail runs (the UX-150
+/// enrolment predicate): a member without attempts has a row, a leaver has
+/// none (UX-169).
+pub async fn gradebook_keys(
     pool: &PgPool,
     course_id: CourseId,
     after: Option<(UserId, ActivityId)>,
     limit: i64,
+) -> Result<Vec<(UserId, ActivityId)>> {
+    let rows = sqlx::query!(
+        r#"SELECT r.user_id AS "user_id!: UserId", g.activity_id AS "activity_id!: ActivityId"
+           FROM (SELECT DISTINCT user_id FROM trail_runs WHERE course_id = $1) r
+           CROSS JOIN (SELECT activity_id FROM assessments WHERE course_id = $1
+                       UNION SELECT activity_id FROM file_submissions WHERE course_id = $1) g
+           WHERE $2::uuid IS NULL OR (r.user_id, g.activity_id) > ($2::uuid, $3::uuid)
+           ORDER BY 1, 2
+           LIMIT $4"#,
+        course_id.0,
+        after.map(|(u, _)| u.0),
+        after.map(|(_, a)| a.0),
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|r| (r.user_id, r.activity_id))
+        .collect())
+}
+
+/// Grade-of-record attempt per (learner, activity) of `keys` in a course.
+///
+/// Over both assessment submissions and file-submission attempts: the
+/// attempts come out in attempt order and each pair folds to its
+/// [`GradeKey`] maximum.
+pub async fn gradebook_cells(
+    pool: &PgPool,
+    course_id: CourseId,
+    keys: &[(UserId, ActivityId)],
 ) -> Result<Vec<GradebookCellRow>> {
+    let (users, activities): (Vec<uuid::Uuid>, Vec<uuid::Uuid>) =
+        keys.iter().map(|(u, a)| (u.0, a.0)).unzip();
     let rows = sqlx::query_as!(
         GradebookCellRow,
         r#"WITH c AS (
@@ -625,10 +657,7 @@ pub async fn gradebook_cells(
                JOIN file_submissions f ON f.id = fa.file_submission_id
                WHERE fa.course_id = $1 AND fa.status <> 'draft'
            ), page AS (
-               SELECT DISTINCT user_id, activity_id FROM c
-               WHERE ($2::uuid IS NULL OR (user_id, activity_id) > ($2::uuid, $3::uuid))
-               ORDER BY user_id, activity_id
-               LIMIT $4
+               SELECT * FROM unnest($2::uuid[], $3::uuid[]) AS k(user_id, activity_id)
            )
            SELECT c.user_id AS "user_id!: UserId", c.activity_id AS "activity_id!: ActivityId",
                   c.assessment_id AS "assessment_id?: AssessmentId",
@@ -650,9 +679,8 @@ pub async fn gradebook_cells(
            FROM c JOIN page USING (user_id, activity_id)
            ORDER BY c.user_id, c.activity_id, c.attempt_number"#,
         course_id.0,
-        after.map(|(u, _)| u.0),
-        after.map(|(_, a)| a.0),
-        limit
+        &users,
+        &activities
     )
     .fetch_all(pool)
     .await?;

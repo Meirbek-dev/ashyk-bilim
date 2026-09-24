@@ -1508,7 +1508,9 @@ impl GradingService {
 
     /// Grade-of-record attempt per (learner, activity) of a course (the
     /// projector's attempt, BUG-173) — assessment submissions and
-    /// file-submission attempts alike — keyset on that pair.
+    /// file-submission attempts alike — keyset on that pair over the
+    /// member × graded-activity matrix: every member is listed, a leaver
+    /// is not (UX-169).
     pub async fn gradebook(
         &self,
         actor: &Actor,
@@ -1520,18 +1522,18 @@ impl GradingService {
         AssessmentsService::require_scoped(actor, &course, Action::Grade, "gradebook")?;
         let after = cursor.map(parse_gradebook_cursor).transpose()?;
         let limit = ab_core::page_limit(limit, MAX_GRADEBOOK_PAGE)?;
-        let mut rows =
-            ab_db::submissions::gradebook_cells(&self.pool, course_id, after, limit + 1).await?;
+        let mut keys =
+            ab_db::submissions::gradebook_keys(&self.pool, course_id, after, limit + 1).await?;
         let page = usize::try_from(limit).unwrap_or(usize::MAX);
-        let next_cursor = if rows.len() > page {
-            rows.truncate(page);
-            rows.last()
-                .map(|r| format!("{}:{}", r.user_id, r.activity_id))
+        let next_cursor = if keys.len() > page {
+            keys.truncate(page);
+            keys.last()
+                .map(|(user, activity)| format!("{user}:{activity}"))
         } else {
             None
         };
-        let mut ids: Vec<UserId> = rows.iter().map(|r| r.user_id).collect();
-        ids.sort();
+        let rows = ab_db::submissions::gradebook_cells(&self.pool, course_id, &keys).await?;
+        let mut ids: Vec<UserId> = keys.iter().map(|(user, _)| *user).collect();
         ids.dedup();
         let users = ab_db::identity::list_user_summaries(&self.pool, &ids)
             .await?
