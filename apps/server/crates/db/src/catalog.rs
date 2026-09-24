@@ -667,7 +667,10 @@ pub async fn insert_activity<'e>(
     Ok(ActivityId(id))
 }
 
-pub async fn get_activity(pool: &PgPool, id: ActivityId) -> Result<Option<ActivityRow>> {
+pub async fn get_activity<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: ActivityId,
+) -> Result<Option<ActivityRow>> {
     let row = sqlx::query_as!(
         ActivityRow,
         r#"SELECT id AS "id: ActivityId", chapter_id AS "chapter_id: ChapterId",
@@ -676,7 +679,7 @@ pub async fn get_activity(pool: &PgPool, id: ActivityId) -> Result<Option<Activi
            FROM activities WHERE id = $1"#,
         id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }

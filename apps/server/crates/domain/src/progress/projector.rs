@@ -166,16 +166,19 @@ impl ProgressProjector {
         else {
             return Ok(());
         };
-        if enrol {
-            self.ensure_enrolled(assessment.course_id, user_id).await?;
-        } else if !ab_db::progress::has_trail_run(&self.pool, assessment.course_id, user_id).await?
+        // BUG-260 / BUG-270: a non-member's grade is recorded (the row) and
+        // nothing more — no progress, completion, certificate or XP.
+        if !self
+            .project(
+                assessment.course_id,
+                Some(assessment.activity_id),
+                user_id,
+                enrol,
+            )
+            .await?
         {
-            // BUG-260: a non-member's grade is recorded (the row) and
-            // nothing more — no progress, completion, certificate or XP.
             return Ok(());
         }
-        self.recalculate_activity(assessment.activity_id, user_id)
-            .await?;
         // A passing, published submission pays XP once (legacy award task).
         let passed =
             ab_db::submissions::list_user_submissions(&self.pool, assessment_id, user_id, false)
@@ -210,14 +213,8 @@ impl ProgressProjector {
         else {
             return Ok(());
         };
-        if enrol {
-            self.ensure_enrolled(fs.course_id, user_id).await?;
-        } else if !ab_db::progress::has_trail_run(&self.pool, fs.course_id, user_id).await? {
-            // BUG-260: a non-member's grade is recorded (the row) and
-            // nothing more — no progress, completion, certificate or XP.
-            return Ok(());
-        }
-        self.recalculate_activity(fs.activity_id, user_id).await?;
+        self.project(fs.course_id, Some(fs.activity_id), user_id, enrol)
+            .await?;
         Ok(())
     }
 
@@ -327,106 +324,54 @@ impl ProgressProjector {
 
     // ── Recalculation ───────────────────────────────────────────────────
 
-    /// Working on a course enrols the learner: the trail run is what
-    /// `learner-state.enrolled` reads, and the legacy created it on the
-    /// first submission too. Learner-initiated paths only (BUG-251).
-    async fn ensure_enrolled(&self, course_id: CourseId, user_id: UserId) -> Result<()> {
-        let mut conn = self.pool.acquire().await?;
-        let trail = ab_db::progress::ensure_trail(&mut conn, user_id).await?;
-        ab_db::progress::ensure_trail_run(&mut conn, trail.id, course_id, user_id).await?;
-        Ok(())
-    }
-
-    /// Rebuild one learner's row for one activity, then the course
-    /// aggregate. Returns `None` when the activity has no projection of its
-    /// own (a lesson never explicitly completed).
-    pub async fn recalculate_activity(
+    /// The one per-member projection entry (BUG-270): one activity's row
+    /// (when given) and the course aggregate, written under the member's
+    /// trail lock with the run re-checked inside it. `enrol` — the learner's
+    /// own work, never a grader's (BUG-251) — creates the run instead: the
+    /// run is what `learner-state.enrolled` reads, and the legacy created it
+    /// on the first submission too. Returns whether the user is a member; a
+    /// non-member is left alone (BUG-260/268/269) and the caller fires no
+    /// member hook (XP). One lock connection at a time; hooks fire after
+    /// commit (BUG-235).
+    async fn project(
         &self,
-        activity_id: ActivityId,
+        course_id: CourseId,
+        activity_id: Option<ActivityId>,
         user_id: UserId,
-    ) -> Result<Option<ActivityProgressRow>> {
-        let Some(activity) = ab_db::catalog::get_activity(&self.pool, activity_id).await? else {
-            return Ok(None);
+        enrol: bool,
+    ) -> Result<bool> {
+        let Some(mut tx) = super::trail::lock_member(&self.pool, user_id, course_id, enrol).await?
+        else {
+            return Ok(false);
         };
-        let write = self.projection_for(&activity, user_id).await?;
-        if let Some(write) = write {
+        let mut hooks = AfterCommit::default();
+        if let Some(activity_id) = activity_id
+            && let Some(activity) = ab_db::catalog::get_activity(&mut *tx, activity_id).await?
+            && let Some(write) = projection_for(&mut tx, &activity, user_id).await?
+        {
             let was_completed =
-                ab_db::progress::get_activity_progress(&self.pool, activity_id, user_id)
+                ab_db::progress::get_activity_progress(&mut *tx, activity_id, user_id)
                     .await?
                     .is_some_and(|row| row.state == ActivityProgressState::Completed);
-            ab_db::progress::upsert_activity_progress(&self.pool, &write).await?;
+            ab_db::progress::upsert_activity_progress(&mut *tx, &write).await?;
             if write.state == ActivityProgressState::Completed && !was_completed {
-                crate::analytics::events::hooks::activity_completed(
-                    &self.pool,
-                    activity.course_id,
-                    activity.id,
-                    user_id,
-                )
-                .await;
+                hooks.activity_completed = Some((course_id, activity_id, user_id));
             }
-        }
-        self.recalculate_course(activity.course_id, user_id).await?;
-        ab_db::progress::get_activity_progress(&self.pool, activity_id, user_id).await
-    }
-
-    async fn projection_for(
-        &self,
-        activity: &ActivityRow,
-        user_id: UserId,
-    ) -> Result<Option<ActivityProgressWrite>> {
-        if activity.activity_type == "file_submission" {
-            let Some(fs) =
-                ab_db::file_submissions::get_file_submission_by_activity(&self.pool, activity.id)
-                    .await?
-            else {
-                return Ok(None);
-            };
-            let attempts =
-                ab_db::file_submissions::list_user_attempts(&self.pool, fs.id, user_id, false)
-                    .await?;
-            return Ok(Some(project_file_attempts(
-                activity, user_id, fs.due_at, &attempts,
-            )));
-        }
-        let Some(assessment) =
-            ab_db::assessments::get_assessment_by_activity(&self.pool, activity.id).await?
-        else {
-            return Ok(None);
-        };
-        let submissions =
-            ab_db::submissions::list_user_submissions(&self.pool, assessment.id, user_id, false)
-                .await?;
-        Ok(Some(project_submissions(
-            activity,
-            user_id,
-            &assessment,
-            &submissions,
-        )))
-    }
-
-    /// Rebuild the course aggregate (seeding `not_started` rows first so
-    /// `total_required_count` covers every published activity) for a member.
-    ///
-    /// Runs under the member's trail lock and re-checks the run inside it:
-    /// unlocked, a leave racing an unpublish / grade / certificate read got
-    /// its aggregate (and certificate) rebuilt after the run was gone
-    /// (BUG-269). A non-member is left alone (BUG-260/268). One lock
-    /// connection at a time; the hook fires after commit (BUG-235).
-    pub async fn recalculate_course(&self, course_id: CourseId, user_id: UserId) -> Result<()> {
-        let mut tx = super::trail::lock_trail_run(&self.pool, user_id, course_id).await?;
-        if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
-            return Ok(());
         }
         let course = self
             .recalculate_course_on(&mut tx, course_id, user_id)
             .await?;
+        hooks.course_completed = course_completed(&course);
         tx.commit().await?;
-        AfterCommit {
-            activity_completed: None,
-            course_completed: course_completed(&course),
-        }
-        .fire(&self.pool)
-        .await;
+        hooks.fire(&self.pool).await;
+        Ok(true)
+    }
+
+    /// Rebuild a member's course aggregate (seeding `not_started` rows
+    /// first so `total_required_count` covers every published activity):
+    /// [`Self::project`] without an activity.
+    pub async fn recalculate_course(&self, course_id: CourseId, user_id: UserId) -> Result<()> {
+        self.project(course_id, None, user_id, false).await?;
         Ok(())
     }
 
@@ -460,14 +405,23 @@ impl ProgressProjector {
     /// toggle, assessment lifecycle transitions — studio + scheduler — and
     /// file-submission publish) flips the flag in its own transaction and
     /// calls this once it committed (BUG-232).
+    ///
+    /// A member whose recalculation fails (lock held past the wait) never
+    /// drops the members after it (BUG-272): the loop goes on and returns
+    /// the last error.
     pub async fn recalculate_course_for_all(&self, course_id: CourseId) -> Result<()> {
+        let mut outcome = Ok(());
         for user_id in ab_db::progress::course_members(&self.pool, course_id).await? {
-            self.recalculate_course(course_id, user_id).await?;
+            if let Err(err) = self.recalculate_course(course_id, user_id).await {
+                tracing::warn!(%course_id, %user_id, error = %err, "course recalculation failed");
+                outcome = Err(err);
+            }
         }
-        Ok(())
+        outcome
     }
 
-    /// Repair projections for every member of one course (or all; BUG-268).
+    /// Repair projections for every member of one course (or all; BUG-268),
+    /// each under the member's trail lock (BUG-270).
     pub async fn backfill(&self, course_id: Option<CourseId>) -> Result<BackfillReport> {
         let courses = match course_id {
             Some(id) => vec![id],
@@ -482,18 +436,64 @@ impl ProgressProjector {
             let activities = ab_db::catalog::list_activities(&self.pool, course).await?;
             let users = ab_db::progress::course_members(&self.pool, course).await?;
             for user_id in users {
+                let Some(mut tx) =
+                    super::trail::lock_member(&self.pool, user_id, course, false).await?
+                else {
+                    continue;
+                };
                 report.learners += 1;
                 for activity in activities.iter().filter(|a| a.published) {
-                    if let Some(write) = self.projection_for(activity, user_id).await? {
-                        ab_db::progress::upsert_activity_progress(&self.pool, &write).await?;
+                    if let Some(write) = projection_for(&mut tx, activity, user_id).await? {
+                        ab_db::progress::upsert_activity_progress(&mut *tx, &write).await?;
                         report.activity_rows += 1;
                     }
                 }
-                self.recalculate_course(course, user_id).await?;
+                let aggregate = self.recalculate_course_on(&mut tx, course, user_id).await?;
+                tx.commit().await?;
+                AfterCommit {
+                    activity_completed: None,
+                    course_completed: course_completed(&aggregate),
+                }
+                .fire(&self.pool)
+                .await;
             }
         }
         Ok(report)
     }
+}
+
+async fn projection_for(
+    conn: &mut PgConnection,
+    activity: &ActivityRow,
+    user_id: UserId,
+) -> Result<Option<ActivityProgressWrite>> {
+    if activity.activity_type == "file_submission" {
+        let Some(fs) =
+            ab_db::file_submissions::get_file_submission_by_activity(&mut *conn, activity.id)
+                .await?
+        else {
+            return Ok(None);
+        };
+        let attempts =
+            ab_db::file_submissions::list_user_attempts(&mut *conn, fs.id, user_id, false).await?;
+        return Ok(Some(project_file_attempts(
+            activity, user_id, fs.due_at, &attempts,
+        )));
+    }
+    let Some(assessment) =
+        ab_db::assessments::get_assessment_by_activity(&mut *conn, activity.id).await?
+    else {
+        return Ok(None);
+    };
+    let submissions =
+        ab_db::submissions::list_user_submissions(&mut *conn, assessment.id, user_id, false)
+            .await?;
+    Ok(Some(project_submissions(
+        activity,
+        user_id,
+        &assessment,
+        &submissions,
+    )))
 }
 
 const fn course_completed(course: &CourseProgressRow) -> Option<(UserId, CourseId)> {

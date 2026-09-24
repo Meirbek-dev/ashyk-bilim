@@ -332,16 +332,20 @@ async fn run_deadline_extension(
         .await?
         .ok_or_else(|| Error::not_found("assessment"))?;
     // BUG-247: membership is re-checked per learner (left between the
-    // request and the run → skipped and named in the log).
+    // request and the run → skipped and named in the log); BUG-271: the
+    // check and the override commit under the member's trail lock, so a
+    // leave lands wholly before or after.
     let mut affected = 0;
     let mut skipped = Vec::new();
     for &user_id in &row.target_user_ids {
-        if !ab_db::progress::has_trail_run(pool, course.id, user_id).await? {
+        let Some(mut tx) =
+            crate::progress::trail::lock_member(pool, user_id, course.id, false).await?
+        else {
             skipped.push(user_id.to_string());
             continue;
-        }
+        };
         ab_db::assessments::upsert_override_due(
-            pool,
+            &mut *tx,
             row.assessment_id,
             user_id,
             new_due_at,
@@ -349,6 +353,7 @@ async fn run_deadline_extension(
             granted_by,
         )
         .await?;
+        tx.commit().await?;
         let submitted =
             ab_db::submissions::list_submitted_for_user(pool, row.assessment_id, user_id).await?;
         for submission in &submitted {

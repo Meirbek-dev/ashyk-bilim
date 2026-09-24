@@ -1210,3 +1210,75 @@ async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
         assert_eq!(rewarded(stayer).await, (1, 1, 1), "stayer {i}");
     }
 }
+
+/// BUG-272: the first member's trail lock is held past the interactive 2 s
+/// wait while the teacher unpublishes the other quiz — the course-wide
+/// recalculation waits for it instead of aborting, so every member
+/// (the held one included) completes.
+#[sqlx::test(migrations = "../../migrations")]
+async fn course_recalculation_outwaits_a_busy_member(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Busy 101").await;
+    let (q1, _, item) = quiz(&app, &teacher, &chapter_id).await;
+    let (q2, _, _) = quiz(&app, &teacher, &chapter_id).await;
+    let mut members = Vec::new();
+    for i in 0..3 {
+        let member = learner(&app, &format!("member{i}")).await;
+        let draft = app
+            .post_as(
+                &member,
+                &format!("/api/v2/assessments/{q1}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+        let submitted = app
+            .post_as(
+                &member,
+                &format!("/api/v2/submissions/{sub_id}/submit"),
+                &serde_json::json!({ "answers": { &item: { "kind": "choice", "selected": ["a"] } } }),
+            )
+            .await;
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        members.push(member);
+    }
+    // The member the recalculation reaches first (`course_members` order).
+    let first: uuid::Uuid =
+        sqlx::query_scalar("SELECT user_id FROM trail_runs WHERE course_id = $1::uuid")
+            .bind(&course_id)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    let mut busy = app.pool.begin().await.unwrap();
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+    )
+    .bind(first)
+    .bind(&course_id)
+    .execute(&mut *busy)
+    .await
+    .unwrap();
+    let release = async {
+        tokio::time::sleep(std::time::Duration::from_millis(2500)).await;
+        busy.commit().await.unwrap();
+    };
+    let (path, to_draft) = (
+        format!("/api/v2/assessments/{q2}/lifecycle"),
+        serde_json::json!({ "to": "draft" }),
+    );
+    let (unpublished, ()) = tokio::join!(app.post_as(&teacher, &path, &to_draft), release);
+    assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
+    for (i, member) in members.iter().enumerate() {
+        let complete: bool = sqlx::query_scalar(
+            "SELECT certificate_eligible FROM course_progress
+             WHERE user_id = $1 AND course_id = $2::uuid",
+        )
+        .bind(member.user_id.0)
+        .bind(&course_id)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        assert!(complete, "member {i} was never recalculated");
+    }
+}

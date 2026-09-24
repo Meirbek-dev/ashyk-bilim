@@ -396,8 +396,8 @@ pub async fn open_attempt(
 /// Every attempt of one learner, newest first.
 /// `include_preview: false` drops staff previews (UX-182) — the progress
 /// projection's view, which must never count them (UX-186).
-pub async fn list_user_attempts(
-    pool: &PgPool,
+pub async fn list_user_attempts<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     file_submission_id: FileSubmissionId,
     user_id: UserId,
     include_preview: bool,
@@ -422,7 +422,7 @@ pub async fn list_user_attempts(
         user_id.0,
         include_preview
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }

@@ -2354,6 +2354,146 @@ async fn grader_actions_never_enrol_a_leaver(pool: PgPool) {
     assert_eq!(completed, 0, "a leaver's grade completed the course");
 }
 
+/// The DB half of `DELETE /trail/courses/{id}` left open: the learner's
+/// trail lock (the `try_lock_trail_run` key) is held and the run deleted,
+/// uncommitted — a leave in flight.
+async fn leave_in_flight(
+    app: &TestApp,
+    who: &MintedSession,
+    course_id: &str,
+) -> sqlx::Transaction<'static, sqlx::Postgres> {
+    let mut leave = app.pool.begin().await.unwrap();
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+    )
+    .bind(who.user_id.0)
+    .bind(course_id)
+    .execute(&mut *leave)
+    .await
+    .unwrap();
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+        .bind(who.user_id.0)
+        .bind(course_id)
+        .execute(&mut *leave)
+        .await
+        .unwrap();
+    leave
+}
+
+async fn commit_after(leave: sqlx::Transaction<'static, sqlx::Postgres>) {
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    leave.commit().await.unwrap();
+}
+
+/// BUG-270: grades released while a leave is in flight — the projection
+/// waits for the leaver's trail lock, finds no run, and pays nothing (no
+/// activity progress, no XP); the member who stays is paid.
+#[sqlx::test(migrations = "../../migrations")]
+async fn publish_grades_racing_a_leave_pays_the_leaver_nothing(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    for who in [&alice, &bob] {
+        let sub = submit_attempt(&app, who, &id, &choice_id, &essay_id).await;
+        let saved = app
+            .send(grade(
+                &teacher,
+                &sub,
+                Some("1"),
+                &serde_json::json!({ "action": "save",
+                    "item_grades": [{ "item_id": &essay_id, "score": 10 }] }),
+            ))
+            .await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    }
+    let (path, body) = (
+        format!("/api/v2/assessments/{id}/publish-grades"),
+        serde_json::json!({}),
+    );
+    let leave = leave_in_flight(&app, &alice, &course_id).await;
+    let (released, ()) = tokio::join!(app.post_as(&teacher, &path, &body), commit_after(leave));
+    assert_eq!(released.status, StatusCode::OK, "{}", released.text());
+    assert_eq!(released.json()["published_count"], 2);
+    let paid = async |who: &MintedSession| {
+        sqlx::query_as::<_, (i64, i64)>(
+            "SELECT (SELECT count(*) FROM activity_progress
+                     WHERE user_id = $1 AND state IN ('passed', 'completed')),
+                    (SELECT count(*) FROM xp_transactions
+                     WHERE user_id = $1 AND source = 'quiz_completion')",
+        )
+        .bind(who.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+    assert_eq!(paid(&alice).await, (0, 0), "the leaver was paid");
+    assert_eq!(paid(&bob).await, (1, 1), "the stayer was not paid");
+}
+
+/// BUG-271: a deadline-extension run racing a leave in flight writes no
+/// override for the leaver — membership is checked and the override
+/// written under the member's trail lock.
+#[sqlx::test(migrations = "../../migrations")]
+async fn deadline_extension_racing_a_leave_writes_no_override(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, _, _) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600 }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    for who in [&alice, &bob] {
+        let started = app
+            .post_as(
+                who,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert!(started.status.is_success(), "{}", started.text());
+    }
+    let queued = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [alice.user_id, bob.user_id],
+                                  "new_due_at_unix": now_unix() + 86_400 }),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let action = ab_core::id::BulkActionId(
+        uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
+    );
+    let leave = leave_in_flight(&app, &alice, &course_id).await;
+    let (ran, ()) = tokio::join!(
+        ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action),
+        commit_after(leave)
+    );
+    ran.unwrap();
+    let done = app
+        .get_as(&teacher, &format!("/api/v2/bulk-actions/{}", action.0))
+        .await;
+    assert_eq!(done.json()["affected_count"], 1, "{}", done.text());
+    let overrides = async |who: &MintedSession| -> i64 {
+        sqlx::query_scalar("SELECT count(*) FROM assessment_overrides WHERE user_id = $1")
+            .bind(who.user_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+    };
+    assert_eq!(overrides(&alice).await, 0, "the leaver got an override");
+    assert_eq!(overrides(&bob).await, 1);
+}
+
 /// BUG-215: an integrity-annulled attempt's 0 is an explicit override —
 /// right or wrong choice, a feedback-only save keeps it `graded 0`, the
 /// review reports `score_override 0`, and the bulk release takes it.

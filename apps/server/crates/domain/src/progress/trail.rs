@@ -61,19 +61,24 @@ const fn trail_perm(action: Action, scope: Scope) -> Permission {
 
 /// How long a mark / leave spins for the (user, course) lock before 409.
 const LOCK_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+/// How long a write on a member's behalf (projection, course-wide
+/// recalculation, deadline extension) waits: a slow mark / leave never drops
+/// that member (BUG-272); bounded so a stuck holder cannot hang the caller.
+const MEMBER_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
 const LOCK_RETRY: std::time::Duration = std::time::Duration::from_millis(15);
 
 /// The (user, course) lock transaction (BUG-210): every trail write and
 /// its projection go through it — marks, leaves and the course-wide
 /// re-aggregation (BUG-269). Waiters poll `try_lock` instead of blocking on
 /// the server, so a stampede never parks a pool connection per waiter
-/// (BUG-220); past `LOCK_WAIT` → 409.
-pub(crate) async fn lock_trail_run(
+/// (BUG-220); past `wait` → 409.
+async fn lock_trail_run(
     pool: &PgPool,
     user_id: UserId,
     course_id: CourseId,
+    wait: std::time::Duration,
 ) -> Result<Transaction<'static, Postgres>> {
-    let deadline = tokio::time::Instant::now() + LOCK_WAIT;
+    let deadline = tokio::time::Instant::now() + wait;
     loop {
         if let Some(tx) = ab_db::progress::try_lock_trail_run(pool, user_id, course_id).await? {
             return Ok(tx);
@@ -85,6 +90,28 @@ pub(crate) async fn lock_trail_run(
         }
         tokio::time::sleep(LOCK_RETRY).await;
     }
+}
+
+/// Every per-member write that depends on membership (BUG-269/270/271):
+/// the member's trail lock with the run re-checked inside it, so a leave
+/// lands wholly before (→ `None`, nothing is written) or after the write.
+/// `enrol` (the learner's own work) creates the run instead. Do every write
+/// through the returned transaction and fire pool hooks after commit
+/// (BUG-235).
+pub(crate) async fn lock_member(
+    pool: &PgPool,
+    user_id: UserId,
+    course_id: CourseId,
+    enrol: bool,
+) -> Result<Option<Transaction<'static, Postgres>>> {
+    let mut tx = lock_trail_run(pool, user_id, course_id, MEMBER_WAIT).await?;
+    if enrol {
+        let trail = ab_db::progress::ensure_trail(&mut tx, user_id).await?;
+        ab_db::progress::ensure_trail_run(&mut tx, trail.id, course_id, user_id).await?;
+    } else if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
+        return Ok(None);
+    }
+    Ok(Some(tx))
 }
 
 /// A 404 from the course behind an activity reads as the activity's own
@@ -196,7 +223,7 @@ impl TrailService {
         user_id: UserId,
         course_id: CourseId,
     ) -> Result<Transaction<'static, Postgres>> {
-        lock_trail_run(&self.pool, user_id, course_id).await
+        lock_trail_run(&self.pool, user_id, course_id, LOCK_WAIT).await
     }
 
     /// Visible course (404) the learner may access (403).

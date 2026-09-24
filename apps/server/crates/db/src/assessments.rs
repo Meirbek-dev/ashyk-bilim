@@ -1034,8 +1034,8 @@ pub async fn update_override(
 /// One statement, so a concurrent `PUT overrides/{user}`
 /// either lands before (its other fields survive) or after (it wins) —
 /// never a read-modify-write that resurrects stale values (BUG-247).
-pub async fn upsert_override_due(
-    pool: &PgPool,
+pub async fn upsert_override_due<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
     user_id: UserId,
     due_at: i64,
@@ -1055,7 +1055,7 @@ pub async fn upsert_override_due(
         note,
         granted_by.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
