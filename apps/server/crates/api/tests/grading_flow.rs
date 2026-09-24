@@ -1460,6 +1460,58 @@ async fn previews_never_count_after_a_role_change(pool: PgPool) {
     assert_eq!(draft.json()["attempt_number"], 1);
 }
 
+/// BUG-286: a learner who becomes a maintainer may not grade the attempt
+/// they made as a learner.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_grader_may_not_grade_their_own_attempt(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let lena_id = app
+        .create_user("lena", "lena@example.com", &["instructor"])
+        .await;
+    let lena = app
+        .mint_session_for(
+            lena_id,
+            &[
+                "course:read:all",
+                "assessment:*:own",
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+            ],
+        )
+        .await;
+    let own = submit_attempt(&app, &lena, &id, &choice_id, &essay_id).await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": lena.user_id, "role": "maintainer" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let graded = app
+        .send(grade(
+            &lena,
+            &own,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::FORBIDDEN, "{}", graded.text());
+    let by_teacher = app
+        .send(grade(
+            &teacher,
+            &own,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 60 }),
+        ))
+        .await;
+    assert_eq!(by_teacher.status, StatusCode::OK, "{}", by_teacher.text());
+}
+
 /// BUG-283: an extension over an expired override applies — the expiry is
 /// cleared, and the expired grant's extra attempts are not resurrected.
 #[sqlx::test(migrations = "../../migrations")]

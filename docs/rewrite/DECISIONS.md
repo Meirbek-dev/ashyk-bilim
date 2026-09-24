@@ -1309,3 +1309,14 @@ Implements three more items of the owner answers above. Routes:
   422. Rejoining starts clean: the teacher re-adds the learner. Replaces
   "allowlist and override rows survive a leave" (UX-180 / BUG-247 only
   checked membership on write).
+
+## A grader never grades their own attempt (2026-09-24, gauntlet pass 24)
+
+- **Grading one's own counted attempt is 403** (BUG-286): the quiz grader
+  paths behind `gradable_submission` (`GET submissions/{id}/review`,
+  grading history, `PATCH submissions/{id}/grade`) and the file-attempt
+  `PATCH …/grade` refuse a submission whose owner is the caller unless it
+  is the caller's own staff preview (UX-182 — a preview is never a grade of
+  record). Why: a learner approved as a contributor published 100 on their
+  own attempt. The owner still reads their work through the learner
+  routes. Replaces the legacy (no owner check on the grading routes).

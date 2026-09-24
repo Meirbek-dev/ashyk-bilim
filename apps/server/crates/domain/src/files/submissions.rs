@@ -1141,6 +1141,9 @@ impl FileSubmissionsService {
                 } if attempt.user_id != actor.user_id => Error::not_found("attempt"),
                 other => other,
             })?;
+        if attempt.user_id == actor.user_id && !attempt.preview {
+            return Err(Error::forbidden(crate::grading::teacher::GRADE_OWN_ATTEMPT));
+        }
         // UX-108: the grading gate answers before the header is validated.
         let expected_version = input.expected_version.ok_or_else(|| {
             Error::validation(vec![field(

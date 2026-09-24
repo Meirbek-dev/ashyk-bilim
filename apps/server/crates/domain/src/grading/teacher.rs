@@ -44,6 +44,9 @@ const MIN_DISCRIMINATION_SAMPLE: usize = 6;
 /// 409 for grading or analysing work the learner has not handed in yet
 /// (`ai::subject` uses the same words — one rule, BUG-198).
 pub(crate) const OPEN_DRAFT: &str = "an open draft cannot be graded";
+/// 403 for a grader opening their own counted attempt (BUG-286; the quiz
+/// and file-attempt grading paths share it). Their previews stay theirs.
+pub(crate) const GRADE_OWN_ATTEMPT: &str = "a grader may not grade their own attempt";
 /// 409 for a publish while an item still awaits its manual score (BUG-197).
 const UNSCORED_MANUAL_ITEMS: &str =
     "every item awaiting manual review must be scored before the grade is published";
@@ -676,7 +679,8 @@ impl GradingService {
     /// the same 404: the id is the secret (UX-134 — a 403 confirmed
     /// another learner's submission ids). An open draft is 409 for the
     /// review read and the save alike (BUG-198) — after the access check,
-    /// so a stranger never learns which ids are drafts (BUG-202).
+    /// so a stranger never learns which ids are drafts (BUG-202). A
+    /// grader's own counted attempt is 403 (BUG-286).
     async fn gradable_submission(
         &self,
         actor: &Actor,
@@ -693,6 +697,9 @@ impl GradingService {
                 } => Error::not_found("submission"),
                 other => other,
             })?;
+        if row.user_id == actor.user_id && !row.preview {
+            return Err(Error::forbidden(GRADE_OWN_ATTEMPT));
+        }
         if row.status == SubmissionStatus::Draft {
             return Err(Error::conflict(OPEN_DRAFT));
         }
