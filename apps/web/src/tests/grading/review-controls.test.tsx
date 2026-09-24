@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulkActionBar'
 import GradeForm from '@/features/grading/review/components/GradeForm'
 import SubmissionList from '@/features/grading/review/components/SubmissionList'
+import SubmissionInspector from '@/features/grading/review/components/SubmissionInspector'
 import type { Submission } from '@/features/grading/domain'
 import { AnnotationProvider } from '@/features/grading/review/AnnotationContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -1002,6 +1003,25 @@ describe('teacher review controls', () => {
         </QueryClientProvider>,
       )
       expect(screen.getByRole('status')).toHaveTextContent('Нельзя оценивать свою попытку.')
+    })
+
+    // UX-196: a refused review shows only the reason, not the list row's
+    // blank «Отправленная работа» / «Начато --».
+    it('a refused review renders only the reason in the inspector', () => {
+      mocks.gradingPanelState.error = new APIError({
+        status: 403,
+        code: 'grade-own-attempt',
+        message: 'Нельзя оценивать свою попытку.',
+      })
+      render(
+        <SubmissionInspector
+          selectedUuid="own"
+          fallbackSubmission={createSubmission({ submission_uuid: 'own', user_id: 'user_teacher' })}
+        />,
+      )
+      expect(screen.getByRole('status')).toHaveTextContent('Нельзя оценивать свою попытку.')
+      expect(screen.queryByText('submissionInspector.submittedWork')).toBeNull()
+      expect(screen.queryByText('submissionInspector.started')).toBeNull()
     })
 
     it('the bulk release reports the rows held back for grading', async () => {

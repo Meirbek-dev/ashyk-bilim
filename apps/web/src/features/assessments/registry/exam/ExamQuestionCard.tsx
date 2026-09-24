@@ -17,6 +17,8 @@ interface ExamQuestionCardProps {
   isFlagged?: boolean
   onAnswerChange: (itemId: string, answer: ItemAnswer) => void
   onToggleFlag?: () => void
+  /** Read-only once the server stops accepting draft saves (UX-196). */
+  disabled?: boolean
 }
 
 /**
@@ -31,6 +33,7 @@ export default function ExamQuestionCard({
   isFlagged = false,
   onAnswerChange,
   onToggleFlag,
+  disabled = false,
 }: ExamQuestionCardProps) {
   const t = useTranslations('Activities.ExamActivity')
   const questionId = item.item_uuid
@@ -78,7 +81,7 @@ export default function ExamQuestionCard({
         <CanonicalAttemptItem
           item={{ ...item, body: { ...item.body, prompt: '' } }}
           answer={answer}
-          disabled={false}
+          disabled={disabled}
           onChange={next => onAnswerChange(questionId, next)}
         />
       </CardContent>

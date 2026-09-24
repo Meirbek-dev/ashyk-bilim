@@ -73,4 +73,29 @@ describe('submit past due', () => {
       invalidation.mockRestore()
     }
   })
+
+  // UX-196: the autosave hits the gate first — say why at once (not «Ошибка
+  // сохранения»), drop the refused edit and refetch attempt-state (read-only).
+  it('an autosave 403 names the reason, keeps the answers on record and refetches attempt-state', async () => {
+    const invalidation = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    try {
+      vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+        if (init?.method === 'PATCH') throw new APIError({ code: 'forbidden', status: 403, message: 'PAST_DUE' })
+        return parse!(String(path).endsWith('/me') ? [fixture] : fixture)
+      })
+      const { result } = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+      await waitFor(() => expect(result.current.draft).not.toBeNull())
+      act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'late edit' } as never))
+      act(() => result.current.save())
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('AttemptActions.blockedReasons.PAST_DUE'))
+      expect(toast.error).toHaveBeenCalledTimes(1)
+      await waitFor(() =>
+        expect(invalidation).toHaveBeenCalledWith({ queryKey: ['assessments', 'attempt-state', assessmentId] }),
+      )
+      expect(result.current.saveState).toBe('saved')
+      expect(JSON.stringify(result.current.answers)).not.toContain('late edit')
+    } finally {
+      invalidation.mockRestore()
+    }
+  })
 })

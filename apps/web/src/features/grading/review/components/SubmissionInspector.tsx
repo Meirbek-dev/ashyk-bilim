@@ -17,6 +17,7 @@ import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/i
 import { itemKindLabelKey } from '@/features/assessments/domain/items'
 import { CanonicalReviewAnswer } from '@/features/assessments/shared/canonical-item-rendering'
 import { useGradingPanel } from '@/hooks/useGradingPanel'
+import { useApiError } from '@/hooks/useApiError'
 import { useAnnotations } from '../AnnotationContext'
 import AnnotatableText from './AnnotatableText'
 import { Badge } from '@/components/ui/badge'
@@ -35,7 +36,8 @@ export default function SubmissionInspector({
   activityUuid?: string
   ReviewDetail?: ComponentType<KindReviewDetailProps>
 }) {
-  const { submission, isLoading } = useGradingPanel(selectedUuid, assessmentUuid)
+  const { submission, isLoading, error } = useGradingPanel(selectedUuid, assessmentUuid)
+  const { handleApiError } = useApiError()
   const t = useTranslations('Features.Grading.Review')
   const format = useFormatter()
   const percent = usePercentFormat()
@@ -54,6 +56,16 @@ export default function SubmissionInspector({
       <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
         <LoaderCircle className="mr-2 size-4 animate-spin" />
         {t('submissionInspector.loadingSubmission')}
+      </div>
+    )
+  }
+
+  // UX-196: a refused review (e.g. `grade-own-attempt`) shows only the
+  // reason — never the list row's blank «Отправленная работа» placeholders.
+  if (error && !submission) {
+    return (
+      <div className="text-muted-foreground flex items-center justify-center p-8 text-sm" role="status">
+        {handleApiError(error).message}
       </div>
     )
   }

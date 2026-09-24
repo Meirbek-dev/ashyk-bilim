@@ -696,6 +696,7 @@ function ExamTakingContent({
               isFlagged={flaggedIndexes.has(currentIndex)}
               onAnswerChange={handleAnswerChange}
               onToggleFlag={() => toggleFlag(currentIndex)}
+              disabled={!canSaveDraft}
             />
           </div>
 
@@ -732,6 +733,7 @@ function ExamTakingContent({
                   isFlagged={flaggedIndexes.has(index)}
                   onAnswerChange={handleAnswerChange}
                   onToggleFlag={() => toggleFlag(index)}
+                  disabled={!canSaveDraft}
                 />
               </div>
             ))}

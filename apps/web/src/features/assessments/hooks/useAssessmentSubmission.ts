@@ -212,6 +212,29 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     [syncLatestSubmission],
   )
 
+  // UX-103 / UX-196: the attempt's window closed under the open form
+  // (PAST_DUE, TIME_LIMIT_EXPIRED, REMEDIATION_REQUIRED, …) — whether the
+  // autosave or the submit hit it. Say why, drop the unsaved edits the server
+  // refused (the form shows what is on record), and refetch attempt-state so
+  // the form turns read-only.
+  const closeOnGate = useCallback(
+    async (reason: string) => {
+      toast.error(tReasons.has(reason) ? tReasons(reason) : tReasons('UNKNOWN'))
+      if (nextSaveTimeoutRef.current) clearTimeout(nextSaveTimeoutRef.current)
+      nextSaveTimeoutRef.current = null
+      pendingAnswersRef.current = null
+      const onRecord = answersFromSubmission(
+        queryClient.getQueryData<DraftRead>(draftQueryOptions.queryKey)?.submission,
+      )
+      localAnswersRef.current = onRecord
+      setLocalAnswers(onRecord)
+      setSaveState('saved')
+      await invalidateAssessmentState()
+      await refreshLearnerCourseState(queryClient, router)
+    },
+    [draftQueryOptions.queryKey, invalidateAssessmentState, queryClient, router, tReasons],
+  )
+
   const saveMutation = useMutation({
     mutationFn: async (answers: Record<string, ItemAnswer>) => {
       const active = await ensureDraft()
@@ -263,6 +286,11 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       }
       if (isOfflineRecoverable(error)) {
         setSaveState('dirty')
+        return
+      }
+      const reason = disabledReasonOf(error)
+      if (reason) {
+        await closeOnGate(reason)
         return
       }
       setSaveState('error')
@@ -364,12 +392,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       }
       const reason = disabledReasonOf(error)
       if (reason) {
-        // UX-103: the window closed under the open attempt (PAST_DUE, …) —
-        // refetch attempt-state so the blocked card replaces the attempt,
-        // and say why instead of a raw «PAST_DUE».
-        toast.error(tReasons.has(reason) ? tReasons(reason) : tReasons('UNKNOWN'))
-        await invalidateAssessmentState()
-        await refreshLearnerCourseState(queryClient, router)
+        await closeOnGate(reason)
         return
       }
       // BUG-178: the submit carried the latest answers, but the draft on the
