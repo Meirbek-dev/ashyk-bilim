@@ -210,24 +210,7 @@ impl CoursesService {
             .as_deref()
             .map(|n| ab_core::required_str("name", n))
             .transpose()?;
-        // BUG-234: the claim commits with the UPDATE that references it; a
-        // concurrent course DELETE turns the UPDATE into a 404 and the
-        // rollback drops the reference instead of leaking the upload.
         let mut tx = self.pool.begin().await?;
-        let thumbnail_key = match changes.thumbnail_upload_id {
-            Some(Some(upload_id)) => Some(Some(
-                claim_upload(
-                    &mut tx,
-                    actor,
-                    upload_id,
-                    "course-thumbnail",
-                    "thumbnail_upload_id",
-                )
-                .await?,
-            )),
-            Some(None) => Some(None),
-            None => None,
-        };
         let tags = changes.tags.as_deref().map(normalize_tags);
         ab_db::catalog::update_course(
             &mut *tx,
@@ -242,6 +225,26 @@ impl CoursesService {
         )
         .await?
         .ok_or_else(|| Error::not_found("course"))?;
+        // BUG-234: the claim commits with the UPDATE that references it; a
+        // concurrent course DELETE turns the UPDATE into a 404 and the
+        // rollback drops the reference instead of leaking the upload.
+        // BUG-261: the UPDATE above locked the course row before the claim
+        // touches an upload row — the course → uploads order every course
+        // delete takes, so PATCH ∥ DELETE (or PATCH ∥ PATCH) cannot deadlock.
+        let thumbnail_key = match changes.thumbnail_upload_id {
+            Some(Some(upload_id)) => Some(Some(
+                claim_upload(
+                    &mut tx,
+                    actor,
+                    upload_id,
+                    "course-thumbnail",
+                    "thumbnail_upload_id",
+                )
+                .await?,
+            )),
+            Some(None) => Some(None),
+            None => None,
+        };
         // UX-143: the key the UPDATE actually replaced is released — not the
         // one this request read, which a concurrent PATCH may have replaced.
         // BUG-209: also when it equals the new key — the claim above counted

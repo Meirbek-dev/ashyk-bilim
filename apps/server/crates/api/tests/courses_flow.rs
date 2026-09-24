@@ -758,3 +758,67 @@ async fn concurrent_thumbnail_patches_pin_no_upload(pool: PgPool) {
     .unwrap();
     assert_eq!(pinned, 0, "a replaced thumbnail stayed referenced");
 }
+
+/// BUG-261: a thumbnail PATCH locks the course row before the upload rows
+/// (the order a course delete takes) — PATCH ∥ DELETE and PATCH ∥ PATCH never
+/// deadlock (40P01 → 500).
+#[sqlx::test(migrations = "../../migrations")]
+async fn thumbnail_patch_races_do_not_deadlock(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let upload = || async {
+        let id: uuid::Uuid = sqlx::query_scalar(
+            "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status)
+             VALUES ($1, 'course-thumbnail', 'public', 'thumb/' || gen_random_uuid(),
+                     'image/png', 4, 'finalized')
+             RETURNING id",
+        )
+        .bind(teacher.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        id.to_string()
+    };
+    let set = |path: String, upload: String| {
+        let (app, teacher) = (&app, &teacher);
+        async move {
+            app.patch_as(
+                teacher,
+                &path,
+                &serde_json::json!({ "thumbnail_upload_id": upload }),
+            )
+            .await
+        }
+    };
+    for _ in 0..8 {
+        let id = create_course(&app, &teacher, "Race").await;
+        let path = format!("/api/v2/courses/{id}");
+        let current = upload().await;
+        assert_eq!(
+            set(path.clone(), current.clone()).await.status,
+            StatusCode::OK
+        );
+        let (patched, deleted) = tokio::join!(
+            set(path.clone(), current.clone()),
+            app.delete_as(&teacher, &path)
+        );
+        assert!(
+            matches!(patched.status, StatusCode::OK | StatusCode::NOT_FOUND),
+            "{}",
+            patched.text()
+        );
+        assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+
+        let id = create_course(&app, &teacher, "Swap").await;
+        let path = format!("/api/v2/courses/{id}");
+        let current = upload().await;
+        assert_eq!(
+            set(path.clone(), current.clone()).await.status,
+            StatusCode::OK
+        );
+        let fresh = upload().await;
+        let (a, b) = tokio::join!(set(path.clone(), fresh), set(path.clone(), current));
+        assert_eq!(a.status, StatusCode::OK, "{}", a.text());
+        assert_eq!(b.status, StatusCode::OK, "{}", b.text());
+    }
+}
