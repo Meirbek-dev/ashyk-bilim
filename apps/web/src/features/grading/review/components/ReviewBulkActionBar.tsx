@@ -88,7 +88,9 @@ export default function ReviewBulkActionBar({
     ),
   ]
   const namesOf = (rows: Submission[]) => [...new Set(rows.map(displayName))].join(', ')
-  const notEnrolledNames = namesOf(submissions.filter(submission => !isMember(submission)))
+  // UX-199: staff are never members (BUG-287) — named as staff, not as leavers.
+  const staffNames = namesOf(submissions.filter(submission => submission.staff))
+  const notEnrolledNames = namesOf(submissions.filter(submission => !isMember(submission) && !submission.staff))
   const releaseSummary = useMemo(() => {
     let visible = 0
     let hidden = 0
@@ -372,6 +374,9 @@ export default function ReviewBulkActionBar({
                   <p className="text-muted-foreground text-xs">
                     {t('preview.notEnrolled', { names: notEnrolledNames })}
                   </p>
+                ) : null}
+                {staffNames ? (
+                  <p className="text-muted-foreground text-xs">{t('preview.staff', { names: staffNames })}</p>
                 ) : null}
                 <PreviewRow
                   label={t('preview.newDueDate')}

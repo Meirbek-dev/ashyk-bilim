@@ -180,6 +180,7 @@ describe('submissionsQueryOptions', () => {
           submitted_at_unix: 1_789_000_000,
           graded_at_unix: 1_789_000_010,
           enrolled: false,
+          staff: true,
         },
       ],
       next_cursor: null,
@@ -207,6 +208,8 @@ describe('submissionsQueryOptions', () => {
     expect(result?.items[0]?.status).toBe('GRADED')
     // UX-167: membership rides along so the bulk extension can leave a leaver out.
     expect(result?.items[0]?.enrolled).toBe(false)
+    // UX-199: and staff are told apart from leavers.
+    expect(result?.items[0]?.staff).toBe(true)
     expect(result?.pages).toBe(1)
   })
 })

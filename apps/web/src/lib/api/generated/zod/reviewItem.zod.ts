@@ -19,6 +19,11 @@ export const ReviewItem = zod.object({
   graded_at_unix: zod.int().nullish(),
   id: zod.uuid(),
   is_late: zod.boolean(),
+  staff: zod
+    .boolean()
+    .describe(
+      'The learner is on the course staff — never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).',
+    ),
   status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
   submitted_at_unix: zod.int().nullish(),
   user: zod.object({

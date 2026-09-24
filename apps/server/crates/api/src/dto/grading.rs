@@ -80,6 +80,9 @@ pub struct ReviewItem {
     /// The learner is a course member (trail run); a leaver's row is not a
     /// target for per-learner actions such as a deadline extension (UX-167).
     pub enrolled: bool,
+    /// The learner is on the course staff — never a member (BUG-287), so
+    /// named as staff rather than as a leaver (UX-199).
+    pub staff: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -106,6 +109,7 @@ impl From<domain::ReviewPage> for ReviewPage {
                     graded_at_unix: i.graded_at,
                     version: i.version,
                     enrolled: i.enrolled,
+                    staff: i.staff,
                 })
                 .collect(),
             next_cursor: p.next_cursor,

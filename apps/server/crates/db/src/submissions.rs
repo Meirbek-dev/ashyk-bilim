@@ -742,6 +742,8 @@ pub struct ReviewRow {
     pub version: i64,
     /// A course member (trail run) — per-learner actions target members only.
     pub enrolled: bool,
+    /// On the course staff (`is_course_staff`) — never a member (UX-199).
+    pub staff: bool,
 }
 
 /// Non-draft submissions of an assessment, newest first (keyset on id),
@@ -766,7 +768,8 @@ pub async fn list_for_review(
                   s.version,
                   EXISTS (SELECT 1 FROM trail_runs r
                           WHERE r.course_id = s.course_id AND r.user_id = s.user_id
-                            AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!"
+                            AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!",
+                  is_course_staff(s.course_id, s.user_id) AS "staff!"
            FROM submissions s JOIN users u ON u.id = s.user_id
            WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview
              AND ($2::text IS NULL OR s.status = $2)

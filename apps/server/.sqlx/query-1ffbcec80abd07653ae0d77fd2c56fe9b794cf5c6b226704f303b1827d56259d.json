@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT s.id AS \"id: SubmissionId\", s.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number, s.auto_score, s.final_score, s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\",\n                  s.version,\n                  EXISTS (SELECT 1 FROM trail_runs r\n                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id\n                            AND NOT is_course_staff(r.course_id, r.user_id)) AS \"enrolled!\"\n           FROM submissions s JOIN users u ON u.id = s.user_id\n           WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview\n             AND ($2::text IS NULL OR s.status = $2)\n             AND (NOT $3 OR s.is_late)\n             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\\' OR u.display_name ILIKE $4 ESCAPE '\\')\n             AND ($5::uuid IS NULL OR s.id < $5)\n           ORDER BY s.id DESC\n           LIMIT $6",
+  "query": "SELECT s.id AS \"id: SubmissionId\", s.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number, s.auto_score, s.final_score, s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\",\n                  s.version,\n                  EXISTS (SELECT 1 FROM trail_runs r\n                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id\n                            AND NOT is_course_staff(r.course_id, r.user_id)) AS \"enrolled!\",\n                  is_course_staff(s.course_id, s.user_id) AS \"staff!\"\n           FROM submissions s JOIN users u ON u.id = s.user_id\n           WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview\n             AND ($2::text IS NULL OR s.status = $2)\n             AND (NOT $3 OR s.is_late)\n             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\\' OR u.display_name ILIKE $4 ESCAPE '\\')\n             AND ($5::uuid IS NULL OR s.id < $5)\n           ORDER BY s.id DESC\n           LIMIT $6",
   "describe": {
     "columns": [
       {
@@ -130,6 +130,12 @@
         "name": "enrolled!",
         "type_info": "Bool",
         "origin": "Expression"
+      },
+      {
+        "ordinal": 13,
+        "name": "staff!",
+        "type_info": "Bool",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -155,8 +161,9 @@
       null,
       null,
       false,
+      null,
       null
     ]
   },
-  "hash": "1781b5e55973e5dc12d8c37dfe4997caa65b8c6d723cad9b051bd60b2b124d1b"
+  "hash": "1ffbcec80abd07653ae0d77fd2c56fe9b794cf5c6b226704f303b1827d56259d"
 }

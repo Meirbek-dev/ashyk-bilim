@@ -1642,6 +1642,24 @@ async fn grader_actions_never_reach_the_callers_own_attempt(pool: PgPool) {
     let work = app.get_as(&lena, "/api/v2/work?role=teacher").await;
     assert_eq!(work.json()["total"], 1, "{}", work.text());
     assert!(!work.text().contains("lena"), "{}", work.text());
+    // UX-199: the review rows name lena as staff, not as a leaver.
+    let rows = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/submissions"))
+        .await;
+    let staff: Vec<(String, bool, bool)> = rows.json()["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| {
+            (
+                r["user"]["username"].as_str().unwrap().to_owned(),
+                r["staff"].as_bool().unwrap(),
+                r["enrolled"].as_bool().unwrap(),
+            )
+        })
+        .collect();
+    assert!(staff.contains(&("lena".into(), true, false)), "{staff:?}");
+    assert!(staff.contains(&("alice".into(), false, true)), "{staff:?}");
     let me = lena.user_id.to_string();
     let waive = serde_json::json!({ "waive_late_penalty": true });
     let own = app

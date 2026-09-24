@@ -20,7 +20,10 @@ const mocks = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
   downloadCsv: vi.fn(),
   toastWarning: vi.fn(),
+  user: null as { id: string } | null,
 }))
+
+vi.mock('@/hooks/useSession', () => ({ useSession: () => ({ user: mocks.user }) }))
 
 vi.mock('sonner', () => ({
   toast: {
@@ -99,6 +102,7 @@ function queueItem(full: FileSubmissionAttempt): FileSubmissionReviewItem {
 describe('file submission review workspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.user = null
     const first = attempt('attempt_first', 'Aruzhan', 92, 'First learner feedback')
     const second = attempt('attempt_second', 'Dias', 64, 'Second learner feedback')
     mocks.getActivity.mockResolvedValue({
@@ -273,6 +277,25 @@ describe('file submission review workspace', () => {
     expect(screen.getByRole('button', { name: 'saveGrade' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'returnForRevision' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'publishResult' })).toBeEnabled()
+  })
+
+  // UX-199 (mirrors UX-193): the viewer's own attempt is marked, every grading
+  // action is disabled and the reason is shown.
+  it("marks the viewer's own attempt and disables grading with the reason", async () => {
+    mocks.user = { id: 'user_aruzhan' }
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <FileSubmissionReviewWorkspace activityUuid="activity_1" />
+      </QueryClientProvider>,
+    )
+
+    await screen.findByDisplayValue('92')
+    expect(screen.getAllByText('ownAttempt')).toHaveLength(2)
+    expect(screen.getByText('grade-own-attempt')).toBeInTheDocument()
+    for (const name of ['saveGrade', 'returnForRevision', 'publishResult']) {
+      expect(screen.getByRole('button', { name })).toBeDisabled()
+    }
   })
 
   // UX-123: the form holds the raw score; a late attempt shows what the

@@ -437,10 +437,11 @@ describe('teacher review controls', () => {
       `${dueDate.toLocaleString('en-US', { month: 'long' })} ${dueDate.getDate()}(?:st|nd|rd|th), ${dueDate.getFullYear()}`,
       'i',
     )
-    const learner = (id: string, enrolled: boolean) =>
+    const learner = (id: string, enrolled: boolean, staff = false) =>
       createSubmission({
         submission_uuid: `submission_${id}`,
         enrolled,
+        staff,
         user: { id, username: id, display_name: id, first_name: id, last_name: '', email: `${id}@example.test` },
       })
     render(
@@ -449,7 +450,12 @@ describe('teacher review controls', () => {
         assessmentUuid="assessment_review"
         disabled={false}
         onRefresh={vi.fn().mockResolvedValue(undefined)}
-        submissions={[learner('user_a', true), learner('user_b', false), learner('user_c', true)]}
+        submissions={[
+          learner('user_a', true),
+          learner('user_b', false),
+          learner('user_c', true),
+          learner('user_d', false, true),
+        ]}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'deadlinePlaceholder' }))
@@ -459,6 +465,8 @@ describe('teacher review controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'extend' }))
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('preview.notEnrolled')).toBeInTheDocument()
+    // UX-199: staff are named as staff, not as leavers.
+    expect(within(dialog).getByText('preview.staff')).toBeInTheDocument()
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
     await waitFor(() => expect(mocks.toastErrorMock).toHaveBeenCalledWith('toasts.notEnrolled'))

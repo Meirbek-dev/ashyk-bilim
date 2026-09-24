@@ -48,6 +48,7 @@ import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import { MarkdownEditor } from '@/features/content-markdown'
 import { SubmissionAIEntry } from '@/features/submission-analysis'
 import { useApiError } from '@/hooks/useApiError'
+import { useSession } from '@/hooks/useSession'
 import { saveBlob } from '@/lib/download'
 import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
@@ -155,6 +156,11 @@ export default function FileSubmissionReviewWorkspace({
   const formatBytes = useFormatBytes()
   const tPanel = useTranslations('Grading.Panel')
   const { handleApiError, toastApiError } = useApiError()
+  // UX-199 (mirrors UX-193): the viewer's own attempt is theirs to see, never
+  // to grade — the queue holds counted attempts only (previews are excluded).
+  const { user } = useSession()
+  const isOwn = (attempt: FileSubmissionAttempt | FileSubmissionReviewItem) =>
+    Boolean(user) && attempt.user?.id === user?.id
   const navigationGuard = useUnsavedChangesGuard(isGradeDirty, {
     message: t('unsavedDescription'),
     interceptInAppNavigation: true,
@@ -464,7 +470,10 @@ export default function FileSubmissionReviewWorkspace({
                       })}
                     </p>
                   </div>
-                  <AttemptStatusBadge status={attempt.status} />
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <AttemptStatusBadge status={attempt.status} />
+                    {isOwn(attempt) ? <Badge variant="secondary">{t('ownAttempt')}</Badge> : null}
+                  </div>
                 </div>
               </Button>
             ))
@@ -520,6 +529,7 @@ export default function FileSubmissionReviewWorkspace({
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  {isOwn(selected) ? <Badge variant="secondary">{t('ownAttempt')}</Badge> : null}
                   {selected.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
                   {typeof selected.final_score === 'number' ? (
                     <Badge variant="outline">{selected.final_score}%</Badge>
@@ -650,6 +660,7 @@ export default function FileSubmissionReviewWorkspace({
                 criteria={parsedCriteria}
                 isPending={gradeMutation.isPending}
                 disabled={remoteUpdate}
+                own={isOwn(selected)}
                 onDirtyChange={setIsGradeDirty}
                 onSubmit={payload => {
                   setIsGradeDirty(false)
@@ -736,7 +747,8 @@ function GradeEditor({
   attempt,
   criteria,
   isPending,
-  disabled,
+  disabled: remoteDisabled,
+  own,
   onDirtyChange,
   onSubmit,
 }: {
@@ -744,10 +756,13 @@ function GradeEditor({
   criteria: RubricCriterion[]
   isPending: boolean
   disabled: boolean
+  own: boolean
   onDirtyChange: (dirty: boolean) => void
   onSubmit: (payload: FileSubmissionGradePayload) => void
 }) {
   const t = useTranslations('FileSubmissionReview')
+  const tErrors = useTranslations('Errors.codes')
+  const disabled = remoteDisabled || own
   // UX-121: reopen with the raw score — `final_score` already carries the late penalty.
   const storedScore = attempt.raw_score ?? attempt.final_score
   const [score, setScore] = useState(typeof storedScore === 'number' ? String(storedScore) : '')
@@ -877,6 +892,11 @@ function GradeEditor({
         />
         {/* UX-065: a released grade is final (BUG-128) — only a re-publish is offered. */}
         {isPublished ? <p className="text-muted-foreground text-xs">{t('publishedIsFinal')}</p> : null}
+        {own ? (
+          <p className="text-muted-foreground text-xs" role="status">
+            {tErrors('grade-own-attempt')}
+          </p>
+        ) : null}
         <div className="grid gap-2">
           <Button onClick={() => submit('GRADED')} disabled={isPending || disabled || isPublished}>
             {isPending ? (
@@ -895,14 +915,16 @@ function GradeEditor({
           </Button>
         </div>
         {/* The analyst and the remediation generator take a file attempt id (DECISIONS 2026-09-12). */}
-        <SubmissionAIEntry
-          submissionUuid={attempt.id}
-          hasFeedback={feedback.trim() !== ''}
-          onDraftFeedback={draft => {
-            setFeedback(draft)
-            onDirtyChange(true)
-          }}
-        />
+        {own ? null : (
+          <SubmissionAIEntry
+            submissionUuid={attempt.id}
+            hasFeedback={feedback.trim() !== ''}
+            onDraftFeedback={draft => {
+              setFeedback(draft)
+              onDirtyChange(true)
+            }}
+          />
+        )}
       </div>
     </section>
   )

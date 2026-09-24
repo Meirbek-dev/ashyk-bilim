@@ -1,5 +1,13 @@
-import type { GradedItem as WireGradedItem, GradingBreakdown as WireGradingBreakdown, Stats, UserSummary } from '@/lib/api/generated/zod'
-import type { ActivityProgressCell as ProgressCell, ActivityProgressState } from '@/features/assessments/domain/progress'
+import type {
+  GradedItem as WireGradedItem,
+  GradingBreakdown as WireGradingBreakdown,
+  Stats,
+  UserSummary,
+} from '@/lib/api/generated/zod'
+import type {
+  ActivityProgressCell as ProgressCell,
+  ActivityProgressState,
+} from '@/features/assessments/domain/progress'
 import type { SubmissionStatus } from '@/features/assessments/domain/submission-status'
 
 export type { ActivityProgressState, SubmissionStatus }
@@ -37,6 +45,8 @@ export interface Submission {
   version?: number
   /** UX-167: `false` = not a course member (left) — no per-learner actions. */
   enrolled?: boolean
+  /** UX-199: on the course staff — never a member, named as staff. */
+  staff?: boolean
   started_at?: string | null
   submitted_at?: string | null
   graded_at?: string | null
@@ -50,7 +60,9 @@ export interface SubmissionsPage {
   pages: number
   total: number
 }
-export interface SubmissionStats extends Stats { needs_grading_count: number }
+export interface SubmissionStats extends Stats {
+  needs_grading_count: number
+}
 export interface TeacherItemGradeInput {
   item_id: string
   score?: number | null
@@ -122,16 +134,31 @@ export interface CourseGradebookResponse {
 
 export function normalizeSubmission(value: Partial<Submission> | null | undefined): Submission {
   return {
-    activity_id: '', assessment_type: 'manual_assessment', created_at: '', id: '',
-    submission_uuid: '', updated_at: '', user_id: '', status: 'PENDING',
-    is_late: false, attempt_number: 0, ...value,
+    activity_id: '',
+    assessment_type: 'manual_assessment',
+    created_at: '',
+    id: '',
+    submission_uuid: '',
+    updated_at: '',
+    user_id: '',
+    status: 'PENDING',
+    is_late: false,
+    attempt_number: 0,
+    ...value,
   }
 }
 
-export function normalizeActivityProgressCell(value: Partial<ActivityProgressCell> | null | undefined): ActivityProgressCell {
+export function normalizeActivityProgressCell(
+  value: Partial<ActivityProgressCell> | null | undefined,
+): ActivityProgressCell {
   return {
-    activity_id: '', user_id: '', state: 'NOT_STARTED', attempt_count: 0,
-    is_late: false, teacher_action_required: false, ...value,
+    activity_id: '',
+    user_id: '',
+    state: 'NOT_STARTED',
+    attempt_count: 0,
+    is_late: false,
+    teacher_action_required: false,
+    ...value,
   }
 }
 
