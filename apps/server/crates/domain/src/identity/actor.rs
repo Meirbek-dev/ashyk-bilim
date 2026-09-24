@@ -22,6 +22,9 @@ pub struct Actor {
     pub permission_strings: Vec<String>,
     pub rbac_version: i64,
     pub mfa_enabled: bool,
+    /// See [`SessionRecord::has_password`].
+    pub has_password: bool,
+    pub google_linked: bool,
 }
 
 impl Actor {
@@ -37,6 +40,8 @@ impl Actor {
             permission_strings: record.permissions.clone(),
             rbac_version: record.rbac_version,
             mfa_enabled: record.mfa_enabled,
+            has_password: record.has_password,
+            google_linked: record.google_linked,
         })
     }
 
@@ -63,6 +68,8 @@ impl Actor {
             permission_strings,
             rbac_version: 0,
             mfa_enabled: false,
+            has_password: false,
+            google_linked: false,
         })
     }
 
@@ -81,6 +88,8 @@ impl Actor {
             permission_strings: Vec::new(),
             rbac_version: 0,
             mfa_enabled: false,
+            has_password: false,
+            google_linked: false,
         }
     }
 
@@ -128,6 +137,8 @@ mod tests {
             permissions: perms.iter().map(ToString::to_string).collect(),
             rbac_version: 1,
             mfa_enabled: false,
+            has_password: true,
+            google_linked: false,
             created_at_unix: 0,
             last_seen_unix: 0,
             ip: None,

@@ -23,5 +23,13 @@ export default function UserAccountSecurityPage() {
 
 async function SecurityContent() {
   const session = await requireSession()
-  return <UserSecuritySettings mfaEnabled={session.user.mfa_enabled} />
+  // UX-188 flags; optional until the generated profile type carries them.
+  const user: { mfa_enabled: boolean; has_password?: boolean; google_linked?: boolean } = session.user
+  return (
+    <UserSecuritySettings
+      mfaEnabled={user.mfa_enabled}
+      hasPassword={user.has_password ?? true}
+      googleLinked={user.google_linked ?? false}
+    />
+  )
 }

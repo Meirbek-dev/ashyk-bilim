@@ -472,3 +472,34 @@ async fn unverified_google_email_creates_an_unverified_zitadel_user(pool: PgPool
     assert_eq!(body["email"]["email"], "unverified@gmail.com");
     assert_ne!(body["email"]["isVerified"], serde_json::json!(true));
 }
+
+/// UX-188: a Google-only account (no password method in Zitadel) reads as
+/// such in `users/me`, so the security page offers no change-password form.
+#[sqlx::test(migrations = "../../migrations")]
+async fn google_only_profile_has_no_password_and_a_google_link(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    mock_zitadel_user_create(&app, 1).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-google-1/authentication_methods"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "authMethodTypes": [] })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    mock_google_token(&app, "g-sub-only", "only@gmail.com").await;
+
+    let res = google_callback(&app).await;
+    let cookie = res.session_cookie().expect("session cookie set");
+    let me = app
+        .send(
+            axum::http::Request::builder()
+                .uri("/api/v2/users/me")
+                .header(axum::http::header::COOKIE, &cookie)
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(me.status, StatusCode::OK);
+    assert_eq!(me.json()["has_password"], false);
+    assert_eq!(me.json()["google_linked"], true);
+}

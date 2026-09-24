@@ -54,6 +54,7 @@ const REGISTER_ATTEMPT_IP_LIMIT: (u32, Duration) = (60, Duration::from_hours(1))
 const DEFAULT_PLATFORM_NAME: &str = "Ashyq Bilim";
 
 pub const TOTP_METHOD: &str = "AUTHENTICATION_METHOD_TYPE_TOTP";
+pub const PASSWORD_METHOD: &str = "AUTHENTICATION_METHOD_TYPE_PASSWORD";
 
 /// Admin account creation (the legacy `user:create` is a platform-admin
 /// grant; v2 keys it on the same permission as the other user admin routes).
@@ -491,6 +492,7 @@ impl IdentityService {
         }
 
         let (roles, permissions) = ab_db::identity::load_user_grants(&self.pool, user.id).await?;
+        let google_linked = ab_db::identity::google_linked(&self.pool, user.id).await?;
         let created = self
             .sessions
             .create(NewSession {
@@ -505,6 +507,9 @@ impl IdentityService {
                 permissions: permissions.clone(),
                 rbac_version: user.rbac_version,
                 mfa_enabled,
+                // Zitadel just checked it.
+                has_password: true,
+                google_linked,
                 ip: input.ip.clone(),
                 user_agent: input.user_agent.clone(),
                 epoch,

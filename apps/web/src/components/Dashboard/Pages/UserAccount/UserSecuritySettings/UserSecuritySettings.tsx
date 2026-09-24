@@ -42,15 +42,26 @@ import type { SessionInfo, TotpEnrollment } from '@/lib/api/generated/zod'
  *
  * `mfaEnabled` is the `UserProfile.mfa_enabled` of the current session; the
  * 409 on enrol stays as a fallback for a session minted before the flag.
+ * `hasPassword` / `googleLinked` (UX-188): a Google-only account has no
+ * password to change (and no way to set one here); TOTP guards password
+ * sign-in only — Google sign-in never asks for the code.
  */
-export default function UserSecuritySettings({ mfaEnabled = false }: { mfaEnabled?: boolean }) {
+export default function UserSecuritySettings({
+  mfaEnabled = false,
+  hasPassword = true,
+  googleLinked = false,
+}: {
+  mfaEnabled?: boolean
+  hasPassword?: boolean
+  googleLinked?: boolean
+}) {
   const t = useTranslations('DashPage.UserAccountSettings.UserAccount.Security')
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-4 pb-10">
       <SessionsSection t={t} />
-      <PasswordSection t={t} />
-      <TotpSection t={t} initialActive={mfaEnabled} />
+      {hasPassword ? <PasswordSection t={t} /> : <NoPasswordSection t={t} />}
+      <TotpSection t={t} initialActive={mfaEnabled} googleLinked={googleLinked} />
     </div>
   )
 }
@@ -189,6 +200,18 @@ function SessionsSection({ t }: { t: Translator }) {
   )
 }
 
+function NoPasswordSection({ t }: { t: Translator }) {
+  return (
+    <section aria-labelledby="password-heading" className="flex flex-col gap-2">
+      <h2 id="password-heading" className="flex items-center gap-2 text-lg font-semibold">
+        <LockKeyhole size={18} aria-hidden="true" />
+        {t('passwordTitle')}
+      </h2>
+      <p className="text-muted-foreground text-sm">{t('passwordNotSet')}</p>
+    </section>
+  )
+}
+
 function PasswordSection({ t }: { t: Translator }) {
   const { toastApiError } = useApiError()
   const errorsT = useTranslations('Errors')
@@ -282,7 +305,15 @@ function PasswordSection({ t }: { t: Translator }) {
   )
 }
 
-function TotpSection({ t, initialActive }: { t: Translator; initialActive: boolean }) {
+function TotpSection({
+  t,
+  initialActive,
+  googleLinked,
+}: {
+  t: Translator
+  initialActive: boolean
+  googleLinked: boolean
+}) {
   const { toastApiError } = useApiError()
   const queryClient = useQueryClient()
   const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null)
@@ -394,6 +425,7 @@ function TotpSection({ t, initialActive }: { t: Translator; initialActive: boole
           {t('totpTitle')}
         </h2>
         <p className="text-muted-foreground text-sm">{t('totpDescription')}</p>
+        {googleLinked ? <p className="text-muted-foreground text-sm">{t('totpGoogleNote')}</p> : null}
       </div>
 
       {enrollment ? (

@@ -175,15 +175,20 @@ impl GoogleAuthService {
         // Google bypasses the password+TOTP check, but the security page
         // still needs the enrollment state. Best-effort: a listing failure
         // must not block a sign-in that already succeeded.
-        let mfa_enabled = match self
+        // UX-188: the password flag comes from the same listing; unknown
+        // reads as "has one" (the change form then answers honestly).
+        let (mfa_enabled, has_password) = match self
             .zitadel
             .list_auth_method_types(&user.zitadel_user_id)
             .await
         {
-            Ok(methods) => methods.iter().any(|m| m == super::auth::TOTP_METHOD),
+            Ok(methods) => (
+                methods.iter().any(|m| m == super::auth::TOTP_METHOD),
+                methods.iter().any(|m| m == super::auth::PASSWORD_METHOD),
+            ),
             Err(err) => {
                 tracing::warn!(%err, "auth methods listing failed after google login");
-                false
+                (false, true)
             }
         };
         self.sessions
@@ -198,6 +203,8 @@ impl GoogleAuthService {
                 permissions,
                 rbac_version: user.rbac_version,
                 mfa_enabled,
+                has_password,
+                google_linked: true,
                 ip: ip.map(str::to_owned),
                 user_agent: user_agent.map(str::to_owned),
                 epoch,

@@ -248,6 +248,17 @@ pub async fn find_user_id_by_email(pool: &PgPool, email: &str) -> Result<Option<
 }
 
 /// Link a Google `sub` to a user. Idempotent per sub.
+/// A Google identity is linked to the account.
+pub async fn google_linked(pool: &PgPool, user_id: UserId) -> Result<bool> {
+    let linked = sqlx::query_scalar!(
+        r#"SELECT EXISTS(SELECT 1 FROM google_accounts WHERE user_id = $1) AS "linked!""#,
+        user_id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(linked)
+}
+
 pub async fn link_google_account(
     pool: &PgPool,
     user_id: UserId,

@@ -111,6 +111,22 @@ describe('UserSecuritySettings', () => {
     expect(screen.queryByText('enableTotp')).toBeNull()
   })
 
+  // UX-188: a Google-only account has no password to change, and TOTP does
+  // not guard its Google sign-in — say so instead of offering the form.
+  it('shows a Google-only account no change-password form and the Google TOTP note', async () => {
+    mockListSessions.mockResolvedValue([])
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings hasPassword={false} googleLinked />
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByText('passwordNotSet')).toBeDefined()
+    expect(document.querySelector('input[name="currentPassword"]')).toBeNull()
+    expect(screen.queryByText('changePassword')).toBeNull()
+    expect(screen.getByText('totpGoogleNote')).toBeDefined()
+  })
+
   it('changes the password through the BFF and maps invalid-credentials onto the current field', async () => {
     mockListSessions.mockResolvedValue([])
     const { APIError } = await import('@/lib/api/assertSuccess')

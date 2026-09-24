@@ -34,7 +34,7 @@ pub async fn my_profile(
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<Json<UserProfile>> {
     let profile = state.users.my_profile(&actor).await?;
-    Ok(Json(UserProfile::from_profile(profile, actor.mfa_enabled)))
+    Ok(Json(UserProfile::for_actor(profile, &actor)))
 }
 
 /// Update the caller's own profile (requires `user:update:own`).
@@ -68,7 +68,7 @@ pub async fn update_my_profile(
             },
         )
         .await?;
-    Ok(Json(UserProfile::from_profile(profile, actor.mfa_enabled)))
+    Ok(Json(UserProfile::for_actor(profile, &actor)))
 }
 
 /// Admin account creation (requires `platform:manage:platform`): Zitadel

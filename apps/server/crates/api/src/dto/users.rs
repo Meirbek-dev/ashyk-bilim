@@ -14,10 +14,31 @@ pub struct UserProfile {
     /// TOTP enrolled on the account (`false` where no session is involved,
     /// e.g. the registration answer).
     pub mfa_enabled: bool,
+    /// The account has a password to change (`false`: Google-only — no
+    /// password can be set through the API — or no session involved). UX-188.
+    pub has_password: bool,
+    /// A Google identity is linked; Google sign-in never asks for the TOTP
+    /// code.
+    pub google_linked: bool,
 }
 
 impl UserProfile {
-    pub(crate) fn from_profile(p: ab_domain::identity::users::Profile, mfa_enabled: bool) -> Self {
+    pub(crate) fn for_actor(
+        p: ab_domain::identity::users::Profile,
+        actor: &ab_domain::identity::Actor,
+    ) -> Self {
+        Self {
+            mfa_enabled: actor.mfa_enabled,
+            has_password: actor.has_password,
+            google_linked: actor.google_linked,
+            ..Self::from(p)
+        }
+    }
+}
+
+/// No session involved (registration / admin answers): the session flags are `false`.
+impl From<ab_domain::identity::users::Profile> for UserProfile {
+    fn from(p: ab_domain::identity::users::Profile) -> Self {
         Self {
             id: p.id,
             username: p.username,
@@ -26,14 +47,10 @@ impl UserProfile {
             bio: p.bio,
             avatar_key: p.avatar_key,
             locale: p.locale,
-            mfa_enabled,
+            mfa_enabled: false,
+            has_password: false,
+            google_linked: false,
         }
-    }
-}
-
-impl From<ab_domain::identity::users::Profile> for UserProfile {
-    fn from(p: ab_domain::identity::users::Profile) -> Self {
-        Self::from_profile(p, false)
     }
 }
 

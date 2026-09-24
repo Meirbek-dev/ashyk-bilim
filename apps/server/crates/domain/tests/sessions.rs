@@ -20,6 +20,8 @@ fn new_session(user_id: UserId, perms: &[&str]) -> NewSession {
         permissions: perms.iter().map(ToString::to_string).collect(),
         rbac_version: 1,
         mfa_enabled: false,
+        has_password: true,
+        google_linked: false,
         ip: Some("127.0.0.1".into()),
         user_agent: Some("test".into()),
         epoch: 0,

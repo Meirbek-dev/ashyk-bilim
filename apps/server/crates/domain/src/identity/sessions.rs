@@ -94,6 +94,9 @@ if redis.call('EXPIRE', KEYS[1], ARGV[1]) == 1 then
   redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[1])
 end
 return 1";
+const fn yes() -> bool {
+    true
+}
 fn now_unix() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -123,6 +126,14 @@ pub struct SessionRecord {
     /// change) — `mfa_enabled` on the wire.
     #[serde(default)]
     pub mfa_enabled: bool,
+    /// The account has a password (UX-188): always after a password login,
+    /// from Zitadel's auth methods after a Google one. Records from before
+    /// the flag were password logins.
+    #[serde(default = "yes")]
+    pub has_password: bool,
+    /// A Google identity is linked to the account (as of login).
+    #[serde(default)]
+    pub google_linked: bool,
     pub created_at_unix: i64,
     pub last_seen_unix: i64,
     pub ip: Option<String>,
@@ -140,6 +151,8 @@ pub struct NewSession {
     pub permissions: Vec<String>,
     pub rbac_version: i64,
     pub mfa_enabled: bool,
+    pub has_password: bool,
+    pub google_linked: bool,
     pub ip: Option<String>,
     pub user_agent: Option<String>,
     /// [`SessionStore::epoch`] as read BEFORE every check this session rests
@@ -220,6 +233,8 @@ impl SessionStore {
             permissions: new.permissions,
             rbac_version: new.rbac_version,
             mfa_enabled: new.mfa_enabled,
+            has_password: new.has_password,
+            google_linked: new.google_linked,
             created_at_unix: now,
             last_seen_unix: now,
             ip: new.ip,

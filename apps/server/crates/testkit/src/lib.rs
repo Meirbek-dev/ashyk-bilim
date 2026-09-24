@@ -293,6 +293,8 @@ impl TestApp {
                 permissions: permissions.iter().map(ToString::to_string).collect(),
                 rbac_version: 1,
                 mfa_enabled: false,
+                has_password: true,
+                google_linked: false,
                 ip: None,
                 user_agent: Some("testkit".into()),
                 epoch,
