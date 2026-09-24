@@ -337,8 +337,9 @@ pub struct TrailRunInfoRow {
     pub user_id: UserId,
 }
 
-/// Attempts the dashboards leave out (UX-192): staff previews, and the
-/// non-preview attempts of the course's staff (made before they joined it —
+/// Attempts the dashboards leave out (UX-192).
+///
+/// Staff previews, and the non-preview attempts of the course's staff (made before they joined it —
 /// staff are in no member set, BUG-287). Same window as [`list_submissions`].
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ExcludedAttempts {

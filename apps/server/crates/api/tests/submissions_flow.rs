@@ -1752,5 +1752,8 @@ async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
             .unwrap();
     assert!(preview);
     assert_ne!(status, "draft");
-    assert_eq!(penalty, 0.0, "a preview carries no late penalty");
+    assert!(
+        penalty.abs() < f64::EPSILON,
+        "a preview carries no late penalty: {penalty}"
+    );
 }
