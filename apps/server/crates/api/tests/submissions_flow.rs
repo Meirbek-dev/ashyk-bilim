@@ -1770,6 +1770,65 @@ async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
     );
 }
 
+/// BUG-315: a timed draft whose clock ran out before the due date is on time
+/// however late the sweep gets to it — judged, and handed in, at the moment
+/// its time expired.
+#[sqlx::test(migrations = "../../migrations")]
+async fn timer_sweep_judges_lateness_when_the_clock_ran_out(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, _items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "time_limit_seconds": 60, "allow_late": true,
+                            "late_policy": { "kind": "penalty", "percent_per_day": 25, "max_days": 3 } }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let sub = uuid::Uuid::parse_str(draft.json()["id"].as_str().unwrap()).unwrap();
+    // Clock out 2 minutes ago, due 1 minute ago, the sweep only now.
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE submissions SET started_at = now() - interval '3 minutes' WHERE id = $1")
+        .bind(sub)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+
+    let swept =
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
+            .await
+            .unwrap();
+    assert_eq!(swept, 1);
+    let (late, penalty, at_clock_out): (bool, f64, bool) = sqlx::query_as(
+        "SELECT is_late, late_penalty_pct,
+                submitted_at < now() - interval '90 seconds' AND duration_seconds = 60
+         FROM submissions WHERE id = $1",
+    )
+    .bind(sub)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert!(!late);
+    assert!(penalty.abs() < f64::EPSILON, "{penalty}");
+    assert!(at_clock_out, "handed in when the time ran out");
+}
+
 /// A user with author permissions who is no course contributor — a learner
 /// until the teacher adds them to the staff.
 async fn future_maintainer(app: &TestApp, name: &str) -> MintedSession {

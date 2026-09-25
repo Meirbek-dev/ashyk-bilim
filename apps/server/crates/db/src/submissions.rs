@@ -345,6 +345,9 @@ pub struct SubmitOutcome<'a> {
     pub auto_submit_reason: Option<AutoSubmitReason>,
     pub graded: bool,
     pub duration_seconds: Option<i32>,
+    /// The hand-in moment; `None` is now (BUG-315: a timer sweep hands in
+    /// at the moment the clock ran out).
+    pub submitted_at: Option<i64>,
 }
 
 /// Draft → submitted. `false` when the row is no longer a draft (a
@@ -356,7 +359,7 @@ pub async fn persist_submit(pool: &PgPool, id: SubmissionId, o: SubmitOutcome<'_
                is_late = $7, late_penalty_pct = $8, violation_count = $9,
                auto_submit_reason = $10,
                auto_submitted_at = CASE WHEN $10::text IS NULL THEN NULL ELSE now() END,
-               submitted_at = now(),
+               submitted_at = COALESCE(to_timestamp($13::bigint), now()),
                graded_at = CASE WHEN $11 THEN now() ELSE NULL END,
                duration_seconds = $12
            WHERE id = $1 AND status = 'draft'"#,
@@ -371,7 +374,8 @@ pub async fn persist_submit(pool: &PgPool, id: SubmissionId, o: SubmitOutcome<'_
         o.violation_count,
         o.auto_submit_reason.map(AutoSubmitReason::as_str),
         o.graded,
-        o.duration_seconds
+        o.duration_seconds,
+        o.submitted_at
     )
     .execute(pool)
     .await?;

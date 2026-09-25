@@ -100,6 +100,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         auto_submit_reason: Some(AutoSubmitReason::TimeExpired),
         graded: true,
         duration_seconds: Some(42),
+        submitted_at: None,
     };
     assert!(
         submissions::persist_submit(&pool, first, outcome)
@@ -118,6 +119,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         auto_submit_reason: None,
         graded: true,
         duration_seconds: None,
+        submitted_at: None,
     };
     assert!(
         !submissions::persist_submit(&pool, first, again)

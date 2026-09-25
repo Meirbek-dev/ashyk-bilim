@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE submissions SET\n               status = $2, answers = $3, grading = $4, auto_score = $5, final_score = $6,\n               is_late = $7, late_penalty_pct = $8, violation_count = $9,\n               auto_submit_reason = $10,\n               auto_submitted_at = CASE WHEN $10::text IS NULL THEN NULL ELSE now() END,\n               submitted_at = COALESCE(to_timestamp($13::bigint), now()),\n               graded_at = CASE WHEN $11 THEN now() ELSE NULL END,\n               duration_seconds = $12\n           WHERE id = $1 AND status = 'draft'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Jsonb",
+        "Float8",
+        "Float8",
+        "Bool",
+        "Float8",
+        "Int4",
+        "Text",
+        "Bool",
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0e79b2f435ce78deeb61f4d3ca8149f1bf9c882f80a62f9512960c97f2a9c4ab"
+}

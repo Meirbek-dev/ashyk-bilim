@@ -1400,3 +1400,15 @@ Implements three more items of the owner answers above. Routes:
   hand-in — it needs a policy history (hand-ins only carry
   `policy_version`), and a teacher moving the due date expects existing
   work to follow it, as an extension does.
+
+## A timed attempt is handed in when its clock runs out (2026-09-25, gauntlet pass 27)
+
+- **The timer sweep hands an expired draft in at `started_at +
+  time_limit_seconds`** (never later than the sweep itself; BUG-315): that
+  moment is its `submitted_at`, and lateness, the late penalty and the
+  override in force (BUG-307) are judged at it — not when the
+  once-a-minute sweep got to the draft. `auto_submitted_at` still records
+  the sweep. Settling re-judges the same `submitted_at`, so live grading and
+  re-settling agree. Why: a draft whose time ran out 8 s before the due date
+  was swept 12 s after it and took a 25 % late penalty; a run swept 2 s
+  earlier scored 100 on time.

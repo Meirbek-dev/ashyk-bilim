@@ -311,6 +311,8 @@ struct FinalizeOptions {
     skip_constraints: bool,
     violation_count: i32,
     auto_submit_reason: Option<AutoSubmitReason>,
+    /// The hand-in moment lateness is judged at; `None` is now (BUG-315).
+    submitted_at: Option<i64>,
 }
 
 #[derive(Clone)]
@@ -803,6 +805,7 @@ impl SubmissionsService {
                 skip_constraints: false,
                 violation_count,
                 auto_submit_reason: None,
+                submitted_at: None,
             },
         )
         .await?;
@@ -871,10 +874,11 @@ impl SubmissionsService {
         if submission.content_version < assessment.content_version {
             grade.breakdown.needs_manual_review = true;
         }
+        let at = opts.submitted_at.unwrap_or(now);
         let late_pct = penalties::late_penalty_pct(
             effective.late_policy,
             effective.due_at,
-            now,
+            at,
             effective.allow_late,
         );
         let penalty = penalties::apply(&PenaltyInput {
@@ -904,14 +908,15 @@ impl SubmissionsService {
                 grading: &breakdown,
                 auto_score: Some(verdict.auto_score),
                 final_score: verdict.final_score,
-                is_late: effective.is_late(now),
+                is_late: effective.is_late(at),
                 late_penalty_pct: penalty.late_penalty_pct,
                 violation_count: opts.violation_count,
                 auto_submit_reason: verdict.auto_submit_reason,
                 graded: !verdict.manual,
                 duration_seconds: submission
                     .started_at
-                    .map(|s| i32::try_from((now - s).max(0)).unwrap_or(i32::MAX)),
+                    .map(|s| i32::try_from((at - s).max(0)).unwrap_or(i32::MAX)),
+                submitted_at: opts.submitted_at,
             },
         )
         .await?;
@@ -1128,16 +1133,23 @@ impl SubmissionsService {
             .into_iter()
             .map(Item::try_from)
             .collect::<Result<Vec<_>>>()?;
+        // BUG-315: the hand-in is the moment the clock ran out, not when the
+        // sweep got to it — lateness, the override in force (BUG-307) and
+        // `submitted_at` (what settling re-judges) all use it.
+        let submitted_at = match (submission.started_at, assessment.time_limit_seconds) {
+            (Some(started), Some(limit)) => (started + i64::from(limit)).min(now_unix()),
+            _ => now_unix(),
+        };
         // BUG-279: the attempt's own preview flag — the same policy rule as
         // a manual submit (a preview carries no late penalty).
         let preview = submission.preview;
-        let effective = AssessmentsService::effective_policy_for(
-            pool,
-            &assessment,
-            submission.user_id,
-            preview,
-        )
-        .await?;
+        let row = if preview {
+            None
+        } else {
+            ab_db::assessments::get_override(pool, assessment.id, submission.user_id).await?
+        };
+        let effective =
+            AssessmentsService::policy_at(&assessment, row.as_ref(), preview, submitted_at);
         let shapes: Vec<ItemShape> = items
             .iter()
             .map(|i| ItemShape {
@@ -1167,6 +1179,7 @@ impl SubmissionsService {
                 skip_constraints: true,
                 violation_count,
                 auto_submit_reason: Some(AutoSubmitReason::TimeExpired),
+                submitted_at: Some(submitted_at),
             },
         )
         .await?;
