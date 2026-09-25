@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.id AS \"id!: DiscussionId\", d.course_id AS \"course_id!: CourseId\",\n                  d.user_id AS \"user_id?: UserId\", d.parent_id AS \"parent_id?: DiscussionId\",\n                  d.content AS \"content!\", d.status AS \"status!: DiscussionStatus\",\n                  u.username AS \"username?\", u.display_name AS \"display_name?\", u.avatar_key AS \"avatar_key?\",\n                  d.likes_count AS \"likes_count!\", d.dislikes_count AS \"dislikes_count!\", d.replies_count AS \"replies_count!\",\n                  (SELECT r.reaction FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.user_id = $2) AS \"my_reaction?: ReactionKind\",\n                  (extract(epoch FROM d.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM d.updated_at))::bigint AS \"updated_at!\"\n           FROM course_discussions d LEFT JOIN users u ON u.id = d.user_id\n           WHERE d.parent_id = $1 AND d.status = 'active'\n             AND ($3::uuid IS NULL OR d.id > $3)\n           ORDER BY d.id\n           LIMIT $4",
+  "query": "SELECT d.id AS \"id!: DiscussionId\", d.course_id AS \"course_id!: CourseId\",\n                  d.user_id AS \"user_id?: UserId\", d.parent_id AS \"parent_id?: DiscussionId\",\n                  d.content AS \"content!\", d.status AS \"status!: DiscussionStatus\",\n                  -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,\n                  -- which differs between an empty and a populated database (the .sqlx cache then drifts).\n                  (SELECT u.username FROM users u WHERE u.id = d.user_id) AS \"username?\",\n                  (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS \"display_name?\",\n                  (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS \"avatar_key?\",\n                  d.likes_count AS \"likes_count!\", d.dislikes_count AS \"dislikes_count!\", d.replies_count AS \"replies_count!\",\n                  (SELECT r.reaction FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.user_id = $2) AS \"my_reaction?: ReactionKind\",\n                  (extract(epoch FROM d.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM d.updated_at))::bigint AS \"updated_at!\"\n           FROM course_discussions d\n           WHERE d.id = $1",
   "describe": {
     "columns": [
       {
@@ -73,34 +73,19 @@
         "ordinal": 6,
         "name": "username?",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "username"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 7,
         "name": "display_name?",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "display_name"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 8,
         "name": "avatar_key?",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "avatar_key"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 9,
@@ -157,9 +142,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid",
-        "Uuid",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -169,9 +152,9 @@
       true,
       false,
       false,
-      false,
-      false,
-      true,
+      null,
+      null,
+      null,
       false,
       false,
       false,
@@ -180,5 +163,5 @@
       null
     ]
   },
-  "hash": "e4fb0575cc8a82dce222fdb1c8bf100ee59bc7e05b4294c6c352c09b31e63642"
+  "hash": "091bfca9ae4fce44706e0cb4bbea31bd9b0f3e7255a9cda1ab4eac7e765745e5"
 }

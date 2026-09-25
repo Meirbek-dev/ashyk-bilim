@@ -41,13 +41,17 @@ pub async fn get_discussion(
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
                   d.content AS "content!", d.status AS "status!: DiscussionStatus",
-                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key AS "avatar_key?",
+                  -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
+                  -- which differs between an empty and a populated database (the .sqlx cache then drifts).
+                  (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
+                  (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS "display_name?",
+                  (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS "avatar_key?",
                   d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
-           FROM course_discussions d LEFT JOIN users u ON u.id = d.user_id
+           FROM course_discussions d
            WHERE d.id = $1"#,
         id.0,
         viewer.0
@@ -70,13 +74,17 @@ pub async fn list_posts(
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
                   d.content AS "content!", d.status AS "status!: DiscussionStatus",
-                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key AS "avatar_key?",
+                  -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
+                  -- which differs between an empty and a populated database (the .sqlx cache then drifts).
+                  (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
+                  (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS "display_name?",
+                  (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS "avatar_key?",
                   d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
-           FROM course_discussions d LEFT JOIN users u ON u.id = d.user_id
+           FROM course_discussions d
            WHERE d.course_id = $1 AND d.parent_id IS NULL AND d.status = 'active'
              AND ($3::uuid IS NULL OR d.id < $3)
            ORDER BY d.id DESC
@@ -104,13 +112,17 @@ pub async fn list_replies(
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
                   d.content AS "content!", d.status AS "status!: DiscussionStatus",
-                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key AS "avatar_key?",
+                  -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
+                  -- which differs between an empty and a populated database (the .sqlx cache then drifts).
+                  (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
+                  (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS "display_name?",
+                  (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS "avatar_key?",
                   d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
-           FROM course_discussions d LEFT JOIN users u ON u.id = d.user_id
+           FROM course_discussions d
            WHERE d.parent_id = $1 AND d.status = 'active'
              AND ($3::uuid IS NULL OR d.id > $3)
            ORDER BY d.id
@@ -137,13 +149,17 @@ pub async fn list_replies_for(
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
                   d.content AS "content!", d.status AS "status!: DiscussionStatus",
-                  u.username AS "username?", u.display_name AS "display_name?", u.avatar_key AS "avatar_key?",
+                  -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
+                  -- which differs between an empty and a populated database (the .sqlx cache then drifts).
+                  (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
+                  (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS "display_name?",
+                  (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS "avatar_key?",
                   d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
-           FROM course_discussions d LEFT JOIN users u ON u.id = d.user_id
+           FROM course_discussions d
            WHERE d.parent_id = ANY($1) AND d.status = 'active'
            ORDER BY d.id"#,
         &ids,
