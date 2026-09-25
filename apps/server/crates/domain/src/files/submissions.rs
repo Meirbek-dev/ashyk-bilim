@@ -211,6 +211,51 @@ const fn late_policy_of(row: &FileSubmissionRow) -> LatePolicy {
     )
 }
 
+/// BUG-316: every learner's file hand-ins judged by the late rules as they
+/// stand — the worker side of `ProgressProjector::after_file_lateness_change`.
+/// Each attempt reads the config under the lock a settings PATCH takes, so a
+/// pass racing a newer PATCH never prices a row by the older rules (the
+/// newer PATCH's own pass runs after it). Previews are never late.
+pub(crate) async fn settle_lateness(pool: &PgPool, id: FileSubmissionId) -> Result<()> {
+    let mut changed = Vec::new();
+    for attempt in ab_db::file_submissions::list_attempts(pool, id).await? {
+        let Some(at) = attempt.submitted_at else {
+            continue;
+        };
+        let mut tx = pool.begin().await?;
+        let Some(config) = ab_db::file_submissions::lock_file_submission(&mut tx, id).await? else {
+            return Ok(());
+        };
+        let late = config.due_at.is_some_and(|due| at > due);
+        let pct = late_penalty_pct(
+            late_policy_of(&config),
+            config.due_at,
+            at,
+            config.allow_late,
+        );
+        let Some((was_late, was_pct, raw)) =
+            ab_db::file_submissions::lock_attempt_lateness(&mut tx, attempt.id).await?
+        else {
+            continue;
+        };
+        if late == was_late && (pct - was_pct).abs() <= f64::EPSILON {
+            continue;
+        }
+        let final_score = raw.map(|s| apply_late(s, pct));
+        ab_db::file_submissions::set_attempt_lateness(&mut tx, attempt.id, late, pct, final_score)
+            .await?;
+        tx.commit().await?;
+        changed.push(attempt.user_id);
+    }
+    changed.sort_unstable();
+    changed.dedup();
+    let projector = ProgressProjector::new(pool.clone());
+    for user_id in changed {
+        projector.reproject_file_attempt(id, user_id).await;
+    }
+    Ok(())
+}
+
 /// Legacy `FileSubmissionConfig` ranges.
 fn validate_config(v: &FileSubmissionValues<'_>) -> Result<()> {
     let mut errors = Vec::new();
@@ -602,6 +647,13 @@ impl FileSubmissionsService {
         }
         ab_db::file_submissions::update_file_submission(&mut *tx, id, values).await?;
         tx.commit().await?;
+        // BUG-316: like a quiz policy PUT (BUG-312), new late rules re-price
+        // every existing hand-in — one rule for every learner.
+        if (row.due_at, row.allow_late, late_policy_of(&row))
+            != (merged.due_at, merged.allow_late, late_policy_of(&merged))
+        {
+            self.projector.after_file_lateness_change(id).await;
+        }
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await
     }

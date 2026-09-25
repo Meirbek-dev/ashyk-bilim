@@ -1735,6 +1735,66 @@ async fn a_policy_change_settles_every_hand_in(pool: PgPool) {
     }
 }
 
+/// BUG-316: a policy change that only moves `attempt_penalty_percent`
+/// re-scores the hand-ins it caps — attempt 2 graded 100 goes 100 → 70.
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_attempt_penalty_change_rescores_hand_ins(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    let mut subs = Vec::new();
+    for _ in 0..2 {
+        let sub = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+        let published = app
+            .send(grade(
+                &teacher,
+                &sub,
+                Some("1"),
+                &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            ))
+            .await;
+        assert_eq!(
+            published.json()["final_score"],
+            100.0,
+            "{}",
+            published.text()
+        );
+        subs.push(sub);
+    }
+    let unpublished = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "draft" }),
+        )
+        .await;
+    assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
+    let mut policy = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await
+        .json()["policy"]
+        .clone();
+    policy["attempt_penalty_percent"] = serde_json::json!(30);
+    let put = app
+        .send(put_json(
+            &teacher.cookie,
+            &format!("/api/v2/assessments/{id}/policy"),
+            &policy,
+        ))
+        .await;
+    assert_eq!(put.status, StatusCode::OK, "{}", put.text());
+    assert_eq!(lateness(&app, &teacher, &subs[0]).await.0, Some(100.0));
+    assert_eq!(lateness(&app, &teacher, &subs[1]).await.0, Some(70.0));
+}
+
 /// BUG-285: previews a maintainer made never count once they are a learner
 /// — not toward the cap, not in the attempt number, not in their own list.
 #[sqlx::test(migrations = "../../migrations")]

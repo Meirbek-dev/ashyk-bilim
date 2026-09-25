@@ -952,6 +952,71 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
     assert_eq!(mine.json()["final_score"], 56.0, "{}", mine.text());
 }
 
+/// BUG-316: a settings change to the late rules re-prices every existing
+/// file hand-in — the rate (80 → 56 → 32) and the due date (→ on time, 80).
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF late").await;
+    let id = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({
+            "due_at_unix": now_unix() - 2 * 86_400 - 60, "allow_late": true,
+            "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 5 },
+        }),
+    )
+    .await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let graded = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&submitted.json()["version"].to_string()),
+            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+        ))
+        .await;
+    assert_eq!(graded.json()["final_score"], 56.0, "{}", graded.text());
+    let attempt_path = format!("/api/v2/file-submission-attempts/{attempt_id}");
+    for (patch, late, pct, score) in [
+        (
+            serde_json::json!({ "late_policy":
+                { "kind": "penalty", "percent_per_day": 20, "max_days": 5 } }),
+            true,
+            60.0,
+            32.0,
+        ),
+        (
+            serde_json::json!({ "due_at_unix": now_unix() + 86_400 }),
+            false,
+            0.0,
+            80.0,
+        ),
+    ] {
+        let moved = app
+            .patch_as(&teacher, &format!("/api/v2/file-submissions/{id}"), &patch)
+            .await;
+        assert_eq!(moved.status, StatusCode::OK, "{}", moved.text());
+        let mine = app.get_as(&alice, &attempt_path).await;
+        assert_eq!(mine.json()["is_late"], late, "{}", mine.text());
+        assert_eq!(mine.json()["late_penalty_pct"], pct, "{}", mine.text());
+        assert_eq!(mine.json()["final_score"], score, "{}", mine.text());
+    }
+}
+
 /// BUG-129: completion is sticky. A second attempt that is only submitted
 /// (not yet published) keeps the course completed and the certificate.
 #[sqlx::test(migrations = "../../migrations")]

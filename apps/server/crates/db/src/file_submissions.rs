@@ -557,6 +557,45 @@ pub async fn grade_attempt(
     Ok(updated.rows_affected() == 1)
 }
 
+/// BUG-316: `(is_late, late_penalty_pct, raw_score)` of one attempt under
+/// `FOR UPDATE` — the lateness settle's read, which a grade save contends for.
+pub async fn lock_attempt_lateness(
+    conn: &mut sqlx::PgConnection,
+    id: FileAttemptId,
+) -> Result<Option<(bool, f64, Option<f64>)>> {
+    let row = sqlx::query!(
+        "SELECT is_late, late_penalty_pct, raw_score FROM file_submission_attempts
+         WHERE id = $1 FOR UPDATE",
+        id.0
+    )
+    .fetch_optional(conn)
+    .await?;
+    Ok(row.map(|r| (r.is_late, r.late_penalty_pct, r.raw_score)))
+}
+
+/// BUG-316: re-judged lateness and the final score it prices; the version
+/// bumps, so a grade save that priced the old penalty is stale (412).
+pub async fn set_attempt_lateness(
+    conn: &mut sqlx::PgConnection,
+    id: FileAttemptId,
+    is_late: bool,
+    late_penalty_pct: f64,
+    final_score: Option<f64>,
+) -> Result<()> {
+    sqlx::query!(
+        "UPDATE file_submission_attempts SET is_late = $2, late_penalty_pct = $3,
+             final_score = $4, version = version + 1
+         WHERE id = $1",
+        id.0,
+        is_late,
+        late_penalty_pct,
+        final_score
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
 // ── Review queue ────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]

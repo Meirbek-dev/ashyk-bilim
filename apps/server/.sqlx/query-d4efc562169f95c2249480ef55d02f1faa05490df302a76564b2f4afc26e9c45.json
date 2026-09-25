@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE file_submission_attempts SET is_late = $2, late_penalty_pct = $3,\n             final_score = $4, version = version + 1\n         WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d4efc562169f95c2249480ef55d02f1faa05490df302a76564b2f4afc26e9c45"
+}

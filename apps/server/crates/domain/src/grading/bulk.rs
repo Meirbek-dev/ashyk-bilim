@@ -303,26 +303,35 @@ async fn settle_lateness(
         return Ok(());
     };
     let penalty_changed = (penalty_pct - locked.late_penalty_pct).abs() > f64::EPSILON;
-    if late == locked.is_late && !penalty_changed {
-        return Ok(());
-    }
     // A row with a score of record is re-scored from its ledger (raw score,
     // attempt cap, the new late deduction). BUG-206: a pending row
     // (feedback-only saved, no final) keeps its `NULL` — the ledger entry is
-    // not a grade; the teacher's save applies the stored penalty.
-    let final_score = if penalty_changed
-        && locked.final_score.is_some()
-        && let Some(entry) =
-            ab_db::submissions::latest_grading_entry(&mut *tx, submission.id).await?
-    {
-        let rescored = apply_late(
+    // not a grade; the teacher's save applies the stored penalty. BUG-316:
+    // the whole deduction is recomputed, so a policy change that only moves
+    // `attempt_penalty_percent` re-scores too.
+    let entry = match locked.final_score {
+        Some(_) => ab_db::submissions::latest_grading_entry(&mut *tx, submission.id).await?,
+        None => None,
+    };
+    let rescored = entry.as_ref().map(|entry| {
+        apply_late(
             attempt_cap(
                 entry.raw_score,
                 assessment.attempt_penalty_percent,
                 submission.attempt_number,
             ),
             penalty_pct,
-        );
+        )
+    });
+    let score_changed = rescored
+        .zip(locked.final_score)
+        .is_some_and(|(new, old)| (new - old).abs() > f64::EPSILON);
+    if late == locked.is_late && !penalty_changed && !score_changed {
+        return Ok(());
+    }
+    let final_score = if (penalty_changed || score_changed)
+        && let (Some(entry), Some(rescored)) = (entry, rescored)
+    {
         ab_db::submissions::insert_grading_entry(
             &mut *tx,
             NewGradingEntry {

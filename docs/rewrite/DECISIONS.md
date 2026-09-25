@@ -1400,6 +1400,17 @@ Implements three more items of the owner answers above. Routes:
   hand-in — it needs a policy history (hand-ins only carry
   `policy_version`), and a teacher moving the due date expects existing
   work to follow it, as an extension does.
+- **The settle re-prices the whole deduction, and file hand-ins follow
+  their late rules too** (BUG-316): a settled row is re-scored from its
+  ledger whenever the attempt cap or the late penalty moves it, so a policy
+  `PUT` that only changes `attempt_penalty_percent` re-scores capped
+  hand-ins. A file-submission settings `PATCH` that changes the due date,
+  `allow_late` or the late policy re-judges every file hand-in (same
+  `progress:lateness` kind, payload `{ file_submission_id }`); each attempt
+  reads the config under the lock the `PATCH` takes, so an older pass never
+  prices a row by replaced rules. File attempts have no ledger: the final is
+  the stored raw score less the new penalty, and the version bumps (412 for
+  a grade save that priced the old one).
 
 ## A timed attempt is handed in when its clock runs out (2026-09-25, gauntlet pass 27)
 

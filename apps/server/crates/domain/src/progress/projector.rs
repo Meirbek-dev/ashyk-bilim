@@ -535,6 +535,19 @@ impl ProgressProjector {
         .await;
     }
 
+    /// A file submission's late rules changed (BUG-316): every learner's
+    /// file hand-ins re-priced, through [`Self::after_commit`] on the
+    /// [`LATENESS_JOB`] kind (payload `{ file_submission_id }`).
+    pub async fn after_file_lateness_change(&self, file_submission_id: FileSubmissionId) {
+        let pool = self.pool.clone();
+        self.after_commit(
+            LATENESS_JOB,
+            serde_json::json!({ "file_submission_id": file_submission_id }),
+            async move { crate::files::submissions::settle_lateness(&pool, file_submission_id).await },
+        )
+        .await;
+    }
+
     /// The one durable post-commit path for course-wide progress work: the
     /// write already landed, so it never fails the caller. `work` runs on
     /// its own task (a hang-up or timeout of the request cannot drop it);
@@ -583,6 +596,13 @@ impl ProgressProjector {
             COURSE_CHANGE_JOB => {
                 self.recalculate_course_for_all(field(payload, "course_id")?)
                     .await
+            }
+            LATENESS_JOB if !payload["file_submission_id"].is_null() => {
+                crate::files::submissions::settle_lateness(
+                    &self.pool,
+                    field(payload, "file_submission_id")?,
+                )
+                .await
             }
             LATENESS_JOB => {
                 crate::grading::bulk::settle_assessment(
