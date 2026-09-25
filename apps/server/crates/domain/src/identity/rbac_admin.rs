@@ -351,28 +351,52 @@ impl RbacAdminService {
     }
 
     /// Bump + rewrite sessions for every affected user (role-level change).
+    /// The members' re-projections run concurrently under one shared inline
+    /// wait, never one per member back to back (UX-210); those still busy
+    /// are left to their queued jobs.
     async fn propagate_all(&self, user_ids: &[UserId]) -> Result<()> {
-        for user_id in user_ids {
-            if let Some(version) = ab_db::identity::bump_rbac_version(&self.pool, *user_id).await? {
-                self.propagate(*user_id, version).await?;
+        let mut changed = Vec::new();
+        let outcome: Result<()> = async {
+            for &user_id in user_ids {
+                if let Some(version) =
+                    ab_db::identity::bump_rbac_version(&self.pool, user_id).await?
+                {
+                    self.push_grants(user_id, version).await?;
+                    changed.push(user_id);
+                }
             }
+            Ok(())
         }
+        .await;
+        let projector = ProgressProjector::new(self.pool.clone());
+        futures::future::join_all(
+            changed
+                .iter()
+                .map(|user_id| projector.after_staff_change(*user_id, None)),
+        )
+        .await;
+        outcome
+    }
+
+    /// [`Self::push_grants`], then re-project the courses they hold a run
+    /// in: a grant change can move them off (or onto) every course's staff
+    /// (`is_course_staff`, BUG-291).
+    async fn propagate(&self, user_id: UserId, rbac_version: i64) -> Result<()> {
+        self.push_grants(user_id, rbac_version).await?;
+        ProgressProjector::new(self.pool.clone())
+            .after_staff_change(user_id, None)
+            .await;
         Ok(())
     }
 
-    /// Push the user's fresh grants into every live session, and re-project
-    /// the courses they hold a run in: a grant change can move them off
-    /// (or onto) every course's staff (`is_course_staff`, BUG-291).
-    async fn propagate(&self, user_id: UserId, rbac_version: i64) -> Result<()> {
+    /// Push the user's fresh grants into every live session.
+    async fn push_grants(&self, user_id: UserId, rbac_version: i64) -> Result<()> {
         let (roles, permissions) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
         let updated = self
             .sessions
             .rewrite_user_sessions(user_id, &roles, &permissions, rbac_version)
             .await?;
         tracing::info!(%user_id, rbac_version, sessions = updated, "rbac change propagated");
-        ProgressProjector::new(self.pool.clone())
-            .after_staff_change(user_id, None)
-            .await;
         Ok(())
     }
 }

@@ -1260,6 +1260,99 @@ async fn roster_add_past_the_inline_wait_is_201_and_the_job_sweeps(pool: PgPool)
     assert_eq!(overrides().await, 0);
 }
 
+/// UX-210: a role change whose members' locks are all held waits one
+/// inline budget for the lot, not one per member back to back, and each
+/// member's queued job sweeps them once the locks free.
+#[sqlx::test(migrations = "../../migrations")]
+async fn role_change_over_busy_members_waits_once(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let admin = app.mint_session(&["*:*:*"]).await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let role = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({ "slug": "busy", "display_name": "B", "priority": 5 }),
+        )
+        .await;
+    assert_eq!(role.status, StatusCode::NO_CONTENT, "{}", role.text());
+    let mut members = Vec::new();
+    for n in 0..4 {
+        let (who, _) = learner(&app, &format!("m{n}")).await;
+        enrol(&pool, &course_id, who).await;
+        let granted = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/overrides/{who}"),
+                &serde_json::json!({ "max_attempts_override": 2 }),
+            )
+            .await;
+        assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+        let assigned = app
+            .post_as(
+                &admin,
+                &format!("/api/v2/users/{who}/roles"),
+                &serde_json::json!({ "role": "busy" }),
+            )
+            .await;
+        assert!(assigned.status.is_success(), "{}", assigned.text());
+        members.push(who);
+    }
+    let mut held = Vec::new();
+    for who in &members {
+        let mut tx = pool.begin().await.unwrap();
+        sqlx::query(
+            "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+        )
+        .bind(who.0)
+        .bind(&course_id)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+        held.push(tx);
+    }
+    let started = std::time::Instant::now();
+    let changed = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri("/api/v2/rbac/roles/busy/permissions")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, admin.cookie.clone())
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "permissions": ["assessment:author:platform"] })
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert!(changed.status.is_success(), "{}", changed.text());
+    let waited = started.elapsed();
+    assert!(waited < std::time::Duration::from_secs(12), "{waited:?}");
+    let payloads: Vec<serde_json::Value> =
+        sqlx::query_scalar("SELECT payload FROM jobs WHERE kind = 'progress:staff-change'")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(payloads.len(), members.len());
+    for tx in held {
+        tx.commit().await.unwrap();
+    }
+    let projector = ab_domain::progress::ProgressProjector::new(pool.clone());
+    for payload in &payloads {
+        projector
+            .run_job("progress:staff-change", payload)
+            .await
+            .unwrap();
+    }
+    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM assessment_overrides")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(left, 0);
+}
+
 /// BUG-303 doors not covered above: a reporter (no staff) keeps their rows
 /// until promoted to contributor; a custom role keeps them until its grant
 /// set gains `assessment:author`. UX-206: a stale save naming a staffer
