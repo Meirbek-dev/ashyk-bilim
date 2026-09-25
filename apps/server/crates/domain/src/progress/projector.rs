@@ -23,6 +23,15 @@ use sqlx::{PgConnection, PgPool};
 /// Queue kind of a deferred [`ProgressProjector::reproject_staff_change`];
 /// payload `{ user_id, course_id | null }` (BUG-305).
 pub const STAFF_CHANGE_JOB: &str = "progress:staff-change";
+/// Queue kind of a deferred [`ProgressProjector::recalculate_course_for_all`];
+/// payload `{ course_id }` (BUG-310).
+pub const COURSE_CHANGE_JOB: &str = "progress:course-change";
+
+/// How long a post-commit re-projection holds the response (UX-209): far
+/// under the 30 s request timeout, so a busy member lock never turns a
+/// committed write into a 408 — the rest goes on in the background, with a
+/// retrying job queued behind it.
+const INLINE_WAIT: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// Default passing score for file submissions (legacy hard-coded 60).
 const FILE_SUBMISSION_PASSING_SCORE: f64 = 60.0;
@@ -424,7 +433,8 @@ impl ProgressProjector {
     /// published set. Every writer of `activities.published` (the curriculum
     /// toggle, assessment lifecycle transitions — studio + scheduler — and
     /// file-submission publish) flips the flag in its own transaction and
-    /// calls this once it committed (BUG-232).
+    /// calls this once it committed (BUG-232), through
+    /// [`Self::after_course_change`] (BUG-310).
     ///
     /// A member whose recalculation fails (lock held past the wait) never
     /// drops the members after it (BUG-272): the loop goes on and returns
@@ -473,28 +483,84 @@ impl ProgressProjector {
         outcome.map(|()| report)
     }
 
-    /// Every roster / RBAC writer's post-commit step (BUG-305): the write
-    /// already landed, so it never fails the caller — a failing
-    /// [`Self::reproject_staff_change`] (member lock busy past the wait)
-    /// becomes a [`STAFF_CHANGE_JOB`] the worker retries with backoff.
-    // ponytail: a crash between the roster commit and this call loses the
-    // sweep (the next staff change or a backfill repairs it); enqueue in the
-    // roster transaction if that window ever matters.
+    /// Every roster / RBAC writer's post-commit step (BUG-305): see
+    /// [`Self::after_commit`].
     pub async fn after_staff_change(&self, user_id: UserId, course_id: Option<CourseId>) {
-        if self
-            .reproject_staff_change(user_id, course_id)
-            .await
-            .is_ok()
-        {
-            return;
-        }
-        let job = ab_db::queue::NewJob::new(
+        let this = self.clone();
+        self.after_commit(
             STAFF_CHANGE_JOB,
             serde_json::json!({ "user_id": user_id, "course_id": course_id }),
+            async move { this.reproject_staff_change(user_id, course_id).await },
         )
-        .max_attempts(10);
+        .await;
+    }
+
+    /// Every writer that changed a course's published set (curriculum
+    /// toggle, deletes, assessment lifecycle, file-submission publish),
+    /// after commit (BUG-310): see [`Self::after_commit`].
+    pub async fn after_course_change(&self, course_id: CourseId) {
+        let this = self.clone();
+        self.after_commit(
+            COURSE_CHANGE_JOB,
+            serde_json::json!({ "course_id": course_id }),
+            async move { this.recalculate_course_for_all(course_id).await },
+        )
+        .await;
+    }
+
+    /// The one durable post-commit path for course-wide progress work: the
+    /// write already landed, so it never fails the caller. `work` runs on
+    /// its own task (a hang-up or timeout of the request cannot drop it);
+    /// the caller waits at most [`INLINE_WAIT`] (UX-209). Failed or not done
+    /// by then → a `kind` job the worker retries with backoff (idempotent,
+    /// so racing the still-running task is harmless).
+    // ponytail: a crash between the commit and the enqueue loses the pass
+    // (the next change or a backfill repairs it); enqueue in the writer's
+    // transaction if that window ever matters.
+    async fn after_commit(
+        &self,
+        kind: &'static str,
+        payload: serde_json::Value,
+        work: impl Future<Output = Result<()>> + Send + 'static,
+    ) {
+        let task = tokio::spawn(work);
+        if matches!(
+            tokio::time::timeout(INLINE_WAIT, task).await,
+            Ok(Ok(Ok(())))
+        ) {
+            return;
+        }
+        let job = ab_db::queue::NewJob::new(kind, payload.clone()).max_attempts(10);
         if let Err(err) = ab_db::queue::enqueue(&self.pool, &job).await {
-            tracing::error!(%user_id, error = %err, "staff-change reprojection not enqueued");
+            tracing::error!(kind, %payload, error = %err, "progress job not enqueued");
+        }
+    }
+
+    /// The worker's side of [`Self::after_commit`]'s jobs.
+    pub async fn run_job(&self, kind: &str, payload: &serde_json::Value) -> Result<()> {
+        fn field<T: serde::de::DeserializeOwned>(
+            payload: &serde_json::Value,
+            key: &str,
+        ) -> Result<T> {
+            serde_json::from_value(payload[key].clone())
+                .map_err(|e| Error::internal("progress job payload", e))
+        }
+        match kind {
+            STAFF_CHANGE_JOB => {
+                self.reproject_staff_change(
+                    field(payload, "user_id")?,
+                    field(payload, "course_id")?,
+                )
+                .await
+            }
+            COURSE_CHANGE_JOB => {
+                self.recalculate_course_for_all(field(payload, "course_id")?)
+                    .await
+            }
+            other => Err(Error::internal(
+                "progress job",
+                std::io::Error::other(format!("unknown kind {other}")),
+            )),
         }
     }
 

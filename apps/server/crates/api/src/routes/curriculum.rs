@@ -282,34 +282,35 @@ pub async fn update_activity(
         }])
         .into());
     }
-    let type_pair = match (&request.activity_type, &request.activity_sub_type) {
-        (Some(t), Some(s)) => Some((t.as_str(), s.as_str())),
-        (None, None) => None,
-        _ => {
-            return Err(Error::validation(vec![FieldError {
-                field: "activity_type".into(),
-                code: "incomplete-pair".into(),
-                message: "activity_type and activity_sub_type change together".into(),
-            }])
-            .into());
-        }
-    };
-    let detail = state
-        .curriculum
-        .update_activity(
-            &actor,
-            id,
-            ActivityChanges {
-                name: request.name.as_deref(),
-                published: request.published,
-                type_pair,
-                content: request.content.as_ref(),
-                details: request.details.as_ref(),
-                settings: request.settings.as_ref(),
-                expected_version,
-            },
-        )
-        .await?;
+    if request.activity_type.is_some() != request.activity_sub_type.is_some() {
+        return Err(Error::validation(vec![FieldError {
+            field: "activity_type".into(),
+            code: "incomplete-pair".into(),
+            message: "activity_type and activity_sub_type change together".into(),
+        }])
+        .into());
+    }
+    // Detached (BUG-310): a publish toggle's course-wide recalculation runs
+    // after the commit and must outlive a client that hangs up.
+    let detail = detached(async move {
+        let changes = ActivityChanges {
+            name: request.name.as_deref(),
+            published: request.published,
+            type_pair: request
+                .activity_type
+                .as_deref()
+                .zip(request.activity_sub_type.as_deref()),
+            content: request.content.as_ref(),
+            details: request.details.as_ref(),
+            settings: request.settings.as_ref(),
+            expected_version,
+        };
+        Ok(state
+            .curriculum
+            .update_activity(&actor, id, changes)
+            .await?)
+    })
+    .await?;
     Ok(with_etag(detail.into()))
 }
 

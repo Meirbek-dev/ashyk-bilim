@@ -1197,6 +1197,69 @@ async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {
     assert_eq!(count(queued, l2).await, 1);
 }
 
+/// UX-209: a roster add whose sweep waits on a member lock held past the
+/// short inline wait answers 201 well before the request timeout (never a
+/// 408 for a landed add), and the queued `progress:staff-change` job
+/// finishes the sweep once the lock frees.
+#[sqlx::test(migrations = "../../migrations")]
+async fn roster_add_past_the_inline_wait_is_201_and_the_job_sweeps(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let (l1, _) = learner(&app, "l1").await;
+    enrol(&pool, &course_id, l1).await;
+    let granted = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{l1}"),
+            &serde_json::json!({ "max_attempts_override": 2 }),
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    let overrides = async || -> i64 {
+        sqlx::query_scalar("SELECT count(*) FROM assessment_overrides WHERE user_id = $1")
+            .bind(l1.0)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+    };
+
+    let mut held = pool.begin().await.unwrap();
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+    )
+    .bind(l1.0)
+    .bind(&course_id)
+    .execute(&mut *held)
+    .await
+    .unwrap();
+    let started = std::time::Instant::now();
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": l1, "role": "contributor" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    assert!(started.elapsed() < std::time::Duration::from_secs(15));
+    assert_eq!(overrides().await, 1, "swept under the held lock");
+    let payload: serde_json::Value = sqlx::query_scalar(
+        "SELECT payload FROM jobs
+         WHERE kind = 'progress:staff-change' AND payload->>'user_id' = $1::text",
+    )
+    .bind(l1.0)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    held.commit().await.unwrap();
+    ab_domain::progress::ProgressProjector::new(pool.clone())
+        .run_job("progress:staff-change", &payload)
+        .await
+        .unwrap();
+    assert_eq!(overrides().await, 0);
+}
+
 /// BUG-303 doors not covered above: a reporter (no staff) keeps their rows
 /// until promoted to contributor; a custom role keeps them until its grant
 /// set gains `assessment:author`. UX-206: a stale save naming a staffer

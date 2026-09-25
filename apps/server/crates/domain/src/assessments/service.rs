@@ -1041,8 +1041,8 @@ impl AssessmentsService {
         .await?;
         tx.commit().await?;
         ProgressProjector::new(self.pool.clone())
-            .recalculate_course_for_all(assessment.course_id)
-            .await?;
+            .after_course_change(assessment.course_id)
+            .await;
         ab_db::assessments::insert_audit_event(
             &self.pool,
             id,
@@ -1099,8 +1099,8 @@ impl AssessmentsService {
                 .await?;
             tx.commit().await?;
             ProgressProjector::new(pool.clone())
-                .recalculate_course_for_all(assessment.course_id)
-                .await?;
+                .after_course_change(assessment.course_id)
+                .await;
             ab_db::assessments::insert_audit_event(
                 pool,
                 id,

@@ -226,9 +226,8 @@ impl CurriculumService {
                 .collect();
         ab_db::catalog::renumber_chapters(&self.pool, &remaining).await?;
         // Its activities' progress rows cascaded away; refresh the totals.
-        self.projector
-            .recalculate_course_for_all(chapter.course_id)
-            .await
+        self.projector.after_course_change(chapter.course_id).await;
+        Ok(())
     }
 
     /// Move a chapter to a 1-based position (clamped), renumbering siblings.
@@ -495,9 +494,7 @@ impl CurriculumService {
         }
         tx.commit().await?;
         if published.is_some() {
-            self.projector
-                .recalculate_course_for_all(activity.course_id)
-                .await?;
+            self.projector.after_course_change(activity.course_id).await;
         }
         self.activity_detail(actor, activity_id).await
     }
@@ -511,9 +508,8 @@ impl CurriculumService {
             ab_db::catalog::list_chapter_activity_ids(&self.pool, activity.chapter_id).await?;
         ab_db::catalog::renumber_activities(&self.pool, &remaining).await?;
         // Its progress rows cascaded away; refresh the learner totals.
-        self.projector
-            .recalculate_course_for_all(activity.course_id)
-            .await
+        self.projector.after_course_change(activity.course_id).await;
+        Ok(())
     }
 
     /// Move within its chapter, or into another chapter of the SAME course.

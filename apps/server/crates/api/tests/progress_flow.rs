@@ -1283,6 +1283,70 @@ async fn course_recalculation_outwaits_a_busy_member(pool: PgPool) {
     }
 }
 
+/// BUG-310: the curriculum toggle is detached — a teacher who hangs up
+/// while a member's trail lock holds up the course-wide recalculation still
+/// gets it once the lock frees: the learner with A done and only B left is
+/// 1/1 and eligible after B is unpublished.
+#[sqlx::test(migrations = "../../migrations")]
+async fn unpublish_dropped_under_a_member_lock_still_recalculates(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Toggle 101").await;
+    let a = lesson(&app, &teacher, &chapter_id, "A").await;
+    let b = lesson(&app, &teacher, &chapter_id, "B").await;
+    let alice = learner(&app, "alice").await;
+    let marked = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{a}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+
+    let mut held = app.pool.begin().await.unwrap();
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+    )
+    .bind(alice.user_id.0)
+    .bind(&course_id)
+    .execute(&mut *held)
+    .await
+    .unwrap();
+    drop_request_when(
+        app.patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{b}"),
+            &serde_json::json!({ "published": false }),
+        ),
+        async || {
+            !sqlx::query_scalar::<_, bool>("SELECT published FROM activities WHERE id = $1::uuid")
+                .bind(&b)
+                .fetch_one(&app.pool)
+                .await
+                .unwrap()
+        },
+        |response| panic!("finished under the lock: {}", response.text()),
+    )
+    .await;
+    held.commit().await.unwrap();
+    let progress = async || {
+        sqlx::query_as::<_, (i32, i32, bool)>(
+            "SELECT completed_required_count, total_required_count, certificate_eligible
+             FROM course_progress WHERE user_id = $1 AND course_id = $2::uuid",
+        )
+        .bind(alice.user_id.0)
+        .bind(&course_id)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+    wait_until("the dropped toggle never recalculated", async || {
+        progress().await == (1, 1, true)
+    })
+    .await;
+}
+
 /// A published one-essay quiz (hand-graded); returns (assessment_id, activity_id, item_id).
 async fn essay_quiz(
     app: &TestApp,

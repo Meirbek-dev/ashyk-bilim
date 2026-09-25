@@ -541,7 +541,10 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         .register(ab_jobs::handlers::analytics::AnalyticsRollup::new(
             pool.clone(),
         ))?
-        .register(ab_jobs::handlers::progress::StaffChangeReprojector::new(
+        .register(ab_jobs::handlers::progress::ProgressJob::staff_change(
+            pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::progress::ProgressJob::course_change(
             pool.clone(),
         ))?
         .register(ab_jobs::handlers::grading::BulkActionRunner::new(

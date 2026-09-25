@@ -652,9 +652,7 @@ impl FileSubmissionsService {
         .await?;
         ab_db::catalog::update_activity(&mut *tx, row.activity_id, None, Some(true)).await?;
         tx.commit().await?;
-        self.projector
-            .recalculate_course_for_all(row.course_id)
-            .await?;
+        self.projector.after_course_change(row.course_id).await;
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await
     }

@@ -1,45 +1,49 @@
-//! `progress:staff-change` — a roster / RBAC write's re-projection that
-//! failed inline (member lock busy past the wait; BUG-305). Retries with
-//! backoff until the sweep lands; the projection is idempotent.
+//! `progress:*` — post-commit re-projections that did not finish inline.
+//!
+//! A member lock was busy past the short inline wait (BUG-305/310, UX-209):
+//! `progress:staff-change` (roster / RBAC) and `progress:course-change`
+//! (the course's published set). Retries with backoff until it lands; the
+//! projection is idempotent.
 
 use ab_core::Result;
-use ab_core::id::{CourseId, UserId};
 use ab_domain::progress::ProgressProjector;
+use ab_domain::progress::projector::{COURSE_CHANGE_JOB, STAFF_CHANGE_JOB};
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use sqlx::PgPool;
 
 use crate::JobHandler;
 
-pub const KIND: &str = ab_domain::progress::projector::STAFF_CHANGE_JOB;
-
-pub struct StaffChangeReprojector {
+pub struct ProgressJob {
     pool: PgPool,
+    kind: &'static str,
 }
 
-impl StaffChangeReprojector {
+impl ProgressJob {
     #[must_use]
-    pub const fn new(pool: PgPool) -> Self {
-        Self { pool }
+    pub const fn staff_change(pool: PgPool) -> Self {
+        Self {
+            pool,
+            kind: STAFF_CHANGE_JOB,
+        }
+    }
+
+    #[must_use]
+    pub const fn course_change(pool: PgPool) -> Self {
+        Self {
+            pool,
+            kind: COURSE_CHANGE_JOB,
+        }
     }
 }
 
-impl JobHandler for StaffChangeReprojector {
+impl JobHandler for ProgressJob {
     fn kind(&self) -> &'static str {
-        KIND
+        self.kind
     }
 
     fn handle(&self, payload: serde_json::Value) -> BoxFuture<'static, Result<()>> {
-        let pool = self.pool.clone();
-        async move {
-            let user_id: UserId = serde_json::from_value(payload["user_id"].clone())
-                .map_err(|e| ab_core::Error::internal("staff-change payload", e))?;
-            let course_id: Option<CourseId> = serde_json::from_value(payload["course_id"].clone())
-                .map_err(|e| ab_core::Error::internal("staff-change payload", e))?;
-            ProgressProjector::new(pool)
-                .reproject_staff_change(user_id, course_id)
-                .await
-        }
-        .boxed()
+        let (pool, kind) = (self.pool.clone(), self.kind);
+        async move { ProgressProjector::new(pool).run_job(kind, &payload).await }.boxed()
     }
 }
