@@ -795,8 +795,10 @@ impl IdentityService {
         let Some(user) = ab_db::identity::find_user_for_login(&self.pool, email).await? else {
             return Err(invalid());
         };
+        // Zitadel's email codes are uppercase letters + digits; a code typed
+        // in lowercase is the same code (UX-205).
         self.zitadel
-            .verify_email(&user.zitadel_user_id, code)
+            .verify_email(&user.zitadel_user_id, &code.trim().to_uppercase())
             .await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,

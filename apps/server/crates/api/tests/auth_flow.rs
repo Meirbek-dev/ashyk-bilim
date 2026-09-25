@@ -532,7 +532,8 @@ async fn registration_creates_the_account_and_emails_the_code(pool: PgPool) {
     let ok = app
         .post_json(
             "/api/v2/auth/verify-email",
-            &serde_json::json!({ "email": "aigerim@example.com", "code": "ABC123" }),
+            // Typed in lowercase: still the emailed code (UX-205).
+            &serde_json::json!({ "email": "aigerim@example.com", "code": "abc123" }),
         )
         .await;
     assert_eq!(ok.status, StatusCode::NO_CONTENT);
