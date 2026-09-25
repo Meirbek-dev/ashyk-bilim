@@ -9795,6 +9795,8 @@
       }
     },
     "ActivityWorkspace": {
+      "accessClosedTitle": "Access to new attempts is closed",
+      "accessClosedDescription": "Your teacher limited who can take this. Your attempts and results stay available to view.",
       "questions": "Questions",
       "readyToStart": "Ready to Start",
       "readyToStartSubtitle": "Review details and start the exam when you're ready.",
