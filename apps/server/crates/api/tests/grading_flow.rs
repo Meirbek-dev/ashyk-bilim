@@ -1545,6 +1545,53 @@ fn put_json(cookie: &str, uri: &str, body: &serde_json::Value) -> Request<Body> 
         .unwrap()
 }
 
+/// BUG-306: a leave and a staff join drop the override rows — the waiver
+/// goes and the penalty comes back, as on a teacher's delete (BUG-297).
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_waiver_settles_on_leave_and_staff_join(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let waive = serde_json::json!({ "waive_late_penalty": true });
+    let alice_id = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            alice_id,
+            &[
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+                "trail:submit:assigned",
+            ],
+        )
+        .await;
+    let (_, sub) = waived_late_hand_in(&app, &teacher, &chapter_id, &alice, waive.clone()).await;
+    let left = app
+        .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert!(left.status.is_success(), "{}", left.text());
+    assert_eq!(
+        lateness(&app, &teacher, &sub).await,
+        (Some(70.0), Some(true))
+    );
+
+    let bob = learner(&app, "bob").await;
+    let (_, sub) = waived_late_hand_in(&app, &teacher, &chapter_id, &bob, waive).await;
+    let rostered = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": bob.user_id, "role": "contributor" }),
+        )
+        .await;
+    assert_eq!(rostered.status, StatusCode::CREATED, "{}", rostered.text());
+    assert_eq!(
+        lateness(&app, &teacher, &sub).await,
+        (Some(70.0), Some(true))
+    );
+}
+
 /// BUG-307: a waiver in force at the hand-in keeps applying to it after it
 /// expires — a note-only PUT after the expiry moves nothing.
 #[sqlx::test(migrations = "../../migrations")]

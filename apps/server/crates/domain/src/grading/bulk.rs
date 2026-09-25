@@ -384,6 +384,21 @@ pub(crate) async fn settle_override(
     Ok(submitted)
 }
 
+/// BUG-306: a sweep that dropped a learner's override rows (a leave, a
+/// staff join) settles those assessments after commit, as a delete does.
+pub(crate) async fn settle_dropped(
+    pool: &PgPool,
+    user_id: UserId,
+    dropped: Vec<AssessmentId>,
+) -> Result<()> {
+    for id in dropped {
+        if let Some(assessment) = ab_db::assessments::get_assessment(pool, id).await? {
+            settle_override(pool, &assessment, user_id, None).await?;
+        }
+    }
+    Ok(())
+}
+
 async fn run_deadline_extension(
     pool: &PgPool,
     events: Option<&GradingEvents>,

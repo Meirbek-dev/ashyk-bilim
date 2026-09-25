@@ -144,11 +144,16 @@ pub(crate) async fn drop_non_member_access(
 ) -> Result<()> {
     let mut tx = lock_trail_run(pool, user_id, course_id, MEMBER_WAIT).await?;
     ab_db::progress::lock_trail_run_row(&mut tx, course_id, user_id).await?;
-    if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
-        ab_db::assessments::drop_member_access(&mut tx, course_id, user_id).await?;
-    }
+    let dropped = if ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
+        Vec::new()
+    } else {
+        ab_db::assessments::drop_member_access(&mut tx, course_id, user_id).await?
+    };
     tx.commit().await?;
-    Ok(())
+    // BUG-306: a dropped waiver/extension settles lateness like a delete.
+    // ponytail: a settle failing here is not retried (the queued re-sweep
+    // finds no rows left); make the settle part of the job if it bites.
+    crate::grading::bulk::settle_dropped(pool, user_id, dropped).await
 }
 
 /// A 404 from the course behind an activity reads as the activity's own
@@ -319,7 +324,8 @@ impl TrailService {
         if !ab_db::progress::delete_trail_run(&mut *tx, trail.id, course_id).await? {
             return Err(Error::not_found("trail run"));
         }
-        ab_db::assessments::drop_member_access(&mut tx, course_id, actor.user_id).await?;
+        let dropped =
+            ab_db::assessments::drop_member_access(&mut tx, course_id, actor.user_id).await?;
         // BUG-235: inside the lock only `tx`, never a second pool connection.
         let mut hooks = AfterCommit::default();
         for activity in ab_db::catalog::list_activities(&mut *tx, course_id).await? {
@@ -336,6 +342,8 @@ impl TrailService {
             .await?;
         tx.commit().await?;
         hooks.fire(&self.pool).await;
+        // BUG-306: the dropped overrides settle lateness like a delete.
+        crate::grading::bulk::settle_dropped(&self.pool, actor.user_id, dropped).await?;
         self.hydrate(actor, trail).await
     }
 

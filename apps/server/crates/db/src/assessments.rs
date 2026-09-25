@@ -924,11 +924,14 @@ pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i
 /// BUG-281: a leave takes the leaver off every allowlist and override of
 /// the course, in the leave's transaction — neither ever names a
 /// non-member.
+///
+/// Returns the assessments whose override went (BUG-306: the caller settles
+/// their lateness after commit).
 pub async fn drop_member_access(
     conn: &mut sqlx::PgConnection,
     course_id: CourseId,
     user_id: UserId,
-) -> Result<()> {
+) -> Result<Vec<AssessmentId>> {
     sqlx::query!(
         "DELETE FROM assessment_access_users a USING assessments s
          WHERE a.assessment_id = s.id AND s.course_id = $1 AND a.user_id = $2",
@@ -937,15 +940,16 @@ pub async fn drop_member_access(
     )
     .execute(&mut *conn)
     .await?;
-    sqlx::query!(
-        "DELETE FROM assessment_overrides o USING assessments s
-         WHERE o.assessment_id = s.id AND s.course_id = $1 AND o.user_id = $2",
+    let dropped = sqlx::query_scalar!(
+        r#"DELETE FROM assessment_overrides o USING assessments s
+           WHERE o.assessment_id = s.id AND s.course_id = $1 AND o.user_id = $2
+           RETURNING o.assessment_id AS "id: AssessmentId""#,
         course_id.0,
         user_id.0
     )
-    .execute(&mut *conn)
+    .fetch_all(&mut *conn)
     .await?;
-    Ok(())
+    Ok(dropped)
 }
 
 /// Direct entry or membership of an allowlisted group.

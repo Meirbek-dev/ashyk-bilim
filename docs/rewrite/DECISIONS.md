@@ -1359,6 +1359,12 @@ Implements three more items of the owner answers above. Routes:
   `expires_at` before the hand-in) or a delete still re-applies the
   penalty. Why: after a waiver expired the learner kept 100 until any
   override write re-settled it to 70 late.
+- **Every path that removes override rows settles** (2026-09-25, BUG-306):
+  the leave (`drop_member_access`) and the staff-join sweep
+  (`drop_non_member_access`, BUG-303) settle each assessment whose override
+  they dropped, after commit, as a delete does. Why: a waiver dropped by a
+  leave or a staff join left 100 on time while an identical attempt scored
+  70 late.
 
 ## A deadline extension outlives the override's expiry (2026-09-25, gauntlet pass 25)
 
