@@ -355,7 +355,9 @@ function MobileGradebookList({
                     <span className="text-muted-foreground block text-xs">{t(progressStateLabelKey(cell.state))}</span>
                   </span>
                   {cell.teacher_action_required ? (
-                    <span className="text-xs font-medium">{t('submissionReview')}</span>
+                    <span className="text-xs font-medium">
+                      {t(cell.awaiting_release ? 'releaseGrade' : 'submissionReview')}
+                    </span>
                   ) : null}
                 </Button>
               ))}
@@ -396,7 +398,9 @@ function TeacherActionsPanel({
           >
             <span className="block truncate text-sm font-medium">{action.student_name}</span>
             <span className="text-muted-foreground mt-1 block truncate text-xs">{action.activity_name}</span>
-            <span className="mt-2 inline-flex text-xs font-medium">{t('submissionReview')}</span>
+            <span className="mt-2 inline-flex text-xs font-medium">
+              {t(action.awaiting_release ? 'releaseGrade' : 'submissionReview')}
+            </span>
           </button>
         ))}
       </div>

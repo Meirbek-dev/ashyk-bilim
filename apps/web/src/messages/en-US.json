@@ -8226,6 +8226,7 @@
         "attempts": "{count, plural, =0 {# attempts} one {# attempt} other {# attempts}}",
         "pendingAttempt": "Awaiting grading · attempt {attempt}",
         "awaitingReleaseAttempt": "Awaiting release · attempt {attempt}",
+        "releaseGrade": "Release grade",
         "teacherActions": "Awaiting the teacher",
         "refresh": "Refresh",
         "export": "Export",
@@ -8244,7 +8245,7 @@
         },
         "savedFilters": {
           "all": "All",
-          "needs_grading": "Needs grading",
+          "needs_grading": "Needs action",
           "overdue": "Overdue",
           "returned": "Returned",
           "failed": "Failed",

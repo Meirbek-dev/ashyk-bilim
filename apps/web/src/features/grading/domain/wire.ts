@@ -1,4 +1,5 @@
-import { Course, Curriculum, GradebookPage, ReviewItem, Stats, TeacherSubmission } from '@/lib/api/generated/zod'
+import { ReviewItem, Stats, TeacherSubmission } from '@/lib/api/generated/zod'
+import type { Course, Curriculum, GradebookPage } from '@/lib/api/generated/zod'
 import type { ReviewItemOutput } from '@/lib/api/generated/zod'
 import { unixToIso } from '@/lib/api/contract'
 import type { ActivityProgressCell, CourseGradebookResponse, Submission, SubmissionStatus } from './types'
@@ -176,6 +177,7 @@ export function gradebookFromWire(
         student_name: users.get(c.user_id)?.display_name ?? '',
         // UX-123: the queue opens the work awaiting grading, not the (older) grade of record.
         submission_uuid: reviewTarget(c)!,
+        awaiting_release: c.awaiting_release === true,
       })),
   }
 }

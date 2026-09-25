@@ -107,7 +107,9 @@ describe('apiJson timeout', () => {
 
   it('retries an idempotent transient failure once', async () => {
     ;(global.fetch as any)
-      .mockResolvedValueOnce(problem({ code: 'service-unavailable', status: 503, title: 'x', type: 'x' }, { status: 503 }))
+      .mockResolvedValueOnce(
+        problem({ code: 'service-unavailable', status: 503, title: 'x', type: 'x' }, { status: 503 }),
+      )
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
 
     const promise = apiJson<{ ok: boolean }>('flaky')
@@ -131,6 +133,23 @@ describe('apiJson timeout', () => {
 
     expect((global.fetch as any).mock.calls).toHaveLength(1)
     expect(assign).toHaveBeenCalledWith('/login?returnTo=%2Fdash%2Fcourses')
+    vi.unstubAllGlobals()
+  })
+
+  it('tells the login page the session expired (UX-220)', async () => {
+    const assign = vi.fn()
+    vi.stubGlobal('location', { pathname: '/ru/course/c/activity/a', search: '', assign })
+    ;(global.fetch as any).mockResolvedValue(
+      problem({ code: 'session-expired', status: 401, title: 'Session expired', type: 'x' }, { status: 401 }),
+    )
+
+    // A fresh module: the one-shot redirect guard is already spent by the test above.
+    vi.resetModules()
+    const { apiJson: freshApiJson } = await import('@/lib/api-client')
+    await expect(freshApiJson('assessments/x/draft', { timeoutMs: false })).rejects.toMatchObject({ status: 401 })
+    expect(assign).toHaveBeenCalledWith(
+      expect.stringMatching(/login\?returnTo=%2Fru%2Fcourse%2Fc%2Factivity%2Fa&error=session-expired$/),
+    )
     vi.unstubAllGlobals()
   })
 

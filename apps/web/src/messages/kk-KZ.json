@@ -8256,6 +8256,7 @@
         "attempts": "{count, plural, other {# әрекет}}",
         "pendingAttempt": "Тексеруде · {attempt}-әрекет",
         "awaitingReleaseAttempt": "Жариялауды күтуде · {attempt}-әрекет",
+        "releaseGrade": "Бағаны жариялау",
         "teacherActions": "Оқытушыны күтеді",
         "refresh": "Жаңарту",
         "export": "Экспорт",
@@ -8274,7 +8275,7 @@
         },
         "savedFilters": {
           "all": "Барлығы",
-          "needs_grading": "Тексеру керек",
+          "needs_grading": "Оқытушыны күтеді",
           "overdue": "Мерзімі өтті",
           "returned": "Қайтарылған",
           "failed": "Өтпеді",

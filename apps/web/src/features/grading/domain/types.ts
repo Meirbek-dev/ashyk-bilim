@@ -111,6 +111,8 @@ export interface TeacherAction {
   user_id: string
   student_name: string
   submission_uuid: string
+  /** Graded, only the release is owed (UX-219). */
+  awaiting_release?: boolean
 }
 export interface CourseGradebookResponse {
   course_id: string

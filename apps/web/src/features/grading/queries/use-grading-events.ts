@@ -81,8 +81,8 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
         signal: probe.signal,
       })
       probe.abort()
+      toast.dismiss(ACCESS_LOST_TOAST)
       if (response.ok) {
-        toast.dismiss(ACCESS_LOST_TOAST)
         setAccessLost(false)
         setGeneration(value => value + 1)
       } else if (response.status === 401) {

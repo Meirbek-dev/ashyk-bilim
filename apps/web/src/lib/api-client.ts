@@ -257,10 +257,12 @@ export function getBrowserReturnTo(): string {
   return `${pathname}${search}` || '/'
 }
 
-export function redirectBrowserToLogin(returnTo: string): void {
+export function redirectBrowserToLogin(returnTo: string, code?: unknown): void {
   if (authRedirectPending) return
   authRedirectPending = true
-  globalThis.location.assign(buildLoginRedirect(returnTo))
+  const target = buildLoginRedirect(returnTo)
+  // UX-220: the login page says why (`?error=` is rendered from Errors.codes).
+  globalThis.location.assign(code === 'session-expired' ? `${target}&error=session-expired` : target)
 }
 
 /**
@@ -268,11 +270,11 @@ export function redirectBrowserToLogin(returnTo: string): void {
  * or never existed), so send the user to the login page with a return path.
  * No-op on the server and on the auth pages themselves.
  */
-export function handleBrowserUnauthenticated(returnTo = getBrowserReturnTo()): void {
+export function handleBrowserUnauthenticated(returnTo = getBrowserReturnTo(), code?: unknown): void {
   if (typeof globalThis.window === 'undefined' || isAuthRoute(globalThis.location.pathname)) {
     return
   }
-  redirectBrowserToLogin(returnTo)
+  redirectBrowserToLogin(returnTo, code)
 }
 
 type ApiTransportOptions<R extends ResponseType = 'json'> = FetchOptions<R> & {
@@ -391,8 +393,9 @@ export async function apiFetchRaw(path: string, init: ApiFetchInit = {}): Promis
   const isServer = typeof globalThis.window === 'undefined'
   const response = await rawTransportFetch(path, init)
 
-  if (!isServer && response.status === 401 && (await isSessionGone(response))) {
-    handleBrowserUnauthenticated()
+  if (!isServer && response.status === 401) {
+    const code = await errorCode(response)
+    if (!isCredentialCheckCode(code)) handleBrowserUnauthenticated(undefined, code)
   }
 
   return response
@@ -408,12 +411,12 @@ export function isCredentialCheckCode(code: unknown): boolean {
   return typeof code === 'string' && CREDENTIAL_CHECK_CODES.has(code)
 }
 
-async function isSessionGone(response: Response): Promise<boolean> {
+async function errorCode(response: Response): Promise<unknown> {
   try {
     const body = (await response.clone().json()) as { code?: unknown }
-    return !isCredentialCheckCode(body?.code)
+    return body?.code
   } catch {
-    return true
+    return undefined
   }
 }
 

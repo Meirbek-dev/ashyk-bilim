@@ -19,7 +19,7 @@ function handle401(error: unknown): void {
   // lost session (api-client.ts applies the same rule at the fetch layer).
   if (isCredentialCheckCode((error as Record<string, unknown>).code)) return
   const { pathname, search } = globalThis.location
-  handleBrowserUnauthenticated(`${pathname}${search}`)
+  handleBrowserUnauthenticated(`${pathname}${search}`, (error as Record<string, unknown>).code)
 }
 
 interface ErrorMeta {

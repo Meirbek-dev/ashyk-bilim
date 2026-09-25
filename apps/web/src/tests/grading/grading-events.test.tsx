@@ -6,11 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
 
-const mocks = vi.hoisted(() => ({ replace: vi.fn(), toast: vi.fn(), unauthenticated: vi.fn() }))
+const mocks = vi.hoisted(() => ({ replace: vi.fn(), toast: vi.fn(), dismiss: vi.fn(), unauthenticated: vi.fn() }))
 
 vi.mock('@services/config/config', () => ({ getAPIUrl: () => 'http://api.test/api/v2/' }))
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
-vi.mock('sonner', () => ({ toast: { warning: mocks.toast, dismiss: vi.fn() } }))
+vi.mock('sonner', () => ({ toast: { warning: mocks.toast, dismiss: mocks.dismiss } }))
 const router = { replace: mocks.replace }
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => router }))
 vi.mock('@/lib/api-client', () => ({ handleBrowserUnauthenticated: mocks.unauthenticated }))
@@ -103,6 +103,8 @@ describe('useCourseGradingEvents', () => {
       expect.objectContaining({ credentials: 'include' }),
     )
     expect(mocks.replace).toHaveBeenCalledWith('/unauthorized')
+    // UX-218: the notice does not follow the user off the page.
+    expect(mocks.dismiss).toHaveBeenCalled()
     expect(mocks.unauthenticated).not.toHaveBeenCalled()
   })
 
