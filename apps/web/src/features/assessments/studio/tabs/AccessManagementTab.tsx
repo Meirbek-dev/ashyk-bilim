@@ -80,6 +80,9 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   const [overrideDueAt, setOverrideDueAt] = useState('')
   const [overrideWaiveLate, setOverrideWaiveLate] = useState(false)
   const [overrideNote, setOverrideNote] = useState('')
+  // BUG-317: the fields the teacher edited — a learner's existing override keeps the rest.
+  const [touchedOverrideFields, setTouchedOverrideFields] = useState<Set<OverrideField>>(new Set())
+  const touchOverride = (field: OverrideField) => setTouchedOverrideFields(current => new Set(current).add(field))
   const [lastSaveError, setLastSaveError] = useState<string | null>(null)
   const [lastOverrideError, setLastOverrideError] = useState<string | null>(null)
   // UX-057: 422 field errors land on the chip / input they name, not in a toast.
@@ -212,7 +215,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   // earlier save stay unless this save proves them stale.
   const overrideMutation = useMutation({
     mutationFn: async () => {
-      const payload: OverrideRequest = {
+      const form: Required<Pick<OverrideRequest, OverrideField>> = {
         max_attempts_override: overrideAttempts ? Number(overrideAttempts) : null,
         due_at_override_unix: toUnix(overrideDueAt || null),
         waive_late_penalty: overrideWaiveLate,
@@ -220,11 +223,12 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       }
       const userIds = [...selectedUsers]
       const results = await Promise.allSettled(
-        userIds.map(userId =>
-          overrideByUserId.has(userId)
-            ? updateOverride(assessmentUuid, userId, payload)
-            : createOverride(assessmentUuid, userId, payload),
-        ),
+        userIds.map(userId => {
+          const existing = overrideByUserId.get(userId)
+          return existing
+            ? updateOverride(assessmentUuid, userId, mergeOverride(existing, form, touchedOverrideFields))
+            : createOverride(assessmentUuid, userId, form)
+        }),
       )
       return results.map((result, index) => ({ userId: userIds[index] ?? '', result }))
     },
@@ -445,10 +449,22 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
             selectedCount={selectedUsers.size}
             lastError={lastOverrideError}
             attemptsError={fieldErrors.get('max_attempts_override') ?? null}
-            onAttemptsChange={setOverrideAttempts}
-            onDueAtChange={setOverrideDueAt}
-            onNoteChange={setOverrideNote}
-            onWaiveLateChange={setOverrideWaiveLate}
+            onAttemptsChange={value => {
+              setOverrideAttempts(value)
+              touchOverride('max_attempts_override')
+            }}
+            onDueAtChange={value => {
+              setOverrideDueAt(value)
+              touchOverride('due_at_override_unix')
+            }}
+            onNoteChange={value => {
+              setOverrideNote(value)
+              touchOverride('note')
+            }}
+            onWaiveLateChange={value => {
+              setOverrideWaiveLate(value)
+              touchOverride('waive_late_penalty')
+            }}
             onApply={applyOverrides}
           />
         </aside>
@@ -915,6 +931,25 @@ function toggleSet(setter: Dispatch<SetStateAction<Set<string>>>, id: string) {
 
 function displayUser(user: AccessLearner) {
   return user.display_name.trim() || user.username
+}
+
+type OverrideField = 'max_attempts_override' | 'due_at_override_unix' | 'waive_late_penalty' | 'note'
+
+/** BUG-317: the PUT replaces the whole override — send the learner's own values (and expiry) for untouched fields. */
+function mergeOverride(
+  existing: StudentOverride,
+  form: Required<Pick<OverrideRequest, OverrideField>>,
+  touched: Set<OverrideField>,
+): OverrideRequest {
+  const pick = <K extends OverrideField>(field: K, current: OverrideRequest[K]) =>
+    touched.has(field) ? form[field] : current
+  return {
+    max_attempts_override: pick('max_attempts_override', existing.max_attempts_override ?? null),
+    due_at_override_unix: pick('due_at_override_unix', existing.due_at_override_unix ?? null),
+    waive_late_penalty: pick('waive_late_penalty', existing.waive_late_penalty),
+    note: pick('note', existing.note),
+    expires_at_unix: existing.expires_at_unix ?? null,
+  }
 }
 
 function describeOverride(override: StudentOverride, t: ReturnType<typeof useTranslations>) {

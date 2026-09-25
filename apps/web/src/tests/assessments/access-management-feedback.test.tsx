@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   createOverride: vi.fn(),
   updateOverride: vi.fn(),
   deleteOverride: vi.fn(),
-  overrides: [] as { user_id: string }[],
+  overrides: [] as Record<string, unknown>[],
   users: [{ id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null }],
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
@@ -176,6 +176,34 @@ describe('access management feedback (UX-057)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Применить/ }))
     await screen.findByText('Входит в команду курса.')
     await waitFor(() => expect(screen.queryByText('Исключение')).toBeNull())
+  })
+
+  // BUG-317: only the attempts were edited — the waiver, extension, note and expiry stay.
+  it('a bulk override keeps the fields the teacher did not change', async () => {
+    mocks.overrides = [
+      {
+        user_id: 'u1',
+        max_attempts_override: null,
+        due_at_override_unix: 1_900_000_000,
+        waive_late_penalty: true,
+        note: 'extension',
+        expires_at_unix: 1_950_000_000,
+      },
+    ]
+    mocks.updateOverride.mockResolvedValue({ ...mocks.overrides[0], max_attempts_override: 5 })
+    renderTab()
+    await waitFor(() => expect(screen.getAllByText(/Исключение|попыт/).length).toBeGreaterThan(0))
+    fireEvent.change(screen.getByLabelText('Лимит попыток'), { target: { value: '5' } })
+    fireEvent.click(screen.getByRole('button', { name: /Применить/ }))
+    await waitFor(() =>
+      expect(mocks.updateOverride).toHaveBeenCalledWith('a1', 'u1', {
+        max_attempts_override: 5,
+        due_at_override_unix: 1_900_000_000,
+        waive_late_penalty: true,
+        note: 'extension',
+        expires_at_unix: 1_950_000_000,
+      }),
+    )
   })
 
   // UX-208: clearing an override that is already gone (404) is a success, not an error.
