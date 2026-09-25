@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assessment_overrides SET\n               max_attempts_override = $3, due_at_override = to_timestamp($4),\n               waive_late_penalty = $5, note = $6, expires_at = to_timestamp($7),\n               granted_by = $8,\n               due_extended = due_extended\n                   AND due_at_override IS NOT DISTINCT FROM to_timestamp($4)\n           WHERE assessment_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Float8",
+        "Bool",
+        "Text",
+        "Float8",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dd103d2f7c53a378a839249919a044cef99558d58869b69967b4c11012f105a4"
+}

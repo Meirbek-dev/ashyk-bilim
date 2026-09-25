@@ -2007,6 +2007,77 @@ async fn deadline_extension_over_a_live_override_keeps_its_expiry(pool: PgPool) 
     );
 }
 
+/// BUG-308: a PUT that re-sends an extended override's values unchanged
+/// keeps the extension's due date past the grants' expiry — only a PUT that
+/// changes the date ends the extension.
+#[sqlx::test(migrations = "../../migrations")]
+async fn override_put_keeps_the_extension_unless_the_date_changes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 30, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let path = format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id);
+    // An override needs a member: the first (late) hand-in enrols alice.
+    submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let granted = app
+        .post_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "max_attempts_override": 2, "expires_at_unix": now_unix() + 3600 }),
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    let new_due = now_unix() + 86_400;
+    let queued = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [alice.user_id], "new_due_at_unix": new_due }),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    ab_domain::grading::GradingService::execute_bulk_action(
+        &app.pool,
+        None,
+        ab_core::id::BulkActionId(
+            uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
+        ),
+    )
+    .await
+    .unwrap();
+    sqlx::query("UPDATE assessment_overrides SET expires_at = now() - interval '1 second'")
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let listed = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/overrides"))
+        .await;
+    let same = same_values(&listed.json()[0], "same values");
+    let put = app.send(put_json(&teacher.cookie, &path, &same)).await;
+    assert_eq!(put.status, StatusCode::OK, "{}", put.text());
+    let state = format!("/api/v2/assessments/{id}/attempt-state");
+    let effective = app.get_as(&alice, &state).await.json()["effective"].clone();
+    assert_eq!(
+        effective["due_at_unix"], new_due,
+        "extension ended: {effective}"
+    );
+    // A PUT that moves the date is a plain override again: it lapses.
+    let mut moved = same;
+    moved["due_at_override_unix"] = serde_json::json!(new_due + 60);
+    let put = app.send(put_json(&teacher.cookie, &path, &moved)).await;
+    assert_eq!(put.status, StatusCode::OK, "{}", put.text());
+    let effective = app.get_as(&alice, &state).await.json()["effective"].clone();
+    assert_ne!(effective["due_at_unix"], new_due + 60, "{effective}");
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn deadline_extension_is_a_queued_bulk_action(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

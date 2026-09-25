@@ -1044,6 +1044,8 @@ pub async fn insert_override<'e>(
     Ok(row)
 }
 
+/// BUG-308: an extension's due date stays one (`due_extended`) unless the
+/// write changes the date.
 pub async fn update_override<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
@@ -1054,7 +1056,9 @@ pub async fn update_override<'e>(
         r#"UPDATE assessment_overrides SET
                max_attempts_override = $3, due_at_override = to_timestamp($4),
                waive_late_penalty = $5, note = $6, expires_at = to_timestamp($7),
-               granted_by = $8, due_extended = false
+               granted_by = $8,
+               due_extended = due_extended
+                   AND due_at_override IS NOT DISTINCT FROM to_timestamp($4)
            WHERE assessment_id = $1 AND user_id = $2"#,
         id.0,
         user_id.0,

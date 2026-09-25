@@ -1374,8 +1374,11 @@ Implements three more items of the owner answers above. Routes:
   row's `expires_at`, so the extra attempts and the waiver lapse on time
   while the new due date (and `override_applied`) outlive them. On an
   already-expired override the grants and the expiry are cleared (BUG-283).
-  A teacher's own `POST`/`PUT overrides/{user}` writes the whole row and
-  clears the flag (its `expires_at` then bounds the due date too). Why:
+  A teacher's `POST overrides/{user}` writes a plain override; a `PUT`
+  writes the whole row and keeps the flag unless it changes the due date
+  (2026-09-25, BUG-308: a same-values `PUT` ended the extension and
+  re-scored an on-time hand-in late) — a changed date is the teacher's own
+  and its `expires_at` bounds it. Why:
   clearing `expires_at` on every extension made a 20-second grant of 9
   attempts and a waiver permanent. Replaces "an extension clears
   `expires_at`" (BUG-283, 0716bc9).
