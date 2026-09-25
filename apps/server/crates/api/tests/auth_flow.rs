@@ -2385,7 +2385,7 @@ async fn logout_dropped_mid_flight_still_revokes_the_session(pool: PgPool) {
                     StatusCode::NO_CONTENT,
                     "{}",
                     response.text()
-                )
+                );
             },
         )
         .await;

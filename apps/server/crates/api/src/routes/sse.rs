@@ -25,7 +25,7 @@ use axum::response::sse::{Event, KeepAlive, KeepAliveStream};
 use futures::StreamExt;
 
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, resolve_actor};
+use crate::extract::{CurrentActor, Path, peek_actor};
 use crate::state::AppState;
 
 /// Blocking-read window; also how quickly a dropped client frees its slot.
@@ -113,7 +113,7 @@ async fn open_stream(
         loop {
             match subscriber.read(stream, &cursor, READ_TIMEOUT, BATCH_LIMIT).await {
                 Ok(batch) => {
-                    let current = match resolve_actor(&state, &actor.session_id).await {
+                    let current = match peek_actor(&state, &actor.session_id).await {
                         Ok(current) => access(&state.grading, &current, stream).await,
                         Err(err) => Err(err),
                     };

@@ -3,7 +3,7 @@
 
 use ab_core::id::UserId;
 use ab_core::{Error, ErrorCode, FieldError};
-use ab_domain::identity::Actor;
+use ab_domain::identity::{Actor, SessionRecord};
 use axum::Json;
 use axum::extract::{ConnectInfo, FromRequest, FromRequestParts, Request};
 use axum::http::request::Parts;
@@ -46,10 +46,20 @@ impl FromRequestParts<AppState> for CurrentActor {
 
 /// The session behind `token` as an [`Actor`] with its current grants
 /// (touching it). `session-expired` once it is logged out, revoked or past
-/// its cap. Open SSE streams re-run this on every access re-check, so a
-/// logout or a role change reaches them too (BUG-320).
+/// its cap.
 pub async fn resolve_actor(state: &AppState, token: &str) -> ab_core::Result<Actor> {
-    let Some(record) = state.sessions.get_and_touch(token).await? else {
+    actor_of(token, state.sessions.get_and_touch(token).await?)
+}
+
+/// [`resolve_actor`] without touching: open SSE streams re-run this on every
+/// access re-check, so a logout or a role change reaches them (BUG-320)
+/// while an unattended tab still idles out.
+pub async fn peek_actor(state: &AppState, token: &str) -> ab_core::Result<Actor> {
+    actor_of(token, state.sessions.peek(token).await?)
+}
+
+fn actor_of(token: &str, record: Option<SessionRecord>) -> ab_core::Result<Actor> {
+    let Some(record) = record else {
         return Err(Error::app(
             ErrorCode::SessionExpired,
             "session is expired or revoked",

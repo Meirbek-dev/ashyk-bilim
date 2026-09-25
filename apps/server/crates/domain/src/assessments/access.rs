@@ -477,7 +477,7 @@ impl AssessmentsService {
         if created.is_none() {
             return Err(Error::conflict("this student already has an override"));
         }
-        Self::audit_override(&mut *tx, actor, id, user_id, "override-created").await?;
+        Self::audit_override(&mut tx, actor, id, user_id, "override-created").await?;
         tx.commit().await?;
         // BUG-313: settled after commit on the durable path (a retried
         // job when it fails), never on the request future.
@@ -515,7 +515,7 @@ impl AssessmentsService {
         if !updated {
             return Err(Error::not_found("override"));
         }
-        Self::audit_override(&mut *tx, actor, id, user_id, "override-updated").await?;
+        Self::audit_override(&mut tx, actor, id, user_id, "override-updated").await?;
         tx.commit().await?;
         // BUG-313: settled after commit on the durable path (a retried
         // job when it fails), never on the request future.
@@ -537,7 +537,7 @@ impl AssessmentsService {
         if !ab_db::assessments::delete_override(&mut *tx, id, user_id).await? {
             return Err(Error::not_found("override"));
         }
-        Self::audit_override(&mut *tx, actor, id, user_id, "override-deleted").await?;
+        Self::audit_override(&mut tx, actor, id, user_id, "override-deleted").await?;
         tx.commit().await?;
         // BUG-297: the waiver/extension is gone — the penalty comes back.
         // BUG-313: settled after commit on the durable path (a retried

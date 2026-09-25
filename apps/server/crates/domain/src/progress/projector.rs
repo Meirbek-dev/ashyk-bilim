@@ -30,7 +30,8 @@ pub const COURSE_CHANGE_JOB: &str = "progress:course-change";
 /// payload `{ assessment_id, user_id | null, granted_by | null }` (BUG-312).
 pub const LATENESS_JOB: &str = "progress:lateness";
 
-/// Queue kind of a deferred grader-side re-projection of one learner
+/// Queue kind of a deferred grader-side re-projection of one learner.
+///
 /// ([`ProgressProjector::reproject_submission`] /
 /// [`ProgressProjector::reproject_file_attempt`]); payload
 /// `{ assessment_id | file_submission_id, user_id }` (BUG-313/314).
