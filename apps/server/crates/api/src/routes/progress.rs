@@ -29,7 +29,15 @@ pub async fn get_trail(
     params(("id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Trail", body = Trail),
+        (status = 401, description = "Not signed in", body = Problem,
+         content_type = "application/problem+json"),
         (status = 403, description = "No course access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or invisible course", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "Course staff never enrol, or the trail lock is busy",
+         body = Problem, content_type = "application/problem+json"),
+        (status = 422, description = "Malformed id", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
@@ -48,7 +56,19 @@ pub async fn add_course(
 #[utoipa::path(
     delete, path = "/trail/courses/{id}", tag = "progress",
     params(("id" = CourseId, Path, description = "Course id")),
-    responses((status = 200, description = "Trail", body = Trail)),
+    responses(
+        (status = 200, description = "Trail", body = Trail),
+        (status = 401, description = "Not signed in", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 403, description = "No trail access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown course or no run in it", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "The trail lock is busy", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Malformed id", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn remove_course(
     State(state): State<AppState>,
