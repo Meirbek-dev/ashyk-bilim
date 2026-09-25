@@ -28,6 +28,8 @@ interface Props {
   enableNavigation?: boolean
   /** Ids of completed activities from the learner-state outline (the single progress source). */
   completedActivityIds: ReadonlySet<string>
+  /** Ids not required of this learner (BUG-318): shown, but not counted. */
+  optionalActivityIds?: ReadonlySet<string>
 }
 
 // Helper functions
@@ -275,6 +277,10 @@ function ActivityIndicators(props: Props) {
     return Boolean(activity.cleanUuid) && completedActivityIds.has(activity.cleanUuid!)
   }
 
+  function isCounted(activity: { cleanUuid?: string }) {
+    return !activity.cleanUuid || !props.optionalActivityIds?.has(activity.cleanUuid)
+  }
+
   function isActivityCurrent(activity: { cleanUuid?: string }) {
     return activity.cleanUuid === cleanCurrentActivityId
   }
@@ -298,8 +304,9 @@ function ActivityIndicators(props: Props) {
   }
 
   // Check if all activities are completed
-  const totalActivitiesCount = allActivities.length
-  const completedActivities = allActivities.filter(activity => isActivityDone(activity)).length
+  const countedActivities = allActivities.filter(activity => isCounted(activity))
+  const totalActivitiesCount = countedActivities.length
+  const completedActivities = countedActivities.filter(activity => isActivityDone(activity)).length
   const isCourseCompleted = totalActivitiesCount > 0 && completedActivities === totalActivitiesCount
 
   return (
@@ -319,11 +326,9 @@ function ActivityIndicators(props: Props) {
         {(course.chapters ?? []).map((chapter: AppChapter, chapterIndex: number) => {
           // Get activities for this chapter from the index
           const chapterActivities = allActivities.filter(a => a.chapterIndex === chapterIndex)
-          const completedCount = chapterActivities.reduce(
-            (acc, activity) => acc + (isActivityDone(activity) ? 1 : 0),
-            0,
-          )
-          const isChapterComplete = chapterActivities.length > 0 && completedCount === chapterActivities.length
+          const countedInChapter = chapterActivities.filter(activity => isCounted(activity))
+          const completedCount = countedInChapter.filter(activity => isActivityDone(activity)).length
+          const isChapterComplete = countedInChapter.length > 0 && completedCount === countedInChapter.length
           const firstActivity = chapterActivities[0]
           const chapterLinkHref = firstActivity
             ? `${getAbsoluteUrl('')}/course/${courseid}/activity/${firstActivity.cleanUuid}`
@@ -339,7 +344,7 @@ function ActivityIndicators(props: Props) {
                   <ChapterTooltipContent
                     chapter={chapter}
                     chapterNumber={chapterIndex + 1}
-                    totalActivities={chapterActivities.length}
+                    totalActivities={countedInChapter.length}
                     completedActivities={completedCount}
                   />
                 }

@@ -270,6 +270,11 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     </Alert>
   ) : null
 
+  // Off the list with nothing handed in: no «ready to start» promise, only the notice.
+  if (isPreflightMode && vm.accessClosed && recommendedAction !== 'waitForRelease' && !awaitingRelease) {
+    return accessNotice
+  }
+
   // Entry card (pre-flight) — no CTA inside, it lives in BottomActionBar
   if (isPreflightMode) {
     return (

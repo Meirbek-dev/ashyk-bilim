@@ -42,6 +42,8 @@ export function learnerCourseProgress(state: LearnerCourseState | null | undefin
   const activities = state?.outline.flatMap(chapter => chapter.activities) ?? []
   return {
     completedIds: new Set(activities.filter(activity => activity.complete).map(activity => activity.id)),
+    /** Not required of this learner (BUG-318) — left out of every client-side tally. */
+    optionalIds: new Set(activities.filter(activity => !activity.required).map(activity => activity.id)),
     completed: state?.progress.completed_required_count ?? 0,
     total: state?.progress.total_required_count ?? 0,
     percent: Math.round(state?.progress.progress_pct ?? 0),

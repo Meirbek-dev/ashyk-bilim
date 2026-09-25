@@ -329,6 +329,7 @@ function CourseClient(props: CourseClientProps) {
                     course_uuid={props.course.course_uuid}
                     course={course}
                     completedActivityIds={progress.completedIds}
+                    optionalActivityIds={progress.optionalIds}
                   />
                 )}
 

@@ -30,6 +30,8 @@ interface RuntimeNavItem {
   complete: boolean
   id: string
   published: boolean
+  /** Counts toward the learner's progress (BUG-318: not an assessment they are off the list of). */
+  required: boolean
   state: StudentActivityState
   title: string
   type: string
@@ -113,6 +115,7 @@ function toNavItem(activity: OutlineActivity): RuntimeNavItem {
     complete: activity.complete,
     id: activity.id,
     published: activity.available,
+    required: activity.required,
     state: activity.available ? activity.state : 'unavailable',
     title: activity.title,
     type: toAppActivityType(activity.activity_type),

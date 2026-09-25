@@ -42,6 +42,7 @@ describe('learnerCourseProgress', () => {
     )
     expect(got).toEqual({
       completedIds: new Set(['a2', 'a3']),
+      optionalIds: new Set(),
       completed: 2,
       total: 3,
       percent: 67,
@@ -62,11 +63,14 @@ describe('learnerCourseProgress', () => {
       ),
     )
     expect(got).toMatchObject({ completed: 1, total: 1, percent: 100, activityCount: 2, nextActivityId: null })
+    // The course-page indicators leave it out of their tallies (reverify-E).
+    expect(got.optionalIds).toEqual(new Set(['quiz']))
   })
 
   it('is empty (0 of 0, 0%) before the state has loaded', () => {
     expect(learnerCourseProgress(undefined)).toEqual({
       completedIds: new Set(),
+      optionalIds: new Set(),
       completed: 0,
       total: 0,
       percent: 0,
