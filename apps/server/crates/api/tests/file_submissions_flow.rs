@@ -792,9 +792,9 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
             &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
         )
         .await;
-    // BUG-166: the quiz vocabulary (403 `cannot start: PAST_DUE`), not 409.
+    // BUG-166: the quiz vocabulary (403 `cannot submit: PAST_DUE`), not 409.
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
-    assert_eq!(refused.json()["detail"], "cannot start: PAST_DUE");
+    assert_eq!(refused.json()["detail"], "cannot submit: PAST_DUE");
     let no_draft = app
         .post_as(
             &alice,
@@ -856,7 +856,7 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
         "{}",
         late_submit.text()
     );
-    assert_eq!(late_submit.json()["detail"], "cannot start: PAST_DUE");
+    assert_eq!(late_submit.json()["detail"], "cannot submit: PAST_DUE");
     // UX-115: so is a draft save — the stored files stay.
     let late_save = app
         .patch_as(
@@ -871,7 +871,7 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
         "{}",
         late_save.text()
     );
-    assert_eq!(late_save.json()["detail"], "cannot start: PAST_DUE");
+    assert_eq!(late_save.json()["detail"], "cannot save: PAST_DUE");
     let still_draft = app
         .get_as(&alice, &format!("/api/v2/file-submissions/{closing}/draft"))
         .await;
@@ -1634,7 +1634,7 @@ async fn a_counted_file_draft_keeps_its_gates_after_promotion(pool: PgPool) {
         )
         .await;
     assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
-    assert_eq!(late.json()["detail"], "cannot start: PAST_DUE");
+    assert_eq!(late.json()["detail"], "cannot submit: PAST_DUE");
 }
 
 /// BUG-295: a file preview draft is never resumed by a learner — hidden

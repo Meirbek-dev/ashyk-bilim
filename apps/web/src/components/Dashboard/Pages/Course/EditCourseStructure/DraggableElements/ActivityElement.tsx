@@ -46,7 +46,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 type ActivityType =
@@ -154,6 +154,16 @@ function ActivityElement({
   const [isUnpublishConfirmOpen, setIsUnpublishConfirmOpen] = useState(false)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingActivity, setIsDeletingActivity] = useState(false)
+  // UX-202: the unpublish confirm closes while the toggle is disabled (request
+  // in flight), so the dialog's focus return lands on <body> — hand focus back
+  // to the toggle once it is enabled again, as the cancel path does.
+  const publishToggleRef = useRef<HTMLButtonElement>(null)
+  const refocusToggle = useRef(false)
+  useEffect(() => {
+    if (isUpdatingPublish || !refocusToggle.current) return
+    refocusToggle.current = false
+    publishToggleRef.current?.focus()
+  }, [isUpdatingPublish])
 
   // v2 activities carry no `can_*` flags: derive them the way the course
   // workspace does — authorship (creator / active co-author) is the `:own`
@@ -375,6 +385,7 @@ function ActivityElement({
                 className={ACTION_ICON_BUTTON_CLASS}
                 // UX-200: unpublishing cuts learners off (their hand-ins too) — confirm first.
                 onClick={activity.published ? () => setIsUnpublishConfirmOpen(true) : handleTogglePublish}
+                ref={publishToggleRef}
                 disabled={isUpdatingPublish}
                 aria-label={activity.published ? t('unpublish') : t('publish')}
               >
@@ -414,7 +425,14 @@ function ActivityElement({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isUpdatingPublish} />
-            <AlertDialogAction variant="destructive" onClick={handleTogglePublish} disabled={isUpdatingPublish}>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                refocusToggle.current = true
+                void handleTogglePublish()
+              }}
+              disabled={isUpdatingPublish}
+            >
               {t('unpublish')}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -134,6 +134,31 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     await waitFor(() => expect(harness.toastSuccess).toHaveBeenCalledWith('unpublishedToast'))
   })
 
+  // UX-202: after the confirm, focus returns to the (still mounted) toggle, not <body>.
+  it('returns focus to the publish toggle after the unpublish confirm', async () => {
+    harness.permissions = new Set(['activity:update:own'])
+    harness.creatorId = 'teacher-1'
+    // The request outlives the dialog's close: the toggle is disabled when the dialog returns focus.
+    let settle: (value: unknown) => void = () => {}
+    harness.updateActivity.mockReset().mockReturnValue(new Promise(resolve => (settle = resolve)))
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } })}>
+        <ActivityElement activity={{ ...activity, published: true }} activityIndex={0} course_uuid="course-1" />
+      </QueryClientProvider>,
+    )
+    const toggle = screen.getByRole('button', { name: 'unpublish' })
+    toggle.focus()
+    fireEvent.click(toggle)
+    await screen.findByText('unpublishConfirmMessage')
+    fireEvent.click(screen.getAllByRole('button', { name: 'unpublish' }).find(b => b !== toggle)!)
+    await waitFor(() => expect(screen.queryByText('unpublishConfirmMessage')).toBeNull())
+    // A browser drops focus from the now-disabled toggle to <body>; jsdom keeps it — emulate the browser.
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    settle({})
+    await waitFor(() => expect(harness.toastSuccess).toHaveBeenCalledWith('unpublishedToast'))
+    await waitFor(() => expect(document.activeElement).toBe(toggle))
+  })
+
   it('platform-scoped grants apply to any course', () => {
     harness.permissions = new Set(['activity:update:platform'])
     harness.creatorId = 'someone-else'

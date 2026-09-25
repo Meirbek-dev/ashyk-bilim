@@ -737,20 +737,22 @@ impl FileSubmissionsService {
         Ok(reasons)
     }
 
-    /// 403 `cannot start: <REASONS>` — the same vocabulary as the quiz
-    /// start/submit, so the web renders the localized blocked card.
+    /// 403 `cannot <action>: <REASONS>` — the same vocabulary as the quiz
+    /// start/submit, so the web renders the localized blocked card (it reads
+    /// only the reason codes; UX-202 names the refused action).
     async fn require_can_act(
         &self,
         user_id: UserId,
         row: &FileSubmissionRow,
         preview: bool,
+        action: &str,
     ) -> Result<()> {
         let reasons = self.disabled_reasons(user_id, row, preview).await?;
         if reasons.is_empty() {
             return Ok(());
         }
         Err(Error::forbidden(format!(
-            "cannot start: {}",
+            "cannot {action}: {}",
             reasons
                 .iter()
                 .map(|r| r.as_str())
@@ -792,6 +794,7 @@ impl FileSubmissionsService {
             actor.user_id,
             &row,
             Self::preview_of(open.as_ref(), is_author),
+            "start",
         )
         .await?;
         if let Some(open) = open {
@@ -867,6 +870,7 @@ impl FileSubmissionsService {
             actor.user_id,
             &row,
             Self::preview_of(open.as_ref(), is_author),
+            "save",
         )
         .await?;
         let uploads = self.validate_files(&row, actor, files).await?;
@@ -1044,6 +1048,7 @@ impl FileSubmissionsService {
             actor.user_id,
             &row,
             Self::preview_of(open.as_ref(), is_author),
+            "submit",
         )
         .await?;
         let files_required =
