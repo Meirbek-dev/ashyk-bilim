@@ -159,6 +159,26 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     await waitFor(() => expect(document.activeElement).toBe(toggle))
   })
 
+  // UX-202 sibling: a direct publish (no dialog) also disables the toggle mid-request.
+  it('returns focus to the publish toggle after a direct publish', async () => {
+    harness.permissions = new Set(['activity:update:own'])
+    harness.creatorId = 'teacher-1'
+    let settle: (value: unknown) => void = () => {}
+    harness.updateActivity.mockReset().mockReturnValue(new Promise(resolve => (settle = resolve)))
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } })}>
+        <ActivityElement activity={{ ...activity, published: false }} activityIndex={0} course_uuid="course-1" />
+      </QueryClientProvider>,
+    )
+    const toggle = screen.getByRole('button', { name: 'publish' })
+    toggle.focus()
+    fireEvent.click(toggle)
+    await waitFor(() => expect(harness.updateActivity).toHaveBeenCalledWith('act-1', { published: true }))
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    settle({})
+    await waitFor(() => expect(document.activeElement).toBe(toggle))
+  })
+
   it('platform-scoped grants apply to any course', () => {
     harness.permissions = new Set(['activity:update:platform'])
     harness.creatorId = 'someone-else'

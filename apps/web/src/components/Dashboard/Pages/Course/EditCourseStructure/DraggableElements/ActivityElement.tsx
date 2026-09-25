@@ -154,9 +154,9 @@ function ActivityElement({
   const [isUnpublishConfirmOpen, setIsUnpublishConfirmOpen] = useState(false)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingActivity, setIsDeletingActivity] = useState(false)
-  // UX-202: the unpublish confirm closes while the toggle is disabled (request
-  // in flight), so the dialog's focus return lands on <body> — hand focus back
-  // to the toggle once it is enabled again, as the cancel path does.
+  // UX-202: the toggle is disabled while a publish/unpublish request is in
+  // flight, so focus falls to <body> — hand it back to the toggle once it is
+  // enabled again (after the unpublish confirm and after a direct publish).
   const publishToggleRef = useRef<HTMLButtonElement>(null)
   const refocusToggle = useRef(false)
   useEffect(() => {
@@ -384,7 +384,15 @@ function ActivityElement({
                 variant="outline"
                 className={ACTION_ICON_BUTTON_CLASS}
                 // UX-200: unpublishing cuts learners off (their hand-ins too) — confirm first.
-                onClick={activity.published ? () => setIsUnpublishConfirmOpen(true) : handleTogglePublish}
+                onClick={
+                  activity.published
+                    ? () => setIsUnpublishConfirmOpen(true)
+                    : () => {
+                        // The toggle disables itself while the request runs; hand focus back after.
+                        refocusToggle.current = true
+                        void handleTogglePublish()
+                      }
+                }
                 ref={publishToggleRef}
                 disabled={isUpdatingPublish}
                 aria-label={activity.published ? t('unpublish') : t('publish')}
