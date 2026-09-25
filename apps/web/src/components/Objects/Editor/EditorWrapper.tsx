@@ -36,7 +36,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
 
   async function setContent(content: unknown) {
     // The header already shows the conflict notice; nothing may overwrite the other tab's save.
-    if (activityAutosave.saveStatus === 'conflict') return
+    if (activityAutosave.saveStatus === 'conflict' || activityAutosave.saveStatus === 'forbidden') return
     const { activity } = props
 
     const updatedActivity = { ...activity, content: stripEmptyFileBlocks(structuredClone(content)) }
@@ -45,6 +45,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
       loading: t('saving'),
       success: () => <b>{t('saveSuccess')}</b>,
       error: err => {
+        if (err?.status === 403) return <b>{t('noAccess')}</b>
         const errorMessage = err?.data?.detail || err?.data?.message || t('saveError')
         const status = err?.status
         return <b>{status ? t('detailedSaveError', { status, message: errorMessage }) : errorMessage}</b>

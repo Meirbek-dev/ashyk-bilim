@@ -4352,7 +4352,8 @@
         "saveSuccess": "Activity saved!",
         "saving": "Saving...",
         "conflict": "This activity was changed in another tab. Autosave stopped so it is not overwritten.",
-        "reload": "Reload page"
+        "reload": "Reload page",
+        "noAccess": "You no longer have access to this course — changes are not saved."
       },
       "EmbedObjects": {
         "addEmbedCodeTitle": "Add Embed Code",

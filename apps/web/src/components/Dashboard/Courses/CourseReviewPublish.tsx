@@ -17,7 +17,7 @@ import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { InlineError } from '@/components/ui/error-state'
-import type { CourseReadiness } from '@services/courses/courses'
+import type { CourseReadiness } from '@services/courses/readiness'
 import { useCourseEditorStore } from '@/stores/courses'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'

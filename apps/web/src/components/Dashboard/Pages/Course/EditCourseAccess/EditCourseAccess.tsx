@@ -29,7 +29,11 @@ import {
 } from '@/features/courses/editor/components/CourseEditorSection'
 import LinkToUserGroup from '@components/Objects/Modals/Dash/EditCourseAccess/LinkToUserGroup'
 import { AlertTriangle, Globe, Loader2, SquareUserRound, Users, X } from 'lucide-react'
-import { CourseChoiceCard, courseReadinessQueryOptions, useReadinessIssueMessage } from '@components/Dashboard/Courses/courseWorkflowUi'
+import {
+  CourseChoiceCard,
+  courseReadinessQueryOptions,
+  useReadinessIssueMessage,
+} from '@components/Dashboard/Courses/courseWorkflowUi'
 import { unLinkResourcesToUserGroup } from '@services/usergroups/usergroups'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourseSectionDraft } from '@/features/courses/editor/hooks/useCourseSectionDraft'
@@ -42,7 +46,7 @@ import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
-import type { getCourseReadiness } from '@services/courses/courses'
+import type { getCourseReadiness } from '@services/courses/readiness'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Link } from '@/i18n/navigation'
 import type { Usergroup } from '@/lib/api/generated/zod'
@@ -57,9 +61,7 @@ function EditCourseAccess() {
     enabled: Boolean(courseStructure?.course_uuid),
   })
   const linkedUserGroupsResource = editorData.linkedUserGroups
-  const usergroups = (
-    Array.isArray(linkedUserGroupsResource.data) ? linkedUserGroupsResource.data : []
-  ) as Usergroup[]
+  const usergroups = (Array.isArray(linkedUserGroupsResource.data) ? linkedUserGroupsResource.data : []) as Usergroup[]
   const isUserGroupsLoading = course.isEditorDataLoading && editorData.linkedUserGroups.data === null
   const {
     draft: draftPublic,

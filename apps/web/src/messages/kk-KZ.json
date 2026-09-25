@@ -1541,7 +1541,7 @@
       "authors": "Авторлар",
       "continueLearning": "Оқуды жалғастыру",
       "courseOptions": "Курстың нұсқалары",
-      "courseThumbnailAlt": "Курс нобайы {courseName}",
+      "courseThumbnailAlt": "Курс мұқабасы {courseName}",
       "delete": "Курсты жою",
       "deleteButtonText": "Курсты жою",
       "deleteConfirmationMessage": "Бұл курсты жойғыңыз келетініне сенімдісіз бе? Бұл әрекетті кері қайтару мүмкін емес.",
@@ -1549,7 +1549,7 @@
       "deleting": "Жойылуда...",
       "editContent": "Мазмұнды өңдеу",
       "loading": "Жүктелуде…",
-      "noThumbnailAlt": "Әдепкі курстық нобай",
+      "noThumbnailAlt": "Әдепкі курс мұқабасы",
       "openCourse": "Ашу {course}",
       "ownerBadge": "Иесі",
       "progress": "Прогресс",
@@ -2636,9 +2636,9 @@
         "searchEmojis": "Эмодзи іздеу..."
       },
       "Thumbnail": {
-        "ariaLabelImage": "Жүктеу үшін курстың нобай кескінін таңдаңыз",
-        "ariaLabelVideo": "Жүктеу үшін курстың бейне нобайын таңдаңыз",
-        "currentThumbnailAlt": "Курстың ағымдағы нобайы",
+        "ariaLabelImage": "Жүктеу үшін курстың мұқаба кескінін таңдаңыз",
+        "ariaLabelVideo": "Жүктеу үшін курстың бейне мұқабасын таңдаңыз",
+        "currentThumbnailAlt": "Курстың ағымдағы мұқабасы",
         "errors": {
           "fileTooLarge": "Файл өлшемі ({fileSize} МБ) 10 МБ шегінен асады",
           "imageReadFailed": "Таңдалған кескінді оқу мүмкін болмады",
@@ -2646,28 +2646,28 @@
           "invalidMimeType": "Жарамсыз файл түрі: {fileType}. JPG, PNG немесе WebP кескіндерін жүктеңіз",
           "invalidVideoMimeType": "Жарамсыз файл түрі: {fileType}. Тек MP4, MKV немесе WebM бейнелерін жүктеңіз",
           "pleaseSelectAFile": "Файлды таңдаңыз",
-          "updateFailed": "Нобайды жаңарту сәтсіз аяқталды",
+          "updateFailed": "Мұқабаны жаңарту сәтсіз аяқталды",
           "videoFileTooLarge": "Файл өлшемі ({fileSize}МБ) 100МБ шегінен асады"
         },
         "gallery": "Галерея",
         "image": "Кескін",
-        "imageAltText": "Курс нобайы",
-        "noImageThumbnail": "Сурет нобайы жоқ",
-        "noVideoThumbnail": "Бейне нобайы жоқ",
+        "imageAltText": "Курс мұқабасы",
+        "noImageThumbnail": "Сурет мұқабасы жоқ",
+        "noVideoThumbnail": "Бейне мұқабасы жоқ",
         "pleaseSelectAFile": "Файлды таңдаңыз",
         "selectImageFile": "Сурет файлын таңдаңыз",
         "selectVideoFile": "Бейне файлын таңдаңыз",
         "supportedFormats": "Қолдау көрсетілетін пішімдер: JPG, PNG, WebP (макс. 10 МБ, 16:9)",
         "supportedVideoFormats": "Қолдау көрсетілетін пішімдер: MP4, MKV, WebM (макс. 100МБ)",
-        "thumbnailPreviewAlt": "Курс нобайының алдын ала қарауы",
-        "thumbnailUpdatedSuccessfully": "Нобай сәтті жаңартылды",
+        "thumbnailPreviewAlt": "Курс мұқабасының алдын ала қарауы",
+        "thumbnailUpdatedSuccessfully": "Мұқаба сәтті жаңартылды",
         "uploadImageButton": "Кескінді жүктеу",
         "uploadVideo": "Бейнені жүктеу",
         "uploading": "Жүктелуде...",
         "video": "Бейне",
         "removeImageButton": "Кескінді өшіру",
-        "thumbnailRemoved": "Нобай өшірілді",
-        "removeConfirmTitle": "Нобайды өшіру керек пе?",
+        "thumbnailRemoved": "Мұқаба өшірілді",
+        "removeConfirmTitle": "Мұқабаны өшіру керек пе?",
         "removeConfirmDescription": "Жаңасын жүктегенше курс мұқабасыз қалады."
       },
       "about": {
@@ -2708,14 +2708,14 @@
       },
       "thumbnail": {
         "chooseFromGalleryButton": "Галереядан таңдаңыз",
-        "label": "Курс нобайы",
+        "label": "Курс мұқабасы",
         "mediaActionsDescription": "Сурет жүктеу курс жазбасын бірден жаңартады. Тақырып, сипаттама, тегтер және басқа параметрлер сақтауға дейін жергілікті болып қалады.",
         "mediaActionsTitle": "Медиафайл әрекеттері бірден қолданылады",
         "mediaUpdatesIsolated": "Медиафайл жаңартулары жоғарғы өрістерден арнайы оқшауланған.",
         "uploadImageButton": "Кескінді жүктеу",
         "uploading": "Жүктелуде..."
       },
-      "thumbnailType": "Нобай түрі",
+      "thumbnailType": "Мұқаба түрі",
       "title": "Курсты өңдеу: {courseName}",
       "video": "Бейне"
     },
@@ -4367,7 +4367,8 @@
         "saveSuccess": "Белсенділік сақталды!",
         "saving": "Сақталуда...",
         "conflict": "Оқу әрекеті басқа қойындыда өзгертілді. Қайта жазып қоймас үшін автосақтау тоқтатылды.",
-        "reload": "Бетті жаңарту"
+        "reload": "Бетті жаңарту",
+        "noAccess": "Сізде енді бұл курсқа қолжетімділік жоқ — өзгерістер сақталмайды."
       },
       "EmbedObjects": {
         "addEmbedCodeTitle": "Кірістіру кодын қосу",
@@ -5495,14 +5496,14 @@
           "addPreview": "Алдын ала қарауды қосу",
           "ariaLabelLogo": "Жүктеу үшін ұйымның логотипін таңдаңыз",
           "ariaLabelPreview": "Жүктеу үшін алдын ала қарау кескінін таңдаңыз",
-          "ariaLabelThumbnail": "Жүктеу үшін Ұйымның нобайын таңдаңыз",
+          "ariaLabelThumbnail": "Жүктеу үшін ұйымның мұқабасын таңдаңыз",
           "organizationLogoAlt": "Ұйым логотипі",
           "selectLogoFile": "Логотип файлын таңдаңыз",
           "selectPreviewFile": "Алдын-ала қарау файлын таңдаңыз",
-          "selectThumbnailFile": "Нобай файлын таңдаңыз",
+          "selectThumbnailFile": "Мұқаба файлын таңдаңыз",
           "uploadNewLogo": "Жаңа логотип жүктеу",
-          "uploadNewThumbnail": "Жаңа нобай жүктеу",
-          "platformThumbnailAlt": "Платформа нобайы",
+          "uploadNewThumbnail": "Жаңа мұқаба жүктеу",
+          "platformThumbnailAlt": "Платформа мұқабасы",
           "uploadingLogo": "Жүктелуде...",
           "uploadingThumbnail": "Жүктелуде..."
         },
@@ -5534,7 +5535,7 @@
           "previewOrderUpdateFailed": "Алдын ала қарау ретін жаңарту мүмкін болмады.",
           "previewRemoveFailed": "Алдын ала қарауды жою мүмкін болмады.",
           "previewsUploadFailed": "Алдын ала қарауларды жүктеу мүмкін болмады.",
-          "thumbnailUploadFailed": "Нобайды жүктеу мүмкін болмады.",
+          "thumbnailUploadFailed": "Мұқабаны жүктеу мүмкін болмады.",
           "videoAlreadyAddedError": "Бұл бейне бұрыннан қосылған."
         },
         "Info": {
@@ -5550,20 +5551,20 @@
           "previewRemovedSuccess": "Алдын ала қарау сәтті жойылды.",
           "previewsAddedSuccess": "{count} алдын ала қарау сәтті қосылды.",
           "removingPreview": "Алдын ала қарауды жою...",
-          "thumbnailUpdatedSuccess": "Нобай сәтті жаңартылды.",
+          "thumbnailUpdatedSuccess": "Мұқаба сәтті жаңартылды.",
           "updatingPreviewOrder": "Алдын ала қарау ретін жаңарту...",
           "uploadingLogo": "Логотип жүктелуде...",
           "uploadingPreviews": "{count} алдын ала қарау жүктелуде...",
-          "uploadingThumbnail": "Нобай жүктелуде...",
+          "uploadingThumbnail": "Мұқаба жүктелуде...",
           "videoPreviewAddFailed": "Бейне алдын ала қарауын қосу мүмкін болмады.",
           "videoPreviewAddedSuccess": "Бейне алдын ала қарауы сәтті қосылды."
         },
         "Tabs": {
           "logo": "Логотип",
           "previews": "Алдын ала қарау",
-          "thumbnail": "Нобай"
+          "thumbnail": "Мұқаба"
         },
-        "description": "Ұйым логотипін, нобайын және алдын ала қарау кескіндерін басқару.",
+        "description": "Ұйым логотипін, мұқабасын және алдын ала қарау кескіндерін басқару.",
         "title": "Суреттер және алдын ала қарау"
       },
       "Landing": {

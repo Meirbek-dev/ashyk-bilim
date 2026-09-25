@@ -1,14 +1,8 @@
 'use server'
 
 import { apiJson, apiResult } from '@/lib/api-client'
-import {
-  Contributor,
-  Course,
-  CoursePage,
-  CourseReadiness as CourseReadinessSchema,
-  Curriculum,
-} from '@/lib/api/generated/zod'
-import type { AddContributorRequest, ReadinessItem, UpdateContributorRequest } from '@/lib/api/generated/zod'
+import { Contributor, Course, CoursePage, Curriculum } from '@/lib/api/generated/zod'
+import type { AddContributorRequest, UpdateContributorRequest } from '@/lib/api/generated/zod'
 import { emptyPage } from '@/lib/api/contract'
 import type { Page } from '@/lib/api/contract'
 import { stripEntityPrefix, toAppChapter, toAppCourse } from '@/hooks/courses/courseKeys'
@@ -135,53 +129,6 @@ export async function updateCourseMetadata(course_uuid: string, data: AppPayload
 export async function updateCourseAccess(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
   if (typeof data.public === 'boolean') return updateCourseLifecycle(course_uuid, data.public, options)
   return patchCourse(course_uuid, toUpdateCourseRequest(data))
-}
-
-export interface CourseReadinessIssue {
-  /** Server code (`no-live-activity`, `assessment-not-ready`, …), localized by the web. */
-  code: string
-  severity: 'blocker' | 'warning'
-  activity_id: string | null
-  /** The activity's name when the issue points at one. */
-  title: string | null
-  /** Where to fix it: the activity studio, or the workspace stage for course-level codes. */
-  path: string | null
-}
-
-/** Workspace stage that fixes a course-level readiness code. */
-const READINESS_STAGE: Record<string, string> = {
-  'no-live-activity': 'curriculum',
-  'activity-unpublished': 'curriculum',
-  'thumbnail-missing': 'details',
-  'certificate-not-configured': 'certificate',
-}
-
-export interface CourseReadiness {
-  ready: boolean
-  issues: CourseReadinessIssue[]
-}
-
-/** `GET courses/{id}/readiness` (server-side rule set; codes documented on the route). */
-export async function getCourseReadiness(courseUuid: string): Promise<CourseReadiness> {
-  const id = stripEntityPrefix(courseUuid)
-  const readiness = await apiJson(`courses/${id}/readiness`, serverGet(), CourseReadinessSchema.parse)
-  const issue =
-    (severity: CourseReadinessIssue['severity']) =>
-    (item: ReadinessItem): CourseReadinessIssue => ({
-      code: item.code,
-      severity,
-      activity_id: item.activity_id ?? null,
-      title: item.title ?? null,
-      path: READINESS_STAGE[item.code]
-        ? `/dash/courses/${id}/${READINESS_STAGE[item.code]}`
-        : item.activity_id
-          ? `/dash/courses/${id}/activity/${item.activity_id}/studio`
-          : null,
-    })
-  return {
-    ready: readiness.ready,
-    issues: [...readiness.blockers.map(issue('blocker')), ...readiness.warnings.map(issue('warning'))],
-  }
 }
 
 export async function updateCourseLifecycle(courseUuid: string, makePublic: boolean, _options?: CourseWriteOptions) {

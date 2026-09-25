@@ -41,4 +41,14 @@ describe('useActivityAutosave scope', () => {
     expect(updateActivity).toHaveBeenLastCalledWith('act-b', { version: 2 })
     expect(result.current.saveStatus).toBe('saved')
   })
+
+  // UX-214: a 403 (author removed mid-edit) is its own state and stops autosave.
+  it('a 403 stops autosave as forbidden', async () => {
+    const { result } = renderHook(() => useActivityAutosave({ activityUuid: 'act-c', courseUuid: 'course-1' }))
+    updateActivity.mockRejectedValueOnce(new APIError({ status: 403, code: 'forbidden', message: 'not an author' }))
+    await act(() => result.current.flush({ version: 1 }).catch(() => undefined))
+    expect(result.current.saveStatus).toBe('forbidden')
+    act(() => result.current.onChange({ version: 1 }))
+    expect(result.current.saveStatus).toBe('forbidden')
+  })
 })

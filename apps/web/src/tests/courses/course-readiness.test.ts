@@ -15,7 +15,7 @@ vi.mock('next-intl', () => ({
 }))
 vi.mock('@services/config/config', () => ({ getAPIUrl: () => 'http://api.test/api/v2' }))
 
-import { getCourseReadiness } from '@services/courses/courses'
+import { getCourseReadiness } from '@services/courses/readiness'
 
 const courseId = '01a08bfb-2c9b-71b3-8985-d541d2b1716b'
 const activityId = '01a08bfb-2c9b-71b3-8985-d541d2b1716c'

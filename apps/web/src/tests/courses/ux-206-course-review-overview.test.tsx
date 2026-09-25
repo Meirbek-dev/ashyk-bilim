@@ -30,7 +30,7 @@ vi.mock('@components/Contexts/CourseContext', () => ({
 vi.mock('@/hooks/mutations/useCoursesMutations', () => ({
   useCoursesMutations: () => ({ updateAccess: harness.updateAccess }),
 }))
-vi.mock('@services/courses/courses', () => ({
+vi.mock('@services/courses/readiness', () => ({
   getCourseReadiness: async () => ({ ready: true, issues: [] }),
 }))
 

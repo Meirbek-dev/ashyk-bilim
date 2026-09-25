@@ -2,7 +2,7 @@
 
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { useDebouncedCallback } from '@/hooks/useDebounce'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import { useCourseEditorStore } from '@/stores/courses'
 import type { SaveStatus } from '@/stores/courses/courseEditorStore'
 import { useCallback, useRef } from 'react'
@@ -27,7 +27,7 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
   )
   const isConflicted = useCallback(() => {
     const current = useCourseEditorStore.getState().activitySave
-    return current.activityUuid === activityUuid && current.status === 'conflict'
+    return current.activityUuid === activityUuid && (current.status === 'conflict' || current.status === 'forbidden')
   }, [activityUuid])
 
   // The activity `version` of the last save (UX-027): the loaded one until the
@@ -50,7 +50,13 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
         if (typeof saved.version === 'number') versionRef.current = { activityUuid, version: saved.version }
         setActivitySaveStatus('saved')
       } catch (error: unknown) {
-        setActivitySaveStatus(hasErrorCode(error, 'precondition-failed') ? 'conflict' : 'error')
+        setActivitySaveStatus(
+          hasErrorCode(error, 'precondition-failed')
+            ? 'conflict'
+            : isApiError(error) && error.status === 403
+              ? 'forbidden'
+              : 'error',
+        )
         throw error
       }
     },

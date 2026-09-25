@@ -9,8 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { queryOptions } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
-import { getCourseReadiness } from '@services/courses/courses'
-import type { CourseReadinessIssue } from '@services/courses/courses'
+import { getCourseReadiness } from '@services/courses/readiness'
+import type { CourseReadinessIssue } from '@services/courses/readiness'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 
 /**
@@ -107,7 +107,17 @@ export function CourseStatusBadge({
   status,
   className,
 }: {
-  status: 'public' | 'private' | 'ready' | 'needs-review' | 'attention' | 'unsaved' | 'live' | 'scheduled' | 'draft' | 'archived'
+  status:
+    | 'public'
+    | 'private'
+    | 'ready'
+    | 'needs-review'
+    | 'attention'
+    | 'unsaved'
+    | 'live'
+    | 'scheduled'
+    | 'draft'
+    | 'archived'
   className?: string
 }) {
   const t = useTranslations('DashPage.CourseManagement.Workflow.status')

@@ -165,6 +165,21 @@ function ActivityElement({
     publishToggleRef.current?.focus()
   }, [isUpdatingPublish])
 
+  // UX-214: the rename input takes focus when it opens; save / Esc hand it
+  // back to the pencil instead of dropping it to <body>.
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  const pencilRef = useRef<HTMLButtonElement>(null)
+  const refocusPencil = useRef(false)
+  useEffect(() => {
+    if (isEditing) {
+      nameInputRef.current?.focus()
+      nameInputRef.current?.select()
+    } else if (refocusPencil.current) {
+      refocusPencil.current = false
+      pencilRef.current?.focus()
+    }
+  }, [isEditing])
+
   // v2 activities carry no `can_*` flags: derive them the way the course
   // workspace does — authorship (creator / active co-author) is the `:own`
   // scope, `<resource>:<action>:platform` covers every course.
@@ -180,6 +195,7 @@ function ActivityElement({
   }
 
   const handleCancelEdit = () => {
+    refocusPencil.current = true
     setIsEditing(false)
     setEditedName(activity.name)
   }
@@ -194,6 +210,7 @@ function ActivityElement({
     try {
       await updateActivity(activity.activity_uuid, { name: trimmedName })
       toast.success(t('activityNameUpdatedSuccess'))
+      refocusPencil.current = true
       setIsEditing(false)
     } catch (error: unknown) {
       // UX-128: the assessment lock (scheduled / archived / published with
@@ -285,7 +302,9 @@ function ActivityElement({
         {isEditing ? (
           <div className="flex items-center gap-1.5">
             <Input
+              ref={nameInputRef}
               type="text"
+              aria-label={t('activityNamePlaceholder')}
               value={editedName}
               onChange={e => setEditedName(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -334,6 +353,7 @@ function ActivityElement({
             {canUpdate && (
               <ToolTip content={t('editButton')} side="top">
                 <Button
+                  ref={pencilRef}
                   size="icon-sm"
                   variant="outline"
                   className="shrink-0"

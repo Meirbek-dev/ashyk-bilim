@@ -229,6 +229,25 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     expect(harness.toastError).not.toHaveBeenCalledWith(expect.stringContaining('read-only'))
   })
 
+  // UX-214: the rename input is labelled and focused; Esc and save hand focus back to the pencil.
+  it('focuses the labelled rename input and returns focus to the pencil', async () => {
+    harness.permissions = new Set(['activity:update:platform'])
+    harness.updateActivity.mockReset().mockResolvedValue({})
+    renderRow()
+    const pencil = screen.getByRole('button', { name: 'editButton' })
+    fireEvent.click(pencil)
+    const input = screen.getByRole('textbox', { name: 'activityNamePlaceholder' })
+    await waitFor(() => expect(document.activeElement).toBe(input))
+    fireEvent.keyDown(input, { key: 'Escape' })
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'editButton' })))
+    fireEvent.click(screen.getByRole('button', { name: 'editButton' }))
+    const again = screen.getByRole('textbox', { name: 'activityNamePlaceholder' })
+    fireEvent.change(again, { target: { value: 'Renamed' } })
+    fireEvent.keyDown(again, { key: 'Enter' })
+    await waitFor(() => expect(harness.updateActivity).toHaveBeenCalledWith('act-1', { name: 'Renamed' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'editButton' })))
+  })
+
   // BUG-186: deleting an assessment activity cascades its hand-ins — the confirm says so.
   it('warns about lost hand-ins when deleting an assessment activity', () => {
     harness.permissions = new Set(['activity:delete:platform'])

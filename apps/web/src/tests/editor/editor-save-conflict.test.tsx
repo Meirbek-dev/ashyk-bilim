@@ -20,4 +20,10 @@ describe('EditorSaveIndicator conflict', () => {
     expect(reload).toHaveBeenCalled()
     vi.unstubAllGlobals()
   })
+
+  // UX-214: an author removed from the course mid-edit is told so.
+  it('says the author lost access on a 403', () => {
+    render(<EditorSaveIndicator saveState="forbidden" />)
+    expect(screen.getByRole('alert')).toHaveTextContent('noAccess')
+  })
 })
