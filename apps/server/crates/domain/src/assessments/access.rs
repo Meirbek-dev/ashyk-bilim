@@ -303,13 +303,27 @@ impl AssessmentsService {
         assessment: &Assessment,
         course: &Course,
     ) -> Result<bool> {
+        self.require_access(actor, assessment, course, true).await
+    }
+
+    /// `take: false` is a learner reading their own attempts (UX-213): the
+    /// allowlist gates taking the assessment, not the results of attempts
+    /// made while they were on it.
+    async fn require_access(
+        &self,
+        actor: &Actor,
+        assessment: &Assessment,
+        course: &Course,
+        take: bool,
+    ) -> Result<bool> {
         if Self::is_teacher_preview(actor, course) {
             return Ok(true);
         }
         if !self.user_has_course_access(course, actor.user_id).await? {
             return Err(Error::forbidden("no access to this course"));
         }
-        if assessment.access_mode == AccessMode::Restricted
+        if take
+            && assessment.access_mode == AccessMode::Restricted
             && !ab_db::assessments::access_allows(&self.pool, assessment.id, actor.user_id).await?
         {
             return Err(Error::forbidden("not on this assessment's access list"));
@@ -649,6 +663,25 @@ impl AssessmentsService {
 
     /// What the learner may do right now (legacy `_build_attempt_state`).
     pub async fn attempt_state(&self, actor: &Actor, id: AssessmentId) -> Result<AttemptState> {
+        self.attempt_state_as(actor, id, true).await
+    }
+
+    /// [`Self::attempt_state`] for reading one's own attempts: a learner
+    /// dropped from the allowlist still reads them (UX-213).
+    pub(crate) async fn reading_state(
+        &self,
+        actor: &Actor,
+        id: AssessmentId,
+    ) -> Result<AttemptState> {
+        self.attempt_state_as(actor, id, false).await
+    }
+
+    async fn attempt_state_as(
+        &self,
+        actor: &Actor,
+        id: AssessmentId,
+        take: bool,
+    ) -> Result<AttemptState> {
         let assessment = self.load(id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
         // Same existence rule as `get`: an unpublished assessment does not
@@ -658,7 +691,7 @@ impl AssessmentsService {
             return Err(Error::not_found("assessment"));
         }
         let staff = self
-            .require_submit_access(actor, &assessment, &course)
+            .require_access(actor, &assessment, &course, take)
             .await?;
         // BUG-295: a learner never resumes a preview draft opened while
         // staff — `start` discards it and opens a counted attempt.

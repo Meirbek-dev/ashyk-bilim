@@ -478,7 +478,7 @@ impl SubmissionsService {
         actor: &Actor,
         assessment_id: AssessmentId,
     ) -> Result<Vec<StudentSubmission>> {
-        let state = self.assessments.attempt_state(actor, assessment_id).await?;
+        let state = self.assessments.reading_state(actor, assessment_id).await?;
         let total =
             usize::try_from(ab_db::assessments::count_items(&self.pool, assessment_id).await?)
                 .unwrap_or(0);
@@ -505,7 +505,7 @@ impl SubmissionsService {
         let submission = self.owned(actor, id).await?;
         let state = self
             .assessments
-            .attempt_state(actor, submission.assessment_id)
+            .reading_state(actor, submission.assessment_id)
             .await?;
         let total = usize::try_from(
             ab_db::assessments::count_items(&self.pool, submission.assessment_id).await?,

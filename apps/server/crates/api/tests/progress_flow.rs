@@ -1979,3 +1979,84 @@ async fn restricted_assessment_is_required_only_of_the_allowlist(pool: PgPool) {
     );
     assert_eq!(ungrouped["progress"]["progress_pct"], 100.0);
 }
+
+/// UX-213: dropped from a quiz's allowlist, a learner can no longer take it
+/// but still reads their own attempts and results.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_learner_off_the_allowlist_still_reads_their_attempts(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Allowlist 102").await;
+    let (quiz_id, _, item) = quiz(&app, &teacher, &chapter_id).await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    for who in [&alice, &bob] {
+        app.post_as(
+            who,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    }
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{quiz_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": { item: { "kind": "choice", "selected": ["a"] } } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let restricted = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{quiz_id}/access"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "mode": "restricted", "user_ids": [bob.user_id],
+                                        "usergroup_ids": [] })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(restricted.status, StatusCode::OK, "{}", restricted.text());
+
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/assessments/{quiz_id}/attempt-state"),
+        )
+        .await;
+    assert_eq!(state.status, StatusCode::FORBIDDEN, "{}", state.text());
+    let again = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{quiz_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::FORBIDDEN, "{}", again.text());
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/assessments/{quiz_id}/submissions/me"),
+        )
+        .await;
+    assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
+    assert_eq!(mine.json().as_array().unwrap().len(), 1, "{}", mine.text());
+    let one = app
+        .get_as(&alice, &format!("/api/v2/submissions/{sub_id}"))
+        .await;
+    assert_eq!(one.status, StatusCode::OK, "{}", one.text());
+    assert_eq!(one.json()["final_score"], 100.0, "{}", one.text());
+}

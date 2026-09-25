@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   updateOverride: vi.fn(),
   deleteOverride: vi.fn(),
   overrides: [] as Record<string, unknown>[],
+  cells: [] as { assessment_id: string; user_id: string }[],
   users: [{ id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null }],
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
@@ -48,15 +49,20 @@ vi.mock('@/lib/api/generated/assessments/assessments', () => ({
   updateOverride: mocks.updateOverride,
   deleteOverride: mocks.deleteOverride,
 }))
-vi.mock('@/lib/api/generated/usergroups/usergroups', () => ({ usergroupsForCourse: vi.fn() }))
-vi.mock('@/features/grading/queries/grading.query', () => ({ collectGradebookPages: vi.fn() }))
+vi.mock('@/lib/api/generated/usergroups/usergroups', () => ({
+  usergroupsForCourse: async () => [],
+  listUsergroupMembers: async () => [],
+}))
+vi.mock('@/features/grading/queries/grading.query', () => ({
+  collectGradebookPages: async () => [{ users: mocks.users, cells: mocks.cells }],
+}))
 
-function renderTab() {
+function renderTab(courseUuid: string | null = null) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <NextIntlClientProvider locale="ru" messages={ruMessages}>
       <QueryClientProvider client={client}>
-        <AccessManagementTab assessmentUuid="a1" courseUuid={null} disabled={false} />
+        <AccessManagementTab assessmentUuid="a1" courseUuid={courseUuid} disabled={false} />
       </QueryClientProvider>
     </NextIntlClientProvider>,
   )
@@ -78,6 +84,7 @@ beforeEach(() => {
   mocks.toastError.mockReset()
   mocks.toastSuccess.mockReset()
   mocks.overrides = []
+  mocks.cells = []
   mocks.users = [{ id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null }]
 })
 
@@ -176,6 +183,49 @@ describe('access management feedback (UX-057)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Применить/ }))
     await screen.findByText('Входит в команду курса.')
     await waitFor(() => expect(screen.queryByText('Исключение')).toBeNull())
+  })
+
+  // UX-213: taking a learner with attempts off the list asks first, counting them.
+  it('asks before a save drops learners who already have attempts', async () => {
+    mocks.users = [
+      { id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null },
+      { id: 'u2', username: 'aru', display_name: 'Aru', avatar_key: null },
+    ]
+    mocks.cells = [
+      { assessment_id: 'a1', user_id: 'u1' },
+      { assessment_id: 'other', user_id: 'u2' },
+    ]
+    mocks.setAccess.mockResolvedValue({ mode: 'restricted', effective_user_count: 1, users: [], usergroups: [] })
+    renderTab('c1')
+    await screen.findAllByText('Mira')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Удалить из выбранной аудитории' })[0] as HTMLElement)
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить доступ' }))
+    const dialog = await screen.findByRole('alertdialog')
+    expect(dialog).toHaveTextContent('1 учащийся, у которого уже есть попытки')
+    expect(mocks.setAccess).not.toHaveBeenCalled()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Сохранить всё равно' }))
+    await waitFor(() =>
+      expect(mocks.setAccess).toHaveBeenCalledWith(
+        'assessments/a1/access',
+        { mode: 'restricted', user_ids: ['u2'], usergroup_ids: [] },
+        '"3"',
+      ),
+    )
+  })
+
+  it('saves without asking when nobody with attempts is dropped', async () => {
+    mocks.users = [
+      { id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null },
+      { id: 'u2', username: 'aru', display_name: 'Aru', avatar_key: null },
+    ]
+    mocks.cells = [{ assessment_id: 'a1', user_id: 'u2' }]
+    mocks.setAccess.mockResolvedValue({ mode: 'restricted', effective_user_count: 1, users: [], usergroups: [] })
+    renderTab('c1')
+    await screen.findAllByText('Mira')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Удалить из выбранной аудитории' })[0] as HTMLElement)
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить доступ' }))
+    await waitFor(() => expect(mocks.setAccess).toHaveBeenCalled())
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   // BUG-317: only the attempts were edited — the waiver, extension, note and expiry stay.

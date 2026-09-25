@@ -9568,6 +9568,8 @@
           "lockoutTitle": "Access list is empty",
           "lockoutDesc": "Nobody will be able to take it until you add learners or groups. Save anyway?",
           "lockoutConfirm": "Save anyway",
+          "dropAttemptsTitle": "Learners with attempts will lose access",
+          "dropAttemptsDesc": "{count, plural, one {# learner who already has attempts} other {# learners who already have attempts}} will no longer be able to take this assessment. They will still see their own results. Save?",
           "fixHighlighted": "Fix the highlighted entries.",
           "eligible": "Eligible",
           "effective": "Effective",

@@ -26,7 +26,7 @@ import {
   updateOverride,
 } from '@/lib/api/generated/assessments/assessments'
 import { assessmentAccessQueryOptions, setVersionedAccess } from '@/features/assessments/queries'
-import { usergroupsForCourse } from '@/lib/api/generated/usergroups/usergroups'
+import { listUsergroupMembers, usergroupsForCourse } from '@/lib/api/generated/usergroups/usergroups'
 import type { OverrideRequest, StudentOverride } from '@/lib/api/generated/zod'
 import { toUnix } from '@/lib/api/contract'
 import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
@@ -88,6 +88,8 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   // UX-057: 422 field errors land on the chip / input they name, not in a toast.
   const [fieldErrors, setFieldErrors] = useState<Map<string, string>>(new Map())
   const [confirmLockout, setConfirmLockout] = useState(false)
+  // UX-213: learners with attempts the save takes off the list (0 = no dialog).
+  const [confirmDropped, setConfirmDropped] = useState(0)
 
   const accessKey = queryKeys.assessments.access(assessmentUuid)
   const overridesKey = queryKeys.assessments.overrides(assessmentUuid)
@@ -103,7 +105,10 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   })
   const learnersQuery = useQuery({
     queryKey: queryKeys.courses.learners(courseUuid ?? ''),
-    queryFn: async () => uniqueById((await collectGradebookPages(courseUuid ?? '')).flatMap(page => page.users)),
+    queryFn: async () => {
+      const pages = await collectGradebookPages(courseUuid ?? '')
+      return { users: uniqueById(pages.flatMap(page => page.users)), cells: pages.flatMap(page => page.cells) }
+    },
     enabled: Boolean(courseUuid),
   })
   const access = accessQuery.data ?? null
@@ -126,7 +131,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   }, [loadError, t, toastApiError])
 
   const allUsers = useMemo<AccessLearner[]>(
-    () => uniqueById<AccessLearner>(learnersQuery.data ?? [], access?.users ?? []),
+    () => uniqueById<AccessLearner>(learnersQuery.data?.users ?? [], access?.users ?? []),
     [access?.users, learnersQuery.data],
   )
   const allGroups = useMemo<AccessGroupRow[]>(
@@ -202,9 +207,49 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       setLastSaveError(t('fixHighlighted'))
     },
   })
-  const save = () => {
+  // UX-213: learners who made attempts, were in the saved audience and are not in the new one.
+  const attemptedUserIds = useMemo(
+    () =>
+      new Set(
+        (learnersQuery.data?.cells ?? [])
+          .filter(cell => cell.assessment_id === assessmentUuid)
+          .map(cell => cell.user_id),
+      ),
+    [assessmentUuid, learnersQuery.data?.cells],
+  )
+  const countDroppedWithAttempts = async (): Promise<number> => {
+    if (mode !== 'restricted' || !access) return 0
+    const wasRestricted = access.mode === 'restricted'
+    const savedGroups = wasRestricted ? access.usergroups.map(group => group.id) : []
+    const candidates = [...attemptedUserIds].filter(
+      id => !selectedUsers.has(id) && (!wasRestricted || savedGroups.length > 0 || access.users.some(u => u.id === id)),
+    )
+    if (candidates.length === 0) return 0
+    const groupIds = [...new Set([...selectedGroups, ...savedGroups])]
+    let members: Map<string, Set<string>>
+    try {
+      members = new Map(
+        await Promise.all(
+          groupIds.map(async id => [id, new Set((await listUsergroupMembers(id)).map(m => m.id))] as const),
+        ),
+      )
+    } catch {
+      return candidates.length // group membership unknown: ask rather than drop silently
+    }
+    const inAny = (groups: Iterable<string>, userId: string) => [...groups].some(id => members.get(id)?.has(userId))
+    return candidates.filter(
+      id =>
+        (!wasRestricted || access.users.some(u => u.id === id) || inAny(savedGroups, id)) && !inAny(selectedGroups, id),
+    ).length
+  }
+  const save = async () => {
     if (isLockout(mode, selectedUsers.size, selectedGroups.size)) {
       setConfirmLockout(true)
+      return
+    }
+    const dropped = await countDroppedWithAttempts()
+    if (dropped > 0) {
+      setConfirmDropped(dropped)
       return
     }
     saveMutation.mutate()
@@ -355,7 +400,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
               <Metric label={t('eligibleLoaded')} value={allUsers.length} />
               <Metric label={t('effectivePreview')} value={effectivePreviewCount} />
             </div>
-            <Button className="w-full" disabled={disabled || saveMutation.isPending} onClick={save}>
+            <Button className="w-full" disabled={disabled || saveMutation.isPending} onClick={() => void save()}>
               {saveMutation.isPending ? (
                 <LoaderCircle className="size-4 animate-spin" />
               ) : (
@@ -365,13 +410,26 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
             </Button>
           </div>
         </div>
-        {lastSaveError ? <RecoverableError message={lastSaveError} retryLabel={t('retrySave')} onRetry={save} /> : null}
+        {lastSaveError ? (
+          <RecoverableError message={lastSaveError} retryLabel={t('retrySave')} onRetry={() => void save()} />
+        ) : null}
       </section>
 
       <AlertDialog open={confirmLockout} onOpenChange={setConfirmLockout}>
         <AlertDialogContent size="sm">
           <AlertDialogTitle>{t('lockoutTitle')}</AlertDialogTitle>
           <AlertDialogDescription>{t('lockoutDesc')}</AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tDialog('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => saveMutation.mutate()}>{t('lockoutConfirm')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmDropped > 0} onOpenChange={open => !open && setConfirmDropped(0)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogTitle>{t('dropAttemptsTitle', { count: confirmDropped })}</AlertDialogTitle>
+          <AlertDialogDescription>{t('dropAttemptsDesc', { count: confirmDropped })}</AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel>{tDialog('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => saveMutation.mutate()}>{t('lockoutConfirm')}</AlertDialogAction>
