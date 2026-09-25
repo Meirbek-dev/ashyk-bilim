@@ -477,17 +477,21 @@ impl AnalyticsService {
         // BUG-157: an intervention targets a learner of the course —
         // UX-150: enrolment is the trail run, as `learner-state` reads it;
         // BUG-273: checked and written under the learner's trail lock.
-        let mut tx =
+        // UX-207: course staff are named as such.
+        let Some(mut tx) =
             crate::progress::trail::lock_member(&self.pool, input.user_id, input.course_id, false)
                 .await?
-                .ok_or_else(|| {
-                    Error::validation(vec![
-                        crate::assessments::service::AssessmentsService::not_in_course(
-                            input.user_id,
-                            "user_id".into(),
-                        ),
-                    ])
-                })?;
+        else {
+            return Err(Error::validation(vec![
+                crate::assessments::service::AssessmentsService::non_member(
+                    &self.pool,
+                    input.course_id,
+                    input.user_id,
+                    "user_id".into(),
+                )
+                .await?,
+            ]));
+        };
         let current_risk =
             ab_db::analytics::latest_risk_score(&mut *tx, input.user_id, input.course_id).await?;
         let resolved = input.status == "resolved";

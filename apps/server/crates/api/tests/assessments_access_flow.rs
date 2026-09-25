@@ -1200,7 +1200,7 @@ async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {
 /// BUG-303 doors not covered above: a reporter (no staff) keeps their rows
 /// until promoted to contributor; a custom role keeps them until its grant
 /// set gains `assessment:author`. UX-206: a stale save naming a staffer
-/// answers `staff`, not `not-in-course`.
+/// answers `staff`, not `not-in-course`; UX-207: so do the override doors.
 #[sqlx::test(migrations = "../../migrations")]
 async fn staff_sweep_via_reporter_promotion_and_grant_set(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
@@ -1345,4 +1345,22 @@ async fn staff_sweep_via_reporter_promotion_and_grant_set(pool: PgPool) {
     ];
     expected.sort();
     assert_eq!(offenders, expected);
+
+    // UX-207: the override doors name the staffer as staff too.
+    let override_uri = format!("/api/v2/assessments/{id}/overrides/{l1}");
+    let body = serde_json::json!({ "max_attempts_override": 2 });
+    let created = app.post_as(&teacher, &override_uri, &body).await;
+    let updated = app
+        .send(put(override_uri, body, teacher.cookie.clone()))
+        .await;
+    for refused in [created, updated] {
+        assert_eq!(
+            refused.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            refused.text()
+        );
+        assert_eq!(refused.json()["field_errors"][0]["field"], "user_id");
+        assert_eq!(refused.json()["field_errors"][0]["code"], "staff");
+    }
 }

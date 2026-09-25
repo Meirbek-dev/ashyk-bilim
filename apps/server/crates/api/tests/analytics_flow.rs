@@ -1304,6 +1304,33 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
         not_enrolled.json()["field_errors"][0]["code"],
         "not-in-course"
     );
+    // UX-207: a course staffer is named as such.
+    let co = instructor(&app, "co").await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "username": "co", "role": "contributor" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let staffer = app
+        .post_as(
+            &teacher,
+            "/api/v2/analytics/teacher/interventions",
+            &serde_json::json!({
+                "user_id": co.user_id, "course_id": course_id,
+                "intervention_type": "message_sent"
+            }),
+        )
+        .await;
+    assert_eq!(
+        staffer.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        staffer.text()
+    );
+    assert_eq!(staffer.json()["field_errors"][0]["code"], "staff");
 
     // UX-150: a learner who left (run gone, projection row kept) is not
     // enrolled anywhere — not at risk, not counted, not a valid target.

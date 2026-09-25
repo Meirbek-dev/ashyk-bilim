@@ -244,22 +244,33 @@ impl AssessmentsService {
         if ab_db::progress::has_trail_run_locked(&mut *db, course_id, user_id).await? {
             return Ok(None);
         }
-        if ab_db::progress::is_course_staff(&mut *db, course_id, user_id).await? {
-            return Ok(Some(FieldError {
-                field,
-                code: "staff".into(),
-                message: format!("user {user_id} is on this course's staff"),
-            }));
-        }
-        Ok(Some(Self::not_in_course(user_id, field)))
+        Ok(Some(Self::non_member(db, course_id, user_id, field).await?))
     }
 
-    pub(crate) fn not_in_course(user_id: UserId, field: String) -> FieldError {
-        FieldError {
-            field,
-            code: "not-in-course".into(),
-            message: format!("user {user_id} is not enrolled in this course"),
-        }
+    /// Why `user_id` is no member of the course: on its staff (`staff`,
+    /// UX-206/UX-207) or not enrolled (`not-in-course`). Every membership
+    /// refusal names the target through here.
+    pub(crate) async fn non_member<'e>(
+        db: impl sqlx::PgExecutor<'e>,
+        course_id: ab_core::id::CourseId,
+        user_id: UserId,
+        field: String,
+    ) -> Result<FieldError> {
+        Ok(
+            if ab_db::progress::is_course_staff(db, course_id, user_id).await? {
+                FieldError {
+                    field,
+                    code: "staff".into(),
+                    message: format!("user {user_id} is on this course's staff"),
+                }
+            } else {
+                FieldError {
+                    field,
+                    code: "not-in-course".into(),
+                    message: format!("user {user_id} is not enrolled in this course"),
+                }
+            },
+        )
     }
 
     /// BUG-273: the member's trail lock with the run re-checked on it — the
@@ -270,9 +281,12 @@ impl AssessmentsService {
         course_id: ab_core::id::CourseId,
         user_id: UserId,
     ) -> Result<sqlx::Transaction<'static, sqlx::Postgres>> {
-        crate::progress::trail::lock_member(&self.pool, user_id, course_id, false)
-            .await?
-            .ok_or_else(|| Error::validation(vec![Self::not_in_course(user_id, "user_id".into())]))
+        match crate::progress::trail::lock_member(&self.pool, user_id, course_id, false).await? {
+            Some(tx) => Ok(tx),
+            None => Err(Error::validation(vec![
+                Self::non_member(&self.pool, course_id, user_id, "user_id".into()).await?,
+            ])),
+        }
     }
 
     /// Course creators and platform authors preview without limits.
@@ -454,7 +468,7 @@ impl AssessmentsService {
         .await?;
         self.audit_override(actor, id, user_id, "override-created")
             .await?;
-        self.override_row(id, user_id).await
+        self.override_row(assessment.course_id, id, user_id).await
     }
 
     pub async fn update_override(
@@ -495,7 +509,7 @@ impl AssessmentsService {
         .await?;
         self.audit_override(actor, id, user_id, "override-updated")
             .await?;
-        self.override_row(id, user_id).await
+        self.override_row(assessment.course_id, id, user_id).await
     }
 
     pub async fn delete_override(
@@ -531,11 +545,20 @@ impl AssessmentsService {
 
     /// Read-back after a committed write under the member lock: a missing row
     /// means the learner left in between (the leave drops overrides), so the
-    /// answer is the membership 422, not 404 (UX-195).
-    async fn override_row(&self, id: AssessmentId, user_id: UserId) -> Result<Override> {
-        ab_db::assessments::get_override(&self.pool, id, user_id)
-            .await?
-            .ok_or_else(|| Error::validation(vec![Self::not_in_course(user_id, "user_id".into())]))
+    /// answer is the membership 422, not 404 (UX-195) — `staff` when a
+    /// promotion dropped it (BUG-303).
+    async fn override_row(
+        &self,
+        course_id: ab_core::id::CourseId,
+        id: AssessmentId,
+        user_id: UserId,
+    ) -> Result<Override> {
+        match ab_db::assessments::get_override(&self.pool, id, user_id).await? {
+            Some(row) => Ok(row),
+            None => Err(Error::validation(vec![
+                Self::non_member(&self.pool, course_id, user_id, "user_id".into()).await?,
+            ])),
+        }
     }
 
     async fn audit_override(
