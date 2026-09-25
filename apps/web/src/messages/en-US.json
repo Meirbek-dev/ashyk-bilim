@@ -9845,6 +9845,8 @@
       "fullscreenExited": "Fullscreen was exited.",
       "answersUpdatedElsewhere": "Your answers were updated elsewhere. Review the latest draft before submitting.",
       "assessmentChanged": "The assessment changed. Review your answers and submit again.",
+      "sessionEnded": "Your session ended. Your unsaved answers are kept on this device — sign in to continue.",
+      "sessionEndedRestored": "Your session had ended. The answers kept on this device are restored and being saved.",
       "submitFailed": "Failed to submit",
       "timeLimitMinutes": "{minutes} min",
       "timeLimitHours": "{hours} h",

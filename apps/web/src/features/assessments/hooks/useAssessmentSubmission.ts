@@ -50,6 +50,36 @@ function answersFromSubmission(submission: AssessmentSubmissionRead | null | und
   return answers ?? {}
 }
 
+// UX-212: a save or submit refused with 401 (the session ended — cap
+// eviction, logout elsewhere) sends the learner to the login page. The
+// answers the draft does not hold yet wait in this tab's sessionStorage,
+// keyed by the attempt, and come back (then save) when the draft reopens.
+const KEPT_ANSWERS_PREFIX = 'ashyq:kept-answers:'
+
+function isSessionEnded(error: unknown): boolean {
+  return isApiError(error) && error.status === 401
+}
+
+function keepAnswers(submissionId: string | null, answers: Record<string, ItemAnswer>): void {
+  if (!submissionId) return
+  try {
+    sessionStorage.setItem(KEPT_ANSWERS_PREFIX + submissionId, JSON.stringify(answers))
+  } catch {
+    // Storage blocked or full: nothing more to keep them in.
+  }
+}
+
+function takeKeptAnswers(submissionId: string): Record<string, ItemAnswer> | null {
+  try {
+    const kept = sessionStorage.getItem(KEPT_ANSWERS_PREFIX + submissionId)
+    if (kept === null) return null
+    sessionStorage.removeItem(KEPT_ANSWERS_PREFIX + submissionId)
+    return JSON.parse(kept) as Record<string, ItemAnswer>
+  } catch {
+    return null
+  }
+}
+
 function isOfflineRecoverable(error: unknown): boolean {
   if (!isApiError(error)) return false
   return error.status === 0 || error.code === 'CLIENT_TIMEOUT' || error.code === 'NETWORK_UNAVAILABLE'
@@ -262,6 +292,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     },
     onError: async (error: unknown) => {
       if (assessmentScopeRef.current !== assessmentUuid) return
+      if (isSessionEnded(error)) {
+        keepAnswers(submissionIdRef.current, localAnswersRef.current)
+        setSaveState('dirty')
+        toast.error(t('sessionEnded'))
+        return
+      }
       if (isApiError(error) && error.status === 409) {
         const latest = submissionIdRef.current ? await getMySubmission(submissionIdRef.current).catch(() => null) : null
         if (latest) {
@@ -365,6 +401,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       await refreshLearnerCourseState(queryClient, router)
     },
     onError: async (error: unknown) => {
+      if (isSessionEnded(error)) {
+        keepAnswers(submissionIdRef.current, localAnswersRef.current)
+        setSaveState('dirty')
+        toast.error(t('sessionEnded'))
+        return
+      }
       if (isApiError(error) && error.status === 409 && error.details?.field === 'content_version' && assessmentUuid) {
         // BUG-238: the teacher changed the questions under this draft. `start`
         // re-syncs it to the current content; reload the items and keep the
@@ -559,6 +601,23 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   useEffect(() => {
     saveRef.current = save
   }, [save])
+
+  // UX-212: back from the login page — the answers a 401 kept for this
+  // attempt replace the draft's and are saved straight away. Checked once
+  // per opened draft: a 401 in this mount keeps them for the next one.
+  const openDraftId = draft?.status === 'DRAFT' ? draft.submission_uuid : null
+  const keptCheckedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!openDraftId || keptCheckedRef.current === openDraftId) return
+    keptCheckedRef.current = openDraftId
+    const kept = takeKeptAnswers(openDraftId)
+    if (!kept) return
+    localAnswersRef.current = kept
+    setLocalAnswers(kept)
+    setSaveState('dirty')
+    toast.info(t('sessionEndedRestored'))
+    saveRef.current()
+  }, [openDraftId, t])
 
   const submit = useCallback(
     (options?: SubmitOptions) =>
