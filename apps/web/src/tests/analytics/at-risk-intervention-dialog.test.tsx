@@ -78,6 +78,22 @@ describe('UX-114 at-risk table', () => {
     expect(toastApiError).not.toHaveBeenCalled()
   })
 
+  it('names a learner who joined the course staff on a 422 user_id/staff (UX-217)', async () => {
+    createTeacherIntervention.mockRejectedValueOnce(
+      new APIError({
+        status: 422,
+        code: 'validation-failed',
+        message: 'Validation failed',
+        fieldErrors: [{ field: 'user_id', code: 'staff', message: 'course staff' }],
+      }),
+    )
+    renderTable([row])
+    fireEvent.click(screen.getByText('intervention.manage'))
+    fireEvent.click(await screen.findByText('atRisk.interventions.message'))
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('atRisk.learnerIsStaff'))
+    expect(toastApiError).not.toHaveBeenCalled()
+  })
+
   it('shows the journal load error through the API error mapper (UX-122)', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     getTeacherInterventions.mockRejectedValueOnce(

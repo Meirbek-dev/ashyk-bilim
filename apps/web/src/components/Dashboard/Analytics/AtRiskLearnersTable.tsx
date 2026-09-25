@@ -312,9 +312,10 @@ function LearnerInterventionDialog({
       setLogged(true)
       toast.success(t('atRisk.interventionLogged'))
     } catch (error) {
-      // UX-114: the learner left the course while the dialog was open.
-      if (isApiError(error) && error.fieldErrors.some(f => f.field === 'user_id' && f.code === 'not-in-course')) {
-        toast.error(t('atRisk.learnerNotEnrolled'))
+      // UX-114 / UX-217: the learner left the course or joined its staff while the dialog was open.
+      const code = isApiError(error) ? error.fieldErrors.find(f => f.field === 'user_id')?.code : undefined
+      if (code === 'not-in-course' || code === 'staff') {
+        toast.error(t(code === 'staff' ? 'atRisk.learnerIsStaff' : 'atRisk.learnerNotEnrolled'))
       } else {
         toastApiError(error, { fallback: t('atRisk.interventionLogFailed') })
       }

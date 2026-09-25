@@ -7827,7 +7827,8 @@
         "missing": "Жіберілген",
         "grading": "Тексеру күтілуде"
       },
-      "learnerNotEnrolled": "Білім алушы курсқа енді жазылмаған"
+      "learnerNotEnrolled": "Білім алушы курсқа енді жазылмаған",
+      "learnerIsStaff": "Білім алушы енді курс командасында"
     },
     "gradingBacklog": {
       "title": "Бағалау кезегі",

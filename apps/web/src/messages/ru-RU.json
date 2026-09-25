@@ -7812,7 +7812,8 @@
         "missing": "Пропущено",
         "grading": "Ожидает проверки"
       },
-      "learnerNotEnrolled": "Учащийся больше не записан на курс"
+      "learnerNotEnrolled": "Учащийся больше не записан на курс",
+      "learnerIsStaff": "Учащийся теперь в команде курса"
     },
     "gradingBacklog": {
       "title": "Очередь проверки",

@@ -7797,7 +7797,8 @@
         "missing": "Missing",
         "grading": "Awaiting grade"
       },
-      "learnerNotEnrolled": "The learner is no longer enrolled in the course"
+      "learnerNotEnrolled": "The learner is no longer enrolled in the course",
+      "learnerIsStaff": "The learner is now on the course team"
     },
     "gradingBacklog": {
       "title": "Grading backlog",
