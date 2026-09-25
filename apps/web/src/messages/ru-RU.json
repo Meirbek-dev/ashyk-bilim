@@ -8243,6 +8243,7 @@
         "defaultCohort": "Список курса",
         "summary": {
           "learners": "Студенты",
+          "learnersFiltered": "Студенты в фильтре (из {total})",
           "activities": "Учебные задачи",
           "needsGrading": "На проверке",
           "awaitingRelease": "Ожидают публикации",

@@ -30,6 +30,7 @@ export default function GradebookToolbar({
 }) {
   const t = useTranslations('Features.Grading.Gradebook')
   const filtered = filters.savedFilter !== 'all' || filters.activityType !== 'all' || filters.search.trim() !== ''
+  const totalStudents = data.page_info?.total_students ?? data.summary.student_count
 
   return (
     <div className="space-y-5">
@@ -40,8 +41,8 @@ export default function GradebookToolbar({
         </div>
         <div className="flex flex-wrap gap-2">
           <SummaryTile
-            label={t('summary.learners')}
-            value={filtered ? visibleStudentCount : (data.page_info?.total_students ?? data.summary.student_count)}
+            label={filtered ? t('summary.learnersFiltered', { total: totalStudents }) : t('summary.learners')}
+            value={filtered ? visibleStudentCount : totalStudents}
           />
           <SummaryTile
             label={t('summary.activities')}

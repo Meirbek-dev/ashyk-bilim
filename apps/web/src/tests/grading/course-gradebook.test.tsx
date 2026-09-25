@@ -373,6 +373,18 @@ describe('CourseGradebookCommandCenter', () => {
     expect(screen.getByText('rollups.title')).toBeInTheDocument()
   })
 
+  it('labels the learners tile as filtered while a filter narrows the rows', () => {
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.not_started' }))
+    expect(screen.getByText('summary.learnersFiltered')).toBeInTheDocument()
+    expect(screen.queryByText('summary.learners')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.all' }))
+    expect(screen.getByText('summary.learners')).toBeInTheDocument()
+    expect(screen.queryByText('summary.learnersFiltered')).not.toBeInTheDocument()
+  })
+
   it('shows the API error instead of staying in a loading state', () => {
     queryState = {
       error: new Error('Internal Server Error'),

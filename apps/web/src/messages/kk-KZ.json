@@ -8258,6 +8258,7 @@
         "defaultCohort": "Курс тізімі",
         "summary": {
           "learners": "Білім алушылар",
+          "learnersFiltered": "Сүзгідегі білім алушылар ({total} ішінен)",
           "activities": "Оқу әрекеттері",
           "needsGrading": "Тексеру керек",
           "awaitingRelease": "Жариялауды күтеді",

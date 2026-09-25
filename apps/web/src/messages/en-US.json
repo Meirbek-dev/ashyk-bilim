@@ -8228,6 +8228,7 @@
         "defaultCohort": "Course roster",
         "summary": {
           "learners": "Learners",
+          "learnersFiltered": "Learners in filter (of {total})",
           "activities": "Activities",
           "needsGrading": "Needs grading",
           "awaitingRelease": "Awaiting release",
