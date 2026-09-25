@@ -93,6 +93,36 @@ async fn concurrent_sessions_are_capped_with_oldest_evicted() {
     assert!(store.list(user).await.unwrap().is_empty());
 }
 
+/// UX-205: two concurrent propagates → every session ends on the newest
+/// grants; a late, older propagate is a no-op.
+#[tokio::test]
+async fn rewrite_never_downgrades_rbac_version() {
+    let store = SessionStore::connect(&redis_url()).await.unwrap();
+    let user = UserId::new();
+    let mut ids = Vec::new();
+    for _ in 0..3 {
+        ids.push(store.create(new_session(user, &[])).await.unwrap().unwrap());
+    }
+    let (instructor, learner) = (["instructor".to_owned()], ["user".to_owned()]);
+    let (newer, older) = tokio::join!(
+        store.rewrite_user_sessions(user, &instructor, &[], 3),
+        store.rewrite_user_sessions(user, &learner, &[], 2),
+    );
+    newer.unwrap();
+    older.unwrap();
+    let late = store
+        .rewrite_user_sessions(user, &learner, &[], 2)
+        .await
+        .unwrap();
+    assert_eq!(late, 0, "an older version writes nothing");
+    for id in &ids {
+        let record = store.get_and_touch(id).await.unwrap().unwrap();
+        assert_eq!(record.rbac_version, 3);
+        assert_eq!(record.roles, vec!["instructor"]);
+    }
+    store.revoke_all(user).await.unwrap();
+}
+
 #[tokio::test]
 async fn rewrite_propagates_permissions_to_live_sessions() {
     let store = SessionStore::connect(&redis_url()).await.unwrap();

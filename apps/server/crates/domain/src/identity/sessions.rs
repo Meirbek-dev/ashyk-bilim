@@ -403,7 +403,9 @@ impl SessionStore {
     }
 
     /// Mutation-time permission propagation: rewrite roles/permissions/version
-    /// in every live session of the user (called by RBAC admin flows).
+    /// in every live session of the user (called by RBAC admin flows). A
+    /// session already on this or a newer `rbac_version` is left alone, so a
+    /// slower concurrent propagate never writes older grants (UX-205).
     pub async fn rewrite_user_sessions(
         &self,
         user_id: UserId,
@@ -412,33 +414,44 @@ impl SessionStore {
         rbac_version: i64,
     ) -> Result<u32> {
         self.update_user_sessions(user_id, |record| {
+            if record.rbac_version >= rbac_version {
+                return false;
+            }
             record.roles = roles.to_vec();
             record.permissions = permissions.to_vec();
             record.rbac_version = rbac_version;
+            true
         })
         .await
     }
 
     /// TOTP enrolled/removed: every live session reflects it immediately.
     pub async fn set_mfa_enabled(&self, user_id: UserId, mfa_enabled: bool) -> Result<u32> {
-        self.update_user_sessions(user_id, |record| record.mfa_enabled = mfa_enabled)
-            .await
+        self.update_user_sessions(user_id, |record| {
+            record.mfa_enabled = mfa_enabled;
+            true
+        })
+        .await
     }
 
     /// Google linked to the account: every live session shows it (UX-198).
     pub async fn set_google_linked(&self, user_id: UserId) -> Result<u32> {
-        self.update_user_sessions(user_id, |record| record.google_linked = true)
-            .await
+        self.update_user_sessions(user_id, |record| {
+            record.google_linked = true;
+            true
+        })
+        .await
     }
 
-    /// Apply `edit` to every live session of the user, keeping each idle TTL.
+    /// Apply `edit` to every live session of the user, keeping each idle TTL;
+    /// `edit` returning false leaves that session as is.
     /// Compare-and-set per session: a concurrent rewrite is retried on top of
     /// its result, a concurrent revoke wins (`XX`). Logins in flight are
     /// fenced first, so none is born with the state this rewrite replaces.
     async fn update_user_sessions(
         &self,
         user_id: UserId,
-        mut edit: impl FnMut(&mut SessionRecord),
+        mut edit: impl FnMut(&mut SessionRecord) -> bool,
     ) -> Result<u32> {
         self.bump_epoch(user_id).await?;
         let mut conn = self.redis.clone();
@@ -454,7 +467,9 @@ impl SessionStore {
                 let Some(raw) = raw else { break };
                 let mut record: SessionRecord = serde_json::from_str(&raw)
                     .map_err(|e| Error::internal("corrupt session record", e))?;
-                edit(&mut record);
+                if !edit(&mut record) {
+                    break;
+                }
                 let payload = serde_json::to_string(&record)
                     .map_err(|e| Error::internal("serializing session", e))?;
                 let written: i32 = script
